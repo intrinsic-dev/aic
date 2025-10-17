@@ -5,7 +5,8 @@
   <!-- import main macro -->
   <xacro:include filename="$(find ur_description)/urdf/ur_macro.xacro"/>
 
-  <xacro:include filename="$(find ur_simulation_gz)/urdf/ur_gz.ros2_control.xacro" />
+  <!-- <xacro:include filename="$(find ur_simulation_gz)/urdf/ur_gz.ros2_control.xacro" /> -->
+  <xacro:include filename="$(find ur_description)/urdf/inc/ur_joint_control.xacro" />
 
   <!-- possible 'ur_type' values: ur3, ur5, ur10, ur3e, ur5e, ur7e, ur10e, ur12e, ur16e, ur8long, ur15, ur20, ur30 -->
   <!-- the default value should raise an error in case this was called without defining the type -->
@@ -105,13 +106,11 @@
   </gazebo>
 
   <!-- ros2 control instance -->
-  <xacro:ur_ros2_control
-    name="$(arg name)"
-    tf_prefix="$(arg tf_prefix)"
-    transmission_hw_interface="$(arg transmission_hw_interface)"
-  />
+  <ros2_control name="GazeboSystem" type="system">
+    <hardware>
+      <plugin>gz_ros2_control/GazeboSimSystem</plugin>
+    </hardware>
 
-  <ros2_control name="sensor_system" type="system">
     <sensor name="force_torque_sensor" type="force_torque">
       <state_interface name="force.x"/>
       <state_interface name="force.y"/>
@@ -120,6 +119,14 @@
       <state_interface name="torque.y"/>
       <state_interface name="torque.z"/>
     </sensor>
+
+    <xacro:ur_joint_control_description
+      tf_prefix="$(arg tf_prefix)"
+      initial_positions="${dict(shoulder_pan_joint=0.0,shoulder_lift_joint=-1.57,elbow_joint=0.0,wrist_1_joint=-1.57,wrist_2_joint=0.0,wrist_3_joint=0.0)}"
+    />
   </ros2_control>
+
+
+
 
 </robot>
