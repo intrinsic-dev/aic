@@ -12,6 +12,7 @@
   <exec_depend>controller_manager</exec_depend>
   <exec_depend>ieec_assets</exec_depend>
   <exec_depend>ieec_description</exec_depend>
+  <exec_depend>kinematics_interface_kdl</exec_depend>
   <exec_depend>launch</exec_depend>
   <exec_depend>launch_ros</exec_depend>
   <exec_depend>nav2_common</exec_depend>

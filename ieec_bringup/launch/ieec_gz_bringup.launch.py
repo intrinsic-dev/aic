@@ -166,14 +166,14 @@ def launch_setup(context, *args, **kwargs):
         }.items(),
     )
 
-    # Make the /clock topic available in ROS
+    # Bridge multiple gz topics to ROS such as /clock, /camera and force-torque sensing
     gz_sim_bridge = Node(
         package="ros_gz_bridge",
         executable="parameter_bridge",
         arguments=[
             "/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock",
             "/camera@sensor_msgs/msg/Image@gz.msgs.Image",
-            "flange/force_torque@geometry_msgs/msg/WrenchStamped@gz.msgs.Wrench",
+            "wrist_3_joint/force_torque@geometry_msgs/msg/WrenchStamped@gz.msgs.Wrench",
         ],
         output="screen",
     )
