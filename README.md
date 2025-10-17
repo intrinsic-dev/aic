@@ -35,3 +35,10 @@ ros2 launch ieec_bringup ieec_gz_bringup.launch.py
 [gazebo-5] Error while loading the library [/opt/ros/jazzy/lib/libgz_ros2_control-system.so]: /opt/ros/jazzy/lib/libgz_ros2_control-system.so: undefined symbol: _ZN18hardware_interface15ResourceManager30load_and_initialize_componentsERKNS_21ResourceManagerParamsE
 ```
 
+
+## Admittance Control
+
+### Force-torque sensor output
+The force-torque sensor in Gazebo has been attached to the joint `wrist_3_joint` of the UR5e robot and it's gz topic has been bridged to the ROS Topic `/flange/force_torque`.
+
+

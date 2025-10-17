@@ -173,6 +173,7 @@ def launch_setup(context, *args, **kwargs):
         arguments=[
             "/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock",
             "/camera@sensor_msgs/msg/Image@gz.msgs.Image",
+            "flange/force_torque@geometry_msgs/msg/WrenchStamped@gz.msgs.Wrench",
         ],
         output="screen",
     )
