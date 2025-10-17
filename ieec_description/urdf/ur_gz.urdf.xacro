@@ -38,7 +38,7 @@
   <link name="world" />
 
   <link name="ground_plane">
-    <visual>
+    <!-- <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
         <box size="5 5 0"/>
@@ -46,7 +46,7 @@
       <material name="ground_white">
         <color rgba="1 1 1 0.5"/>
       </material>
-    </visual>
+    </visual> -->
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
