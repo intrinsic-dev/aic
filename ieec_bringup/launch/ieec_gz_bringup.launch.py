@@ -131,11 +131,18 @@ def launch_setup(context, *args, **kwargs):
         arguments=[initial_joint_controller, "-c", "/controller_manager"],
         condition=IfCondition(activate_joint_controller),
     )
+
     initial_joint_controller_spawner_stopped = Node(
         package="controller_manager",
         executable="spawner",
         arguments=[initial_joint_controller, "-c", "/controller_manager", "--stopped"],
         condition=UnlessCondition(activate_joint_controller),
+    )
+
+    fts_broadcaster_spawner = Node(
+        package="controller_manager",
+        executable="spawner",
+        arguments=["fts_broadcaster", "--controller-manager", "/controller_manager"],
     )
 
     # GZ nodes
@@ -184,6 +191,7 @@ def launch_setup(context, *args, **kwargs):
         delay_rviz_after_joint_state_broadcaster_spawner,
         initial_joint_controller_spawner_stopped,
         initial_joint_controller_spawner_started,
+        fts_broadcaster_spawner,
         gz_spawn_entity,
         gz_launch_description,
         gz_sim_bridge,

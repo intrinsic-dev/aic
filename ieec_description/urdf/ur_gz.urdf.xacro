@@ -110,4 +110,16 @@
     tf_prefix="$(arg tf_prefix)"
     transmission_hw_interface="$(arg transmission_hw_interface)"
   />
+
+  <ros2_control name="sensor_system" type="system">
+    <sensor name="force_torque_sensor" type="force_torque">
+      <state_interface name="force.x"/>
+      <state_interface name="force.y"/>
+      <state_interface name="force.z"/>
+      <state_interface name="torque.x"/>
+      <state_interface name="torque.y"/>
+      <state_interface name="torque.z"/>
+    </sensor>
+  </ros2_control>
+
 </robot>
