@@ -20,7 +20,6 @@ from launch.substitutions import (
 from launch_ros.actions import Node
 from launch_ros.descriptions import ParameterFile
 from launch_ros.substitutions import FindPackageShare
-from nav2_common.launch import ReplaceString, RewrittenYaml
 
 def launch_setup(context, *args, **kwargs):
     # UR arguments

@@ -19,7 +19,3 @@ repositories:
     type: git
     url: https://github.com/ros-industrial/ur_msgs.git
     version: 2.3.0
-  kinematics_interface:
-    type: git
-    url: https://github.com/ros-controls/kinematics_interface.git
-    version: jazzy
