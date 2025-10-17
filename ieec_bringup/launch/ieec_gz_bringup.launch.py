@@ -312,7 +312,7 @@ def generate_launch_description():
         DeclareLaunchArgument("y", default_value="0.0", description="Robot spawn Y position")
     )
     declared_arguments.append(
-        DeclareLaunchArgument("z", default_value="2.0", description="Robot spawn Z position")
+        DeclareLaunchArgument("z", default_value="1.0", description="Robot spawn Z position")
     )
     declared_arguments.append(
         DeclareLaunchArgument("roll", default_value="0.0", description="Robot spawn roll orientation (radians)")

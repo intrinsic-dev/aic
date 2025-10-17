@@ -64,7 +64,7 @@
   <xacro:ur_robot
     name="$(arg name)"
     tf_prefix="$(arg tf_prefix)"
-    parent="world"
+    parent="ground_plane"
     joint_limits_parameters_file="$(arg joint_limit_params)"
     kinematics_parameters_file="$(arg kinematics_params)"
     physical_parameters_file="$(arg physical_params)"
@@ -86,6 +86,22 @@
         <namespace>$(arg ros_namespace)</namespace>
       </ros>
     </plugin>
+    <plugin filename="gz-sim-forcetorque-system"
+            name="gz::sim::systems::ForceTorque">
+    </plugin>
+  </gazebo>
+
+  <gazebo reference="$(arg tf_prefix)wrist_3_joint">
+    <sensor name="force_torque_sensor" type="force_torque">
+      <always_on>true</always_on>
+      <update_rate>50</update_rate>
+      <visualize>true</visualize>
+      <topic>$(arg tf_prefix)flange/force_torque</topic>
+      <force_torque>
+        <frame>sensor</frame>
+        <measure_direction>parent_to_child</measure_direction>
+      </force_torque>
+    </sensor>
   </gazebo>
 
   <!-- ros2 control instance -->

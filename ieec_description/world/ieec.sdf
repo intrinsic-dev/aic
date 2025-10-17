@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 <sdf version="1.9">
   <world name="ieec_world">
-  
+
     <scene>
       <ambient>0.4 0.4 0.4</ambient>
       <grid>false</grid>
@@ -19,7 +19,7 @@
         </gz-gui>
 
         <engine>ogre2</engine>
-        
+
         <shadows>
           <texture_size light_type="spotlight">2048</texture_size>
         </shadows>
@@ -317,7 +317,7 @@
       </attenuation>
       <direction>-0.2 -0.2 -1.0</direction>
     </light>-->
-    
+
     <light type="spot" name="spot">
       <pose>0 0 2.6 0 0 0</pose>
       <cast_shadows>true</cast_shadows>
@@ -337,7 +337,7 @@
 
     <model name="ground_plane">
       <static>true</static>
-      <pose>0 0 0.8 0 0 0</pose>
+      <pose>0 0 0.0 0 0 0</pose>
       <link name="link">
         <collision name="collision">
           <geometry>
