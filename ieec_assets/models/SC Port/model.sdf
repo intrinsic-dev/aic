@@ -1,0 +1,70 @@
+<?xml version="1.0" ?>
+<sdf version="1.9">
+  <model name="SC Port">
+    <link name="sc_port_link">
+      <visual name="sc_port_visual">
+        <geometry>
+          <mesh>
+            <uri>sc_port_visual.glb</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <collision name="cube_collider_box">
+        <pose>0.012013 0.0 0.0 0.0 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.001625 0.0273 0.0093</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="cube_collider_box.001">
+        <pose>0.0 0.0 0.004225 0.0 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.02565 0.0273 0.00085</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="cube_collider_box.002">
+        <pose>0.0 0.0 -0.004225 0.0 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.02565 0.0273 0.00085</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="cube_collider_box.003">
+        <pose>-0.012013 0.0 0.0 0.0 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.001625 0.0273 0.0093</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="cube_collider_box.004">
+        <pose>-0.014683 0.0 0.0 0.0 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.005484 0.00285 0.0093</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="cube_collider_box.005">
+        <pose>0.014683 0.0 0.0 0.0 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.005484 0.00285 0.0093</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="cube_collider_box.006">
+        <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.003 0.0273 0.0093</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model>
+</sdf>
