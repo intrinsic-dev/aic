@@ -250,7 +250,7 @@ def generate_launch_description():
         DeclareLaunchArgument(
             "controllers_file",
             default_value=PathJoinSubstitution(
-                [FindPackageShare("ieec_bringup"), "config", "ieec_ros2_controllers.yaml"]
+                [FindPackageShare("aic_bringup"), "config", "aic_ros2_controllers.yaml"]
             ),
             description="Absolute path to YAML file with the controllers configuration.",
         )
@@ -282,7 +282,7 @@ def generate_launch_description():
         DeclareLaunchArgument(
             "description_file",
             default_value=PathJoinSubstitution(
-                [FindPackageShare("ieec_description"), "urdf", "ur_gz.urdf.xacro"]
+                [FindPackageShare("aic_description"), "urdf", "ur_gz.urdf.xacro"]
             ),
             description="URDF/XACRO description file (absolute path) with the robot.",
         )
@@ -294,7 +294,7 @@ def generate_launch_description():
         DeclareLaunchArgument(
             "rviz_config_file",
             default_value=PathJoinSubstitution(
-                [FindPackageShare("ieec_bringup"), "rviz", "ieec.rviz"]
+                [FindPackageShare("aic_bringup"), "rviz", "aic.rviz"]
             ),
             description="Rviz config file (absolute path) to use when launching rviz.",
         )
@@ -308,7 +308,7 @@ def generate_launch_description():
         DeclareLaunchArgument(
             "world_file",
             default_value=PathJoinSubstitution(
-                [FindPackageShare("ieec_description"), "world", "ieec.sdf"]
+                [FindPackageShare("aic_description"), "world", "aic.sdf"]
             ),
             description="Gazebo world file (absolute path or filename from the gazebosim worlds collection) containing a custom world.",
         )

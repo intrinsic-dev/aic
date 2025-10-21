@@ -1,4 +1,4 @@
-# ieec
+# aic
 
 ## Local setup
 
@@ -10,11 +10,11 @@
 
 ```bash
 sudo apt update && sudo apt upgrade -y && sudo apt install ros-jazzy-rmw-zenoh-cpp -y
-mkdir ~/ws_ieec/src -p
-cd ~/ws_ieec/src
-git clone https://github.com/intrinsic-dev/ieec
-vcs import . < ieec/ieec.repos --recursive
-cd ~/ws_ieec
+mkdir ~/ws_aic/src -p
+cd ~/ws_aic/src
+git clone https://github.com/intrinsic-dev/aic
+vcs import . < aic/aic.repos --recursive
+cd ~/ws_aic
 rosdep install --from-paths src --ignore-src --rosdistro jazzy -yr
 source /opt/ros/jazzy/setup.bash
 colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release --symlink-install
@@ -25,7 +25,7 @@ colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release --symlink-install
 Make sure to already have the zenoh router up by running `ros2 run rmw_zenoh_cpp rmw_zenohd`.
 
 ```bash
-ros2 launch ieec_bringup ieec_gz_bringup.launch.py
+ros2 launch aic_bringup aic_gz_bringup.launch.py
 ```
 
 ## Admittance Control
@@ -33,7 +33,7 @@ ros2 launch ieec_bringup ieec_gz_bringup.launch.py
 ### Launch
 
 ```bash
-ros2 launch ieec_bringup ieec_gz_bringup.launch.py initial_joint_controller:=admittance_controller
+ros2 launch aic_bringup aic_gz_bringup.launch.py initial_joint_controller:=admittance_controller
 ```
 
 ### Force-torque sensor output
