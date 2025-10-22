@@ -300,6 +300,10 @@
       filename="gz-sim-scene-broadcaster-system"
       name="gz::sim::systems::SceneBroadcaster">
     </plugin>
+    <plugin
+      filename="ScoringPlugin"
+      name="aic_gazebo::ScoringPlugin">
+    </plugin>
 
     <gravity>0 0 -9.8</gravity>
 
