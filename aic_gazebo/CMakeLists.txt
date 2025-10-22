@@ -18,7 +18,6 @@ find_package(gz-sim8 REQUIRED)
 set(GZ_SIM_VER ${gz-sim8_VERSION_MAJOR})
 message(STATUS "Compiling against Gazebo Harmonic")
 
-# Following directives similarly specify another target: 'ScoringPlugin'.
 add_library(ScoringPlugin
   SHARED
   src/ScoringPlugin.cc
@@ -36,7 +35,6 @@ install(
   DESTINATION lib/${PROJECT_NAME}
 )
 
-# Following directives are used when testing.
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()

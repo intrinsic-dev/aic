@@ -16,7 +16,6 @@
  *
 */
 
-#include <string>
 #include <gz/common/Console.hh>
 #include <gz/plugin/Register.hh>
 #include "aic_gazebo/ScoringPlugin.hh"
