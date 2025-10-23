@@ -1,4 +1,19 @@
-import xacro
+#
+#  Copyright (C) 2025 Intrinsic Innovation LLC
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+#
+
 
 from launch import LaunchDescription
 from launch.actions import (
@@ -18,7 +33,6 @@ from launch.substitutions import (
     PathJoinSubstitution,
 )
 from launch_ros.actions import Node
-from launch_ros.descriptions import ParameterFile
 from launch_ros.substitutions import FindPackageShare
 
 def launch_setup(context, *args, **kwargs):
@@ -29,7 +43,7 @@ def launch_setup(context, *args, **kwargs):
     safety_k_position = LaunchConfiguration("safety_k_position")
     # General arguments
     controllers_file = LaunchConfiguration("controllers_file")
-    tf_prefix = LaunchConfiguration("tf_prefix")
+    ur_tf_prefix = LaunchConfiguration("ur_tf_prefix")
     activate_joint_controller = LaunchConfiguration("activate_joint_controller")
     initial_joint_controller = LaunchConfiguration("initial_joint_controller")
     description_file = LaunchConfiguration("description_file")
@@ -66,7 +80,7 @@ def launch_setup(context, *args, **kwargs):
             ur_type,
             " ",
             "tf_prefix:=",
-            tf_prefix,
+            ur_tf_prefix,
             " ",
             "simulation_controllers:=",
             controllers_file,
@@ -179,7 +193,7 @@ def launch_setup(context, *args, **kwargs):
         arguments=[
             "/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock",
             "/camera@sensor_msgs/msg/Image@gz.msgs.Image",
-            "wrist_3_joint/force_torque@geometry_msgs/msg/WrenchStamped@gz.msgs.Wrench",
+            "/axia80_m20/wrench@geometry_msgs/msg/WrenchStamped@gz.msgs.Wrench",
         ],
         output="screen",
     )
@@ -257,7 +271,7 @@ def generate_launch_description():
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            "tf_prefix",
+            "ur_tf_prefix",
             default_value='""',
             description="Prefix of the joint names, useful for "
             "multi-robot setup. If changed than also joint names in the controllers' configuration "

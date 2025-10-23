@@ -13,4 +13,9 @@ install(
   DESTINATION share/${PROJECT_NAME}
 )
 
+install(PROGRAMS
+  scripts/move_to_contact.py
+  DESTINATION lib/${PROJECT_NAME}
+)
+
 ament_package()
