@@ -146,7 +146,6 @@ admittance_controller:
 
     chainable_command_interfaces:
       - position
-      - velocity
 
     kinematics:
       plugin_name: kinematics_interface_kdl/KinematicsInterfaceKDL
