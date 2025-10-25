@@ -376,6 +376,58 @@
       </link>
     </model>
 
+    <!-- Spawn a block to test contact with rigid surface -->
+    <model name="test_block">
+      <static>false</static>
+      <pose>0.45 -0.15 1.05 0 0 0</pose>
+      <link name="link">
+        <inertial>
+          <mass>1000.0</mass>
+          <inertia> <!-- inertias are tricky to compute -->
+            <!-- http://gazebosim.org/tutorials?tut=inertia&cat=build_robot -->
+            <ixx>5.239375</ixx>       <!-- for a box: ixx = 0.083 * mass * (y*y + z*z) -->
+            <ixy>0.0</ixy>         <!-- for a box: ixy = 0 -->
+            <ixz>0.0</ixz>         <!-- for a box: ixz = 0 -->
+            <iyy>5.239375</iyy>       <!-- for a box: iyy = 0.083 * mass * (x*x + z*z) -->
+            <iyz>0.0</iyz>         <!-- for a box: iyz = 0 -->
+            <izz>10.375</izz>       <!-- for a box: izz = 0.083 * mass * (x*x + y*y) -->
+          </inertia>
+        </inertial>
+        <collision name="collision">
+          <geometry>
+            <box>
+              <size>0.25 0.25 0.025</size>
+            </box>
+          </geometry>
+          <surface>
+            <contact>
+                <ode>
+                  <kp>1e15</kp>
+                  <kd>1e13</kd>
+                </ode>
+              </contact>
+            <friction>
+              <ode>
+                <mu>0.1</mu>
+                <mu2>0.1</mu2>
+              </ode>
+            </friction>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>0.25 0.25 0.025</size>
+            </box>
+          </geometry>
+          <material>
+            <diffuse>1 0 0 1.0</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+
     <include>
       <uri>
         https://fuel.gazebosim.org/1.0/OpenRobotics/models/Reflective table
@@ -387,14 +439,14 @@
     <include>
       <uri>model://SFP Module</uri>
       <name>sfp_module</name>
-      <pose>0.5 0 1.06 0 0 0</pose>
+      <pose>0.7 0 1.06 0 0 0</pose>
       <static>false</static>
     </include>
 
     <include>
       <uri>model://SFP Plug</uri>
       <name>sfp_plug</name>
-      <pose>0.5 0.1 1.06 0 0 0</pose>
+      <pose>0.7 0.1 1.06 0 0 0</pose>
       <static>false</static>
     </include>
 

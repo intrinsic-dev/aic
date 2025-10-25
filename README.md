@@ -43,7 +43,7 @@ Send a target reference force of 13N in the z-axis to the  controller
 ros2 topic pub --once /admittance_controller/wrench_reference geometry_msgs/msg/WrenchStamped "{
     header: {
         stamp: {sec: 0, nanosec: 0},
-        frame_id: 'wrist_3_link'
+        frame_id: 'tool0'
     },
     wrench: {
         force:  {x: 0.0, y: 0.0, z: 13.0},
