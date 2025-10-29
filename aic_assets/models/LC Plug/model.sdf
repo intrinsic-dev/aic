@@ -1,0 +1,82 @@
+<?xml version="1.0" ?>
+<sdf version="1.9">
+  <model name="LC Plug">
+    <link name="lc_plug_link">
+      <visual name="lc_plug_visual">
+        <geometry>
+          <mesh>
+            <uri>lc_plug_visual.glb</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <collision name="cube_collider_box.003">
+        <pose>0.003125 0.0097 0.0 -1.570796 1.570796 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.0045 0.0045 0.02</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="cube_collider_box.002">
+        <pose>-0.003125 0.0097 -0.0 -1.570796 1.570796 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.0045 0.0045 0.02</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="cube001_collider_box.003">
+        <pose>-0.0 0.002503 0.001434 -0.0 3.141593 -0.0</pose>
+        <geometry>
+          <box>
+            <size>0.012353 0.0056 0.00325</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="cube001_collider_box.002">
+        <pose>-0.0 0.002503 -0.000413 -0.0 3.141593 -0.0</pose>
+        <geometry>
+          <box>
+            <size>0.00665 0.0056 0.006032</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="cylinder001_collider_cylinder.001">
+        <pose>0.003125 0.0197 0.0 1.570796 0.0 0.0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.000625</radius>
+            <length>0.003004</length>
+          </cylinder>
+        </geometry>
+      </collision>
+      <collision name="cylinder_collider_cylinder.001">
+        <pose>-0.003125 0.0197 0.0 1.570796 0.0 0.0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.000625</radius>
+            <length>0.003004</length>
+          </cylinder>
+        </geometry>
+      </collision>
+      <collision name="1af02-003-ma2_collider_cylinder">
+        <pose>0.003125 -0.014628 -0.0 -1.570796 -0.0 -0.0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.002794</radius>
+            <length>0.028702</length>
+          </cylinder>
+        </geometry>
+      </collision>
+      <collision name="1af02-003-ma2001_collider_cylinder">
+        <pose>-0.003125 -0.014628 -0.0 -1.570796 -0.0 -0.0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.002794</radius>
+            <length>0.028702</length>
+          </cylinder>
+        </geometry>
+      </collision>
+    </link>
+  </model>
+</sdf>

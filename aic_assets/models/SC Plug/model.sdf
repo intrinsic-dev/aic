@@ -1,0 +1,74 @@
+<?xml version="1.0" ?>
+<sdf version="1.9">
+  <model name="SC Plug">
+    <link name="sc_plug_link">
+      <visual name="sc_plug_visual">
+        <geometry>
+          <mesh>
+            <uri>sc_plug_visual.glb</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <collision name="housing blue_predeterminado005_collider_box">
+        <pose>0.002539 0.006344 4e-06 0.0 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.013722 0.009 0.0073</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="housing blue_predeterminado005_collider_box.001">
+        <pose>0.002539 -0.006344 4e-06 0.0 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.013722 0.009 0.0073</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="cube002_collider_box">
+        <pose>-0.010291 0.0 0.0 0.0 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.01255 0.025 0.0101</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="cylinder011_collider_cylinder">
+        <pose>-0.031147 -0.00635 -0.0 -0.0 1.570796 0.0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.0029</radius>
+            <length>0.02921</length>
+          </cylinder>
+        </geometry>
+      </collision>
+      <collision name="cylinder005_collider_cylinder">
+        <pose>-0.029953 0.00635 -0.0 -0.0 1.570796 0.0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.0029</radius>
+            <length>0.031598</length>
+          </cylinder>
+        </geometry>
+      </collision>
+      <collision name="ferula_predeterminado005_collider_cylinder">
+        <pose>0.00465 -0.00635 0.0 -0.0 1.570796 0.0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.00125</radius>
+            <length>0.014</length>
+          </cylinder>
+        </geometry>
+      </collision>
+      <collision name="ferula_predeterminado003_collider_cylinder">
+        <pose>0.00465 0.00635 0.0 -0.0 1.570796 0.0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.00125</radius>
+            <length>0.014</length>
+          </cylinder>
+        </geometry>
+      </collision>
+    </link>
+  </model>
+</sdf>

@@ -369,9 +369,23 @@
     </include>
 
     <include>
-      <uri>model://SFP Plug</uri>
-      <name>sfp_plug</name>
+      <uri>model://LC Plug</uri>
+      <name>lc_plug</name>
       <pose>0.5 0.1 1.06 0 0 0</pose>
+      <static>false</static>
+    </include>
+    
+    <include>
+      <uri>model://SC Plug</uri>
+      <name>sc_plug</name>
+      <pose>0.6 0.1 1.06 0 0 0</pose>
+      <static>false</static>
+    </include>
+    
+    <include>
+      <uri>model://SC Port</uri>
+      <name>sc_port</name>
+      <pose>0.4 0.1 1.06 0 0 0</pose>
       <static>false</static>
     </include>
     
