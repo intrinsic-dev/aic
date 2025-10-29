@@ -28,8 +28,7 @@ target_include_directories(
 )
 
 target_link_libraries(ScoringPlugin PRIVATE
-  gz-sim${GZ_SIM_VER}::gz-sim${GZ_SIM_VER}
-)
+  gz-sim${GZ_SIM_VER}::gz-sim${GZ_SIM_VER})
 
 install(
   TARGETS ScoringPlugin
