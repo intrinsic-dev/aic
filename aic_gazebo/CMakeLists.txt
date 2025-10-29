@@ -7,9 +7,6 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 find_package(ament_cmake REQUIRED)
-find_package(rclcpp REQUIRED)
-find_package(rclcpp_components REQUIRED)
-find_package(std_msgs REQUIRED)
 
 # Harmonic
 find_package(gz-cmake3 REQUIRED)
@@ -32,8 +29,6 @@ target_include_directories(
 
 target_link_libraries(ScoringPlugin PRIVATE
   gz-sim${GZ_SIM_VER}::gz-sim${GZ_SIM_VER}
-  rclcpp::rclcpp
-  ${std_msgs_TARGETS}
 )
 
 install(
