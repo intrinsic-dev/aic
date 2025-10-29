@@ -24,7 +24,6 @@ message(STATUS "Compiling against Gazebo Harmonic")
 add_library(ScoringPlugin
   SHARED
   src/ScoringPlugin.cc
-  src/ScoringTier1.cc
 )
 
 target_include_directories(
