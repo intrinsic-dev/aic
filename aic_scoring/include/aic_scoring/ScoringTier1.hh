@@ -76,10 +76,10 @@ namespace aic_scoring
     /// \brief Last timestamp received.
     private: std::chrono::time_point<std::chrono::steady_clock> lastTimestamp;
 
-    /// \brief Topic associated to this stats.
+    /// \brief Topic name associated to the stats.
     private: std::string topicName;
 
-    /// \brief Topic type associated to this stats.
+    /// \brief Topic type associated to the stats.
     private: std::string topicType;
 
     /// \brief Topic stats.
