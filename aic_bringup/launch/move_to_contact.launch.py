@@ -67,7 +67,7 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             "tool_frame",
-            default_value="wrist_3_link",
+            default_value="tool0",
             description="Tool frame for the move_to_contact node.",
         )
     )
@@ -78,5 +78,5 @@ def generate_launch_description():
             description="Contact force along the z-axis for the move_to_contact node.",
         )
     )
-    
+
     return LaunchDescription(declared_arguments + [OpaqueFunction(function=launch_setup)])
