@@ -8,6 +8,12 @@
 
 ### Install
 
+We will be building Gazebo Ionic from source to take advantage of new features and improvements so we will need to remove the `gz-harmonic` or `gz-ionic` binaries
+```bash
+sudo apt remove gz-harmonic
+```
+
+Build the workspace
 ```bash
 sudo apt update && sudo apt upgrade -y && sudo apt install ros-jazzy-rmw-zenoh-cpp -y
 mkdir ~/ws_aic/src -p
