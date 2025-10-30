@@ -32,13 +32,19 @@ ros2 launch aic_bringup aic_gz_bringup.launch.py
 
 ### Launch
 
+Start up the admittance controller
 ```bash
 ros2 launch aic_bringup aic_gz_bringup.launch.py initial_joint_controller:=admittance_controller
 ```
 
+Send a reference wrench command (10N in the positive z-axis) to the admittance controller
+```bash
+ros2 launch aic_bringup move_to_contact.launch.py
+```
+
 ### Debugging
 
-Send a target reference force of 13N in the z-axis to the  controller
+Send a target reference force of 13N in the z-axis to the admittance controller
 ```bash
 ros2 topic pub --once /admittance_controller/wrench_reference geometry_msgs/msg/WrenchStamped "{
     header: {
