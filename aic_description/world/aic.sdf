@@ -277,6 +277,13 @@
         </gz-gui>
       </plugin>
 
+      <!-- Visualize Contacts -->
+      <plugin filename="VisualizeContacts" name="Visualize Contacts">
+        <ignition-gui>
+          <property key="state" type="string">docked</property>
+        </ignition-gui>
+      </plugin>
+
     </gui>
 
     <physics name="1ms" type="bullet-featherstone">
@@ -299,6 +306,14 @@
     <plugin
       filename="gz-sim-scene-broadcaster-system"
       name="gz::sim::systems::SceneBroadcaster">
+    </plugin>
+    <plugin
+      filename="ScoringPlugin"
+      name="aic_gazebo::ScoringPlugin">
+    </plugin>
+    <plugin
+      filename="libignition-gazebo-contact-system.so"
+      name="ignition::gazebo::systems::Contact">
     </plugin>
 
     <gravity>0 0 -9.8</gravity>

@@ -34,8 +34,8 @@ controller_manager:
 
 fts_broadcaster:
   ros__parameters:
-    frame_id: wrist_3_joint
-    sensor_name: force_torque_sensor
+    frame_id: ati/tool_link
+    sensor_name: AtiForceTorqueSensor
 
 speed_scaling_state_broadcaster:
   ros__parameters:
@@ -146,26 +146,25 @@ admittance_controller:
 
     chainable_command_interfaces:
       - position
-      - velocity
 
     kinematics:
       plugin_name: kinematics_interface_kdl/KinematicsInterfaceKDL
       plugin_package: kinematics_interface
       base: base_link # Assumed to be stationary
-      tip: tool0
+      tip: wrist_3_link
       group_name: arm
       alpha: 0.0005 # Specifies the damping coefficient for the Jacobian pseudo inverse.
 
     ft_sensor:
-      name: force_torque_sensor
+      name: AtiForceTorqueSensor
       frame:
-        id: tool0  # Wrench measurements are in this frame
+        id: wrist_3_link  # Wrench measurements are in this frame
         external: false # force torque frame exists within URDF kinematic chain
       filter_coefficient: 0.005 # Specifies the filter coefficient for the sensor’s exponential filter.
 
     control:
       frame:
-        id: tool0 # Admittance calcs (displacement etc) are done in this frame. Usually the tool or end-effector
+        id: wrist_3_link # Admittance calcs (displacement etc) are done in this frame. Usually the tool or end-effector
         external: false # control frame exists within URDF kinematic chain
 
     fixed_world_frame:   # Gravity points down (neg. Z) in this frame (Usually: world or base_link)
@@ -175,7 +174,7 @@ admittance_controller:
 
     gravity_compensation:
       frame:
-        id: tool0
+        id: wrist_3_link
         external: false
 
       CoG: # specifies the center of gravity of the end effector
@@ -183,7 +182,7 @@ admittance_controller:
           - 0.0 # x
           - 0.0 # y
           - 0.0 # z
-        force: 23.0 # mass * 9.81
+        force: 3.5316 # mass * 9.81
 
     admittance:
       selected_axes:
@@ -197,12 +196,14 @@ admittance_controller:
       # Having ".0" at the end is MUST, otherwise there is a loading error
       # F = M*a + D*v + S*(x - x_d)
       mass:
-        - 5.5
-        - 6.6
-        - 7.7
-        - 8.8
-        - 9.9
-        - 10.10
+        - 10.0 # x
+        - 10.0 # y
+        - 10.0 # z
+        - 10.0 # rx
+        - 10.0 # ry
+        - 10.0 # rz
+
+      joint_damping: 12.0
 
       damping_ratio: # damping can be used instead: zeta = D / (2 * sqrt( M * S ))
         - 2.828427 # x
@@ -213,9 +214,9 @@ admittance_controller:
         - 2.828427 # rz
 
       stiffness:
-        - 214.1
-        - 214.2
-        - 214.3
-        - 214.4
-        - 214.5
-        - 214.6
+        - 1000.0 # x
+        - 1000.0 # y
+        - 1000.0 # z
+        - 1000.0 # rx
+        - 1000.0 # ry
+        - 1000.0 # rz

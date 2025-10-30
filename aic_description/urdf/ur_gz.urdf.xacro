@@ -2,8 +2,10 @@
 <robot xmlns:xacro="http://wiki.ros.org/xacro" name="$(arg name)">
   <!-- robot name parameter -->
   <xacro:arg name="name" default="ur"/>
-  <!-- import main macro -->
+  <!-- import UR macro -->
   <xacro:include filename="$(find ur_description)/urdf/ur_macro.xacro"/>
+  <!-- import ATI Axia80-M20 macro -->
+  <xacro:include filename="$(find aic_assets)/models/ATI_Axia80_M20/axia80_m20_macro.xacro"/>
 
   <!-- <xacro:include filename="$(find ur_simulation_gz)/urdf/ur_gz.ros2_control.xacro" /> -->
   <xacro:include filename="$(find ur_description)/urdf/inc/ur_joint_control.xacro" />
@@ -26,6 +28,8 @@
   <xacro:arg name="simulation_controllers" default="" />
   <xacro:arg name="ros_namespace" default="" />
 
+  <xacro:arg name="ati_tf_prefix" default="ati/" />
+
   <!-- Pose arguments for robot positioning -->
   <xacro:arg name="x" default="0.0" />
   <xacro:arg name="y" default="0.0" />
@@ -34,11 +38,23 @@
   <xacro:arg name="pitch" default="0.0" />
   <xacro:arg name="yaw" default="0.0" />
 
+  <xacro:property name="adapter_offset" value="0.0254"/>
+
+  <!-- <xacro:arg name="adapter_offset" default="0.0254" />
+  <xacro:arg name="adapter_offset_halved" default="0.0127" /> -->
+
   <!-- create link fixed to the "world" -->
   <link name="world" />
+  <link name="tabletop" />
 
-  <link name="ground_plane">
-    <!-- <visual>
+  <joint name="tabletop_joint" type="fixed">
+    <origin xyz="$(arg x) $(arg y) $(arg z)" rpy="$(arg roll) $(arg pitch) $(arg yaw)" />
+    <parent link="world"/>
+    <child link="tabletop"/>
+  </joint>
+
+  <!-- <link name="ground_plane">
+    <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
         <box size="5 5 0"/>
@@ -46,7 +62,7 @@
       <material name="ground_white">
         <color rgba="1 1 1 0.5"/>
       </material>
-    </visual> -->
+    </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
@@ -59,13 +75,13 @@
     <origin xyz="$(arg x) $(arg y) $(arg z)" rpy="$(arg roll) $(arg pitch) $(arg yaw)" />
     <parent link="world"/>
     <child link="ground_plane"/>
-  </joint>
+  </joint> -->
 
   <!-- arm -->
   <xacro:ur_robot
     name="$(arg name)"
     tf_prefix="$(arg tf_prefix)"
-    parent="ground_plane"
+    parent="tabletop"
     joint_limits_parameters_file="$(arg joint_limit_params)"
     kinematics_parameters_file="$(arg kinematics_params)"
     physical_parameters_file="$(arg physical_params)"
@@ -92,18 +108,18 @@
     </plugin>
   </gazebo>
 
-  <gazebo reference="$(arg tf_prefix)wrist_3_joint">
-    <sensor name="force_torque_sensor" type="force_torque">
-      <always_on>true</always_on>
-      <update_rate>50</update_rate>
-      <visualize>true</visualize>
-      <topic>$(arg tf_prefix)wrist_3_joint/force_torque</topic>
-      <force_torque>
-        <frame>sensor</frame>
-        <measure_direction>parent_to_child</measure_direction>
-      </force_torque>
-    </sensor>
-  </gazebo>
+  <!-- ATI Force Torque sensor -->
+  <xacro:axia80_m20
+    name="ati"
+    tf_prefix="$(arg ati_tf_prefix)"
+    >
+  </xacro:axia80_m20>
+
+  <joint name="attach_ft_sensor_joint" type="fixed">
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+    <parent link="$(arg tf_prefix)tool0"/>
+    <child link="$(arg ati_tf_prefix)base_link"/>
+  </joint>
 
   <!-- ros2 control instance -->
   <ros2_control name="GazeboSystem" type="system">
@@ -111,7 +127,7 @@
       <plugin>gz_ros2_control/GazeboSimSystem</plugin>
     </hardware>
 
-    <sensor name="force_torque_sensor" type="force_torque">
+    <sensor name="AtiForceTorqueSensor" type="force_torque">
       <state_interface name="force.x"/>
       <state_interface name="force.y"/>
       <state_interface name="force.z"/>
@@ -122,11 +138,8 @@
 
     <xacro:ur_joint_control_description
       tf_prefix="$(arg tf_prefix)"
-      initial_positions="${dict(shoulder_pan_joint=0.0,shoulder_lift_joint=-1.57,elbow_joint=0.0,wrist_1_joint=-1.57,wrist_2_joint=0.0,wrist_3_joint=0.0)}"
+      initial_positions="${dict(shoulder_pan_joint=0.0,shoulder_lift_joint=-1.8645,elbow_joint=-2.4956,wrist_1_joint=-0.3641,wrist_2_joint=1.5708,wrist_3_joint=0.0)}"
     />
   </ros2_control>
-
-
-
 
 </robot>

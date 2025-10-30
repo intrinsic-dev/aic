@@ -1,0 +1,126 @@
+<?xml version="1.0" ?>
+<robot xmlns:xacro="http://wiki.ros.org/xacro">
+
+  <!-- robot name parameter -->
+  <xacro:property name="name" value="axia80_m20"/>
+  <!-- TF prefix parameter -->
+  <xacro:property name="tf_prefix" value="ati"/>
+  <!-- adapter_offset is the effective length that the adapter adds to the endeffector -->
+  <xacro:property name="adapter_offset" value="0.0245"/>
+
+  <xacro:macro name="axia80_m20" params="name tf_prefix">
+    <link name="${tf_prefix}base_link">
+      <inertial>
+        <origin xyz="0 0 ${adapter_offset / 2}" rpy="0 0 0"/>
+        <mass value="0.36"/>
+        <inertia ixx="0.0017389750000000002" ixy="0" ixz="0"
+                 iyy="0.0017389750000000002" iyz="0"
+                 izz="0.0002521499999999999"/>
+      </inertial>
+    </link>
+    <joint name="${tf_prefix}attach_joint" type="fixed">
+      <origin xyz="0 0 ${adapter_offset}" rpy="0 0 0"/>
+      <parent link="${tf_prefix}base_link"/>
+      <child link="${tf_prefix}tool_link"/>
+    </joint>
+    <link name="${tf_prefix}tool_link">
+      <inertial>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <mass value="0.001"/>
+        <inertia ixx="0.000001" ixy="0" ixz="0"
+                 iyy="0.000001" iyz="0"
+                 izz="0.000001"/>
+      </inertial>
+
+      <visual>
+        <origin xyz="0 0 ${adapter_offset / 2}" rpy="0 0 0"/>
+        <geometry>
+          <cylinder length="${adapter_offset}" radius="0.041"/>
+        </geometry>
+      </visual>
+      <collision name="collision1">
+        <origin xyz="0 0 ${adapter_offset / 2}" rpy="0 0 0"/>
+        <geometry>
+          <cylinder length="${adapter_offset}" radius="0.041"/>
+        </geometry>
+      </collision>
+      <collision name="collision2">
+        <origin xyz="-0.0475 0 0.0075" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.015 0.015 0.015"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <gazebo reference="${tf_prefix}attach_joint">
+      <preserveFixedJoint>true</preserveFixedJoint>
+      <sensor name="AtiForceTorqueSensor" type="force_torque">
+        <always_on>1</always_on>
+        <visualize>1</visualize>
+        <update_rate>50</update_rate>
+        <topic>/axia80_m20/wrench</topic>
+        <force_torque>
+          <!-- Set to ensure forces are expressed in `AtiForceTorqueSensor`-->
+          <frame>sensor</frame>
+          <!-- Realistic noise as measured in ATI Mini 45 hardware experiments -->
+          <force>
+            <x>
+              <noise type="gaussian">
+                <mean>0.0</mean>
+                <stddev>0.2</stddev>
+              </noise>
+            </x>
+            <y>
+              <noise type="gaussian">
+                <mean>0.0</mean>
+                <stddev>0.2</stddev>
+              </noise>
+            </y>
+            <z>
+              <noise type="gaussian">
+                <mean>0.0</mean>
+                <stddev>0.2</stddev>
+              </noise>
+            </z>
+          </force>
+          <torque>
+            <x>
+              <noise type="gaussian">
+                <mean>0.0</mean>
+                <stddev>0.05</stddev>
+              </noise>
+            </x>
+            <y>
+              <noise type="gaussian">
+                <mean>0.0</mean>
+                <stddev>0.05</stddev>
+              </noise>
+            </y>
+            <z>
+              <noise type="gaussian">
+                <mean>0.0</mean>
+                <stddev>0.05</stddev>
+              </noise>
+            </z>
+          </torque>
+        </force_torque>
+      </sensor>
+    </gazebo>
+
+    <gazebo reference="${tf_prefix}tool_link">
+      <sensor name="contact_sensor" type="contact">
+        <contact>
+          <collision>collision1</collision>
+        </contact>
+      </sensor>
+      <!-- Reduce contact stiffness and damping for better stability -->
+      <kp>100000</kp>
+      <kd>100</kd>
+      <!-- Reduce friction in order to get smoother simulated force -->
+      <mu1>0.01</mu1>
+      <mu2>0.01</mu2>
+    </gazebo>
+
+  </xacro:macro>
+
+</robot>

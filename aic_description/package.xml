@@ -10,6 +10,7 @@
   <buildtool_depend>ament_cmake</buildtool_depend>
 
   <exec_depend>aic_assets</exec_depend>
+  <exec_depend>aic_gazebo</exec_depend>
   <exec_depend>ur_description</exec_depend>
   <exec_depend>ur_simulation_gz</exec_depend>
 

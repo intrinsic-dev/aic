@@ -36,9 +36,20 @@ ros2 launch aic_bringup aic_gz_bringup.launch.py
 ros2 launch aic_bringup aic_gz_bringup.launch.py initial_joint_controller:=admittance_controller
 ```
 
-### Force-torque sensor output
-The force-torque sensor in Gazebo has been attached to the joint `wrist_3_joint` of the UR5e robot and it's gz topic has been bridged to the ROS Topic `/wrist_3_joint/force_torque`.
+### Debugging
 
-### TODO
-1. Fix kinematics interface plugin
-2. Tuning of parameters for admittance controller
+Send a target reference force of 13N in the z-axis to the  controller
+```bash
+ros2 topic pub --once /admittance_controller/wrench_reference geometry_msgs/msg/WrenchStamped "{
+    header: {
+        stamp: {sec: 0, nanosec: 0},
+        frame_id: 'wrist_3_link'
+    },
+    wrench: {
+        force:  {x: 0.0, y: 0.0, z: 13.0},
+        torque: {x: 0.0,  y: 0.0, z: 0.0}
+    }
+}"
+```
+
+
