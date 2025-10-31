@@ -28,7 +28,7 @@ Make sure to already have the zenoh router up by running `ros2 run rmw_zenoh_cpp
 ros2 launch aic_bringup aic_gz_bringup.launch.py
 ```
 
-Send a reference wrench command (10N in the positive z-axis) to the admittance controller
+Send a reference wrench command (10N in the positive z-axis) to the controller
 ```bash
 ros2 launch aic_bringup move_to_contact.launch.py contact_force_z:=10.0
 ```
