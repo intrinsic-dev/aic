@@ -38,7 +38,7 @@ class ControlReferencePublisher(Node):
             JointTrajectoryPoint, self.controller_namespace+'/joint_references', 10)
         self.wrench_ref_publisher = self.create_publisher(
             WrenchStamped, self.controller_namespace+'/wrench_reference', 10)
-        
+
         self.timer = self.create_timer(1.0, self.send_references)
 
     def generate_joint_ref(self, positions = [], velocities = [], accelerations = [], effort = []):
