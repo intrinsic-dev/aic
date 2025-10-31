@@ -378,7 +378,7 @@
 
     <!-- Spawn a block to test contact with rigid surface -->
     <model name="test_block">
-      <static>false</static>
+      <static>true</static>
       <pose>0.45 -0.15 1.05 0 0 0</pose>
       <link name="link">
         <inertial>
