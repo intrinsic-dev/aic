@@ -3,7 +3,7 @@
 ## Local setup
 
 ### Requirements
-- [Ubunutu 24.04](https://releases.ubuntu.com/noble/)
+- [Ubuntu 24.04](https://releases.ubuntu.com/noble/)
 - [ROS 2 Jazzy Jalisco](https://docs.ros.org/en/jazzy/Installation/Ubuntu-Install-Debs.html)
 
 ### Install

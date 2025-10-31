@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <sdf version="1.9">
-  <model name="SC Port">
+  <model name="SC_Port">
     <link name="sc_port_link">
       <visual name="sc_port_visual">
         <geometry>
@@ -10,10 +10,10 @@
         </geometry>
       </visual>
       <collision name="cube_collider_box">
-        <pose>0.012013 0.0 0.0 0.0 0.0 0.0</pose>
+        <pose>0.011922 0.0 0.0 0.0 0.0 0.0</pose>
         <geometry>
           <box>
-            <size>0.001625 0.0273 0.0093</size>
+            <size>0.001937 0.027432 0.0093</size>
           </box>
         </geometry>
       </collision>
@@ -21,47 +21,55 @@
         <pose>0.0 0.0 0.004225 0.0 0.0 0.0</pose>
         <geometry>
           <box>
-            <size>0.02565 0.0273 0.00085</size>
+            <size>0.025781 0.027432 0.00085</size>
           </box>
         </geometry>
       </collision>
       <collision name="cube_collider_box.002">
-        <pose>0.0 0.0 -0.004225 0.0 0.0 0.0</pose>
+        <pose>0.0 -0.0 -0.004225 0.0 0.0 0.0</pose>
         <geometry>
           <box>
-            <size>0.02565 0.0273 0.00085</size>
+            <size>0.02565 0.027432 0.00085</size>
           </box>
         </geometry>
       </collision>
       <collision name="cube_collider_box.003">
-        <pose>-0.012013 0.0 0.0 0.0 0.0 0.0</pose>
+        <pose>-0.011922 -0.0 0.0 0.0 0.0 0.0</pose>
         <geometry>
           <box>
-            <size>0.001625 0.0273 0.0093</size>
+            <size>0.001937 0.027432 0.0093</size>
           </box>
         </geometry>
       </collision>
       <collision name="cube_collider_box.004">
-        <pose>-0.014683 0.0 0.0 0.0 0.0 0.0</pose>
+        <pose>-0.014683 -0.0 0.0 0.0 0.0 0.0</pose>
         <geometry>
           <box>
-            <size>0.005484 0.00285 0.0093</size>
+            <size>0.005484 0.003048 0.0093</size>
           </box>
         </geometry>
       </collision>
       <collision name="cube_collider_box.005">
-        <pose>0.014683 0.0 0.0 0.0 0.0 0.0</pose>
+        <pose>0.014683 -0.0 0.0 0.0 0.0 0.0</pose>
         <geometry>
           <box>
-            <size>0.005484 0.00285 0.0093</size>
+            <size>0.005484 0.003048 0.0093</size>
           </box>
         </geometry>
       </collision>
       <collision name="cube_collider_box.006">
-        <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
+        <pose>-0.0 0.0 0.0 0.0 0.0 0.0</pose>
         <geometry>
           <box>
-            <size>0.003 0.0273 0.0093</size>
+            <size>0.003492 0.027432 0.0093</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="foa-005a_3d_collider_box">
+        <pose>0.0 0.0 -0.0 3.141593 -0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.025 0.002946 0.009</size>
           </box>
         </geometry>
       </collision>
