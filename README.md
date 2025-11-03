@@ -7,10 +7,10 @@
 - [ROS 2 Jazzy Jalisco](https://docs.ros.org/en/jazzy/Installation/Ubuntu-Install-Debs.html)
 
 ### Install
-Purge existing `gz-harmonic`, `ros-jazzy-gz-*-vendor` and `ros-jazzy-ros2-control` binaries
+
+We will be building Gazebo Ionic from source to take advantage of new features and improvements so we will need to remove the `gz-harmonic` or `gz-ionic` binaries
 ```bash
-sudo apt purge gz-harmonic
-sudo apt purge ros-jazzy-gz-*-vendor ros-jazzy-gz-ros2-control
+sudo apt remove gz-harmonic
 ```
 
 Build the workspace
