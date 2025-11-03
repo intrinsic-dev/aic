@@ -9,7 +9,7 @@ endif()
 find_package(ament_cmake REQUIRED)
 
 # Ionic
-find_package(gz_cmake_vendor REQUIRED)
+find_package(gz-cmake4 REQUIRED)
 find_package(gz-plugin3 REQUIRED COMPONENTS register)
 set(GZ_PLUGIN_VER ${gz-plugin3_VERSION_MAJOR})
 find_package(gz-common6 REQUIRED COMPONENTS profiler)
