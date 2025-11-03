@@ -19,83 +19,75 @@ repositories:
     type: git
     url: https://github.com/ros-industrial/ur_msgs.git
     version: 2.3.0
-  gz_dartsim_vendor:
+  gazebo/gz-cmake:
     type: git
-    url: https://github.com/gazebo-release/gazebo_dartsim_vendor.git
-    version: rolling
-  gz_libs/gz_cmake_vendor:
+    url: https://github.com/gazebosim/gz-cmake
+    version: gz-cmake4
+  gazebo/gz-common:
     type: git
-    url: https://github.com/gazebo-release/gz_cmake_vendor.git
-    version: kilted
-  gz_libs/gz_common_vendor:
+    url: https://github.com/gazebosim/gz-common
+    version: gz-common6
+  gazebo/gz-fuel-tools:
     type: git
-    url: https://github.com/gazebo-release/gz_common_vendor.git
-    version: kilted
-  gz_libs/gz_fuel_tools_vendor:
+    url: https://github.com/gazebosim/gz-fuel-tools
+    version: gz-fuel-tools10
+  gazebo/gz-sim:
     type: git
-    url: https://github.com/gazebo-release/gz_fuel_tools_vendor.git
-    version: kilted
-  gz_libs/gz_gui_vendor:
+    url: https://github.com/gazebosim/gz-sim
+    version: gz-sim9
+  gazebo/gz-gui:
     type: git
-    url: https://github.com/gazebo-release/gz_gui_vendor.git
-    version: kilted
-  gz_libs/gz_launch_vendor:
+    url: https://github.com/gazebosim/gz-gui
+    version: gz-gui9
+  gazebo/gz-launch:
     type: git
-    url: https://github.com/gazebo-release/gz_launch_vendor.git
-    version: kilted
-  gz_libs/gz_math_vendor:
+    url: https://github.com/gazebosim/gz-launch
+    version: gz-launch8
+  gazebo/gz-math:
     type: git
-    url: https://github.com/gazebo-release/gz_math_vendor.git
-    version: kilted
-  gz_libs/gz_msgs_vendor:
+    url: https://github.com/gazebosim/gz-math
+    version: gz-math8
+  gazebo/gz-msgs:
     type: git
-    url: https://github.com/gazebo-release/gz_msgs_vendor.git
-    version: kilted
-  gz_libs/gz_physics_vendor:
+    url: https://github.com/gazebosim/gz-msgs
+    version: gz-msgs11
+  gazebo/gz-physics:
     type: git
-    url: https://github.com/gazebo-release/gz_physics_vendor.git
-    version: kilted
-  gz_libs/gz_plugin_vendor:
+    url: https://github.com/gazebosim/gz-physics
+    version: gz-physics8
+  gazebo/gz-plugin:
     type: git
-    url: https://github.com/gazebo-release/gz_plugin_vendor.git
-    version: kilted
-  gz_libs/gz_rendering_vendor:
+    url: https://github.com/gazebosim/gz-plugin
+    version: gz-plugin3
+  gazebo/gz-rendering:
     type: git
-    url: https://github.com/gazebo-release/gz_rendering_vendor.git
-    version: kilted
-  gz_libs/gz_sensors_vendor:
+    url: https://github.com/gazebosim/gz-rendering
+    version: gz-rendering9
+  gazebo/gz-sensors:
     type: git
-    url: https://github.com/gazebo-release/gz_sensors_vendor.git
-    version: kilted
-  gz_libs/gz_sim_vendor:
+    url: https://github.com/gazebosim/gz-sensors
+    version: gz-sensors9
+  gazebo/gz-tools:
     type: git
-    url: https://github.com/gazebo-release/gz_sim_vendor.git
-    version: kilted
-  gz_libs/gz_tools_vendor:
+    url: https://github.com/gazebosim/gz-tools
+    version: gz-tools2
+  gazebo/gz-transport:
     type: git
-    url: https://github.com/gazebo-release/gz_tools_vendor.git
-    version: kilted
-  gz_libs/gz_transport_vendor:
+    url: https://github.com/gazebosim/gz-transport
+    version: gz-transport14
+  gazebo/gz-utils:
     type: git
-    url: https://github.com/gazebo-release/gz_transport_vendor.git
-    version: kilted
-  gz_libs/gz_utils_vendor:
+    url: https://github.com/gazebosim/gz-utils
+    version: gz-utils3
+  gazebo/sdformat:
     type: git
-    url: https://github.com/gazebo-release/gz_utils_vendor.git
-    version: kilted
-  gz_libs/sdformat_vendor:
-    type: git
-    url: https://github.com/gazebo-release/sdformat_vendor.git
-    version: kilted
-  gz_ogre_next_vendor:
-    type: git
-    url: https://github.com/gazebo-release/gazebo_ogre_next_vendor.git
-    version: rolling
-  gz_ros2_control:
+    url: https://github.com/gazebosim/sdformat
+    version: sdf15
+  gazebo/gz_ros2_control:
     type: git
     url: https://github.com/ros-controls/gz_ros2_control.git
     version: kilted
-  ros_gz:
+  gazebo/ros_gz:
     type: git
     url: https://github.com/gazebosim/ros_gz.git
     version: kilted
