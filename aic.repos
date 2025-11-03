@@ -19,10 +19,6 @@ repositories:
     type: git
     url: https://github.com/ros-industrial/ur_msgs.git
     version: 2.3.0
-  gz_dartsim_vendor:
-    type: git
-    url: https://github.com/gazebo-release/gazebo_dartsim_vendor.git
-    version: rolling
   gazebo/gz_cmake_vendor:
     type: git
     url: https://github.com/gazebo-release/gz_cmake_vendor.git
@@ -87,10 +83,6 @@ repositories:
     type: git
     url: https://github.com/gazebo-release/sdformat_vendor.git
     version: kilted
-  gazebo/gz_ogre_next_vendor:
-    type: git
-    url: https://github.com/gazebo-release/gazebo_ogre_next_vendor.git
-    version: rolling
   gazebo/gz_ros2_control:
     type: git
     url: https://github.com/ros-controls/gz_ros2_control.git
