@@ -10,12 +10,19 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_components REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(yaml-cpp REQUIRED)
 
 add_executable(scoring_tier1 src/ScoringTier1.cc)
-target_link_libraries(scoring_tier1 PRIVATE rclcpp::rclcpp ${std_msgs_TARGETS})
+target_link_libraries(scoring_tier1
+  PRIVATE rclcpp::rclcpp ${std_msgs_TARGETS} yaml-cpp)
 
 target_include_directories(
   scoring_tier1 PRIVATE include
+)
+
+install(
+  DIRECTORY config
+  DESTINATION share/${PROJECT_NAME}
 )
 
 install(TARGETS

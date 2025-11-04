@@ -36,6 +36,18 @@ namespace aic_scoring
   /// \brief Tier1 POD.
   class StatsTier1
   {
+    /// \brief Topic name.
+    public: std::string topicName;
+
+    /// \brief Topic type. It should use slashes. E.g.: std_msgs/msg/String
+    public: std::string topicType;
+
+    /// \brief Min number of messages to pass.
+    public: double minMessages;
+
+    /// \brief Max median time between deltas (seconds) to pass.
+    public: double maxMedianTime;
+
     /// \brief History of deltas in seconds (sorted).
     public: std::vector<double> deltas;
 
@@ -45,18 +57,19 @@ namespace aic_scoring
     /// \brief Delta median timestamp. This is the median elapsed time
     /// between timestamps in seconds.
     public: double median = 0.0;
-  } ;
+
+    /// \brief Whether this topic stats pass or fail.
+    public: bool passed = false;
+  };
 
   // The Tier1Stats class.
   class TopicStatsTier1
   {
     /// \brief Class constructor.
     /// \param[in] _node Pointer to the ROS node.
-    /// \param[in] _topicName Topic to track.
-    /// \param[in] _topicType The topic type.
+    /// \param[in] _topicStats Topic info to track.
     public: TopicStatsTier1(rclcpp::Node *_node,
-                            std::string &_topicName,
-                            std::string &_topicType);
+                            StatsTier1 &_topicStats);
 
     /// \brief Get the current stats.
     /// \return Current stats.
@@ -76,12 +89,6 @@ namespace aic_scoring
     /// \brief Last timestamp received.
     private: std::chrono::time_point<std::chrono::steady_clock> lastTimestamp;
 
-    /// \brief Topic name associated to the stats.
-    private: std::string topicName;
-
-    /// \brief Topic type associated to the stats.
-    private: std::string topicType;
-
     /// \brief Topic stats.
     private: StatsTier1 stats;
 
@@ -95,19 +102,23 @@ namespace aic_scoring
     private: rclcpp::Node *node;
   };
 
+  /// \brief ToDo.
+  using AllStats =
+    std::unordered_map<std::string, std::unique_ptr<TopicStatsTier1>>;
+
   // The Tier1 scoring class.
   class ScoringTier1 : public rclcpp::Node
   {
     /// \brief Class constructor.
-    /// \param[in] _topicsAndTypes Vector of pairs.
-    /// Each pair is a ROS <topic_name, topic_type> tuple.
-    /// topic_type should use slashes . E.g.: std_msgs/msg/String
-    public: ScoringTier1(
-      std::vector<std::pair<std::string, std::string>> &_topicsAndTypes);
+    /// \param[in] _configFile YAML config file.
+    public: ScoringTier1(const std::string &_configFile);
+
+    /// \brief ToDo.
+    private: bool ParseStats(const std::string &_yamlFile,
+                             AllStats &_allStats);
 
     /// \brief List of topics to track.
-    public: std::unordered_map<std::string, std::unique_ptr<TopicStatsTier1>>
-      allStats;
+    public: AllStats allStats;
   };
 }
 #endif
