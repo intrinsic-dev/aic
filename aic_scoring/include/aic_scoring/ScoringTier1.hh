@@ -102,7 +102,9 @@ namespace aic_scoring
     private: rclcpp::Node *node;
   };
 
-  /// \brief ToDo.
+  /// \brief All topic statistics.
+  /// Key: Topic name.
+  /// Value: Pointer to a TopicStatsTier1 will all its associated stats.
   using AllStats =
     std::unordered_map<std::string, std::unique_ptr<TopicStatsTier1>>;
 
@@ -110,12 +112,11 @@ namespace aic_scoring
   class ScoringTier1 : public rclcpp::Node
   {
     /// \brief Class constructor.
-    /// \param[in] _configFile YAML config file.
-    public: ScoringTier1(const std::string &_configFile);
+    public: ScoringTier1();
 
-    /// \brief ToDo.
-    private: bool ParseStats(const std::string &_yamlFile,
-                             AllStats &_allStats);
+    /// \brief Populate the scoring input params from a YAML file.
+    /// \param[in] _yamlFile Input YAML file.
+    public: bool ParseStats(const std::string &_yamlFile);
 
     /// \brief List of topics to track.
     public: AllStats allStats;

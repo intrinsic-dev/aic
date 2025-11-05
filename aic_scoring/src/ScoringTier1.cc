@@ -110,15 +110,13 @@ void TopicStatsTier1::TopicCallback(std::shared_ptr<rclcpp::SerializedMessage>)
 }
 
 //////////////////////////////////////////////////
-ScoringTier1::ScoringTier1(const std::string &_configFile)
+ScoringTier1::ScoringTier1()
   : Node("score_tier1_node")
 {
-  if (!this->ParseStats(_configFile, this->allStats))
-    return;
 }
 
 //////////////////////////////////////////////////
-bool ScoringTier1::ParseStats(const std::string &_yamlFile, AllStats &_allStats)
+bool ScoringTier1::ParseStats(const std::string &_yamlFile)
 {
   YAML::Node config;
   try
@@ -138,15 +136,15 @@ bool ScoringTier1::ParseStats(const std::string &_yamlFile, AllStats &_allStats)
     return false;
   }
 
-  // Sanity check: We should a sequence of [topic]
+  // Sanity check: We should have a sequence of [topic]
   auto topics = config["topics"];
   if (!topics.IsSequence())
   {
-    std::cerr << "Unable to find sequence of topics within [topics]" << std::endl;
+    std::cerr << "Unable to find sequence of topics within [topics]"
+              << std::endl;
     return false;
   }
 
-  std::cout << topics.size() << std::endl;
   for (std::size_t i = 0u; i < topics.size(); i++)
   {
     auto newTopic = topics[i];
@@ -157,6 +155,8 @@ bool ScoringTier1::ParseStats(const std::string &_yamlFile, AllStats &_allStats)
       std::cerr << "Unrecognized element. It should be [topic]" << std::endl;
       return false;
     }
+
+    StatsTier1 stats;
     auto topicProperties = newTopic["topic"];
     if (!topicProperties.IsMap())
     {
@@ -169,42 +169,32 @@ bool ScoringTier1::ParseStats(const std::string &_yamlFile, AllStats &_allStats)
       std::cerr << "Unable to find [name] within [topic]" << std::endl;
       return false;
     }
-    auto name = topicProperties["name"];
+    stats.topicName = topicProperties["name"].as<std::string>();
 
     if (!topicProperties["type"])
     {
       std::cerr << "Unable to find [type] within [topic]" << std::endl;
       return false;
     }
-    auto type = topicProperties["type"];
+    stats.topicType = topicProperties["type"].as<std::string>();
 
     if (!topicProperties["min_messages"])
     {
       std::cerr << "Unable to find [min_messages] within [topic]" << std::endl;
       return false;
     }
-    auto minMessages = topicProperties["min_messages"];
+    stats.minMessages = topicProperties["min_messages"].as<double>();
 
     if (!topicProperties["max_median_time"])
     {
-      std::cerr << "Unable to find [max_median_time] within [topic]" << std::endl;
+      std::cerr << "Unable to find [max_median_time] within [topic]"
+                << std::endl;
       return false;
     }
-    auto maxMedianTime = topicProperties["max_median_time"];
-
-    std::cout << "Name: [" << name << "]" << std::endl;
-    std::cout << "Type: [" << type << "]" << std::endl;
-    std::cout << "Min messages: [" << minMessages << "]" << std::endl;
-    std::cout << "Max median time: [" << maxMedianTime << "]" << std::endl;
-
-    StatsTier1 stats;
-    stats.topicName = name.as<std::string>();
-    stats.topicType = type.as<std::string>();
-    stats.minMessages = minMessages.as<double>();
-    stats.maxMedianTime = maxMedianTime.as<double>();
+    stats.maxMedianTime = topicProperties["max_median_time"].as<double>();
 
     auto topicStats = std::make_unique<TopicStatsTier1>(this, stats);
-    _allStats.insert({stats.topicName, std::move(topicStats)});
+    this->allStats.insert({stats.topicName, std::move(topicStats)});
   }
   return true;
 }
@@ -221,10 +211,14 @@ int main(int argc, char * argv[])
     return -1;
   }
 
-  std::string configFile = std::string(argv[1]);
-
   rclcpp::init(argc, argv);
-  rclcpp::spin(std::make_shared<aic_scoring::ScoringTier1>(configFile));
+
+  auto scoringTier1 = std::make_shared<aic_scoring::ScoringTier1>();
+  std::string configFile = std::string(argv[1]);
+  if (!scoringTier1->ParseStats(configFile))
+    return -1;
+
+  rclcpp::spin(scoringTier1);
   rclcpp::shutdown();
   return 0;
 }
