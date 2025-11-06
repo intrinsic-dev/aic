@@ -8,7 +8,7 @@
 
 ### Install
 
-Purge existing `gz-harmonic`, `ros-jazzy-gz-*-vendor` and `ros-jazzy-ros2-control` binaries
+Purge existing Gazebo binaries
 ```bash
 sudo apt purge gz-harmonic
 sudo apt purge ros-jazzy-gz-*-vendor ros-jazzy-gz-ros2-control
@@ -20,8 +20,8 @@ sudo apt update && sudo apt upgrade -y && sudo apt install ros-jazzy-rmw-zenoh-c
 mkdir ~/ws_aic/src -p
 cd ~/ws_aic/src
 git clone https://github.com/intrinsic-dev/aic
-cd ~/ws_aic
 vcs import . < aic/aic.repos --recursive
+cd ~/ws_aic
 rosdep install --from-paths src --ignore-src --rosdistro jazzy -yr
 source /opt/ros/jazzy/setup.bash
 colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release --symlink-install
