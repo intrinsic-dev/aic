@@ -1,0 +1,15 @@
+---
+# Tier1 scoring configuration.
+
+# List of topics to monitor.
+topics:
+  - topic:
+      name: "/foo"
+      type: "std_msgs/msg/String"
+      min_messages: 20
+      max_median_time: 0.5
+  - topic:
+      name: "/bar"
+      type: "std_msgs/msg/String"
+      min_messages: 10
+      max_median_time: 0.6
