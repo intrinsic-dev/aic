@@ -4,7 +4,7 @@
   <!-- robot name parameter -->
   <xacro:property name="name" value="axia80_m20"/>
   <!-- TF prefix parameter -->
-  <xacro:property name="tf_prefix" value="ati"/>
+  <xacro:property name="tf_prefix" value="ati/"/>
   <!-- adapter_offset is the effective length that the adapter adds to the endeffector -->
   <xacro:property name="adapter_offset" value="0.0245"/>
 
@@ -110,7 +110,11 @@
     <gazebo reference="${tf_prefix}tool_link">
       <sensor name="contact_sensor" type="contact">
         <contact>
-          <collision>collision1</collision>
+          <!-- The reason for the convoluted collision name reference is due to URDF to SDF
+          conversion prepending and appending names to the collision name. The current workaround
+          is provide an exact name -->
+          <collision>${tf_prefix}tool_link_fixed_joint_lump__collision1_collision</collision>
+          <topic>collision/tool_link</topic>
         </contact>
       </sensor>
       <!-- Reduce contact stiffness and damping for better stability -->

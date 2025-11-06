@@ -279,9 +279,9 @@
 
       <!-- Visualize Contacts -->
       <plugin filename="VisualizeContacts" name="Visualize Contacts">
-        <ignition-gui>
+        <gz-gui>
           <property key="state" type="string">docked</property>
-        </ignition-gui>
+        </gz-gui>
       </plugin>
 
     </gui>
@@ -312,8 +312,8 @@
       name="aic_gazebo::ScoringPlugin">
     </plugin>
     <plugin
-      filename="libignition-gazebo-contact-system.so"
-      name="ignition::gazebo::systems::Contact">
+      filename="gz-sim-contact-system"
+      name="gz::sim::systems::Contact">
     </plugin>
 
     <gravity>0 0 -9.8</gravity>
@@ -440,21 +440,21 @@
       <pose>0.5 0.1 1.06 0 0 0</pose>
       <static>false</static>
     </include>
-    
+
     <include>
       <uri>model://SC Plug</uri>
       <name>sc_plug</name>
       <pose>0.6 0.1 1.06 0 0 0</pose>
       <static>false</static>
     </include>
-    
+
     <include>
       <uri>model://SC Port</uri>
       <name>sc_port</name>
       <pose>0.4 0.1 1.06 0 0 0</pose>
       <static>false</static>
     </include>
-    
+
     <include>
       <uri>model://Enclosure</uri>
       <name>enclosure</name>
