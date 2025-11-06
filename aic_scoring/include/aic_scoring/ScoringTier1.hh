@@ -104,7 +104,7 @@ namespace aic_scoring
 
   /// \brief All topic statistics.
   /// Key: Topic name.
-  /// Value: Pointer to a TopicStatsTier1 will all its associated stats.
+  /// Value: Pointer to a TopicStatsTier1 with all its associated stats.
   using AllStats =
     std::unordered_map<std::string, std::unique_ptr<TopicStatsTier1>>;
 
