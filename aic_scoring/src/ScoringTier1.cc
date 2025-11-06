@@ -1,4 +1,3 @@
-
 /*
  * Copyright (C) 2025 Intrinsic Innovation LLC
  *
@@ -39,7 +38,7 @@ TopicStatsTier1::TopicStatsTier1(rclcpp::Node *_node,
 {
   if (!_node)
   {
-    std::cerr << "[TopicStasTier1]: null ROS node. Aborting." << std::endl;
+    std::cerr << "[TopicStatsTier1]: null ROS node. Aborting." << std::endl;
     return;
   }
 
