@@ -1,4 +1,3 @@
-
 /*
  * Copyright (C) 2025 Intrinsic Innovation LLC
  *
@@ -64,7 +63,8 @@ namespace aic_scoring
 
     /// \brief Topic callback;
     /// \param[in] _msg Input message (unused).
-    private: void TopicCallback(std::shared_ptr<rclcpp::SerializedMessage> msg);
+    private: void TopicCallback(
+      std::shared_ptr<rclcpp::SerializedMessage> _msg);
 
     /// \brief Update the stats with a new timestamp.
     private: void Update();
