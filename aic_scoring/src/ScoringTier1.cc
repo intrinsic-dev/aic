@@ -31,7 +31,8 @@
 namespace aic_scoring
 {
 //////////////////////////////////////////////////
-TopicStatsTier1::TopicStatsTier1(rclcpp::Node *_node, StatsTier1 &_topicStats)
+TopicStatsTier1::TopicStatsTier1(rclcpp::Node *_node,
+                                 const StatsTier1 &_topicStats)
   : lastTimestamp(std::chrono::steady_clock::now()),
     stats(_topicStats),
     node(_node)
@@ -90,7 +91,7 @@ void TopicStatsTier1::Update()
       "Type: " << this->stats.topicType << std::endl <<
       "Size: " << this->stats.size << std::endl <<
       "Median: " << this->stats.median << std::endl <<
-      "Pased: " << std::boolalpha << this->stats.passed << std::noboolalpha <<
+      "Passed: " << std::boolalpha << this->stats.passed << std::noboolalpha <<
       std::endl <<
       "--" << std::endl);
   }

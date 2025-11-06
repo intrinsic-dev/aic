@@ -69,7 +69,7 @@ namespace aic_scoring
     /// \param[in] _node Pointer to the ROS node.
     /// \param[in] _topicStats Topic info to track.
     public: TopicStatsTier1(rclcpp::Node *_node,
-                            StatsTier1 &_topicStats);
+                            const StatsTier1 &_topicStats);
 
     /// \brief Get the current stats.
     /// \return Current stats.
