@@ -3,7 +3,7 @@
   <world name="aic_world">
 
     <scene>
-      <ambient>0.4 0.4 0.4</ambient>
+      <ambient>0 0 0</ambient>
       <grid>false</grid>
       <!-- <sky></sky> -->
     </scene>
@@ -20,9 +20,9 @@
 
         <engine>ogre2</engine>
 
-        <shadows>
+        <!--<shadows>
           <texture_size light_type="spotlight">2048</texture_size>
-        </shadows>
+        </shadows>-->
 
         <camera_clip>
           <near>0.05</near>
@@ -334,10 +334,10 @@
     </light>-->
 
     <light type="spot" name="spot">
-      <pose>0 0 2.6 0 0 0</pose>
+      <pose>0 0 2.35 0 0 0</pose>
       <cast_shadows>true</cast_shadows>
       <diffuse>1 1 1 1</diffuse>
-      <intensity>1.5</intensity>
+      <intensity>3</intensity>
       <specular>.1 .1 .1 1</specular>
       <attenuation>
         <range>4</range>
@@ -376,26 +376,89 @@
       </link>
     </model>
 
-    <include>
-      <uri>
-        https://fuel.gazebosim.org/1.0/OpenRobotics/models/Reflective table
-      </uri>
-      <name>table1</name>
-      <pose>0 0 0 0 0 0.0</pose>
-    </include>
+    <!-- Spawn a block to test contact with rigid surface -->
+    <model name="test_block">
+      <static>true</static>
+      <pose>0.45 -0.15 1.05 0 0 0</pose>
+      <link name="link">
+        <inertial>
+          <mass>100.0</mass>
+          <inertia>
+            <ixx>5.239375</ixx>       <!-- for a box: ixx = 0.083 * mass * (y*y + z*z) -->
+            <ixy>0.0</ixy>         <!-- for a box: ixy = 0 -->
+            <ixz>0.0</ixz>         <!-- for a box: ixz = 0 -->
+            <iyy>5.239375</iyy>       <!-- for a box: iyy = 0.083 * mass * (x*x + z*z) -->
+            <iyz>0.0</iyz>         <!-- for a box: iyz = 0 -->
+            <izz>10.375</izz>       <!-- for a box: izz = 0.083 * mass * (x*x + y*y) -->
+          </inertia>
+        </inertial>
+        <collision name="collision">
+          <geometry>
+            <box>
+              <size>0.25 0.25 0.05</size>
+            </box>
+          </geometry>
+          <surface>
+            <contact>
+                <ode>
+                  <kp>1e15</kp>
+                  <kd>1e13</kd>
+                </ode>
+              </contact>
+            <friction>
+              <ode>
+                <mu>0.1</mu>
+                <mu2>0.1</mu2>
+              </ode>
+            </friction>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>0.25 0.25 0.025</size>
+            </box>
+          </geometry>
+          <material>
+            <diffuse>1 0 0 1.0</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
 
     <include>
       <uri>model://SFP Module</uri>
       <name>sfp_module</name>
-      <pose>0.5 0 1.06 0 0 0</pose>
+      <pose>0.7 0 1.06 0 0 0</pose>
       <static>false</static>
     </include>
 
     <include>
-      <uri>model://SFP Plug</uri>
-      <name>sfp_plug</name>
+      <uri>model://LC Plug</uri>
+      <name>lc_plug</name>
       <pose>0.5 0.1 1.06 0 0 0</pose>
       <static>false</static>
+    </include>
+    
+    <include>
+      <uri>model://SC Plug</uri>
+      <name>sc_plug</name>
+      <pose>0.6 0.1 1.06 0 0 0</pose>
+      <static>false</static>
+    </include>
+    
+    <include>
+      <uri>model://SC Port</uri>
+      <name>sc_port</name>
+      <pose>0.4 0.1 1.06 0 0 0</pose>
+      <static>false</static>
+    </include>
+    
+    <include>
+      <uri>model://Enclosure</uri>
+      <name>enclosure</name>
+      <static>true</static>
     </include>
 
   </world>

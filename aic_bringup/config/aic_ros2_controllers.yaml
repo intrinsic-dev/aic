@@ -151,20 +151,20 @@ admittance_controller:
       plugin_name: kinematics_interface_kdl/KinematicsInterfaceKDL
       plugin_package: kinematics_interface
       base: base_link # Assumed to be stationary
-      tip: wrist_3_link
+      tip: tool0
       group_name: arm
       alpha: 0.0005 # Specifies the damping coefficient for the Jacobian pseudo inverse.
 
     ft_sensor:
       name: AtiForceTorqueSensor
       frame:
-        id: wrist_3_link  # Wrench measurements are in this frame
+        id: tool0  # Wrench measurements are in this frame
         external: false # force torque frame exists within URDF kinematic chain
       filter_coefficient: 0.005 # Specifies the filter coefficient for the sensor’s exponential filter.
 
     control:
       frame:
-        id: wrist_3_link # Admittance calcs (displacement etc) are done in this frame. Usually the tool or end-effector
+        id: tool0 # Admittance calcs (displacement etc) are done in this frame. Usually the tool or end-effector
         external: false # control frame exists within URDF kinematic chain
 
     fixed_world_frame:   # Gravity points down (neg. Z) in this frame (Usually: world or base_link)
@@ -174,7 +174,7 @@ admittance_controller:
 
     gravity_compensation:
       frame:
-        id: wrist_3_link
+        id: tool0
         external: false
 
       CoG: # specifies the center of gravity of the end effector
@@ -182,7 +182,8 @@ admittance_controller:
           - 0.0 # x
           - 0.0 # y
           - 0.0 # z
-        force: 3.5316 # mass * 9.81
+        # Total End effector weight is (0.365 + 0.36)*9.81 which is the mass of the wrist_3_link and the FT sensor combined
+        force: 7.11225 # mass * 9.81
 
     admittance:
       selected_axes:
@@ -203,15 +204,17 @@ admittance_controller:
         - 10.0 # ry
         - 10.0 # rz
 
-      joint_damping: 12.0
+      # Joint damping
+      joint_damping: 0.0
 
+      # damping_ratio defines the overdamping which is the only way to achieve stability with this controller.
       damping_ratio: # damping can be used instead: zeta = D / (2 * sqrt( M * S ))
-        - 2.828427 # x
-        - 2.828427 # y
-        - 2.828427 # z
-        - 2.828427 # rx
-        - 2.828427 # ry
-        - 2.828427 # rz
+        - 12.0 # x
+        - 12.0 # y
+        - 12.0 # z
+        - 12.0 # rx
+        - 12.0 # ry
+        - 12.0 # rz
 
       stiffness:
         - 1000.0 # x

@@ -288,7 +288,7 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             "initial_joint_controller",
-            default_value="forward_position_controller",
+            default_value="admittance_controller",
             description="Robot controller to start.",
         )
     )
