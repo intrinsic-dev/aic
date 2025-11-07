@@ -26,18 +26,18 @@
         </geometry>
       </collision>
       <collision name="port_collider_box.002">
-        <pose>0.0 0.028207 -0.00447 1.570796 -0.0 0.0</pose>
+        <pose>0.0 0.02732 -0.00447 1.570796 -0.0 0.0</pose>
         <geometry>
           <box>
-            <size>0.01284 0.00019 0.009077</size>
+            <size>0.01284 0.00019 0.007302</size>
           </box>
         </geometry>
       </collision>
       <collision name="port_collider_box.003">
-        <pose>0.00596 0.022559 -1.8e-05 1.570796 -0.0 0.0</pose>
+        <pose>0.00596 0.022559 -8.7e-05 1.570796 -0.0 0.0</pose>
         <geometry>
           <box>
-            <size>0.00092 0.008141 0.020375</size>
+            <size>0.00092 0.008279 0.020375</size>
           </box>
         </geometry>
       </collision>
@@ -50,10 +50,10 @@
         </geometry>
       </collision>
       <collision name="port_collider_box.005">
-        <pose>-0.00596 0.022559 -1.8e-05 1.570796 -0.0 0.0</pose>
+        <pose>-0.00596 0.022559 -8.7e-05 1.570796 -0.0 0.0</pose>
         <geometry>
           <box>
-            <size>0.00092 0.008141 0.020375</size>
+            <size>0.00092 0.008279 0.020375</size>
           </box>
         </geometry>
       </collision>
@@ -74,82 +74,82 @@
         </geometry>
       </collision>
       <collision name="port_collider_box.008">
-        <pose>-0.00571 0.018813 -0.003418 1.570796 -0.0 0.0</pose>
+        <pose>-0.00571 0.018813 -0.003546 1.570796 -0.0 0.0</pose>
         <geometry>
           <box>
-            <size>0.00142 0.00075 0.012883</size>
+            <size>0.00142 0.001006 0.012883</size>
           </box>
         </geometry>
       </collision>
       <collision name="port_collider_box.009">
-        <pose>0.00571 0.018813 -0.003418 1.570796 -0.0 0.0</pose>
+        <pose>0.00571 0.018813 -0.003546 1.570796 -0.0 0.0</pose>
         <geometry>
           <box>
-            <size>0.00142 0.00075 0.012883</size>
+            <size>0.00142 0.001006 0.012883</size>
           </box>
         </geometry>
       </collision>
       <collision name="latch_collider_box">
-        <pose>0.0 0.030896 -0.005698 1.570796 -0.0 0.0</pose>
+        <pose>0.0 0.029531 -0.005175 1.570796 -0.0 0.0</pose>
         <geometry>
           <box>
-            <size>0.01384 0.002646 0.0037</size>
+            <size>0.01384 0.001601 0.003426</size>
           </box>
         </geometry>
       </collision>
       <collision name="latch_collider_box.001">
-        <pose>0.006405 0.030896 -0.001021 1.570796 -0.0 0.0</pose>
+        <pose>0.006405 0.030896 0.000207 1.570796 -0.0 0.0</pose>
         <geometry>
           <box>
-            <size>0.001029 0.012 0.0037</size>
+            <size>0.001029 0.009544 0.0037</size>
           </box>
         </geometry>
       </collision>
       <collision name="latch_collider_box.002">
-        <pose>0.0 0.030896 0.004252 1.570796 -0.0 0.0</pose>
+        <pose>0.0 0.030896 0.004716 1.570796 -0.0 0.0</pose>
         <geometry>
           <box>
-            <size>0.01384 0.001454 0.0037</size>
+            <size>0.01384 0.002383 0.0037</size>
           </box>
         </geometry>
       </collision>
       <collision name="latch_collider_box.003">
-        <pose>-0.006437 0.030896 -0.001021 1.570796 -0.0 0.0</pose>
+        <pose>-0.006437 0.030896 0.000207 1.570796 -0.0 0.0</pose>
         <geometry>
           <box>
-            <size>0.000965 0.012 0.0037</size>
+            <size>0.000965 0.009544 0.0037</size>
           </box>
         </geometry>
       </collision>
       <collision name="head_collider_box">
-        <pose>0.006358 0.026353 0.0 1.570796 -0.0 0.0</pose>
+        <pose>0.006358 0.026353 0.000375 1.570796 -0.0 0.0</pose>
         <geometry>
           <box>
-            <size>0.001284 0.011 0.0054</size>
+            <size>0.001284 0.01025 0.0054</size>
           </box>
         </geometry>
       </collision>
       <collision name="head_collider_box.001">
-        <pose>-0.006358 0.026353 0.0 1.570796 -0.0 0.0</pose>
+        <pose>-0.006358 0.026353 0.000765 1.570796 -0.0 0.0</pose>
         <geometry>
           <box>
-            <size>0.001284 0.011 0.0054</size>
+            <size>0.001284 0.01097 0.0054</size>
           </box>
         </geometry>
       </collision>
       <collision name="head_collider_box.002">
-        <pose>0.0 0.026353 0.004753 1.570796 -0.0 0.0</pose>
+        <pose>0.0 0.026353 0.005128 1.570796 -0.0 0.0</pose>
         <geometry>
           <box>
-            <size>0.014 0.001495 0.0054</size>
+            <size>0.014 0.002245 0.0054</size>
           </box>
         </geometry>
       </collision>
       <collision name="head_collider_box.003">
-        <pose>0.0 0.026353 -0.005005 1.570796 -0.0 0.0</pose>
+        <pose>0.0 0.026353 -0.004563 1.570796 -0.0 0.0</pose>
         <geometry>
           <box>
-            <size>0.014 0.000991 0.0054</size>
+            <size>0.014 0.000375 0.0054</size>
           </box>
         </geometry>
       </collision>
@@ -162,10 +162,10 @@
         </geometry>
       </collision>
       <collision name="body_collider_box.001">
-        <pose>0.0 0.0 -0.004137 0.0 0.0 0.0</pose>
+        <pose>0.0 0.0 -0.004138 0.0 0.0 0.0</pose>
         <geometry>
           <box>
-            <size>0.01375 0.0473 0.000176</size>
+            <size>0.01375 0.0473 0.000178</size>
           </box>
         </geometry>
       </collision>
@@ -202,18 +202,18 @@
         </geometry>
       </collision>
       <collision name="port_collider_box002_collider_box">
-        <pose>0.0 0.024453 -0.004175 1.570796 -0.0 0.0</pose>
+        <pose>0.0 0.024453 -0.004254 1.570796 -0.0 0.0</pose>
         <geometry>
           <box>
-            <size>0.01284 0.000566 0.001601</size>
+            <size>0.01284 0.000409 0.001601</size>
           </box>
         </geometry>
       </collision>
-      <collision name="port_collider_box002_collider_box_collider_box">
-        <pose>0.0 0.018813 -0.003802 1.570796 -0.0 0.0</pose>
+      <collision name="port_collider_box.011">
+        <pose>0.0 0.018813 -0.003546 1.570796 -0.0 0.0</pose>
         <geometry>
           <box>
-            <size>0.01284 0.000353 0.012883</size>
+            <size>0.0025 0.001006 0.012883</size>
           </box>
         </geometry>
       </collision>
