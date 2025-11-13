@@ -15,8 +15,10 @@ add_executable(scoring_tier1 src/ScoringTier1.cc)
 target_link_libraries(scoring_tier1
   PRIVATE rclcpp::rclcpp ${std_msgs_TARGETS} yaml-cpp)
 
-target_include_directories(
-  scoring_tier1 PRIVATE include
+target_include_directories(scoring_tier1
+  PUBLIC
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
+    "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>"
 )
 
 install(
@@ -27,6 +29,11 @@ install(
 install(TARGETS
   scoring_tier1
   DESTINATION lib/${PROJECT_NAME}
+)
+
+install(
+  DIRECTORY include/
+  DESTINATION include/${PROJECT_NAME}
 )
 
 if(BUILD_TESTING)

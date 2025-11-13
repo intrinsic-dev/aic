@@ -1,4 +1,3 @@
-
 cmake_minimum_required(VERSION 3.8)
 project(aic_gazebo)
 
@@ -7,6 +6,7 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 find_package(ament_cmake REQUIRED)
+find_package(aic_scoring REQUIRED)
 
 # Harmonic
 find_package(gz-cmake3 REQUIRED)
@@ -28,7 +28,8 @@ target_include_directories(
 )
 
 target_link_libraries(ScoringPlugin PRIVATE
-  gz-sim${GZ_SIM_VER}::gz-sim${GZ_SIM_VER})
+  gz-sim${GZ_SIM_VER}::gz-sim${GZ_SIM_VER}
+  aic_scoring)
 
 install(
   TARGETS ScoringPlugin

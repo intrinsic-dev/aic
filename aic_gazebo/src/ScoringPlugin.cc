@@ -33,6 +33,12 @@ GZ_ADD_PLUGIN(
 namespace aic_gazebo 
 {
 //////////////////////////////////////////////////
+double ScoringPlugin::Distance()
+{
+  return 0.0;
+}
+
+//////////////////////////////////////////////////
 void ScoringPlugin::Configure(const gz::sim::Entity &_entity,
                         const std::shared_ptr<const sdf::Element> &/*_element*/,
                         gz::sim::EntityComponentManager &/*_ecm*/,
