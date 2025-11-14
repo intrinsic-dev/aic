@@ -286,8 +286,8 @@
 
     </gui>
 
-    <physics name="1ms" type="bullet-featherstone">
-      <max_step_size>0.001</max_step_size>
+    <physics name="2ms" type="bullet-featherstone">
+      <max_step_size>0.002</max_step_size>
       <real_time_factor>1.0</real_time_factor>
     </physics>
     <plugin
@@ -461,7 +461,7 @@
       <pose>0.7 0.1 1.06 0 0 0</pose>
       <static>false</static>
     </include>
-    
+
     <include>
       <uri>model://Enclosure</uri>
       <name>enclosure</name>
