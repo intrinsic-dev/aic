@@ -2,6 +2,9 @@
 <sdf version="1.9">
   <model name="SFP Module">
     <link name="sfp_module_link">
+      <inertial auto="true">
+        <mass>0.03</mass>
+      </inertial>
       <visual name="sfp_module_visual">
         <geometry>
           <mesh>
