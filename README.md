@@ -14,6 +14,13 @@ sudo apt purge gz-harmonic
 sudo apt purge ros-jazzy-gz-*-vendor ros-jazzy-gz-ros2-control
 ```
 
+Add `packages.osrfoundation.org` to the apt sources list:
+```bash
+sudo curl https://packages.osrfoundation.org/gazebo.gpg --output /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/gazebo-stable.list > /dev/null
+sudo apt-get update
+```
+
 Build the workspace
 ```bash
 sudo apt update && sudo apt upgrade -y && sudo apt install ros-jazzy-rmw-zenoh-cpp -y
@@ -21,10 +28,12 @@ mkdir ~/ws_aic/src -p
 cd ~/ws_aic/src
 git clone https://github.com/intrinsic-dev/aic
 vcs import . < aic/aic.repos --recursive
+# Install Gazebo package dependencies
+sudo apt -y install   $(sort -u $(find . -iname 'packages-'`lsb_release -cs`'.apt' -o -iname 'packages.apt' | grep -v '/\.git/') | sed '/gz\|sdf/d' | tr '\n' ' ')
 cd ~/ws_aic
 rosdep install --from-paths src --ignore-src --rosdistro jazzy -yr
 source /opt/ros/jazzy/setup.bash
-colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release --symlink-install
+GZ_BUILD_FROM_SOURCE=1 colcon build --merge-install --cmake-args -DCMAKE_BUILD_TYPE=Release --symlink-install
 ```
 
 ### Launch
@@ -32,7 +41,7 @@ colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release --symlink-install
 Make sure to already have the zenoh router up by running `ros2 run rmw_zenoh_cpp rmw_zenohd`.
 
 ```bash
-ros2 launch aic_bringup aic_gz_bringup.launch.py
+GZ_CONFIG_PATH=`pwd`/install/share/gz ros2 launch aic_bringup aic_gz_bringup.launch.py
 ```
 
 Send a reference wrench command (10N in the positive z-axis) to the controller
