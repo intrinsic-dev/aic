@@ -1,0 +1,119 @@
+<?xml version="1.0" ?>
+<sdf version="1.9">
+  <model name="Robotiq Hand-E">
+
+    <link name="hande_base_link">
+      <visual name="hande_base_visual">
+        <geometry>
+          <mesh>
+            <uri>hande_base_visual.glb</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <collision name="body_collider_cylinder">
+        <pose>0.0 0.0 0.06855 3.141593 -0.0 1.570796</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.038</radius>
+            <length>0.1131</length>
+          </cylinder>
+        </geometry>
+      </collision>
+      <collision name="cylinder003_collider_cylinder">
+        <pose>0.0 0.0 0.006 0.0 0.0 0.0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.043</radius>
+            <length>0.012</length>
+          </cylinder>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="hande_finger_link_r">
+      <visual name="hande_finger_visual">
+        <geometry>
+          <mesh>
+            <uri>hande_finger_visual.glb</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <collision name="finger_collider_box">
+        <pose>0.032595 -1e-05 0.138138 0.0 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.007839 0.021 0.028622</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="finger_collider_box.001">
+        <pose>0.028 -1e-05 0.16145 0.0 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.006 0.021 0.021498</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="finger_collider_box.002">
+        <pose>0.014354 -0.015 0.124725 0.0 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.044319 0.0075 0.003949</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="finger_collider_box.003">
+        <pose>0.027046 -0.00954 0.129064 0.0 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.017387 0.018419 0.009271</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+
+    <link name="hande_finger_link_l">
+      <pose>0 0 0 0 0 3.14159</pose>
+      <visual name="hande_finger_visual">
+        <geometry>
+          <mesh>
+            <uri>hande_finger_visual.glb</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <collision name="finger_collider_box">
+        <pose>0.032595 -1e-05 0.138138 0.0 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.007839 0.021 0.028622</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="finger_collider_box.001">
+        <pose>0.028 -1e-05 0.16145 0.0 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.006 0.021 0.021498</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="finger_collider_box.002">
+        <pose>0.014354 -0.015 0.124725 0.0 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.044319 0.0075 0.003949</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="finger_collider_box.003">
+        <pose>0.027046 -0.00954 0.129064 0.0 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.017387 0.018419 0.009271</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+
+  </model>
+</sdf>
