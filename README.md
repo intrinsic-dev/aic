@@ -42,7 +42,7 @@ Make sure to already have the zenoh router up by running `ros2 run rmw_zenoh_cpp
 
 We launch it with GZ_CONFIG_PATH set to the path of Gazebo Ionic built from source
 ```bash
-GZ_CONFIG_PATH=`pwd`/install/share/gz ros2 launch aic_bringup aic_gz_bringup.launch.py
+GZ_CONFIG_PATH=~/ws_aic/install/share/gz ros2 launch aic_bringup aic_gz_bringup.launch.py
 ```
 
 Send a reference wrench command (10N in the positive z-axis) to the controller
