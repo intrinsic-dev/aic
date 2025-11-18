@@ -1,0 +1,142 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://wiki.ros.org/xacro">
+
+  <xacro:property name="tf_prefix" value="gripper/"/>
+  <xacro:property name="grip_pos_min" value="0"/>
+  <xacro:property name="grip_pos_max" value="0.025"/>
+  <xacro:property name="hande_height" value="0.099"/>
+
+  <xacro:macro name="robotiq_hand_e" params="tf_prefix">
+
+    <link name="${tf_prefix}hande_base_link">
+      <visual name="hande_base_visual">
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://aic_assets/models/Robotiq Hand-E/hande_base_visual.glb"/>
+        </geometry>
+      </visual>
+
+      <collision name="body_collider_cylinder">
+        <origin xyz="0.0 0.0 0.06855" rpy="3.141593 0.0 1.570796"/>
+        <geometry>
+          <cylinder radius="0.038" length="0.1131"/>
+        </geometry>
+      </collision>
+
+      <collision name="cylinder003_collider_cylinder">
+        <origin xyz="0.0 0.0 0.006" rpy="0.0 0.0 0.0"/>
+        <geometry>
+          <cylinder radius="0.043" length="0.012"/>
+        </geometry>
+      </collision>
+
+    </link>
+
+    <joint name="${tf_prefix}robotiq_hande_left_finger_joint" type="prismatic">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <parent link="${tf_prefix}hande_base_link"/>
+      <child link="${tf_prefix}hande_finger_link_l"/>
+      <axis xyz="1 0 0"/>
+      <limit effort="130" lower="${grip_pos_min}" upper="${grip_pos_max}" velocity="0.15"/>
+    </joint>
+
+    <link name="${tf_prefix}hande_finger_link_l">
+      <visual name="hande_finger_visual">
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://aic_assets/models/Robotiq Hand-E/hande_finger_visual.glb"/>
+        </geometry>
+      </visual>
+
+      <collision name="finger_collider_box">
+        <origin xyz="0.032595 -0.00001 0.138138" rpy="0.0 0.0 0.0"/>
+        <geometry>
+          <box size="0.007839 0.021 0.028622"/>
+        </geometry>
+      </collision>
+
+      <collision name="finger_collider_box001">
+        <origin xyz="0.028 -0.00001 0.16145" rpy="0.0 0.0 0.0"/>
+        <geometry>
+          <box size="0.006 0.021 0.021498"/>
+        </geometry>
+      </collision>
+
+      <collision name="finger_collider_box002">
+        <origin xyz="0.014354 -0.015 0.124725" rpy="0.0 0.0 0.0"/>
+        <geometry>
+          <box size="0.044319 0.0075 0.003949"/>
+        </geometry>
+      </collision>
+
+      <collision name="finger_collider_box003">
+        <origin xyz="0.027046 -0.00954 0.129064" rpy="0.0 0.0 0.0"/>
+        <geometry>
+          <box size="0.017387 0.018419 0.009271"/>
+        </geometry>
+      </collision>
+
+      <inertial>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <mass value="0.03804"/>
+        <inertia ixx="1E-9" ixy="0.0" ixz="0.0" iyy="1E-9" iyz="0.0" izz="1E-9"/>
+      </inertial>
+
+    </link>
+
+    <joint name="${tf_prefix}robotiq_hande_right_finger_joint" type="prismatic">
+      <origin xyz="0 0 ${hande_height}" rpy="0 0 0"/>
+      <parent link="${tf_prefix}hande_base_link"/>
+      <child link="${tf_prefix}hande_finger_link_r"/>
+      <axis xyz="-1 0 0"/>
+      <limit effort="130" lower="${grip_pos_min}" upper="${grip_pos_max}" velocity="0.15"/>
+      <mimic joint="${tf_prefix}robotiq_hande_left_finger_joint" multiplier="1" offset="0"/>
+    </joint>
+
+    <link name="${tf_prefix}hande_finger_link_r">
+      <visual name="hande_finger_visual">
+        <origin xyz="0 0 0" rpy="0 0 ${pi}"/>
+        <geometry>
+          <mesh filename="package://aic_assets/models/Robotiq Hand-E/hande_finger_visual.glb"/>
+        </geometry>
+      </visual>
+
+      <collision name="finger_collider_box">
+        <origin xyz="0.032595 -0.00001 0.138138" rpy="0.0 0.0 ${pi}"/>
+        <geometry>
+          <box size="0.007839 0.021 0.028622"/>
+        </geometry>
+      </collision>
+
+      <collision name="finger_collider_box001">
+        <origin xyz="0.028 -0.00001 0.16145" rpy="0.0 0.0 ${pi}"/>
+        <geometry>
+          <box size="0.006 0.021 0.021498"/>
+        </geometry>
+      </collision>
+
+      <collision name="finger_collider_box002">
+        <origin xyz="0.014354 -0.015 0.124725" rpy="0.0 0.0 ${pi}"/>
+        <geometry>
+          <box size="0.044319 0.0075 0.003949"/>
+        </geometry>
+      </collision>
+
+      <collision name="finger_collider_box003">
+        <origin xyz="0.027046 -0.00954 0.129064" rpy="0.0 0.0 ${pi}"/>
+        <geometry>
+          <box size="0.017387 0.018419 0.009271"/>
+        </geometry>
+      </collision>
+
+      <inertial>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <mass value="0.03804"/>
+        <inertia ixx="1E-9" ixy="0.0" ixz="0.0" iyy="1E-9" iyz="0.0" izz="1E-9"/>
+      </inertial>
+
+    </link>
+
+  </xacro:macro>
+
+</robot>

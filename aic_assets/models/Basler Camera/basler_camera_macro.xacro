@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://wiki.ros.org/xacro">
+
+  <!-- TF prefix parameter -->
+  <xacro:property name="tf_prefix" value="wrist_camera_1/"/>
+
+  <xacro:macro name="basler_camera" params="tf_prefix">
+
+    <link name="${tf_prefix}basler_cam_link">
+      <visual name="basler_cam_visual">
+        <geometry>
+          <mesh filename="package://aic_assets/models/Basler Camera/basler_cam_visual.glb"/>
+        </geometry>
+      </visual>
+
+      <collision name="lens001_collider_cylinder">
+        <origin xyz="-0.000005 0.000001 0.013336" rpy="0.0 0.0 0.0"/>
+        <geometry>
+          <cylinder radius="0.016429" length="0.040108"/>
+        </geometry>
+      </collision>
+
+      <collision name="basler_ace2_gige027_collider_box">
+        <origin xyz="-0.000001 -0.000017 -0.031178" rpy="0.0 0.0 0.0"/>
+        <geometry>
+          <box size="0.028998 0.028965 0.04919"/>
+        </geometry>
+      </collision>
+
+      <collision name="basler_ace2_gige011_collider_cylinder">
+        <origin xyz="-0.005773 -0.0081 -0.058082" rpy="0.0 0.0 0.0"/>
+        <geometry>
+          <cylinder radius="0.005145" length="0.008255"/>
+        </geometry>
+      </collision>
+
+    </link>
+
+  </xacro:macro>
+
+</robot>
