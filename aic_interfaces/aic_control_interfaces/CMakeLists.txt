@@ -20,11 +20,14 @@ find_package(ament_cmake REQUIRED)
 find_package(builtin_interfaces REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
-find_package(sensor_msgs REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(trajectory_msgs REQUIRED)
 
 
 set(msg_files
+  "msg/JointMotionUpdate.msg"
   "msg/MotionUpdate.msg"
+  "msg/TrajectoryGenerationMode.msg"
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}
@@ -34,6 +37,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
     builtin_interfaces
     geometry_msgs
     std_msgs
+    trajectory_msgs
   ADD_LINTER_TESTS
 )
 
