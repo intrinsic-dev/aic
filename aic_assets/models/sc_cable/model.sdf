@@ -1,0 +1,26 @@
+<?xml version="1.0" ?>
+<sdf version="1.9">
+  <model name="sc_cable">
+    <include merge="true">
+      <uri>model://cable_base_b</uri>
+    </include>
+    <include>
+      <name>plug_a</name>
+      <uri>model://SC Plug</uri>
+      <pose relative_to="cable_connection_0">-0.055 0 0 0 0 3.14159</pose>
+    </include>
+    <include>
+      <name>plug_b</name>
+      <uri>model://SC Plug</uri>
+      <pose relative_to="cable_connection_1">0.055 0 0 0 0 0</pose>
+    </include>
+    <joint name="plug_a_joint" type="fixed">
+      <parent>cable_connection_0</parent>
+      <child>plug_a::sc_plug_link</child>
+    </joint>
+    <joint name="plug_b_joint" type="fixed">
+      <parent>cable_connection_1</parent>
+      <child>plug_b::sc_plug_link</child>
+    </joint>
+  </model>
+</sdf>
