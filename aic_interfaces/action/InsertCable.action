@@ -1,0 +1,18 @@
+# Request
+Task task
+
+---
+
+# Response
+
+# True if the task succeeded.
+bool success
+# A message if the task succeeded or failed.
+string message
+
+---
+
+# Feedback
+
+# A description on how the task is progressing.
+string message
