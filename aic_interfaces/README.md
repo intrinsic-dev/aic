@@ -11,6 +11,10 @@ The following interfaces are defined.
     * An Action interface used to trigger the Insertion Policy to perform the cable insertion task.
 * **[msg/Task.msg](./aic_task_interfaces/msg/Task.msg)**
     * Describes the specific parameters and state of the cable insertion task.
+* **[msg/MotionUpdate.msg](./aic_control_interfaces/msg/MotionUpdate.msg)**
+    * Describes a target pose and the associated tolerances for Cartesian-space control.
+* **[msg/JointMotionUpdate.msg](./aic_control_interfaces/msg/JointMotionUpdate.msg)**
+    * Describes a target joint configuration and the associated tolerances for joint-space control.
 
 ---
 
