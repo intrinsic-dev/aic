@@ -18,5 +18,3 @@
 #   gz_type_name: "gz.msgs.Image"
 #   direction: GZ_TO_ROS
 #   lazy: true
-
-
