@@ -1,0 +1,4 @@
+#!/usr/bin/bash
+
+SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
+exec "$SCRIPT_DIR/../share/aic_venv/venv/bin/python3" "$@"
