@@ -18,6 +18,7 @@
 from launch import LaunchDescription
 from launch.actions import (
     DeclareLaunchArgument,
+    ExecuteProcess,
     IncludeLaunchDescription,
     OpaqueFunction,
     RegisterEventHandler,
@@ -31,9 +32,12 @@ from launch.substitutions import (
     IfElseSubstitution,
     LaunchConfiguration,
     PathJoinSubstitution,
+    PythonExpression,
 )
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
+from ros_gz_bridge.actions import RosGzBridge
+from ros_gz_sim.actions import GzServer
 
 def launch_setup(context, *args, **kwargs):
     # UR arguments
@@ -49,6 +53,7 @@ def launch_setup(context, *args, **kwargs):
     description_file = LaunchConfiguration("description_file")
     launch_rviz = LaunchConfiguration("launch_rviz")
     rviz_config_file = LaunchConfiguration("rviz_config_file")
+    ros_gz_bridge_config_file = LaunchConfiguration("ros_gz_bridge_config_file")
     gazebo_gui = LaunchConfiguration("gazebo_gui")
     world_file = LaunchConfiguration("world_file")
     x = LaunchConfiguration("x")
@@ -173,29 +178,27 @@ def launch_setup(context, *args, **kwargs):
         ],
     )
 
-    gz_launch_description = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            [FindPackageShare("ros_gz_sim"), "/launch/gz_sim.launch.py"]
-        ),
-        launch_arguments={
-            "gz_args": IfElseSubstitution(
-                gazebo_gui,
-                if_value=[" -r -v 4 --physics-engine gz-physics-bullet-featherstone-plugin ", world_file],
-                else_value=[" -s -r -v 4 --physics-engine gz-physics-bullet-featherstone-plugin ", world_file],
-            )
-        }.items(),
+    gzserver = GzServer(
+        world_sdf_file=world_file,
+        container_name='ros_gz_container',
+        create_own_container='True',
+        use_composition='True',
     )
 
-    # Bridge multiple gz topics to ROS such as /clock, /camera and force-torque sensing
-    gz_sim_bridge = Node(
-        package="ros_gz_bridge",
-        executable="parameter_bridge",
-        arguments=[
-            "/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock",
-            "/camera@sensor_msgs/msg/Image@gz.msgs.Image",
-            "/axia80_m20/wrench@geometry_msgs/msg/WrenchStamped@gz.msgs.Wrench",
-        ],
-        output="screen",
+    gzgui = ExecuteProcess(
+        cmd=['gz', 'sim', '-g'],
+        condition=IfCondition(
+            PythonExpression(["'", gazebo_gui, "' == 'true'"])
+        ),
+        output='screen'
+    )
+
+    ros_gz_bridge = RosGzBridge(
+        bridge_name='ros_gz_bridge',
+        config_file=ros_gz_bridge_config_file,
+        container_name='ros_gz_container',
+        create_own_container='False',
+        use_composition='True',
     )
 
     nodes_to_start = [
@@ -205,9 +208,10 @@ def launch_setup(context, *args, **kwargs):
         initial_joint_controller_spawner_stopped,
         initial_joint_controller_spawner_started,
         fts_broadcaster_spawner,
+        gzserver,
+        gzgui,
+        ros_gz_bridge,
         gz_spawn_entity,
-        gz_launch_description,
-        gz_sim_bridge,
     ]
 
     return nodes_to_start
@@ -311,6 +315,15 @@ def generate_launch_description():
                 [FindPackageShare("aic_bringup"), "rviz", "aic.rviz"]
             ),
             description="Rviz config file (absolute path) to use when launching rviz.",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "ros_gz_bridge_config_file",
+            default_value=PathJoinSubstitution(
+                [FindPackageShare("aic_bringup"), "config", "ros_gz_bridge_config.yaml"]
+            ),
+            description="ros_gz bridge config file (absolute path) to use.",
         )
     )
     declared_arguments.append(
