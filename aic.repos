@@ -22,67 +22,67 @@ repositories:
   gazebo/gz_cmake_vendor:
     type: git
     url: https://github.com/gazebo-release/gz_cmake_vendor.git
-    version: kilted
+    version: 0.3.2
   gazebo/gz_common_vendor:
     type: git
     url: https://github.com/gazebo-release/gz_common_vendor.git
-    version: kilted
+    version: 0.2.6
   gazebo/gz_fuel_tools_vendor:
     type: git
     url: https://github.com/gazebo-release/gz_fuel_tools_vendor.git
-    version: kilted
+    version: 0.2.3
   gazebo/gz_gui_vendor:
     type: git
     url: https://github.com/gazebo-release/gz_gui_vendor.git
-    version: kilted
+    version: 0.2.2
   gazebo/gz_launch_vendor:
     type: git
     url: https://github.com/gazebo-release/gz_launch_vendor.git
-    version: kilted
+    version: 0.2.2
   gazebo/gz_math_vendor:
     type: git
     url: https://github.com/gazebo-release/gz_math_vendor.git
-    version: kilted
+    version: 0.2.5
   gazebo/gz_msgs_vendor:
     type: git
     url: https://github.com/gazebo-release/gz_msgs_vendor.git
-    version: kilted
+    version: 0.2.4
   gazebo/gz_physics_vendor:
     type: git
     url: https://github.com/gazebo-release/gz_physics_vendor.git
-    version: kilted
+    version: 0.2.3
   gazebo/gz_plugin_vendor:
     type: git
     url: https://github.com/gazebo-release/gz_plugin_vendor.git
-    version: kilted
+    version: 0.2.3
   gazebo/gz_rendering_vendor:
     type: git
     url: https://github.com/gazebo-release/gz_rendering_vendor.git
-    version: kilted
+    version: 0.2.6
   gazebo/gz_sensors_vendor:
     type: git
     url: https://github.com/gazebo-release/gz_sensors_vendor.git
-    version: kilted
+    version: 0.2.3
   gazebo/gz_sim_vendor:
     type: git
     url: https://github.com/gazebo-release/gz_sim_vendor.git
-    version: kilted
+    version: 0.2.3
   gazebo/gz_tools_vendor:
     type: git
     url: https://github.com/gazebo-release/gz_tools_vendor.git
-    version: kilted
+    version: 0.1.3
   gazebo/gz_transport_vendor:
     type: git
     url: https://github.com/gazebo-release/gz_transport_vendor.git
-    version: kilted
+    version: 0.2.4
   gazebo/gz_utils_vendor:
     type: git
     url: https://github.com/gazebo-release/gz_utils_vendor.git
-    version: kilted
+    version: 0.3.0
   gazebo/sdformat_vendor:
     type: git
     url: https://github.com/gazebo-release/sdformat_vendor.git
-    version: kilted
+    version: 0.2.6
   gazebo/gz_ros2_control:
     type: git
     url: https://github.com/ros-controls/gz_ros2_control.git
@@ -90,7 +90,7 @@ repositories:
   gazebo/ros_gz:
     type: git
     url: https://github.com/gazebosim/ros_gz.git
-    version: kilted
+    version: 2.1.12
   gazebo/gz-cmake:
     type: git
     url: https://github.com/gazebosim/gz-cmake

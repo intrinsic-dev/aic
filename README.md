@@ -40,9 +40,8 @@ GZ_BUILD_FROM_SOURCE=1 colcon build --merge-install --cmake-args -DCMAKE_BUILD_T
 
 Make sure to already have the zenoh router up by running `ros2 run rmw_zenoh_cpp rmw_zenohd`.
 
-We launch it with GZ_CONFIG_PATH set to the path of Gazebo Ionic built from source
 ```bash
-GZ_CONFIG_PATH=~/ws_aic/install/share/gz ros2 launch aic_bringup aic_gz_bringup.launch.py
+ros2 launch aic_bringup aic_gz_bringup.launch.py
 ```
 
 Send a reference wrench command (10N in the positive z-axis) to the controller
