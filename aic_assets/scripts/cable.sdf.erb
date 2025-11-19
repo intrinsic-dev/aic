@@ -7,13 +7,12 @@
 
   To generate an sdf file: run `erb -T 1 path_to_ws/src/aic/aic_assets/scripts/cable.sdf.erb > model.sdf`
 
-  Create a new cable model (or replace an existing one) with the generated
-  model.sdf. Note: this is referred to as the base (body) of the cable.
-  To connect the cable plugs to this generated cable body, create a new model
-  that includes this cable body and the cable plugins (using <include>) and connect
-  them using fixed joints. The links at the ends of the cables are named:
-  `cable_connection_0` and `cable_connection_1`.
-  are
+  Once the model.sdf is generated, you can create a new cable body model
+  (or replace an existing one) with this generated model.sdf.
+  To connect the cable plugs to this cable body, create another new model
+  that includes this cable body and the cable plugins (using <include>) and
+  connect them using fixed joints. The links at the ends of the cables are
+  named: `cable_connection_0` and `cable_connection_1`.
 %>
 <?xml version="1.0" ?>
 <!--
