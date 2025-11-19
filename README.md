@@ -33,4 +33,13 @@ Send a reference wrench command (10N in the positive z-axis) to the controller
 ros2 launch aic_bringup move_to_contact.launch.py contact_force_z:=10.0
 ```
 
-
+Send a command to the gripper, with joint range from 0.0 to 0.025 m
+```bash
+ros2 topic pub /gripper_controller/commands std_msgs/msg/Float64MultiArray "{
+  layout: {
+    dim: [],
+    data_offset: 0
+  },
+  data: [0.0]
+}"
+```

@@ -152,6 +152,12 @@ def launch_setup(context, *args, **kwargs):
         condition=UnlessCondition(activate_joint_controller),
     )
 
+    gripper_controller_spawner = Node(
+        package="controller_manager",
+        executable="spawner",
+        arguments=["gripper_controller", "--controller-manager", "/controller_manager"],
+    )
+
     fts_broadcaster_spawner = Node(
         package="controller_manager",
         executable="spawner",
@@ -205,13 +211,13 @@ def launch_setup(context, *args, **kwargs):
         initial_joint_controller_spawner_stopped,
         initial_joint_controller_spawner_started,
         fts_broadcaster_spawner,
+        gripper_controller_spawner,
         gz_spawn_entity,
         gz_launch_description,
         gz_sim_bridge,
     ]
 
     return nodes_to_start
-
 
 def generate_launch_description():
     declared_arguments = []

@@ -1,12 +1,17 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://wiki.ros.org/xacro">
 
-  <xacro:property name="tf_prefix" value="gripper/"/>
-  <xacro:property name="grip_pos_min" value="0"/>
-  <xacro:property name="grip_pos_max" value="0.025"/>
-  <xacro:property name="hande_height" value="0.099"/>
+  <xacro:include filename="$(find aic_assets)/models/Robotiq Hand-E/robotiq_hande.ros2_control.xacro"/>
 
-  <xacro:macro name="robotiq_hand_e" params="tf_prefix">
+  <xacro:macro name="robotiq_hande" params="name tf_prefix grip_pos_min grip_pos_max grip_vel_max grip_effort_max initial_pos">
+
+    <xacro:robotiq_hande_ros2_control
+      name="${name}"
+      tf_prefix="${tf_prefix}"
+      grip_pos_min="${grip_pos_min}"
+      grip_pos_max="${grip_pos_max}"
+      initial_pos="${initial_pos}"
+    />
 
     <link name="${tf_prefix}hande_base_link">
       <visual name="hande_base_visual">
@@ -31,14 +36,6 @@
       </collision>
 
     </link>
-
-    <joint name="${tf_prefix}robotiq_hande_left_finger_joint" type="prismatic">
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <parent link="${tf_prefix}hande_base_link"/>
-      <child link="${tf_prefix}hande_finger_link_l"/>
-      <axis xyz="1 0 0"/>
-      <limit effort="130" lower="${grip_pos_min}" upper="${grip_pos_max}" velocity="0.15"/>
-    </joint>
 
     <link name="${tf_prefix}hande_finger_link_l">
       <visual name="hande_finger_visual">
@@ -81,17 +78,7 @@
         <mass value="0.03804"/>
         <inertia ixx="1E-9" ixy="0.0" ixz="0.0" iyy="1E-9" iyz="0.0" izz="1E-9"/>
       </inertial>
-
     </link>
-
-    <joint name="${tf_prefix}robotiq_hande_right_finger_joint" type="prismatic">
-      <origin xyz="0 0 ${hande_height}" rpy="0 0 0"/>
-      <parent link="${tf_prefix}hande_base_link"/>
-      <child link="${tf_prefix}hande_finger_link_r"/>
-      <axis xyz="-1 0 0"/>
-      <limit effort="130" lower="${grip_pos_min}" upper="${grip_pos_max}" velocity="0.15"/>
-      <mimic joint="${tf_prefix}robotiq_hande_left_finger_joint" multiplier="1" offset="0"/>
-    </joint>
 
     <link name="${tf_prefix}hande_finger_link_r">
       <visual name="hande_finger_visual">
@@ -134,9 +121,32 @@
         <mass value="0.03804"/>
         <inertia ixx="1E-9" ixy="0.0" ixz="0.0" iyy="1E-9" iyz="0.0" izz="1E-9"/>
       </inertial>
-
     </link>
 
-  </xacro:macro>
+    <joint name="${tf_prefix}left_finger_joint" type="prismatic">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <parent link="${tf_prefix}hande_base_link"/>
+      <child link="${tf_prefix}hande_finger_link_l"/>
+      <axis xyz="1 0 0"/>
+      <limit effort="${grip_effort_max}" lower="${grip_pos_min}" upper="${grip_pos_max}" velocity="${grip_vel_max}"/>
+    </joint>
 
+    <joint name="${tf_prefix}right_finger_joint" type="prismatic">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <parent link="${tf_prefix}hande_base_link"/>
+      <child link="${tf_prefix}hande_finger_link_r"/>
+      <axis xyz="-1 0 0"/>
+      <limit effort="${grip_effort_max}" lower="${grip_pos_min}" upper="${grip_pos_max}" velocity="${grip_vel_max}"/>
+      <mimic joint="${tf_prefix}left_finger_joint" multiplier="1" offset="0"/>
+    </joint>
+
+    <link name="${tf_prefix}tool_frame"/>
+
+    <joint name="${tf_prefix}attach_tool_frame" type="fixed">
+      <origin xyz="0 0 0.128" rpy="0 0 0"/>
+      <parent link="${tf_prefix}hande_base_link"/>
+      <child link="${tf_prefix}tool_frame"/>
+    </joint>
+
+  </xacro:macro>
 </robot>

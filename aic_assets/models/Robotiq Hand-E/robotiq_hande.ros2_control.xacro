@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://wiki.ros.org/xacro">
+
+  <xacro:macro name="robotiq_hande_ros2_control" params="name tf_prefix grip_pos_min grip_pos_max initial_pos">
+
+    <ros2_control name="${name}" type="system">
+      <hardware>
+        <plugin>gz_ros2_control/GazeboSimSystem</plugin>
+      </hardware>
+
+      <joint name="${tf_prefix}left_finger_joint">
+        <command_interface name="position">
+          <param name="min">${grip_pos_min}</param>
+          <param name="max">${grip_pos_max}</param>
+        </command_interface>
+        <state_interface name="position">
+          <param name="initial_value">${initial_pos}</param>
+        </state_interface>
+        <state_interface name="velocity">
+          <param name="initial_value">0.0</param>
+        </state_interface>
+      </joint>
+    </ros2_control>
+
+  </xacro:macro>
+</robot>
