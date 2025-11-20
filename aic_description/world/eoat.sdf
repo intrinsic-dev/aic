@@ -293,6 +293,7 @@
     <plugin
       filename="gz-sim-physics-system"
       name="gz::sim::systems::Physics">
+      <engine><filename>gz-physics-bullet-featherstone-plugin</filename></engine>
     </plugin>
     <plugin
       filename="gz-sim-sensors-system"
@@ -339,31 +340,31 @@
       <uri>model://Tri Cam Mount</uri>
       <name>cam_mount</name>
     </include>
-    
+
     <include>
       <uri>model://Axia80 M20</uri>
       <name>ft_sensor</name>
       <pose>0 0 0.0265 0 0 0</pose>
     </include>
-    
+
     <include>
       <uri>model://Robotiq Hand-E</uri>
       <name>gripper</name>
       <pose>0 0 0.0519 0 0 0</pose>
     </include>
-    
+
     <include>
       <uri>model://Basler Camera</uri>
       <name>wrist_camera_01</name>
       <pose>0.10395 0 0.054483 0.261799 0 -1.5708</pose>
     </include>
-    
+
     <include>
       <uri>model://Basler Camera</uri>
       <name>wrist_camera_02</name>
       <pose>-0.051975 -0.090023 0.054483 0.261799 0 2.61799</pose>
     </include>
-    
+
     <include>
       <uri>model://Basler Camera</uri>
       <name>wrist_camera_03</name>
