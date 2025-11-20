@@ -37,7 +37,6 @@
   <xacro:arg name="cam_mount_tf_prefix" default="cam_mount/" />
   <xacro:arg name="wrist_camera_1_tf_prefix" default="wrist_camera_1/"/>
   <xacro:arg name="wrist_camera_2_tf_prefix" default="wrist_camera_2/"/>
-  <xacro:arg name="wrist_camera_3_tf_prefix" default="wrist_camera_3/"/>
   <xacro:arg name="gripper_tf_prefix" default="gripper/"/>
   <xacro:arg name="cam_lens_offset" default="0.035" />
   <xacro:arg name="cam_mount_offset" default="0.09495" />
@@ -145,14 +144,6 @@
     >
   </xacro:basler_camera>
 
-  <xacro:basler_camera
-    name="wrist_camera_3"
-    tf_prefix="$(arg wrist_camera_3_tf_prefix)"
-    cam_lens_offset="$(arg cam_lens_offset)"
-    use_sim_cam="$(arg use_sim_cam)"
-    >
-  </xacro:basler_camera>
-
   <xacro:robotiq_hande
     name="gripper"
     tf_prefix="$(arg gripper_tf_prefix)"
@@ -188,13 +179,6 @@
       rpy="0.261799 0 2.61799"/>
     <parent link="$(arg cam_mount_tf_prefix)cam_mount_link"/>
     <child link="$(arg wrist_camera_2_tf_prefix)basler_cam_link"/>
-  </joint>
-
-  <joint name="attach_wrist_camera_3" type="fixed">
-    <origin xyz="-${$(arg cam_mount_offset) * sin(30.0*D2R)} ${$(arg cam_mount_offset) * cos(30.0*D2R)} ${0.054483+$(arg cam_lens_offset)}"
-      rpy="0.261799 0 0.523599"/>
-    <parent link="$(arg cam_mount_tf_prefix)cam_mount_link"/>
-    <child link="$(arg wrist_camera_3_tf_prefix)basler_cam_link"/>
   </joint>
 
   <joint name="attach_gripper" type="fixed">
