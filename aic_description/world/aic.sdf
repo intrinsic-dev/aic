@@ -293,6 +293,7 @@
     <plugin
       filename="gz-sim-physics-system"
       name="gz::sim::systems::Physics">
+      <engine><filename>gz-physics-bullet-featherstone-plugin</filename></engine>
     </plugin>
     <plugin
       filename="gz-sim-sensors-system"

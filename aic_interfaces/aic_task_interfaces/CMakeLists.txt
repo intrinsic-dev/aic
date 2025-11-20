@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(aic_interfaces)
+project(aic_task_interfaces)
 
 # Default to C99
 if(NOT CMAKE_C_STANDARD)
@@ -36,8 +36,6 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   ${action_files}
   DEPENDENCIES
     builtin_interfaces
-    geometry_msgs
-    sensor_msgs
   ADD_LINTER_TESTS
 )
 
