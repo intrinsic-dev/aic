@@ -8,13 +8,6 @@
 
 ### Install
 
-Add `packages.osrfoundation.org` to the apt sources list:
-```bash
-sudo curl https://packages.osrfoundation.org/gazebo.gpg --output /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/gazebo-stable.list > /dev/null
-sudo apt-get update
-```
-
 Build the workspace
 ```bash
 sudo apt update && sudo apt upgrade -y && sudo apt install ros-kilted-rmw-zenoh-cpp -y
@@ -22,13 +15,11 @@ mkdir ~/ws_aic/src -p
 cd ~/ws_aic/src
 git clone https://github.com/intrinsic-dev/aic
 vcs import . < aic/aic.repos --recursive
-# Install Gazebo dependencies.
-sudo apt -y install $(sort -u $(find . -iname 'packages-'`lsb_release -cs`'.apt' -o -iname 'packages.apt' | grep -v '/\.git/') | sed '/gz\|sdf/d' | tr '\n' ' ')
-cd ~/ws_aic
 # Install ROS dependencies using rosdep.
-rosdep install --from-paths src --ignore-src --rosdistro kilted -yr --skip-keys "gz-cmake3 DART libogre-dev libogre-next-2.3-dev"
+cd ~/ws_aic
+rosdep install --from-paths src --ignore-src --rosdistro kilted -yr
 source /opt/ros/kilted/setup.bash
-GZ_BUILD_FROM_SOURCE=1 colcon build --merge-install --cmake-args -DCMAKE_BUILD_TYPE=Release --symlink-install
+colcon build --merge-install --cmake-args -DCMAKE_BUILD_TYPE=Release --symlink-install
 ```
 
 ### Launch
