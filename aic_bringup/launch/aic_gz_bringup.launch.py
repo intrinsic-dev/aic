@@ -152,10 +152,10 @@ def launch_setup(context, *args, **kwargs):
         condition=UnlessCondition(activate_joint_controller),
     )
 
-    gripper_controller_spawner = Node(
+    gripper_action_controller_spawner = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=["gripper_controller", "--controller-manager", "/controller_manager"],
+        arguments=["gripper_action_controller", "--controller-manager", "/controller_manager"],
     )
 
     fts_broadcaster_spawner = Node(
@@ -200,6 +200,12 @@ def launch_setup(context, *args, **kwargs):
             "/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock",
             "/camera@sensor_msgs/msg/Image@gz.msgs.Image",
             "/axia80_m20/wrench@geometry_msgs/msg/WrenchStamped@gz.msgs.Wrench",
+            "/wrist_camera_1/image@sensor_msgs/msg/Image@gz.msgs.Image",
+            "/wrist_camera_2/image@sensor_msgs/msg/Image@gz.msgs.Image",
+            "/wrist_camera_3/image@sensor_msgs/msg/Image@gz.msgs.Image",
+            "/wrist_camera_1/camera_info@sensor_msgs/msg/CameraInfo@gz.msgs.CameraInfo",
+            "/wrist_camera_2/camera_info@sensor_msgs/msg/CameraInfo@gz.msgs.CameraInfo",
+            "/wrist_camera_3/camera_info@sensor_msgs/msg/CameraInfo@gz.msgs.CameraInfo",
         ],
         output="screen",
     )
@@ -211,7 +217,7 @@ def launch_setup(context, *args, **kwargs):
         initial_joint_controller_spawner_stopped,
         initial_joint_controller_spawner_started,
         fts_broadcaster_spawner,
-        gripper_controller_spawner,
+        gripper_action_controller_spawner,
         gz_spawn_entity,
         gz_launch_description,
         gz_sim_bridge,

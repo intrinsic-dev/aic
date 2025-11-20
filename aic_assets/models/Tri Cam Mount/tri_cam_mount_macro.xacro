@@ -6,6 +6,14 @@
   <xacro:macro name="tri_cam_mount" params="tf_prefix">
 
     <link name="${tf_prefix}cam_mount_link">
+      <inertial>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <mass value="0.001"/>
+        <inertia ixx="0.000001" ixy="0" ixz="0"
+                 iyy="0.000001" iyz="0"
+                 izz="0.000001"/>
+      </inertial>
+
       <visual name="cam_mount_visual">
         <geometry>
           <mesh filename="package://aic_assets/models/Tri Cam Mount/cam_mount_visual.glb"/>

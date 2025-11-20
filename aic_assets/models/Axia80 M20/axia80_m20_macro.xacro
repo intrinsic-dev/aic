@@ -4,7 +4,7 @@
   <!-- TF prefix parameter -->
   <xacro:property name="tf_prefix" value="ati/"/>
   <!-- adapter_offset is the effective length that the adapter adds to the endeffector -->
-  <!-- <xacro:property name="adapter_offset" value="0.0245"/> -->
+  <xacro:property name="adapter_offset" value="0.0245"/>
 
   <xacro:macro name="axia80_m20" params="tf_prefix">
     <link name="${tf_prefix}base_link">
@@ -15,22 +15,9 @@
                  iyy="0.0017389750000000002" iyz="0"
                  izz="0.0002521499999999999"/>
       </inertial>
-    </link>
-    <joint name="${tf_prefix}attach_joint" type="fixed">
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <parent link="${tf_prefix}base_link"/>
-      <child link="${tf_prefix}tool_link"/>
-    </joint>
-    <link name="${tf_prefix}tool_link">
-      <inertial>
-        <origin xyz="0 0 0" rpy="0 0 0"/>
-        <mass value="0.001"/>
-        <inertia ixx="0.000001" ixy="0" ixz="0"
-                 iyy="0.000001" iyz="0"
-                 izz="0.000001"/>
-      </inertial>
+
       <visual name="axia_ft_sensor_visual">
-        <origin xyz="0 0 0.0" rpy="0 0 0"/>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
         <geometry>
           <mesh filename="package://aic_assets/models/Axia80 M20/axia_ft_sensor_visual.glb"/>
         </geometry>
@@ -47,6 +34,22 @@
           <cylinder radius="0.006027" length="0.016717"/>
         </geometry>
       </collision>
+    </link>
+
+    <joint name="${tf_prefix}attach_joint" type="fixed">
+      <origin xyz="0 0 ${adapter_offset}" rpy="0 0 0"/>
+      <parent link="${tf_prefix}base_link"/>
+      <child link="${tf_prefix}tool_link"/>
+    </joint>
+
+    <link name="${tf_prefix}tool_link">
+      <inertial>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <mass value="0.001"/>
+        <inertia ixx="0.000001" ixy="0" ixz="0"
+                 iyy="0.000001" iyz="0"
+                 izz="0.000001"/>
+      </inertial>
     </link>
 
     <gazebo reference="${tf_prefix}attach_joint">
