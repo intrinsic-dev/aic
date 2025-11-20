@@ -2,6 +2,9 @@
 <sdf version="1.9">
   <model name="PCIe_NIC_Card">
     <link name="nic_card_link">
+      <inertial auto="true">
+        <mass>0.15</mass>
+      </inertial>
       <visual name="nic_card_visual">
         <geometry>
           <mesh>
