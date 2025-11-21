@@ -1,15 +1,20 @@
 # aic_interfaces
 
-This package contains additional ROS 2 interface definitions relevant to the AI Challenge. It defines the custom messages and actions required to bridge the robot hardware and the Insertion Policy.
+Additional ROS 2 interface definitions relevant to the AI Challenge.
+It defines the custom messages and actions required to bridge the robot hardware and the Insertion Policy.
 
 ## Interface Definitions
 
-The package defines the following custom interfaces:
+The following interfaces are defined.
 
-* **[action/InsertCable.action](./action/InsertCable.action)**
+* **[action/InsertCable.action](./aic_task_interfaces/action/InsertCable.action)**
     * An Action interface used to trigger the Insertion Policy to perform the cable insertion task.
-* **[msg/Task.msg](./msg/Task.msg)**
+* **[msg/Task.msg](./aic_task_interfaces/msg/Task.msg)**
     * Describes the specific parameters and state of the cable insertion task.
+* **[msg/MotionUpdate.msg](./aic_control_interfaces/msg/MotionUpdate.msg)**
+    * Describes a target pose and the associated tolerances for Cartesian-space control.
+* **[msg/JointMotionUpdate.msg](./aic_control_interfaces/msg/JointMotionUpdate.msg)**
+    * Describes a target joint configuration and the associated tolerances for joint-space control.
 
 ---
 
@@ -33,7 +38,7 @@ The following topics provide sensory data and state information to the model.
 
 | Action Name | Action Type | Description |
 | :--- | :--- | :--- |
-| `/insert_cable` | `aic_interfaces/action/InsertCable` | Trigger for the autonomous insertion task. |
+| `/insert_cable` | `aic_task_interfaces/action/InsertCable` | Trigger for the autonomous insertion task. |
 
 ### Outputs
 
@@ -43,7 +48,7 @@ The Insertion Policy controls the robot by publishing to the following topics.
 
 | Topic | Message Type | Description |
 | :--- | :--- | :--- |
-| `/joint_commands` | `aic_interfaces/msg/JointMotionUpdate` | Target configurations for joint-space control. |
-| `/pose_commands` | `aic_interfaces/msg/MotionUpdate` | Target poses for Cartesian-space control. |
+| `/joint_commands` | `aic_control_interfaces/msg/JointMotionUpdate` | Target configurations for joint-space control. |
+| `/pose_commands` | `aic_control_interfaces/msg/MotionUpdate` | Target poses for Cartesian-space control. |
 
 > **Note:** The model can command the robot using either joint configurations (via `/joint_commands`) or Cartesian poses (via `/pose_commands`). Publishing references to both topics simultaneously is discouraged to avoid control conflicts.
