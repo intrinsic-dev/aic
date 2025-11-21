@@ -15,6 +15,8 @@
       initial_pos="${initial_pos}"
     />
 
+    <xacro:property name="gripper_jaw_offset" value="0.025"/>
+
     <link name="${tf_prefix}hande_base_link">
       <inertial>
         <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -57,35 +59,35 @@
       </inertial>
 
       <visual name="hande_finger_visual">
-        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <origin xyz="${-gripper_jaw_offset} 0 0" rpy="0 0 0"/>
         <geometry>
           <mesh filename="package://aic_assets/models/Robotiq Hand-E/hande_finger_visual.glb"/>
         </geometry>
       </visual>
 
       <collision name="finger_collider_box">
-        <origin xyz="0.032595 -0.00001 0.138138" rpy="0.0 0.0 0.0"/>
+        <origin xyz="${-gripper_jaw_offset + 0.032595} -0.00001 0.138138" rpy="0.0 0.0 0.0"/>
         <geometry>
           <box size="0.007839 0.021 0.028622"/>
         </geometry>
       </collision>
 
       <collision name="finger_collider_box001">
-        <origin xyz="0.028 -0.00001 0.16145" rpy="0.0 0.0 0.0"/>
+        <origin xyz="${-gripper_jaw_offset + 0.028} -0.00001 0.16145" rpy="0.0 0.0 0.0"/>
         <geometry>
           <box size="0.006 0.021 0.021498"/>
         </geometry>
       </collision>
 
       <collision name="finger_collider_box002">
-        <origin xyz="0.014354 -0.015 0.124725" rpy="0.0 0.0 0.0"/>
+        <origin xyz="${-gripper_jaw_offset + 0.014354} -0.015 0.124725" rpy="0.0 0.0 0.0"/>
         <geometry>
           <box size="0.044319 0.0075 0.003949"/>
         </geometry>
       </collision>
 
       <collision name="finger_collider_box003">
-        <origin xyz="0.027046 -0.00954 0.129064" rpy="0.0 0.0 0.0"/>
+        <origin xyz="${-gripper_jaw_offset + 0.027046} -0.00954 0.129064" rpy="0.0 0.0 0.0"/>
         <geometry>
           <box size="0.017387 0.018419 0.009271"/>
         </geometry>
@@ -108,35 +110,35 @@
       </inertial>
 
       <visual name="hande_finger_visual">
-        <origin xyz="0 0 0" rpy="0 0 3.14157"/>
+        <origin xyz="${gripper_jaw_offset} 0 0" rpy="0 0 3.14157"/>
         <geometry>
           <mesh filename="package://aic_assets/models/Robotiq Hand-E/hande_finger_visual.glb"/>
         </geometry>
       </visual>
 
       <collision name="finger_collider_box">
-        <origin xyz="-0.032595 -0.00001 0.138138" rpy="0.0 0.0 0.0"/>
+        <origin xyz="${gripper_jaw_offset - 0.032595} -0.00001 0.138138" rpy="0.0 0.0 0.0"/>
         <geometry>
           <box size="0.007839 0.021 0.028622"/>
         </geometry>
       </collision>
 
       <collision name="finger_collider_box001">
-        <origin xyz="-0.028 -0.00001 0.16145" rpy="0.0 0.0 0.0"/>
+        <origin xyz="${gripper_jaw_offset - 0.028} -0.00001 0.16145" rpy="0.0 0.0 0.0"/>
         <geometry>
           <box size="0.006 0.021 0.021498"/>
         </geometry>
       </collision>
 
       <collision name="finger_collider_box002">
-        <origin xyz="-0.014354 -0.015 0.124725" rpy="0.0 0.0 0.0"/>
+        <origin xyz="${gripper_jaw_offset - 0.014354} -0.015 0.124725" rpy="0.0 0.0 0.0"/>
         <geometry>
           <box size="0.044319 0.0075 0.003949"/>
         </geometry>
       </collision>
 
       <collision name="finger_collider_box003">
-        <origin xyz="-0.027046 -0.00954 0.129064" rpy="0.0 0.0 0.0"/>
+        <origin xyz="${gripper_jaw_offset - 0.027046} -0.00954 0.129064" rpy="0.0 0.0 0.0"/>
         <geometry>
           <box size="0.017387 0.018419 0.009271"/>
         </geometry>
@@ -169,7 +171,7 @@
     <link name="${tf_prefix}tool_frame"/>
 
     <joint name="${tf_prefix}attach_tool_frame" type="fixed">
-      <origin xyz="0 0 0.128" rpy="0 0 0"/>
+      <origin xyz="0 0 0.172" rpy="0 0 0"/>
       <parent link="${tf_prefix}hande_base_link"/>
       <child link="${tf_prefix}tool_frame"/>
     </joint>
