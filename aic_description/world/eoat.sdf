@@ -337,7 +337,7 @@
     </light>
 
     <include>
-      <uri>model://Tri Cam Mount</uri>
+      <uri>model://Camera Mount</uri>
       <name>cam_mount</name>
     </include>
 

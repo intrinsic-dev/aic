@@ -3,7 +3,7 @@
 
   <xacro:property name="tf_prefix" value="cam_mount/"/>
 
-  <xacro:macro name="tri_cam_mount" params="tf_prefix">
+  <xacro:macro name="camera_mount" params="tf_prefix">
 
     <link name="${tf_prefix}cam_mount_link">
       <inertial>
@@ -16,7 +16,7 @@
 
       <visual name="cam_mount_visual">
         <geometry>
-          <mesh filename="package://aic_assets/models/Tri Cam Mount/cam_mount_visual.glb"/>
+          <mesh filename="package://aic_assets/models/Camera Mount/cam_mount_visual.glb"/>
         </geometry>
       </visual>
 

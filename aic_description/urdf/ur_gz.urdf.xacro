@@ -6,7 +6,7 @@
   <xacro:include filename="$(find ur_description)/urdf/ur_macro.xacro"/>
   <!-- import ATI Axia80-M20 macro -->
   <xacro:include filename="$(find aic_assets)/models/Axia80 M20/axia80_m20_macro.xacro"/>
-  <xacro:include filename="$(find aic_assets)/models/Tri Cam Mount/tri_cam_mount_macro.xacro"/>
+  <xacro:include filename="$(find aic_assets)/models/Camera Mount/cam_mount_macro.xacro"/>
   <xacro:include filename="$(find aic_assets)/models/Basler Camera/basler_camera_macro.xacro"/>
   <xacro:include filename="$(find aic_assets)/models/Robotiq Hand-E/robotiq_hande_macro.xacro"/>
 
@@ -122,11 +122,11 @@
     >
   </xacro:axia80_m20>
 
-  <!-- Tri Cam Mount -->
-  <xacro:tri_cam_mount
+  <!-- Camera Mount -->
+  <xacro:camera_mount
     tf_prefix="$(arg cam_mount_tf_prefix)"
     >
-  </xacro:tri_cam_mount>
+  </xacro:camera_mount>
 
   <xacro:basler_camera
     name="wrist_camera_1"
@@ -155,7 +155,7 @@
     >
   </xacro:robotiq_hande>
 
-  <joint name="attach_tri_cam_mount" type="fixed">
+  <joint name="attach_cam_mount" type="fixed">
     <origin xyz="0 0 0" rpy="0 0 0"/>
     <parent link="$(arg tf_prefix)tool0"/>
     <child link="$(arg cam_mount_tf_prefix)cam_mount_link"/>
