@@ -37,5 +37,5 @@ ros2 launch aic_bringup move_to_contact.launch.py contact_force_z:=10.0
 
 Control the gripper via a ROS2 Action. The joint range of the gripper is from 0.0 to 0.025m
 ```bash
-ros2 action send_goal /gripper_action_controller/gripper_cmd control_msgs/action/GripperCommand "{command: {position: 0.0, max_effort: 50.0}}"
+ros2 launch aic_bringup gripper_action.launch.py use_position:=true position:=0.024
 ```

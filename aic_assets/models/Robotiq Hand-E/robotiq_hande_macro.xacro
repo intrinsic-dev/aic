@@ -3,13 +3,15 @@
 
   <xacro:include filename="$(find aic_assets)/models/Robotiq Hand-E/robotiq_hande.ros2_control.xacro"/>
 
-  <xacro:macro name="robotiq_hande" params="name tf_prefix grip_pos_min grip_pos_max grip_vel_max grip_effort_max initial_pos">
+  <xacro:macro name="robotiq_hande" params="name tf_prefix grip_pos_min grip_pos_max grip_vel_max grip_effort_min grip_effort_max initial_pos">
 
     <xacro:robotiq_hande_ros2_control
       name="${name}"
       tf_prefix="${tf_prefix}"
       grip_pos_min="${grip_pos_min}"
       grip_pos_max="${grip_pos_max}"
+      grip_effort_min="${grip_effort_min}"
+      grip_effort_max="${grip_effort_max}"
       initial_pos="${initial_pos}"
     />
 

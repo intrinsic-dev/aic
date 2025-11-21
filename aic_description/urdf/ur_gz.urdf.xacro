@@ -150,6 +150,7 @@
     grip_pos_min="0.0"
     grip_pos_max="0.025"
     grip_vel_max="0.05"
+    grip_effort_min="20"
     grip_effort_max="130"
     initial_pos="0.025"
     >

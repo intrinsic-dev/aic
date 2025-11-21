@@ -30,7 +30,7 @@ controller_manager:
       type: admittance_controller/AdmittanceController
 
     gripper_action_controller:
-      type: position_controllers/GripperActionController
+      type: parallel_gripper_action_controller/GripperActionController
 
     fts_broadcaster:
       type: force_torque_sensor_broadcaster/ForceTorqueSensorBroadcaster
@@ -43,10 +43,15 @@ fts_broadcaster:
 gripper_action_controller:
   ros__parameters:
     action_monitor_rate: 20.0
+    state_interfaces:
+      - position
+      - velocity
+      - effort
     allow_stalling: false
     goal_tolerance: 0.01
     joint: 'gripper/left_finger_joint'
-    max_effort: 0.0
+    max_effort: 130.0
+    max_effort_interface: "gripper/left_finger_joint/effort"
     stall_timeout: 1.0
     stall_velocity_threshold: 0.001
 
@@ -151,6 +156,14 @@ admittance_controller:
       - wrist_2_joint
       - wrist_3_joint
 
+    command_joints:
+      - shoulder_pan_joint
+      - shoulder_lift_joint
+      - elbow_joint
+      - wrist_1_joint
+      - wrist_2_joint
+      - wrist_3_joint
+
     command_interfaces:
       - position
 
@@ -236,3 +249,6 @@ admittance_controller:
         - 1000.0 # rx
         - 1000.0 # ry
         - 1000.0 # rz
+
+    # If enabled, the parameters will be dynamically updated while the controller is running.
+    enable_parameter_update_without_reactivation: true
