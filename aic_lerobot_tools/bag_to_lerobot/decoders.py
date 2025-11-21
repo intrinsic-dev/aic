@@ -1,4 +1,7 @@
-from rosetta.common.decoders import register_decoder
+import geometry_msgs.msg
+import numpy as np
+from rosetta.common.contract_utils import SpecView
+from rosetta.common.decoders import _decode_via_names, register_decoder
 
 
 def register_decoders():
@@ -8,6 +11,17 @@ def register_decoders():
     """
 
     @register_decoder("geometry_msgs/msg/WrenchStamped")
-    def decode_wrench_stamped(msg):
-        # TODO
-        pass
+    def decode_wrench_stamped(msg: geometry_msgs.msg.WrenchStamped, spec: SpecView):
+        if spec.names:
+            return _decode_via_names(msg, spec.names)
+        return np.array(
+            [
+                msg.wrench.force.x,
+                msg.wrench.force.y,
+                msg.wrench.force.z,
+                msg.wrench.torque.x,
+                msg.wrench.torque.y,
+                msg.wrench.torque.z,
+            ],
+            dtype=np.float32,
+        )

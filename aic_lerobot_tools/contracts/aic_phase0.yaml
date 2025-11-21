@@ -34,7 +34,6 @@ observations:
     topic: /joint_states
     type: sensor_msgs/msg/JointState
     selector:
-      # Only the wheel joints matter for diff_drive control
       names:
         - position.elbow_joint
         - position.shoulder_lift_joint
@@ -57,20 +56,19 @@ observations:
     align: { strategy: hold, stamp: header, tol_ms: 1500 }
     qos: { reliability: best_effort, history: keep_last, depth: 50 }
 
-  # TODO: rosetta does not yet support geometry_msgs/msg/WrenchStamped
-  # - key: observation.state
-  #   topic: /fts_broadcaster/wrench
-  #   type: geometry_msgs/msg/WrenchStamped
-  #   selector:
-  #     names:
-  #       - force.x
-  #       - force.y
-  #       - force.z
-  #       - torque.x
-  #       - torque.y
-  #       - torque.z
-  #   align: { strategy: hold, stamp: header, tol_ms: 1500 }
-  #   qos: { reliability: best_effort, history: keep_last, depth: 50 }
+  - key: observation.state
+    topic: /fts_broadcaster/wrench
+    type: geometry_msgs/msg/WrenchStamped
+    selector:
+      names:
+        - wrench.force.x
+        - wrench.force.y
+        - wrench.force.z
+        - wrench.torque.x
+        - wrench.torque.y
+        - wrench.torque.z
+    align: { strategy: hold, stamp: header, tol_ms: 1500 }
+    qos: { reliability: best_effort, history: keep_last, depth: 50 }
 
 # actions:
 #   - key: action

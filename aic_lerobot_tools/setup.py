@@ -26,7 +26,7 @@ setup(
     install_requires=["setuptools"],
     zip_safe=True,
     maintainer="koonpeng",
-    maintainer_email="teokoonpeng@gmail.com",
+    maintainer_email="koonpeng@intrinsic.ai",
     entry_points={
         "console_scripts": [],
     },
