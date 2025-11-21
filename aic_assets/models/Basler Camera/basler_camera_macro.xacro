@@ -75,16 +75,16 @@
           <camera name="${name}">
             <camera_info_topic>/${name}/camera_info</camera_info_topic>
             <image>
-              <width>1936</width>
-              <height>1216</height>
+              <width>2840</width>
+              <height>2840</height>
               <format>R8G8B8</format>
             </image>
             <lens>
               <intrinsics>
-                <fx>1426.0899369363822</fx>
-                <fy>1425.8803490609369</fy>
-                <cx>971.4830445595597</cx>
-                <cy>609.4634452956738</cy>
+                <fx>2920</fx>
+                <fy>2920</fy>
+                <cx>1420</cx>
+                <cy>1420</cy>
               </intrinsics>
             </lens>
             <clip>
@@ -92,11 +92,11 @@
               <far>300</far>
             </clip>
             <distortion>
-              <k1>-0.17436234247184138</k1>
-              <k2>0.12925824906602892</k2>
-              <k3>-0.04034799597244948</k3>
-              <p1>0.0002735332847870008</p1>
-              <p2>-0.00021180159916717322</p2>
+              <k1>0</k1>
+              <k2>0</k2>
+              <k3>0</k3>
+              <p1>0</p1>
+              <p2>0</p2>
             </distortion>
             <noise>
               <type>gaussian</type>
