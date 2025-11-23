@@ -35,6 +35,8 @@ controller_manager:
     fts_broadcaster:
       type: force_torque_sensor_broadcaster/ForceTorqueSensorBroadcaster
 
+    # enforce_command_limit: false
+
 fts_broadcaster:
   ros__parameters:
     frame_id: ati/tool_link
@@ -128,12 +130,12 @@ forward_velocity_controller:
 forward_position_controller:
   ros__parameters:
     joints:
-      - shoulder_pan_joint
-      - shoulder_lift_joint
-      - elbow_joint
-      - wrist_1_joint
-      - wrist_2_joint
-      - wrist_3_joint
+      - admittance_controller/shoulder_pan_joint
+      - admittance_controller/shoulder_lift_joint
+      - admittance_controller/elbow_joint
+      - admittance_controller/wrist_1_joint
+      - admittance_controller/wrist_2_joint
+      - admittance_controller/wrist_3_joint
 
 effort_controller:
   ros__parameters:
@@ -146,7 +148,6 @@ effort_controller:
       - wrist_3_joint
 
 admittance_controller:
-  # contains minimal needed parameters for kuka_kr6
   ros__parameters:
     joints:
       - shoulder_pan_joint

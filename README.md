@@ -54,3 +54,8 @@ Control the gripper via a ROS2 Action. The joint range of the gripper is from 0.
 ```bash
 ros2 launch aic_bringup gripper_action.launch.py use_position:=true position:=0.024
 ```
+
+Send a joint-position control command to the arm:
+```bash
+ros2 topic pub /forward_position_controller/commands std_msgs/msg/Float64MultiArray 'data: [0.0, -1.57, -1.57, -1.57, 1.57, 0]' --once
+```
