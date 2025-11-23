@@ -70,6 +70,13 @@ joint_trajectory_controller:
       - wrist_1_joint
       - wrist_2_joint
       - wrist_3_joint
+    command_joints:
+      - admittance_controller/shoulder_pan_joint
+      - admittance_controller/shoulder_lift_joint
+      - admittance_controller/elbow_joint
+      - admittance_controller/wrist_1_joint
+      - admittance_controller/wrist_2_joint
+      - admittance_controller/wrist_3_joint
     command_interfaces:
       - position
     state_interfaces:
@@ -209,8 +216,11 @@ admittance_controller:
           - 0.0 # x
           - 0.0 # y
           - 0.0 # z
-        # Total End effector weight is (0.365 + 0.36)*9.81 which is the mass of the wrist_3_link and the FT sensor combined
-        force: 7.11225 # mass * 9.81
+        # force/torque sensor mass: 0.36
+        # Current Basler model mass: 0.101
+        # Current camera mount model mass: 0.001
+        # Total end effector weight: 9.81 * (0.36 + 2*.101 + 0.001)
+        force: 5.523
 
     admittance:
       selected_axes:
