@@ -146,7 +146,7 @@ def launch_setup(context, *args, **kwargs):
     initial_joint_controller_spawner_started = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=[initial_joint_controller, "forward_position_controller", "--activate-as-group", "-c", "/controller_manager"],
+        arguments=[initial_joint_controller, "joint_trajectory_controller", "--activate-as-group", "-c", "/controller_manager"],
         condition=IfCondition(activate_joint_controller),
     )
 
