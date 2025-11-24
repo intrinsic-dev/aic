@@ -3,6 +3,8 @@
 
   <xacro:property name="tf_prefix" value="cam_mount/"/>
 
+  <xacro:property name="z_rot" value="-1.57079"/>
+
   <xacro:macro name="camera_mount" params="tf_prefix">
 
     <link name="${tf_prefix}cam_mount_link">
@@ -15,62 +17,63 @@
       </inertial>
 
       <visual name="cam_mount_visual">
+        <origin xyz="0.0 0.0 0.0215" rpy="0.0 0.0 ${z_rot}"/>
         <geometry>
           <mesh filename="package://aic_assets/models/Camera Mount/cam_mount_visual.glb"/>
         </geometry>
       </visual>
 
       <collision name="cam_mount_collider_cylinder">
-        <origin xyz="0.0 0.0 0.0215" rpy="0.0 0.0 0.0"/>
+        <origin xyz="0.0 0.0 0.0215" rpy="0.0 0.0 ${z_rot}"/>
         <geometry>
           <cylinder radius="0.06" length="0.01"/>
         </geometry>
       </collision>
 
       <collision name="cam_mount_collider_cylinder.001">
-        <origin xyz="0.0 0.0 0.012638" rpy="0.0 0.0 0.0"/>
+        <origin xyz="0.0 0.0 0.012638" rpy="0.0 0.0 ${z_rot}"/>
         <geometry>
           <cylinder radius="0.030383" length="0.025275"/>
         </geometry>
       </collision>
 
       <collision name="cam_mount003_collider_box">
-        <origin xyz="0.068974 0.000189 0.02" rpy="0.0 0.0 0.0"/>
+        <origin xyz="0.068974 0.000189 0.02" rpy="0.0 0.0 ${z_rot}"/>
         <geometry>
           <box size="0.055675 0.027622 0.003"/>
         </geometry>
       </collision>
 
       <collision name="cam_mount003_collider_box.001">
-        <origin xyz="0.096142 0.000189 0.021981" rpy="0.0 1.308997 0.0"/>
+        <origin xyz="0.096142 0.000189 0.021981" rpy="0.0 1.308997 ${z_rot}"/>
         <geometry>
           <box size="0.035256 0.027622 0.003"/>
         </geometry>
       </collision>
 
       <collision name="cam_mount003_collider_box.002">
-        <origin xyz="-0.034323 -0.059827 0.02" rpy="0.0 0.0 -2.094395"/>
+        <origin xyz="-0.034323 -0.059827 0.02" rpy="0.0 0.0 ${z_rot - 2.094395}"/>
         <geometry>
           <box size="0.055675 0.027622 0.003"/>
         </geometry>
       </collision>
 
       <collision name="cam_mount003_collider_box.003">
-        <origin xyz="-0.047908 -0.083356 0.021981" rpy="0.0 1.308997 -2.094395"/>
+        <origin xyz="-0.047908 -0.083356 0.021981" rpy="0.0 1.308997 ${z_rot - 2.094395}"/>
         <geometry>
           <box size="0.035256 0.027622 0.003"/>
         </geometry>
       </collision>
 
       <collision name="cam_mount003_collider_box.004">
-        <origin xyz="-0.03465 0.059639 0.02" rpy="0.0 0.0 -4.18879"/>
+        <origin xyz="-0.03465 0.059639 0.02" rpy="0.0 0.0 ${z_rot - 4.18879}"/>
         <geometry>
           <box size="0.055675 0.027622 0.003"/>
         </geometry>
       </collision>
 
       <collision name="cam_mount003_collider_box.005">
-        <origin xyz="-0.048235 0.083167 0.021981" rpy="0.0 1.308997 -4.18879"/>
+        <origin xyz="-0.048235 0.083167 0.021981" rpy="0.0 1.308997 ${z_rot - 4.18879}"/>
         <geometry>
           <box size="0.035256 0.027622 0.003"/>
         </geometry>
