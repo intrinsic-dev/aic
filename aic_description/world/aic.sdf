@@ -299,6 +299,17 @@
       filename="gz-sim-sensors-system"
       name="gz::sim::systems::Sensors">
       <render_engine>ogre2</render_engine>
+      <global_illumination type="vct">
+        <enabled>true</enabled>
+        <resolution>256 256 256</resolution>
+        <octant_count>1 1 1</octant_count>
+        <bounce_count>3</bounce_count>
+        <high_quality>false</high_quality>
+        <anisotropic>true</anisotropic>
+        <thin_wall_counter>1.0</thin_wall_counter>
+        <conserve_memory>true</conserve_memory>
+        <debug_vis_mode>none</debug_vis_mode>
+      </global_illumination>
     </plugin>
     <plugin
       filename="gz-sim-user-commands-system"
