@@ -58,7 +58,7 @@
     </link>
 
     <joint name="${tf_prefix}attach_optical" type="fixed">
-      <origin xyz="0 0 0" rpy="0 0 3.1415926"/>
+      <origin xyz="0 0 0" rpy="-1.5708 0 -1.5708"/>
       <parent link="${tf_prefix}basler_cam_link"/>
       <child link="${tf_prefix}optical"/>
     </joint>
@@ -67,15 +67,43 @@
       <preserveFixedJoint>true</preserveFixedJoint>
     </gazebo>
 
+    <link name="${tf_prefix}sensor_link">
+      <!-- inertial property required for valid conversion to SDF,
+        so we set a tiny mass and M.O.I. here -->
+      <inertial>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <mass value="0.001"/>
+        <inertia ixx="0.000001" ixy="0" ixz="0"
+                 iyy="0.000001" iyz="0"
+                 izz="0.000001"/>
+      </inertial>
+    </link>
+
+    <!-- Currently the sensor_link is the same location as the
+         cam_link frame. However, we may adjust this in the future
+         if the lens focal point ends up being somewhat forward or
+         backward of the current estimate. -->
+    <joint name="${tf_prefix}attach_sensor_link" type="fixed">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <parent link="${tf_prefix}basler_cam_link"/>
+      <child link="${tf_prefix}sensor_link"/>
+    </joint>
+
+    <gazebo reference="${tf_prefix}attach_sensor_link">
+      <preserveFixedJoint>true</preserveFixedJoint>
+    </gazebo>
+
     <xacro:if value="${use_sim_cam}">
-      <gazebo reference="${tf_prefix}basler_cam_link">
+      <gazebo reference="${tf_prefix}sensor_link">
         <sensor name="${name}" type="camera">
           <pose>0 0 0 0 0 0</pose>
-          <update_rate>10.0</update_rate>
+          <update_rate>20.0</update_rate>
           <topic>/${name}/image</topic>
           <always_on>true</always_on>
+          <frame_id>${tf_prefix}sensor_link</frame_id>
           <camera name="${name}">
             <camera_info_topic>/${name}/camera_info</camera_info_topic>
+            <optical_frame_id>${tf_prefix}optical</optical_frame_id>
             <image>
               <width>1420</width>
               <height>1420</height>
