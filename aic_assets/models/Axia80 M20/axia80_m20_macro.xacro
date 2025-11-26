@@ -1,28 +1,47 @@
 <?xml version="1.0" ?>
 <robot xmlns:xacro="http://wiki.ros.org/xacro">
 
-  <!-- robot name parameter -->
-  <xacro:property name="name" value="axia80_m20"/>
   <!-- TF prefix parameter -->
   <xacro:property name="tf_prefix" value="ati/"/>
   <!-- adapter_offset is the effective length that the adapter adds to the endeffector -->
   <xacro:property name="adapter_offset" value="0.0245"/>
 
-  <xacro:macro name="axia80_m20" params="name tf_prefix">
+  <xacro:macro name="axia80_m20" params="tf_prefix">
     <link name="${tf_prefix}base_link">
       <inertial>
-        <origin xyz="0 0 ${adapter_offset / 2}" rpy="0 0 0"/>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
         <mass value="0.36"/>
         <inertia ixx="0.0017389750000000002" ixy="0" ixz="0"
                  iyy="0.0017389750000000002" iyz="0"
                  izz="0.0002521499999999999"/>
       </inertial>
+
+      <visual name="axia_ft_sensor_visual">
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://aic_assets/models/Axia80 M20/axia_ft_sensor_visual.glb"/>
+        </geometry>
+      </visual>
+      <collision name="axia80_m20_collider_cylinder">
+        <origin xyz="0.0 -0.000004 0.012699" rpy="3.141593 0.0 0.0"/>
+        <geometry>
+          <cylinder length="0.025399" radius="0.041519"/>
+        </geometry>
+      </collision>
+      <collision name="axia80_m20001_collider_cylinder">
+        <origin xyz="0.0 0.041828 0.018432" rpy="-1.570796 0 0"/>
+        <geometry>
+          <cylinder radius="0.006027" length="0.016717"/>
+        </geometry>
+      </collision>
     </link>
+
     <joint name="${tf_prefix}attach_joint" type="fixed">
       <origin xyz="0 0 ${adapter_offset}" rpy="0 0 0"/>
       <parent link="${tf_prefix}base_link"/>
       <child link="${tf_prefix}tool_link"/>
     </joint>
+
     <link name="${tf_prefix}tool_link">
       <inertial>
         <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -31,25 +50,6 @@
                  iyy="0.000001" iyz="0"
                  izz="0.000001"/>
       </inertial>
-
-      <visual>
-        <origin xyz="0 0 ${adapter_offset / 2}" rpy="0 0 0"/>
-        <geometry>
-          <cylinder length="${adapter_offset}" radius="0.041"/>
-        </geometry>
-      </visual>
-      <collision name="collision1">
-        <origin xyz="0 0 ${adapter_offset / 2}" rpy="0 0 0"/>
-        <geometry>
-          <cylinder length="${adapter_offset}" radius="0.041"/>
-        </geometry>
-      </collision>
-      <collision name="collision2">
-        <origin xyz="-0.0475 0 0.0075" rpy="0 0 0"/>
-        <geometry>
-          <box size="0.015 0.015 0.015"/>
-        </geometry>
-      </collision>
     </link>
 
     <gazebo reference="${tf_prefix}attach_joint">
@@ -105,24 +105,6 @@
           </torque>
         </force_torque>
       </sensor>
-    </gazebo>
-
-    <gazebo reference="${tf_prefix}tool_link">
-      <sensor name="contact_sensor" type="contact">
-        <contact>
-          <!-- The reason for the convoluted collision name reference is due to URDF to SDF
-          conversion prepending and appending names to the collision name. The current workaround
-          is provide an exact name -->
-          <collision>${tf_prefix}tool_link_fixed_joint_lump__collision1_collision</collision>
-          <topic>collision/tool_link</topic>
-        </contact>
-      </sensor>
-      <!-- Reduce contact stiffness and damping for better stability -->
-      <kp>100000</kp>
-      <kd>100</kd>
-      <!-- Reduce friction in order to get smoother simulated force -->
-      <mu1>0.01</mu1>
-      <mu2>0.01</mu2>
     </gazebo>
 
   </xacro:macro>

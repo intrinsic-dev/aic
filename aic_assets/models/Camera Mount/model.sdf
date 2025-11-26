@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <sdf version="1.9">
-  <model name="Tri Cam Mount">
+  <model name="Camera Mount">
     <link name="cam_mount_link">
       <visual name="cam_mount_visual">
         <geometry>

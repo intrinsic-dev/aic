@@ -428,20 +428,6 @@
     </model>
 
     <include>
-      <uri>model://LC Plug</uri>
-      <name>lc_plug</name>
-      <pose>0.3 0.1 1.06 0 0 0</pose>
-      <static>false</static>
-    </include>
-
-    <include>
-      <uri>model://SC Plug</uri>
-      <name>sc_plug</name>
-      <pose>0.4 0.1 1.06 0 0 0</pose>
-      <static>false</static>
-    </include>
-
-    <include>
       <uri>model://SC Port</uri>
       <name>sc_port</name>
       <pose>0.5 0.1 1.06 0 0 0</pose>
@@ -459,6 +445,13 @@
       <uri>model://PCIe NIC Card</uri>
       <name>nic_card</name>
       <pose>0.2 0.2 1.06 0 0 0</pose>
+      <static>false</static>
+    </include>
+
+    <include>
+      <uri>model://sfp_cable</uri>
+      <name>sfp_cable</name>
+      <pose>0.0 0.4 1.06 0 0 0</pose>
       <static>false</static>
     </include>
 

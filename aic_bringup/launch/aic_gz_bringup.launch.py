@@ -146,7 +146,7 @@ def launch_setup(context, *args, **kwargs):
     initial_joint_controller_spawner_started = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=[initial_joint_controller, "-c", "/controller_manager"],
+        arguments=[initial_joint_controller, "joint_trajectory_controller", "--activate-as-group", "-c", "/controller_manager"],
         condition=IfCondition(activate_joint_controller),
     )
 
@@ -157,10 +157,22 @@ def launch_setup(context, *args, **kwargs):
         condition=UnlessCondition(activate_joint_controller),
     )
 
+    gripper_action_controller_spawner = Node(
+        package="controller_manager",
+        executable="spawner",
+        arguments=["gripper_action_controller", "--controller-manager", "/controller_manager"],
+    )
+
     fts_broadcaster_spawner = Node(
         package="controller_manager",
         executable="spawner",
         arguments=["fts_broadcaster", "--controller-manager", "/controller_manager"],
+    )
+
+    home_script_spawner = Node(
+        package="aic_bringup",
+        executable="home_robot.py",
+        arguments=[],
     )
 
     # GZ nodes
@@ -208,14 +220,15 @@ def launch_setup(context, *args, **kwargs):
         initial_joint_controller_spawner_stopped,
         initial_joint_controller_spawner_started,
         fts_broadcaster_spawner,
+        gripper_action_controller_spawner,
         gzserver,
         gzgui,
         ros_gz_bridge,
         gz_spawn_entity,
+        home_script_spawner,
     ]
 
     return nodes_to_start
-
 
 def generate_launch_description():
     declared_arguments = []

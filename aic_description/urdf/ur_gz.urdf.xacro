@@ -5,10 +5,15 @@
   <!-- import UR macro -->
   <xacro:include filename="$(find ur_description)/urdf/ur_macro.xacro"/>
   <!-- import ATI Axia80-M20 macro -->
-  <xacro:include filename="$(find aic_assets)/models/ATI_Axia80_M20/axia80_m20_macro.xacro"/>
+  <xacro:include filename="$(find aic_assets)/models/Axia80 M20/axia80_m20_macro.xacro"/>
+  <xacro:include filename="$(find aic_assets)/models/Camera Mount/cam_mount_macro.xacro"/>
+  <xacro:include filename="$(find aic_assets)/models/Basler Camera/basler_camera_macro.xacro"/>
+  <xacro:include filename="$(find aic_assets)/models/Robotiq Hand-E/robotiq_hande_macro.xacro"/>
 
   <!-- <xacro:include filename="$(find ur_simulation_gz)/urdf/ur_gz.ros2_control.xacro" /> -->
   <xacro:include filename="$(find ur_description)/urdf/inc/ur_joint_control.xacro" />
+
+  <xacro:property name="D2R" value="${pi / 180.0}"/>
 
   <!-- possible 'ur_type' values: ur3, ur5, ur10, ur3e, ur5e, ur7e, ur10e, ur12e, ur16e, ur8long, ur15, ur20, ur30 -->
   <!-- the default value should raise an error in case this was called without defining the type -->
@@ -29,6 +34,14 @@
   <xacro:arg name="ros_namespace" default="" />
 
   <xacro:arg name="ati_tf_prefix" default="ati/" />
+  <xacro:arg name="cam_mount_tf_prefix" default="cam_mount/" />
+  <xacro:arg name="wrist_camera_1_tf_prefix" default="wrist_camera_1/"/>
+  <xacro:arg name="wrist_camera_2_tf_prefix" default="wrist_camera_2/"/>
+  <xacro:arg name="gripper_tf_prefix" default="gripper/"/>
+  <xacro:arg name="cam_lens_offset" default="0.035" />
+  <xacro:arg name="cam_mount_offset" default="0.09495" />
+  <!-- If true, enable Gazebo camera in sim -->
+  <xacro:arg name="use_sim_cam" default="${True}"/>
 
   <!-- Pose arguments for robot positioning -->
   <xacro:arg name="x" default="0.0" />
@@ -37,11 +50,6 @@
   <xacro:arg name="roll" default="0.0" />
   <xacro:arg name="pitch" default="0.0" />
   <xacro:arg name="yaw" default="0.0" />
-
-  <xacro:property name="adapter_offset" value="0.0254"/>
-
-  <!-- <xacro:arg name="adapter_offset" default="0.0254" />
-  <xacro:arg name="adapter_offset_halved" default="0.0127" /> -->
 
   <!-- create link fixed to the "world" -->
   <link name="world" />
@@ -110,15 +118,74 @@
 
   <!-- ATI Force Torque sensor -->
   <xacro:axia80_m20
-    name="ati"
     tf_prefix="$(arg ati_tf_prefix)"
     >
   </xacro:axia80_m20>
 
-  <joint name="attach_ft_sensor_joint" type="fixed">
-    <origin rpy="0 0 0" xyz="0 0 0"/>
+  <!-- Camera Mount -->
+  <xacro:camera_mount
+    tf_prefix="$(arg cam_mount_tf_prefix)"
+    >
+  </xacro:camera_mount>
+
+  <xacro:basler_camera
+    name="wrist_camera_1"
+    tf_prefix="$(arg wrist_camera_1_tf_prefix)"
+    cam_lens_offset="$(arg cam_lens_offset)"
+    use_sim_cam="$(arg use_sim_cam)"
+    >
+  </xacro:basler_camera>
+
+  <xacro:basler_camera
+    name="wrist_camera_2"
+    tf_prefix="$(arg wrist_camera_2_tf_prefix)"
+    cam_lens_offset="$(arg cam_lens_offset)"
+    use_sim_cam="$(arg use_sim_cam)"
+    >
+  </xacro:basler_camera>
+
+  <xacro:robotiq_hande
+    name="gripper"
+    tf_prefix="$(arg gripper_tf_prefix)"
+    grip_pos_min="0.0"
+    grip_pos_max="0.025"
+    grip_vel_max="0.05"
+    grip_effort_min="20"
+    grip_effort_max="130"
+    initial_pos="0.02"
+    >
+  </xacro:robotiq_hande>
+
+  <joint name="attach_cam_mount" type="fixed">
+    <origin xyz="0 0 0" rpy="0 0 0"/>
     <parent link="$(arg tf_prefix)tool0"/>
+    <child link="$(arg cam_mount_tf_prefix)cam_mount_link"/>
+  </joint>
+
+  <joint name="attach_ft_sensor_joint" type="fixed">
+    <origin xyz="0 0 0.0265" rpy="0 0 0"/>
+    <parent link="$(arg cam_mount_tf_prefix)cam_mount_link"/>
     <child link="$(arg ati_tf_prefix)base_link"/>
+  </joint>
+
+  <joint name="attach_wrist_camera_1" type="fixed">
+    <origin xyz="$(arg cam_mount_offset) 0 ${0.054483+$(arg cam_lens_offset)}"
+      rpy="0.261799 0 -1.5708"/>
+    <parent link="$(arg cam_mount_tf_prefix)cam_mount_link"/>
+    <child link="$(arg wrist_camera_1_tf_prefix)basler_cam_link"/>
+  </joint>
+
+  <joint name="attach_wrist_camera_2" type="fixed">
+    <origin xyz="-${$(arg cam_mount_offset) * sin(30.0*D2R)} -${$(arg cam_mount_offset) * cos(30.0*D2R)} ${0.054483+$(arg cam_lens_offset)}"
+      rpy="0.261799 0 2.61799"/>
+    <parent link="$(arg cam_mount_tf_prefix)cam_mount_link"/>
+    <child link="$(arg wrist_camera_2_tf_prefix)basler_cam_link"/>
+  </joint>
+
+  <joint name="attach_gripper" type="fixed">
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <parent link="$(arg ati_tf_prefix)tool_link"/>
+    <child link="$(arg gripper_tf_prefix)hande_base_link"/>
   </joint>
 
   <!-- ros2 control instance -->
@@ -140,12 +207,13 @@
       tf_prefix="$(arg tf_prefix)"
       initial_positions="${dict(
         shoulder_pan_joint=0.0,
-        shoulder_lift_joint=-1.8645,
+        shoulder_lift_joint=-1.2645,
         elbow_joint=-2.35,
         wrist_1_joint=-0.5,
         wrist_2_joint=1.5708,
         wrist_3_joint=0.0)}"
     />
+
   </ros2_control>
 
 </robot>
