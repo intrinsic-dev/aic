@@ -1,0 +1,9 @@
+<library path="aic_controller">
+  <class name="aic_controller/AICController"
+         type="aic_controller::AICController"
+         base_class_type="controller_interface::ControllerInterface">
+    <description>
+      A ros2_control controller with command interpolation and impedance control.
+    </description>
+  </class>
+</library>

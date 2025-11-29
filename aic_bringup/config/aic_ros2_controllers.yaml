@@ -35,6 +35,9 @@ controller_manager:
     fts_broadcaster:
       type: force_torque_sensor_broadcaster/ForceTorqueSensorBroadcaster
 
+    aic_controller:
+      type: aic_controller/AICController
+
     # enforce_command_limit: false
 
 fts_broadcaster:
@@ -260,6 +263,54 @@ admittance_controller:
         - 1000.0 # rx
         - 1000.0 # ry
         - 1000.0 # rz
+
+    # If enabled, the parameters will be dynamically updated while the controller is running.
+    enable_parameter_update_without_reactivation: true
+
+aic_controller:
+  ros__parameters:
+    # Available control modes are "admittance" and "impedance"
+    control_mode: "admittance"
+
+    interpolation_mode: "linear"
+
+    joints:
+      - shoulder_pan_joint
+      - shoulder_lift_joint
+      - elbow_joint
+      - wrist_1_joint
+      - wrist_2_joint
+      - wrist_3_joint
+
+    state_interfaces:
+      - position
+
+    # Chained to admittance controller command interface
+    command_joints:
+      - admittance_controller/shoulder_pan_joint
+      - admittance_controller/shoulder_lift_joint
+      - admittance_controller/elbow_joint
+      - admittance_controller/wrist_1_joint
+      - admittance_controller/wrist_2_joint
+      - admittance_controller/wrist_3_joint
+
+    command_interfaces:
+      - position
+
+    kinematics:
+      plugin_name: kinematics_interface_kdl/KinematicsInterfaceKDL
+      plugin_package: kinematics_interface
+      base: base_link # Assumed to be stationary
+      tip: tool0
+      group_name: arm
+      alpha: 0.0005 # Specifies the damping coefficient for the Jacobian pseudo inverse.
+
+    ft_sensor:
+      name: AtiForceTorqueSensor
+      frame:
+        id: tool0  # Wrench measurements are in this frame
+        external: false # force torque frame exists within URDF kinematic chain
+      filter_coefficient: 0.005 # Specifies the filter coefficient for the sensor’s exponential filter.
 
     # If enabled, the parameters will be dynamically updated while the controller is running.
     enable_parameter_update_without_reactivation: true
