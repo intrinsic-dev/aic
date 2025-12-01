@@ -15,7 +15,7 @@ set(DEP_PKGS
   generate_parameter_library
   geometry_msgs
   hardware_interface
-  # kinematics_interface
+  kinematics_interface
   pluginlib
   rclcpp
   rclcpp_lifecycle
@@ -32,6 +32,7 @@ generate_parameter_library(aic_controller_parameters
 
 add_library(aic_controller SHARED
   src/aic_controller.cpp
+  src/cartesian_impedance_controller.cpp
 )
 target_compile_features(aic_controller PUBLIC cxx_std_17)
 target_include_directories(aic_controller PUBLIC
@@ -42,7 +43,7 @@ target_link_libraries(aic_controller PUBLIC
                       aic_controller_parameters
                       controller_interface::controller_interface
                       hardware_interface::hardware_interface
-                      # kinematics_interface::kinematics_interface
+                      kinematics_interface::kinematics_interface
                       pluginlib::pluginlib
                       rclcpp::rclcpp
                       rclcpp_lifecycle::rclcpp_lifecycle

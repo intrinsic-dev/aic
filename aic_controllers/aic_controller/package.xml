@@ -18,7 +18,7 @@
   <depend>generate_parameter_library</depend>
   <depend>geometry_msgs</depend>
   <depend>hardware_interface</depend>
-  <!-- <depend>kinematics_interface</depend> -->
+  <depend>kinematics_interface</depend>
   <depend>pluginlib</depend>
   <depend>rclcpp</depend>
   <depend>rclcpp_lifecycle</depend>

@@ -274,6 +274,9 @@ aic_controller:
 
     interpolation_mode: "linear"
 
+    # Available target types are "cartesian" and "joint"
+    target_type: "joint"
+
     joints:
       - shoulder_pan_joint
       - shoulder_lift_joint
@@ -304,13 +307,6 @@ aic_controller:
       tip: tool0
       group_name: arm
       alpha: 0.0005 # Specifies the damping coefficient for the Jacobian pseudo inverse.
-
-    ft_sensor:
-      name: AtiForceTorqueSensor
-      frame:
-        id: tool0  # Wrench measurements are in this frame
-        external: false # force torque frame exists within URDF kinematic chain
-      filter_coefficient: 0.005 # Specifies the filter coefficient for the sensor’s exponential filter.
 
     # If enabled, the parameters will be dynamically updated while the controller is running.
     enable_parameter_update_without_reactivation: true

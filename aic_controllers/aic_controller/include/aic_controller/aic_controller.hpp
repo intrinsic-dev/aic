@@ -18,11 +18,13 @@
 #ifndef AIC_CONTROLLER__AIC_CONTROLLER_HPP_
 #define AIC_CONTROLLER__AIC_CONTROLLER_HPP_
 
-// #include "aic_controller/impedance_rule.hpp"
 #include "aic_control_interfaces/msg/joint_motion_update.hpp"
 #include "aic_control_interfaces/msg/motion_update.hpp"
 #include "aic_control_interfaces/msg/trajectory_generation_mode.hpp"
+#include "aic_controller/cartesian_impedance_controller.hpp"
+#include "cart_state.hpp"
 #include "controller_interface/controller_interface.hpp"
+#include "joint_limits.hpp"
 #include "rclcpp_lifecycle/state.hpp"
 #include "realtime_tools/realtime_publisher.hpp"
 #include "realtime_tools/realtime_thread_safe_box.hpp"
@@ -51,7 +53,6 @@ enum ControlMode {
 };
 
 enum InterpolationMode {
-  UNSPECIFIED_INTERPOLATION_MODE,
   LINEAR,
   REFLEXXES,
   MINIMAL_SPLINES,
@@ -90,35 +91,58 @@ class AICController : public controller_interface::ControllerInterface {
 
   controller_interface::return_type update_and_write_commands_joints();
 
-  /// Update reference values by limiting them and then performing interpolation
+  /**
+   * @brief Update reference values by limiting the target states to stay within
+   * limits and then interpolating their values.
+   */
   bool update_reference_joints();
 
-  /// Update reference values by limiting them and then performing interpolation
+  /**
+   * @brief Update reference values by limiting the target states to stay within
+   * limits and then interpolating their values.
+   */
   bool update_reference_cartesian();
 
-  JointTrajectoryPoint update_reference_joints_linear_interpolation(
-      const JointTrajectoryPoint& msg);
+  /**
+   * @brief Update the impedance parameters given the last
+   * MotionUpdate and controller parameters
+   */
+  bool update_impedance();
 
-  /// Update reference from input topics when not in chained mode. This method
-  /// is called before 'update'
+  /**
+   * @brief Update the feedforward wrench given the last MotionUpdate and
+   * controller parameters
+   */
+  bool update_feed_forward_wrench();
+
+  /**
+   * @brief Performs
+   *
+   * @param target_state
+   * @return JointTrajectoryPoint
+   */
+  JointTrajectoryPoint update_reference_joints_linear_interpolation(
+      const JointTrajectoryPoint& target_state);
+
+  /**
+   * @brief Reads state values from hardware interfaces and reference values
+   * from subscribers
+   */
   controller_interface::return_type sense();
 
   /**
-   * @brief Read force torque sensor values from hardware interfaces and set
-   * force torque sensor readings
-   */
-  void read_force_torque_sensor_states(geometry_msgs::msg::Wrench& ft_values);
-
-  /**
-   * @brief Read joint state values from hardware interfaces and set current
-   * joint states
+   * @brief Read joint state values from hardware interfaces
+   *
+   * @param state_current
    */
   void read_joint_states(JointTrajectoryPoint& state_current);
 
   /**
-   * @brief Write values from state_command to admittance controller
+   * @brief Write joint positions to command interface
+   *
+   * @param state_command
    */
-  void write_reference_to_admittance_controller(
+  void write_reference_joint_position(
       const JointTrajectoryPoint& state_command);
 
   // controller parameters
@@ -128,56 +152,45 @@ class AICController : public controller_interface::ControllerInterface {
   size_t num_joints_ = 0;
   std::vector<std::string> command_joint_names_;
 
-  bool has_position_state_interface_ = false;  // used by impedance controller
-  bool has_velocity_state_interface_ = false;  // used by impedance controller
-  bool has_acceleration_state_interface_ = false;  // unused
-  bool has_position_command_interface_ =
-      false;  // used by admittance controller
-  bool has_velocity_command_interface_ =
-      false;  // used by admittance controller
-  bool has_acceleration_command_interface_ = false;  // unused
-  bool has_effort_command_interface_ = false;  // used by impedance controller
+  TargetType target_type_{TargetType::JOINT};
+  ControlMode control_mode_{ControlMode::UNSPECIFIED_CONTROL_MODE};
+  InterpolationMode interpolation_mode_{InterpolationMode::LINEAR};
+
+  bool has_position_state_interface_ = false;
+  bool has_velocity_state_interface_ = false;
+  bool has_acceleration_state_interface_ = false;
+  bool has_position_command_interface_ = false;
+  bool has_effort_command_interface_ = false;
 
   const std::vector<std::string> allowed_state_interface_types_ = {
       hardware_interface::HW_IF_POSITION, hardware_interface::HW_IF_VELOCITY,
       hardware_interface::HW_IF_ACCELERATION};
 
-  // Impedance rule and dependent variables;
-  //   std::unique_ptr<aic_controller::ImpedanceRule> impedance_;
-
-  // force torque sensor
-  std::unique_ptr<semantic_components::ForceTorqueSensor> force_torque_sensor_;
+  // Impedance controller for cartesian targets
+  std::unique_ptr<CartesianImpedanceController> cartesian_impedance_controller_;
 
   rclcpp::Subscription<MotionUpdate>::SharedPtr motion_update_sub_;
   rclcpp::Subscription<JointMotionUpdate>::SharedPtr joint_motion_update_sub_;
-  // todo(@johntgz) add impedance controller state message and publisher
+  // todo(johntgz) add impedance controller state message and publisher
 
-  // real-time boxes
+  // real-time boxes for thread-safe access
   realtime_tools::RealtimeThreadSafeBox<MotionUpdate> motion_update_command_;
   realtime_tools::RealtimeThreadSafeBox<JointMotionUpdate>
       joint_motion_update_command_;
   JointMotionUpdate joint_motion_update_msg_;
   MotionUpdate motion_update_msg_;
 
-  TargetType target_type_{TargetType::JOINT};
-  ControlMode control_mode_{ControlMode::UNSPECIFIED_CONTROL_MODE};
-  InterpolationMode interpolation_mode_{
-      InterpolationMode::UNSPECIFIED_INTERPOLATION_MODE};
-
-  // last written command written to controller
+  // Last value written to controller interfaces
   JointTrajectoryPoint last_commanded_joints_;
-  // reference_joints_: interpolated joint reference values passed to admittance
-  // controller
+  // interpolated reference joint values
   std::optional<JointTrajectoryPoint> reference_joints_;
-  // target_joint_state_: state commanded by JointMotionUpdate user commands
+  // State commanded by JointMotionUpdate user commands
   std::optional<JointTrajectoryPoint> target_joint_state_;
 
   double time_to_target_seconds_{0.0};
 
-  // joint_state_: Current state of joints
+  // Latest joint states read from hardware interface
   JointTrajectoryPoint joint_state_;
-  // ft_values_: values read from the force torque sensor
-  geometry_msgs::msg::Wrench ft_values_;
 };
 
 }  // namespace aic_controller

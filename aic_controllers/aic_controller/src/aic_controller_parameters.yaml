@@ -12,19 +12,17 @@ aic_controller:
     read_only: true
   }
 
-  command_interfaces:
-    {
-      type: string_array,
-      description: "Specifies which command interfaces the controller will claim.",
-      read_only: true
-    }
+  command_interfaces: {
+    type: string_array,
+    description: "Specifies which command interfaces the controller will claim.",
+    read_only: true
+  }
 
-  state_interfaces:
-    {
-      type: string_array,
-      description: "Specifies which state interfaces the controller will claim.",
-      read_only: true
-    }
+  state_interfaces: {
+    type: string_array,
+    description: "Specifies which state interfaces the controller will claim.",
+    read_only: true
+  }
 
   kinematics:
     plugin_name: {
@@ -49,22 +47,6 @@ aic_controller:
       description: "Specifies the damping coefficient for the Jacobian pseudo inverse."
     }
 
-  ft_sensor:
-    name: {
-      type: string,
-      description: "Specifies the name of the force torque sensor in the robot description which will be used in the impedance controller."
-    }
-    frame:
-      id: {
-        type: string,
-        description: "Specifies the frame/link name of the force torque sensor."
-      }
-    filter_coefficient: {
-      type: double,
-      default_value: 0.05,
-      description: "Specifies the filter coefficient for the sensor's exponential filter."
-    }
-
   control_mode: {
     type: string,
     default_value: "admittance",
@@ -75,6 +57,12 @@ aic_controller:
     type: string,
     default_value: "linear",
     description: "Sets the interpolation mode, which can be either 'linear', 'reflexxes' or 'minimal_splines'"
+  }
+
+  target_type: {
+    type: string,
+    default_value: "joint",
+    description: "Sets the target type, which can be either 'cartesian' and 'joint'"
   }
 
   # general settings
