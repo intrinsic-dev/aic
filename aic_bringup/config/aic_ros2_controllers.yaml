@@ -264,9 +264,6 @@ admittance_controller:
         - 1000.0 # ry
         - 1000.0 # rz
 
-    # If enabled, the parameters will be dynamically updated while the controller is running.
-    enable_parameter_update_without_reactivation: true
-
 aic_controller:
   ros__parameters:
     # Available control modes are "admittance" and "impedance"
