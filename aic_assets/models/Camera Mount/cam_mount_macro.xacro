@@ -23,6 +23,13 @@
         </geometry>
       </visual>
 
+      <visual name="cam_mount_visual_repeated">
+        <origin xyz="0.0 0.0 0.0215" rpy="0.0 0.0 ${z_rot + 3.1415926}"/>
+        <geometry>
+          <mesh filename="package://aic_assets/models/Camera Mount/cam_mount_visual.glb"/>
+        </geometry>
+      </visual>
+
       <collision name="cam_mount_collider_cylinder">
         <origin xyz="0.0 0.0 0.0215" rpy="0.0 0.0 ${z_rot}"/>
         <geometry>
