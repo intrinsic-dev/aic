@@ -146,7 +146,7 @@ def launch_setup(context, *args, **kwargs):
     initial_joint_controller_spawner_started = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=[initial_joint_controller, "joint_trajectory_controller", "--activate-as-group", "-c", "/controller_manager"],
+        arguments=[initial_joint_controller, "admittance_controller", "--activate-as-group", "-c", "/controller_manager"],
         condition=IfCondition(activate_joint_controller),
     )
 
@@ -305,7 +305,7 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             "initial_joint_controller",
-            default_value="admittance_controller",
+            default_value="aic_controller",
             description="Robot controller to start.",
         )
     )
