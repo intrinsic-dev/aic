@@ -38,18 +38,20 @@ CartesianImpedanceController::Create(
 
 CartesianImpedanceController::CartesianImpedanceController(unsigned int ndof,
                                                            Params params)
-    : ndof_(ndof), jacobian_(6, ndof_), params_(params) {}
+    : ndof_(ndof), params_(params) {}
 
 controller_interface::return_type CartesianImpedanceController::Configure(
     const std::shared_ptr<rclcpp_lifecycle::LifecycleNode>& node,
     const std::string& robot_description) {
   // UNIMPLEMENTED
   // Load the differential IK plugin given the robot_description
+
   return controller_interface::return_type::OK;
 }
 
 Eigen::VectorXd CartesianImpedanceController::Compute(
-    const CartStatePVA& tool_goal,
+    const geometry_msg::msg::Pose tool_pose,
+    const geometry_msg::msg::Twist tool_vel,
     const CartesianImpedanceParameters& impedance_params,
     const JointLimits& joint_limits) {
   // UNIMPLEMENTED
@@ -63,6 +65,7 @@ bool CartesianImpedanceController::Update(
   // UNIMPLEMENTED
   // Compute the end-effector cartesian pose estimate using forward kinematics.
   // Compute the jacobian
+
   return false;
 }
 

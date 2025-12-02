@@ -22,9 +22,7 @@
 #include "aic_control_interfaces/msg/motion_update.hpp"
 #include "aic_control_interfaces/msg/trajectory_generation_mode.hpp"
 #include "aic_controller/cartesian_impedance_controller.hpp"
-#include "cart_state.hpp"
 #include "controller_interface/controller_interface.hpp"
-#include "joint_limits.hpp"
 #include "rclcpp_lifecycle/state.hpp"
 #include "realtime_tools/realtime_publisher.hpp"
 #include "realtime_tools/realtime_thread_safe_box.hpp"
@@ -102,18 +100,6 @@ class AICController : public controller_interface::ControllerInterface {
    * limits and then interpolating their values.
    */
   bool update_reference_cartesian();
-
-  /**
-   * @brief Update the impedance parameters given the last
-   * MotionUpdate and controller parameters
-   */
-  bool update_impedance();
-
-  /**
-   * @brief Update the feedforward wrench given the last MotionUpdate and
-   * controller parameters
-   */
-  bool update_feed_forward_wrench();
 
   /**
    * @brief Performs

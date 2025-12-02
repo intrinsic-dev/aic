@@ -74,8 +74,6 @@ controller_interface::CallbackReturn AICController::on_init() {
 
 controller_interface::InterfaceConfiguration
 AICController::command_interface_configuration() const {
-  RCLCPP_INFO(get_node()->get_logger(), "command_interface_configuration().");
-
   controller_interface::InterfaceConfiguration command_interfaces_config;
 
   std::vector<std::string> command_interfaces_config_names;
@@ -92,7 +90,6 @@ AICController::command_interface_configuration() const {
 
 controller_interface::InterfaceConfiguration
 AICController::state_interface_configuration() const {
-  RCLCPP_INFO(get_node()->get_logger(), "state_interface_configuration().");
   controller_interface::InterfaceConfiguration state_interfaces_config;
   std::vector<std::string> state_interfaces_config_names;
 
@@ -109,8 +106,6 @@ AICController::state_interface_configuration() const {
 
 controller_interface::CallbackReturn AICController::on_configure(
     const rclcpp_lifecycle::State& /*previous_state*/) {
-  RCLCPP_INFO(this->get_node()->get_logger(), "configuring...");
-
   // Set and validate commanded joint names
   command_joint_names_ = params_.command_joints;
   if (command_joint_names_.empty()) {
@@ -246,19 +241,6 @@ controller_interface::CallbackReturn AICController::on_configure(
           return;
         }
 
-        RCLCPP_INFO(
-            get_node()->get_logger(),
-            "Received MotionUpdate command with: \n Trajectory Generation "
-            "Mode "
-            ": %d \n Pose : (% .2f, % .2f, % .2f) \n Feedforward Wrench : (% "
-            ".2f, % .2f, % .2f) \n time_to_target : %.2f s \n ",
-            msg->trajectory_generation_mode.mode, msg->pose.position.x,
-            msg->pose.position.y, msg->pose.position.z,
-            msg->feedforward_wrench_at_tip.force.x,
-            msg->feedforward_wrench_at_tip.force.y,
-            msg->feedforward_wrench_at_tip.force.z,
-            msg->time_to_target_seconds);
-
         motion_update_command_.set(*msg);
       });
 
@@ -273,14 +255,6 @@ controller_interface::CallbackReturn AICController::on_configure(
                                    "accepting MotionUpdate messages");
               return;
             }
-
-            RCLCPP_INFO(
-                get_node()->get_logger(),
-                "Received JointMotionUpdate command with: \n Trajectory "
-                "Generation Mode "
-                ": %d \n time_to_target : %.2f s \n ",
-                msg->trajectory_generation_mode.mode,
-                msg->time_to_target_seconds);
 
             joint_motion_update_command_.set(*msg);
           });
@@ -297,15 +271,11 @@ controller_interface::CallbackReturn AICController::on_configure(
     }
   }
 
-  RCLCPP_INFO(this->get_node()->get_logger(), "configure successful");
-
   return controller_interface::CallbackReturn::SUCCESS;
 }
 
 controller_interface::CallbackReturn AICController::on_activate(
     const rclcpp_lifecycle::State& /*previous_state*/) {
-  RCLCPP_INFO(this->get_node()->get_logger(), "activating...");
-
   if (control_mode_ == ControlMode::IMPEDANCE) {
     if (!cartesian_impedance_controller_) {
       return controller_interface::CallbackReturn::ERROR;
@@ -335,7 +305,6 @@ controller_interface::CallbackReturn AICController::on_activate(
   reset_joint_motion_update_msg(joint_motion_update_msg_);
   joint_motion_update_command_.try_set(joint_motion_update_msg_);
 
-  RCLCPP_INFO(this->get_node()->get_logger(), "activate successful");
   return controller_interface::CallbackReturn::SUCCESS;
 }
 
@@ -357,8 +326,6 @@ controller_interface::CallbackReturn AICController::on_deactivate(
 
   reset_joint_motion_update_msg(joint_motion_update_msg_);
   joint_motion_update_command_.try_set(joint_motion_update_msg_);
-
-  RCLCPP_INFO(this->get_node()->get_logger(), "deactivate successful");
 
   return controller_interface::CallbackReturn::SUCCESS;
 }
@@ -383,10 +350,12 @@ bool AICController::update_reference_joints() {
 
   switch (joint_motion_update_msg_.trajectory_generation_mode.mode) {
     case TrajectoryGenerationMode::MODE_POSITION:
-      // todo(johntgz) Implement this
+      // UNIMPLEMENTED
+      // Clamp poses to limit
       break;
     case TrajectoryGenerationMode::MODE_VELOCITY:
       // UNIMPLEMENTED
+      // Clamp twist to limit
       RCLCPP_ERROR(get_node()->get_logger(),
                    "MODE_VELOCITY trajectory generation mode is unimplemented. "
                    "Please use MODE_POSITION.");
@@ -394,6 +363,7 @@ bool AICController::update_reference_joints() {
       break;
     case TrajectoryGenerationMode::MODE_POSITION_AND_VELOCITY:
       // UNIMPLEMENTED
+      // Clamp pose and twist to limit
       RCLCPP_ERROR(get_node()->get_logger(),
                    "MODE_POSITION_AND_VELOCITY trajectory generation mode is "
                    "unimplemented. Please use MODE_POSITION.");
@@ -404,7 +374,8 @@ bool AICController::update_reference_joints() {
                            1000,
                            "MODE_UNSPECIFIED trajectory generation mode set. "
                            "Defaulting to MODE_POSITION.");
-      // todo(johntgz) Implement this
+      // UNIMPLEMENTED
+      // Clamp poses to limit
       break;
     default:
       RCLCPP_ERROR(get_node()->get_logger(),
@@ -419,6 +390,7 @@ bool AICController::update_reference_joints() {
   auto new_reference_joints_ = *reference_joints_;
   switch (interpolation_mode_) {
     case InterpolationMode::LINEAR:
+      // UNIMPLEMENTED
       new_reference_joints_ =
           update_reference_joints_linear_interpolation(*target_joint_state_);
       break;
@@ -457,27 +429,17 @@ AICController::update_and_write_commands_cartesian() {
   }
 
   if (control_mode_ == ControlMode::IMPEDANCE) {
-    // Interpolate impedance parameters
-    if (!update_impedance()) {
-      return controller_interface::return_type::ERROR;
-    }
-
-    // Interpolate feed-forward wrench
-    if (!update_feed_forward_wrench()) {
-      return controller_interface::return_type::ERROR;
-    }
-
     // UNIMPLEMENTED
+    // Interpolate impedance parameters
+    // Interpolate feed-forward wrench
     // Compute control torque
     // Then, write the control torque to hardware interfaces
     return controller_interface::return_type::ERROR;
   } else if (control_mode_ == ControlMode::ADMITTANCE) {
     // UNIMPLEMENTED
+    // Cartesian control for admittance controller
     return controller_interface::return_type::ERROR;
   }
-
-  // UNIMPLEMENTED
-  // Publish controller state
 
   RCLCPP_ERROR(
       get_node()->get_logger(),
@@ -503,8 +465,6 @@ AICController::update_and_write_commands_joints() {
     write_reference_joint_position(*reference_joints_);
   }
 
-  // UNIMPLEMENTED
-  // Publish controller state
   return controller_interface::return_type::OK;
 }
 
@@ -619,20 +579,11 @@ controller_interface::return_type AICController::sense() {
       cartesian_impedance_controller_->Update(joint_state_);
     } else if (target_type_ == TargetType::JOINT) {
       // UNIMPLEMENTED
+      // update joint impedance controller with current joint state
     }
   }
 
   return controller_interface::return_type::OK;
-}
-
-bool update_impedance() {
-  // UNIMPLEMENTED
-  return false;
-}
-
-bool update_feed_forward_wrench() {
-  // UNIMPLEMENTED
-  return false;
 }
 
 JointTrajectoryPoint
