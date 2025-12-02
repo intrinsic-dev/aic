@@ -23,6 +23,9 @@
         </geometry>
       </visual>
 
+      <!-- TODO(anyone): Update the camera mount visual to have arms at [-60, 0, +60].
+           The repeated camera mount is just a placeholder, and it adds "extra" arms
+           arms that we are not currently using, since we have 3 cameras, not 6. -->
       <visual name="cam_mount_visual_repeated">
         <origin xyz="0.0 0.0 0.0215" rpy="0.0 0.0 ${z_rot + 3.1415926}"/>
         <geometry>
@@ -44,6 +47,7 @@
         </geometry>
       </collision>
 
+      <!-- TODO(anyone): Update the colliders to match the [-60, 0, +60] cameras. -->
       <collision name="cam_mount003_collider_box">
         <origin xyz="0.068974 0.000189 0.02" rpy="0.0 0.0 ${z_rot}"/>
         <geometry>
