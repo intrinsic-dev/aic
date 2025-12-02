@@ -50,8 +50,8 @@ controller_interface::return_type CartesianImpedanceController::Configure(
 }
 
 Eigen::VectorXd CartesianImpedanceController::Compute(
-    const geometry_msg::msg::Pose tool_pose,
-    const geometry_msg::msg::Twist tool_vel,
+    const geometry_msgs::msg::Pose tool_pose,
+    const geometry_msgs::msg::Twist tool_vel,
     const CartesianImpedanceParameters& impedance_params,
     const JointLimits& joint_limits) {
   // UNIMPLEMENTED

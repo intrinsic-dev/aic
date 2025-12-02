@@ -62,8 +62,8 @@ class CartesianImpedanceController {
    * and further derivatives
    * @return Eigen::VectorXd
    */
-  Eigen::VectorXd Compute(const geometry_msg::msg::Pose tool_pose,
-                          const geometry_msg::msg::Twist tool_vel,
+  Eigen::VectorXd Compute(const geometry_msgs::msg::Pose tool_pose,
+                          const geometry_msgs::msg::Twist tool_vel,
                           const CartesianImpedanceParameters& impedance_params,
                           const JointLimits& joint_limits);
 
