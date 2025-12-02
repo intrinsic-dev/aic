@@ -51,8 +51,6 @@ source ~/ws_aic/install/setup.bash
 export RMW_IMPLEMENTATION=rmw_zenoh_cpp
 export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
 ros2 launch aic_bringup aic_gz_bringup.launch.py
-# Optionally, to use the aic_controller, specify the initial_joint_controller argument as follows
-ros2 launch aic_bringup aic_gz_bringup.launch.py initial_joint_controller:=aic_controller
 ```
 
 Send a reference wrench command (10N in the positive z-axis) to the controller
