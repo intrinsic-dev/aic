@@ -11,8 +11,9 @@ class AicAdapterNode : public rclcpp::Node {
   AicAdapterNode() : Node("aic_adapter_node") {
     RCLCPP_INFO(this->get_logger(), "Hello, world!");
     images_.resize(kNumCameras);
-    observation_msg_ =
-        std::make_unique<aic_model_interfaces::msg::Observation>();
+    observation_pub_ =
+        this->create_publisher<aic_model_interfaces::msg::Observation>(
+            "observations", 10);
     for (size_t camera_idx = 0; camera_idx < kNumCameras - 1; camera_idx++) {
       char topic_name_buf[64] = {0};
       snprintf(topic_name_buf, sizeof(topic_name_buf),
@@ -22,7 +23,6 @@ class AicAdapterNode : public rclcpp::Node {
           [this, camera_idx](sensor_msgs::msg::Image::UniquePtr msg) -> void {
             this->image_callback(camera_idx, std::move(msg));
           }));
-      // observation_pub_
     }
   }
   virtual ~AicAdapterNode() {}
@@ -41,16 +41,14 @@ class AicAdapterNode : public rclcpp::Node {
 
     // See if we have a recent image collection. If so, re-publish them and
     // remove them from our buffer.
-    const size_t kMaxCameraId = 2;  // todo: remove and use other constant once
-                                    // PR is merged that adds the third camera
-    for (size_t i = 0; i < kMaxCameraId; i++) {
+    for (size_t i = 0; i < kNumCameras; i++) {
       if (!images_[i]) {
         return;
       }
     }
 
     const rclcpp::Time t_image_0(images_[0]->header.stamp);
-    for (size_t i = 1; i < kMaxCameraId; i++) {
+    for (size_t i = 1; i < kNumCameras; i++) {
 #if 0
       RCLCPP_INFO(this->get_logger(), "cam 0 time: %.3f  cam 1 time: %.3f",
                   t_image_0.seconds(),
@@ -66,6 +64,19 @@ class AicAdapterNode : public rclcpp::Node {
     }
 
     // If we get here, all of the camera image timestamps are aligned
+    aic_model_interfaces::msg::Observation::UniquePtr observation_msg =
+        std::make_unique<aic_model_interfaces::msg::Observation>();
+
+    for (size_t i = 0; i < kNumCameras; i++) {
+      if (i >= observation_msg->wrist_cameras.size()) {
+        RCLCPP_ERROR(this->get_logger(),
+                     "Tried to publish an unknown wrist camera: %zu", i);
+        continue;
+      }
+      observation_msg->wrist_cameras[camera_idx] =
+          std::move(*images_[camera_idx]);
+    }
+    this->observation_pub_->publish(std::move(observation_msg));
   }
 
   static const int kNumCameras = 3;
@@ -75,7 +86,6 @@ class AicAdapterNode : public rclcpp::Node {
   std::vector<sensor_msgs::msg::Image::UniquePtr> images_;
   rclcpp::Publisher<aic_model_interfaces::msg::Observation>::SharedPtr
       observation_pub_;
-  aic_model_interfaces::msg::Observation::UniquePtr observation_msg_;
 };
 
 int main(int argc, char* argv[]) {
