@@ -33,10 +33,12 @@
 #include "trajectory_msgs/msg/joint_trajectory_point.hpp"
 
 /**
- * AICController is a controller that subscribes to user commands at a lower
- * frequency and depending on the control mode, forwards the interpolated
- * commands at a higher frequency to the admittance controller or outputs a
- * command from an impedance controller implementation
+ * AICController subscribes to user commands at a lower frequency and
+ * based on the control mode:
+ * 1. Admittance mode: Outputs interpolated user commands at
+ * a higher frequency to the admittance controller.
+ * 2. Impedance mode: Outputs control commands to the robot arm's hardware
+ * interface from an internal impedance controller implementation.
  */
 namespace aic_controller {
 using aic_control_interfaces::msg::JointMotionUpdate;
@@ -90,14 +92,14 @@ class AICController : public controller_interface::ControllerInterface {
   controller_interface::return_type update_and_write_commands_joints();
 
   /**
-   * @brief Update reference values by limiting the target states to stay within
-   * limits and then interpolating their values.
+   * @brief Update reference values by limiting the target states to stay
+   * within limits and then interpolating their values.
    */
   bool update_reference_joints();
 
   /**
-   * @brief Update reference values by limiting the target states to stay within
-   * limits and then interpolating their values.
+   * @brief Update reference values by limiting the target states to stay
+   * within limits and then interpolating their values.
    */
   bool update_reference_cartesian();
 
