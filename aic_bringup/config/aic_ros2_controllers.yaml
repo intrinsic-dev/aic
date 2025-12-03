@@ -274,6 +274,8 @@ aic_controller:
     # Available target types are "cartesian" and "joint"
     target_type: "joint"
 
+    update_rate: 500  # Hz
+
     joints:
       - shoulder_pan_joint
       - shoulder_lift_joint

@@ -230,6 +230,15 @@ controller_interface::CallbackReturn AICController::on_configure(
     return controller_interface::CallbackReturn::FAILURE;
   }
 
+  // Validate controller update rate
+  if (params_.update_rate < 1) {
+    RCLCPP_ERROR(get_node()->get_logger(),
+                 "update_rate needs to be at least 1 Hz. Value provided is %ld",
+                 params_.update_rate);
+    return controller_interface::CallbackReturn::FAILURE;
+  }
+  frequency_hz_ = params_.update_rate;
+
   motion_update_sub_ = this->get_node()->create_subscription<MotionUpdate>(
       "~/motion_update", rclcpp::SystemDefaultsQoS(),
       [this](const MotionUpdate::SharedPtr msg) {
@@ -241,7 +250,7 @@ controller_interface::CallbackReturn AICController::on_configure(
           return;
         }
 
-        motion_update_command_.set(*msg);
+        motion_update_rt_.set(*msg);
       });
 
   joint_motion_update_sub_ =
@@ -256,7 +265,7 @@ controller_interface::CallbackReturn AICController::on_configure(
               return;
             }
 
-            joint_motion_update_command_.set(*msg);
+            joint_motion_update_rt_.set(*msg);
           });
 
   if (control_mode_ == ControlMode::IMPEDANCE) {
@@ -294,16 +303,16 @@ controller_interface::CallbackReturn AICController::on_activate(
   if (!reference_joints_.has_value()) {
     reference_joints_ = joint_state_;
   }
-  if (!target_joint_state_.has_value()) {
-    target_joint_state_ = joint_state_;
+  if (!target_joint_msg_.has_value()) {
+    target_joint_msg_ = joint_state_;
   }
   last_commanded_joints_ = joint_state_;
 
-  reset_motion_update_msg(motion_update_msg_);
-  motion_update_command_.try_set(motion_update_msg_);
+  reset_motion_update_msg(motion_update_);
+  motion_update_rt_.try_set(motion_update_);
 
-  reset_joint_motion_update_msg(joint_motion_update_msg_);
-  joint_motion_update_command_.try_set(joint_motion_update_msg_);
+  reset_joint_motion_update_msg(joint_motion_update_);
+  joint_motion_update_rt_.try_set(joint_motion_update_);
 
   return controller_interface::CallbackReturn::SUCCESS;
 }
@@ -321,11 +330,11 @@ controller_interface::CallbackReturn AICController::on_deactivate(
     // Nothing to be done
   }
 
-  reset_motion_update_msg(motion_update_msg_);
-  motion_update_command_.try_set(motion_update_msg_);
+  reset_motion_update_msg(motion_update_);
+  motion_update_rt_.try_set(motion_update_);
 
-  reset_joint_motion_update_msg(joint_motion_update_msg_);
-  joint_motion_update_command_.try_set(joint_motion_update_msg_);
+  reset_joint_motion_update_msg(joint_motion_update_);
+  joint_motion_update_rt_.try_set(joint_motion_update_);
 
   return controller_interface::CallbackReturn::SUCCESS;
 }
@@ -342,13 +351,13 @@ bool AICController::update_reference_joints() {
     return false;
   }
 
-  if (!target_joint_state_.has_value()) {
+  if (!target_joint_msg_.has_value()) {
     RCLCPP_ERROR(get_node()->get_logger(),
-                 "Unset target_joint_state_ in update_reference_joints()");
+                 "Unset target_joint_msg_ in update_reference_joints()");
     return false;
   }
 
-  switch (joint_motion_update_msg_.trajectory_generation_mode.mode) {
+  switch (joint_motion_update_.trajectory_generation_mode.mode) {
     case TrajectoryGenerationMode::MODE_POSITION:
       // UNIMPLEMENTED
       // Clamp poses to limit
@@ -385,14 +394,14 @@ bool AICController::update_reference_joints() {
       return false;
   }
 
-  time_to_target_seconds_ = joint_motion_update_msg_.time_to_target_seconds;
+  time_to_target_seconds_ = joint_motion_update_.time_to_target_seconds;
 
   auto new_reference_joints_ = *reference_joints_;
   switch (interpolation_mode_) {
     case InterpolationMode::LINEAR:
       // UNIMPLEMENTED
       new_reference_joints_ =
-          update_reference_joints_linear_interpolation(*target_joint_state_);
+          update_reference_joints_linear_interpolation(*target_joint_msg_);
       break;
     case InterpolationMode::REFLEXXES:
       // UNIMPLEMENTED
@@ -415,6 +424,14 @@ bool AICController::update_reference_joints() {
                    "following: 'linear', 'reflexxes' or 'minimal_splines'");
       return false;
       break;
+  }
+
+  // update remaining remaining_time_to_target_seconds_ on each cycle to keep
+  // track of progress towards the target.
+  if (remaining_time_to_target_seconds_ > 0) {
+    remaining_time_to_target_seconds_ -= 1. / frequency_hz_;
+    if (remaining_time_to_target_seconds_ < 0)
+      remaining_time_to_target_seconds_ = 0;
   }
 
   reference_joints_ = new_reference_joints_;
@@ -561,16 +578,45 @@ controller_interface::return_type AICController::sense() {
 
   // read user commands
   if (target_type_ == TargetType::CARTESIAN) {
-    auto command_op = motion_update_command_.try_get();
+    auto command_op = motion_update_rt_.try_get();
     if (command_op.has_value()) {
-      motion_update_msg_ = command_op.value();
+      motion_update_ = command_op.value();
     }
 
   } else if (target_type_ == TargetType::JOINT) {
-    auto command_op = joint_motion_update_command_.try_get();
+    auto command_op = joint_motion_update_rt_.try_get();
     if (command_op.has_value()) {
-      joint_motion_update_msg_ = command_op.value();
-      target_joint_state_ = joint_motion_update_msg_.target_state;
+      joint_motion_update_ = command_op.value();
+      target_joint_msg_ = joint_motion_update_.target_state;
+
+      // Only update remaining_time_to_target_seconds_ if target or
+      // time_to_target has been updated.
+      bool did_target_or_time_to_target_change =
+          (joint_motion_update_.time_to_target_seconds !=
+           time_to_target_seconds_) ||
+          (!ToEigen(target_joint_msg_.value().positions, num_joints_)
+                .isApprox(target_joint_.positions)) ||
+          (!ToEigen(target_joint_msg_.value().velocities, num_joints_)
+                .isApprox(target_joint_.velocities));
+
+      bool is_position_mode_with_zero_velocity_target =
+          ToEigen(target_joint_msg_.value().velocities, num_joints_)
+              .isApprox(Eigen::VectorXd::Zero(num_joints_)) &&
+          (joint_motion_update_.trajectory_generation_mode.mode ==
+               TrajectoryGenerationMode::MODE_POSITION ||
+           joint_motion_update_.trajectory_generation_mode.mode ==
+               TrajectoryGenerationMode::MODE_POSITION_AND_VELOCITY);
+
+      if (did_target_or_time_to_target_change ||
+          !is_position_mode_with_zero_velocity_target) {
+        remaining_time_to_target_seconds_ =
+            joint_motion_update_.time_to_target_seconds;
+      }
+
+      target_joint_ = JointState(*target_joint_msg_);
+    } else {
+      // todo: is this required?
+      remaining_time_to_target_seconds_ = time_to_target_seconds_;
     }
   }
 
@@ -588,8 +634,78 @@ controller_interface::return_type AICController::sense() {
 
 JointTrajectoryPoint
 AICController::update_reference_joints_linear_interpolation(
-    const JointTrajectoryPoint& target_state) {
-  return target_state;
+    const JointTrajectoryPoint& target_state_msg) {
+  JointState target_state = JointState(target_state_msg);
+  JointState reference = JointState(*reference_joints_);
+  JointState new_reference = reference;
+
+  switch (joint_motion_update_.trajectory_generation_mode.mode) {
+    case TrajectoryGenerationMode::MODE_POSITION:
+      if (remaining_time_to_target_seconds_ > 0.0) {
+        // Apply linear interpolation to minimize discontinuities from the
+        // current reference to the target position.
+        new_reference.positions +=
+            (target_state.positions - reference.positions) /
+            (remaining_time_to_target_seconds_ * frequency_hz_);
+      } else {
+        // Hold the target position upon reaching the trajectory endpoint
+        new_reference.positions = target_state.positions;
+      }
+      // Always set reference velocity and acceleration to zero.
+      new_reference.velocities.setZero();
+      new_reference.accelerations.setZero();
+
+      break;
+
+    case TrajectoryGenerationMode::MODE_VELOCITY:
+      // Integrate the reference velocity.
+      if (remaining_time_to_target_seconds_ > 0.0) {
+        // Apply linear interpolation to minimize discontinuities from the
+        // current reference to the target velocity.
+        new_reference.velocities +=
+            (target_state.velocities - reference.velocities) /
+            (remaining_time_to_target_seconds_ * frequency_hz_);
+        // Integrate the reference position.
+        new_reference.positions += new_reference.velocities / frequency_hz_;
+      } else {
+        // Hold the target velocity and integrate target position upon reaching
+        // the trajectory endpoint
+        new_reference.positions += target_state.velocities / frequency_hz_;
+        new_reference.velocities = target_state.velocities;
+      }
+      // Always set reference acceleration to zero.
+      new_reference.accelerations.setZero();
+
+      break;
+
+    case TrajectoryGenerationMode::MODE_POSITION_AND_VELOCITY:
+      // UNIMPLEMENTED
+      // Clamp pose and twist to limit
+      RCLCPP_ERROR(get_node()->get_logger(),
+                   "MODE_POSITION_AND_VELOCITY trajectory generation mode is "
+                   "unimplemented. Please use MODE_POSITION.");
+
+      break;
+
+    case TrajectoryGenerationMode::MODE_UNSPECIFIED:
+      RCLCPP_INFO_THROTTLE(get_node()->get_logger(), *get_node()->get_clock(),
+                           1000,
+                           "MODE_UNSPECIFIED trajectory generation mode set. "
+                           "Defaulting to MODE_POSITION.");
+      // UNIMPLEMENTED
+      // Clamp poses to limit
+
+      break;
+
+    default:
+      RCLCPP_ERROR(get_node()->get_logger(),
+                   "Unsupported trajectory generation mode. Please set to "
+                   "either MODE_POSITION, MODE_VELOCITY or "
+                   "MODE_POSITION_AND_VELOCITY");
+      break;
+  }
+
+  return new_reference.to_msg();
 }
 
 }  // namespace aic_controller
