@@ -15,6 +15,7 @@
   <depend>aic_control_interfaces</depend>
   <depend>control_msgs</depend>
   <depend>controller_interface</depend>
+  <depend>eigen</depend>
   <depend>generate_parameter_library</depend>
   <depend>geometry_msgs</depend>
   <depend>hardware_interface</depend>

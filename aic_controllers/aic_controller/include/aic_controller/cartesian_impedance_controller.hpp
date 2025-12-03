@@ -28,17 +28,18 @@
 #include "joint_limits.hpp"
 #include "trajectory_msgs/msg/joint_trajectory_point.hpp"
 
-namespace aic_controller {
+namespace aic {
 using trajectory_msgs::msg::JointTrajectoryPoint;
 
 struct CartesianImpedanceParameters {};
 
 class CartesianImpedanceController {
  public:
-  CartesianImpedanceController(unsigned int ndof, Params params);
+  CartesianImpedanceController(unsigned int ndof,
+                               aic_controller::Params params);
 
   static std::unique_ptr<CartesianImpedanceController> Create(
-      const std::shared_ptr<ParamListener>& param_listener);
+      const std::shared_ptr<aic_controller::ParamListener>& param_listener);
 
   /**
    * @brief Loads the inverse kinematic plugin given the robot description
@@ -75,12 +76,12 @@ class CartesianImpedanceController {
 
  private:
   // controller parameters
-  Params params_;
+  aic_controller::Params params_;
 
   // Number of robot joints
-  const unsigned int ndof_;
+  const std::size_t ndof_;
 };
 
-}  // namespace aic_controller
+}  // namespace aic
 
 #endif  // AIC_CONTROLLER__CARTESIAN_IMPEDANCE_CONTROLLER_HPP_

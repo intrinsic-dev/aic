@@ -36,7 +36,7 @@ controller_manager:
       type: force_torque_sensor_broadcaster/ForceTorqueSensorBroadcaster
 
     aic_controller:
-      type: aic_controller/AICController
+      type: aic/Controller
 
     # enforce_command_limit: false
 
@@ -298,6 +298,7 @@ aic_controller:
 
     command_interfaces:
       - position
+      - effort
 
     kinematics:
       plugin_name: kinematics_interface_kdl/KinematicsInterfaceKDL

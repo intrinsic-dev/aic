@@ -39,21 +39,23 @@ target_include_directories(aic_controller PUBLIC
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include/aic_controller>
 )
-target_link_libraries(aic_controller PUBLIC
-                      aic_controller_parameters
-                      controller_interface::controller_interface
-                      hardware_interface::hardware_interface
-                      kinematics_interface::kinematics_interface
-                      pluginlib::pluginlib
-                      rclcpp::rclcpp
-                      rclcpp_lifecycle::rclcpp_lifecycle
-                      realtime_tools::realtime_tools
-                      ${aic_control_interfaces_TARGETS}
-                      ${geometry_msgs_TARGETS}
-                      ${trajectory_msgs_TARGETS}
-                      ${control_msgs_TARGETS})
 
-pluginlib_export_plugin_description_file(controller_interface aic_controller.xml)
+target_link_libraries(aic_controller PUBLIC
+  aic_controller_parameters
+  controller_interface::controller_interface
+  hardware_interface::hardware_interface
+  kinematics_interface::kinematics_interface
+  pluginlib::pluginlib
+  rclcpp::rclcpp
+  rclcpp_lifecycle::rclcpp_lifecycle
+  realtime_tools::realtime_tools
+  ${aic_control_interfaces_TARGETS}
+  ${geometry_msgs_TARGETS}
+  ${trajectory_msgs_TARGETS}
+  ${control_msgs_TARGETS}
+)
+
+pluginlib_export_plugin_description_file(controller_interface aic_controller_plugin.xml)
 
 # Causes the visibility macros to use dllexport rather than dllimport,
 # which is appropriate when building the dll but not consuming it.
