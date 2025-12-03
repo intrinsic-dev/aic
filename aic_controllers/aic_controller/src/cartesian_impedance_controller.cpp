@@ -17,14 +17,14 @@
 
 #include "aic_controller/cartesian_impedance_controller.hpp"
 
-namespace aic_controller {
+namespace aic {
 
 std::unique_ptr<CartesianImpedanceController>
 CartesianImpedanceController::Create(
-    const std::shared_ptr<ParamListener>& param_listener) {
+    const std::shared_ptr<aic_controller::ParamListener>& param_listener) {
   auto params = param_listener->get_params();
 
-  unsigned int ndof = params.joints.size();
+  std::size_t ndof = params.joints.size();
   if (ndof < 1) {
     RCLCPP_ERROR(
         rclcpp::get_logger("CartesianImpedanceController"),
@@ -32,12 +32,12 @@ CartesianImpedanceController::Create(
     return nullptr;
   }
 
-  return std::make_unique<aic_controller::CartesianImpedanceController>(
-      ndof, std::move(params));
+  return std::make_unique<aic::CartesianImpedanceController>(ndof,
+                                                             std::move(params));
 }
 
-CartesianImpedanceController::CartesianImpedanceController(unsigned int ndof,
-                                                           Params params)
+CartesianImpedanceController::CartesianImpedanceController(
+    unsigned int ndof, aic_controller::Params params)
     : ndof_(ndof), params_(params) {}
 
 controller_interface::return_type CartesianImpedanceController::Configure(
@@ -69,4 +69,4 @@ bool CartesianImpedanceController::Update(
   return false;
 }
 
-}  // namespace aic_controller
+}  // namespace aic

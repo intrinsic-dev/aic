@@ -18,6 +18,10 @@
 #ifndef AIC_CONTROLLER__AIC_CONTROLLER_HPP_
 #define AIC_CONTROLLER__AIC_CONTROLLER_HPP_
 
+#include <memory>
+#include <optional>
+#include <string>
+
 #include "aic_control_interfaces/msg/joint_motion_update.hpp"
 #include "aic_control_interfaces/msg/motion_update.hpp"
 #include "aic_control_interfaces/msg/trajectory_generation_mode.hpp"
@@ -33,42 +37,42 @@
 #include "trajectory_msgs/msg/joint_trajectory_point.hpp"
 
 /**
- * AICController subscribes to user commands at a lower frequency and
+ * The AIC Controller subscribes to user commands at a lower frequency and
  * based on the control mode:
  * 1. Admittance mode: Outputs interpolated user commands at
  * a higher frequency to the admittance controller.
  * 2. Impedance mode: Outputs control commands to the robot arm's hardware
  * interface from an internal impedance controller implementation.
  */
-namespace aic_controller {
-using aic_control_interfaces::msg::JointMotionUpdate;
-using aic_control_interfaces::msg::MotionUpdate;
-using aic_control_interfaces::msg::TrajectoryGenerationMode;
-using trajectory_msgs::msg::JointTrajectoryPoint;
+namespace aic {
+using JointMotionUpdate = aic_control_interfaces::msg::JointMotionUpdate;
+using MotionUpdate = aic_control_interfaces::msg::MotionUpdate;
+using TrajectoryGenerationMode =
+    aic_control_interfaces::msg::TrajectoryGenerationMode;
+using JointTrajectoryPoint = trajectory_msgs::msg::JointTrajectoryPoint;
 
-enum ControlMode {
-  UNSPECIFIED_CONTROL_MODE,
-  ADMITTANCE,
-  IMPEDANCE,
+enum class ControlMode : uint8_t { Invalid = 0, Admittance = 1, Impedance = 2 };
+
+enum class InterpolationMode : uint8_t {
+  Invalid = 0,
+  Linear = 1,
+  Reflexxes = 2,
+  MinimalSplines = 3
 };
 
-enum InterpolationMode {
-  LINEAR,
-  REFLEXXES,
-  MINIMAL_SPLINES,
+enum class TargetType : uint8_t {
+  Invalid = 0,
+  Joint = 1,
+  Cartesian = 2,
 };
 
-enum TargetType {
-  JOINT,
-  CARTESIAN,
-};
-
-class AICController : public controller_interface::ControllerInterface {
+class Controller : public controller_interface::ControllerInterface {
  public:
+  Controller();
+
   controller_interface::InterfaceConfiguration command_interface_configuration()
       const override;
 
-  // Add joint and ft sensor states
   controller_interface::InterfaceConfiguration state_interface_configuration()
       const override;
 
@@ -86,69 +90,80 @@ class AICController : public controller_interface::ControllerInterface {
   controller_interface::return_type update(
       const rclcpp::Time& time, const rclcpp::Duration& period) override;
 
- protected:
-  controller_interface::return_type update_and_write_commands_cartesian();
-
-  controller_interface::return_type update_and_write_commands_joints();
-
+ private:
   /**
-   * @brief Update reference values by limiting the target states to stay
-   * within limits and then interpolating their values.
-   */
-  bool update_reference_joints();
-
-  /**
-   * @brief Update reference values by limiting the target states to stay
-   * within limits and then interpolating their values.
-   */
-  bool update_reference_cartesian();
-
-  /**
-   * @brief Performs
+   * @brief Update controller parameters and compute commands based on control
+   * law
    *
-   * @param target_state
-   * @return JointTrajectoryPoint
+   * @param target_type
+   * @return controller_interface::return_type
    */
-  JointTrajectoryPoint update_reference_joints_linear_interpolation(
-      const JointTrajectoryPoint& target_state);
+  controller_interface::return_type update_and_write_commands(
+      const ControlMode& control_mode, const TargetType& target_type);
 
   /**
    * @brief Reads state values from hardware interfaces and reference values
-   * from subscribers
+   * from ROS subscribers
    */
-  controller_interface::return_type sense();
+  bool sense();
 
   /**
-   * @brief Read joint state values from hardware interfaces
+   * @brief Update cartesian reference by limiting the target states to stay
+   * within limits and then interpolating their values.
    *
-   * @param state_current
+   * @return true Update successful
+   * @return false Update failed
    */
-  void read_joint_states(JointTrajectoryPoint& state_current);
+  bool update_joint_reference();
 
   /**
-   * @brief Write joint positions to command interface
+   * @brief Update cartesian reference by limiting the target states to stay
+   * within limits and then interpolating their values.
    *
-   * @param state_command
+   * @return true Update successful
+   * @return false Update failed
    */
-  void write_reference_joint_position(
-      const JointTrajectoryPoint& state_command);
+  bool update_cartesian_reference();
+
+  /**
+   * @brief Applies linear interpolation to the reference values to minimize
+   * discontinuities from the current reference to the target reference.
+   *
+   * @param target_state The target state towards which the current reference is
+   * interpolated.
+   * @return JointTrajectoryPoint
+   */
+  JointTrajectoryPoint update_reference_joints_linear_interpolation(
+      const JointTrajectoryPoint& target_joint_state);
+
+  /**
+   * @brief Update fields of state_current with joint states from hardware
+   * interfaces
+   *
+   * @param state_current Sensed joint states
+   */
+  void read_state_from_hardware(JointTrajectoryPoint& state_current);
+
+  /**
+   * @brief Write values from state_command to claimed command interfaces
+   *
+   * @param state_command Commanded joint states
+   */
+  void write_state_to_hardware(const JointTrajectoryPoint& state_command);
 
   // controller parameters
-  std::shared_ptr<ParamListener> param_listener_;
-  Params params_;
+  std::shared_ptr<aic_controller::ParamListener> param_listener_;
+  aic_controller::Params params_;
 
-  size_t num_joints_ = 0;
+  std::size_t num_joints_{0};
   std::vector<std::string> command_joint_names_;
 
-  TargetType target_type_{TargetType::JOINT};
-  ControlMode control_mode_{ControlMode::UNSPECIFIED_CONTROL_MODE};
-  InterpolationMode interpolation_mode_{InterpolationMode::LINEAR};
+  TargetType target_type_{TargetType::Invalid};
+  ControlMode control_mode_{ControlMode::Invalid};
+  InterpolationMode interpolation_mode_{InterpolationMode::Invalid};
 
-  bool has_position_state_interface_ = false;
-  bool has_velocity_state_interface_ = false;
-  bool has_acceleration_state_interface_ = false;
-  bool has_position_command_interface_ = false;
-  bool has_effort_command_interface_ = false;
+  bool has_position_state_interface_, has_velocity_state_interface_,
+      has_acceleration_state_interface_;
 
   const std::vector<std::string> allowed_state_interface_types_ = {
       hardware_interface::HW_IF_POSITION, hardware_interface::HW_IF_VELOCITY,
@@ -159,7 +174,6 @@ class AICController : public controller_interface::ControllerInterface {
 
   rclcpp::Subscription<MotionUpdate>::SharedPtr motion_update_sub_;
   rclcpp::Subscription<JointMotionUpdate>::SharedPtr joint_motion_update_sub_;
-  // todo(johntgz) add impedance controller state message and publisher
 
   // real-time boxes for thread-safe access
   realtime_tools::RealtimeThreadSafeBox<MotionUpdate> motion_update_command_;
@@ -175,12 +189,12 @@ class AICController : public controller_interface::ControllerInterface {
   // State commanded by JointMotionUpdate user commands
   std::optional<JointTrajectoryPoint> target_joint_state_;
 
-  double time_to_target_seconds_{0.0};
+  double time_to_target_seconds_;
 
   // Latest joint states read from hardware interface
   JointTrajectoryPoint joint_state_;
 };
 
-}  // namespace aic_controller
+}  // namespace aic
 
 #endif  // AIC_CONTROLLER__AIC_CONTROLLER_HPP_

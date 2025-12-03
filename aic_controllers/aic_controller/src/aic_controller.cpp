@@ -20,22 +20,30 @@
 namespace {  // utility
 
 // called from RT control loop
-void reset_motion_update_msg(aic_controller::MotionUpdate& msg) {
-  msg = aic_controller::MotionUpdate();
+void reset_motion_update_msg(aic::MotionUpdate& msg) {
+  msg = aic::MotionUpdate();
 }
 
 // called from RT control loop
-void reset_joint_motion_update_msg(aic_controller::JointMotionUpdate& msg) {
-  msg = aic_controller::JointMotionUpdate();
+void reset_joint_motion_update_msg(aic::JointMotionUpdate& msg) {
+  msg = aic::JointMotionUpdate();
 }
 
 }  // namespace
 
-namespace aic_controller {
+namespace aic {
 
-controller_interface::CallbackReturn AICController::on_init() {
+Controller::Controller()
+    : num_joints_(0),
+      has_position_state_interface_(false),
+      has_velocity_state_interface_(false),
+      has_acceleration_state_interface_(false),
+      time_to_target_seconds_(0.0) {}
+
+controller_interface::CallbackReturn Controller::on_init() {
   try {
-    param_listener_ = std::make_shared<ParamListener>(get_node());
+    param_listener_ =
+        std::make_shared<aic_controller::ParamListener>(get_node());
     params_ = param_listener_->get_params();
 
   } catch (const std::exception& e) {
@@ -73,14 +81,25 @@ controller_interface::CallbackReturn AICController::on_init() {
 }
 
 controller_interface::InterfaceConfiguration
-AICController::command_interface_configuration() const {
+Controller::command_interface_configuration() const {
   controller_interface::InterfaceConfiguration command_interfaces_config;
 
   std::vector<std::string> command_interfaces_config_names;
   for (const auto& interface : params_.command_interfaces) {
-    for (const auto& joint : command_joint_names_) {
-      auto full_name = joint + "/" + interface;
-      command_interfaces_config_names.push_back(full_name);
+    if (control_mode_ == ControlMode::Admittance &&
+        interface == hardware_interface::HW_IF_POSITION) {
+      // Only initialize position interfaces in admittance control mode
+      for (const auto& joint : command_joint_names_) {
+        auto full_name = joint + "/" + interface;
+        command_interfaces_config_names.push_back(full_name);
+      }
+    } else if (control_mode_ == ControlMode::Impedance &&
+               interface == hardware_interface::HW_IF_EFFORT) {
+      // Only initialize effort interfaces in impedance control mode
+      for (const auto& joint : command_joint_names_) {
+        auto full_name = joint + "/" + interface;
+        command_interfaces_config_names.push_back(full_name);
+      }
     }
   }
 
@@ -89,7 +108,7 @@ AICController::command_interface_configuration() const {
 }
 
 controller_interface::InterfaceConfiguration
-AICController::state_interface_configuration() const {
+Controller::state_interface_configuration() const {
   controller_interface::InterfaceConfiguration state_interfaces_config;
   std::vector<std::string> state_interfaces_config_names;
 
@@ -104,7 +123,7 @@ AICController::state_interface_configuration() const {
           state_interfaces_config_names};
 }
 
-controller_interface::CallbackReturn AICController::on_configure(
+controller_interface::CallbackReturn Controller::on_configure(
     const rclcpp_lifecycle::State& /*previous_state*/) {
   // Set and validate commanded joint names
   command_joint_names_ = params_.command_joints;
@@ -138,17 +157,17 @@ controller_interface::CallbackReturn AICController::on_configure(
                          interface_type) != interface_type_list.end();
       };
 
-  has_position_command_interface_ = contains_interface_type(
+  bool has_position_command_interface = contains_interface_type(
       params_.command_interfaces, hardware_interface::HW_IF_POSITION);
-  has_effort_command_interface_ = contains_interface_type(
+  bool has_effort_command_interface = contains_interface_type(
       params_.command_interfaces, hardware_interface::HW_IF_EFFORT);
 
   if (params_.control_mode == "impedance") {
     RCLCPP_INFO(get_node()->get_logger(), "Control mode set to impedance");
-    control_mode_ = ControlMode::IMPEDANCE;
+    control_mode_ = ControlMode::Impedance;
   } else if (params_.control_mode == "admittance") {
     RCLCPP_INFO(get_node()->get_logger(), "Control mode set to admittance");
-    control_mode_ = ControlMode::ADMITTANCE;
+    control_mode_ = ControlMode::Admittance;
   } else {
     RCLCPP_ERROR(get_node()->get_logger(),
                  "Unsupported control mode. Please set control_mode to either "
@@ -157,14 +176,14 @@ controller_interface::CallbackReturn AICController::on_configure(
   }
 
   // validate control_mode
-  if (control_mode_ == ControlMode::ADMITTANCE &&
-      !has_position_command_interface_) {
+  if (control_mode_ == ControlMode::Admittance &&
+      !has_position_command_interface) {
     RCLCPP_ERROR(get_node()->get_logger(),
                  "Control mode set to 'admittance' but no position command "
                  "interface set");
     return controller_interface::CallbackReturn::FAILURE;
-  } else if (control_mode_ == ControlMode::IMPEDANCE &&
-             !has_effort_command_interface_) {
+  } else if (control_mode_ == ControlMode::Impedance &&
+             !has_effort_command_interface) {
     RCLCPP_ERROR(get_node()->get_logger(),
                  "Control mode set to 'impedance' but no torque command "
                  "interface set");
@@ -197,32 +216,38 @@ controller_interface::CallbackReturn AICController::on_configure(
 
   // Validate interpolation mode
   if (params_.interpolation_mode == "linear") {
-    RCLCPP_INFO(get_node()->get_logger(), "Interpolation mode set to LINEAR");
-    interpolation_mode_ = InterpolationMode::LINEAR;
+    interpolation_mode_ = InterpolationMode::Linear;
+    RCLCPP_INFO(get_node()->get_logger(), "Interpolation mode set to Linear");
+
   } else if (params_.interpolation_mode == "reflexxes") {
+    interpolation_mode_ = InterpolationMode::Reflexxes;
     RCLCPP_ERROR(get_node()->get_logger(),
                  "Unimplemented interpolation mode 'reflexxes'. Please use "
                  "'linear' interpolation");
+
     return controller_interface::CallbackReturn::FAILURE;
   } else if (params_.interpolation_mode == "minimal_splines") {
+    interpolation_mode_ = InterpolationMode::MinimalSplines;
     RCLCPP_ERROR(get_node()->get_logger(),
                  "Unimplemented interpolation mode 'minimal_splines'. Please "
                  "use 'linear' interpolation");
+
     return controller_interface::CallbackReturn::FAILURE;
   } else {
     RCLCPP_ERROR(
         get_node()->get_logger(),
         "Unsupported interpolation mode. Please use 'linear' interpolation");
+
     return controller_interface::CallbackReturn::FAILURE;
   }
 
   // Validate target type
   if (params_.target_type == "cartesian") {
     RCLCPP_INFO(get_node()->get_logger(), "Target type set to CARTESIAN.");
-    target_type_ = TargetType::CARTESIAN;
+    target_type_ = TargetType::Cartesian;
   } else if (params_.target_type == "joint") {
     RCLCPP_INFO(get_node()->get_logger(), "Target type set to JOINT.");
-    target_type_ = TargetType::JOINT;
+    target_type_ = TargetType::Joint;
   } else {
     RCLCPP_ERROR(
         get_node()->get_logger(),
@@ -233,10 +258,10 @@ controller_interface::CallbackReturn AICController::on_configure(
   motion_update_sub_ = this->get_node()->create_subscription<MotionUpdate>(
       "~/motion_update", rclcpp::SystemDefaultsQoS(),
       [this](const MotionUpdate::SharedPtr msg) {
-        if (target_type_ == TargetType::JOINT) {
+        if (target_type_ == TargetType::Joint) {
           RCLCPP_INFO_THROTTLE(get_node()->get_logger(),
                                *get_node()->get_clock(), 1000,
-                               "Current target_type set to JOINT, only "
+                               "Current target_type set to Joint, only "
                                "accepting JointMotionUpdate messages");
           return;
         }
@@ -248,10 +273,10 @@ controller_interface::CallbackReturn AICController::on_configure(
       this->get_node()->create_subscription<JointMotionUpdate>(
           "~/joint_motion_update", rclcpp::SystemDefaultsQoS(),
           [this](const JointMotionUpdate::SharedPtr msg) {
-            if (target_type_ == TargetType::CARTESIAN) {
+            if (target_type_ == TargetType::Cartesian) {
               RCLCPP_INFO_THROTTLE(get_node()->get_logger(),
                                    *get_node()->get_clock(), 1000,
-                                   "Current target_type set to CARTESIAN, only "
+                                   "Current target_type set to Cartesian, only "
                                    "accepting MotionUpdate messages");
               return;
             }
@@ -259,7 +284,7 @@ controller_interface::CallbackReturn AICController::on_configure(
             joint_motion_update_command_.set(*msg);
           });
 
-  if (control_mode_ == ControlMode::IMPEDANCE) {
+  if (control_mode_ == ControlMode::Impedance) {
     if (!cartesian_impedance_controller_) {
       return controller_interface::CallbackReturn::ERROR;
     }
@@ -274,16 +299,16 @@ controller_interface::CallbackReturn AICController::on_configure(
   return controller_interface::CallbackReturn::SUCCESS;
 }
 
-controller_interface::CallbackReturn AICController::on_activate(
+controller_interface::CallbackReturn Controller::on_activate(
     const rclcpp_lifecycle::State& /*previous_state*/) {
-  if (control_mode_ == ControlMode::IMPEDANCE) {
+  if (control_mode_ == ControlMode::Impedance) {
     if (!cartesian_impedance_controller_) {
       return controller_interface::CallbackReturn::ERROR;
     }
   }
 
   // read and initialize current joint states
-  read_joint_states(joint_state_);
+  read_state_from_hardware(joint_state_);
   for (auto val : joint_state_.positions) {
     if (std::isnan(val)) {
       RCLCPP_ERROR(get_node()->get_logger(),
@@ -308,17 +333,14 @@ controller_interface::CallbackReturn AICController::on_activate(
   return controller_interface::CallbackReturn::SUCCESS;
 }
 
-controller_interface::CallbackReturn AICController::on_deactivate(
+controller_interface::CallbackReturn Controller::on_deactivate(
     const rclcpp_lifecycle::State& /*previous_state*/) {
-  if (control_mode_ == ControlMode::IMPEDANCE) {
+  if (control_mode_ == ControlMode::Impedance) {
     if (!cartesian_impedance_controller_) {
       return controller_interface::CallbackReturn::ERROR;
     }
 
     release_interfaces();
-
-  } else if (control_mode_ == ControlMode::ADMITTANCE) {
-    // Nothing to be done
   }
 
   reset_motion_update_msg(motion_update_msg_);
@@ -330,21 +352,22 @@ controller_interface::CallbackReturn AICController::on_deactivate(
   return controller_interface::CallbackReturn::SUCCESS;
 }
 
-bool AICController::update_reference_cartesian() {
-  // UNIMPLEMENTED
+bool Controller::update_cartesian_reference() {
+  RCLCPP_ERROR(get_node()->get_logger(),
+               "update_cartesian_reference() is unimplemented");
   return false;
 }
 
-bool AICController::update_reference_joints() {
+bool Controller::update_joint_reference() {
   if (!reference_joints_.has_value()) {
     RCLCPP_ERROR(get_node()->get_logger(),
-                 "Unset reference_joints_ in update_reference_joints()");
+                 "Unset reference_joints_ in update_joint_reference()");
     return false;
   }
 
   if (!target_joint_state_.has_value()) {
     RCLCPP_ERROR(get_node()->get_logger(),
-                 "Unset target_joint_state_ in update_reference_joints()");
+                 "Unset target_joint_state_ in update_joint_reference()");
     return false;
   }
 
@@ -389,19 +412,19 @@ bool AICController::update_reference_joints() {
 
   auto new_reference_joints_ = *reference_joints_;
   switch (interpolation_mode_) {
-    case InterpolationMode::LINEAR:
+    case InterpolationMode::Linear:
       // UNIMPLEMENTED
       new_reference_joints_ =
           update_reference_joints_linear_interpolation(*target_joint_state_);
       break;
-    case InterpolationMode::REFLEXXES:
+    case InterpolationMode::Reflexxes:
       // UNIMPLEMENTED
       RCLCPP_ERROR(
           get_node()->get_logger(),
-          "REFLEXXES interpolation mode is unimplemented. Please use LINEAR");
+          "Reflexxes interpolation mode is unimplemented. Please use LINEAR");
       return false;
       break;
-    case InterpolationMode::MINIMAL_SPLINES:
+    case InterpolationMode::MinimalSplines:
       // UNIMPLEMENTED
       RCLCPP_ERROR(
           get_node()->get_logger(),
@@ -411,7 +434,7 @@ bool AICController::update_reference_joints() {
       break;
     default:
       RCLCPP_ERROR(get_node()->get_logger(),
-                   "Unknown interpolation mode. Please choose one the "
+                   "Invalid interpolation mode. Please choose one the "
                    "following: 'linear', 'reflexxes' or 'minimal_splines'");
       return false;
       break;
@@ -422,78 +445,125 @@ bool AICController::update_reference_joints() {
   return true;
 }
 
-controller_interface::return_type
-AICController::update_and_write_commands_cartesian() {
-  if (!update_reference_cartesian()) {
-    return controller_interface::return_type::ERROR;
-  }
-
-  if (control_mode_ == ControlMode::IMPEDANCE) {
+controller_interface::return_type Controller::update_and_write_commands(
+    const ControlMode& control_mode, const TargetType& target_type) {
+  if (control_mode == ControlMode::Impedance) {
     // UNIMPLEMENTED
     // Interpolate impedance parameters
+    //    UpdateImpedance(target_type)
     // Interpolate feed-forward wrench
-    // Compute control torque
-    // Then, write the control torque to hardware interfaces
-    return controller_interface::return_type::ERROR;
-  } else if (control_mode_ == ControlMode::ADMITTANCE) {
+    //    UpdateFeedforwardWrench(target_type)
+
+    if (target_type == TargetType::Cartesian) {
+      // UNIMPLEMENTED
+      // Compute joint torques
+    } else if (target_type == TargetType::Joint) {
+      // UNIMPLEMENTED
+      // Compute joint torques
+    }
     // UNIMPLEMENTED
-    // Cartesian control for admittance controller
+    // Write the control torque to hardware interfaces
+
+    RCLCPP_ERROR(get_node()->get_logger(),
+                 "Impedance control is unimplemented.");
+
+    return controller_interface::return_type::ERROR;
+  } else if (control_mode == ControlMode::Admittance) {
+    if (target_type == TargetType::Cartesian) {
+      // UNIMPLEMENTED
+      // Compute joint references given cartesian target using IK
+
+      RCLCPP_ERROR(
+          get_node()->get_logger(),
+          "Cartesian targets for admittance controller is unimplemented.");
+
+      return controller_interface::return_type::ERROR;
+    }
+    // If target_type is Joint, simply forward the joint reference
+
+  } else {
+    RCLCPP_ERROR(get_node()->get_logger(),
+                 "Invalid control mode defined. Please set control_mode to "
+                 "either 'admittance' or 'impedance'");
+
     return controller_interface::return_type::ERROR;
   }
 
-  RCLCPP_ERROR(
-      get_node()->get_logger(),
-      "Cartesian targets via MotionUpdate commands are unimplemented. Please "
-      "use joint targets by publishgin JointMotionCommands instead.");
-
-  return controller_interface::return_type::ERROR;
-}
-
-controller_interface::return_type
-AICController::update_and_write_commands_joints() {
-  if (!update_reference_joints()) {
-    return controller_interface::return_type::ERROR;
-  }
-
-  if (control_mode_ == ControlMode::IMPEDANCE) {
-    // UNIMPLEMENTED
-    // Interpolate impedance parameters, feed-forward wrench and compute control
-    // torque
-    // Then, write the control torque to hardware interfaces.
-    return controller_interface::return_type::ERROR;
-  } else if (control_mode_ == ControlMode::ADMITTANCE) {
-    write_reference_joint_position(*reference_joints_);
-  }
+  write_state_to_hardware(*reference_joints_);
 
   return controller_interface::return_type::OK;
 }
 
-controller_interface::return_type AICController::update(
+controller_interface::return_type Controller::update(
     const rclcpp::Time& /*time*/, const rclcpp::Duration& /*period*/) {
   // Read and update current states from sensors
-  sense();
-
-  if (target_type_ == TargetType::CARTESIAN) {
-    return update_and_write_commands_cartesian();
-  } else if (target_type_ == TargetType::JOINT) {
-    return update_and_write_commands_joints();
+  if (!sense()) {
+    return controller_interface::return_type::ERROR;
   }
+
+  // Update reference by limiting them and interpolating their values
+  if (target_type_ == TargetType::Cartesian) {
+    if (!update_cartesian_reference()) {
+      return controller_interface::return_type::ERROR;
+    }
+  } else if (target_type_ == TargetType::Joint) {
+    if (!update_joint_reference()) {
+      return controller_interface::return_type::ERROR;
+    }
+  }
+
+  update_and_write_commands(control_mode_, target_type_);
 
   return controller_interface::return_type::OK;
 }
 
-void AICController::read_joint_states(JointTrajectoryPoint& state_current) {
+bool Controller::sense() {
+  read_state_from_hardware(joint_state_);
+
+  // read user commands
+  if (target_type_ == TargetType::Cartesian) {
+    auto command_op = motion_update_command_.try_get();
+    if (command_op.has_value()) {
+      motion_update_msg_ = command_op.value();
+    }
+
+  } else if (target_type_ == TargetType::Joint) {
+    auto command_op = joint_motion_update_command_.try_get();
+    if (command_op.has_value()) {
+      joint_motion_update_msg_ = command_op.value();
+      target_joint_state_ = joint_motion_update_msg_.target_state;
+    }
+  }
+
+  if (control_mode_ == ControlMode::Impedance) {
+    if (target_type_ == TargetType::Cartesian) {
+      cartesian_impedance_controller_->Update(joint_state_);
+    } else if (target_type_ == TargetType::Joint) {
+      // UNIMPLEMENTED
+      // update joint impedance controller with current joint state
+    }
+  }
+
+  return true;
+}
+
+JointTrajectoryPoint Controller::update_reference_joints_linear_interpolation(
+    const JointTrajectoryPoint& target_joint_state) {
+  return target_joint_state;
+}
+
+void Controller::read_state_from_hardware(JointTrajectoryPoint& state_current) {
   // Set state_current to last commanded state if any of the hardware interface
   // values are NaN
   bool nan_position = false;
   bool nan_velocity = false;
   bool nan_acceleration = false;
 
-  size_t pos_ind = 0;
-  size_t vel_ind = pos_ind + has_velocity_state_interface_;
-  size_t acc_ind = vel_ind + has_acceleration_state_interface_;
+  std::size_t pos_ind = 0;
+  std::size_t vel_ind = pos_ind + has_velocity_state_interface_;
+  std::size_t acc_ind = vel_ind + has_acceleration_state_interface_;
 
-  for (size_t joint_ind = 0; joint_ind < num_joints_; ++joint_ind) {
+  for (std::size_t joint_ind = 0; joint_ind < num_joints_; ++joint_ind) {
     if (has_position_state_interface_) {
       const auto state_current_position_op =
           state_interfaces_[pos_ind * num_joints_ + joint_ind].get_optional();
@@ -536,17 +606,21 @@ void AICController::read_joint_states(JointTrajectoryPoint& state_current) {
   }
 }
 
-void AICController::write_reference_joint_position(
+void Controller::write_state_to_hardware(
     const JointTrajectoryPoint& state_commanded) {
-  size_t pos_ind = 0;
-
-  for (size_t joint_ind = 0; joint_ind < num_joints_; ++joint_ind) {
+  for (std::size_t joint_ind = 0; joint_ind < num_joints_; ++joint_ind) {
     bool success = true;
-    if (has_position_command_interface_) {
-      success &=
-          command_interfaces_[pos_ind * num_joints_ + joint_ind].set_value(
-              state_commanded.positions[joint_ind]);
+
+    if (control_mode_ == ControlMode::Admittance) {
+      // Only write position commands in admittance control mode
+      success &= command_interfaces_[joint_ind].set_value(
+          state_commanded.positions[joint_ind]);
+    } else if (control_mode_ == ControlMode::Impedance) {
+      // Only write effort commands in impedance control mode
+      success &= command_interfaces_[joint_ind].set_value(
+          state_commanded.effort[joint_ind]);
     }
+
     if (!success) {
       RCLCPP_WARN(this->get_node()->get_logger(),
                   "Error while setting command for joint %zu.", joint_ind);
@@ -556,45 +630,9 @@ void AICController::write_reference_joint_position(
   last_commanded_joints_ = state_commanded;
 }
 
-controller_interface::return_type AICController::sense() {
-  read_joint_states(joint_state_);
-
-  // read user commands
-  if (target_type_ == TargetType::CARTESIAN) {
-    auto command_op = motion_update_command_.try_get();
-    if (command_op.has_value()) {
-      motion_update_msg_ = command_op.value();
-    }
-
-  } else if (target_type_ == TargetType::JOINT) {
-    auto command_op = joint_motion_update_command_.try_get();
-    if (command_op.has_value()) {
-      joint_motion_update_msg_ = command_op.value();
-      target_joint_state_ = joint_motion_update_msg_.target_state;
-    }
-  }
-
-  if (control_mode_ == ControlMode::IMPEDANCE) {
-    if (target_type_ == TargetType::CARTESIAN) {
-      cartesian_impedance_controller_->Update(joint_state_);
-    } else if (target_type_ == TargetType::JOINT) {
-      // UNIMPLEMENTED
-      // update joint impedance controller with current joint state
-    }
-  }
-
-  return controller_interface::return_type::OK;
-}
-
-JointTrajectoryPoint
-AICController::update_reference_joints_linear_interpolation(
-    const JointTrajectoryPoint& target_state) {
-  return target_state;
-}
-
-}  // namespace aic_controller
+}  // namespace aic
 
 #include "pluginlib/class_list_macros.hpp"
 
-PLUGINLIB_EXPORT_CLASS(aic_controller::AICController,
+PLUGINLIB_EXPORT_CLASS(aic::Controller,
                        controller_interface::ControllerInterface)
