@@ -110,8 +110,7 @@ class Controller : public controller_interface::ControllerInterface {
    * @brief Reads state values from hardware interfaces and reference values
    * from ROS subscribers
    */
-  bool 
-  ;
+  bool sense();
 
   /**
    * @brief Update cartesian reference by limiting the target states to stay
@@ -135,12 +134,15 @@ class Controller : public controller_interface::ControllerInterface {
    * @brief Applies linear interpolation to the reference values to minimize
    * discontinuities from the current reference to the target reference.
    *
-   * @param target_state The target state towards which the current reference is
-   * interpolated.
-   * @return JointTrajectoryPoint
+   * @param reference_state
+   * @param target_state
+   * @param new_reference
+   * @return true
+   * @return false
    */
-  JointTrajectoryPoint update_reference_joints_linear_interpolation(
-      const JointTrajectoryPoint& target_joint_state);
+  bool update_reference_joints_linear_interpolation(
+      const JointState& reference_state, const JointState& target_state,
+      JointState& new_reference);
 
   /**
    * @brief Update fields of state_current with joint states from hardware
@@ -148,14 +150,14 @@ class Controller : public controller_interface::ControllerInterface {
    *
    * @param state_current Sensed joint states
    */
-  void read_state_from_hardware(JointTrajectoryPoint& state_current);
+  void read_state_from_hardware(JointState& state_current);
 
   /**
    * @brief Write values from state_command to claimed command interfaces
    *
    * @param state_command Commanded joint states
    */
-  void write_state_to_hardware(const JointTrajectoryPoint& state_command);
+  void write_state_to_hardware(const JointState& state_command);
 
   // controller parameters
   std::shared_ptr<aic_controller::ParamListener> param_listener_;
@@ -190,18 +192,21 @@ class Controller : public controller_interface::ControllerInterface {
   MotionUpdate motion_update_;
 
   // Last value written to controller interfaces
-  JointTrajectoryPoint last_commanded_joints_;
+  JointState last_commanded_joints_;
   // interpolated reference joint values
-  std::optional<JointTrajectoryPoint> reference_joints_;
+  std::optional<JointState> reference_joints_;
   // State commanded by JointMotionUpdate user commands
-  std::optional<JointTrajectoryPoint> target_joint_msg_;
-  JointState target_joint_;
+  std::optional<JointState> target_joints_;
+  //   // interpolated reference joint values
+  //   std::optional<JointTrajectoryPoint> reference_joints_;
+  //   // State commanded by JointMotionUpdate user commands
+  //   std::optional<JointTrajectoryPoint> target_joints_;
 
   double remaining_time_to_target_seconds_{0.0};
   double time_to_target_seconds_;
 
   // Latest joint states read from hardware interface
-  JointTrajectoryPoint joint_state_;
+  JointState joint_state_;
 };
 
 }  // namespace aic

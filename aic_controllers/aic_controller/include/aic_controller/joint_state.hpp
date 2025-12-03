@@ -22,9 +22,9 @@
 
 #include "trajectory_msgs/msg/joint_trajectory_point.hpp"
 
-namespace aic_controller {
+namespace aic {
 
-// Joint states for position, velocity and acceleration
+// Joint states for position, velocity, acceleration and effort
 struct JointState {
   Eigen::VectorXd positions;
   Eigen::VectorXd velocities;
@@ -35,6 +35,16 @@ struct JointState {
    *
    */
   JointState() = default;
+
+  /**
+   * @brief Construct JointState with num_joints and all values set to zero
+   *
+   * @param num_joints
+   */
+  explicit JointState(const std::size_t num_joints)
+      : positions(Eigen::VectorXd::Zero(num_joints)),
+        velocities(Eigen::VectorXd::Zero(num_joints)),
+        accelerations(Eigen::VectorXd::Zero(num_joints)) {}
 
   /**
    * @brief Construct JointState from JointTrajectoryPoint ROS message
@@ -95,6 +105,6 @@ struct JointState {
   }
 };
 
-}  // namespace aic_controller
+}  // namespace aic
 
 #endif  // AIC_CONTROLLER__JOINT_STATE_HPP_
