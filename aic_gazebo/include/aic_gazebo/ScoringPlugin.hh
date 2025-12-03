@@ -18,7 +18,6 @@
 #ifndef AIC_GAZEBO__SCORING_PLUGIN_HH_
 #define AIC_GAZEBO__SCORING_PLUGIN_HH_
 
-#include <aic_scoring/aic_scoring/ScoringTier2.hh>
 #include <gz/sim/EventManager.hh>
 #include <gz/sim/System.hh>
 
@@ -26,7 +25,6 @@ namespace aic_gazebo
 {
   // The main AIC scoring plugin.
   class ScoringPlugin:
-    public aic_scoring::ScoringTier2.hh,
     public gz::sim::System,
     public gz::sim::ISystemConfigure,
     public gz::sim::ISystemPreUpdate,
@@ -34,9 +32,6 @@ namespace aic_gazebo
     public gz::sim::ISystemPostUpdate,
     public gz::sim::ISystemReset
   {
-    // Documentation inherited.
-    public: double Distance() const override;
-
     // Documentation inherited
     public: void Configure(const gz::sim::Entity &_entity,
                            const std::shared_ptr<const sdf::Element> &_element,

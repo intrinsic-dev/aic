@@ -9,8 +9,6 @@
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
-  <depend>aic_scoring</depend>
-
   <test_depend>ament_lint_auto</test_depend>
 
   <export>
