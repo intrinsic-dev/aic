@@ -155,7 +155,7 @@ Visualization Manager:
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /camera
+        Value: /wrist_camera_1/image
       Value: true
     - Class: rviz_default_plugins/TF
       Enabled: true

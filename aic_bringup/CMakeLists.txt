@@ -15,7 +15,11 @@ install(
 
 install(PROGRAMS
   scripts/move_to_contact.py
+  scripts/gripper_action.py
+  scripts/home_robot.py
   DESTINATION lib/${PROJECT_NAME}
 )
+
+ament_environment_hooks("${CMAKE_CURRENT_SOURCE_DIR}/hooks/gz_config_path.dsv.in")
 
 ament_package()

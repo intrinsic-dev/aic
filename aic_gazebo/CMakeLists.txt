@@ -7,15 +7,23 @@ endif()
 
 find_package(ament_cmake REQUIRED)
 
-# Harmonic
-find_package(gz-cmake3 REQUIRED)
-find_package(gz-plugin2 REQUIRED COMPONENTS register)
-set(GZ_PLUGIN_VER ${gz-plugin2_VERSION_MAJOR})
-find_package(gz-common5 REQUIRED COMPONENTS profiler)
-set(GZ_COMMON_VER ${gz-common5_VERSION_MAJOR})
-find_package(gz-sim8 REQUIRED)
-set(GZ_SIM_VER ${gz-sim8_VERSION_MAJOR})
-message(STATUS "Compiling against Gazebo Harmonic")
+# Ionic
+find_package(gz_cmake_vendor REQUIRED)
+find_package(gz-cmake REQUIRED)
+
+find_package(gz_plugin_vendor REQUIRED)
+find_package(gz-plugin REQUIRED COMPONENTS register)
+set(GZ_PLUGIN_VER ${gz-plugin_VERSION_MAJOR})
+
+find_package(gz_common_vendor REQUIRED)
+find_package(gz-common REQUIRED COMPONENTS profiler)
+set(GZ_COMMON_VER ${gz-common_VERSION_MAJOR})
+
+find_package(gz_sim_vendor REQUIRED)
+find_package(gz-sim REQUIRED)
+set(GZ_SIM_VER ${gz-sim_VERSION_MAJOR})
+
+message(STATUS "Compiling against Gazebo Ionic")
 
 add_library(ScoringPlugin
   SHARED

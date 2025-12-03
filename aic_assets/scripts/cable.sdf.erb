@@ -1,0 +1,388 @@
+<%#
+  This erb template can be used to generate cables of different dimensions,
+  number of segments, and physics / visual properties.
+  The cable will have a Y connection at each end for connecting to different
+  types of cable plugs. The dimensions of the Y connection can also be
+  configured.
+
+  To generate an sdf file: run `erb -T 1 path_to_ws/src/aic/aic_assets/scripts/cable.sdf.erb > model.sdf`
+
+  Once the model.sdf is generated, you can create a new cable body model
+  (or replace an existing one) with this generated model.sdf.
+  To connect the cable plugs to this cable body, create another new model
+  that includes this cable body and the cable plugins (using <include>) and
+  connect them using fixed joints. The links at the ends of the cables are
+  named: `cable_connection_0` and `cable_connection_1`.
+%>
+<?xml version="1.0" ?>
+<!--
+  THIS FILE IS AUTO-GENERATED FROM AN ERB TEMPLATE
+
+  see instructions in 'path_to_ws/src/aic/aic_assets/scripts/cable.sdf.erb'
+-->
+<sdf version="1.9">
+  <model name="cable">
+<%
+  # cable dimensions
+  cable_len = 0.5
+  radius = 0.002
+  segments = 8 # number of links in this cable model.
+  segment_len = cable_len / segments
+
+  # cable plug Y connection at both ends of the cable
+  add_cable_y_connections = true
+  connection_baseline = 0.008 # baseline for sc plug
+  # connection_baseline = 0.004 # baseline for lc and sfp plug
+  connection_depth = 0.01
+  connection_len = Math.sqrt(connection_baseline*0.5*connection_baseline*0.5 +
+      connection_depth*connection_depth)
+  connection_split_angle = Math.atan(connection_baseline * 0.5 / connection_depth)
+  connection_mass = 0.01
+
+  # physics params
+  cable_mass = 0.3 # note: mass increased for stability
+  segment_mass = cable_mass / segments
+  joint_damping = 1.0
+  joint_spring_stiffness = 1.0
+
+  # visual params
+  diffuse = '0.6 0.6 0.0'
+  specular = '0.2 0.2 0.2'
+  roughness = 0.05
+  metalness = 0.01
+
+  # For testing: Attach base to world using a fixed joint
+  attach_base_to_world = false
+%>
+<%
+  if attach_base_to_world == true
+%>
+    <joint name="joint_world" type="fixed">
+      <parent>world</parent>
+      <child>cable_end_0</child>
+    </joint>
+<%
+  end
+%>
+    <link name="cable_end_0">
+      <pose>0.000000 0.000000 0.000000 0.000000 -0.000000 0.000000</pose>
+      <inertial>
+        <pose>0.000000 0.000000 0.000000 0.000000 -0.000000 0.000000</pose>
+        <mass><%= segment_mass %></mass>
+        <inertia>
+          <ixx>0.010000</ixx>
+          <ixy>0.000000</ixy>
+          <ixz>0.000000</ixz>
+          <iyy>0.010000</iyy>
+          <iyz>0.000000</iyz>
+          <izz>0.010000</izz>
+        </inertia>
+      </inertial>
+      <collision name="base_collision">
+        <pose>0.000000 0.000000 0.000000 0.000000 0.000000 0.000000</pose>
+        <geometry>
+          <sphere>
+            <radius><%= radius %></radius>
+          </sphere>
+        </geometry>
+      </collision>
+      <visual name="base_vis">
+        <pose>0.000000 0.000000 0.000000 0.000000 0.000000 0.000000</pose>
+        <geometry>
+          <sphere>
+            <radius><%= radius %></radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse><%= diffuse %></diffuse>
+          <specular><%= specular %></specular>
+          <pbr>
+            <metal>
+              <roughness><%= roughness %></roughness>
+              <metalness><%= metalness %></metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+    </link>
+    <joint name="joint_end_0" type="ball">
+      <pose>0.00000 0.000000 <%= -0.5 * segment_len %> 0.000000 0 0.000000</pose>
+      <child>link_1</child>
+      <parent>cable_end_0</parent>
+      <axis>
+        <dynamics>
+          <damping><%= joint_damping %></damping>
+          <spring_stiffness><%= joint_spring_stiffness %></spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+<%
+  for i in (1..segments)
+%>
+    <link name="link_<%= i %>">
+      <pose><%= 0.5 * segment_len + (segment_len * (i-1)) %> 0.000000 0.000000 0.000000 1.570790 0.000000</pose>
+      <inertial>
+        <pose>0.000000 0.000000 0.000000 0.000000 -0.000000 0.000000</pose>
+        <mass><%= segment_mass %></mass>
+        <inertia>
+          <ixx>0.010000</ixx>
+          <ixy>0.000000</ixy>
+          <ixz>0.000000</ixz>
+          <iyy>0.010000</iyy>
+          <iyz>0.000000</iyz>
+          <izz>0.010000</izz>
+        </inertia>
+      </inertial>
+      <collision name="link_<%= i %>_collision">
+        <pose>0.00000 0.000000 0.000000 0.000000 0 0.000000</pose>
+        <geometry>
+          <cylinder>
+            <length><%= segment_len %></length>
+            <radius><%= radius %></radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name="link_<%= i %>_vis">
+        <pose>0.00000 0.000000 0.000000 0.000000 0 0.000000</pose>
+        <geometry>
+          <cylinder>
+            <length><%= segment_len %></length>
+            <radius><%= radius %></radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse><%= diffuse %></diffuse>
+          <specular><%= specular %></specular>
+          <pbr>
+            <metal>
+              <roughness><%= roughness %></roughness>
+              <metalness><%= metalness %></metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <collision name="sphere_<%= i %>_collision">
+        <pose>0.000000 0.000000 <%= segment_len / 2 %> 0.000000 -0.000000 0.000000</pose>
+        <geometry>
+          <sphere>
+            <radius><%= radius %></radius>
+          </sphere>
+        </geometry>
+      </collision>
+      <visual name="sphere_<%= i %>_vis">
+        <pose>0.000000 0.000000 <%= segment_len / 2 %> 0.000000 -0.000000 0.000000</pose>
+        <geometry>
+          <sphere>
+            <radius><%= radius %></radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse><%= diffuse %></diffuse>
+          <specular><%= specular %></specular>
+          <pbr>
+            <metal>
+              <roughness><%= roughness %></roughness>
+              <metalness><%= metalness %></metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+    </link>
+<%
+  end
+%>
+<%
+  for i in (1..(segments-1))
+%>
+    <joint name="joint_<%= i %>" type="ball">
+      <pose>0.00000 0.000000 <%= -0.5 * segment_len %> 0.000000 0 0.000000</pose>
+      <parent>link_<%= i %></parent>
+      <child>link_<%= i+1 %></child>
+      <axis>
+        <dynamics>
+          <damping><%= joint_damping %></damping>
+          <spring_stiffness><%= joint_spring_stiffness %></spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+<%
+  end
+%>
+    <frame name="cable_mount_base">
+      <pose>0 0 0 0 0 0</pose>
+    </frame>
+    <frame name="cable_mount_end">
+      <pose><%=cable_len %> 0 0 0 0 0</pose>
+    </frame>
+<%
+  if add_cable_y_connections == true
+%>
+    <link name="cable_connection_0">
+      <inertial>
+        <pose>0.000000 0.000000 0.000000 0.000000 -0.000000 0.000000</pose>
+        <mass><%= connection_mass %></mass>
+        <inertia>
+          <ixx>0.010000</ixx>
+          <ixy>0.000000</ixy>
+          <ixz>0.000000</ixz>
+          <iyy>0.010000</iyy>
+          <iyz>0.000000</iyz>
+          <izz>0.010000</izz>
+        </inertia>
+      </inertial>
+      <pose relative_to="cable_mount_base">0 0 0 0 0 0</pose>
+      <collision name="collision_0">
+        <pose>-<%= connection_len * 0.5 %> <%= connection_baseline*0.5 %> 0 <%= connection_split_angle %> 1.57079 0</pose>
+        <geometry>
+          <cylinder>
+            <radius><%= radius*0.5 %></radius>
+            <length><%= connection_len %></length>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name="visual_0">
+        <pose>-<%= connection_len * 0.5 %> <%= connection_baseline*0.5 %> 0 <%= connection_split_angle %> 1.57079 0</pose>
+        <geometry>
+          <cylinder>
+            <radius><%= radius*0.5 %></radius>
+            <length><%= connection_len %></length>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse><%= diffuse %></diffuse>
+          <specular><%= specular %></specular>
+          <pbr>
+            <metal>
+              <roughness><%= roughness %></roughness>
+              <metalness><%= metalness %></metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <collision name="collision_1">
+        <pose>-<%= connection_len * 0.5 %> <%= -connection_baseline*0.5 %> 0 <%= -connection_split_angle %> 1.57079 0</pose>
+        <geometry>
+          <cylinder>
+            <radius><%= radius*0.5 %></radius>
+            <length><%= connection_len %></length>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name="visual_1">
+        <pose>-<%= connection_len * 0.5 %> <%= -connection_baseline*0.5 %> 0 <%= -connection_split_angle %> 1.57079 0</pose>
+        <geometry>
+          <cylinder>
+            <radius><%= radius*0.5 %></radius>
+            <length><%= connection_len %></length>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse><%= diffuse %></diffuse>
+          <specular><%= specular %></specular>
+          <pbr>
+            <metal>
+              <roughness><%= roughness %></roughness>
+              <metalness><%= metalness %></metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+    </link>
+    <link name="cable_connection_1">
+      <inertial>
+        <pose>0.000000 0.000000 0.000000 0.000000 -0.000000 0.000000</pose>
+        <mass><%= connection_mass %></mass>
+        <inertia>
+          <ixx>0.010000</ixx>
+          <ixy>0.000000</ixy>
+          <ixz>0.000000</ixz>
+          <iyy>0.010000</iyy>
+          <iyz>0.000000</iyz>
+          <izz>0.010000</izz>
+        </inertia>
+      </inertial>
+      <pose relative_to="cable_mount_end">0 0 0 0 0 0</pose>
+      <collision name="collision_0">
+        <pose><%= connection_len * 0.5 %> <%= -connection_baseline*0.5 %> 0 <%= connection_split_angle %> 1.57079 0</pose>
+        <geometry>
+          <cylinder>
+            <radius><%= radius*0.5 %></radius>
+            <length><%= connection_len %></length>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name="visual_0">
+        <pose><%= connection_len * 0.5 %> <%= -connection_baseline*0.5 %> 0 <%= connection_split_angle %> 1.57079 0</pose>
+        <geometry>
+          <cylinder>
+            <radius><%= radius*0.5 %></radius>
+            <length><%= connection_len %></length>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse><%= diffuse %></diffuse>
+          <specular><%= specular %></specular>
+          <pbr>
+            <metal>
+              <roughness><%= roughness %></roughness>
+              <metalness><%= metalness %></metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <collision name="collision_1">
+        <pose><%= connection_len * 0.5 %> <%= connection_baseline*0.5 %> 0 <%= -connection_split_angle %> 1.57079 0</pose>
+        <geometry>
+          <cylinder>
+            <radius><%= radius*0.5 %></radius>
+            <length><%= connection_len %></length>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name="visual_1">
+        <pose><%= connection_len * 0.5 %> <%= connection_baseline*0.5 %> 0 <%= -connection_split_angle %> 1.57079 0</pose>
+        <geometry>
+          <cylinder>
+            <radius><%= radius*0.5 %></radius>
+            <length><%= connection_len %></length>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse><%= diffuse %></diffuse>
+          <specular><%= specular %></specular>
+          <pbr>
+            <metal>
+              <roughness><%= roughness %></roughness>
+              <metalness><%= metalness %></metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+    </link>
+    <joint name="joint_connection_end_0" type="ball">
+      <pose>0.00000 0.000000 0 0.000000 0 0.000000</pose>
+      <parent>cable_end_0</parent>
+      <child>cable_connection_0</child>
+      <axis>
+        <dynamics>
+          <damping><%= joint_damping %></damping>
+          <spring_stiffness><%= joint_spring_stiffness %></spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <joint name="joint_connection_end_1" type="ball">
+      <pose>0.00000 0.000000 0 0.000000 0 0.000000</pose>
+      <parent>link_<%= segments %></parent>
+      <child>cable_connection_1</child>
+      <axis>
+        <dynamics>
+          <damping><%= joint_damping %></damping>
+          <spring_stiffness><%= joint_spring_stiffness %></spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+<%
+  end
+%>
+  </model>
+</sdf>

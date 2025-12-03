@@ -1,0 +1,1 @@
+prepend-non-duplicate;GZ_CONFIG_PATH;@CMAKE_INSTALL_PREFIX@/share/gz
