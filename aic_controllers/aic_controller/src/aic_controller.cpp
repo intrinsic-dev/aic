@@ -288,7 +288,96 @@ controller_interface::CallbackReturn Controller::on_configure(
               return;
             }
 
-            joint_motion_update_rt_.set(*msg);
+            // Validate target_state values to ensure that they are provided
+            // according to the trajectory_generation_mode.
+            // Set missing values for velocities, accelerations and effort to
+            // zero
+            JointMotionUpdate joint_motion_update = *msg;
+            switch (joint_motion_update.trajectory_generation_mode.mode) {
+              case TrajectoryGenerationMode::MODE_POSITION:
+
+                if (joint_motion_update.target_state.positions.size() !=
+                    num_joints_) {
+                  RCLCPP_ERROR_THROTTLE(
+                      get_node()->get_logger(), *get_node()->get_clock(), 1000,
+                      "Number of joint positions in target_state in "
+                      "JointMotionUpdate message does not match num_joints_! "
+                      "Discarding message.");
+                  return;
+                }
+                if (joint_motion_update.target_state.velocities.size() !=
+                    num_joints_) {
+                  joint_motion_update.target_state.velocities =
+                      std::vector<double>(num_joints_, 0.0);
+                }
+                if (joint_motion_update.target_state.accelerations.size() !=
+                    num_joints_) {
+                  joint_motion_update.target_state.accelerations =
+                      std::vector<double>(num_joints_, 0.0);
+                }
+
+                break;
+              case TrajectoryGenerationMode::MODE_VELOCITY:
+
+                if (joint_motion_update.target_state.velocities.size() !=
+                    num_joints_) {
+                  RCLCPP_ERROR_THROTTLE(
+                      get_node()->get_logger(), *get_node()->get_clock(), 1000,
+                      "Number of joint velocities in target_state in "
+                      "JointMotionUpdate message does not match num_joints_! "
+                      "Discarding message.");
+                  return;
+                }
+                if (joint_motion_update.target_state.positions.size() !=
+                    num_joints_) {
+                  joint_motion_update.target_state.positions =
+                      std::vector<double>(num_joints_, 0.0);
+                }
+                if (joint_motion_update.target_state.accelerations.size() !=
+                    num_joints_) {
+                  joint_motion_update.target_state.accelerations =
+                      std::vector<double>(num_joints_, 0.0);
+                }
+
+                break;
+              case TrajectoryGenerationMode::MODE_POSITION_AND_VELOCITY:
+
+                if (joint_motion_update.target_state.positions.size() !=
+                    num_joints_) {
+                  RCLCPP_ERROR_THROTTLE(
+                      get_node()->get_logger(), *get_node()->get_clock(), 1000,
+                      "Number of joint positions in target_state in "
+                      "JointMotionUpdate message does not match num_joints_! "
+                      "Discarding message.");
+                  return;
+                }
+                if (joint_motion_update.target_state.velocities.size() !=
+                    num_joints_) {
+                  RCLCPP_ERROR_THROTTLE(
+                      get_node()->get_logger(), *get_node()->get_clock(), 1000,
+                      "Number of joint velocities in target_state in "
+                      "JointMotionUpdate message does not match num_joints_! "
+                      "Discarding message.");
+                  return;
+                }
+                if (joint_motion_update.target_state.accelerations.size() !=
+                    num_joints_) {
+                  joint_motion_update.target_state.accelerations =
+                      std::vector<double>(num_joints_, 0.0);
+                }
+
+                break;
+              default:
+                RCLCPP_ERROR(get_node()->get_logger(),
+                             "Unsupported trajectory generation mode in "
+                             "JointMotionUpdate. Please set to "
+                             "either MODE_POSITION, MODE_VELOCITY or "
+                             "MODE_POSITION_AND_VELOCITY");
+
+                return;
+            }
+
+            joint_motion_update_rt_.set(joint_motion_update);
           });
 
   if (control_mode_ == ControlMode::Impedance) {
@@ -385,7 +474,7 @@ bool Controller::update_joint_reference() {
   // update target to ensure it is within pre-defined limits
   switch (joint_motion_update_.trajectory_generation_mode.mode) {
     case TrajectoryGenerationMode::MODE_POSITION:
-      // todo(johntgz) fix this
+      // todo(johntgz) Implement clamping to limits
 
       // if (ClampJointStatesToLimits(joint_limits_,
       //                              &target_joints_.value().positions)) {
@@ -396,7 +485,7 @@ bool Controller::update_joint_reference() {
 
       break;
     case TrajectoryGenerationMode::MODE_VELOCITY:
-      // todo(johntgz) fix this
+      // todo(johntgz) Implement clamping to limits
 
       // if (ScaleJointVelocitiesToLimits(joint_limits_,
       //                                  &target_joints_.value().velocities)) {
@@ -409,7 +498,7 @@ bool Controller::update_joint_reference() {
 
       break;
     case TrajectoryGenerationMode::MODE_POSITION_AND_VELOCITY:
-      // todo(johntgz) fix this
+      // todo(johntgz) Implement clamping to limits
 
       // if (ClampJointStatesToLimits(
       //         joint_limits_, &target_state_.value().position,
@@ -476,8 +565,8 @@ bool Controller::update_joint_reference() {
       remaining_time_to_target_seconds_ = 0;
   }
 
-  RCLCPP_ERROR(get_node()->get_logger(), "Remaining time to target: %f s",
-               remaining_time_to_target_seconds_);
+  // RCLCPP_ERROR(get_node()->get_logger(), "Remaining time to target: %f s",
+  //              remaining_time_to_target_seconds_);
 
   reference_joints_ = new_reference;
 
@@ -574,8 +663,6 @@ bool Controller::sense() {
     if (command_op.has_value()) {
       joint_motion_update_ = command_op.value();
 
-      // Update time to target
-
       // If target values or time_to_target_seconds is unchanged, then we keep
       // the current remaining_time_to_target_seconds_ such that the current
       // spline continues to the target.This is only applicable in pure position
@@ -596,6 +683,7 @@ bool Controller::sense() {
            joint_motion_update_.trajectory_generation_mode.mode ==
                TrajectoryGenerationMode::MODE_POSITION_AND_VELOCITY);
 
+      // Update time to target
       if (did_target_or_time_to_target_change ||
           !is_position_mode_with_zero_velocity_target) {
         remaining_time_to_target_seconds_ =

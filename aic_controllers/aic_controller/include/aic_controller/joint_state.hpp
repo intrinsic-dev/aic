@@ -87,14 +87,14 @@ struct JointState {
     msg.positions.resize(size);
     Eigen::VectorXd::Map(&msg.positions[0], size) = positions;
 
-    if (velocities.size() == size) {
+    if (std::size_t(velocities.size()) == size) {
       msg.velocities.resize(size);
       Eigen::VectorXd::Map(&msg.velocities[0], size) = velocities;
     } else {
       msg.velocities = std::vector<double>(size);
     }
 
-    if (accelerations.size() == size) {
+    if (std::size_t(accelerations.size()) == size) {
       msg.accelerations.resize(size);
       Eigen::VectorXd::Map(&msg.accelerations[0], size) = accelerations;
     } else {

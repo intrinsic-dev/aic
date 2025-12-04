@@ -68,8 +68,7 @@ enum class TargetType : uint8_t {
   Cartesian = 2,
 };
 
-Eigen::Map<Eigen::VectorXd> ToEigen(const std::vector<double>& array,
-                                    int num_joints) {
+Eigen::Map<Eigen::VectorXd> ToEigen(std::vector<double> array, int num_joints) {
   return Eigen::Map<Eigen::VectorXd>(array.data(), num_joints);
 }
 
@@ -201,8 +200,8 @@ class Controller : public controller_interface::ControllerInterface {
   // State commanded by JointMotionUpdate user commands
   std::optional<JointState> target_joints_;
 
-  double remaining_time_to_target_seconds_;
   double time_to_target_seconds_;
+  double remaining_time_to_target_seconds_;
 
   // Latest joint states read from hardware interface
   JointState joint_state_;
