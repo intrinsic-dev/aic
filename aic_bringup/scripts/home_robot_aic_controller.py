@@ -23,9 +23,7 @@ from rclpy.node import Node
 from geometry_msgs.msg import Pose, Twist, Accel, Wrench
 from aic_control_interfaces.msg import MotionUpdate, JointMotionUpdate, TrajectoryGenerationMode
 
-JOINT_POSITIONS_START = [0.0, -1.2645, -2.35, -0.5, 1.5708, 0]
 JOINT_POSITIONS_HOME = [0.6, -1.3, -1.9, -1.57, 1.57, 0]
-JOINT_POSITIONS_A = [-0.25, -1.0, -1.5, -1.0, -1.57, 1.0]
 class HomeTrajectoryNode(Node):
     def __init__(self):
         super().__init__('home_trajectory_node')
@@ -83,32 +81,22 @@ class HomeTrajectoryNode(Node):
         return msg
 
     def send_joint_motion_update(self, joint_positions, time_to_target):
+        print("Sending joint motion update")
         joint_motion_update_msg = self.generate_joint_motion_update(joint_positions, time_to_target)
         self.joint_motion_update_publisher.publish(joint_motion_update_msg)
+
 
 def main(args=None):
     rclpy.init(args=args)
 
-    node = HomeTrajectoryNode()
+    node = HomeTrajectoryNode(JOINT_POSITIONS_HOME, 2.0)
 
-    # Home robot
-    node.send_joint_motion_update(JOINT_POSITIONS_HOME, 2.0)
-    time.sleep(2.5)
+    node.send_joint_motion_update()
 
-    try:
-        # Start loop where robot moves between joint positions A and B
-        while True:
-            node.send_joint_motion_update(JOINT_POSITIONS_A, 2.0)
-            time.sleep(2.5)
-            node.send_joint_motion_update(JOINT_POSITIONS_HOME, 2.0)
-            time.sleep(2.5)
+    rclpy.spin(node)
 
-            rclpy.spin_once(node, timeout_sec=0.1)
-    except KeyboardInterrupt:
-        print("Keyboard interrupt detected, shutting down node.")
-    finally:
-        node.destroy_node()
-        rclpy.shutdown()
+    node.destroy_node()
+    rclpy.shutdown()
 
 
 if __name__ == '__main__':
