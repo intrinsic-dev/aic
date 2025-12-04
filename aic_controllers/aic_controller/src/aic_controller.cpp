@@ -219,20 +219,6 @@ controller_interface::CallbackReturn Controller::on_configure(
     interpolation_mode_ = InterpolationMode::Linear;
     RCLCPP_INFO(get_node()->get_logger(), "Interpolation mode set to Linear");
 
-  } else if (params_.interpolation_mode == "reflexxes") {
-    interpolation_mode_ = InterpolationMode::Reflexxes;
-    RCLCPP_ERROR(get_node()->get_logger(),
-                 "Unimplemented interpolation mode 'reflexxes'. Please use "
-                 "'linear' interpolation");
-
-    return controller_interface::CallbackReturn::FAILURE;
-  } else if (params_.interpolation_mode == "minimal_splines") {
-    interpolation_mode_ = InterpolationMode::MinimalSplines;
-    RCLCPP_ERROR(get_node()->get_logger(),
-                 "Unimplemented interpolation mode 'minimal_splines'. Please "
-                 "use 'linear' interpolation");
-
-    return controller_interface::CallbackReturn::FAILURE;
   } else {
     RCLCPP_ERROR(
         get_node()->get_logger(),
@@ -417,25 +403,10 @@ bool Controller::update_joint_reference() {
       new_reference_joints_ =
           update_reference_joints_linear_interpolation(*target_joint_state_);
       break;
-    case InterpolationMode::Reflexxes:
-      // UNIMPLEMENTED
-      RCLCPP_ERROR(
-          get_node()->get_logger(),
-          "Reflexxes interpolation mode is unimplemented. Please use LINEAR");
-      return false;
-      break;
-    case InterpolationMode::MinimalSplines:
-      // UNIMPLEMENTED
-      RCLCPP_ERROR(
-          get_node()->get_logger(),
-          "MINIMAL_SPLINES interpolation mode is unimplemented. Please "
-          "use LINEAR");
-      return false;
-      break;
     default:
       RCLCPP_ERROR(get_node()->get_logger(),
-                   "Invalid interpolation mode. Please choose one the "
-                   "following: 'linear', 'reflexxes' or 'minimal_splines'");
+                   "Invalid interpolation mode. Only supported interpolation "
+                   "mode is 'linear'");
       return false;
       break;
   }
