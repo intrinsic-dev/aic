@@ -60,7 +60,8 @@ Eigen::VectorXd CartesianImpedanceController::Compute(
   return Eigen::VectorXd();
 }
 
-bool CartesianImpedanceController::Update(const JointState& current_sensed) {
+bool CartesianImpedanceController::Update(
+    const JointTrajectoryPoint& current_sensed) {
   // UNIMPLEMENTED
   // Compute the end-effector cartesian pose estimate using forward kinematics.
   // Compute the jacobian

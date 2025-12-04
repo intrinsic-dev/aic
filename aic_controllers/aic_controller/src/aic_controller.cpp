@@ -217,20 +217,6 @@ controller_interface::CallbackReturn Controller::on_configure(
     interpolation_mode_ = InterpolationMode::Linear;
     RCLCPP_INFO(get_node()->get_logger(), "Interpolation mode set to Linear");
 
-  } else if (params_.interpolation_mode == "reflexxes") {
-    interpolation_mode_ = InterpolationMode::Reflexxes;
-    RCLCPP_ERROR(get_node()->get_logger(),
-                 "Unimplemented interpolation mode 'reflexxes'. Please use "
-                 "'linear' interpolation");
-
-    return controller_interface::CallbackReturn::FAILURE;
-  } else if (params_.interpolation_mode == "minimal_splines") {
-    interpolation_mode_ = InterpolationMode::MinimalSplines;
-    RCLCPP_ERROR(get_node()->get_logger(),
-                 "Unimplemented interpolation mode 'minimal_splines'. Please "
-                 "use 'linear' interpolation");
-
-    return controller_interface::CallbackReturn::FAILURE;
   } else {
     RCLCPP_ERROR(
         get_node()->get_logger(),
@@ -474,41 +460,21 @@ bool Controller::update_joint_reference() {
   // update target to ensure it is within pre-defined limits
   switch (joint_motion_update_.trajectory_generation_mode.mode) {
     case TrajectoryGenerationMode::MODE_POSITION:
-      // todo(johntgz) Implement clamping to limits
-
-      // if (ClampJointStatesToLimits(joint_limits_,
-      //                              &target_joints_.value().positions)) {
-      //   RCLCPP_WARN(
-      //       get_node()->get_logger(),
-      //       "Position limit violation: Clamped target position to limits");
-      // }
-
+      // UNIMPLEMENTED
+      // Clamp poses to limit
       break;
     case TrajectoryGenerationMode::MODE_VELOCITY:
-      // todo(johntgz) Implement clamping to limits
-
-      // if (ScaleJointVelocitiesToLimits(joint_limits_,
-      //                                  &target_joints_.value().velocities)) {
-      //   RCLCPP_WARN(
-      //       get_node()->get_logger(),
-      //       "Position limit violation: Clamped target position to limits");
-      // }
-
+      // UNIMPLEMENTED
+      // Clamp twist to limit
+      RCLCPP_ERROR(get_node()->get_logger(),
+                   "MODE_VELOCITY trajectory generation mode is unimplemented. "
+                   "Please use MODE_POSITION.");
       return false;
 
       break;
     case TrajectoryGenerationMode::MODE_POSITION_AND_VELOCITY:
-      // todo(johntgz) Implement clamping to limits
-
-      // if (ClampJointStatesToLimits(
-      //         joint_limits_, &target_state_.value().position,
-      //         limits_soft_margin_radians_, &target_state_.value().velocity))
-      //         {
-      //   RCLCPP_WARN(get_node()->get_logger(),
-      //               "Position and velocity limit violation: Clamped target "
-      //               "position and velocity to limits");
-      // };
-
+      // UNIMPLEMENTED
+      // Clamp pose and twist to limit
       RCLCPP_ERROR(get_node()->get_logger(),
                    "MODE_POSITION_AND_VELOCITY trajectory generation mode is "
                    "unimplemented. Please use MODE_POSITION.");
@@ -533,21 +499,7 @@ bool Controller::update_joint_reference() {
               new_reference)) {
         return false;
       }
-      break;
-    case InterpolationMode::Reflexxes:
-      // UNIMPLEMENTED
-      RCLCPP_ERROR(
-          get_node()->get_logger(),
-          "Reflexxes interpolation mode is unimplemented. Please use LINEAR");
-      return false;
-      break;
-    case InterpolationMode::MinimalSplines:
-      // UNIMPLEMENTED
-      RCLCPP_ERROR(
-          get_node()->get_logger(),
-          "MINIMAL_SPLINES interpolation mode is unimplemented. Please "
-          "use LINEAR");
-      return false;
+
       break;
     default:
       RCLCPP_ERROR(get_node()->get_logger(),
@@ -564,9 +516,6 @@ bool Controller::update_joint_reference() {
     if (remaining_time_to_target_seconds_ < 0)
       remaining_time_to_target_seconds_ = 0;
   }
-
-  // RCLCPP_ERROR(get_node()->get_logger(), "Remaining time to target: %f s",
-  //              remaining_time_to_target_seconds_);
 
   reference_joints_ = new_reference;
 
@@ -696,7 +645,8 @@ bool Controller::sense() {
 
   if (control_mode_ == ControlMode::Impedance) {
     if (target_type_ == TargetType::Cartesian) {
-      cartesian_impedance_controller_->Update(joint_state_);
+      // UNIMPLEMENTED
+      // cartesian_impedance_controller_->Update(joint_state_);
     } else if (target_type_ == TargetType::Joint) {
       // UNIMPLEMENTED
       // update joint impedance controller with current joint state
