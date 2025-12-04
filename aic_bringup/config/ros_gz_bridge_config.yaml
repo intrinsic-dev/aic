@@ -26,6 +26,13 @@
   direction: GZ_TO_ROS
   lazy: true
 
+- ros_topic_name: "/wrist_camera_3/image"
+  gz_topic_name: "/wrist_camera_3/image"
+  ros_type_name: "sensor_msgs/msg/Image"
+  gz_type_name: "gz.msgs.Image"
+  direction: GZ_TO_ROS
+  lazy: true
+
 - ros_topic_name: "/wrist_camera_1/camera_info"
   gz_topic_name: "/wrist_camera_1/camera_info"
   ros_type_name: "sensor_msgs/msg/CameraInfo"
@@ -35,6 +42,13 @@
 
 - ros_topic_name: "/wrist_camera_2/camera_info"
   gz_topic_name: "/wrist_camera_2/camera_info"
+  ros_type_name: "sensor_msgs/msg/CameraInfo"
+  gz_type_name: "gz.msgs.CameraInfo"
+  direction: GZ_TO_ROS
+  lazy: true
+
+- ros_topic_name: "/wrist_camera_3/camera_info"
+  gz_topic_name: "/wrist_camera_3/camera_info"
   ros_type_name: "sensor_msgs/msg/CameraInfo"
   gz_type_name: "gz.msgs.CameraInfo"
   direction: GZ_TO_ROS

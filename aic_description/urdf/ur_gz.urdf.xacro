@@ -37,6 +37,7 @@
   <xacro:arg name="cam_mount_tf_prefix" default="cam_mount/" />
   <xacro:arg name="wrist_camera_1_tf_prefix" default="wrist_camera_1/"/>
   <xacro:arg name="wrist_camera_2_tf_prefix" default="wrist_camera_2/"/>
+  <xacro:arg name="wrist_camera_3_tf_prefix" default="wrist_camera_3/"/>
   <xacro:arg name="gripper_tf_prefix" default="gripper/"/>
   <xacro:arg name="cam_mount_radial_offset" default="0.1" />
   <xacro:arg name="cam_mount_axial_offset" default="0.08" />
@@ -142,6 +143,13 @@
     >
   </xacro:basler_camera>
 
+  <xacro:basler_camera
+    name="wrist_camera_3"
+    tf_prefix="$(arg wrist_camera_3_tf_prefix)"
+    use_sim_cam="$(arg use_sim_cam)"
+    >
+  </xacro:basler_camera>
+
   <xacro:robotiq_hande
     name="gripper"
     tf_prefix="$(arg gripper_tf_prefix)"
@@ -153,6 +161,10 @@
     initial_pos="0.02"
     >
   </xacro:robotiq_hande>
+
+ <!-- ********************
+      ** wrist_camera_1 **
+      ******************** -->
 
   <joint name="attach_cam_mount" type="fixed">
     <origin xyz="0 0 -.0265" rpy="0 0 0"/>
@@ -178,8 +190,8 @@
   </link>
 
   <joint name="wrist_camera_1_intermediate_joint" type="fixed">
-    <origin xyz="0 -$(arg cam_mount_radial_offset) $(arg cam_mount_axial_offset)"
-      rpy="${90.0*D2R} ${-90.0*D2R} ${0.0*D2R}"/>
+    <origin xyz="${-cos(30.0*D2R)*$(arg cam_mount_radial_offset)} -${sin(30.0*D2R)*$(arg cam_mount_radial_offset)} $(arg cam_mount_axial_offset)"
+      rpy="${90.0*D2R} ${-90.0*D2R} ${-60.0*D2R}"/>
     <parent link="$(arg cam_mount_tf_prefix)cam_mount_link"/>
     <child link="wrist_camera_1_intermediate_link"/>
   </joint>
@@ -189,6 +201,10 @@
     <parent link="wrist_camera_1_intermediate_link"/>
     <child link="$(arg wrist_camera_1_tf_prefix)basler_cam_link"/>
   </joint>
+
+  <!-- ********************
+       ** wrist_camera_2 **
+       ******************** -->
 
   <!-- Dummy link to simplify the chain of rotations -->
   <link name="wrist_camera_2_intermediate_link">
@@ -202,8 +218,8 @@
   </link>
 
   <joint name="wrist_camera_2_intermediate_joint" type="fixed">
-    <origin xyz="${-cos(30.0*D2R)*$(arg cam_mount_radial_offset)} ${sin(30.0*D2R)*$(arg cam_mount_radial_offset)} $(arg cam_mount_axial_offset)"
-      rpy="${90.0*D2R} ${-90.0*D2R} ${-120.0*D2R}"/>
+    <origin xyz="0 -$(arg cam_mount_radial_offset) $(arg cam_mount_axial_offset)"
+      rpy="${90.0*D2R} ${-90.0*D2R} ${0.0*D2R}"/>
     <parent link="$(arg cam_mount_tf_prefix)cam_mount_link"/>
     <child link="wrist_camera_2_intermediate_link"/>
   </joint>
@@ -212,6 +228,34 @@
     <origin xyz="0 0 0" rpy="${0.0*D2R} ${15.0*D2R} ${0.0*D2R}"/>
     <parent link="wrist_camera_2_intermediate_link"/>
     <child link="$(arg wrist_camera_2_tf_prefix)basler_cam_link"/>
+  </joint>
+
+  <!-- ********************
+       ** wrist_camera_3 **
+       ******************** -->
+
+  <!-- Dummy link to simplify the chain of rotations -->
+  <link name="wrist_camera_3_intermediate_link">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.001"/>
+      <inertia ixx="0.000001" ixy="0" ixz="0"
+               iyy="0.000001" iyz="0"
+               izz="0.000001"/>
+    </inertial>
+  </link>
+
+  <joint name="wrist_camera_3_intermediate_joint" type="fixed">
+    <origin xyz="${cos(30.0*D2R)*$(arg cam_mount_radial_offset)} -${sin(30.0*D2R)*$(arg cam_mount_radial_offset)} $(arg cam_mount_axial_offset)"
+      rpy="${90.0*D2R} ${-90.0*D2R} ${60.0*D2R}"/>
+    <parent link="$(arg cam_mount_tf_prefix)cam_mount_link"/>
+    <child link="wrist_camera_3_intermediate_link"/>
+  </joint>
+
+  <joint name="attach_wrist_camera_3" type="fixed">
+    <origin xyz="0 0 0" rpy="${0.0*D2R} ${15.0*D2R} ${0.0*D2R}"/>
+    <parent link="wrist_camera_3_intermediate_link"/>
+    <child link="$(arg wrist_camera_3_tf_prefix)basler_cam_link"/>
   </joint>
 
   <joint name="attach_gripper" type="fixed">

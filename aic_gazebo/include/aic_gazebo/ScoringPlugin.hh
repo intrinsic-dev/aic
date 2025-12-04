@@ -1,4 +1,3 @@
-
 /*
  * Copyright (C) 2025 Intrinsic Innovation LLC
  *

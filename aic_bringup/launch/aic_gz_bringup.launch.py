@@ -35,6 +35,7 @@ from launch.substitutions import (
     PythonExpression,
 )
 from launch_ros.actions import Node
+from launch_ros.parameter_descriptions import ParameterValue
 from launch_ros.substitutions import FindPackageShare
 from ros_gz_bridge.actions import RosGzBridge
 from ros_gz_sim.actions import GzServer
@@ -109,7 +110,9 @@ def launch_setup(context, *args, **kwargs):
             yaw,
         ]
     )
-    robot_description = {"robot_description": robot_description_content}
+    robot_description = {
+        "robot_description": ParameterValue(robot_description_content, value_type=str)
+    }
 
     robot_state_publisher_node = Node(
         package="robot_state_publisher",
