@@ -38,7 +38,8 @@ Controller::Controller()
       has_position_state_interface_(false),
       has_velocity_state_interface_(false),
       has_acceleration_state_interface_(false),
-      time_to_target_seconds_(0.0) {}
+      time_to_target_seconds_(0.0),
+      remaining_time_to_target_seconds_(0.0) {}
 
 controller_interface::CallbackReturn Controller::on_init() {
   try {
@@ -330,10 +331,14 @@ controller_interface::CallbackReturn Controller::on_activate(
   }
   last_commanded_joints_ = joint_state_;
 
+  // todo(johntgz) Set motion_update_ to the current sensed state
   reset_motion_update_msg(motion_update_);
   motion_update_rt_.try_set(motion_update_);
 
   reset_joint_motion_update_msg(joint_motion_update_);
+  joint_motion_update_.trajectory_generation_mode.mode =
+      TrajectoryGenerationMode::MODE_POSITION;
+  joint_motion_update_.target_state = joint_state_.to_msg();
   joint_motion_update_rt_.try_set(joint_motion_update_);
 
   return controller_interface::CallbackReturn::SUCCESS;
@@ -377,35 +382,49 @@ bool Controller::update_joint_reference() {
     return false;
   }
 
+  // update target to ensure it is within pre-defined limits
   switch (joint_motion_update_.trajectory_generation_mode.mode) {
     case TrajectoryGenerationMode::MODE_POSITION:
-      // UNIMPLEMENTED
-      // Clamp poses to limit
+      // todo(johntgz) fix this
+
+      // if (ClampJointStatesToLimits(joint_limits_,
+      //                              &target_joints_.value().positions)) {
+      //   RCLCPP_WARN(
+      //       get_node()->get_logger(),
+      //       "Position limit violation: Clamped target position to limits");
+      // }
 
       break;
     case TrajectoryGenerationMode::MODE_VELOCITY:
-      // UNIMPLEMENTED
-      // Clamp twist to limit
-      RCLCPP_ERROR(get_node()->get_logger(),
-                   "MODE_VELOCITY trajectory generation mode is unimplemented. "
-                   "Please use MODE_POSITION.");
+      // todo(johntgz) fix this
+
+      // if (ScaleJointVelocitiesToLimits(joint_limits_,
+      //                                  &target_joints_.value().velocities)) {
+      //   RCLCPP_WARN(
+      //       get_node()->get_logger(),
+      //       "Position limit violation: Clamped target position to limits");
+      // }
+
       return false;
+
       break;
     case TrajectoryGenerationMode::MODE_POSITION_AND_VELOCITY:
-      // UNIMPLEMENTED
-      // Clamp pose and twist to limit
+      // todo(johntgz) fix this
+
+      // if (ClampJointStatesToLimits(
+      //         joint_limits_, &target_state_.value().position,
+      //         limits_soft_margin_radians_, &target_state_.value().velocity))
+      //         {
+      //   RCLCPP_WARN(get_node()->get_logger(),
+      //               "Position and velocity limit violation: Clamped target "
+      //               "position and velocity to limits");
+      // };
+
       RCLCPP_ERROR(get_node()->get_logger(),
                    "MODE_POSITION_AND_VELOCITY trajectory generation mode is "
                    "unimplemented. Please use MODE_POSITION.");
       return false;
-      break;
-    case TrajectoryGenerationMode::MODE_UNSPECIFIED:
-      RCLCPP_INFO_THROTTLE(get_node()->get_logger(), *get_node()->get_clock(),
-                           1000,
-                           "MODE_UNSPECIFIED trajectory generation mode set. "
-                           "Defaulting to MODE_POSITION.");
-      // UNIMPLEMENTED
-      // Clamp poses to limit
+
       break;
     default:
       RCLCPP_ERROR(get_node()->get_logger(),
@@ -457,6 +476,9 @@ bool Controller::update_joint_reference() {
       remaining_time_to_target_seconds_ = 0;
   }
 
+  RCLCPP_ERROR(get_node()->get_logger(), "Remaining time to target: %f s",
+               remaining_time_to_target_seconds_);
+
   reference_joints_ = new_reference;
 
   return true;
@@ -464,6 +486,7 @@ bool Controller::update_joint_reference() {
 
 controller_interface::return_type Controller::update_and_write_commands(
     const ControlMode& control_mode, const TargetType& target_type) {
+  JointTrajectoryPoint reference;
   if (control_mode == ControlMode::Impedance) {
     // UNIMPLEMENTED
     // Interpolate impedance parameters
@@ -495,8 +518,10 @@ controller_interface::return_type Controller::update_and_write_commands(
           "Cartesian targets for admittance controller is unimplemented.");
 
       return controller_interface::return_type::ERROR;
+    } else if (target_type == TargetType::Joint) {
+      // Simply forward the joint reference to the admittance controller
+      reference = reference_joints_.value().to_msg();
     }
-    // If target_type is Joint, simply forward the joint reference
 
   } else {
     RCLCPP_ERROR(get_node()->get_logger(),
@@ -506,7 +531,7 @@ controller_interface::return_type Controller::update_and_write_commands(
     return controller_interface::return_type::ERROR;
   }
 
-  write_state_to_hardware(reference_joints_.value());
+  write_state_to_hardware(reference);
 
   return controller_interface::return_type::OK;
 }
@@ -548,6 +573,36 @@ bool Controller::sense() {
     auto command_op = joint_motion_update_rt_.try_get();
     if (command_op.has_value()) {
       joint_motion_update_ = command_op.value();
+
+      // Update time to target
+
+      // If target values or time_to_target_seconds is unchanged, then we keep
+      // the current remaining_time_to_target_seconds_ such that the current
+      // spline continues to the target.This is only applicable in pure position
+      // trajectory generation mode with non-zero time_to_target_seconds.
+      bool did_target_or_time_to_target_change =
+          joint_motion_update_.time_to_target_seconds !=
+              time_to_target_seconds_ ||
+          !ToEigen(joint_motion_update_.target_state.positions, num_joints_)
+               .isApprox(target_joints_.value().positions) ||
+          !ToEigen(joint_motion_update_.target_state.velocities, num_joints_)
+               .isApprox(target_joints_.value().velocities);
+
+      bool is_position_mode_with_zero_velocity_target =
+          ToEigen(joint_motion_update_.target_state.velocities, num_joints_)
+              .isApprox(Eigen::VectorXd::Zero(num_joints_)) &&
+          (joint_motion_update_.trajectory_generation_mode.mode ==
+               TrajectoryGenerationMode::MODE_POSITION ||
+           joint_motion_update_.trajectory_generation_mode.mode ==
+               TrajectoryGenerationMode::MODE_POSITION_AND_VELOCITY);
+
+      if (did_target_or_time_to_target_change ||
+          !is_position_mode_with_zero_velocity_target) {
+        remaining_time_to_target_seconds_ =
+            joint_motion_update_.time_to_target_seconds;
+      }
+
+      target_joints_ = JointState(joint_motion_update_.target_state);
     }
   }
 
@@ -689,7 +744,8 @@ void Controller::read_state_from_hardware(JointState& state_current) {
   }
 }
 
-void Controller::write_state_to_hardware(const JointState& state_commanded) {
+void Controller::write_state_to_hardware(
+    const JointTrajectoryPoint& state_commanded) {
   for (std::size_t joint_ind = 0; joint_ind < num_joints_; ++joint_ind) {
     bool success = true;
 
@@ -699,9 +755,8 @@ void Controller::write_state_to_hardware(const JointState& state_commanded) {
           state_commanded.positions[joint_ind]);
     } else if (control_mode_ == ControlMode::Impedance) {
       // Only write effort commands in impedance control mode
-      // todo(johntgz)
-      // success &= command_interfaces_[joint_ind].set_value(
-      //     state_commanded.effort[joint_ind]);
+      success &= command_interfaces_[joint_ind].set_value(
+          state_commanded.effort[joint_ind]);
     }
 
     if (!success) {
@@ -710,7 +765,7 @@ void Controller::write_state_to_hardware(const JointState& state_commanded) {
     }
   }
 
-  last_commanded_joints_ = state_commanded;
+  last_commanded_joints_ = JointState(state_commanded);
 }
 
 }  // namespace aic

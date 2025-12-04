@@ -242,7 +242,7 @@ def launch_setup(context, *args, **kwargs):
         ros_gz_bridge,
         gz_spawn_entity,
         home_script_spawner,
-        home_script_aic_controller_spawner,
+        # home_script_aic_controller_spawner,
     ]
 
     return nodes_to_start
