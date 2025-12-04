@@ -17,11 +17,15 @@
 #
 
 import sys
+import time
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Pose, Twist, Accel, Wrench
 from aic_control_interfaces.msg import MotionUpdate, JointMotionUpdate, TrajectoryGenerationMode
 
+JOINT_POSITIONS_START = [0.0, -1.2645, -2.35, -0.5, 1.5708, 0]
+JOINT_POSITIONS_HOME = [0.6, -1.3, -1.9, -1.57, 1.57, 0]
+JOINT_POSITIONS_A = [-0.25, -1.0, -1.5, -1.0, -1.57, 1.0]
 class HomeTrajectoryNode(Node):
     def __init__(self):
         super().__init__('home_trajectory_node')
@@ -35,7 +39,9 @@ class HomeTrajectoryNode(Node):
         self.joint_motion_update_publisher = self.create_publisher(
             JointMotionUpdate, self.controller_namespace+'/joint_motion_update', 10)
 
-        self.timer = self.create_timer(1.0, self.send_joint_motion_update)
+        while self.joint_motion_update_publisher.get_subscription_count() == 0:
+            self.get_logger().info(f"Waiting for subscriber to '{self.controller_namespace+'/joint_motion_update'}'...")
+            time.sleep(1.0)
 
     def get_result_callback(self, future):
         rclpy.shutdown()
@@ -57,48 +63,52 @@ class HomeTrajectoryNode(Node):
         msg.feedforward_wrench_at_tip = Wrench()
 
         msg.trajectory_generation_mode = TrajectoryGenerationMode.MODE_POSITION
-        # msg.trajectory_generation_mode = TrajectoryGenerationMode.MODE_VELOCITY
-        # msg.trajectory_generation_mode = TrajectoryGenerationMode.MODE_POSITION_AND_VELOCITY
 
         msg.time_to_target_seconds = 1.0
 
         return msg
 
-    def generate_joint_motion_update(self):
+    def generate_joint_motion_update(self, joint_positions, time_to_target):
         msg = JointMotionUpdate()
 
-        # Home joints configuration
-        msg.target_state.positions = [0.6, -1.3, -1.9, -1.57, 1.57, 0]
-        msg.target_state.time_from_start.sec = 2
+        msg.target_state.positions = joint_positions
 
         msg.target_stiffness = []
         msg.target_damping = []
 
         msg.trajectory_generation_mode.mode = TrajectoryGenerationMode.MODE_POSITION
-        # msg.trajectory_generation_mode = TrajectoryGenerationMode.MODE_VELOCITY
-        # msg.trajectory_generation_mode = TrajectoryGenerationMode.MODE_POSITION_AND_VELOCITY
 
-        msg.time_to_target_seconds = 2.0
+        msg.time_to_target_seconds = time_to_target
 
         return msg
 
-    def send_joint_motion_update(self):
-        print("Sending joint motion update")
-        joint_motion_update_msg = self.generate_joint_motion_update()
+    def send_joint_motion_update(self, joint_positions, time_to_target):
+        joint_motion_update_msg = self.generate_joint_motion_update(joint_positions, time_to_target)
         self.joint_motion_update_publisher.publish(joint_motion_update_msg)
-
 
 def main(args=None):
     rclpy.init(args=args)
 
     node = HomeTrajectoryNode()
 
-    node.send_joint_motion_update()
+    # Home robot
+    node.send_joint_motion_update(JOINT_POSITIONS_HOME, 2.0)
+    time.sleep(2.5)
 
-    rclpy.spin(node)
+    try:
+        # Start loop where robot moves between joint positions A and B
+        while True:
+            node.send_joint_motion_update(JOINT_POSITIONS_A, 2.0)
+            time.sleep(2.5)
+            node.send_joint_motion_update(JOINT_POSITIONS_HOME, 2.0)
+            time.sleep(2.5)
 
-    node.destroy_node()
-    rclpy.shutdown()
+            rclpy.spin_once(node, timeout_sec=0.1)
+    except KeyboardInterrupt:
+        print("Keyboard interrupt detected, shutting down node.")
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
 
 
 if __name__ == '__main__':
