@@ -41,27 +41,24 @@ CartesianImpedanceController::CartesianImpedanceController(
     : ndof_(ndof), params_(params) {}
 
 controller_interface::return_type CartesianImpedanceController::Configure(
-    const std::shared_ptr<rclcpp_lifecycle::LifecycleNode>& node,
-    const std::string& robot_description) {
+    const std::shared_ptr<rclcpp_lifecycle::LifecycleNode>& node) {
   // UNIMPLEMENTED
   // Load the differential IK plugin given the robot_description
 
   return controller_interface::return_type::OK;
 }
 
-Eigen::VectorXd CartesianImpedanceController::Compute(
-    const geometry_msgs::msg::Pose tool_pose,
-    const geometry_msgs::msg::Twist tool_vel,
+Eigen::Matrix<double, 6, 1> CartesianImpedanceController::Compute(
+    const CartState& tool_target,
     const CartesianImpedanceParameters& impedance_params,
     const JointLimits& joint_limits) {
   // UNIMPLEMENTED
   // Compute control wrench using the control law
 
-  return Eigen::VectorXd();
+  return Eigen::Matrix<double, 6, 1>::Zero();
 }
 
-bool CartesianImpedanceController::Update(
-    const JointTrajectoryPoint& current_sensed) {
+bool CartesianImpedanceController::Update(const JointState& current_sensed) {
   // UNIMPLEMENTED
   // Compute the end-effector cartesian pose estimate using forward kinematics.
   // Compute the jacobian

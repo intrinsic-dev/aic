@@ -101,6 +101,8 @@ struct JointState {
       msg.accelerations = std::vector<double>(size);
     }
 
+    msg.effort = std::vector<double>(size);
+
     return msg;
   }
 };

@@ -267,12 +267,16 @@ admittance_controller:
 aic_controller:
   ros__parameters:
     # Available control modes are "admittance" and "impedance"
-    control_mode: "admittance"
+    control_mode: "impedance"
+    # Available target types are "cartesian" and "joint"
+    target_type: "cartesian"
+
+    # # Available control modes are "admittance" and "impedance"
+    # control_mode: "admittance"
+    # # Available target types are "cartesian" and "joint"
+    # target_type: "joint"
 
     interpolation_mode: "linear"
-
-    # Available target types are "cartesian" and "joint"
-    target_type: "joint"
 
     update_rate: 500  # Hz
 
@@ -287,14 +291,19 @@ aic_controller:
     state_interfaces:
       - position
 
-    # Chained to admittance controller command interface
+    # When chained to admittance controller command interface in
+    # admittance control_mdoe, the command interfaces will prepend the
+    # command_joints with this namespace
+    admittance_controller_namespace: "admittance_controller"
+
+    # Command interfaces to be chained to
     command_joints:
-      - admittance_controller/shoulder_pan_joint
-      - admittance_controller/shoulder_lift_joint
-      - admittance_controller/elbow_joint
-      - admittance_controller/wrist_1_joint
-      - admittance_controller/wrist_2_joint
-      - admittance_controller/wrist_3_joint
+      - shoulder_pan_joint
+      - shoulder_lift_joint
+      - elbow_joint
+      - wrist_1_joint
+      - wrist_2_joint
+      - wrist_3_joint
 
     command_interfaces:
       - position
@@ -307,6 +316,8 @@ aic_controller:
       tip: tool0
       group_name: arm
       alpha: 0.0005 # Specifies the damping coefficient for the Jacobian pseudo inverse.
+
+    control_frame_id: "tool0" # Usually the tool or end-effector
 
     # If enabled, the parameters will be dynamically updated while the controller is running.
     enable_parameter_update_without_reactivation: true

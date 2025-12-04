@@ -144,6 +144,31 @@ class Controller : public controller_interface::ControllerInterface {
       JointState& new_reference);
 
   /**
+   * @brief Update the impedance parameters by interpolating their values for
+   * the impedance control law
+   *
+   * @param target_type
+   */
+  bool UpdateImpedance(const TargetType& target_type);
+
+  /**
+   * @brief Update the feedforward wrench  by interpolating their values for the
+   * impedance control law
+   *
+   * @param target_type
+   */
+  bool UpdateFeedforwardWrench(const TargetType& target_type);
+
+  /**
+   * @brief todo(johntgz)
+   *
+   * @param target_type
+   * @return CartesianImpedanceParameters
+   */
+  CartesianImpedanceParameters PopulateImpedanceParameters(
+      const TargetType& target_type);
+
+  /**
    * @brief Update fields of state_current with joint states from hardware
    * interfaces
    *
@@ -198,11 +223,24 @@ class Controller : public controller_interface::ControllerInterface {
   // State commanded by JointMotionUpdate user commands
   std::optional<JointState> target_joints_;
 
+  // Last value written to controller interfaces
+  CartState last_commanded_cart_;
+  // Variable used in interpolation of target
+  std::optional<CartState> reference_cart_;
+  // State commanded by MotionUpdate user commands
+  std::optional<CartState> target_cart_;
+
   double time_to_target_seconds_;
   double remaining_time_to_target_seconds_;
 
   // Latest joint states read from hardware interface
   JointState joint_state_;
+  CartState cart_state_;
+
+  std::shared_ptr<
+      pluginlib::ClassLoader<kinematics_interface::KinematicsInterface>>
+      kinematics_loader_;
+  std::unique_ptr<kinematics_interface::KinematicsInterface> kinematics_;
 };
 
 }  // namespace aic

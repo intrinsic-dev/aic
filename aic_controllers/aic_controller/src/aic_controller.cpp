@@ -67,6 +67,11 @@ controller_interface::CallbackReturn Controller::on_init() {
   last_commanded_joints_ = reference_joints_.value();
   joint_state_ = reference_joints_.value();
 
+  // Initialize size of value of cartesian references and states
+  reference_cart_ = CartState();
+  last_commanded_cart_ = reference_cart_.value();
+  cart_state_ = reference_cart_.value();
+
   cartesian_impedance_controller_ =
       CartesianImpedanceController::Create(param_listener_);
   if (!cartesian_impedance_controller_) {
@@ -88,7 +93,8 @@ Controller::command_interface_configuration() const {
         interface == hardware_interface::HW_IF_POSITION) {
       // Only initialize position interfaces in admittance control mode
       for (const auto& joint : command_joint_names_) {
-        auto full_name = joint + "/" + interface;
+        auto full_name = params_.admittance_controller_namespace + "/" + joint +
+                         "/" + interface;
         command_interfaces_config_names.push_back(full_name);
       }
     } else if (control_mode_ == ControlMode::Impedance &&
@@ -371,11 +377,45 @@ controller_interface::CallbackReturn Controller::on_configure(
       return controller_interface::CallbackReturn::ERROR;
     }
 
-    if (cartesian_impedance_controller_->Configure(
-            get_node(), this->get_robot_description()) ==
+    if (cartesian_impedance_controller_->Configure(get_node()) ==
         controller_interface::return_type::ERROR) {
       return controller_interface::CallbackReturn::ERROR;
     }
+  }
+
+  // Load the kinematics plugin
+  if (!params_.kinematics.plugin_name.empty()) {
+    try {
+      // Make sure we destroy the interface first. Otherwise we might run into a
+      // segfault
+      if (kinematics_loader_) {
+        kinematics_.reset();
+      }
+      kinematics_loader_ = std::make_shared<
+          pluginlib::ClassLoader<kinematics_interface::KinematicsInterface>>(
+          params_.kinematics.plugin_package,
+          "kinematics_interface::KinematicsInterface");
+      kinematics_ = std::unique_ptr<kinematics_interface::KinematicsInterface>(
+          kinematics_loader_->createUnmanagedInstance(
+              params_.kinematics.plugin_name));
+
+      if (!kinematics_->initialize(
+              this->get_robot_description(),
+              this->get_node()->get_node_parameters_interface(),
+              "kinematics")) {
+        return controller_interface::CallbackReturn::ERROR;
+      }
+    } catch (pluginlib::PluginlibException& ex) {
+      RCLCPP_ERROR(rclcpp::get_logger("AdmittanceRule"),
+                   "Exception while loading the IK plugin '%s': '%s'",
+                   params_.kinematics.plugin_name.c_str(), ex.what());
+      return controller_interface::CallbackReturn::ERROR;
+    }
+  } else {
+    RCLCPP_ERROR(
+        rclcpp::get_logger("AdmittanceRule"),
+        "A differential IK plugin name was not specified in the config file.");
+    return controller_interface::CallbackReturn::ERROR;
   }
 
   return controller_interface::CallbackReturn::SUCCESS;
@@ -405,6 +445,22 @@ controller_interface::CallbackReturn Controller::on_activate(
     target_joints_ = joint_state_;
   }
   last_commanded_joints_ = joint_state_;
+
+  // Get current cartesian state of control tool frame
+  if (!kinematics_->calculate_link_transform(
+          joint_state_.positions, params_.control_frame_id, cart_state_.pose) ||
+      !kinematics_->convert_joint_deltas_to_cartesian_deltas(
+          joint_state_.positions, joint_state_.velocities,
+          params_.control_frame_id, cart_state_.velocity)) {
+    return controller_interface::CallbackReturn::ERROR;
+  }
+  cart_state_.acceleration.setZero();
+  if (!reference_cart_.has_value()) {
+    reference_cart_ = cart_state_;
+  }
+  if (!target_cart_.has_value()) {
+    target_cart_ = cart_state_;
+  }
 
   // todo(johntgz) Set motion_update_ to the current sensed state
   reset_motion_update_msg(motion_update_);
@@ -441,7 +497,7 @@ controller_interface::CallbackReturn Controller::on_deactivate(
 bool Controller::update_cartesian_reference() {
   RCLCPP_ERROR(get_node()->get_logger(),
                "update_cartesian_reference() is unimplemented");
-  return false;
+  return true;
 }
 
 bool Controller::update_joint_reference() {
@@ -524,28 +580,52 @@ bool Controller::update_joint_reference() {
 
 controller_interface::return_type Controller::update_and_write_commands(
     const ControlMode& control_mode, const TargetType& target_type) {
-  JointTrajectoryPoint reference;
+  JointTrajectoryPoint reference = joint_state_.to_msg();
   if (control_mode == ControlMode::Impedance) {
-    // UNIMPLEMENTED
-    // Interpolate impedance parameters
-    //    UpdateImpedance(target_type)
+    // todo(johntgz) update parameters
+
+    if (!UpdateImpedance(target_type)) {
+      RCLCPP_ERROR(get_node()->get_logger(),
+                   "Unable to update impedance parameters");
+      return controller_interface::return_type::ERROR;
+    }
+
     // Interpolate feed-forward wrench
-    //    UpdateFeedforwardWrench(target_type)
+    if (!UpdateFeedforwardWrench(target_type)) {
+      RCLCPP_ERROR(get_node()->get_logger(),
+                   "Unable to update feedforward wrench");
+      return controller_interface::return_type::ERROR;
+    }
+
+    // Get wrench feedback gains.
+    // wrench_feedback_gains_at_tip_ = Eigen::Map<const eigenmath::Vector6d>(
+    //     motion_update_.wrench_feedback_gains_at_tip);
+
+    CartesianImpedanceParameters impedance_parameters;
+    // CartesianImpedanceParameters impedance_parameters =
+    //     PopulateImpedanceParameters(
+    //         task_settings_, system_limits_.max_torque, stiffness_, damping_,
+    //         mass_, sensed_cartesian_state_->pose, feedforward_wrench_at_tip_,
+    //         wrench_feedback_gains_at_tip_, wrench_at_tip_);
 
     if (target_type == TargetType::Cartesian) {
-      // UNIMPLEMENTED
-      // Compute joint torques
+      // Compute joint efforts
+      Eigen::Matrix<double, 6, 1> control_effort =
+          cartesian_impedance_controller_->Compute(
+              reference_cart_.value(), impedance_parameters, joint_limits_);
+
+      // todo(johntgz) assign control_effort to reference
+      // reference = control_effort;
+
     } else if (target_type == TargetType::Joint) {
       // UNIMPLEMENTED
       // Compute joint torques
+
+      RCLCPP_ERROR(get_node()->get_logger(),
+                   "Impedance control in joint space is unimplemented.");
+
+      return controller_interface::return_type::ERROR;
     }
-    // UNIMPLEMENTED
-    // Write the control torque to hardware interfaces
-
-    RCLCPP_ERROR(get_node()->get_logger(),
-                 "Impedance control is unimplemented.");
-
-    return controller_interface::return_type::ERROR;
   } else if (control_mode == ControlMode::Admittance) {
     if (target_type == TargetType::Cartesian) {
       // UNIMPLEMENTED
@@ -593,7 +673,6 @@ controller_interface::return_type Controller::update(
   }
 
   update_and_write_commands(control_mode_, target_type_);
-
   return controller_interface::return_type::OK;
 }
 
@@ -645,8 +724,8 @@ bool Controller::sense() {
 
   if (control_mode_ == ControlMode::Impedance) {
     if (target_type_ == TargetType::Cartesian) {
-      // UNIMPLEMENTED
-      // cartesian_impedance_controller_->Update(joint_state_);
+      // todo(johntgz) implement this
+      cartesian_impedance_controller_->Update(joint_state_);
     } else if (target_type_ == TargetType::Joint) {
       // UNIMPLEMENTED
       // update joint impedance controller with current joint state
@@ -728,6 +807,12 @@ bool Controller::update_reference_joints_linear_interpolation(
       break;
   }
 
+  return true;
+}
+
+bool Controller::UpdateImpedance(const TargetType& target_type) { return true; }
+
+bool Controller::UpdateFeedforwardWrench(const TargetType& target_type) {
   return true;
 }
 

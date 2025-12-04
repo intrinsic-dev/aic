@@ -71,6 +71,18 @@ aic_controller:
     description: "Robot controller update rate in Hz"
   }
 
+  admittance_controller_namespace: {
+    type: string,
+    default_value: "admittance_controller",
+    description: "Namespace of admittance controller used when chaining to the admittance controller's reference interface"
+  }
+
+  control_frame_id: {
+    type: string,
+    default_value: "tool0",
+    description: "Frame ID of control tooltip or end-effector"
+  }
+
   # general settings
   enable_parameter_update_without_reactivation: {
     type: bool,
