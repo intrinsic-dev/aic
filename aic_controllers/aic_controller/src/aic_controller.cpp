@@ -503,8 +503,8 @@ bool Controller::update_joint_reference() {
       break;
     default:
       RCLCPP_ERROR(get_node()->get_logger(),
-                   "Invalid interpolation mode. Please choose one the "
-                   "following: 'linear', 'reflexxes' or 'minimal_splines'");
+                   "Invalid interpolation mode. Only supported interpolation "
+                   "mode is 'linear'");
       return false;
       break;
   }

@@ -58,8 +58,6 @@ enum class ControlMode : uint8_t { Invalid = 0, Admittance = 1, Impedance = 2 };
 enum class InterpolationMode : uint8_t {
   Invalid = 0,
   Linear = 1,
-  Reflexxes = 2,
-  MinimalSplines = 3
 };
 
 enum class TargetType : uint8_t {
