@@ -20,18 +20,18 @@
 namespace {  // utility
 
 // called from RT control loop
-void reset_motion_update_msg(aic::MotionUpdate& msg) {
-  msg = aic::MotionUpdate();
+void reset_motion_update_msg(aic_controller::MotionUpdate& msg) {
+  msg = aic_controller::MotionUpdate();
 }
 
 // called from RT control loop
-void reset_joint_motion_update_msg(aic::JointMotionUpdate& msg) {
-  msg = aic::JointMotionUpdate();
+void reset_joint_motion_update_msg(aic_controller::JointMotionUpdate& msg) {
+  msg = aic_controller::JointMotionUpdate();
 }
 
 }  // namespace
 
-namespace aic {
+namespace aic_controller {
 
 Controller::Controller()
     : num_joints_(0),
@@ -601,9 +601,9 @@ void Controller::write_state_to_hardware(
   last_commanded_joints_ = state_commanded;
 }
 
-}  // namespace aic
+}  // namespace aic_controller
 
 #include "pluginlib/class_list_macros.hpp"
 
-PLUGINLIB_EXPORT_CLASS(aic::Controller,
+PLUGINLIB_EXPORT_CLASS(aic_controller::Controller,
                        controller_interface::ControllerInterface)

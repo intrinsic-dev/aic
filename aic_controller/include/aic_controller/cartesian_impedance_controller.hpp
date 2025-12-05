@@ -28,7 +28,7 @@
 #include "joint_limits.hpp"
 #include "trajectory_msgs/msg/joint_trajectory_point.hpp"
 
-namespace aic {
+namespace aic_controller {
 using trajectory_msgs::msg::JointTrajectoryPoint;
 
 struct CartesianImpedanceParameters {};
@@ -82,6 +82,6 @@ class CartesianImpedanceController {
   const std::size_t ndof_;
 };
 
-}  // namespace aic
+}  // namespace aic_controller
 
 #endif  // AIC_CONTROLLER__CARTESIAN_IMPEDANCE_CONTROLLER_HPP_

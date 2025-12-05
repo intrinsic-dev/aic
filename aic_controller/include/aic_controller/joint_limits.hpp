@@ -18,13 +18,13 @@
 #ifndef AIC_CONTROLLER__JOINT_LIMITS_HPP_
 #define AIC_CONTROLLER__JOINT_LIMITS_HPP_
 
-namespace aic {
+namespace aic_controller {
 
 // Joint limits for position, velocity, acceleration, jerk and torque.
 struct JointLimits {
   // UNIMPLEMENTED
 };
 
-}  // namespace aic
+}  // namespace aic_controller
 
 #endif  // AIC_CONTROLLER__JOINT_LIMITS_HPP_

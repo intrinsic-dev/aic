@@ -44,7 +44,7 @@
  * 2. Impedance mode: Outputs control commands to the robot arm's hardware
  * interface from an internal impedance controller implementation.
  */
-namespace aic {
+namespace aic_controller {
 using JointMotionUpdate = aic_control_interfaces::msg::JointMotionUpdate;
 using MotionUpdate = aic_control_interfaces::msg::MotionUpdate;
 using TrajectoryGenerationMode =
@@ -193,6 +193,6 @@ class Controller : public controller_interface::ControllerInterface {
   JointTrajectoryPoint joint_state_;
 };
 
-}  // namespace aic
+}  // namespace aic_controller_controller
 
 #endif  // AIC_CONTROLLER__AIC_CONTROLLER_HPP_

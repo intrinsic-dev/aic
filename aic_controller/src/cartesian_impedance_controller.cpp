@@ -17,7 +17,7 @@
 
 #include "aic_controller/cartesian_impedance_controller.hpp"
 
-namespace aic {
+namespace aic_controller {
 
 std::unique_ptr<CartesianImpedanceController>
 CartesianImpedanceController::Create(
@@ -32,7 +32,7 @@ CartesianImpedanceController::Create(
     return nullptr;
   }
 
-  return std::make_unique<aic::CartesianImpedanceController>(ndof,
+  return std::make_unique<aic_controller::CartesianImpedanceController>(ndof,
                                                              std::move(params));
 }
 
@@ -69,4 +69,4 @@ bool CartesianImpedanceController::Update(
   return false;
 }
 
-}  // namespace aic
+}  // namespace aic_controller
