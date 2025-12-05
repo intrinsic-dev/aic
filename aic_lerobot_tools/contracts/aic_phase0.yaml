@@ -12,15 +12,32 @@ max_duration_s: 90.0
 
 # Policy inference parameters # Generate 5 actions per inference (reasonable for 0.5Hz)
 observations:
-  # TODO: Define camera contract
-  # - key: observation.images.main
-  #   topic: /camera
-  #   type: sensor_msgs/msg/Image
-  #   image:
-  #     # bag_to_lerobot decodes to RGB and resizes here
-  #     resize: [512, 512]
-  #   align: { strategy: hold, stamp: header, tol_ms: 1500 }
-  #   qos: { reliability: best_effort, history: keep_last, depth: 10 }
+  - key: observation.images.wrist1
+    topic: /wrist_camera_1/image
+    type: sensor_msgs/msg/Image
+    image:
+      # bag_to_lerobot decodes to RGB and resizes here
+      resize: [512, 512]
+    align: { strategy: hold, stamp: header, tol_ms: 1500 }
+    qos: { reliability: reliable, history: keep_last, depth: 10 }
+  
+  - key: observation.images.wrist2
+    topic: /wrist_camera_2/image
+    type: sensor_msgs/msg/Image
+    image:
+      # bag_to_lerobot decodes to RGB and resizes here
+      resize: [512, 512]
+    align: { strategy: hold, stamp: header, tol_ms: 1500 }
+    qos: { reliability: reliable, history: keep_last, depth: 10 }
+  
+  - key: observation.images.wrist3
+    topic: /wrist_camera_3/image
+    type: sensor_msgs/msg/Image
+    image:
+      # bag_to_lerobot decodes to RGB and resizes here
+      resize: [512, 512]
+    align: { strategy: hold, stamp: header, tol_ms: 1500 }
+    qos: { reliability: reliable, history: keep_last, depth: 10 }
 
   # - key: observation.images.front.depth
   #   topic: /intel_realsense_r200_depth/depth/image_raw
