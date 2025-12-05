@@ -36,12 +36,9 @@ add_library(aic_controller SHARED
   src/actions/cartesian_impedance_action.cpp
 )
 target_compile_features(aic_controller PUBLIC cxx_std_17)
-target_include_directories(aic_controller
-  PUBLIC
+target_include_directories(aic_controller PUBLIC
   $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include/aic_controller>
-  PRIVATE
-    ${PROJECT_SOURCE_DIR}/src/actions
 )
 
 target_link_libraries(aic_controller PUBLIC
