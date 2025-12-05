@@ -37,8 +37,8 @@ add_library(aic_controller SHARED
 )
 target_compile_features(aic_controller PUBLIC cxx_std_17)
 target_include_directories(aic_controller PUBLIC
-  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include/aic_controller>
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include/aic_controller>
 )
 
 target_link_libraries(aic_controller PUBLIC
