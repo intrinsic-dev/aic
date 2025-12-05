@@ -17,29 +17,93 @@
 
 #include "aic_controller/aic_controller.hpp"
 
-namespace {  // utility
+//==============================================================================
+namespace {
 
+//==============================================================================
 // called from RT control loop
 void reset_motion_update_msg(aic_controller::MotionUpdate& msg) {
   msg = aic_controller::MotionUpdate();
 }
 
+//==============================================================================
 // called from RT control loop
 void reset_joint_motion_update_msg(aic_controller::JointMotionUpdate& msg) {
   msg = aic_controller::JointMotionUpdate();
 }
 
-}  // namespace
+}  // namespace anonymous
 
+//==============================================================================
 namespace aic_controller {
 
+//==============================================================================
 Controller::Controller()
-    : num_joints_(0),
-      has_position_state_interface_(false),
-      has_velocity_state_interface_(false),
-      has_acceleration_state_interface_(false),
-      time_to_target_seconds_(0.0) {}
+: param_listener_(nullptr),
+	num_joints_(0),
+	command_joint_names_({}),
+	target_type_(TargetType::Invalid),
+	control_mode_(ControlMode::Invalid),
+	interpolation_mode_(InterpolationMode::Invalid),
+	has_position_state_interface_(false),
+	has_velocity_state_interface_(false),
+	has_acceleration_state_interface_(false),
+	cartesian_impedance_action_(nullptr),
+	motion_update_sub_(nullptr),
+	joint_motion_update_sub_(nullptr),
+	reference_joints_(std::nullopt),
+	target_joints_(std::nullopt),
+	time_to_target_seconds_(0.0)
+{
+	// Do nothing.
+}
 
+//==============================================================================
+controller_interface::InterfaceConfiguration
+Controller::command_interface_configuration() const {
+  controller_interface::InterfaceConfiguration command_interfaces_config;
+
+  std::vector<std::string> command_interfaces_config_names;
+  for (const auto& interface : params_.command_interfaces) {
+    if (control_mode_ == ControlMode::Admittance &&
+        interface == hardware_interface::HW_IF_POSITION) {
+      // Only initialize position interfaces in admittance control mode
+      for (const auto& joint : command_joint_names_) {
+        auto full_name = joint + "/" + interface;
+        command_interfaces_config_names.push_back(full_name);
+      }
+    } else if (control_mode_ == ControlMode::Impedance &&
+               interface == hardware_interface::HW_IF_EFFORT) {
+      // Only initialize effort interfaces in impedance control mode
+      for (const auto& joint : command_joint_names_) {
+        auto full_name = joint + "/" + interface;
+        command_interfaces_config_names.push_back(full_name);
+      }
+    }
+  }
+
+  return {controller_interface::interface_configuration_type::INDIVIDUAL,
+          command_interfaces_config_names};
+}
+
+//==============================================================================
+controller_interface::InterfaceConfiguration
+Controller::state_interface_configuration() const {
+  controller_interface::InterfaceConfiguration state_interfaces_config;
+  std::vector<std::string> state_interfaces_config_names;
+
+  for (const auto& interface : params_.state_interfaces) {
+    for (const auto& joint : params_.joints) {
+      auto full_name = joint + "/" + interface;
+      state_interfaces_config_names.push_back(full_name);
+    }
+  }
+
+  return {controller_interface::interface_configuration_type::INDIVIDUAL,
+          state_interfaces_config_names};
+}
+
+//==============================================================================
 controller_interface::CallbackReturn Controller::on_init() {
   try {
     param_listener_ =
@@ -81,49 +145,7 @@ controller_interface::CallbackReturn Controller::on_init() {
   return controller_interface::CallbackReturn::SUCCESS;
 }
 
-controller_interface::InterfaceConfiguration
-Controller::command_interface_configuration() const {
-  controller_interface::InterfaceConfiguration command_interfaces_config;
-
-  std::vector<std::string> command_interfaces_config_names;
-  for (const auto& interface : params_.command_interfaces) {
-    if (control_mode_ == ControlMode::Admittance &&
-        interface == hardware_interface::HW_IF_POSITION) {
-      // Only initialize position interfaces in admittance control mode
-      for (const auto& joint : command_joint_names_) {
-        auto full_name = joint + "/" + interface;
-        command_interfaces_config_names.push_back(full_name);
-      }
-    } else if (control_mode_ == ControlMode::Impedance &&
-               interface == hardware_interface::HW_IF_EFFORT) {
-      // Only initialize effort interfaces in impedance control mode
-      for (const auto& joint : command_joint_names_) {
-        auto full_name = joint + "/" + interface;
-        command_interfaces_config_names.push_back(full_name);
-      }
-    }
-  }
-
-  return {controller_interface::interface_configuration_type::INDIVIDUAL,
-          command_interfaces_config_names};
-}
-
-controller_interface::InterfaceConfiguration
-Controller::state_interface_configuration() const {
-  controller_interface::InterfaceConfiguration state_interfaces_config;
-  std::vector<std::string> state_interfaces_config_names;
-
-  for (const auto& interface : params_.state_interfaces) {
-    for (const auto& joint : params_.joints) {
-      auto full_name = joint + "/" + interface;
-      state_interfaces_config_names.push_back(full_name);
-    }
-  }
-
-  return {controller_interface::interface_configuration_type::INDIVIDUAL,
-          state_interfaces_config_names};
-}
-
+//==============================================================================
 controller_interface::CallbackReturn Controller::on_configure(
     const rclcpp_lifecycle::State& /*previous_state*/) {
   // Set and validate commanded joint names
@@ -285,6 +307,7 @@ controller_interface::CallbackReturn Controller::on_configure(
   return controller_interface::CallbackReturn::SUCCESS;
 }
 
+//==============================================================================
 controller_interface::CallbackReturn Controller::on_activate(
     const rclcpp_lifecycle::State& /*previous_state*/) {
   if (control_mode_ == ControlMode::Impedance) {
@@ -323,6 +346,7 @@ controller_interface::CallbackReturn Controller::on_activate(
   return controller_interface::CallbackReturn::SUCCESS;
 }
 
+//==============================================================================
 controller_interface::CallbackReturn Controller::on_deactivate(
     const rclcpp_lifecycle::State& /*previous_state*/) {
   if (control_mode_ == ControlMode::Impedance) {
@@ -342,12 +366,14 @@ controller_interface::CallbackReturn Controller::on_deactivate(
   return controller_interface::CallbackReturn::SUCCESS;
 }
 
+//==============================================================================
 bool Controller::update_cartesian_reference() {
   RCLCPP_ERROR(get_node()->get_logger(),
                "update_cartesian_reference() is unimplemented");
   return false;
 }
 
+//==============================================================================
 bool Controller::update_joint_reference() {
   if (!reference_joints_.has_value()) {
     RCLCPP_ERROR(get_node()->get_logger(),
@@ -419,6 +445,7 @@ bool Controller::update_joint_reference() {
   return true;
 }
 
+//==============================================================================
 controller_interface::return_type Controller::update_and_write_commands(
     const ControlMode& control_mode, const TargetType& target_type) {
   JointTrajectoryPoint reference;
@@ -471,6 +498,7 @@ controller_interface::return_type Controller::update_and_write_commands(
   return controller_interface::return_type::OK;
 }
 
+//==============================================================================
 controller_interface::return_type Controller::update(
     const rclcpp::Time& /*time*/, const rclcpp::Duration& /*period*/) {
   // Read and update current states from sensors
@@ -494,6 +522,7 @@ controller_interface::return_type Controller::update(
   return controller_interface::return_type::OK;
 }
 
+//==============================================================================
 bool Controller::sense() {
   read_state_from_hardware(joint_state_);
 
@@ -525,6 +554,7 @@ bool Controller::sense() {
   return true;
 }
 
+//==============================================================================
 bool Controller::update_reference_joints_linear_interpolation(
     const JointTrajectoryPoint& reference_state,
     const JointTrajectoryPoint& target_state,
@@ -533,6 +563,7 @@ bool Controller::update_reference_joints_linear_interpolation(
   return true;
 }
 
+//==============================================================================
 void Controller::read_state_from_hardware(JointTrajectoryPoint& state_current) {
   // Set state_current to last commanded state if any of the hardware interface
   // values are NaN
@@ -596,6 +627,7 @@ void Controller::read_state_from_hardware(JointTrajectoryPoint& state_current) {
   }
 }
 
+//==============================================================================
 void Controller::write_state_to_hardware(
     const JointTrajectoryPoint& state_commanded) {
   for (std::size_t joint_ind = 0; joint_ind < num_joints_; ++joint_ind) {

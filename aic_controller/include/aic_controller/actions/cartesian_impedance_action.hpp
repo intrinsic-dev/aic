@@ -20,16 +20,21 @@
 
 #include <Eigen/Core>
 
+#include "rclcpp_lifecycle/lifecycle_node.hpp"
+
+// Interfaces
 #include "geometry_msgs/msg/pose.hpp"
 #include "geometry_msgs/msg/twist.hpp"
-#include "rclcpp_lifecycle/lifecycle_node.hpp"
 #include "trajectory_msgs/msg/joint_trajectory_point.hpp"
 
+//==============================================================================
 namespace aic_controller {
 using trajectory_msgs::msg::JointTrajectoryPoint;
 
+//==============================================================================
 struct CartesianImpedanceParameters {};
 
+//==============================================================================
 class CartesianImpedanceAction {
  public:
   CartesianImpedanceAction(unsigned int ndof);

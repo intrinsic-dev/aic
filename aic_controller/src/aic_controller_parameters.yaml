@@ -56,7 +56,7 @@ aic_controller:
   interpolation_mode: {
     type: string,
     default_value: "linear",
-    description: "Sets the interpolation mode, which can be either 'linear', 'reflexxes' or 'minimal_splines'"
+    description: "Sets the interpolation mode, which can only be 'linear'"
   }
 
   target_type: {
