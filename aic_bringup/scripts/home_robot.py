@@ -40,6 +40,13 @@ class HomeTrajectoryNode(Node):
         if self.use_aic_control:
             self.publisher = self.create_publisher(
                 JointMotionUpdate, f'/{self.controller_namespace}/joint_motion_update', 10)
+
+            while self.publisher.get_subscription_count() == 0:
+                self.get_logger().info(
+                    f"Waiting for subscriber to '{self.controller_namespace}/joint_motion_update'..."
+                )
+                time.sleep(1.0)
+
         else:
             # todo(Yadunund): We could also directly publish a JouintTrajectory message
             # to /joint_trajectory_controller/joint_trajectory.
@@ -70,7 +77,7 @@ class HomeTrajectoryNode(Node):
         if self.use_aic_control:
             msg = JointMotionUpdate()
             # Home joints configuration
-            msg.target_state.positions = [0.0, -1.3, -1.9, -1.57, 1.57, 0]
+            msg.target_state.positions = self.home_joint_positions
             msg.target_state.time_from_start.sec = 2
             msg.target_stiffness = []
             msg.target_damping = []

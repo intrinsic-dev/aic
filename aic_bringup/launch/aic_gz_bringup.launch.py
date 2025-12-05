@@ -172,10 +172,6 @@ def launch_setup(context, *args, **kwargs):
         arguments=["fts_broadcaster", "--controller-manager", "/controller_manager"],
     )
 
-    use_aic_controller = PythonExpression([
-        "'", initial_joint_controller, "' == 'aic_controller'"
-    ])
-
     # GZ nodes
     gz_spawn_entity = Node(
         package="ros_gz_sim",

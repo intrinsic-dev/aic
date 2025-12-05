@@ -70,7 +70,8 @@ controller_interface::CallbackReturn Controller::on_init() {
   joint_state_ = reference_joints_.value();
 
   cartesian_impedance_action_ =
-      CartesianImpedanceAction::Create(param_listener_);
+      std::make_unique<CartesianImpedanceAction>(num_joints_);
+
   if (!cartesian_impedance_action_) {
     RCLCPP_ERROR(get_node()->get_logger(),
                  "Unable to create CartesianImpedanceAction");
@@ -275,9 +276,8 @@ controller_interface::CallbackReturn Controller::on_configure(
       return controller_interface::CallbackReturn::ERROR;
     }
 
-    if (cartesian_impedance_action_->Configure(
-            get_node(), this->get_robot_description()) ==
-        controller_interface::return_type::ERROR) {
+    if (!cartesian_impedance_action_->Configure(
+            get_node(), this->get_robot_description())) {
       return controller_interface::CallbackReturn::ERROR;
     }
   }
@@ -314,6 +314,9 @@ controller_interface::CallbackReturn Controller::on_activate(
   motion_update_command_.try_set(motion_update_msg_);
 
   reset_joint_motion_update_msg(joint_motion_update_msg_);
+  joint_motion_update_msg_.trajectory_generation_mode.mode =
+      TrajectoryGenerationMode::MODE_POSITION;
+  joint_motion_update_msg_.target_state = joint_state_;
   joint_motion_update_command_.try_set(joint_motion_update_msg_);
 
   return controller_interface::CallbackReturn::SUCCESS;
