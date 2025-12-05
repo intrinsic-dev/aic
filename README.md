@@ -17,7 +17,7 @@ sudo apt-get update
 
 Build the workspace
 ```bash
-sudo apt update && sudo apt upgrade -y && sudo apt install ros-kilted-rmw-zenoh-cpp -y
+sudo apt update && sudo apt upgrade -y
 mkdir ~/ws_aic/src -p
 cd ~/ws_aic/src
 git clone https://github.com/intrinsic-dev/aic
@@ -33,23 +33,46 @@ GZ_BUILD_FROM_SOURCE=1 colcon build --merge-install --cmake-args -DCMAKE_BUILD_T
 
 ### Launch
 
-Make sure to already have the zenoh router up by running `ros2 run rmw_zenoh_cpp rmw_zenohd`.
+> [!NOTE]
+> We rely on [rmw_zenoh](https://github.com/ros2/rmw_zenoh) as the ROS 2 middleware for this application. Please ensure the `RMW_IMPLEMENTATION` environment variable is set to `rmw_zenoh_cpp` in all terminals.
+
+Start the Zenoh router.
 
 ```bash
+source ~/ws_aic/install/setup.bash
+export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
+ros2 run rmw_zenoh_cpp rmw_zenohd`
+```
+
+Then bringup the simulator.
+
+```bash
+source ~/ws_aic/install/setup.bash
+export RMW_IMPLEMENTATION=rmw_zenoh_cpp
+export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
 ros2 launch aic_bringup aic_gz_bringup.launch.py
 ```
 
 Send a reference wrench command (10N in the positive z-axis) to the controller
 ```bash
+source ~/ws_aic/install/setup.bash
+export RMW_IMPLEMENTATION=rmw_zenoh_cpp
+export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
 ros2 launch aic_bringup move_to_contact.launch.py contact_force_z:=10.0
 ```
 
 Control the gripper via a ROS2 Action. The joint range of the gripper is from 0.0 to 0.025m
 ```bash
+source ~/ws_aic/install/setup.bash
+export RMW_IMPLEMENTATION=rmw_zenoh_cpp
+export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
 ros2 launch aic_bringup gripper_action.launch.py use_position:=true position:=0.024
 ```
 
 Send a joint-position command to the arm as a single-point 1-second trajectory:
 ```bash
+source ~/ws_aic/install/setup.bash
+export RMW_IMPLEMENTATION=rmw_zenoh_cpp
+export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
 ros2 topic pub /joint_trajectory_controller/joint_trajectory trajectory_msgs/msg/JointTrajectory '{ joint_names: ["shoulder_pan_joint", "shoulder_lift_joint", "elbow_joint", "wrist_1_joint", "wrist_2_joint", "wrist_3_joint"], points: [ {positions: [0.0, -1.57, -1.57, -1.57, 1.57, 0], time_from_start: {sec: 1} } ] }' --once
 ```

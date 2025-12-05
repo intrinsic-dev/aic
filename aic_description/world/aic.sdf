@@ -299,6 +299,17 @@
       filename="gz-sim-sensors-system"
       name="gz::sim::systems::Sensors">
       <render_engine>ogre2</render_engine>
+      <global_illumination type="vct">
+        <enabled>true</enabled>
+        <resolution>256 256 256</resolution>
+        <octant_count>1 1 1</octant_count>
+        <bounce_count>3</bounce_count>
+        <high_quality>false</high_quality>
+        <anisotropic>true</anisotropic>
+        <thin_wall_counter>1.0</thin_wall_counter>
+        <conserve_memory>true</conserve_memory>
+        <debug_vis_mode>none</debug_vis_mode>
+      </global_illumination>
     </plugin>
     <plugin
       filename="gz-sim-user-commands-system"
@@ -377,81 +388,32 @@
       </link>
     </model>
 
-    <!-- Spawn a block to test contact with rigid surface -->
-    <model name="test_block">
-      <static>true</static>
-      <pose>0.45 -0.15 1.05 0 0 0</pose>
-      <link name="link">
-        <inertial>
-          <mass>100.0</mass>
-          <inertia>
-            <ixx>5.239375</ixx>       <!-- for a box: ixx = 0.083 * mass * (y*y + z*z) -->
-            <ixy>0.0</ixy>         <!-- for a box: ixy = 0 -->
-            <ixz>0.0</ixz>         <!-- for a box: ixz = 0 -->
-            <iyy>5.239375</iyy>       <!-- for a box: iyy = 0.083 * mass * (x*x + z*z) -->
-            <iyz>0.0</iyz>         <!-- for a box: iyz = 0 -->
-            <izz>10.375</izz>       <!-- for a box: izz = 0.083 * mass * (x*x + y*y) -->
-          </inertia>
-        </inertial>
-        <collision name="collision">
-          <geometry>
-            <box>
-              <size>0.25 0.25 0.05</size>
-            </box>
-          </geometry>
-          <surface>
-            <contact>
-                <ode>
-                  <kp>1e15</kp>
-                  <kd>1e13</kd>
-                </ode>
-              </contact>
-            <friction>
-              <ode>
-                <mu>0.1</mu>
-                <mu2>0.1</mu2>
-              </ode>
-            </friction>
-          </surface>
-        </collision>
-        <visual name="visual">
-          <geometry>
-            <box>
-              <size>0.25 0.25 0.025</size>
-            </box>
-          </geometry>
-          <material>
-            <diffuse>1 0 0 1.0</diffuse>
-          </material>
-        </visual>
-      </link>
-    </model>
 
     <include>
       <uri>model://SC Port</uri>
       <name>sc_port</name>
-      <pose>0.5 0.1 1.06 0 0 0</pose>
+      <pose>0.5 -0.2 1.1 0 0 0</pose>
       <static>false</static>
     </include>
 
     <include>
       <uri>model://SFP Module</uri>
       <name>sfp_module</name>
-      <pose>0.2 0 1.06 0 0 0</pose>
+      <pose>0.32 -0.25 1.1 0 0 0</pose>
       <static>false</static>
     </include>
 
     <include>
       <uri>model://PCIe NIC Card</uri>
       <name>nic_card</name>
-      <pose>0.2 0.2 1.06 0 0 0</pose>
+      <pose>0.4 -0.1 1.1 0 0 0</pose>
       <static>false</static>
     </include>
 
     <include>
       <uri>model://sfp_cable</uri>
       <name>sfp_cable</name>
-      <pose>0.0 0.4 1.06 0 0 0</pose>
+      <pose>0.0 0.4 1.1 0 0 0</pose>
       <static>false</static>
     </include>
 

@@ -1,11 +1,14 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://wiki.ros.org/xacro">
 
-  <xacro:macro name="basler_camera" params="name tf_prefix cam_lens_offset use_sim_cam">
+  <xacro:macro name="basler_camera" params="name tf_prefix use_sim_cam">
+    <xacro:property name="x_rot" value="1.5708"/>
+    <xacro:property name="y_rot" value="0.0"/>
+    <xacro:property name="z_rot" value="1.5708"/>
 
     <link name="${tf_prefix}basler_cam_link">
       <inertial>
-        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <origin xyz="0 0 0" rpy="${x_rot} ${y_rot} ${z_rot}"/>
         <mass value="0.1"/>
         <inertia ixx="0.00002083" ixy="0" ixz="0"
                  iyy="0.00002083" iyz="0"
@@ -13,33 +16,56 @@
       </inertial>
 
       <visual name="basler_cam_visual">
-        <origin xyz="0 0 -${cam_lens_offset}" rpy="0 0 0"/>
+        <origin xyz="0 0 0" rpy="${x_rot} ${y_rot} ${z_rot}"/>
         <geometry>
           <mesh filename="package://aic_assets/models/Basler Camera/basler_cam_visual.glb"/>
         </geometry>
       </visual>
 
       <collision name="lens001_collider_cylinder">
-        <origin xyz="-0.000005 0.000001 ${0.013336 - cam_lens_offset}" rpy="0.0 0.0 0.0"/>
+        <origin xyz="0.013336 0 0" rpy="${x_rot} ${y_rot} ${z_rot}"/>
         <geometry>
           <cylinder radius="0.016429" length="0.040108"/>
         </geometry>
       </collision>
 
       <collision name="basler_ace2_gige027_collider_box">
-        <origin xyz="-0.000001 -0.000017 ${-0.031178 - cam_lens_offset}" rpy="0.0 0.0 0.0"/>
+        <origin xyz="-0.031178 0 0" rpy="0 0 0"/>
         <geometry>
-          <box size="0.028998 0.028965 0.04919"/>
+          <box size="0.04919 0.029 0.029"/>
         </geometry>
       </collision>
 
+      <!-- the IO connector on the back of the camera -->
       <collision name="basler_ace2_gige011_collider_cylinder">
-        <origin xyz="-0.005773 -0.0081 ${-0.058082 - cam_lens_offset}" rpy="0.0 0.0 0.0"/>
+        <origin xyz="-0.058082 -0.005773 -0.0081" rpy="0 1.5708 0"/>
         <geometry>
           <cylinder radius="0.005145" length="0.008255"/>
         </geometry>
       </collision>
     </link>
+
+    <link name="${tf_prefix}optical">
+      <!-- inertial property required for valid conversion to SDF,
+        so we set a tiny mass and M.O.I. here -->
+      <inertial>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <mass value="0.001"/>
+        <inertia ixx="0.000001" ixy="0" ixz="0"
+                 iyy="0.000001" iyz="0"
+                 izz="0.000001"/>
+      </inertial>
+    </link>
+
+    <joint name="${tf_prefix}attach_optical" type="fixed">
+      <origin xyz="0 0 0" rpy="-1.5708 0 -1.5708"/>
+      <parent link="${tf_prefix}basler_cam_link"/>
+      <child link="${tf_prefix}optical"/>
+    </joint>
+
+    <gazebo reference="${tf_prefix}attach_optical">
+      <preserveFixedJoint>true</preserveFixedJoint>
+    </gazebo>
 
     <link name="${tf_prefix}sensor_link">
       <!-- inertial property required for valid conversion to SDF,
@@ -53,56 +79,41 @@
       </inertial>
     </link>
 
-    <joint name="${tf_prefix}attach_sensor" type="fixed">
+    <!-- Currently the sensor_link is the same location as the
+         cam_link frame. However, we may adjust this in the future
+         if the lens focal point ends up being somewhat forward or
+         backward of the current estimate. -->
+    <joint name="${tf_prefix}attach_sensor_link" type="fixed">
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <parent link="${tf_prefix}basler_cam_link"/>
       <child link="${tf_prefix}sensor_link"/>
     </joint>
 
-    <gazebo reference="${tf_prefix}attach_sensor">
+    <gazebo reference="${tf_prefix}attach_sensor_link">
       <preserveFixedJoint>true</preserveFixedJoint>
     </gazebo>
 
     <xacro:if value="${use_sim_cam}">
       <gazebo reference="${tf_prefix}sensor_link">
         <sensor name="${name}" type="camera">
-          <pose>0 0 0 1.57079632679 -1.57079632679 0</pose>
-          <update_rate>10.0</update_rate>
+          <pose>0 0 0 0 0 0</pose>
+          <update_rate>20.0</update_rate>
           <topic>/${name}/image</topic>
           <always_on>true</always_on>
-          <visualize>true</visualize>
           <frame_id>${tf_prefix}sensor_link</frame_id>
           <camera name="${name}">
             <camera_info_topic>/${name}/camera_info</camera_info_topic>
+            <optical_frame_id>${tf_prefix}optical</optical_frame_id>
             <image>
-              <width>2840</width>
-              <height>2840</height>
+              <width>1420</width>
+              <height>1420</height>
               <format>R8G8B8</format>
             </image>
-            <lens>
-              <intrinsics>
-                <fx>2920</fx>
-                <fy>2920</fy>
-                <cx>1420</cx>
-                <cy>1420</cy>
-              </intrinsics>
-            </lens>
+            <horizontal_fov>1.0</horizontal_fov>
             <clip>
-              <near>0.02</near>
+              <near>0.07</near>
               <far>300</far>
             </clip>
-            <distortion>
-              <k1>0</k1>
-              <k2>0</k2>
-              <k3>0</k3>
-              <p1>0</p1>
-              <p2>0</p2>
-            </distortion>
-            <noise>
-              <type>gaussian</type>
-              <mean>0.0</mean>
-              <stddev>0.007</stddev>
-            </noise>
           </camera>
         </sensor>
       </gazebo>
