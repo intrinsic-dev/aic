@@ -199,7 +199,7 @@ bool ScoringTier1::ParseStats(const std::string &_yamlFile)
   return true;
 }
 
-}  // namespace aic_controller_scoring
+}  // namespace aic_scoring
 
 //////////////////////////////////////////////////
 int main(int argc, char * argv[])

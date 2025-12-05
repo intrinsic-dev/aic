@@ -66,4 +66,4 @@ void ScoringPlugin::Reset(const gz::sim::UpdateInfo &/*_info*/,
 {
   gzdbg << "aic_gazebo::ScoringPlugin::Reset" << std::endl;
 }
-}  // namespace aic_controller_gazebo
+}  // namespace aic_gazebo

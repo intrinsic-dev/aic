@@ -193,6 +193,6 @@ class Controller : public controller_interface::ControllerInterface {
   JointTrajectoryPoint joint_state_;
 };
 
-}  // namespace aic_controller_controller
+}  // namespace aic_controller
 
 #endif  // AIC_CONTROLLER__AIC_CONTROLLER_HPP_
