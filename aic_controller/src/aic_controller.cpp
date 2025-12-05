@@ -69,11 +69,11 @@ controller_interface::CallbackReturn Controller::on_init() {
   last_commanded_joints_ = reference_joints_.value();
   joint_state_ = reference_joints_.value();
 
-  cartesian_impedance_controller_ =
-      CartesianImpedanceController::Create(param_listener_);
-  if (!cartesian_impedance_controller_) {
+  cartesian_impedance_action_ =
+      CartesianImpedanceAction::Create(param_listener_);
+  if (!cartesian_impedance_action_) {
     RCLCPP_ERROR(get_node()->get_logger(),
-                 "Unable to create CartesianImpedanceController");
+                 "Unable to create CartesianImpedanceAction");
     return controller_interface::CallbackReturn::ERROR;
   }
 
@@ -271,11 +271,11 @@ controller_interface::CallbackReturn Controller::on_configure(
           });
 
   if (control_mode_ == ControlMode::Impedance) {
-    if (!cartesian_impedance_controller_) {
+    if (!cartesian_impedance_action_) {
       return controller_interface::CallbackReturn::ERROR;
     }
 
-    if (cartesian_impedance_controller_->Configure(
+    if (cartesian_impedance_action_->Configure(
             get_node(), this->get_robot_description()) ==
         controller_interface::return_type::ERROR) {
       return controller_interface::CallbackReturn::ERROR;
@@ -288,7 +288,7 @@ controller_interface::CallbackReturn Controller::on_configure(
 controller_interface::CallbackReturn Controller::on_activate(
     const rclcpp_lifecycle::State& /*previous_state*/) {
   if (control_mode_ == ControlMode::Impedance) {
-    if (!cartesian_impedance_controller_) {
+    if (!cartesian_impedance_action_) {
       return controller_interface::CallbackReturn::ERROR;
     }
   }
@@ -322,7 +322,7 @@ controller_interface::CallbackReturn Controller::on_activate(
 controller_interface::CallbackReturn Controller::on_deactivate(
     const rclcpp_lifecycle::State& /*previous_state*/) {
   if (control_mode_ == ControlMode::Impedance) {
-    if (!cartesian_impedance_controller_) {
+    if (!cartesian_impedance_action_) {
       return controller_interface::CallbackReturn::ERROR;
     }
 
@@ -508,7 +508,7 @@ bool Controller::sense() {
 
   if (control_mode_ == ControlMode::Impedance) {
     if (target_type_ == TargetType::Cartesian) {
-      cartesian_impedance_controller_->Update(joint_state_);
+      cartesian_impedance_action_->Update(joint_state_);
     } else if (target_type_ == TargetType::Joint) {
       // UNIMPLEMENTED
       // update joint impedance controller with current joint state

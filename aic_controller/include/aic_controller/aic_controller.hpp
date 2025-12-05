@@ -25,7 +25,7 @@
 #include "aic_control_interfaces/msg/joint_motion_update.hpp"
 #include "aic_control_interfaces/msg/motion_update.hpp"
 #include "aic_control_interfaces/msg/trajectory_generation_mode.hpp"
-#include "aic_controller/cartesian_impedance_controller.hpp"
+#include "aic_controller/actions/cartesian_impedance_action.hpp"
 #include "controller_interface/controller_interface.hpp"
 #include "rclcpp_lifecycle/state.hpp"
 #include "realtime_tools/realtime_publisher.hpp"
@@ -168,7 +168,7 @@ class Controller : public controller_interface::ControllerInterface {
       hardware_interface::HW_IF_ACCELERATION};
 
   // Impedance controller for cartesian targets
-  std::unique_ptr<CartesianImpedanceController> cartesian_impedance_controller_;
+  std::unique_ptr<CartesianImpedanceAction> cartesian_impedance_action_;
 
   rclcpp::Subscription<MotionUpdate>::SharedPtr motion_update_sub_;
   rclcpp::Subscription<JointMotionUpdate>::SharedPtr joint_motion_update_sub_;

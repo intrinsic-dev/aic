@@ -15,8 +15,8 @@
  *
  */
 
-#ifndef AIC_CONTROLLER__CARTESIAN_IMPEDANCE_CONTROLLER_HPP_
-#define AIC_CONTROLLER__CARTESIAN_IMPEDANCE_CONTROLLER_HPP_
+#ifndef AIC_CONTROLLER__ACTIONS__CARTESIAN_IMPEDANCE_ACTION_HPP_
+#define AIC_CONTROLLER__ACTIONS__CARTESIAN_IMPEDANCE_ACTION_HPP_
 
 #include <Eigen/Core>
 
@@ -25,20 +25,21 @@
 #include "controller_interface/controller_interface_base.hpp"
 #include "geometry_msgs/msg/pose.hpp"
 #include "geometry_msgs/msg/twist.hpp"
-#include "joint_limits.hpp"
+#include "joint_limits/joint_limits.hpp"
 #include "trajectory_msgs/msg/joint_trajectory_point.hpp"
 
 namespace aic_controller {
+using JointLimits = joint_limits::JointLimits;
 using trajectory_msgs::msg::JointTrajectoryPoint;
 
 struct CartesianImpedanceParameters {};
 
-class CartesianImpedanceController {
+class CartesianImpedanceAction {
  public:
-  CartesianImpedanceController(unsigned int ndof,
+  CartesianImpedanceAction(unsigned int ndof,
                                aic_controller::Params params);
 
-  static std::unique_ptr<CartesianImpedanceController> Create(
+  static std::unique_ptr<CartesianImpedanceAction> Create(
       const std::shared_ptr<aic_controller::ParamListener>& param_listener);
 
   /**
@@ -84,4 +85,4 @@ class CartesianImpedanceController {
 
 }  // namespace aic_controller
 
-#endif  // AIC_CONTROLLER__CARTESIAN_IMPEDANCE_CONTROLLER_HPP_
+#endif  // AIC_CONTROLLER__ACTIONS__CARTESIAN_IMPEDANCE_ACTION_HPP_
