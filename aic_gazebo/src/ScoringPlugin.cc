@@ -30,7 +30,7 @@ GZ_ADD_PLUGIN(
     aic_gazebo::ScoringPlugin::ISystemReset
 )
 
-namespace aic_gazebo 
+namespace aic_gazebo
 {
 //////////////////////////////////////////////////
 void ScoringPlugin::Configure(const gz::sim::Entity &_entity,
@@ -56,7 +56,7 @@ void ScoringPlugin::Update(const gz::sim::UpdateInfo &/*_info*/,
 
 //////////////////////////////////////////////////
 void ScoringPlugin::PostUpdate(const gz::sim::UpdateInfo &/*_info*/,
-                               const gz::sim::EntityComponentManager &/*_ecm*/) 
+                               const gz::sim::EntityComponentManager &/*_ecm*/)
 {
 }
 

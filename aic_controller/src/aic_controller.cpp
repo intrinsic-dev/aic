@@ -20,18 +20,18 @@
 namespace {  // utility
 
 // called from RT control loop
-void reset_motion_update_msg(aic::MotionUpdate& msg) {
-  msg = aic::MotionUpdate();
+void reset_motion_update_msg(aic_controller::MotionUpdate& msg) {
+  msg = aic_controller::MotionUpdate();
 }
 
 // called from RT control loop
-void reset_joint_motion_update_msg(aic::JointMotionUpdate& msg) {
-  msg = aic::JointMotionUpdate();
+void reset_joint_motion_update_msg(aic_controller::JointMotionUpdate& msg) {
+  msg = aic_controller::JointMotionUpdate();
 }
 
 }  // namespace
 
-namespace aic {
+namespace aic_controller {
 
 Controller::Controller()
     : num_joints_(0),
@@ -69,11 +69,12 @@ controller_interface::CallbackReturn Controller::on_init() {
   last_commanded_joints_ = reference_joints_.value();
   joint_state_ = reference_joints_.value();
 
-  cartesian_impedance_controller_ =
-      CartesianImpedanceController::Create(param_listener_);
-  if (!cartesian_impedance_controller_) {
+  cartesian_impedance_action_ =
+      std::make_unique<CartesianImpedanceAction>(num_joints_);
+
+  if (!cartesian_impedance_action_) {
     RCLCPP_ERROR(get_node()->get_logger(),
-                 "Unable to create CartesianImpedanceController");
+                 "Unable to create CartesianImpedanceAction");
     return controller_interface::CallbackReturn::ERROR;
   }
 
@@ -271,13 +272,12 @@ controller_interface::CallbackReturn Controller::on_configure(
           });
 
   if (control_mode_ == ControlMode::Impedance) {
-    if (!cartesian_impedance_controller_) {
+    if (!cartesian_impedance_action_) {
       return controller_interface::CallbackReturn::ERROR;
     }
 
-    if (cartesian_impedance_controller_->Configure(
-            get_node(), this->get_robot_description()) ==
-        controller_interface::return_type::ERROR) {
+    if (!cartesian_impedance_action_->Configure(
+            get_node(), this->get_robot_description())) {
       return controller_interface::CallbackReturn::ERROR;
     }
   }
@@ -288,7 +288,7 @@ controller_interface::CallbackReturn Controller::on_configure(
 controller_interface::CallbackReturn Controller::on_activate(
     const rclcpp_lifecycle::State& /*previous_state*/) {
   if (control_mode_ == ControlMode::Impedance) {
-    if (!cartesian_impedance_controller_) {
+    if (!cartesian_impedance_action_) {
       return controller_interface::CallbackReturn::ERROR;
     }
   }
@@ -314,6 +314,9 @@ controller_interface::CallbackReturn Controller::on_activate(
   motion_update_command_.try_set(motion_update_msg_);
 
   reset_joint_motion_update_msg(joint_motion_update_msg_);
+  joint_motion_update_msg_.trajectory_generation_mode.mode =
+      TrajectoryGenerationMode::MODE_POSITION;
+  joint_motion_update_msg_.target_state = joint_state_;
   joint_motion_update_command_.try_set(joint_motion_update_msg_);
 
   return controller_interface::CallbackReturn::SUCCESS;
@@ -322,7 +325,7 @@ controller_interface::CallbackReturn Controller::on_activate(
 controller_interface::CallbackReturn Controller::on_deactivate(
     const rclcpp_lifecycle::State& /*previous_state*/) {
   if (control_mode_ == ControlMode::Impedance) {
-    if (!cartesian_impedance_controller_) {
+    if (!cartesian_impedance_action_) {
       return controller_interface::CallbackReturn::ERROR;
     }
 
@@ -508,7 +511,7 @@ bool Controller::sense() {
 
   if (control_mode_ == ControlMode::Impedance) {
     if (target_type_ == TargetType::Cartesian) {
-      cartesian_impedance_controller_->Update(joint_state_);
+      cartesian_impedance_action_->Update(joint_state_);
     } else if (target_type_ == TargetType::Joint) {
       // UNIMPLEMENTED
       // update joint impedance controller with current joint state
@@ -601,9 +604,9 @@ void Controller::write_state_to_hardware(
   last_commanded_joints_ = state_commanded;
 }
 
-}  // namespace aic
+}  // namespace aic_controller
 
 #include "pluginlib/class_list_macros.hpp"
 
-PLUGINLIB_EXPORT_CLASS(aic::Controller,
+PLUGINLIB_EXPORT_CLASS(aic_controller::Controller,
                        controller_interface::ControllerInterface)

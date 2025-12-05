@@ -172,28 +172,6 @@ def launch_setup(context, *args, **kwargs):
         arguments=["fts_broadcaster", "--controller-manager", "/controller_manager"],
     )
 
-    use_aic_controller = PythonExpression([
-        "'", initial_joint_controller, "' == 'aic_controller'"
-    ])
-
-    home_script_spawner = Node(
-        package="aic_bringup",
-        executable="home_robot.py",
-        arguments=[],
-        condition=UnlessCondition(use_aic_controller),
-    )
-
-    home_script_aic_controller_spawner = Node(
-        package="aic_bringup",
-        executable="home_robot_aic_controller.py",
-        parameters=[
-            {
-                "controller_namespace": "aic_controller",
-            }
-        ],
-        condition=IfCondition(use_aic_controller),
-    )
-
     # GZ nodes
     gz_spawn_entity = Node(
         package="ros_gz_sim",
@@ -244,8 +222,6 @@ def launch_setup(context, *args, **kwargs):
         gzgui,
         ros_gz_bridge,
         gz_spawn_entity,
-        home_script_spawner,
-        home_script_aic_controller_spawner,
     ]
 
     return nodes_to_start

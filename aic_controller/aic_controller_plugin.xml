@@ -1,6 +1,6 @@
 <library path="aic_controller">
   <class name="aic/Controller"
-         type="aic::Controller"
+         type="aic_controller::Controller"
          base_class_type="controller_interface::ControllerInterface">
     <description>
       A controller that interpolates sparse joint and cartesian-space commands and performs admittance or impedance control of a manipulator.
