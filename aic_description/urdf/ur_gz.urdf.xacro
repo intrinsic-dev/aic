@@ -282,10 +282,10 @@
     <xacro:ur_joint_control_description
       tf_prefix="$(arg tf_prefix)"
       initial_positions="${dict(
-        shoulder_pan_joint=0.0,
-        shoulder_lift_joint=-1.2645,
-        elbow_joint=-2.35,
-        wrist_1_joint=-0.5,
+        shoulder_pan_joint=0.6,
+        shoulder_lift_joint=-1.3,
+        elbow_joint=-1.9,
+        wrist_1_joint=-1.5708,
         wrist_2_joint=1.5708,
         wrist_3_joint=0.0)}"
     />
