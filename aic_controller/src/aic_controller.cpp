@@ -38,7 +38,8 @@ Controller::Controller()
       has_position_state_interface_(false),
       has_velocity_state_interface_(false),
       has_acceleration_state_interface_(false),
-      time_to_target_seconds_(0.0) {}
+      time_to_target_seconds_(0.0),
+      remaining_time_to_target_seconds_(0.0) {}
 
 controller_interface::CallbackReturn Controller::on_init() {
   try {
@@ -62,10 +63,7 @@ controller_interface::CallbackReturn Controller::on_init() {
   }
 
   // Initialize size and value of joint references and states
-  reference_joints_ = JointTrajectoryPoint();
-  reference_joints_.value().positions.assign(num_joints_, 0.0);
-  reference_joints_.value().velocities.assign(num_joints_, 0.0);
-  reference_joints_.value().accelerations.assign(num_joints_, 0.0);
+  reference_joints_ = JointState(num_joints_);
   last_commanded_joints_ = reference_joints_.value();
   joint_state_ = reference_joints_.value();
 
@@ -242,6 +240,15 @@ controller_interface::CallbackReturn Controller::on_configure(
     return controller_interface::CallbackReturn::FAILURE;
   }
 
+  // Validate controller update rate
+  if (params_.update_rate < 1) {
+    RCLCPP_ERROR(get_node()->get_logger(),
+                 "update_rate needs to be at least 1 Hz. Value provided is %ld",
+                 params_.update_rate);
+    return controller_interface::CallbackReturn::FAILURE;
+  }
+  frequency_hz_ = params_.update_rate;
+
   motion_update_sub_ = this->get_node()->create_subscription<MotionUpdate>(
       "~/motion_update", rclcpp::SystemDefaultsQoS(),
       [this](const MotionUpdate::SharedPtr msg) {
@@ -268,7 +275,96 @@ controller_interface::CallbackReturn Controller::on_configure(
               return;
             }
 
-            joint_motion_update_rt_.set(*msg);
+            // Validate target_state values to ensure that they are provided
+            // according to the trajectory_generation_mode.
+            // Set missing values for velocities, accelerations and effort to
+            // zero
+            JointMotionUpdate joint_motion_update = *msg;
+            switch (joint_motion_update.trajectory_generation_mode.mode) {
+              case TrajectoryGenerationMode::MODE_POSITION:
+
+                if (joint_motion_update.target_state.positions.size() !=
+                    num_joints_) {
+                  RCLCPP_ERROR_THROTTLE(
+                      get_node()->get_logger(), *get_node()->get_clock(), 1000,
+                      "Number of joint positions in target_state in "
+                      "JointMotionUpdate message does not match num_joints_! "
+                      "Discarding message.");
+                  return;
+                }
+                if (joint_motion_update.target_state.velocities.size() !=
+                    num_joints_) {
+                  joint_motion_update.target_state.velocities =
+                      std::vector<double>(num_joints_, 0.0);
+                }
+                if (joint_motion_update.target_state.accelerations.size() !=
+                    num_joints_) {
+                  joint_motion_update.target_state.accelerations =
+                      std::vector<double>(num_joints_, 0.0);
+                }
+
+                break;
+              case TrajectoryGenerationMode::MODE_VELOCITY:
+
+                if (joint_motion_update.target_state.velocities.size() !=
+                    num_joints_) {
+                  RCLCPP_ERROR_THROTTLE(
+                      get_node()->get_logger(), *get_node()->get_clock(), 1000,
+                      "Number of joint velocities in target_state in "
+                      "JointMotionUpdate message does not match num_joints_! "
+                      "Discarding message.");
+                  return;
+                }
+                if (joint_motion_update.target_state.positions.size() !=
+                    num_joints_) {
+                  joint_motion_update.target_state.positions =
+                      std::vector<double>(num_joints_, 0.0);
+                }
+                if (joint_motion_update.target_state.accelerations.size() !=
+                    num_joints_) {
+                  joint_motion_update.target_state.accelerations =
+                      std::vector<double>(num_joints_, 0.0);
+                }
+
+                break;
+              case TrajectoryGenerationMode::MODE_POSITION_AND_VELOCITY:
+
+                if (joint_motion_update.target_state.positions.size() !=
+                    num_joints_) {
+                  RCLCPP_ERROR_THROTTLE(
+                      get_node()->get_logger(), *get_node()->get_clock(), 1000,
+                      "Number of joint positions in target_state in "
+                      "JointMotionUpdate message does not match num_joints_! "
+                      "Discarding message.");
+                  return;
+                }
+                if (joint_motion_update.target_state.velocities.size() !=
+                    num_joints_) {
+                  RCLCPP_ERROR_THROTTLE(
+                      get_node()->get_logger(), *get_node()->get_clock(), 1000,
+                      "Number of joint velocities in target_state in "
+                      "JointMotionUpdate message does not match num_joints_! "
+                      "Discarding message.");
+                  return;
+                }
+                if (joint_motion_update.target_state.accelerations.size() !=
+                    num_joints_) {
+                  joint_motion_update.target_state.accelerations =
+                      std::vector<double>(num_joints_, 0.0);
+                }
+
+                break;
+              default:
+                RCLCPP_ERROR(get_node()->get_logger(),
+                             "Unsupported trajectory generation mode in "
+                             "JointMotionUpdate. Please set to "
+                             "either MODE_POSITION, MODE_VELOCITY or "
+                             "MODE_POSITION_AND_VELOCITY");
+
+                return;
+            }
+
+            joint_motion_update_rt_.set(joint_motion_update);
           });
 
   if (control_mode_ == ControlMode::Impedance) {
@@ -317,7 +413,7 @@ controller_interface::CallbackReturn Controller::on_activate(
   reset_joint_motion_update_msg(joint_motion_update_);
   joint_motion_update_.trajectory_generation_mode.mode =
       TrajectoryGenerationMode::MODE_POSITION;
-  joint_motion_update_.target_state = joint_state_;
+  joint_motion_update_.target_state = joint_state_.to_msg();
   joint_motion_update_rt_.try_set(joint_motion_update_);
 
   return controller_interface::CallbackReturn::SUCCESS;
@@ -395,10 +491,9 @@ bool Controller::update_joint_reference() {
 
   time_to_target_seconds_ = joint_motion_update_.time_to_target_seconds;
 
-  auto new_reference = *reference_joints_;
+  JointState new_reference = reference_joints_.value();
   switch (interpolation_mode_) {
     case InterpolationMode::Linear:
-      // UNIMPLEMENTED
       if (!update_reference_joints_linear_interpolation(
               reference_joints_.value(), target_joints_.value(),
               new_reference)) {
@@ -412,6 +507,14 @@ bool Controller::update_joint_reference() {
                    "mode is 'linear'");
       return false;
       break;
+  }
+
+  // update remaining remaining_time_to_target_seconds_ on each cycle to keep
+  // track of progress towards the target.
+  if (remaining_time_to_target_seconds_ > 0) {
+    remaining_time_to_target_seconds_ -= 1. / frequency_hz_;
+    if (remaining_time_to_target_seconds_ < 0)
+      remaining_time_to_target_seconds_ = 0;
   }
 
   reference_joints_ = new_reference;
@@ -455,7 +558,7 @@ controller_interface::return_type Controller::update_and_write_commands(
       return controller_interface::return_type::ERROR;
     } else if (target_type == TargetType::Joint) {
       // Simply forward the joint reference to the admittance controller
-      reference = reference_joints_.value();
+      reference = reference_joints_.value().to_msg();
     }
 
   } else {
@@ -508,14 +611,42 @@ bool Controller::sense() {
     auto command_op = joint_motion_update_rt_.try_get();
     if (command_op.has_value()) {
       joint_motion_update_ = command_op.value();
-      target_joints_ = joint_motion_update_.target_state;
+
+      // If target values or time_to_target_seconds is unchanged, then we keep
+      // the current remaining_time_to_target_seconds_ such that the current
+      // spline continues to the target.This is only applicable in pure position
+      // trajectory generation mode with non-zero time_to_target_seconds.
+      bool did_target_or_time_to_target_change =
+          joint_motion_update_.time_to_target_seconds !=
+              time_to_target_seconds_ ||
+          !ToEigen(joint_motion_update_.target_state.positions, num_joints_)
+               .isApprox(target_joints_.value().positions) ||
+          !ToEigen(joint_motion_update_.target_state.velocities, num_joints_)
+               .isApprox(target_joints_.value().velocities);
+
+      bool is_position_mode_with_zero_velocity_target =
+          ToEigen(joint_motion_update_.target_state.velocities, num_joints_)
+              .isApprox(Eigen::VectorXd::Zero(num_joints_)) &&
+          (joint_motion_update_.trajectory_generation_mode.mode ==
+               TrajectoryGenerationMode::MODE_POSITION ||
+           joint_motion_update_.trajectory_generation_mode.mode ==
+               TrajectoryGenerationMode::MODE_POSITION_AND_VELOCITY);
+
+      // Update time to target
+      if (did_target_or_time_to_target_change ||
+          !is_position_mode_with_zero_velocity_target) {
+        remaining_time_to_target_seconds_ =
+            joint_motion_update_.time_to_target_seconds;
+      }
+
+      target_joints_ = JointState(joint_motion_update_.target_state);
     }
   }
 
   if (control_mode_ == ControlMode::Impedance) {
     if (target_type_ == TargetType::Cartesian) {
       // UNIMPLEMENTED
-      cartesian_impedance_action_->Update(joint_state_);
+      // cartesian_impedance_controller_->Update(joint_state_);
     } else if (target_type_ == TargetType::Joint) {
       // UNIMPLEMENTED
       // update joint impedance controller with current joint state
@@ -526,14 +657,81 @@ bool Controller::sense() {
 }
 
 bool Controller::update_reference_joints_linear_interpolation(
-    const JointTrajectoryPoint& reference_state,
-    const JointTrajectoryPoint& target_state,
-    JointTrajectoryPoint& new_reference) {
-  new_reference = target_state;
+    const JointState& reference_state, const JointState& target_state,
+    JointState& new_reference) {
+  switch (joint_motion_update_.trajectory_generation_mode.mode) {
+    case TrajectoryGenerationMode::MODE_POSITION:
+      // Apply linear interpolation to minimize discontinuities from the
+      // current reference to the target position.
+      if (remaining_time_to_target_seconds_ > 0.0) {
+        new_reference.positions +=
+            (target_state.positions - reference_state.positions) /
+            (remaining_time_to_target_seconds_ * frequency_hz_);
+      } else {
+        // Hold the target position upon reaching the trajectory endpoint
+        new_reference.positions = target_state.positions;
+      }
+      // Always set reference velocity and acceleration to zero.
+      new_reference.velocities.setZero();
+      new_reference.accelerations.setZero();
+
+      break;
+    case TrajectoryGenerationMode::MODE_VELOCITY:
+      // Apply linear interpolation to minimize discontinuities from the
+      // current reference to the target velocity.
+      if (remaining_time_to_target_seconds_ > 0.0) {
+        // Integrate the reference velocity.
+        new_reference.velocities +=
+            (target_state.velocities - reference_state.velocities) /
+            (remaining_time_to_target_seconds_ * frequency_hz_);
+        // Integrate the reference position.
+        new_reference.positions += new_reference.velocities / frequency_hz_;
+      } else {
+        // Hold the target velocity and integrate target position upon reaching
+        // the trajectory endpoint
+        new_reference.positions += target_state.velocities / frequency_hz_;
+        new_reference.velocities = target_state.velocities;
+      }
+      // Always set reference acceleration to zero.
+      new_reference.accelerations.setZero();
+
+      break;
+    case TrajectoryGenerationMode::MODE_POSITION_AND_VELOCITY:
+      // Apply linear interpolation to minimize discontinuities from the
+      // current reference to the target position and velocity
+      if (remaining_time_to_target_seconds_ > 0.0) {
+        new_reference.positions +=
+            (target_state.positions - reference_state.positions) /
+            (remaining_time_to_target_seconds_ * frequency_hz_);
+        new_reference.velocities +=
+            (target_state.velocities - reference_state.velocities) /
+            (remaining_time_to_target_seconds_ * frequency_hz_);
+
+      } else {
+        // If we are at the end of the trajectory, keep the target position and
+        // velocity.
+        new_reference.positions = target_state.positions;
+        new_reference.velocities = target_state.velocities;
+      }
+      // Reference acceleration is always zero.
+      new_reference.accelerations.setZero();
+
+      break;
+    default:
+      RCLCPP_ERROR(get_node()->get_logger(),
+                   "Unsupported trajectory generation mode. Please set to "
+                   "either MODE_POSITION, MODE_VELOCITY or "
+                   "MODE_POSITION_AND_VELOCITY");
+
+      return false;
+
+      break;
+  }
+
   return true;
 }
 
-void Controller::read_state_from_hardware(JointTrajectoryPoint& state_current) {
+void Controller::read_state_from_hardware(JointState& state_current) {
   // Set state_current to last commanded state if any of the hardware interface
   // values are NaN
   bool nan_position = false;
@@ -617,7 +815,7 @@ void Controller::write_state_to_hardware(
     }
   }
 
-  last_commanded_joints_ = state_commanded;
+  last_commanded_joints_ = JointState(state_commanded);
 }
 
 }  // namespace aic_controller

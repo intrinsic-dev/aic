@@ -65,6 +65,12 @@ aic_controller:
     description: "Sets the target type, which can be either 'cartesian' and 'joint'"
   }
 
+  update_rate: {
+    type: int,
+    default_value: 500,
+    description: "Robot controller update rate in Hz"
+  }
+
   # general settings
   enable_parameter_update_without_reactivation: {
     type: bool,
