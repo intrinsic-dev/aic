@@ -24,6 +24,7 @@
 #include "geometry_msgs/msg/twist.hpp"
 #include "rclcpp_lifecycle/lifecycle_node.hpp"
 #include "trajectory_msgs/msg/joint_trajectory_point.hpp"
+
 namespace aic_controller {
 using trajectory_msgs::msg::JointTrajectoryPoint;
 

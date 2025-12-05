@@ -127,12 +127,16 @@ class Controller : public controller_interface::ControllerInterface {
    * @brief Applies linear interpolation to the reference values to minimize
    * discontinuities from the current reference to the target reference.
    *
-   * @param target_state The target state towards which the current reference is
-   * interpolated.
-   * @return JointTrajectoryPoint
+   * @param reference_state
+   * @param target_state
+   * @param new_reference
+   * @return true
+   * @return false
    */
-  JointTrajectoryPoint update_reference_joints_linear_interpolation(
-      const JointTrajectoryPoint& target_joint_state);
+  bool update_reference_joints_linear_interpolation(
+      const JointTrajectoryPoint& reference_state,
+      const JointTrajectoryPoint& target_state,
+      JointTrajectoryPoint& new_reference);
 
   /**
    * @brief Update fields of state_current with joint states from hardware
@@ -174,18 +178,18 @@ class Controller : public controller_interface::ControllerInterface {
   rclcpp::Subscription<JointMotionUpdate>::SharedPtr joint_motion_update_sub_;
 
   // real-time boxes for thread-safe access
-  realtime_tools::RealtimeThreadSafeBox<MotionUpdate> motion_update_command_;
+  realtime_tools::RealtimeThreadSafeBox<MotionUpdate> motion_update_rt_;
   realtime_tools::RealtimeThreadSafeBox<JointMotionUpdate>
-      joint_motion_update_command_;
-  JointMotionUpdate joint_motion_update_msg_;
-  MotionUpdate motion_update_msg_;
+      joint_motion_update_rt_;
+  JointMotionUpdate joint_motion_update_;
+  MotionUpdate motion_update_;
 
   // Last value written to controller interfaces
   JointTrajectoryPoint last_commanded_joints_;
-  // interpolated reference joint values
+  // Variable used in interpolation of target
   std::optional<JointTrajectoryPoint> reference_joints_;
   // State commanded by JointMotionUpdate user commands
-  std::optional<JointTrajectoryPoint> target_joint_state_;
+  std::optional<JointTrajectoryPoint> target_joints_;
 
   double time_to_target_seconds_;
 

@@ -253,7 +253,7 @@ controller_interface::CallbackReturn Controller::on_configure(
           return;
         }
 
-        motion_update_command_.set(*msg);
+        motion_update_rt_.set(*msg);
       });
 
   joint_motion_update_sub_ =
@@ -268,7 +268,7 @@ controller_interface::CallbackReturn Controller::on_configure(
               return;
             }
 
-            joint_motion_update_command_.set(*msg);
+            joint_motion_update_rt_.set(*msg);
           });
 
   if (control_mode_ == ControlMode::Impedance) {
@@ -295,7 +295,7 @@ controller_interface::CallbackReturn Controller::on_activate(
 
   // read and initialize current joint states
   read_state_from_hardware(joint_state_);
-  for (auto val : joint_state_.positions) {
+  for (const auto& val : joint_state_.positions) {
     if (std::isnan(val)) {
       RCLCPP_ERROR(get_node()->get_logger(),
                    "Failed to read joint positions from the hardware.\n");
@@ -305,19 +305,20 @@ controller_interface::CallbackReturn Controller::on_activate(
   if (!reference_joints_.has_value()) {
     reference_joints_ = joint_state_;
   }
-  if (!target_joint_state_.has_value()) {
-    target_joint_state_ = joint_state_;
+  if (!target_joints_.has_value()) {
+    target_joints_ = joint_state_;
   }
   last_commanded_joints_ = joint_state_;
 
-  reset_motion_update_msg(motion_update_msg_);
-  motion_update_command_.try_set(motion_update_msg_);
+  // todo(johntgz) Set motion_update_ to the current sensed state
+  reset_motion_update_msg(motion_update_);
+  motion_update_rt_.try_set(motion_update_);
 
-  reset_joint_motion_update_msg(joint_motion_update_msg_);
-  joint_motion_update_msg_.trajectory_generation_mode.mode =
+  reset_joint_motion_update_msg(joint_motion_update_);
+  joint_motion_update_.trajectory_generation_mode.mode =
       TrajectoryGenerationMode::MODE_POSITION;
-  joint_motion_update_msg_.target_state = joint_state_;
-  joint_motion_update_command_.try_set(joint_motion_update_msg_);
+  joint_motion_update_.target_state = joint_state_;
+  joint_motion_update_rt_.try_set(joint_motion_update_);
 
   return controller_interface::CallbackReturn::SUCCESS;
 }
@@ -332,11 +333,11 @@ controller_interface::CallbackReturn Controller::on_deactivate(
     release_interfaces();
   }
 
-  reset_motion_update_msg(motion_update_msg_);
-  motion_update_command_.try_set(motion_update_msg_);
+  reset_motion_update_msg(motion_update_);
+  motion_update_rt_.try_set(motion_update_);
 
-  reset_joint_motion_update_msg(joint_motion_update_msg_);
-  joint_motion_update_command_.try_set(joint_motion_update_msg_);
+  reset_joint_motion_update_msg(joint_motion_update_);
+  joint_motion_update_rt_.try_set(joint_motion_update_);
 
   return controller_interface::CallbackReturn::SUCCESS;
 }
@@ -354,13 +355,14 @@ bool Controller::update_joint_reference() {
     return false;
   }
 
-  if (!target_joint_state_.has_value()) {
+  if (!target_joints_.has_value()) {
     RCLCPP_ERROR(get_node()->get_logger(),
-                 "Unset target_joint_state_ in update_joint_reference()");
+                 "Unset target_joints_ in update_joint_reference()");
     return false;
   }
 
-  switch (joint_motion_update_msg_.trajectory_generation_mode.mode) {
+  // update target to ensure it is within pre-defined limits
+  switch (joint_motion_update_.trajectory_generation_mode.mode) {
     case TrajectoryGenerationMode::MODE_POSITION:
       // UNIMPLEMENTED
       // Clamp poses to limit
@@ -372,6 +374,7 @@ bool Controller::update_joint_reference() {
                    "MODE_VELOCITY trajectory generation mode is unimplemented. "
                    "Please use MODE_POSITION.");
       return false;
+
       break;
     case TrajectoryGenerationMode::MODE_POSITION_AND_VELOCITY:
       // UNIMPLEMENTED
@@ -380,14 +383,7 @@ bool Controller::update_joint_reference() {
                    "MODE_POSITION_AND_VELOCITY trajectory generation mode is "
                    "unimplemented. Please use MODE_POSITION.");
       return false;
-      break;
-    case TrajectoryGenerationMode::MODE_UNSPECIFIED:
-      RCLCPP_INFO_THROTTLE(get_node()->get_logger(), *get_node()->get_clock(),
-                           1000,
-                           "MODE_UNSPECIFIED trajectory generation mode set. "
-                           "Defaulting to MODE_POSITION.");
-      // UNIMPLEMENTED
-      // Clamp poses to limit
+
       break;
     default:
       RCLCPP_ERROR(get_node()->get_logger(),
@@ -397,14 +393,18 @@ bool Controller::update_joint_reference() {
       return false;
   }
 
-  time_to_target_seconds_ = joint_motion_update_msg_.time_to_target_seconds;
+  time_to_target_seconds_ = joint_motion_update_.time_to_target_seconds;
 
-  auto new_reference_joints_ = *reference_joints_;
+  auto new_reference = *reference_joints_;
   switch (interpolation_mode_) {
     case InterpolationMode::Linear:
       // UNIMPLEMENTED
-      new_reference_joints_ =
-          update_reference_joints_linear_interpolation(*target_joint_state_);
+      if (!update_reference_joints_linear_interpolation(
+              reference_joints_.value(), target_joints_.value(),
+              new_reference)) {
+        return false;
+      }
+
       break;
     default:
       RCLCPP_ERROR(get_node()->get_logger(),
@@ -414,13 +414,14 @@ bool Controller::update_joint_reference() {
       break;
   }
 
-  reference_joints_ = new_reference_joints_;
+  reference_joints_ = new_reference;
 
   return true;
 }
 
 controller_interface::return_type Controller::update_and_write_commands(
     const ControlMode& control_mode, const TargetType& target_type) {
+  JointTrajectoryPoint reference;
   if (control_mode == ControlMode::Impedance) {
     // UNIMPLEMENTED
     // Interpolate impedance parameters
@@ -452,8 +453,10 @@ controller_interface::return_type Controller::update_and_write_commands(
           "Cartesian targets for admittance controller is unimplemented.");
 
       return controller_interface::return_type::ERROR;
+    } else if (target_type == TargetType::Joint) {
+      // Simply forward the joint reference to the admittance controller
+      reference = reference_joints_.value();
     }
-    // If target_type is Joint, simply forward the joint reference
 
   } else {
     RCLCPP_ERROR(get_node()->get_logger(),
@@ -463,7 +466,7 @@ controller_interface::return_type Controller::update_and_write_commands(
     return controller_interface::return_type::ERROR;
   }
 
-  write_state_to_hardware(*reference_joints_);
+  write_state_to_hardware(reference);
 
   return controller_interface::return_type::OK;
 }
@@ -496,21 +499,22 @@ bool Controller::sense() {
 
   // read user commands
   if (target_type_ == TargetType::Cartesian) {
-    auto command_op = motion_update_command_.try_get();
+    auto command_op = motion_update_rt_.try_get();
     if (command_op.has_value()) {
-      motion_update_msg_ = command_op.value();
+      motion_update_ = command_op.value();
     }
 
   } else if (target_type_ == TargetType::Joint) {
-    auto command_op = joint_motion_update_command_.try_get();
+    auto command_op = joint_motion_update_rt_.try_get();
     if (command_op.has_value()) {
-      joint_motion_update_msg_ = command_op.value();
-      target_joint_state_ = joint_motion_update_msg_.target_state;
+      joint_motion_update_ = command_op.value();
+      target_joints_ = joint_motion_update_.target_state;
     }
   }
 
   if (control_mode_ == ControlMode::Impedance) {
     if (target_type_ == TargetType::Cartesian) {
+      // UNIMPLEMENTED
       cartesian_impedance_action_->Update(joint_state_);
     } else if (target_type_ == TargetType::Joint) {
       // UNIMPLEMENTED
@@ -521,9 +525,12 @@ bool Controller::sense() {
   return true;
 }
 
-JointTrajectoryPoint Controller::update_reference_joints_linear_interpolation(
-    const JointTrajectoryPoint& target_joint_state) {
-  return target_joint_state;
+bool Controller::update_reference_joints_linear_interpolation(
+    const JointTrajectoryPoint& reference_state,
+    const JointTrajectoryPoint& target_state,
+    JointTrajectoryPoint& new_reference) {
+  new_reference = target_state;
+  return true;
 }
 
 void Controller::read_state_from_hardware(JointTrajectoryPoint& state_current) {
@@ -570,12 +577,21 @@ void Controller::read_state_from_hardware(JointTrajectoryPoint& state_current) {
   }
 
   if (nan_position) {
+    RCLCPP_ERROR(this->get_node()->get_logger(),
+                 "Read NaN value from position state interface, setting "
+                 "current position to last_commanded_joints_");
     state_current.positions = last_commanded_joints_.positions;
   }
   if (nan_velocity) {
+    RCLCPP_ERROR(this->get_node()->get_logger(),
+                 "Read NaN value from velocity state interface, setting "
+                 "current velocity to last_commanded_joints_");
     state_current.velocities = last_commanded_joints_.velocities;
   }
   if (nan_acceleration) {
+    RCLCPP_ERROR(this->get_node()->get_logger(),
+                 "Read NaN value from acceleration state interface, setting "
+                 "current acceleration to last_commanded_joints_");
     state_current.accelerations = last_commanded_joints_.accelerations;
   }
 }
