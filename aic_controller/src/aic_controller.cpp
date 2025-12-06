@@ -264,8 +264,11 @@ controller_interface::CallbackReturn Controller::on_configure(
     return controller_interface::CallbackReturn::FAILURE;
   }
 
+	// Reliable QoS subscriptions for motion updates.
+	rclcpp::QoS reliable_qos = rclcpp::QoS(rclcpp::KeepLast(10)).reliable();
+
   motion_update_sub_ = this->get_node()->create_subscription<MotionUpdate>(
-      "~/motion_update", rclcpp::SystemDefaultsQoS(),
+      "~/motion_update", reliable_qos,
       [this](const MotionUpdate::SharedPtr msg) {
         if (target_type_ == TargetType::Joint) {
           RCLCPP_INFO_THROTTLE(get_node()->get_logger(),
@@ -280,7 +283,7 @@ controller_interface::CallbackReturn Controller::on_configure(
 
   joint_motion_update_sub_ =
       this->get_node()->create_subscription<JointMotionUpdate>(
-          "~/joint_motion_update", rclcpp::SystemDefaultsQoS(),
+          "~/joint_motion_update", reliable_qos,
           [this](const JointMotionUpdate::SharedPtr msg) {
             if (target_type_ == TargetType::Cartesian) {
               RCLCPP_INFO_THROTTLE(get_node()->get_logger(),
