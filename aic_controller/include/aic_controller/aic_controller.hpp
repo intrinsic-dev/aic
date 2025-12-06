@@ -173,7 +173,7 @@ class Controller : public controller_interface::ControllerInterface {
    * @return false
    */
 	[[nodiscard]]
-  bool update_reference_joints_linear_interpolation(
+  bool update_next_command_linear_interpolation(
       const JointTrajectoryPoint& reference_state,
       const JointTrajectoryPoint& target_state,
       JointTrajectoryPoint& new_reference);
@@ -229,16 +229,16 @@ class Controller : public controller_interface::ControllerInterface {
   MotionUpdate motion_update_;
 
   // Last value written to controller interfaces
-  JointTrajectoryPoint last_commanded_joints_;
-  // Variable used in interpolation of target
-  std::optional<JointTrajectoryPoint> reference_joints_;
-  // State commanded by JointMotionUpdate user commands
-  std::optional<JointTrajectoryPoint> target_joints_;
+  JointTrajectoryPoint last_commanded_state_;
+  // Set points for next control update computer after interpolations
+  std::optional<JointTrajectoryPoint> next_command_;
+  // Desired target state read from JointMotionUpdate user commands
+  std::optional<JointTrajectoryPoint> target_state_;
 
   double time_to_target_seconds_;
 
   // Latest joint states read from hardware interface
-  JointTrajectoryPoint joint_state_;
+  JointTrajectoryPoint current_state_;
 };
 
 }  // namespace aic_controller
