@@ -37,7 +37,7 @@ namespace aic_scoring
   };
   
   // The Tier2 scoring interface.
-  class ScoringTier2
+  class ScoringTier2 : public rclcpp::Node
   {
     /// \brief Class constructor.
     public: ScoringTier2();
@@ -48,7 +48,7 @@ namespace aic_scoring
 
     /// \brief Check distance between the tip of the cable and the connector.
     /// \return Distance (m) between the cable and connector.
-    public: virtual double Distance() const = 0;
+    //public: virtual double Distance() const = 0;
 
     /// \brief Store the current distance cable-connector.
     public: void Update();
