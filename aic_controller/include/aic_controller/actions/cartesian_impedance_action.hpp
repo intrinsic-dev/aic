@@ -37,7 +37,7 @@ struct CartesianImpedanceParameters {};
 //==============================================================================
 class CartesianImpedanceAction {
  public:
-  CartesianImpedanceAction(unsigned int ndof);
+  CartesianImpedanceAction(std::size_t num_joints);
 
   /**
    * @brief Loads the inverse kinematic plugin given the robot description
@@ -46,6 +46,7 @@ class CartesianImpedanceAction {
    * @param robot_description robot description used by kinematics plugin
    * @return controller_interface::return_type
    */
+	[[nodiscard]]
   bool Configure(const std::shared_ptr<rclcpp_lifecycle::LifecycleNode>& node,
                  const std::string& robot_description);
 
@@ -70,11 +71,12 @@ class CartesianImpedanceAction {
    * @brief Estimates the end-effector cartesian pose estimate given the joint
    * positions
    */
+	[[nodiscard]]
   bool Update(const JointTrajectoryPoint& current_sensed);
 
  private:
   // Number of robot joints
-  const std::size_t ndof_;
+  const std::size_t num_joints_;
 };
 
 }  // namespace aic_controller

@@ -544,7 +544,8 @@ bool Controller::sense() {
   if (control_mode_ == ControlMode::Impedance) {
     if (target_type_ == TargetType::Cartesian) {
       // UNIMPLEMENTED
-      cartesian_impedance_action_->Update(joint_state_);
+      const auto result = cartesian_impedance_action_->Update(joint_state_);
+			(void) result;
     } else if (target_type_ == TargetType::Joint) {
       // UNIMPLEMENTED
       // update joint impedance controller with current joint state
@@ -559,6 +560,7 @@ bool Controller::update_reference_joints_linear_interpolation(
     const JointTrajectoryPoint& reference_state,
     const JointTrajectoryPoint& target_state,
     JointTrajectoryPoint& new_reference) {
+	(void)reference_state;
   new_reference = target_state;
   return true;
 }

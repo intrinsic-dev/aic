@@ -266,9 +266,13 @@ admittance_controller:
 
 aic_controller:
   ros__parameters:
-    # Available control modes are "admittance" and "impedance"
+    # Available control modes are "admittance" and "impedance".
+    # Admittance requires position command interfaces for specified joints.
+    # Impedance requires effort command interfaces for specified joints.
+    # Both modes require position state interfaces for specified joints.
     control_mode: "admittance"
 
+    # Available interpolation modes is only "linear".
     interpolation_mode: "linear"
 
     # Available target types are "cartesian" and "joint"
