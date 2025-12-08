@@ -22,40 +22,31 @@ namespace {
 
 //==============================================================================
 // called from RT control loop
-void reset_motion_update_msg(aic_controller::MotionUpdate& msg) {
-  msg = aic_controller::MotionUpdate();
-}
-
-//==============================================================================
-// called from RT control loop
 void reset_joint_motion_update_msg(aic_controller::JointMotionUpdate& msg) {
   msg = aic_controller::JointMotionUpdate();
 }
 
-}  // namespace anonymous
+}  // namespace
 
 //==============================================================================
 namespace aic_controller {
 
 //==============================================================================
 Controller::Controller()
-: param_listener_(nullptr),
-	num_joints_(0),
-	command_joint_names_({}),
-	target_type_(TargetType::Invalid),
-	control_mode_(ControlMode::Invalid),
-	interpolation_mode_(InterpolationMode::Invalid),
-	has_position_state_interface_(false),
-	has_velocity_state_interface_(false),
-	has_acceleration_state_interface_(false),
-	cartesian_impedance_action_(nullptr),
-	motion_update_sub_(nullptr),
-	joint_motion_update_sub_(nullptr),
-	next_command_(std::nullopt),
-	target_state_(std::nullopt),
-	time_to_target_seconds_(0.0)
-{
-	// Do nothing.
+    : param_listener_(nullptr),
+      num_joints_(0),
+      command_joint_names_({}),
+      target_type_(TargetType::Invalid),
+      control_mode_(ControlMode::Invalid),
+      interpolation_mode_(InterpolationMode::Invalid),
+      has_position_state_interface_(false),
+      has_velocity_state_interface_(false),
+      has_acceleration_state_interface_(false),
+      joint_motion_update_sub_(nullptr),
+      next_command_(std::nullopt),
+      target_state_(std::nullopt),
+      time_to_target_seconds_(0.0) {
+  // Do nothing.
 }
 
 //==============================================================================
@@ -126,26 +117,17 @@ controller_interface::CallbackReturn Controller::on_init() {
   }
 
   // Initialize size and value of joint references and states
-	// TODO(Yadunund): why are next_command_ and current_state_ optional if they
-	// always get initialized here?
+  // TODO(Yadunund): why are next_command_ and current_state_ optional if they
+  // always get initialized here?
   next_command_ = JointTrajectoryPoint();
   next_command_.value().positions.assign(num_joints_, 0.0);
   next_command_.value().velocities.assign(num_joints_, 0.0);
   next_command_.value().accelerations.assign(num_joints_, 0.0);
-	// TODO(Yadunund): why are last_commanded_state_ and current_state_ not optional and
-	// instead being initialized directly?
-	// current_state_ should be initialized only in on_activate().
+  // TODO(Yadunund): why are last_commanded_state_ and current_state_ not
+  // optional and instead being initialized directly? current_state_ should be
+  // initialized only in on_activate().
   last_commanded_state_ = next_command_.value();
   current_state_ = next_command_.value();
-
-  cartesian_impedance_action_ =
-      std::make_unique<CartesianImpedanceAction>(num_joints_);
-
-  if (!cartesian_impedance_action_) {
-    RCLCPP_ERROR(get_node()->get_logger(),
-                 "Unable to create CartesianImpedanceAction");
-    return controller_interface::CallbackReturn::ERROR;
-  }
 
   return controller_interface::CallbackReturn::SUCCESS;
 }
@@ -256,61 +238,24 @@ controller_interface::CallbackReturn Controller::on_configure(
   }
 
   // Validate target type
-  if (params_.target_type == "cartesian") {
-    RCLCPP_INFO(get_node()->get_logger(), "Target type set to CARTESIAN.");
-    target_type_ = TargetType::Cartesian;
-  } else if (params_.target_type == "joint") {
+  if (params_.target_type == "joint") {
     RCLCPP_INFO(get_node()->get_logger(), "Target type set to JOINT.");
     target_type_ = TargetType::Joint;
   } else {
-    RCLCPP_ERROR(
-        get_node()->get_logger(),
-        "Unsupported target type. Please use either 'cartesian' or 'joints'");
+    RCLCPP_ERROR(get_node()->get_logger(),
+                 "Unsupported target type. Please use 'joints'");
     return controller_interface::CallbackReturn::FAILURE;
   }
 
-	// Reliable QoS subscriptions for motion updates.
-	rclcpp::QoS reliable_qos = rclcpp::QoS(rclcpp::KeepLast(10)).reliable();
-
-  motion_update_sub_ = this->get_node()->create_subscription<MotionUpdate>(
-      "~/motion_update", reliable_qos,
-      [this](const MotionUpdate::SharedPtr msg) {
-        if (target_type_ == TargetType::Joint) {
-          RCLCPP_INFO_THROTTLE(get_node()->get_logger(),
-                               *get_node()->get_clock(), 1000,
-                               "Current target_type set to Joint, only "
-                               "accepting JointMotionUpdate messages");
-          return;
-        }
-
-        motion_update_rt_.set(*msg);
-      });
+  // Reliable QoS subscriptions for motion updates.
+  rclcpp::QoS reliable_qos = rclcpp::QoS(rclcpp::KeepLast(10)).reliable();
 
   joint_motion_update_sub_ =
       this->get_node()->create_subscription<JointMotionUpdate>(
           "~/joint_motion_update", reliable_qos,
           [this](const JointMotionUpdate::SharedPtr msg) {
-            if (target_type_ == TargetType::Cartesian) {
-              RCLCPP_INFO_THROTTLE(get_node()->get_logger(),
-                                   *get_node()->get_clock(), 1000,
-                                   "Current target_type set to Cartesian, only "
-                                   "accepting MotionUpdate messages");
-              return;
-            }
-
             joint_motion_update_rt_.set(*msg);
           });
-
-  if (control_mode_ == ControlMode::Impedance) {
-    if (!cartesian_impedance_action_) {
-      return controller_interface::CallbackReturn::ERROR;
-    }
-
-    if (!cartesian_impedance_action_->Configure(
-            get_node(), this->get_robot_description())) {
-      return controller_interface::CallbackReturn::ERROR;
-    }
-  }
 
   return controller_interface::CallbackReturn::SUCCESS;
 }
@@ -318,12 +263,6 @@ controller_interface::CallbackReturn Controller::on_configure(
 //==============================================================================
 controller_interface::CallbackReturn Controller::on_activate(
     const rclcpp_lifecycle::State& /*previous_state*/) {
-  if (control_mode_ == ControlMode::Impedance) {
-    if (!cartesian_impedance_action_) {
-      return controller_interface::CallbackReturn::ERROR;
-    }
-  }
-
   // read and initialize current joint states
   read_state_from_hardware(current_state_);
   for (const auto& val : current_state_.positions) {
@@ -341,10 +280,6 @@ controller_interface::CallbackReturn Controller::on_activate(
   }
   last_commanded_state_ = current_state_;
 
-  // todo(johntgz) Set motion_update_ to the current sensed state
-  reset_motion_update_msg(motion_update_);
-  motion_update_rt_.try_set(motion_update_);
-
   reset_joint_motion_update_msg(joint_motion_update_);
   joint_motion_update_.trajectory_generation_mode.mode =
       TrajectoryGenerationMode::MODE_POSITION;
@@ -358,27 +293,13 @@ controller_interface::CallbackReturn Controller::on_activate(
 controller_interface::CallbackReturn Controller::on_deactivate(
     const rclcpp_lifecycle::State& /*previous_state*/) {
   if (control_mode_ == ControlMode::Impedance) {
-    if (!cartesian_impedance_action_) {
-      return controller_interface::CallbackReturn::ERROR;
-    }
-
     release_interfaces();
   }
-
-  reset_motion_update_msg(motion_update_);
-  motion_update_rt_.try_set(motion_update_);
 
   reset_joint_motion_update_msg(joint_motion_update_);
   joint_motion_update_rt_.try_set(joint_motion_update_);
 
   return controller_interface::CallbackReturn::SUCCESS;
-}
-
-//==============================================================================
-bool Controller::update_cartesian_reference() {
-  RCLCPP_ERROR(get_node()->get_logger(),
-               "update_cartesian_reference() is unimplemented");
-  return false;
 }
 
 //==============================================================================
@@ -434,8 +355,7 @@ bool Controller::update_joint_reference() {
     case InterpolationMode::Linear:
       // UNIMPLEMENTED
       if (!update_next_command_linear_interpolation(
-              next_command_.value(), target_state_.value(),
-              new_reference)) {
+              next_command_.value(), target_state_.value(), new_reference)) {
         return false;
       }
 
@@ -464,12 +384,14 @@ controller_interface::return_type Controller::update_and_write_commands(
     // Interpolate feed-forward wrench
     //    UpdateFeedforwardWrench(target_type)
 
-    if (target_type == TargetType::Cartesian) {
+    if (target_type == TargetType::Joint) {
       // UNIMPLEMENTED
       // Compute joint torques
-    } else if (target_type == TargetType::Joint) {
-      // UNIMPLEMENTED
-      // Compute joint torques
+    } else {
+      RCLCPP_ERROR(get_node()->get_logger(),
+                   "Cartesian targets are unimplemented.");
+
+      return controller_interface::return_type::ERROR;
     }
     // UNIMPLEMENTED
     // Write the control torque to hardware interfaces
@@ -479,20 +401,15 @@ controller_interface::return_type Controller::update_and_write_commands(
 
     return controller_interface::return_type::ERROR;
   } else if (control_mode == ControlMode::Admittance) {
-    if (target_type == TargetType::Cartesian) {
-      // UNIMPLEMENTED
-      // Compute joint references given cartesian target using IK
-
-      RCLCPP_ERROR(
-          get_node()->get_logger(),
-          "Cartesian targets for admittance controller is unimplemented.");
-
-      return controller_interface::return_type::ERROR;
-    } else if (target_type == TargetType::Joint) {
+    if (target_type == TargetType::Joint) {
       // Simply forward the joint reference to the admittance controller
       reference = next_command_.value();
-    }
+    } else {
+      RCLCPP_ERROR(get_node()->get_logger(),
+                   "Cartesian targets are unimplemented.");
 
+      return controller_interface::return_type::ERROR;
+    }
   } else {
     RCLCPP_ERROR(get_node()->get_logger(),
                  "Invalid control mode defined. Please set control_mode to "
@@ -515,11 +432,7 @@ controller_interface::return_type Controller::update(
   }
 
   // Update reference by limiting them and interpolating their values
-  if (target_type_ == TargetType::Cartesian) {
-    if (!update_cartesian_reference()) {
-      return controller_interface::return_type::ERROR;
-    }
-  } else if (target_type_ == TargetType::Joint) {
+  if (target_type_ == TargetType::Joint) {
     if (!update_joint_reference()) {
       return controller_interface::return_type::ERROR;
     }
@@ -535,29 +448,15 @@ bool Controller::sense() {
   read_state_from_hardware(current_state_);
 
   // read user commands
-  if (target_type_ == TargetType::Cartesian) {
-    auto command_op = motion_update_rt_.try_get();
-    if (command_op.has_value()) {
-      motion_update_ = command_op.value();
-    }
-
-  } else if (target_type_ == TargetType::Joint) {
-    auto command_op = joint_motion_update_rt_.try_get();
-    if (command_op.has_value()) {
-      joint_motion_update_ = command_op.value();
-      target_state_ = joint_motion_update_.target_state;
-    }
+  auto command_op = joint_motion_update_rt_.try_get();
+  if (command_op.has_value()) {
+    joint_motion_update_ = command_op.value();
+    target_state_ = joint_motion_update_.target_state;
   }
 
   if (control_mode_ == ControlMode::Impedance) {
-    if (target_type_ == TargetType::Cartesian) {
-      // UNIMPLEMENTED
-      const auto result = cartesian_impedance_action_->Update(current_state_);
-			(void) result;
-    } else if (target_type_ == TargetType::Joint) {
-      // UNIMPLEMENTED
-      // update joint impedance controller with current joint state
-    }
+    // UNIMPLEMENTED
+    // update joint impedance controller with current joint state
   }
 
   return true;
@@ -568,7 +467,7 @@ bool Controller::update_next_command_linear_interpolation(
     const JointTrajectoryPoint& reference_state,
     const JointTrajectoryPoint& target_state,
     JointTrajectoryPoint& new_reference) {
-	(void)reference_state;
+  (void)reference_state;
   new_reference = target_state;
   return true;
 }
