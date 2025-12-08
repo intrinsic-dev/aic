@@ -1,0 +1,14 @@
+name: aic
+channels:
+  - robostack-kilted
+  - conda-forge
+dependencies:
+  - colcon-common-extensions
+  - gxx=13
+  - pip
+  - pip:
+    - lerobot==0.4.2
+  - rosdep
+  - ros-kilted-rmw-zenoh-cpp
+  - ros-kilted-ros-core
+  - vcstool

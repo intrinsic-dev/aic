@@ -5,8 +5,13 @@
 ### Requirements
 - [Ubuntu 24.04](https://releases.ubuntu.com/noble/)
 - [ROS 2 Kilted Kaiju](https://docs.ros.org/en/kilted/Installation/Ubuntu-Install-Debs.html)
+- [miniforge](https://docs.conda.io/projects/conda/en/stable/) (Other conda distributions should work as well)
 
-### Install
+## Install
+
+This repo contains 2 workspaces, a "world" workspace using ubuntu 24.04 native packages (apt) dependencies and a "participant" workspace using mamba.
+
+### Install ("world" workspace)
 
 Add `packages.osrfoundation.org` to the apt sources list:
 ```bash
@@ -29,6 +34,40 @@ cd ~/ws_aic
 rosdep install --from-paths src --ignore-src --rosdistro kilted -yr --skip-keys "gz-cmake3 DART libogre-dev libogre-next-2.3-dev"
 source /opt/ros/kilted/setup.bash
 GZ_BUILD_FROM_SOURCE=1 colcon build --merge-install --cmake-args -DCMAKE_BUILD_TYPE=Release --symlink-install
+```
+
+### Install ("participant" workspace)
+
+Create mamba environment
+
+```bash
+mamba create -f src/aic/environment.yml
+mamba config -n aic prepend --env channels robostack-kilted
+mamba activate aic
+```
+
+Setup workspace
+
+```bash
+AIC_WS=~/ws_aic
+AIC_PWS=~/ws_aic_participant
+mkdir -p "$AIC_PWS/src"
+cd "$AIC_PWS"
+ln -s "$AIC_WS/src/aic/participant_pkgs/pkgs" src/aic
+vcs import src < "$AIC_WS/src/aic/participant.repos" --recursive
+```
+
+Install dependencies
+
+```bash
+rosdep install -yi --skip-keys=ament_python --from-paths "$AIC_PWS/src/aic/aic_lerobot_tools" "$AIC_PWS/src/iblnkn"
+pip install -r "$AIC_WS/src/aic/requirements.txt"
+```
+
+Build
+
+```bash
+colcon build --merge-install --cmake-args -DCMAKE_BUILD_TYPE=Release
 ```
 
 ### Launch

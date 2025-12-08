@@ -21,7 +21,7 @@ ros2 service call /record_episode/cancel std_srvs/srv/Trigger '{}'
 Convert the recording to leRobot dataset:
 
 ```bash
-aic_venv_python3 -m bag_to_lerobot --contract src/aic/aic_lerobot_tools/contracts/aic_phase0.yaml --out recording --bags episodes/*
+python -m bag_to_lerobot --contract src/aic/aic_lerobot_tools/contracts/aic_phase0.yaml --out recording --bags episodes/*
 ```
 
 ### Contracts
