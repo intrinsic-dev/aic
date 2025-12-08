@@ -1,5 +1,8 @@
 ### Recording an episode
 
+> [!NOTE]
+> All commands should be run from the participant workspace.
+
 Start the episode recorder node:
 
 ```bash

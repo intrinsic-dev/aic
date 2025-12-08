@@ -11,6 +11,9 @@
 
 This repo contains 2 workspaces, a "world" workspace using ubuntu 24.04 native packages (apt) dependencies and a "participant" workspace using mamba.
 
+> [!CAUTION]
+> Do not source both workspace in the same environment. The may cause the dependencies to be tainted, a full rebuild will be needed to fix it.
+
 ### Install ("world" workspace)
 
 Add `packages.osrfoundation.org` to the apt sources list:
