@@ -6,6 +6,9 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 find_package(ament_cmake REQUIRED)
+find_package(gz_math_vendor REQUIRED)
+find_package(gz-math REQUIRED)
+set(GZ_MATH_VER ${gz-math_VERSION_MAJOR})
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_components REQUIRED)
 find_package(std_msgs REQUIRED)
@@ -23,7 +26,8 @@ target_include_directories(scoring_tier1
 
 add_executable(scoring_tier2 src/ScoringTier2.cc)
 target_link_libraries(scoring_tier2
-  PRIVATE rclcpp::rclcpp ${std_msgs_TARGETS} yaml-cpp)
+  PRIVATE rclcpp::rclcpp ${std_msgs_TARGETS} yaml-cpp
+  gz-math${GZ_MATH_VER}::gz-math${GZ_MATH_VER})
 
 target_include_directories(scoring_tier2
   PUBLIC

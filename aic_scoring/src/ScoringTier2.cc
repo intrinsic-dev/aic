@@ -49,73 +49,109 @@ bool ScoringTier2::ParseStats(const std::string &_yamlFile)
     return false;
   }
 
-  // // Sanity check: We should have a [topics] map.
-  // if (!config["topics"])
-  // {
-  //   std::cerr << "Unable to find [topics] in tier1.yaml" << std::endl;
-  //   return false;
-  // }
+  // Sanity check: We should have a [plugs] map.
+  if (!config["plugs"])
+  {
+    std::cerr << "Unable to find [plugs] in tier2.yaml" << std::endl;
+    return false;
+  }
 
-  // // Sanity check: We should have a sequence of [topic]
-  // auto topics = config["topics"];
-  // if (!topics.IsSequence())
-  // {
-  //   std::cerr << "Unable to find sequence of topics within [topics]"
-  //             << std::endl;
-  //   return false;
-  // }
+  // Sanity check: We should have a sequence of [plug]
+  auto plugs = config["plugs"];
+  if (!plugs.IsSequence())
+  {
+    std::cerr << "Unable to find sequence of plugs within [plugs]"
+              << std::endl;
+    return false;
+  }
 
-  // for (std::size_t i = 0u; i < topics.size(); i++)
-  // {
-  //   auto newTopic = topics[i];
+  for (std::size_t i = 0u; i < plugs.size(); i++)
+  {
+    auto newPlug = plugs[i];
 
-  //   // Sanity check: The key should be "topic".
-  //   if (!newTopic["topic"])
-  //   {
-  //     std::cerr << "Unrecognized element. It should be [topic]" << std::endl;
-  //     return false;
-  //   }
+    // Sanity check: The key should be "plug".
+    if (!newPlug["plug"])
+    {
+      std::cerr << "Unrecognized element. It should be [plug]" << std::endl;
+      return false;
+    }
 
-  //   StatsTier1 stats;
-  //   auto topicProperties = newTopic["topic"];
-  //   if (!topicProperties.IsMap())
-  //   {
-  //     std::cerr << "Unable to find properties within [topic]" << std::endl;
-  //     return false;
-  //   }
+    Pluggable plug;
+    auto plugProperties = newPlug["plug"];
+    if (!plugProperties.IsMap())
+    {
+      std::cerr << "Unable to find properties within [plug]" << std::endl;
+      return false;
+    }
 
-  //   if (!topicProperties["name"])
-  //   {
-  //     std::cerr << "Unable to find [name] within [topic]" << std::endl;
-  //     return false;
-  //   }
-  //   stats.topicName = topicProperties["name"].as<std::string>();
+    if (!plugProperties["name"])
+    {
+      std::cerr << "Unable to find [name] within [plug]" << std::endl;
+      return false;
+    }
+    plug.name = plugProperties["name"].as<std::string>();
 
-  //   if (!topicProperties["type"])
-  //   {
-  //     std::cerr << "Unable to find [type] within [topic]" << std::endl;
-  //     return false;
-  //   }
-  //   stats.topicType = topicProperties["type"].as<std::string>();
+    if (!plugProperties["type"])
+    {
+      std::cerr << "Unable to find [type] within [plug]" << std::endl;
+      return false;
+    }
 
-  //   if (!topicProperties["min_messages"])
-  //   {
-  //     std::cerr << "Unable to find [min_messages] within [topic]" << std::endl;
-  //     return false;
-  //   }
-  //   stats.minMessages = topicProperties["min_messages"].as<double>();
+    plug.type = plugProperties["type"].as<std::string>();
+    this->plugs.insert({plug.name, std::move(plug)});
+  }
 
-  //   if (!topicProperties["max_median_time"])
-  //   {
-  //     std::cerr << "Unable to find [max_median_time] within [topic]"
-  //               << std::endl;
-  //     return false;
-  //   }
-  //   stats.maxMedianTime = topicProperties["max_median_time"].as<double>();
+  // Sanity check: We should have a [ports] map.
+  if (!config["ports"])
+  {
+    std::cerr << "Unable to find [ports] in tier2.yaml" << std::endl;
+    return false;
+  }
 
-  //   auto topicStats = std::make_unique<TopicStatsTier1>(this, stats);
-  //   this->allStats.insert({stats.topicName, std::move(topicStats)});
-  // }
+  // Sanity check: We should have a sequence of [port]
+  auto ports = config["ports"];
+  if (!ports.IsSequence())
+  {
+    std::cerr << "Unable to find sequence of ports within [ports]"
+              << std::endl;
+    return false;
+  }
+
+  for (std::size_t i = 0u; i < ports.size(); i++)
+  {
+    auto newPort = ports[i];
+
+    // Sanity check: The key should be "port".
+    if (!newPort["port"])
+    {
+      std::cerr << "Unrecognized element. It should be [port]" << std::endl;
+      return false;
+    }
+
+    Pluggable port;
+    auto portProperties = newPort["port"];
+    if (!portProperties.IsMap())
+    {
+      std::cerr << "Unable to find properties within [port]" << std::endl;
+      return false;
+    }
+
+    if (!portProperties["name"])
+    {
+      std::cerr << "Unable to find [name] within [port]" << std::endl;
+      return false;
+    }
+    port.name = portProperties["name"].as<std::string>();
+
+    if (!portProperties["type"])
+    {
+      std::cerr << "Unable to find [type] within [port]" << std::endl;
+      return false;
+    }
+
+    port.type = portProperties["type"].as<std::string>();
+    this->ports.insert({port.name, std::move(port)});
+  }
   return true;
 }
 
@@ -137,6 +173,23 @@ int main(int argc, char * argv[])
   std::string configFile = std::string(argv[1]);
   if (!scoringTier2->ParseStats(configFile))
     return -1;
+
+  // Populate pluggableMap.
+  for (const auto& [plugName, plugInfo] : scoringTier2->plugs)
+  {
+    for (const auto& [portName, portInfo] : scoringTier2->ports)
+    {
+      if (plugInfo.type == portInfo.type)
+      {
+        std::string connectionName = plugName + "&" + portName;
+        scoringTier2->pluggableMap.insert({connectionName, 0});
+      }
+    }
+  }
+
+  // Debug.
+  // for (const auto& [connection, distance] : scoringTier2->pluggableMap)
+  //   std::cout << connection << ": " << distance << " m." << std::endl;
 
   rclcpp::spin(scoringTier2);
   rclcpp::shutdown();

@@ -18,24 +18,26 @@
 #include <chrono>
 #include <string>
 
+#include <gz/math/Pose3.hh>
+
 #ifndef AIC_SCORING__SCORING_TIER2_HH_
 #define AIC_SCORING__SCORING_TIER2_HH_
 
 namespace aic_scoring
 {
   /// \brief Tier2 POD.
-  class StatsTier2
+  class Pluggable
   {
-    /// \brief Timestamp.
-    public: std::chrono::time_point<std::chrono::steady_clock> timestamp;
+    /// \brief Plug/port name.
+    public: std::string name;
 
-    /// \brief Distance cable-connector in meters.
-    public: double distance;
+    /// \brief Plug/port type.
+    public: std::string type;
 
-    /// \brief Whether the connector and cable are plugged in.
-    public: bool connected = false;
+    /// \brief Position.
+    public: gz::math::Vector3d position;
   };
-  
+
   // The Tier2 scoring interface.
   class ScoringTier2 : public rclcpp::Node
   {
@@ -46,15 +48,18 @@ namespace aic_scoring
     /// \param[in] _yamlFile Input YAML file.
     public: bool ParseStats(const std::string &_yamlFile);
 
-    /// \brief Check distance between the tip of the cable and the connector.
-    /// \return Distance (m) between the cable and connector.
-    //public: virtual double Distance() const = 0;
-
     /// \brief Store the current distance cable-connector.
     public: void Update();
 
-    /// \brief History of tier 2 stats.
-    private: std::vector<StatsTier2> allStats;
+    /// \brief All pluggable plugs.
+    public: std::map<std::string, Pluggable> plugs;
+
+    /// \brief All pluggable ports.
+    public: std::map<std::string, Pluggable> ports;
+
+    /// \brief Plug<->port connections.
+    /// The first key is always the plug, followed by "&", follower by port.
+    public: std::map<std::string, double> pluggableMap;
   };
 }
 #endif
