@@ -41,10 +41,9 @@ Controller::Controller()
       interpolation_mode_(InterpolationMode::Invalid),
       has_position_state_interface_(false),
       has_velocity_state_interface_(false),
-      has_acceleration_state_interface_(false),
       joint_motion_update_sub_(nullptr),
-      next_command_(std::nullopt),
-      target_state_(std::nullopt),
+      last_commanded_state_(std::nullopt),
+      current_state_(std::nullopt),
       time_to_target_seconds_(0.0) {
   // Do nothing.
 }
@@ -119,15 +118,9 @@ controller_interface::CallbackReturn Controller::on_init() {
   // Initialize size and value of joint references and states
   // TODO(Yadunund): why are next_command_ and current_state_ optional if they
   // always get initialized here?
-  next_command_ = JointTrajectoryPoint();
-  next_command_.value().positions.assign(num_joints_, 0.0);
-  next_command_.value().velocities.assign(num_joints_, 0.0);
-  next_command_.value().accelerations.assign(num_joints_, 0.0);
   // TODO(Yadunund): why are last_commanded_state_ and current_state_ not
   // optional and instead being initialized directly? current_state_ should be
   // initialized only in on_activate().
-  last_commanded_state_ = next_command_.value();
-  current_state_ = next_command_.value();
 
   return controller_interface::CallbackReturn::SUCCESS;
 }
@@ -206,7 +199,8 @@ controller_interface::CallbackReturn Controller::on_configure(
                         allowed_state_interface_types_.end(), interface);
     if (it == allowed_state_interface_types_.end()) {
       RCLCPP_ERROR(get_node()->get_logger(),
-                   "State interface type '%s' not allowed!", interface.c_str());
+                   "State interface type '%s' not supported!",
+                   interface.c_str());
       return controller_interface::CallbackReturn::FAILURE;
     }
   }
@@ -215,12 +209,10 @@ controller_interface::CallbackReturn Controller::on_configure(
       params_.state_interfaces, hardware_interface::HW_IF_POSITION);
   has_velocity_state_interface_ = contains_interface_type(
       params_.state_interfaces, hardware_interface::HW_IF_VELOCITY);
-  has_acceleration_state_interface_ = contains_interface_type(
-      params_.state_interfaces, hardware_interface::HW_IF_ACCELERATION);
 
-  if (!has_position_state_interface_) {
+  if (!has_position_state_interface_ || !has_velocity_state_interface_) {
     RCLCPP_ERROR(get_node()->get_logger(),
-                 "Position state interface is required.");
+                 "Both position and velocity state interfaces are required.");
     return controller_interface::CallbackReturn::FAILURE;
   }
 
@@ -264,26 +256,28 @@ controller_interface::CallbackReturn Controller::on_configure(
 controller_interface::CallbackReturn Controller::on_activate(
     const rclcpp_lifecycle::State& /*previous_state*/) {
   // read and initialize current joint states
-  read_state_from_hardware(current_state_);
-  for (const auto& val : current_state_.positions) {
+  if (!current_state_.has_value()) {
+    current_state_ = JointTrajectoryPoint();
+    current_state_.value().positions.assign(num_joints_, 0.0);
+    current_state_.value().velocities.assign(num_joints_, 0.0);
+  }
+  read_state_from_hardware(current_state_.value());
+  for (const auto& val : current_state_.value().positions) {
     if (std::isnan(val)) {
       RCLCPP_ERROR(get_node()->get_logger(),
                    "Failed to read joint positions from the hardware.\n");
       return controller_interface::CallbackReturn::ERROR;
     }
   }
-  if (!next_command_.has_value()) {
-    next_command_ = current_state_;
-  }
-  if (!target_state_.has_value()) {
-    target_state_ = current_state_;
-  }
-  last_commanded_state_ = current_state_;
+
+  // Set the current state as the default command
+  next_command_ = current_state_.value();
+  target_state_ = current_state_.value();
 
   reset_joint_motion_update_msg(joint_motion_update_);
   joint_motion_update_.trajectory_generation_mode.mode =
       TrajectoryGenerationMode::MODE_POSITION;
-  joint_motion_update_.target_state = current_state_;
+  joint_motion_update_.target_state = current_state_.value();
   joint_motion_update_rt_.try_set(joint_motion_update_);
 
   return controller_interface::CallbackReturn::SUCCESS;
@@ -292,9 +286,7 @@ controller_interface::CallbackReturn Controller::on_activate(
 //==============================================================================
 controller_interface::CallbackReturn Controller::on_deactivate(
     const rclcpp_lifecycle::State& /*previous_state*/) {
-  if (control_mode_ == ControlMode::Impedance) {
-    release_interfaces();
-  }
+  release_interfaces();
 
   reset_joint_motion_update_msg(joint_motion_update_);
   joint_motion_update_rt_.try_set(joint_motion_update_);
@@ -304,18 +296,6 @@ controller_interface::CallbackReturn Controller::on_deactivate(
 
 //==============================================================================
 bool Controller::update_joint_reference() {
-  if (!next_command_.has_value()) {
-    RCLCPP_ERROR(get_node()->get_logger(),
-                 "Unset next_command_ in update_joint_reference()");
-    return false;
-  }
-
-  if (!target_state_.has_value()) {
-    RCLCPP_ERROR(get_node()->get_logger(),
-                 "Unset target_state_ in update_joint_reference()");
-    return false;
-  }
-
   // update target to ensure it is within pre-defined limits
   switch (joint_motion_update_.trajectory_generation_mode.mode) {
     case TrajectoryGenerationMode::MODE_POSITION:
@@ -350,14 +330,14 @@ bool Controller::update_joint_reference() {
 
   time_to_target_seconds_ = joint_motion_update_.time_to_target_seconds;
 
-  auto new_reference = *next_command_;
+  auto new_reference = next_command_;
   switch (interpolation_mode_) {
     case InterpolationMode::Linear:
       // UNIMPLEMENTED
-      if (!update_next_command_linear_interpolation(
-              next_command_.value(), target_state_.value(), new_reference)) {
-        return false;
-      }
+      // Apply linear interpolation to the target_state_ to obtain a new
+      // reference. Linear interpolation should support MODE_POSITION,
+      // MODE_VELOCITY and MODE_POSITION_AND_VELOCITY
+      new_reference = target_state_;
 
       break;
     default:
@@ -374,17 +354,44 @@ bool Controller::update_joint_reference() {
 }
 
 //==============================================================================
-controller_interface::return_type Controller::update_and_write_commands(
-    const ControlMode& control_mode, const TargetType& target_type) {
+controller_interface::return_type Controller::update(
+    const rclcpp::Time& /*time*/, const rclcpp::Duration& /*period*/) {
+  // Read and update current states from sensors
+  read_state_from_hardware(current_state_.value());
+
+  // read user commands
+  auto command_op = joint_motion_update_rt_.try_get();
+  if (command_op.has_value()) {
+    joint_motion_update_ = command_op.value();
+    target_state_ = joint_motion_update_.target_state;
+  }
+
+  if (control_mode_ == ControlMode::Impedance) {
+    // UNIMPLEMENTED
+    // update joint impedance controller with current joint state
+  }
+
+  // Update reference by limiting them and interpolating their values
+  if (target_type_ == TargetType::Joint) {
+    if (!update_joint_reference()) {
+      return controller_interface::return_type::ERROR;
+    }
+  } else {
+    RCLCPP_ERROR(get_node()->get_logger(),
+                 "Cartesian targets are unimplemented.");
+
+    return controller_interface::return_type::ERROR;
+  }
+
   JointTrajectoryPoint reference;
-  if (control_mode == ControlMode::Impedance) {
+  if (control_mode_ == ControlMode::Impedance) {
     // UNIMPLEMENTED
     // Interpolate impedance parameters
-    //    UpdateImpedance(target_type)
+    //    UpdateImpedance(target_type_)
     // Interpolate feed-forward wrench
-    //    UpdateFeedforwardWrench(target_type)
+    //    UpdateFeedforwardWrench(target_type_)
 
-    if (target_type == TargetType::Joint) {
+    if (target_type_ == TargetType::Joint) {
       // UNIMPLEMENTED
       // Compute joint torques
     } else {
@@ -400,22 +407,16 @@ controller_interface::return_type Controller::update_and_write_commands(
                  "Impedance control is unimplemented.");
 
     return controller_interface::return_type::ERROR;
-  } else if (control_mode == ControlMode::Admittance) {
-    if (target_type == TargetType::Joint) {
+  } else if (control_mode_ == ControlMode::Admittance) {
+    if (target_type_ == TargetType::Joint) {
       // Simply forward the joint reference to the admittance controller
-      reference = next_command_.value();
+      reference = next_command_;
     } else {
       RCLCPP_ERROR(get_node()->get_logger(),
                    "Cartesian targets are unimplemented.");
 
       return controller_interface::return_type::ERROR;
     }
-  } else {
-    RCLCPP_ERROR(get_node()->get_logger(),
-                 "Invalid control mode defined. Please set control_mode to "
-                 "either 'admittance' or 'impedance'");
-
-    return controller_interface::return_type::ERROR;
   }
 
   write_state_to_hardware(reference);
@@ -424,65 +425,14 @@ controller_interface::return_type Controller::update_and_write_commands(
 }
 
 //==============================================================================
-controller_interface::return_type Controller::update(
-    const rclcpp::Time& /*time*/, const rclcpp::Duration& /*period*/) {
-  // Read and update current states from sensors
-  if (!sense()) {
-    return controller_interface::return_type::ERROR;
-  }
-
-  // Update reference by limiting them and interpolating their values
-  if (target_type_ == TargetType::Joint) {
-    if (!update_joint_reference()) {
-      return controller_interface::return_type::ERROR;
-    }
-  }
-
-  update_and_write_commands(control_mode_, target_type_);
-
-  return controller_interface::return_type::OK;
-}
-
-//==============================================================================
-bool Controller::sense() {
-  read_state_from_hardware(current_state_);
-
-  // read user commands
-  auto command_op = joint_motion_update_rt_.try_get();
-  if (command_op.has_value()) {
-    joint_motion_update_ = command_op.value();
-    target_state_ = joint_motion_update_.target_state;
-  }
-
-  if (control_mode_ == ControlMode::Impedance) {
-    // UNIMPLEMENTED
-    // update joint impedance controller with current joint state
-  }
-
-  return true;
-}
-
-//==============================================================================
-bool Controller::update_next_command_linear_interpolation(
-    const JointTrajectoryPoint& reference_state,
-    const JointTrajectoryPoint& target_state,
-    JointTrajectoryPoint& new_reference) {
-  (void)reference_state;
-  new_reference = target_state;
-  return true;
-}
-
-//==============================================================================
 void Controller::read_state_from_hardware(JointTrajectoryPoint& state_current) {
   // Set state_current to last commanded state if any of the hardware interface
   // values are NaN
   bool nan_position = false;
   bool nan_velocity = false;
-  bool nan_acceleration = false;
 
   std::size_t pos_ind = 0;
   std::size_t vel_ind = pos_ind + has_velocity_state_interface_;
-  std::size_t acc_ind = vel_ind + has_acceleration_state_interface_;
 
   for (std::size_t joint_ind = 0; joint_ind < num_joints_; ++joint_ind) {
     if (has_position_state_interface_) {
@@ -504,35 +454,23 @@ void Controller::read_state_from_hardware(JointTrajectoryPoint& state_current) {
         state_current.velocities[joint_ind] = state_current_velocity_op.value();
       }
     }
-    if (has_acceleration_state_interface_) {
-      auto state_current_acceleration_op =
-          state_interfaces_[acc_ind * num_joints_ + joint_ind].get_optional();
-      nan_acceleration |= !state_current_acceleration_op.has_value() ||
-                          std::isnan(state_current_acceleration_op.value());
-      if (state_current_acceleration_op.has_value()) {
-        state_current.accelerations[joint_ind] =
-            state_current_acceleration_op.value();
-      }
-    }
   }
 
   if (nan_position) {
     RCLCPP_ERROR(this->get_node()->get_logger(),
                  "Read NaN value from position state interface, setting "
                  "current position to last_commanded_state_");
-    state_current.positions = last_commanded_state_.positions;
+    if (last_commanded_state_.has_value()) {
+      state_current.positions = last_commanded_state_.value().positions;
+    }
   }
   if (nan_velocity) {
     RCLCPP_ERROR(this->get_node()->get_logger(),
                  "Read NaN value from velocity state interface, setting "
                  "current velocity to last_commanded_state_");
-    state_current.velocities = last_commanded_state_.velocities;
-  }
-  if (nan_acceleration) {
-    RCLCPP_ERROR(this->get_node()->get_logger(),
-                 "Read NaN value from acceleration state interface, setting "
-                 "current acceleration to last_commanded_state_");
-    state_current.accelerations = last_commanded_state_.accelerations;
+    if (last_commanded_state_.has_value()) {
+      state_current.velocities = last_commanded_state_.value().velocities;
+    }
   }
 }
 

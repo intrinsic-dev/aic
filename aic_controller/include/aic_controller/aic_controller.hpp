@@ -118,24 +118,6 @@ class Controller : public controller_interface::ControllerInterface {
 
  private:
   /**
-   * @brief Update controller parameters and compute commands based on control
-   * law
-   *
-   * @param control_mode Control mode to use for updating and writing commands
-   * @param target_type Target type to use for updating and writing commands
-   * @return controller_interface::return_type
-   */
-  controller_interface::return_type update_and_write_commands(
-      const ControlMode& control_mode, const TargetType& target_type);
-
-  /**
-   * @brief Reads state values from hardware interfaces and reference values
-   * from ROS subscribers
-   */
-  [[nodiscard]]
-  bool sense();
-
-  /**
    * @brief Update joint reference by limiting the target states to stay
    * within limits and then interpolating their values.
    *
@@ -144,22 +126,6 @@ class Controller : public controller_interface::ControllerInterface {
    */
   [[nodiscard]]
   bool update_joint_reference();
-
-  /**
-   * @brief Applies linear interpolation to the reference values to minimize
-   * discontinuities from the current reference to the target reference.
-   *
-   * @param reference_state
-   * @param target_state
-   * @param new_reference
-   * @return true
-   * @return false
-   */
-  [[nodiscard]]
-  bool update_next_command_linear_interpolation(
-      const JointTrajectoryPoint& reference_state,
-      const JointTrajectoryPoint& target_state,
-      JointTrajectoryPoint& new_reference);
 
   /**
    * @brief Update fields of state_current with joint states from hardware
@@ -189,12 +155,10 @@ class Controller : public controller_interface::ControllerInterface {
 
   bool has_position_state_interface_;
   bool has_velocity_state_interface_;
-  bool has_acceleration_state_interface_;
 
-  static constexpr std::array<std::string_view, 3>
+  static constexpr std::array<std::string_view, 2>
       allowed_state_interface_types_{hardware_interface::HW_IF_POSITION,
-                                     hardware_interface::HW_IF_VELOCITY,
-                                     hardware_interface::HW_IF_ACCELERATION};
+                                     hardware_interface::HW_IF_VELOCITY};
 
   // ROS2 subscribers for user commands
   rclcpp::Subscription<JointMotionUpdate>::SharedPtr joint_motion_update_sub_;
@@ -205,16 +169,15 @@ class Controller : public controller_interface::ControllerInterface {
   JointMotionUpdate joint_motion_update_;
 
   // Last value written to controller interfaces
-  JointTrajectoryPoint last_commanded_state_;
+  std::optional<JointTrajectoryPoint> last_commanded_state_;
   // Set points for next control update computer after interpolations
-  std::optional<JointTrajectoryPoint> next_command_;
+  JointTrajectoryPoint next_command_;
   // Desired target state read from JointMotionUpdate user commands
-  std::optional<JointTrajectoryPoint> target_state_;
+  JointTrajectoryPoint target_state_;
+  // Latest joint states read from hardware interface
+  std::optional<JointTrajectoryPoint> current_state_;
 
   double time_to_target_seconds_;
-
-  // Latest joint states read from hardware interface
-  JointTrajectoryPoint current_state_;
 };
 
 }  // namespace aic_controller
