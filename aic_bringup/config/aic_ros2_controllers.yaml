@@ -288,6 +288,7 @@ aic_controller:
 
     state_interfaces:
       - position
+      - velocity
 
     # Chained to admittance controller command interface
     command_joints:
