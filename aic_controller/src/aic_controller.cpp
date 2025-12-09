@@ -52,16 +52,12 @@ Controller::command_interface_configuration() const {
   controller_interface::InterfaceConfiguration command_interfaces_config;
   std::vector<std::string> command_interfaces_config_names;
 
-  std::string controller_prefix, interface;
-  if (control_mode_ == ControlMode::Admittance) {
-    // Only initialize position interfaces in admittance control mode
-    interface = hardware_interface::HW_IF_POSITION;
-    controller_prefix = params_.admittance_controller_namespace + "/";
-  } else if (control_mode_ == ControlMode::Impedance) {
-    // Only initialize effort interfaces in impedance control mode
-    interface = hardware_interface::HW_IF_EFFORT;
-    controller_prefix = "";
-  }
+  const std::string controller_prefix = control_mode_ == ControlMode::Admittance
+			? params_.admittance_controller_namespace + "/"
+			: "";
+	const std::string interface = control_mode_ == ControlMode::Admittance
+			? hardware_interface::HW_IF_POSITION
+			: hardware_interface::HW_IF_EFFORT;
 
   for (const auto& joint : params_.joints) {
     command_interfaces_config_names.push_back(controller_prefix + joint + "/" + interface);
