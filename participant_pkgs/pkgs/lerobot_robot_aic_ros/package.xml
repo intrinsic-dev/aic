@@ -1,15 +1,13 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>aic_lerobot_tools</name>
+  <name>lerobot_robot_aic_ros</name>
   <version>0.0.1</version>
-  <description>This package contains tools to work with LeRobot for the challenge</description>
+  <description>LeRobot driver for AIC</description>
   <maintainer email="koonpeng@intrinsic.ai">Teo Koon Peng</maintainer>
   <license>Apache License 2.0</license>
 
-  <exec_depend>rosbag2</exec_depend>
-  <exec_depend>rosbag2_storage_mcap</exec_depend>
-  <exec_depend>rosetta</exec_depend>
+  <exec_depend>speech-dispatcher</exec_depend>
 
   <export>
     <build_type>ament_python</build_type>
