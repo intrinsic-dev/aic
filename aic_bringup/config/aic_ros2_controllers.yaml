@@ -272,11 +272,8 @@ aic_controller:
     # Both modes require position state interfaces for specified joints.
     control_mode: "admittance"
 
-    # Available interpolation modes is only "linear".
-    interpolation_mode: "linear"
-
-    # Available target types are "cartesian" and "joint"
-    target_type: "joint"
+    # Namespace of admittance controller for chaining controller interfaces
+    admittance_controller_namespace: "admittance_controller"
 
     joints:
       - shoulder_pan_joint
@@ -285,22 +282,6 @@ aic_controller:
       - wrist_1_joint
       - wrist_2_joint
       - wrist_3_joint
-
-    state_interfaces:
-      - position
-
-    # Chained to admittance controller command interface
-    command_joints:
-      - admittance_controller/shoulder_pan_joint
-      - admittance_controller/shoulder_lift_joint
-      - admittance_controller/elbow_joint
-      - admittance_controller/wrist_1_joint
-      - admittance_controller/wrist_2_joint
-      - admittance_controller/wrist_3_joint
-
-    command_interfaces:
-      - position
-      - effort
 
     kinematics:
       plugin_name: kinematics_interface_kdl/KinematicsInterfaceKDL

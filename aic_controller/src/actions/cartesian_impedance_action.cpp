@@ -31,32 +31,26 @@ bool CartesianImpedanceAction::Configure(
   // Load the differential IK plugin given the robot_description
   (void)node;
   (void)robot_description;
-  return false;
+
+  return true;
 }
 
 //==============================================================================
-Eigen::VectorXd CartesianImpedanceAction::Compute(
-    const geometry_msgs::msg::Pose tool_pose,
-    const geometry_msgs::msg::Twist tool_vel,
-    const CartesianImpedanceParameters& impedance_params
+JointTrajectoryPoint CartesianImpedanceAction::Compute(
+    const CartesianState tool_target,
+    const JointTrajectoryPoint& current_state
+    // const CartesianImpedanceParameters& impedance_params
     // const JointLimits& joint_limits
 ) {
   // UNIMPLEMENTED
   // Compute control wrench using the control law
-	(void)tool_pose;
-	(void)tool_vel;
-	(void)impedance_params;
-  return Eigen::VectorXd();
-}
+	(void)tool_target;
+	(void)current_state;
 
-//==============================================================================
-bool CartesianImpedanceAction::Update(
-    const JointTrajectoryPoint& current_sensed) {
-  // UNIMPLEMENTED
-  // Compute the end-effector cartesian pose estimate using forward kinematics.
-  // Compute the jacobian
-	(void)current_sensed;
-  return false;
+  JointTrajectoryPoint joint_target;
+  joint_target.effort.assign(num_joints_, 0.0);
+
+  return joint_target;
 }
 
 }  // namespace aic_controller

@@ -27,6 +27,8 @@
 #include "geometry_msgs/msg/twist.hpp"
 #include "trajectory_msgs/msg/joint_trajectory_point.hpp"
 
+#include "aic_controller/cartesian_state.hpp"
+
 //==============================================================================
 namespace aic_controller {
 using trajectory_msgs::msg::JointTrajectoryPoint;
@@ -51,28 +53,22 @@ class CartesianImpedanceAction {
                  const std::string& robot_description);
 
   /**
-   * @brief Generates a target torque vector with the control torque given the
+   * @brief Generates a target joint torque with the control torque given the
    * nullspace, tool goal, sensed joint position and velocity, and control
    * parameters.
    *
-   * @param tool_goal Goal state of tool control frame
+   * @param tool_target Goal state of tool control frame
+   * @param current_state Current joint states
    * @param impedance_params Impedance controller parameters
    * @param joint_limits Joint limits on joint position, velocity, accelration
    * and further derivatives
-   * @return Eigen::VectorXd
+   * @return JointTrajectoryPoint Joint target torque
    */
-  Eigen::VectorXd Compute(const geometry_msgs::msg::Pose tool_pose,
-                          const geometry_msgs::msg::Twist tool_vel,
-                          const CartesianImpedanceParameters& impedance_params
-                          //   const JointLimits& joint_limits
+  JointTrajectoryPoint Compute(const CartesianState tool_target,
+                          const JointTrajectoryPoint& current_state
+                          // const CartesianImpedanceParameters& impedance_params
+                          // const JointLimits& joint_limits
   );
-
-  /**
-   * @brief Estimates the end-effector cartesian pose estimate given the joint
-   * positions
-   */
-	[[nodiscard]]
-  bool Update(const JointTrajectoryPoint& current_sensed);
 
  private:
   // Number of robot joints

@@ -5,25 +5,6 @@ aic_controller:
     read_only: true
   }
 
-  command_joints: {
-    type: string_array,
-    default_value: [],
-    description: "(optional) Specifies the joints for writing into another controllers reference. This parameter is only relevant when chaining the output of this controller to the input of another controller.",
-    read_only: true
-  }
-
-  command_interfaces: {
-    type: string_array,
-    description: "Specifies which command interfaces the controller will claim.",
-    read_only: true
-  }
-
-  state_interfaces: {
-    type: string_array,
-    description: "Specifies which state interfaces the controller will claim.",
-    read_only: true
-  }
-
   kinematics:
     plugin_name: {
       type: string,
@@ -53,16 +34,10 @@ aic_controller:
     description: "Sets the controller used, which can be either 'impedance' or 'admittance'"
   }
 
-  interpolation_mode: {
+  admittance_controller_namespace: {
     type: string,
-    default_value: "linear",
-    description: "Sets the interpolation mode, which can only be 'linear'"
-  }
-
-  target_type: {
-    type: string,
-    default_value: "joint",
-    description: "Sets the target type, which can be either 'cartesian' and 'joint'"
+    default_value: "admittance_controller",
+    description: "Sets the namespace of the admittance controller to chain to"
   }
 
   # general settings
