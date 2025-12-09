@@ -33,3 +33,16 @@ Key mapping
 | g   | +wrist_2       |
 | y   | -wrist_3       |
 | h   | +wrist_3       |
+
+## Record
+
+```bash
+lerobot-record \
+  --robot.type=aic_ros --robot.id=aic \
+  --teleop.type=aic_keyboard --teleop.id=aic \
+  --dataset.repo_id=<hf-repo> \
+  --dataset.single_task=<task-prompt> \
+  --dataset.push_to_hub=false \
+  --dataset.private=true \
+  --display_data=true
+```
