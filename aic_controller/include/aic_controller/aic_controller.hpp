@@ -146,6 +146,8 @@ class Controller : public controller_interface::ControllerInterface {
   realtime_tools::RealtimeThreadSafeBox<MotionUpdate> motion_update_rt_;
   MotionUpdate motion_update_;
 
+  std::atomic<bool> motion_update_received_;
+
   // Last value written to controller interfaces
   std::optional<JointTrajectoryPoint> last_commanded_state_;
   // Desired target state read from JointMotionUpdate user commands

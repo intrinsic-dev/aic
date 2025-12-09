@@ -38,6 +38,7 @@ Controller::Controller()
       control_mode_(ControlMode::Invalid),
       cartesian_impedance_action_(nullptr),
       motion_update_sub_(nullptr),
+      motion_update_received_(false),
       last_commanded_state_(std::nullopt),
       target_state_(std::nullopt),
       time_to_target_seconds_(0.0),
@@ -152,6 +153,7 @@ controller_interface::CallbackReturn Controller::on_configure(
         }
 
         motion_update_rt_.set(*msg);
+        motion_update_received_ = true;
       });
 
   if (!cartesian_impedance_action_->Configure(
@@ -217,10 +219,12 @@ controller_interface::return_type Controller::update(
   read_state_from_hardware(current_state_);
 
   // read user commands
-  auto command_op = motion_update_rt_.try_get();
-  if (command_op.has_value()) {
-    motion_update_ = command_op.value();
-    target_state_ = CartState(motion_update_.pose, motion_update_.velocity);
+  if (motion_update_received_){
+    auto command_op = motion_update_rt_.try_get();
+    if (command_op.has_value()) {
+      motion_update_ = command_op.value();
+      target_state_ = CartState(motion_update_.pose, motion_update_.velocity);
+    }
   }
 
   if (!target_state_.has_value()){
