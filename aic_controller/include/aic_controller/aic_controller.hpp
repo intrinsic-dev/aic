@@ -23,7 +23,7 @@
 #include <string>
 
 #include "aic_controller/actions/cartesian_impedance_action.hpp"
-#include "aic_controller/cart_state.hpp"
+#include "aic_controller/cartesian_state.hpp"
 #include "controller_interface/controller_interface.hpp"
 #include "rclcpp_lifecycle/state.hpp"
 #include "realtime_tools/realtime_publisher.hpp"
@@ -151,7 +151,7 @@ class Controller : public controller_interface::ControllerInterface {
   // Last value written to controller interfaces
   std::optional<JointTrajectoryPoint> last_commanded_state_;
   // Desired target state read from JointMotionUpdate user commands
-  std::optional<CartState> target_state_;
+  std::optional<CartesianState> target_state_;
   // Latest joint states read from hardware interface
   JointTrajectoryPoint current_state_;
 

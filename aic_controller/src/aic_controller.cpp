@@ -223,7 +223,7 @@ controller_interface::return_type Controller::update(
     auto command_op = motion_update_rt_.try_get();
     if (command_op.has_value()) {
       motion_update_ = command_op.value();
-      target_state_ = CartState(motion_update_.pose, motion_update_.velocity);
+      target_state_ = CartesianState(motion_update_.pose, motion_update_.velocity);
     }
   }
 

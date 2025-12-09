@@ -27,7 +27,7 @@
 #include "geometry_msgs/msg/twist.hpp"
 #include "trajectory_msgs/msg/joint_trajectory_point.hpp"
 
-#include "aic_controller/cart_state.hpp"
+#include "aic_controller/cartesian_state.hpp"
 
 //==============================================================================
 namespace aic_controller {
@@ -64,7 +64,7 @@ class CartesianImpedanceAction {
    * and further derivatives
    * @return JointTrajectoryPoint Joint target torque
    */
-  JointTrajectoryPoint Compute(const CartState tool_target,
+  JointTrajectoryPoint Compute(const CartesianState tool_target,
                           const JointTrajectoryPoint& current_state
                           // const CartesianImpedanceParameters& impedance_params
                           // const JointLimits& joint_limits

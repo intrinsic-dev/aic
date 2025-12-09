@@ -37,7 +37,7 @@ bool CartesianImpedanceAction::Configure(
 
 //==============================================================================
 JointTrajectoryPoint CartesianImpedanceAction::Compute(
-    const CartState tool_target,
+    const CartesianState tool_target,
     const JointTrajectoryPoint& current_state
     // const CartesianImpedanceParameters& impedance_params
     // const JointLimits& joint_limits

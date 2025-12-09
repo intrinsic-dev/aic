@@ -15,8 +15,8 @@
  *
  */
 
-#ifndef AIC_CONTROLLER__CART_STATE_HPP_
-#define AIC_CONTROLLER__CART_STATE_HPP_
+#ifndef AIC_CONTROLLER__CARTESIAN_STATE_HPP_
+#define AIC_CONTROLLER__CARTESIAN_STATE_HPP_
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -29,8 +29,10 @@
 
 namespace aic_controller {
 
+//==============================================================================
 // Cartesian state with pose and velocity
-struct CartState {
+struct CartesianState {
+
   Eigen::Isometry3d pose;
   Eigen::Matrix<double, 6, 1> velocity;
 
@@ -39,24 +41,20 @@ struct CartState {
    * acceleration values set to zero.
    *
    */
-  explicit CartState()
-      : pose(Eigen::Isometry3d::Identity()),
-        velocity(Eigen::Matrix<double, 6, 1>::Zero()) {};
+  CartesianState();
 
   /**
-   * @brief Construct a CartState from ROS messages
+   * @brief Construct a CartesianState from ROS messages
    *
    * @param pose_msg
    * @param velocity_msg
    * @param acceleration_msg
    */
-  explicit CartState(const geometry_msgs::msg::Pose& pose_msg,
-                     const geometry_msgs::msg::Twist& velocity_msg) {
-    tf2::fromMsg(pose_msg, pose);
-    tf2::fromMsg(velocity_msg, velocity);
-  }
+  CartesianState(
+		const geometry_msgs::msg::Pose& pose_msg,
+		const geometry_msgs::msg::Twist& velocity_msg);
 };
 
 }  // namespace aic_controller
 
-#endif  // AIC_CONTROLLER__CART_STATE_HPP_
+#endif  // AIC_CONTROLLER__CARTESIAN_STATE_HPP_
