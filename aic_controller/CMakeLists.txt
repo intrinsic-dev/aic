@@ -21,11 +21,14 @@ set(DEP_PKGS
   rclcpp
   rclcpp_lifecycle
   realtime_tools
+  tf2_eigen
   trajectory_msgs
 )
 foreach(pkg ${DEP_PKGS})
   find_package(${pkg} REQUIRED)
 endforeach()
+
+find_package(Eigen3 REQUIRED NO_MODULE)
 
 generate_parameter_library(aic_controller_parameters
   src/aic_controller_parameters.yaml
@@ -44,6 +47,7 @@ target_include_directories(aic_controller PUBLIC
 target_link_libraries(aic_controller PUBLIC
   aic_controller_parameters
   controller_interface::controller_interface
+  Eigen3::Eigen
   hardware_interface::hardware_interface
   joint_limits::joint_limits
   kinematics_interface::kinematics_interface
@@ -51,6 +55,7 @@ target_link_libraries(aic_controller PUBLIC
   rclcpp::rclcpp
   rclcpp_lifecycle::rclcpp_lifecycle
   realtime_tools::realtime_tools
+  tf2_eigen::tf2_eigen
   ${aic_control_interfaces_TARGETS}
   ${geometry_msgs_TARGETS}
   ${trajectory_msgs_TARGETS}
