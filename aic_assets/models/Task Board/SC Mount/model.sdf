@@ -1,0 +1,86 @@
+<?xml version="1.0" ?>
+<sdf version="1.9">
+  <model name="SC Mount">
+    <link name="sc_mount_link">
+      <visual name="sc_mount_visual">
+        <geometry>
+          <mesh>
+            <uri>sc_mount_visual.glb</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <collision name="v1015079011_collider_box">
+        <pose>0.035449 -0.0 0.0025 0.0 -0.0 -0.0</pose>
+        <geometry>
+          <box>
+            <size>0.015101 0.014 0.005</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="v1015079011_collider_box.001">
+        <pose>0.020068 -0.0054 0.013451 0.0 0.785398 -0.0</pose>
+        <geometry>
+          <box>
+            <size>0.025812 0.0032 0.013799</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="v1015079011_collider_box.002">
+        <pose>0.020068 0.00585 0.013451 0.0 0.785398 -0.0</pose>
+        <geometry>
+          <box>
+            <size>0.025812 0.0023 0.013799</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="v1015079011_collider_box003_collider_box">
+        <pose>0.01165 -0.0 0.02187 0.0 0.785398 -0.0</pose>
+        <geometry>
+          <box>
+            <size>0.002 0.014 0.013799</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="v1015079011_collider_box003_collider_box.001">
+        <pose>0.028564 -0.0 0.004956 0.0 0.785398 -0.0</pose>
+        <geometry>
+          <box>
+            <size>0.001842 0.014 0.013799</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="v1015079011_collider_box003_collider_box.002">
+        <pose>0.008208 -0.0 0.0025 0.0 -0.0 -0.0</pose>
+        <geometry>
+          <box>
+            <size>0.02236 0.014 0.005</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="v1015079011_collider_box003_collider_box.003">
+        <pose>0.015274 -0.0 0.008656 0.0 0.785398 -0.0</pose>
+        <geometry>
+          <box>
+            <size>0.025812 0.014 0.001239</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="v1015079011_collider_box003_collider_box.004">
+        <pose>0.032889 -0.0 0.004624 0.0 -0.0 -0.0</pose>
+        <geometry>
+          <box>
+            <size>0.002221 0.014 0.009249</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="v1015079011_collider_box003_collider_box004_collider_box">
+        <pose>0.007045 -0.0 0.008711 0.0 -0.0 -0.0</pose>
+        <geometry>
+          <box>
+            <size>0.00209 0.014 0.017422</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model>
+</sdf>

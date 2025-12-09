@@ -1,0 +1,70 @@
+<?xml version="1.0" ?>
+<sdf version="1.9">
+  <model name="LC Mount">
+    <link name="lc_mount_link">
+      <visual name="lc_mount_visual">
+        <geometry>
+          <mesh>
+            <uri>lc_mount_visual.glb</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <collision name="v1015081011_collider_box">
+        <pose>0.019353 -0.0 0.0025 0.0 -0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.019294 0.01475 0.005</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="v1015081011_collider_box.001">
+        <pose>-0.00294 -0.0 0.0025 0.0 -0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.01212 0.01475 0.005</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="v1015081011_collider_box.002">
+        <pose>0.004062 -0.0 0.014555 0.0 -0.785398 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.014258 0.01475 0.002</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="v1015081011_collider_box.003">
+        <pose>0.015992 -0.0 0.004149 0.0 -0.785398 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.012103 0.01475 0.010218</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="v1015081011_collider_box.004">
+        <pose>0.001043 -0.0 0.003076 0.0 -0.785398 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.006246 0.01475 0.013841</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="v1015081011_collider_box.005">
+        <pose>0.00925 0.006437 0.009368 0.0 -0.785398 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.014258 0.001875 0.014086</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="v1015081011_collider_box.006">
+        <pose>0.009324 -0.006438 0.009293 0.0 -0.785398 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.014258 0.001875 0.013874</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model>
+</sdf>
