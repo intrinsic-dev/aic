@@ -35,6 +35,9 @@ controller_manager:
     fts_broadcaster:
       type: force_torque_sensor_broadcaster/ForceTorqueSensorBroadcaster
 
+    aic_controller:
+      type: aic/Controller
+
     # enforce_command_limit: false
 
 fts_broadcaster:
@@ -260,6 +263,33 @@ admittance_controller:
         - 1000.0 # rx
         - 1000.0 # ry
         - 1000.0 # rz
+
+aic_controller:
+  ros__parameters:
+    # Available control modes are "admittance" and "impedance".
+    # Admittance requires position command interfaces for specified joints.
+    # Impedance requires effort command interfaces for specified joints.
+    # Both modes require position state interfaces for specified joints.
+    control_mode: "admittance"
+
+    # Namespace of admittance controller for chaining controller interfaces
+    admittance_controller_namespace: "admittance_controller"
+
+    joints:
+      - shoulder_pan_joint
+      - shoulder_lift_joint
+      - elbow_joint
+      - wrist_1_joint
+      - wrist_2_joint
+      - wrist_3_joint
+
+    kinematics:
+      plugin_name: kinematics_interface_kdl/KinematicsInterfaceKDL
+      plugin_package: kinematics_interface
+      base: base_link # Assumed to be stationary
+      tip: tool0
+      group_name: arm
+      alpha: 0.0005 # Specifies the damping coefficient for the Jacobian pseudo inverse.
 
     # If enabled, the parameters will be dynamically updated while the controller is running.
     enable_parameter_update_without_reactivation: true
