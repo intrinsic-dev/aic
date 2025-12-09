@@ -53,7 +53,7 @@
     </link>
     
     <link name="nic_card_link">
-      <pose>0 -0.01785 0.0799 -1.5708 0 0</pose>
+      <pose>0 -0.01785 0.0799 -1.57 0 0</pose>
       <inertial auto="true">
         <mass>0.15</mass>
       </inertial>
@@ -291,6 +291,11 @@
         </geometry>
       </collision>
     </link>
+    
+    <joint name="card_joint" type="fixed">
+      <parent>nic_card_mount_link</parent>
+      <child>nic_card_link</child>
+    </joint>
     
   </model>
 </sdf>
