@@ -28,7 +28,7 @@
 #include "realtime_tools/realtime_thread_safe_box.hpp"
 
 // Interfaces
-#include "aic_control_interfaces/msg/joint_motion_update.hpp"
+#include "aic_control_interfaces/msg/motion_update.hpp"
 #include "aic_control_interfaces/msg/trajectory_generation_mode.hpp"
 #include "trajectory_msgs/msg/joint_trajectory_point.hpp"
 
@@ -39,7 +39,7 @@
 //==============================================================================
 namespace aic_controller {
 
-using JointMotionUpdate = aic_control_interfaces::msg::JointMotionUpdate;
+using MotionUpdate = aic_control_interfaces::msg::MotionUpdate;
 using TrajectoryGenerationMode =
     aic_control_interfaces::msg::TrajectoryGenerationMode;
 using JointTrajectoryPoint = trajectory_msgs::msg::JointTrajectoryPoint;
@@ -125,7 +125,7 @@ class Controller : public controller_interface::ControllerInterface {
    * @return false Update failed
    */
   [[nodiscard]]
-  bool update_joint_reference();
+  bool update_reference();
 
   /**
    * @brief Update fields of state_current with joint states from hardware
@@ -161,12 +161,12 @@ class Controller : public controller_interface::ControllerInterface {
                                      hardware_interface::HW_IF_VELOCITY};
 
   // ROS2 subscribers for user commands
-  rclcpp::Subscription<JointMotionUpdate>::SharedPtr joint_motion_update_sub_;
+  rclcpp::Subscription<MotionUpdate>::SharedPtr motion_update_sub_;
 
   // Real-time boxes for thread-safe access
-  realtime_tools::RealtimeThreadSafeBox<JointMotionUpdate>
-      joint_motion_update_rt_;
-  JointMotionUpdate joint_motion_update_;
+
+  realtime_tools::RealtimeThreadSafeBox<MotionUpdate> motion_update_rt_;
+  MotionUpdate motion_update_;
 
   // Last value written to controller interfaces
   std::optional<JointTrajectoryPoint> last_commanded_state_;

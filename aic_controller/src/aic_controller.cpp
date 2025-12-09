@@ -22,11 +22,11 @@ namespace {
 
 //==============================================================================
 // called from RT control loop
-void reset_joint_motion_update_msg(aic_controller::JointMotionUpdate& msg) {
-  msg = aic_controller::JointMotionUpdate();
+void reset_motion_update_msg(aic_controller::MotionUpdate& msg) {
+  msg = aic_controller::MotionUpdate();
 }
 
-}  // namespace
+}  // namespace anonymous
 
 //==============================================================================
 namespace aic_controller {
@@ -41,7 +41,7 @@ Controller::Controller()
       interpolation_mode_(InterpolationMode::Invalid),
       has_position_state_interface_(false),
       has_velocity_state_interface_(false),
-      joint_motion_update_sub_(nullptr),
+      motion_update_sub_(nullptr),
       last_commanded_state_(std::nullopt),
       current_state_(std::nullopt),
       time_to_target_seconds_(0.0) {
@@ -199,8 +199,7 @@ controller_interface::CallbackReturn Controller::on_configure(
                         allowed_state_interface_types_.end(), interface);
     if (it == allowed_state_interface_types_.end()) {
       RCLCPP_ERROR(get_node()->get_logger(),
-                   "State interface type '%s' not supported!",
-                   interface.c_str());
+                   "State interface type '%s' not allowed!", interface.c_str());
       return controller_interface::CallbackReturn::FAILURE;
     }
   }
@@ -230,24 +229,25 @@ controller_interface::CallbackReturn Controller::on_configure(
   }
 
   // Validate target type
-  if (params_.target_type == "joint") {
-    RCLCPP_INFO(get_node()->get_logger(), "Target type set to JOINT.");
-    target_type_ = TargetType::Joint;
+  if (params_.target_type == "cartesian") {
+    RCLCPP_INFO(get_node()->get_logger(), "Target type set to CARTESIAN.");
+    target_type_ = TargetType::Cartesian;
   } else {
     RCLCPP_ERROR(get_node()->get_logger(),
-                 "Unsupported target type. Please use 'joints'");
+                 "Unsupported target type. Please use 'cartesian'");
     return controller_interface::CallbackReturn::FAILURE;
   }
 
   // Reliable QoS subscriptions for motion updates.
   rclcpp::QoS reliable_qos = rclcpp::QoS(rclcpp::KeepLast(10)).reliable();
 
-  joint_motion_update_sub_ =
-      this->get_node()->create_subscription<JointMotionUpdate>(
-          "~/joint_motion_update", reliable_qos,
-          [this](const JointMotionUpdate::SharedPtr msg) {
-            joint_motion_update_rt_.set(*msg);
-          });
+  motion_update_sub_ = this->get_node()->create_subscription<MotionUpdate>(
+      "~/motion_update", reliable_qos,
+      [this](const MotionUpdate::SharedPtr msg) {
+        // todo(johntgz) Is RealtimeThreadSafeBox necessary? Can we avoid a copy
+        // here?
+        motion_update_rt_.set(*msg);
+      });
 
   return controller_interface::CallbackReturn::SUCCESS;
 }
@@ -272,13 +272,11 @@ controller_interface::CallbackReturn Controller::on_activate(
 
   // Set the current state as the default command
   next_command_ = current_state_.value();
-  target_state_ = current_state_.value();
+  // todo(johntgz) Initialize target_state_ to current tool state from FK on
+  // current joint state
 
-  reset_joint_motion_update_msg(joint_motion_update_);
-  joint_motion_update_.trajectory_generation_mode.mode =
-      TrajectoryGenerationMode::MODE_POSITION;
-  joint_motion_update_.target_state = current_state_.value();
-  joint_motion_update_rt_.try_set(joint_motion_update_);
+  reset_motion_update_msg(motion_update_);
+  motion_update_rt_.try_set(motion_update_);
 
   return controller_interface::CallbackReturn::SUCCESS;
 }
@@ -288,16 +286,16 @@ controller_interface::CallbackReturn Controller::on_deactivate(
     const rclcpp_lifecycle::State& /*previous_state*/) {
   release_interfaces();
 
-  reset_joint_motion_update_msg(joint_motion_update_);
-  joint_motion_update_rt_.try_set(joint_motion_update_);
+  reset_motion_update_msg(motion_update_);
+  motion_update_rt_.try_set(motion_update_);
 
   return controller_interface::CallbackReturn::SUCCESS;
 }
 
 //==============================================================================
-bool Controller::update_joint_reference() {
+bool Controller::update_reference() {
   // update target to ensure it is within pre-defined limits
-  switch (joint_motion_update_.trajectory_generation_mode.mode) {
+  switch (motion_update_.trajectory_generation_mode.mode) {
     case TrajectoryGenerationMode::MODE_POSITION:
       // UNIMPLEMENTED
       // Clamp poses to limit
@@ -328,7 +326,7 @@ bool Controller::update_joint_reference() {
       return false;
   }
 
-  time_to_target_seconds_ = joint_motion_update_.time_to_target_seconds;
+  time_to_target_seconds_ = motion_update_.time_to_target_seconds;
 
   auto new_reference = next_command_;
   switch (interpolation_mode_) {
@@ -360,10 +358,13 @@ controller_interface::return_type Controller::update(
   read_state_from_hardware(current_state_.value());
 
   // read user commands
-  auto command_op = joint_motion_update_rt_.try_get();
+  auto command_op = motion_update_rt_.try_get();
   if (command_op.has_value()) {
-    joint_motion_update_ = command_op.value();
-    target_state_ = joint_motion_update_.target_state;
+    motion_update_ = command_op.value();
+    // UNIMPLEMENTED: Update target
+    // todo(johntgz)
+    // target_state_ = CartState(motion_update_.pose, motion_update_.velocity,
+    //                           motion_update_.acceleration);
   }
 
   if (control_mode_ == ControlMode::Impedance) {
@@ -372,13 +373,14 @@ controller_interface::return_type Controller::update(
   }
 
   // Update reference by limiting them and interpolating their values
-  if (target_type_ == TargetType::Joint) {
-    if (!update_joint_reference()) {
+  if (target_type_ == TargetType::Cartesian) {
+    if (!update_reference()) {
       return controller_interface::return_type::ERROR;
     }
   } else {
-    RCLCPP_ERROR(get_node()->get_logger(),
-                 "Cartesian targets are unimplemented.");
+    RCLCPP_ERROR(
+        get_node()->get_logger(),
+        "Other target types are unimplemented. Please use 'cartesian'");
 
     return controller_interface::return_type::ERROR;
   }
@@ -391,12 +393,13 @@ controller_interface::return_type Controller::update(
     // Interpolate feed-forward wrench
     //    UpdateFeedforwardWrench(target_type_)
 
-    if (target_type_ == TargetType::Joint) {
+    if (target_type_ == TargetType::Cartesian) {
       // UNIMPLEMENTED
       // Compute joint torques
     } else {
-      RCLCPP_ERROR(get_node()->get_logger(),
-                   "Cartesian targets are unimplemented.");
+      RCLCPP_ERROR(
+          get_node()->get_logger(),
+          "Other target types are unimplemented. Please use 'cartesian'");
 
       return controller_interface::return_type::ERROR;
     }
@@ -408,12 +411,13 @@ controller_interface::return_type Controller::update(
 
     return controller_interface::return_type::ERROR;
   } else if (control_mode_ == ControlMode::Admittance) {
-    if (target_type_ == TargetType::Joint) {
+    if (target_type_ == TargetType::Cartesian) {
       // Simply forward the joint reference to the admittance controller
       reference = next_command_;
     } else {
-      RCLCPP_ERROR(get_node()->get_logger(),
-                   "Cartesian targets are unimplemented.");
+      RCLCPP_ERROR(
+          get_node()->get_logger(),
+          "Other target types are unimplemented. Please use 'cartesian'");
 
       return controller_interface::return_type::ERROR;
     }
