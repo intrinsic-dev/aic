@@ -1,1 +1,1 @@
-Put the packages for the participant workspace in the `pkgs` directory. For packages used by both workspaces, create a symlink.
+Put the packages for the participant workspace here. Note that those packages will also be part of the world workspace but they will not work there.
