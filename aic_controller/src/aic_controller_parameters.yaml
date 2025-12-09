@@ -1,0 +1,48 @@
+aic_controller:
+  joints: {
+    type: string_array,
+    description: "Specifies which joints will be used by the controller. ",
+    read_only: true
+  }
+
+  kinematics:
+    plugin_name: {
+      type: string,
+      description: "Specifies the name of the kinematics plugin to load."
+    }
+    plugin_package: {
+      type: string,
+      description: "Specifies the package name that contains the kinematics plugin."
+    }
+    base: {
+      type: string,
+      description: "Specifies the base link of the robot description used by the kinematics plugin."
+    }
+    tip: {
+      type: string,
+      description: "Specifies the end effector link of the robot description used by the kinematics plugin."
+    }
+    alpha: {
+      type: double,
+      default_value: 0.01,
+      description: "Specifies the damping coefficient for the Jacobian pseudo inverse."
+    }
+
+  control_mode: {
+    type: string,
+    default_value: "admittance",
+    description: "Sets the controller used, which can be either 'impedance' or 'admittance'"
+  }
+
+  admittance_controller_namespace: {
+    type: string,
+    default_value: "admittance_controller",
+    description: "Sets the namespace of the admittance controller to chain to"
+  }
+
+  # general settings
+  enable_parameter_update_without_reactivation: {
+    type: bool,
+    default_value: true,
+    description: "If enabled, the parameters will be dynamically updated while the controller is running."
+  }
