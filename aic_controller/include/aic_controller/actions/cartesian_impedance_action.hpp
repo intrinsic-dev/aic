@@ -23,11 +23,10 @@
 #include "rclcpp_lifecycle/lifecycle_node.hpp"
 
 // Interfaces
+#include "aic_controller/cartesian_state.hpp"
 #include "geometry_msgs/msg/pose.hpp"
 #include "geometry_msgs/msg/twist.hpp"
 #include "trajectory_msgs/msg/joint_trajectory_point.hpp"
-
-#include "aic_controller/cartesian_state.hpp"
 
 //==============================================================================
 namespace aic_controller {
@@ -48,7 +47,7 @@ class CartesianImpedanceAction {
    * @param robot_description robot description used by kinematics plugin
    * @return controller_interface::return_type
    */
-	[[nodiscard]]
+  [[nodiscard]]
   bool Configure(const std::shared_ptr<rclcpp_lifecycle::LifecycleNode>& node,
                  const std::string& robot_description);
 
@@ -64,10 +63,11 @@ class CartesianImpedanceAction {
    * and further derivatives
    * @return JointTrajectoryPoint Joint target torque
    */
-  JointTrajectoryPoint Compute(const CartesianState tool_target,
-                          const JointTrajectoryPoint& current_state
-                          // const CartesianImpedanceParameters& impedance_params
-                          // const JointLimits& joint_limits
+  JointTrajectoryPoint Compute(
+      const CartesianState tool_target,
+      const JointTrajectoryPoint& current_state
+      // const CartesianImpedanceParameters& impedance_params
+      // const JointLimits& joint_limits
   );
 
  private:

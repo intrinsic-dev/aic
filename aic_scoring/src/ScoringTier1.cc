@@ -13,7 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
-*/
+ */
+
+#include "aic_scoring/ScoringTier1.hh"
 
 #include <yaml-cpp/yaml.h>
 
@@ -21,38 +23,30 @@
 #include <chrono>
 #include <iostream>
 #include <memory>
+#include <rclcpp/rclcpp.hpp>
 #include <string>
 #include <vector>
 
-#include <rclcpp/rclcpp.hpp>
-#include "aic_scoring/ScoringTier1.hh"
-
-namespace aic_scoring
-{
+namespace aic_scoring {
 //////////////////////////////////////////////////
-TopicStatsTier1::TopicStatsTier1(rclcpp::Node *_node,
-                                 const StatsTier1 &_topicStats)
-  : lastTimestamp(std::chrono::steady_clock::now()),
-    stats(_topicStats),
-    node(_node)
-{
-  if (!_node)
-  {
+TopicStatsTier1::TopicStatsTier1(rclcpp::Node* _node,
+                                 const StatsTier1& _topicStats)
+    : lastTimestamp(std::chrono::steady_clock::now()),
+      stats(_topicStats),
+      node(_node) {
+  if (!_node) {
     std::cerr << "[TopicStatsTier1]: null ROS node. Aborting." << std::endl;
     return;
   }
 
   this->subscription = this->node->create_generic_subscription(
       this->stats.topicName, this->stats.topicType, rclcpp::QoS(10),
-      std::bind(&TopicStatsTier1::TopicCallback, this,
-      std::placeholders::_1));
+      std::bind(&TopicStatsTier1::TopicCallback, this, std::placeholders::_1));
 }
 
 //////////////////////////////////////////////////
-double TopicStatsTier1::Median() const
-{
-  if (this->stats.deltas.empty())
-    return 0.0;
+double TopicStatsTier1::Median() const {
+  if (this->stats.deltas.empty()) return 0.0;
 
   // Check if the number of elements is odd.
   if (this->stats.size % 2 != 0)
@@ -61,12 +55,12 @@ double TopicStatsTier1::Median() const
   // If the number of elements is even, return the average
   // of the two middle elements.
   return (this->stats.deltas[(this->stats.size - 1) / 2] +
-          this->stats.deltas[this->stats.size / 2]) / 2.0;
+          this->stats.deltas[this->stats.size / 2]) /
+         2.0;
 }
 
 //////////////////////////////////////////////////
-void TopicStatsTier1::Update()
-{
+void TopicStatsTier1::Update() {
   auto now = std::chrono::steady_clock::now();
   auto delta = std::chrono::duration<double>(now - this->lastTimestamp).count();
 
@@ -75,8 +69,8 @@ void TopicStatsTier1::Update()
     this->lastTimestamp = now;
 
     // Insert while maintaining the sort order.
-    auto it = std::lower_bound(
-      this->stats.deltas.begin(), this->stats.deltas.end(), delta);
+    auto it = std::lower_bound(this->stats.deltas.begin(),
+                               this->stats.deltas.end(), delta);
     this->stats.deltas.insert(it, delta);
 
     this->stats.size++;
@@ -85,108 +79,91 @@ void TopicStatsTier1::Update()
                          this->stats.median <= this->stats.median;
 
     RCLCPP_INFO_STREAM(
-      this->node->get_logger(),
-      "\nTopic: " << this->stats.topicName << std::endl <<
-      "Type: " << this->stats.topicType << std::endl <<
-      "Size: " << this->stats.size << std::endl <<
-      "Median: " << this->stats.median << std::endl <<
-      "Passed: " << std::boolalpha << this->stats.passed << std::noboolalpha <<
-      std::endl <<
-      "--" << std::endl);
+        this->node->get_logger(),
+        "\nTopic: " << this->stats.topicName << std::endl
+                    << "Type: " << this->stats.topicType << std::endl
+                    << "Size: " << this->stats.size << std::endl
+                    << "Median: " << this->stats.median << std::endl
+                    << "Passed: " << std::boolalpha << this->stats.passed
+                    << std::noboolalpha << std::endl
+                    << "--" << std::endl);
   }
 }
 
 //////////////////////////////////////////////////
-StatsTier1 TopicStatsTier1::Stats() const
-{
+StatsTier1 TopicStatsTier1::Stats() const {
   std::lock_guard<std::mutex> lock(this->mutex);
   return this->stats;
 }
 
 //////////////////////////////////////////////////
-void TopicStatsTier1::TopicCallback(std::shared_ptr<rclcpp::SerializedMessage>)
-{
+void TopicStatsTier1::TopicCallback(
+    std::shared_ptr<rclcpp::SerializedMessage>) {
   this->Update();
 }
 
 //////////////////////////////////////////////////
-ScoringTier1::ScoringTier1()
-  : Node("score_tier1_node")
-{
-}
+ScoringTier1::ScoringTier1() : Node("score_tier1_node") {}
 
 //////////////////////////////////////////////////
-bool ScoringTier1::ParseStats(const std::string &_yamlFile)
-{
+bool ScoringTier1::ParseStats(const std::string& _yamlFile) {
   YAML::Node config;
-  try
-  {
+  try {
     config = YAML::LoadFile(_yamlFile);
-  }
-  catch (const YAML::BadFile &_e)
-  {
+  } catch (const YAML::BadFile& _e) {
     std::cerr << "Unable to open YAML file [" << _yamlFile << "]" << std::endl;
     return false;
   }
 
   // Sanity check: We should have a [topics] map.
-  if (!config["topics"])
-  {
+  if (!config["topics"]) {
     std::cerr << "Unable to find [topics] in tier1.yaml" << std::endl;
     return false;
   }
 
   // Sanity check: We should have a sequence of [topic]
   auto topics = config["topics"];
-  if (!topics.IsSequence())
-  {
+  if (!topics.IsSequence()) {
     std::cerr << "Unable to find sequence of topics within [topics]"
               << std::endl;
     return false;
   }
 
-  for (std::size_t i = 0u; i < topics.size(); i++)
-  {
+  for (std::size_t i = 0u; i < topics.size(); i++) {
     auto newTopic = topics[i];
 
     // Sanity check: The key should be "topic".
-    if (!newTopic["topic"])
-    {
+    if (!newTopic["topic"]) {
       std::cerr << "Unrecognized element. It should be [topic]" << std::endl;
       return false;
     }
 
     StatsTier1 stats;
     auto topicProperties = newTopic["topic"];
-    if (!topicProperties.IsMap())
-    {
+    if (!topicProperties.IsMap()) {
       std::cerr << "Unable to find properties within [topic]" << std::endl;
       return false;
     }
 
-    if (!topicProperties["name"])
-    {
+    if (!topicProperties["name"]) {
       std::cerr << "Unable to find [name] within [topic]" << std::endl;
       return false;
     }
     stats.topicName = topicProperties["name"].as<std::string>();
 
-    if (!topicProperties["type"])
-    {
+    if (!topicProperties["type"]) {
       std::cerr << "Unable to find [type] within [topic]" << std::endl;
       return false;
     }
     stats.topicType = topicProperties["type"].as<std::string>();
 
-    if (!topicProperties["min_messages"])
-    {
+    if (!topicProperties["min_messages"]) {
       std::cerr << "Unable to find [min_messages] within [topic]" << std::endl;
       return false;
     }
     stats.minMessages = topicProperties["min_messages"].as<double>();
 
-    if (!topicProperties["max_median_time"])
-    {
+    if (!topicProperties["max_median_time"]) {
       std::cerr << "Unable to find [max_median_time] within [topic]"
                 << std::endl;
       return false;
@@ -202,11 +179,9 @@ bool ScoringTier1::ParseStats(const std::string &_yamlFile)
 }  // namespace aic_scoring
 
 //////////////////////////////////////////////////
-int main(int argc, char * argv[])
-{
+int main(int argc, char* argv[]) {
   // Sanity check: There should be one argument.
-  if (argc != 2)
-  {
+  if (argc != 2) {
     std::cerr << "Usage: scoring_tier1 <tier1_yaml_file>" << std::endl;
     return -1;
   }
@@ -215,8 +190,7 @@ int main(int argc, char * argv[])
 
   auto scoringTier1 = std::make_shared<aic_scoring::ScoringTier1>();
   std::string configFile = std::string(argv[1]);
-  if (!scoringTier1->ParseStats(configFile))
-    return -1;
+  if (!scoringTier1->ParseStats(configFile)) return -1;
 
   rclcpp::spin(scoringTier1);
   rclcpp::shutdown();

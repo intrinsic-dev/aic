@@ -27,19 +27,25 @@ from rclpy.node import Node
 from trajectory_msgs.msg import JointTrajectoryPoint
 from aic_control_interfaces.msg import JointMotionUpdate, TrajectoryGenerationMode
 
+
 class HomeTrajectoryNode(Node):
     def __init__(self):
-        super().__init__('home_trajectory_node')
-        self.get_logger().info('HomeTrajectoryNode started')
+        super().__init__("home_trajectory_node")
+        self.get_logger().info("HomeTrajectoryNode started")
 
         # Declare parameters.
-        self.use_aic_control = self.declare_parameter('use_aic_controller', False).value
-        self.controller_namespace = self.declare_parameter('controller_namespace', 'aic_controller').value
+        self.use_aic_control = self.declare_parameter("use_aic_controller", False).value
+        self.controller_namespace = self.declare_parameter(
+            "controller_namespace", "aic_controller"
+        ).value
         self.home_joint_positions = [0.0, -1.3, -1.9, -1.57, 1.57, 0.0]
         # Create publisher if needed.
         if self.use_aic_control:
             self.publisher = self.create_publisher(
-                JointMotionUpdate, f'/{self.controller_namespace}/joint_motion_update', 10)
+                JointMotionUpdate,
+                f"/{self.controller_namespace}/joint_motion_update",
+                10,
+            )
 
             while self.publisher.get_subscription_count() == 0:
                 self.get_logger().info(
@@ -53,10 +59,10 @@ class HomeTrajectoryNode(Node):
             self.action_client = ActionClient(
                 self,
                 FollowJointTrajectory,
-                '/joint_trajectory_controller/follow_joint_trajectory')
+                "/joint_trajectory_controller/follow_joint_trajectory",
+            )
             while not self.action_client.wait_for_server(timeout_sec=1.0):
-                self.get_logger().info(
-                    f'Waiting for {self.action_client._action_name}')
+                self.get_logger().info(f"Waiting for {self.action_client._action_name}")
 
         # A timer that will send the trajectory only once.
         self.timer = self.create_timer(1.0, self.send_trajectory)
@@ -64,9 +70,9 @@ class HomeTrajectoryNode(Node):
     def goal_response_callback(self, future):
         goal_handle = future.result()
         if not goal_handle.accepted:
-            self.get_logger().error('Goal rejected')
+            self.get_logger().error("Goal rejected")
             return
-        self.get_logger().info('Home trajectory goal accepted')
+        self.get_logger().info("Home trajectory goal accepted")
         self.get_result_future = goal_handle.get_result_async()
         self.get_result_future.add_done_callback(self.get_result_callback)
 
@@ -84,18 +90,20 @@ class HomeTrajectoryNode(Node):
             msg.trajectory_generation_mode.mode = TrajectoryGenerationMode.MODE_POSITION
             msg.time_to_target_seconds = 2.0
             self.publisher.publish(msg)
-            self.get_logger().info('Published home joint motion update to aic_controller')
+            self.get_logger().info(
+                "Published home joint motion update to aic_controller"
+            )
             # Shutdown after a short delay to ensure message is sent.
             time.sleep(1.0)
         else:
             goal = FollowJointTrajectory.Goal()
             goal.trajectory.joint_names = [
-                'shoulder_pan_joint',
-                'shoulder_lift_joint',
-                'elbow_joint',
-                'wrist_1_joint',
-                'wrist_2_joint',
-                'wrist_3_joint',
+                "shoulder_pan_joint",
+                "shoulder_lift_joint",
+                "elbow_joint",
+                "wrist_1_joint",
+                "wrist_2_joint",
+                "wrist_3_joint",
             ]
             home_point = JointTrajectoryPoint()
             home_point.positions = self.home_joint_positions
@@ -122,5 +130,5 @@ def main(args=None):
         pass
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main(sys.argv)

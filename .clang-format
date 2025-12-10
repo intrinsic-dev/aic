@@ -1,0 +1,8 @@
+# This is a clang-format file based on the Google C++ style guide.
+# It is used by editors and IDEs to automatically format C++ code, ensuring
+# a consistent style across the project.
+# For a detailed list of all options, see:
+# https://clang.llvm.org/docs/ClangFormatStyleOptions.html
+
+# Use the Google style as a baseline for all formatting rules.
+BasedOnStyle: Google
