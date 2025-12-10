@@ -24,8 +24,11 @@ ros2 service call /record_episode/cancel std_srvs/srv/Trigger '{}'
 Convert the recording to leRobot dataset:
 
 ```bash
-python -m bag_to_lerobot --contract src/aic/aic_lerobot_tools/contracts/aic_phase0.yaml --out recording --bags episodes/*
+python -m bag_to_lerobot --contract src/aic/aic_lerobot_tools/contracts/aic_phase0.yaml --timestamp bag --out recording --bags episodes/*
 ```
+
+> [!CAUTION]
+> Converting actions are currently broken in `rosetta`, all actions will have 0 values.
 
 ### Contracts
 

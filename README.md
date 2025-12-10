@@ -56,7 +56,7 @@ AIC_WS=~/ws_aic
 AIC_PWS=~/ws_aic_participant
 mkdir -p "$AIC_PWS/src"
 cd "$AIC_PWS"
-ln -s "$AIC_WS/src/aic/participant_pkgs/pkgs" src/aic
+ln -s "$AIC_WS/src/aic/participant_pkgs" src/aic
 vcs import src < "$AIC_WS/src/aic/participant.repos" --recursive
 ```
 

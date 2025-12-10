@@ -20,7 +20,7 @@ observations:
       resize: [512, 512]
     align: { strategy: hold, stamp: header, tol_ms: 1500 }
     qos: { reliability: reliable, history: keep_last, depth: 10 }
-  
+
   - key: observation.images.wrist2
     topic: /wrist_camera_2/image
     type: sensor_msgs/msg/Image
@@ -29,7 +29,7 @@ observations:
       resize: [512, 512]
     align: { strategy: hold, stamp: header, tol_ms: 1500 }
     qos: { reliability: reliable, history: keep_last, depth: 10 }
-  
+
   - key: observation.images.wrist3
     topic: /wrist_camera_3/image
     type: sensor_msgs/msg/Image
@@ -71,7 +71,7 @@ observations:
         - effort.wrist_2_joint
         - effort.wrist_3_joint
     align: { strategy: hold, stamp: header, tol_ms: 1500 }
-    qos: { reliability: best_effort, history: keep_last, depth: 50 }
+    qos: { reliability: reliable, history: keep_last, depth: 50 }
 
   - key: observation.state
     topic: /fts_broadcaster/wrench
@@ -85,25 +85,26 @@ observations:
         - wrench.torque.y
         - wrench.torque.z
     align: { strategy: hold, stamp: header, tol_ms: 1500 }
-    qos: { reliability: best_effort, history: keep_last, depth: 50 }
+    qos: { reliability: reliable, history: keep_last, depth: 50 }
 
-# actions:
-#   - key: action
-#     publish:
-#       topic: /cmd_vel
-#       type: geometry_msgs/msg/Twist
-#       layout: flat
-#       qos: { reliability: best_effort, history: keep_last, depth: 10 }
-#       strategy:
-#         mode: nearest # 'fifo' | 'nearest' - nearest selects action closest to current time
-#         tolerance_ms: 500
-#     selector:
-#       # For diff_drive, only linear.x (forward/back) and angular.z (rotation) matter
-#       names: [linear.x, angular.z]
-#     from_tensor:
-#       # Clamp linear.x and angular.z to reasonable diff_drive range
-#       clamp: [-2.0, 2.0]
-#     safety_behavior: zeros # 'zeros' to send all zeros when stopped, 'hold' to maintain last command
+actions:
+  - key: action
+    publish:
+      topic: /joint_trajectory_controller/joint_trajectory
+      type: trajectory_msgs/msg/JointTrajectory
+      qos: { reliability: reliable, history: keep_last, depth: 10 }
+      # strategy:
+      #   mode: nearest # 'fifo' | 'nearest' - nearest selects action closest to current time
+      #   tolerance_ms: 500
+    selector:
+      names:
+        - shoulder_pan_joint
+        - shoulder_lift_joint
+        - elbow_joint
+        - wrist_1_joint
+        - wrist_2_joint
+        - wrist_3_joint
+    safety_behavior: hold # 'zeros' to send all zeros when stopped, 'hold' to maintain last command
 
 recording:
   storage: mcap

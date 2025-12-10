@@ -1,7 +1,8 @@
-import geometry_msgs.msg
 import numpy as np
+from geometry_msgs.msg import WrenchStamped
 from rosetta.common.contract_utils import SpecView
 from rosetta.common.decoders import _decode_via_names, register_decoder
+from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 
 
 def register_decoders():
@@ -11,17 +12,15 @@ def register_decoders():
     """
 
     @register_decoder("geometry_msgs/msg/WrenchStamped")
-    def decode_wrench_stamped(msg: geometry_msgs.msg.WrenchStamped, spec: SpecView):
-        if spec.names:
-            return _decode_via_names(msg, spec.names)
+    def decode_wrench_stamped(msg: WrenchStamped, spec: SpecView):
+        return _decode_via_names(msg, spec.names)
+
+    @register_decoder("trajectory_msgs/msg/JointTrajectory")
+    def decode_joint_trajecotry(msg: JointTrajectory, spec: SpecView):
+        if len(msg.points) == 0:
+            return None
+        last_point: JointTrajectoryPoint = msg.points[-1]  # type: ignore
+        joint_idx = {n: i for i, n in enumerate(msg.joint_names)}
         return np.array(
-            [
-                msg.wrench.force.x,
-                msg.wrench.force.y,
-                msg.wrench.force.z,
-                msg.wrench.torque.x,
-                msg.wrench.torque.y,
-                msg.wrench.torque.z,
-            ],
-            dtype=np.float32,
+            [last_point.positions[joint_idx[n]] for n in spec.names], dtype=np.float32
         )
