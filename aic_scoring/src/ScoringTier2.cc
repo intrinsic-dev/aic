@@ -29,13 +29,10 @@
 
 namespace aic_scoring {
 //////////////////////////////////////////////////
-ScoringTier2::ScoringTier2(rclcpp::Node *_node)
-  : node(_node) {
-}
+ScoringTier2::ScoringTier2(rclcpp::Node *_node) : node(_node) {}
 
 //////////////////////////////////////////////////
-ScoringTier2Node::ScoringTier2Node()
-  : Node("score_tier2_node") {
+ScoringTier2Node::ScoringTier2Node() : Node("score_tier2_node") {
   this->score = std::make_unique<aic_scoring::ScoringTier2>(this);
 }
 
@@ -58,8 +55,7 @@ bool ScoringTier2Node::ParseStats(const std::string &_yamlFile) {
   // Sanity check: We should have a sequence of [plug]
   auto plugs = config["plugs"];
   if (!plugs.IsSequence()) {
-    std::cerr << "Unable to find sequence of plugs within [plugs]"
-              << std::endl;
+    std::cerr << "Unable to find sequence of plugs within [plugs]" << std::endl;
     return false;
   }
 
@@ -103,8 +99,7 @@ bool ScoringTier2Node::ParseStats(const std::string &_yamlFile) {
   // Sanity check: We should have a sequence of [port]
   auto ports = config["ports"];
   if (!ports.IsSequence()) {
-    std::cerr << "Unable to find sequence of ports within [ports]"
-              << std::endl;
+    std::cerr << "Unable to find sequence of ports within [ports]" << std::endl;
     return false;
   }
 
@@ -140,8 +135,8 @@ bool ScoringTier2Node::ParseStats(const std::string &_yamlFile) {
   }
 
   // Populate pluggableMap.
-  for (const auto& [plugName, plugInfo] : this->score->plugs) {
-    for (const auto& [portName, portInfo] : this->score->ports) {
+  for (const auto &[plugName, plugInfo] : this->score->plugs) {
+    for (const auto &[portName, portInfo] : this->score->ports) {
       if (plugInfo.type == portInfo.type) {
         std::string connectionName = plugName + "&" + portName;
         this->score->pluggableMap.insert({connectionName, 0});
