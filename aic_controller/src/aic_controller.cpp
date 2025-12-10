@@ -77,8 +77,6 @@ Controller::state_interface_configuration() const {
   for (const auto& joint : params_.joints) {
     state_interfaces_config_names.push_back(
       joint + "/" + hardware_interface::HW_IF_POSITION);
-  }
-  for (const auto& joint : params_.joints) {
     state_interfaces_config_names.push_back(
       joint + "/" + hardware_interface::HW_IF_VELOCITY);
   }
