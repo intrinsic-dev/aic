@@ -48,10 +48,10 @@ Eigen::Vector3d logQuaternion(const Eigen::Quaterniond& quaternion);
  */
 Eigen::Quaterniond expQuaternion(const Eigen::Vector3d& delta);
 
-bool clamp_to_limits(const CartesianLimits& limits, const uint8_t& mode,
-                     CartesianState& target_state,
-                     double soft_margin_meters = 0.0,
-                     double soft_margin_radians = 0.0);
+bool ClampReferenceToLimits(const CartesianLimits& limits, const uint8_t& mode,
+                            CartesianState& target_state,
+                            double soft_margin_meters = 0.0,
+                            double soft_margin_radians = 0.0);
 
 }  // namespace utils
 

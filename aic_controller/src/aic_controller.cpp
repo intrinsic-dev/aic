@@ -231,9 +231,9 @@ controller_interface::return_type Controller::update(
   JointTrajectoryPoint new_reference;
 
   // Clamp the target states to stay within limits
-  utils::clamp_to_limits(cartesian_limits_,
-                         motion_update_.trajectory_generation_mode.mode,
-                         target_state_.value());
+  utils::ClampReferenceToLimits(cartesian_limits_,
+                                motion_update_.trajectory_generation_mode.mode,
+                                target_state_.value());
 
   time_to_target_seconds_ = motion_update_.time_to_target_seconds;
 
@@ -241,6 +241,8 @@ controller_interface::return_type Controller::update(
   // Apply linear interpolation to the target_state_ to obtain a new
   // reference. Linear interpolation should support MODE_POSITION,
   // MODE_VELOCITY and MODE_POSITION_AND_VELOCITY
+  // utils::UpdateReferenceLinearInterpolation(new_reference, current_state_,
+  //                                           target_state_.value());
 
   if (control_mode_ == ControlMode::Impedance) {
     // UNIMPLEMENTED

@@ -34,9 +34,10 @@ Eigen::Quaterniond expQuaternion(const Eigen::Vector3d& delta) {
   return Eigen::Quaterniond::Identity();
 }
 
-bool clamp_to_limits(const CartesianLimits& limits, const uint8_t& mode,
-                     CartesianState& target_state, double soft_margin_meters,
-                     double soft_margin_radians) {
+bool ClampReferenceToLimits(const CartesianLimits& limits, const uint8_t& mode,
+                            CartesianState& target_state,
+                            double soft_margin_meters,
+                            double soft_margin_radians) {
   bool mutated = false;
 
   bool clamp_pose =
