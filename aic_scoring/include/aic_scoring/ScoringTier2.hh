@@ -56,7 +56,7 @@ namespace aic_scoring
     public: std::map<std::string, Pluggable> ports;
 
     /// \brief Plug<->port connections.
-    /// The first key is always the plug, followed by "&", follower by port.
+    /// The first key is always the plug, followed by "&", followed by port.
     /// The value is the distance (meters) between the plug and the port.
     public: std::map<std::string, double> pluggableMap;
 
