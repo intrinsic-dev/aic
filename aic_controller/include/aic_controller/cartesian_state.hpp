@@ -21,10 +21,9 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
+#include "geometry_msgs/msg/accel.hpp"
 #include "geometry_msgs/msg/pose.hpp"
 #include "geometry_msgs/msg/twist.hpp"
-#include "geometry_msgs/msg/accel.hpp"
-
 #include "tf2_eigen/tf2_eigen.hpp"
 
 namespace aic_controller {
@@ -32,7 +31,6 @@ namespace aic_controller {
 //==============================================================================
 // Cartesian state with pose and velocity
 struct CartesianState {
-
   Eigen::Isometry3d pose;
   Eigen::Matrix<double, 6, 1> velocity;
 
@@ -50,9 +48,8 @@ struct CartesianState {
    * @param velocity_msg
    * @param acceleration_msg
    */
-  CartesianState(
-		const geometry_msgs::msg::Pose& pose_msg,
-		const geometry_msgs::msg::Twist& velocity_msg);
+  CartesianState(const geometry_msgs::msg::Pose& pose_msg,
+                 const geometry_msgs::msg::Twist& velocity_msg);
 };
 
 }  // namespace aic_controller

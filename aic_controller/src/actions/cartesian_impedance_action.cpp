@@ -37,15 +37,14 @@ bool CartesianImpedanceAction::Configure(
 
 //==============================================================================
 JointTrajectoryPoint CartesianImpedanceAction::Compute(
-    const CartesianState tool_target,
-    const JointTrajectoryPoint& current_state
+    const CartesianState tool_target, const JointTrajectoryPoint& current_state
     // const CartesianImpedanceParameters& impedance_params
     // const JointLimits& joint_limits
 ) {
   // UNIMPLEMENTED
   // Compute control wrench using the control law
-	(void)tool_target;
-	(void)current_state;
+  (void)tool_target;
+  (void)current_state;
 
   JointTrajectoryPoint joint_target;
   joint_target.effort.assign(num_joints_, 0.0);
