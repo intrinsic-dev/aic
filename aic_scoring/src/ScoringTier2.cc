@@ -13,7 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
-*/
+ */
+
+#include "aic_scoring/ScoringTier2.hh"
 
 #include <yaml-cpp/yaml.h>
 
@@ -21,85 +23,69 @@
 #include <chrono>
 #include <iostream>
 #include <memory>
+#include <rclcpp/rclcpp.hpp>
 #include <string>
 #include <vector>
 
-#include <rclcpp/rclcpp.hpp>
-#include "aic_scoring/ScoringTier2.hh"
-
-namespace aic_scoring
-{
+namespace aic_scoring {
 //////////////////////////////////////////////////
 ScoringTier2::ScoringTier2(rclcpp::Node *_node)
-  : node(_node)
-{
+  : node(_node) {
 }
 
 //////////////////////////////////////////////////
 ScoringTier2Node::ScoringTier2Node()
-  : Node("score_tier2_node")
-{
+  : Node("score_tier2_node") {
   this->score = std::make_unique<aic_scoring::ScoringTier2>(this);
 }
 
 //////////////////////////////////////////////////
-bool ScoringTier2Node::ParseStats(const std::string &_yamlFile)
-{
+bool ScoringTier2Node::ParseStats(const std::string &_yamlFile) {
   YAML::Node config;
-  try
-  {
+  try {
     config = YAML::LoadFile(_yamlFile);
-  }
-  catch (const YAML::BadFile &_e)
-  {
+  } catch (const YAML::BadFile &_e) {
     std::cerr << "Unable to open YAML file [" << _yamlFile << "]" << std::endl;
     return false;
   }
 
   // Sanity check: We should have a [plugs] map.
-  if (!config["plugs"])
-  {
+  if (!config["plugs"]) {
     std::cerr << "Unable to find [plugs] in tier2.yaml" << std::endl;
     return false;
   }
 
   // Sanity check: We should have a sequence of [plug]
   auto plugs = config["plugs"];
-  if (!plugs.IsSequence())
-  {
+  if (!plugs.IsSequence()) {
     std::cerr << "Unable to find sequence of plugs within [plugs]"
               << std::endl;
     return false;
   }
 
-  for (std::size_t i = 0u; i < plugs.size(); i++)
-  {
+  for (std::size_t i = 0u; i < plugs.size(); i++) {
     auto newPlug = plugs[i];
 
     // Sanity check: The key should be "plug".
-    if (!newPlug["plug"])
-    {
+    if (!newPlug["plug"]) {
       std::cerr << "Unrecognized element. It should be [plug]" << std::endl;
       return false;
     }
 
     Pluggable plug;
     auto plugProperties = newPlug["plug"];
-    if (!plugProperties.IsMap())
-    {
+    if (!plugProperties.IsMap()) {
       std::cerr << "Unable to find properties within [plug]" << std::endl;
       return false;
     }
 
-    if (!plugProperties["name"])
-    {
+    if (!plugProperties["name"]) {
       std::cerr << "Unable to find [name] within [plug]" << std::endl;
       return false;
     }
     plug.name = plugProperties["name"].as<std::string>();
 
-    if (!plugProperties["type"])
-    {
+    if (!plugProperties["type"]) {
       std::cerr << "Unable to find [type] within [plug]" << std::endl;
       return false;
     }
@@ -109,49 +95,42 @@ bool ScoringTier2Node::ParseStats(const std::string &_yamlFile)
   }
 
   // Sanity check: We should have a [ports] map.
-  if (!config["ports"])
-  {
+  if (!config["ports"]) {
     std::cerr << "Unable to find [ports] in tier2.yaml" << std::endl;
     return false;
   }
 
   // Sanity check: We should have a sequence of [port]
   auto ports = config["ports"];
-  if (!ports.IsSequence())
-  {
+  if (!ports.IsSequence()) {
     std::cerr << "Unable to find sequence of ports within [ports]"
               << std::endl;
     return false;
   }
 
-  for (std::size_t i = 0u; i < ports.size(); i++)
-  {
+  for (std::size_t i = 0u; i < ports.size(); i++) {
     auto newPort = ports[i];
 
     // Sanity check: The key should be "port".
-    if (!newPort["port"])
-    {
+    if (!newPort["port"]) {
       std::cerr << "Unrecognized element. It should be [port]" << std::endl;
       return false;
     }
 
     Pluggable port;
     auto portProperties = newPort["port"];
-    if (!portProperties.IsMap())
-    {
+    if (!portProperties.IsMap()) {
       std::cerr << "Unable to find properties within [port]" << std::endl;
       return false;
     }
 
-    if (!portProperties["name"])
-    {
+    if (!portProperties["name"]) {
       std::cerr << "Unable to find [name] within [port]" << std::endl;
       return false;
     }
     port.name = portProperties["name"].as<std::string>();
 
-    if (!portProperties["type"])
-    {
+    if (!portProperties["type"]) {
       std::cerr << "Unable to find [type] within [port]" << std::endl;
       return false;
     }
@@ -161,12 +140,9 @@ bool ScoringTier2Node::ParseStats(const std::string &_yamlFile)
   }
 
   // Populate pluggableMap.
-  for (const auto& [plugName, plugInfo] : this->score->plugs)
-  {
-    for (const auto& [portName, portInfo] : this->score->ports)
-    {
-      if (plugInfo.type == portInfo.type)
-      {
+  for (const auto& [plugName, plugInfo] : this->score->plugs) {
+    for (const auto& [portName, portInfo] : this->score->ports) {
+      if (plugInfo.type == portInfo.type) {
         std::string connectionName = plugName + "&" + portName;
         this->score->pluggableMap.insert({connectionName, 0});
       }
