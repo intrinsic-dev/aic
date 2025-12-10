@@ -14,38 +14,51 @@ find_package(rclcpp_components REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(yaml-cpp REQUIRED)
 
-add_executable(scoring_tier1 src/ScoringTier1.cc)
-target_link_libraries(scoring_tier1
-  PRIVATE rclcpp::rclcpp ${std_msgs_TARGETS} yaml-cpp)
+# Create a library that can be linked against
+add_library(${PROJECT_NAME} SHARED
+  src/ScoringTier1.cc
+  src/ScoringTier2.cc)
 
-target_include_directories(scoring_tier1
+target_link_libraries(${PROJECT_NAME}
+  PUBLIC
+    rclcpp::rclcpp
+    ${std_msgs_TARGETS}
+    yaml-cpp
+    gz-math${GZ_MATH_VER}::gz-math${GZ_MATH_VER})
+
+target_include_directories(${PROJECT_NAME}
   PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
     "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>"
 )
 
-add_executable(scoring_tier2 src/ScoringTier2.cc)
-target_link_libraries(scoring_tier2
-  PRIVATE rclcpp::rclcpp ${std_msgs_TARGETS} yaml-cpp
-  gz-math${GZ_MATH_VER}::gz-math${GZ_MATH_VER})
+# Create executable that uses the library
+add_executable(scoring_tier1_main src/ScoringTier1_main.cc)
+target_link_libraries(scoring_tier1_main
+  PRIVATE ${PROJECT_NAME})
 
-target_include_directories(scoring_tier2
-  PUBLIC
-    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
-    "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>"
-)
+# Create executable that uses the library
+add_executable(scoring_tier2_main src/ScoringTier2_main.cc)
+target_link_libraries(scoring_tier2_main
+  PRIVATE ${PROJECT_NAME} )
 
 install(
   DIRECTORY config
   DESTINATION share/${PROJECT_NAME}
 )
 
+# Install library and executable with export
 install(TARGETS
-  scoring_tier1
-  scoring_tier2
-  DESTINATION lib/${PROJECT_NAME}
+  ${PROJECT_NAME}
+  scoring_tier1_main
+  scoring_tier2_main
+  EXPORT ${PROJECT_NAME}_targets
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
 
+# Install headers
 install(
   DIRECTORY include/
   DESTINATION include/${PROJECT_NAME}
@@ -55,5 +68,9 @@ if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
 endif()
+
+# Export the targets and dependencies
+ament_export_targets(${PROJECT_NAME}_targets HAS_LIBRARY_TARGET)
+ament_export_dependencies(rclcpp rclcpp_components std_msgs yaml-cpp)
 
 ament_package()

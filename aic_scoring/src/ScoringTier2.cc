@@ -177,29 +177,3 @@ bool ScoringTier2Node::ParseStats(const std::string &_yamlFile)
 }
 
 }  // namespace aic_scoring
-
-//////////////////////////////////////////////////
-int main(int argc, char * argv[])
-{
-  // Sanity check: There should be one argument.
-  if (argc != 2)
-  {
-    std::cerr << "Usage: scoring_tier1 <tier1_yaml_file>" << std::endl;
-    return -1;
-  }
-
-  rclcpp::init(argc, argv);
-
-  auto scoringTier2 = std::make_shared<aic_scoring::ScoringTier2Node>();
-  std::string configFile = std::string(argv[1]);
-  if (!scoringTier2->ParseStats(configFile))
-    return -1;
-
-  // Debug.
-  for (const auto& [connection, distance] : scoringTier2->score->pluggableMap)
-    std::cout << connection << ": " << distance << " m." << std::endl;
-
-  rclcpp::spin(scoringTier2);
-  rclcpp::shutdown();
-  return 0;
-}

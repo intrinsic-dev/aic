@@ -330,7 +330,7 @@
 
     <gravity>0 0 -9.8</gravity>
 
-    <!--<light type="directional" name="sun">
+    <light type="directional" name="sun">
       <intensity>1.0</intensity>
       <cast_shadows>true</cast_shadows>
       <pose>0 0 3 0 0 0</pose>
@@ -343,7 +343,7 @@
         <quadratic>0.001</quadratic>
       </attenuation>
       <direction>-0.2 -0.2 -1.0</direction>
-    </light>-->
+    </light>
 
     <light type="spot" name="spot">
       <pose>0 0 2.35 0 0 0</pose>
@@ -362,66 +362,136 @@
       </spot>
     </light>
 
-    <model name="ground_plane">
-      <static>true</static>
-      <pose>0 0 0.0 0 0 0</pose>
-      <link name="link">
-        <collision name="collision">
-          <geometry>
-            <plane>
-              <normal>0 0 1</normal>
-              <size>3 3</size>
-            </plane>
-          </geometry>
-        </collision>
-        <!-- <visual name="visual">
-          <geometry>
-            <plane>
-              <normal>0 0 1</normal>
-              <size>3 3</size>
-            </plane>
-          </geometry>
-          <material>
-            <diffuse>0.8 0.8 0.8 1</diffuse>
-          </material>
-        </visual> -->
-      </link>
-    </model>
-
-
-    <include>
-      <uri>model://SC Port</uri>
-      <name>sc_port</name>
-      <pose>0.5 -0.2 1.1 0 0 0</pose>
-      <static>false</static>
-    </include>
-
-    <include>
-      <uri>model://SFP Module</uri>
-      <name>sfp_module</name>
-      <pose>0.32 -0.25 1.1 0 0 0</pose>
-      <static>false</static>
-    </include>
-
-    <include>
-      <uri>model://PCIe NIC Card</uri>
-      <name>nic_card</name>
-      <pose>0.4 -0.1 1.1 0 0 0</pose>
-      <static>false</static>
-    </include>
-
-    <include>
-      <uri>model://sfp_cable</uri>
-      <name>sfp_cable</name>
-      <pose>0.0 0.4 1.1 0 0 0</pose>
-      <static>false</static>
-    </include>
-
     <include>
       <uri>model://Enclosure</uri>
       <name>enclosure</name>
       <static>true</static>
     </include>
 
+    <include>
+      <uri>model://Enclosure Walls</uri>
+      <name>enclosure walls</name>
+      <static>true</static>
+    </include>
+
+    <include>
+      <uri>model://Floor</uri>
+      <name>floor</name>
+      <static>true</static>
+    </include>
+
+    <include>
+      <uri>model://sfp_cable</uri>
+      <name>sfp_cable</name>
+      <pose>0.0 0.4 1.15 0 0 0</pose>
+      <static>false</static>
+    </include>
+
+		<include>
+			<uri>model://Task Board Base</uri>
+			<name>task_board_base</name>
+			<pose>0.25 0 1.14 0 0 0</pose>
+			<static>true</static>
+		</include>
+
+		<!--LC port left slot. Adjust "Y" position between -0.010 and -0.2025 to move along slot.-->
+		<include>
+			<uri>LC Mount</uri>
+			<name>lc_mount_01</name>
+			<pose>0.2715 -0.10625 1.15 0 0 0</pose>
+			<static>true</static>
+		</include>
+
+		<!--SFP port left slot. Adjust "Y" position between -0.010 and -0.2025 to move along slot.-->
+		<include>
+			<uri>SFP Mount</uri>
+			<name>sfp_mount_01</name>
+			<pose>0.3035 -0.10625 1.15 0 0 0</pose>
+			<static>true</static>
+		</include>
+
+		<!--SC port left slot. Adjust "Y" position between -0.010 and -0.2025 to move along slot.-->
+		<include>
+			<uri>SC Mount</uri>
+			<name>sc_mount_01</name>
+			<pose>0.3485 -0.10625 1.15 0 0 0</pose>
+			<static>true</static>
+		</include>
+
+		<!--LC plug right slot. Adjust "Y" position between 0.010 and 0.2025 to move along slot.-->
+		<include>
+			<uri>LC Mount</uri>
+			<name>lc_mount_02</name>
+			<pose>0.2715 0.10625 1.15 0 0 0</pose>
+			<static>true</static>
+		</include>
+
+		<!--SFP plug right slot. Adjust "Y" position between 0.010 and 0.2025 to move along slot.-->
+		<include>
+			<uri>SFP Mount</uri>
+			<name>sfp_mount_02</name>
+			<pose>0.3035 0.10625 1.15 0 0 0</pose>
+			<static>true</static>
+		</include>
+
+		<!--SC plug right slot. Adjust "Y" position between 0.010 and 0.2025 to move along slot.-->
+		<include>
+			<uri>SC Mount</uri>
+			<name>sc_mount_02</name>
+			<pose>0.3485 0.10625 1.15 0 0 0</pose>
+			<static>true</static>
+		</include>
+
+		<!--SC port left slot. Adjust "X" position between -0.020 and -0.130 to move along slot.-->
+		<include>
+			<uri>SC Port</uri>
+			<name>sc_port_01</name>
+			<pose>0.175 0.0295 1.15 1.57 0 1.57</pose>
+			<static>true</static>
+		</include>
+
+		<!--SC port right slot. Adjust "X" position between -0.020 and -0.130 to move along slot.-->
+		<include>
+			<uri>SC Port</uri>
+			<name>sc_port_02</name>
+			<pose>0.175 0.0705 1.15 1.57 0 1.57</pose>
+			<static>true</static>
+		</include>
+
+		<!--NIC card and mounts. Adjust "X" position between x and y to move along slot.-->
+		<include>
+			<uri>NIC Card Mount</uri>
+			<name>nic_card_mount_01</name>
+			<pose>0.168582 -0.0145 1.15  0 0 0</pose>
+			<static>true</static>
+		</include>
+
+		<include>
+			<uri>NIC Card Mount</uri>
+			<name>nic_card_mount_02</name>
+			<pose>0.168582 -0.0545 1.15 0 0 0</pose>
+			<static>true</static>
+		</include>
+
+		<include>
+			<uri>NIC Card Mount</uri>
+			<name>nic_card_mount_03</name>
+			<pose>0.168582 -0.0945 1.15 0 0 0</pose>
+			<static>true</static>
+		</include>
+
+		<include>
+			<uri>NIC Card Mount</uri>
+			<name>nic_card_mount_04</name>
+			<pose>0.168582 -0.1345 1.15 0 0 0</pose>
+			<static>true</static>
+		</include>
+
+		<include>
+			<uri>NIC Card Mount</uri>
+			<name>nic_card_mount_05</name>
+			<pose>0.168582 -0.1745 1.15 0 0 0</pose>
+			<static>true</static>
+		</include>
   </world>
 </sdf>

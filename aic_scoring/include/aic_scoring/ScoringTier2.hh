@@ -19,6 +19,7 @@
 #include <string>
 
 #include <gz/math/Pose3.hh>
+#include <rclcpp/rclcpp.hpp>
 
 #ifndef AIC_SCORING__SCORING_TIER2_HH_
 #define AIC_SCORING__SCORING_TIER2_HH_

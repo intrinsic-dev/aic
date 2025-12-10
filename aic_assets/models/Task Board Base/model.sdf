@@ -1,0 +1,30 @@
+<?xml version="1.0" ?>
+<sdf version="1.9">
+  <model name="Task Board Base">
+    <link name="base_link">
+      <visual name="base_visual">
+        <geometry>
+          <mesh>
+            <uri>base_visual.glb</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <collision name="v1015074_collider_box">
+        <pose>-0.075 0.05 0.0105 0.0 -0.0 -0.0</pose>
+        <geometry>
+          <box>
+            <size>0.14 0.087 0.005</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="v1015083001_collider_box">
+        <pose>-0.0 0.0 0.0075 0.0 0.0 -0.0</pose>
+        <geometry>
+          <box>
+            <size>0.3 0.425 0.005</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model>
+</sdf>

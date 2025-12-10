@@ -1,0 +1,78 @@
+<?xml version="1.0" ?>
+<sdf version="1.9">
+  <model name="SFP Mount">
+    <link name="sfp_mount_link">
+      <visual name="sfp_mount_visual">
+        <geometry>
+          <mesh>
+            <uri>sfp_mount_visual.glb</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <collision name="iso 4762 - m2 x 8072_collider_box">
+        <pose>0.033272 -0.0 0.0025 0.0 -0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.029457 0.01775 0.005</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="iso 4762 - m2 x 8072_collider_box.001">
+        <pose>0.016366 -0.0 0.017144 0.0 -0.785398 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.038533 0.01775 0.001728</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="iso 4762 - m2 x 8072_collider_box.002">
+        <pose>0.028636 -0.0 0.012684 0.0 -0.785398 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.027485 0.01775 0.003688</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="iso 4762 - m2 x 8072_collider_box.003">
+        <pose>0.021242 0.007723 0.013979 0.0 -0.785398 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.036111 0.002305 0.010956</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="iso 4762 - m2 x 8072_collider_box.004">
+        <pose>0.021003 -0.007938 0.014217 0.0 -0.785398 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.036111 0.001875 0.01163</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="iso 4762 - m2 x 8072_collider_box.005">
+        <pose>0.010017 -0.0 0.003231 0.0 -0.785398 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.005064 0.01775 0.01163</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="iso 4762 - m2 x 8072_collider_box.006">
+        <pose>0.0042 -0.0 0.0025 0.0 -0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.014371 0.01775 0.005</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="iso 4762 - m2 x 8072_collider_box.007">
+        <pose>0.036553 -0.0 0.011771 0.0 -0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.004893 0.01775 0.016755</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model>
+</sdf>

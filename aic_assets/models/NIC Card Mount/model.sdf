@@ -1,0 +1,303 @@
+<?xml version="1.0" ?>
+<sdf version="1.9">
+  <model name="NIC Card Mount">
+  
+    <link name="nic_card_mount_link">
+      <visual name="nic_card_mount_visual">
+        <geometry>
+          <mesh>
+            <uri>nic_card_mount_visual.glb</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <collision name="v1015085006_collider_box">
+        <pose>0.007 -0.0255 0.0775 0.0 0.0 1.570796</pose>
+        <geometry>
+          <box>
+            <size>0.005 0.072 0.155</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="v1015085006_collider_box.001">
+        <pose>-0.048467 -0.0155 0.162 0.0 0.0 1.570796</pose>
+        <geometry>
+          <box>
+            <size>0.025 0.039374 0.014</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="v1015085006_collider_box.002">
+        <pose>0.0405 -0.01425 0.1055 0.0 0.0 1.570796</pose>
+        <geometry>
+          <box>
+            <size>0.0275 0.005 0.103</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="v1015085006_collider_box.003">
+        <pose>0.0 -0.0125 0.0055 0.0 0.0 1.570796</pose>
+        <geometry>
+          <box>
+            <size>0.031 0.058 0.011</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="v1015085006_collider_box004_collider_box">
+        <pose>-0.045132 -0.0255 0.137803 0.0 0.0 1.570796</pose>
+        <geometry>
+          <box>
+            <size>0.005 0.036343 0.034395</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+    
+    <link name="nic_card_link">
+      <pose>0 -0.01785 0.0799 -1.57 0 0</pose>
+      <inertial auto="true">
+        <mass>0.15</mass>
+      </inertial>
+      <visual name="nic_card_visual">
+        <geometry>
+          <mesh>
+            <uri>nic_card_visual.glb</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <collision name="pcb_collider_box">
+        <pose>0.0 0.0 -0.0008 0.0 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.056 0.145 0.0016</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="pcb_collider_box.001">
+        <pose>0.0065 -0.0025 -0.0008 0.0 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.069 0.051 0.0016</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="pcb_collider_box.002">
+        <pose>0.004 -0.02475 -0.0008 0.0 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.064 0.0955 0.0016</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="cylinder015_collider_cylinder">
+        <pose>0.03175 -0.063 -0.000988 0.0 0.0 0.0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.00268</radius>
+            <length>0.005514</length>
+          </cylinder>
+        </geometry>
+      </collision>
+      <collision name="cylinder017_collider_cylinder">
+        <pose>-0.02225 -0.0675 -0.000986 0.0 0.0 0.0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.00268</radius>
+            <length>0.005518</length>
+          </cylinder>
+        </geometry>
+      </collision>
+      <collision name="pcb001_collider_box">
+        <pose>0.015105 0.054161 0.001899 0.0 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.01025 0.01025 0.004603</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="pcb024_collider_box">
+        <pose>-0.015586 0.055516 0.001759 0.0 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.0068 0.0068 0.004324</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="pcb033_collider_box">
+        <pose>-0.002297 0.046302 0.000749 0.0 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.043074 0.041615 0.002303</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="cube001_collider_box">
+        <pose>0.025006 -0.00041 0.00575 0.0 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.004 0.14 0.0115</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="cube001_collider_box.001">
+        <pose>-0.0029 -0.0015 0.008 0.0 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.047 0.052 0.011</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="10099100-011lfc001_collider_box">
+        <pose>-0.017799 -0.052954 0.00548 3.128092 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.001099 0.04872 0.011083</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="10099100-011lfc001_collider_box.001">
+        <pose>-0.002687 -0.052954 0.005461 3.128092 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.001125 0.04872 0.011121</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="10099100-011lfc001_collider_box.002">
+        <pose>-0.010237 -0.052889 0.010234 3.128092 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.016224 0.04872 0.000923</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="10099100-011lfc001_collider_box.003">
+        <pose>-0.010237 -0.053024 0.000296 3.128092 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.016224 0.04872 0.001054</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="10099100-011lfc001_collider_box.004">
+        <pose>-0.010237 -0.028738 0.003845 3.128092 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.016224 0.00025 0.013698</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="10099100-011lfc001_collider_box.005">
+        <pose>0.005401 -0.052954 0.00548 3.128092 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.001099 0.04872 0.011083</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="10099100-011lfc001_collider_box.006">
+        <pose>0.020513 -0.052954 0.005461 3.128092 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.001125 0.04872 0.011121</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="10099100-011lfc001_collider_box.007">
+        <pose>0.012963 -0.052889 0.010234 3.128092 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.016224 0.04872 0.000923</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="10099100-011lfc001_collider_box.008">
+        <pose>0.012963 -0.053024 0.000296 3.128092 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.016224 0.04872 0.001054</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="10099100-011lfc001_collider_box.009">
+        <pose>0.012963 -0.028738 0.003845 3.128092 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.016224 0.00025 0.013698</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="plane001_collider_box">
+        <pose>-0.007649 -0.074646 -0.000751 0.0 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.113402 0.000875 0.003449</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="plane001_collider_box.001">
+        <pose>-0.007649 -0.074646 0.01352 0.0 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.113402 0.000875 0.00501</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="plane001_collider_box.002">
+        <pose>0.038559 -0.074646 0.006455 0.0 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.036181 0.000875 0.011123</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="plane001_collider_box.003">
+        <pose>-0.041261 -0.074646 0.006455 0.0 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.046178 0.000875 0.011123</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="plane001_collider_box.004">
+        <pose>-0.063913 -0.080558 0.005525 0.0 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.000875 0.0127 0.021</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="plane001_collider_box.005">
+        <pose>0.004 -0.067206 -0.001238 0.0 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.064 0.014996 0.002475</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="cube001_collider_box.002">
+        <pose>-0.0029 -0.0015 0.001228 0.0 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.043 0.048 0.003149</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="plane001_collider_box.006">
+        <pose>-0.005942 -0.073499 0.015586 0.0 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.076184 0.003168 0.000877</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+    
+    <joint name="card_joint" type="fixed">
+      <parent>nic_card_mount_link</parent>
+      <child>nic_card_link</child>
+    </joint>
+    
+  </model>
+</sdf>
+
+
