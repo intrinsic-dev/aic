@@ -40,6 +40,7 @@ from launch_ros.substitutions import FindPackageShare
 from ros_gz_bridge.actions import RosGzBridge
 from ros_gz_sim.actions import GzServer
 
+
 def launch_setup(context, *args, **kwargs):
     # UR arguments
     ur_type = LaunchConfiguration("ur_type")
@@ -133,7 +134,11 @@ def launch_setup(context, *args, **kwargs):
     joint_state_broadcaster_spawner = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=["joint_state_broadcaster", "--controller-manager", "/controller_manager"],
+        arguments=[
+            "joint_state_broadcaster",
+            "--controller-manager",
+            "/controller_manager",
+        ],
     )
 
     # Delay rviz start after `joint_state_broadcaster`
@@ -149,21 +154,37 @@ def launch_setup(context, *args, **kwargs):
     initial_joint_controller_spawner_started = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=[initial_joint_controller, "admittance_controller", "--activate-as-group", "-c", "/controller_manager"],
+        arguments=[
+            initial_joint_controller,
+            "admittance_controller",
+            "--activate-as-group",
+            "-c",
+            "/controller_manager",
+        ],
         condition=IfCondition(activate_joint_controller),
     )
 
     initial_joint_controller_spawner_stopped = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=[initial_joint_controller, "admittance_controller", "-c", "/controller_manager", "--inactive"],
+        arguments=[
+            initial_joint_controller,
+            "admittance_controller",
+            "-c",
+            "/controller_manager",
+            "--inactive",
+        ],
         condition=UnlessCondition(activate_joint_controller),
     )
 
     gripper_action_controller_spawner = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=["gripper_action_controller", "--controller-manager", "/controller_manager"],
+        arguments=[
+            "gripper_action_controller",
+            "--controller-manager",
+            "/controller_manager",
+        ],
     )
 
     fts_broadcaster_spawner = Node(
@@ -189,25 +210,23 @@ def launch_setup(context, *args, **kwargs):
 
     gzserver = GzServer(
         world_sdf_file=world_file,
-        container_name='ros_gz_container',
-        create_own_container='True',
-        use_composition='True',
+        container_name="ros_gz_container",
+        create_own_container="True",
+        use_composition="True",
     )
 
     gzgui = ExecuteProcess(
-        cmd=['gz', 'sim', '-g'],
-        condition=IfCondition(
-            PythonExpression(["'", gazebo_gui, "' == 'true'"])
-        ),
-        output='screen'
+        cmd=["gz", "sim", "-g"],
+        condition=IfCondition(PythonExpression(["'", gazebo_gui, "' == 'true'"])),
+        output="screen",
     )
 
     ros_gz_bridge = RosGzBridge(
-        bridge_name='ros_gz_bridge',
+        bridge_name="ros_gz_bridge",
         config_file=ros_gz_bridge_config_file,
-        container_name='ros_gz_container',
-        create_own_container='False',
-        use_composition='True',
+        container_name="ros_gz_container",
+        create_own_container="False",
+        use_composition="True",
     )
 
     nodes_to_start = [
@@ -225,6 +244,7 @@ def launch_setup(context, *args, **kwargs):
     ]
 
     return nodes_to_start
+
 
 def generate_launch_description():
     declared_arguments = []
@@ -315,7 +335,9 @@ def generate_launch_description():
         )
     )
     declared_arguments.append(
-        DeclareLaunchArgument("launch_rviz", default_value="true", description="Launch RViz?")
+        DeclareLaunchArgument(
+            "launch_rviz", default_value="true", description="Launch RViz?"
+        )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
@@ -350,22 +372,42 @@ def generate_launch_description():
         )
     )
     declared_arguments.append(
-        DeclareLaunchArgument("x", default_value="0.0", description="Robot spawn X position")
+        DeclareLaunchArgument(
+            "x", default_value="0.0", description="Robot spawn X position"
+        )
     )
     declared_arguments.append(
-        DeclareLaunchArgument("y", default_value="0.0", description="Robot spawn Y position")
+        DeclareLaunchArgument(
+            "y", default_value="0.0", description="Robot spawn Y position"
+        )
     )
     declared_arguments.append(
-        DeclareLaunchArgument("z", default_value="1.0", description="Robot spawn Z position")
+        DeclareLaunchArgument(
+            "z", default_value="1.0", description="Robot spawn Z position"
+        )
     )
     declared_arguments.append(
-        DeclareLaunchArgument("roll", default_value="0.0", description="Robot spawn roll orientation (radians)")
+        DeclareLaunchArgument(
+            "roll",
+            default_value="0.0",
+            description="Robot spawn roll orientation (radians)",
+        )
     )
     declared_arguments.append(
-        DeclareLaunchArgument("pitch", default_value="0.0", description="Robot spawn pitch orientation (radians)")
+        DeclareLaunchArgument(
+            "pitch",
+            default_value="0.0",
+            description="Robot spawn pitch orientation (radians)",
+        )
     )
     declared_arguments.append(
-        DeclareLaunchArgument("yaw", default_value="-3.141", description="Robot spawn yaw orientation (radians)")
+        DeclareLaunchArgument(
+            "yaw",
+            default_value="-3.141",
+            description="Robot spawn yaw orientation (radians)",
+        )
     )
 
-    return LaunchDescription(declared_arguments + [OpaqueFunction(function=launch_setup)])
+    return LaunchDescription(
+        declared_arguments + [OpaqueFunction(function=launch_setup)]
+    )
