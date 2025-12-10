@@ -15,15 +15,14 @@
  *
  */
 
-#include "aic_scoring/ScoringTier2.hh"
 #include <yaml-cpp/yaml.h>
 
+#include "aic_scoring/ScoringTier2.hh"
+
 //////////////////////////////////////////////////
-int main(int argc, char * argv[])
-{
+int main(int argc, char* argv[]) {
   // Sanity check: There should be one argument.
-  if (argc != 2)
-  {
+  if (argc != 2) {
     std::cerr << "Usage: scoring_tier1 <tier1_yaml_file>" << std::endl;
     return -1;
   }
@@ -32,8 +31,7 @@ int main(int argc, char * argv[])
 
   auto scoringTier2 = std::make_shared<aic_scoring::ScoringTier2Node>();
   std::string configFile = std::string(argv[1]);
-  if (!scoringTier2->ParseStats(configFile))
-    return -1;
+  if (!scoringTier2->ParseStats(configFile)) return -1;
 
   // Debug.
   for (const auto& [connection, distance] : scoringTier2->score->pluggableMap)

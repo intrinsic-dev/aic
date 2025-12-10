@@ -15,8 +15,9 @@
  *
  */
 
-#include "aic_scoring/ScoringTier1.hh"
 #include <yaml-cpp/yaml.h>
+
+#include "aic_scoring/ScoringTier1.hh"
 
 //////////////////////////////////////////////////
 int main(int argc, char* argv[]) {
