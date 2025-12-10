@@ -439,7 +439,7 @@
 		<include>
 			<uri>SC Port</uri>
 			<name>sc_port_01</name>
-			<pose>0.175 0.0295 0.0185 1.57 0 1.57</pose>
+			<pose>0.175 0.0295 1.15 1.57 0 1.57</pose>
 			<static>true</static>
 		</include>
 
@@ -447,7 +447,7 @@
 		<include>
 			<uri>SC Port</uri>
 			<name>sc_port_02</name>
-			<pose>0.175 0.0705 0.0185 1.57 0 1.57</pose>
+			<pose>0.175 0.0705 1.15 1.57 0 1.57</pose>
 			<static>true</static>
 		</include>
 
