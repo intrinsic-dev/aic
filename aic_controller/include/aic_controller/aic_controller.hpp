@@ -23,7 +23,9 @@
 #include <string>
 
 #include "aic_controller/actions/cartesian_impedance_action.hpp"
+#include "aic_controller/cartesian_limits.hpp"
 #include "aic_controller/cartesian_state.hpp"
+#include "aic_controller/utils.hpp"
 #include "controller_interface/controller_interface.hpp"
 #include "rclcpp_lifecycle/state.hpp"
 #include "realtime_tools/realtime_publisher.hpp"
@@ -135,6 +137,8 @@ class Controller : public controller_interface::ControllerInterface {
   std::size_t num_joints_;
 
   ControlMode control_mode_;
+
+  CartesianLimits cartesian_limits_;
 
   // Impedance controller for cartesian targets
   std::unique_ptr<CartesianImpedanceAction> cartesian_impedance_action_;
