@@ -1,0 +1,410 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://wiki.ros.org/xacro" name="task_board">
+  <!-- Task Board Base pose arguments -->
+  <xacro:arg name="x" default="-0.2"/>
+  <xacro:arg name="y" default="0.2"/>
+  <xacro:arg name="z" default="1.14"/>
+  <xacro:arg name="roll" default="0.0"/>
+  <xacro:arg name="pitch" default="0.0"/>
+  <xacro:arg name="yaw" default="-3.141"/>
+
+  <!-- LC Mount 01 (left slot) - Y range: -0.010 to -0.2025 -->
+  <xacro:arg name="lc_mount_01_delta_x" default="0.0"/>
+  <xacro:arg name="lc_mount_01_delta_y" default="0.0"/>
+  <xacro:arg name="lc_mount_01_delta_z" default="0.0"/>
+
+  <!-- SFP Mount 01 (left slot) - Y range: -0.010 to -0.2025 -->
+  <xacro:arg name="sfp_mount_01_delta_x" default="0.0"/>
+  <xacro:arg name="sfp_mount_01_delta_y" default="0.0"/>
+  <xacro:arg name="sfp_mount_01_delta_z" default="0.0"/>
+
+  <!-- SC Mount 01 (left slot) - Y range: -0.010 to -0.2025 -->
+  <xacro:arg name="sc_mount_01_delta_x" default="0.0"/>
+  <xacro:arg name="sc_mount_01_delta_y" default="0.0"/>
+  <xacro:arg name="sc_mount_01_delta_z" default="0.0"/>
+
+  <!-- LC Mount 02 (right slot) - Y range: 0.010 to 0.2025 -->
+  <xacro:arg name="lc_mount_02_delta_x" default="0.0"/>
+  <xacro:arg name="lc_mount_02_delta_y" default="0.0"/>
+  <xacro:arg name="lc_mount_02_delta_z" default="0.0"/>
+
+  <!-- SFP Mount 02 (right slot) - Y range: 0.010 to 0.2025 -->
+  <xacro:arg name="sfp_mount_02_delta_x" default="0.0"/>
+  <xacro:arg name="sfp_mount_02_delta_y" default="0.0"/>
+  <xacro:arg name="sfp_mount_02_delta_z" default="0.0"/>
+
+  <!-- SC Mount 02 (right slot) - Y range: 0.010 to 0.2025 -->
+  <xacro:arg name="sc_mount_02_delta_x" default="0.0"/>
+  <xacro:arg name="sc_mount_02_delta_y" default="0.0"/>
+  <xacro:arg name="sc_mount_02_delta_z" default="0.0"/>
+
+  <!-- SC Port 01 (left slot) - X range: -0.020 to -0.130 -->
+  <xacro:arg name="sc_port_01_delta_x" default="0.0"/>
+  <xacro:arg name="sc_port_01_delta_y" default="0.0"/>
+  <xacro:arg name="sc_port_01_delta_z" default="0.0"/>
+
+  <!-- SC Port 02 (right slot) - X range: -0.020 to -0.130 -->
+  <xacro:arg name="sc_port_02_delta_x" default="0.0"/>
+  <xacro:arg name="sc_port_02_delta_y" default="0.0"/>
+  <xacro:arg name="sc_port_02_delta_z" default="0.0"/>
+
+  <!-- NIC Card Mount 01 -->
+  <xacro:arg name="nic_card_mount_01_delta_x" default="0.0"/>
+  <xacro:arg name="nic_card_mount_01_delta_y" default="0.0"/>
+  <xacro:arg name="nic_card_mount_01_delta_z" default="0.0"/>
+
+  <!-- NIC Card Mount 02 -->
+  <xacro:arg name="nic_card_mount_02_delta_x" default="0.0"/>
+  <xacro:arg name="nic_card_mount_02_delta_y" default="0.0"/>
+  <xacro:arg name="nic_card_mount_02_delta_z" default="0.0"/>
+
+  <!-- NIC Card Mount 03 -->
+  <xacro:arg name="nic_card_mount_03_delta_x" default="0.0"/>
+  <xacro:arg name="nic_card_mount_03_delta_y" default="0.0"/>
+  <xacro:arg name="nic_card_mount_03_delta_z" default="0.0"/>
+
+  <!-- NIC Card Mount 04 -->
+  <xacro:arg name="nic_card_mount_04_delta_x" default="0.0"/>
+  <xacro:arg name="nic_card_mount_04_delta_y" default="0.0"/>
+  <xacro:arg name="nic_card_mount_04_delta_z" default="0.0"/>
+
+  <!-- NIC Card Mount 05 -->
+  <xacro:arg name="nic_card_mount_05_delta_x" default="0.0"/>
+  <xacro:arg name="nic_card_mount_05_delta_y" default="0.0"/>
+  <xacro:arg name="nic_card_mount_05_delta_z" default="0.0"/>
+
+  <!-- Calculate absolute positions relative to task board base -->
+  <!-- Task Board Base is at (0.25, 0, 1.14) relative to world in original SDF -->
+  <!-- Components are positioned relative to base -->
+
+  <!-- Base link for the entire task board assembly -->
+  <link name="task_board_base_link">
+    <inertial>
+      <mass value="5.0"/>
+      <inertia ixx="0.1" ixy="0.0" ixz="0.0" iyy="0.1" iyz="0.0" izz="0.1"/>
+    </inertial>
+  </link>
+
+  <gazebo reference="task_board_base_link">
+    <visual>
+      <geometry>
+        <mesh>
+          <uri>model://Task Board Base</uri>
+        </mesh>
+      </geometry>
+    </visual>
+  </gazebo>
+
+  <!-- LC Mount 01 -->
+  <joint name="lc_mount_01_joint" type="fixed">
+    <parent link="task_board_base_link"/>
+    <child link="lc_mount_01_link"/>
+    <origin xyz="${0.0215 + $(arg lc_mount_01_delta_x)} ${-0.10625 + $(arg lc_mount_01_delta_y)} ${0.01 + $(arg lc_mount_01_delta_z)}" rpy="0 0 0"/>
+  </joint>
+
+  <link name="lc_mount_01_link">
+    <inertial>
+      <mass value="0.1"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
+    </inertial>
+  </link>
+
+  <gazebo reference="lc_mount_01_link">
+    <visual>
+      <geometry>
+        <mesh>
+          <uri>model://LC Mount</uri>
+        </mesh>
+      </geometry>
+    </visual>
+  </gazebo>
+
+  <!-- SFP Mount 01 -->
+  <joint name="sfp_mount_01_joint" type="fixed">
+    <parent link="task_board_base_link"/>
+    <child link="sfp_mount_01_link"/>
+    <origin xyz="${0.0535 + $(arg sfp_mount_01_delta_x)} ${-0.10625 + $(arg sfp_mount_01_delta_y)} ${0.01 + $(arg sfp_mount_01_delta_z)}" rpy="0 0 0"/>
+  </joint>
+
+  <link name="sfp_mount_01_link">
+    <inertial>
+      <mass value="0.1"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
+    </inertial>
+  </link>
+
+  <gazebo reference="sfp_mount_01_link">
+    <visual>
+      <geometry>
+        <mesh>
+          <uri>model://SFP Mount</uri>
+        </mesh>
+      </geometry>
+    </visual>
+  </gazebo>
+
+  <!-- SC Mount 01 -->
+  <joint name="sc_mount_01_joint" type="fixed">
+    <parent link="task_board_base_link"/>
+    <child link="sc_mount_01_link"/>
+    <origin xyz="${0.0985 + $(arg sc_mount_01_delta_x)} ${-0.10625 + $(arg sc_mount_01_delta_y)} ${0.01 + $(arg sc_mount_01_delta_z)}" rpy="0 0 0"/>
+  </joint>
+
+  <link name="sc_mount_01_link">
+    <inertial>
+      <mass value="0.1"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
+    </inertial>
+  </link>
+
+  <gazebo reference="sc_mount_01_link">
+    <visual>
+      <geometry>
+        <mesh>
+          <uri>model://SC Mount</uri>
+        </mesh>
+      </geometry>
+    </visual>
+  </gazebo>
+
+  <!-- LC Mount 02 -->
+  <joint name="lc_mount_02_joint" type="fixed">
+    <parent link="task_board_base_link"/>
+    <child link="lc_mount_02_link"/>
+    <origin xyz="${0.0215 + $(arg lc_mount_02_delta_x)} ${0.10625 + $(arg lc_mount_02_delta_y)} ${0.01 + $(arg lc_mount_02_delta_z)}" rpy="0 0 0"/>
+  </joint>
+
+  <link name="lc_mount_02_link">
+    <inertial>
+      <mass value="0.1"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
+    </inertial>
+  </link>
+
+  <gazebo reference="lc_mount_02_link">
+    <visual>
+      <geometry>
+        <mesh>
+          <uri>model://LC Mount</uri>
+        </mesh>
+      </geometry>
+    </visual>
+  </gazebo>
+
+  <!-- SFP Mount 02 -->
+  <joint name="sfp_mount_02_joint" type="fixed">
+    <parent link="task_board_base_link"/>
+    <child link="sfp_mount_02_link"/>
+    <origin xyz="${0.0535 + $(arg sfp_mount_02_delta_x)} ${0.10625 + $(arg sfp_mount_02_delta_y)} ${0.01 + $(arg sfp_mount_02_delta_z)}" rpy="0 0 0"/>
+  </joint>
+
+  <link name="sfp_mount_02_link">
+    <inertial>
+      <mass value="0.1"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
+    </inertial>
+  </link>
+
+  <gazebo reference="sfp_mount_02_link">
+    <visual>
+      <geometry>
+        <mesh>
+          <uri>model://SFP Mount</uri>
+        </mesh>
+      </geometry>
+    </visual>
+  </gazebo>
+
+  <!-- SC Mount 02 -->
+  <joint name="sc_mount_02_joint" type="fixed">
+    <parent link="task_board_base_link"/>
+    <child link="sc_mount_02_link"/>
+    <origin xyz="${0.0985 + $(arg sc_mount_02_delta_x)} ${0.10625 + $(arg sc_mount_02_delta_y)} ${0.01 + $(arg sc_mount_02_delta_z)}" rpy="0 0 0"/>
+  </joint>
+
+  <link name="sc_mount_02_link">
+    <inertial>
+      <mass value="0.1"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
+    </inertial>
+  </link>
+
+  <gazebo reference="sc_mount_02_link">
+    <visual>
+      <geometry>
+        <mesh>
+          <uri>model://SC Mount</uri>
+        </mesh>
+      </geometry>
+    </visual>
+  </gazebo>
+
+  <!-- SC Port 01 -->
+  <joint name="sc_port_01_joint" type="fixed">
+    <parent link="task_board_base_link"/>
+    <child link="sc_port_01_link"/>
+    <origin xyz="${-0.075 + $(arg sc_port_01_delta_x)} ${0.0295 + $(arg sc_port_01_delta_y)} ${0.01 + $(arg sc_port_01_delta_z)}" rpy="1.57 0 1.57"/>
+  </joint>
+
+  <link name="sc_port_01_link">
+    <inertial>
+      <mass value="0.1"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
+    </inertial>
+  </link>
+
+  <gazebo reference="sc_port_01_link">
+    <visual>
+      <geometry>
+        <mesh>
+          <uri>model://SC Port</uri>
+        </mesh>
+      </geometry>
+    </visual>
+  </gazebo>
+
+  <!-- SC Port 02 -->
+  <joint name="sc_port_02_joint" type="fixed">
+    <parent link="task_board_base_link"/>
+    <child link="sc_port_02_link"/>
+    <origin xyz="${-0.075 + $(arg sc_port_02_delta_x)} ${0.0705 + $(arg sc_port_02_delta_y)} ${0.01 + $(arg sc_port_02_delta_z)}" rpy="1.57 0 1.57"/>
+  </joint>
+
+  <link name="sc_port_02_link">
+    <inertial>
+      <mass value="0.1"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
+    </inertial>
+  </link>
+
+  <gazebo reference="sc_port_02_link">
+    <visual>
+      <geometry>
+        <mesh>
+          <uri>model://SC Port</uri>
+        </mesh>
+      </geometry>
+    </visual>
+  </gazebo>
+
+  <!-- NIC Card Mount 01 -->
+  <joint name="nic_card_mount_01_joint" type="fixed">
+    <parent link="task_board_base_link"/>
+    <child link="nic_card_mount_01_link"/>
+    <origin xyz="${-0.081418 + $(arg nic_card_mount_01_delta_x)} ${-0.0145 + $(arg nic_card_mount_01_delta_y)} ${0.01 + $(arg nic_card_mount_01_delta_z)}" rpy="0 0 0"/>
+  </joint>
+
+  <link name="nic_card_mount_01_link">
+    <inertial>
+      <mass value="0.1"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
+    </inertial>
+  </link>
+
+  <gazebo reference="nic_card_mount_01_link">
+    <visual>
+      <geometry>
+        <mesh>
+          <uri>model://NIC Card Mount</uri>
+        </mesh>
+      </geometry>
+    </visual>
+  </gazebo>
+
+  <!-- NIC Card Mount 02 -->
+  <joint name="nic_card_mount_02_joint" type="fixed">
+    <parent link="task_board_base_link"/>
+    <child link="nic_card_mount_02_link"/>
+    <origin xyz="${-0.081418 + $(arg nic_card_mount_02_delta_x)} ${-0.0545 + $(arg nic_card_mount_02_delta_y)} ${0.01 + $(arg nic_card_mount_02_delta_z)}" rpy="0 0 0"/>
+  </joint>
+
+  <link name="nic_card_mount_02_link">
+    <inertial>
+      <mass value="0.1"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
+    </inertial>
+  </link>
+
+  <gazebo reference="nic_card_mount_02_link">
+    <visual>
+      <geometry>
+        <mesh>
+          <uri>model://NIC Card Mount</uri>
+        </mesh>
+      </geometry>
+    </visual>
+  </gazebo>
+
+  <!-- NIC Card Mount 03 -->
+  <joint name="nic_card_mount_03_joint" type="fixed">
+    <parent link="task_board_base_link"/>
+    <child link="nic_card_mount_03_link"/>
+    <origin xyz="${-0.081418 + $(arg nic_card_mount_03_delta_x)} ${-0.0945 + $(arg nic_card_mount_03_delta_y)} ${0.01 + $(arg nic_card_mount_03_delta_z)}" rpy="0 0 0"/>
+  </joint>
+
+  <link name="nic_card_mount_03_link">
+    <inertial>
+      <mass value="0.1"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
+    </inertial>
+  </link>
+
+  <gazebo reference="nic_card_mount_03_link">
+    <visual>
+      <geometry>
+        <mesh>
+          <uri>model://NIC Card Mount</uri>
+        </mesh>
+      </geometry>
+    </visual>
+  </gazebo>
+
+  <!-- NIC Card Mount 04 -->
+  <joint name="nic_card_mount_04_joint" type="fixed">
+    <parent link="task_board_base_link"/>
+    <child link="nic_card_mount_04_link"/>
+    <origin xyz="${-0.081418 + $(arg nic_card_mount_04_delta_x)} ${-0.1345 + $(arg nic_card_mount_04_delta_y)} ${0.01 + $(arg nic_card_mount_04_delta_z)}" rpy="0 0 0"/>
+  </joint>
+
+  <link name="nic_card_mount_04_link">
+    <inertial>
+      <mass value="0.1"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
+    </inertial>
+  </link>
+
+  <gazebo reference="nic_card_mount_04_link">
+    <visual>
+      <geometry>
+        <mesh>
+          <uri>model://NIC Card Mount</uri>
+        </mesh>
+      </geometry>
+    </visual>
+  </gazebo>
+
+  <!-- NIC Card Mount 05 -->
+  <joint name="nic_card_mount_05_joint" type="fixed">
+    <parent link="task_board_base_link"/>
+    <child link="nic_card_mount_05_link"/>
+    <origin xyz="${-0.081418 + $(arg nic_card_mount_05_delta_x)} ${-0.1745 + $(arg nic_card_mount_05_delta_y)} ${0.01 + $(arg nic_card_mount_05_delta_z)}" rpy="0 0 0"/>
+  </joint>
+
+  <link name="nic_card_mount_05_link">
+    <inertial>
+      <mass value="0.1"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
+    </inertial>
+  </link>
+
+  <gazebo reference="nic_card_mount_05_link">
+    <visual>
+      <geometry>
+        <mesh>
+          <uri>model://NIC Card Mount</uri>
+        </mesh>
+      </geometry>
+    </visual>
+  </gazebo>
+
+</robot>
