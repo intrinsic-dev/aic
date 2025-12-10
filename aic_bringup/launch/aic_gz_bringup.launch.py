@@ -373,17 +373,17 @@ def generate_launch_description():
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            "x", default_value="0.0", description="Robot spawn X position"
+            "x", default_value="-0.2", description="Robot spawn X position"
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            "y", default_value="0.0", description="Robot spawn Y position"
+            "y", default_value="0.2", description="Robot spawn Y position"
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            "z", default_value="1.0", description="Robot spawn Z position"
+            "z", default_value="1.14", description="Robot spawn Z position"
         )
     )
     declared_arguments.append(
