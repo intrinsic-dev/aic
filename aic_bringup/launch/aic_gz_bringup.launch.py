@@ -149,14 +149,14 @@ def launch_setup(context, *args, **kwargs):
     initial_joint_controller_spawner_started = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=[initial_joint_controller, "joint_trajectory_controller", "--activate-as-group", "-c", "/controller_manager"],
+        arguments=[initial_joint_controller, "admittance_controller", "--activate-as-group", "-c", "/controller_manager"],
         condition=IfCondition(activate_joint_controller),
     )
 
     initial_joint_controller_spawner_stopped = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=[initial_joint_controller, "-c", "/controller_manager", "--stopped"],
+        arguments=[initial_joint_controller, "admittance_controller", "-c", "/controller_manager", "--inactive"],
         condition=UnlessCondition(activate_joint_controller),
     )
 
@@ -170,12 +170,6 @@ def launch_setup(context, *args, **kwargs):
         package="controller_manager",
         executable="spawner",
         arguments=["fts_broadcaster", "--controller-manager", "/controller_manager"],
-    )
-
-    home_script_spawner = Node(
-        package="aic_bringup",
-        executable="home_robot.py",
-        arguments=[],
     )
 
     # GZ nodes
@@ -228,7 +222,6 @@ def launch_setup(context, *args, **kwargs):
         gzgui,
         ros_gz_bridge,
         gz_spawn_entity,
-        home_script_spawner,
     ]
 
     return nodes_to_start
@@ -308,7 +301,7 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             "initial_joint_controller",
-            default_value="admittance_controller",
+            default_value="joint_trajectory_controller",
             description="Robot controller to start.",
         )
     )
@@ -357,13 +350,13 @@ def generate_launch_description():
         )
     )
     declared_arguments.append(
-        DeclareLaunchArgument("x", default_value="0.0", description="Robot spawn X position")
+        DeclareLaunchArgument("x", default_value="-0.2", description="Robot spawn X position")
     )
     declared_arguments.append(
-        DeclareLaunchArgument("y", default_value="0.0", description="Robot spawn Y position")
+        DeclareLaunchArgument("y", default_value="0.2", description="Robot spawn Y position")
     )
     declared_arguments.append(
-        DeclareLaunchArgument("z", default_value="1.0", description="Robot spawn Z position")
+        DeclareLaunchArgument("z", default_value="1.14", description="Robot spawn Z position")
     )
     declared_arguments.append(
         DeclareLaunchArgument("roll", default_value="0.0", description="Robot spawn roll orientation (radians)")

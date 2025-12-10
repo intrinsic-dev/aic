@@ -44,7 +44,7 @@ TopicStatsTier1::TopicStatsTier1(rclcpp::Node *_node,
 
   this->subscription = this->node->create_generic_subscription(
       this->stats.topicName, this->stats.topicType, rclcpp::QoS(10),
-      std::bind(&TopicStatsTier1::TopicCallback, this, 
+      std::bind(&TopicStatsTier1::TopicCallback, this,
       std::placeholders::_1));
 }
 

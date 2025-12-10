@@ -1,0 +1,46 @@
+<?xml version="1.0" ?>
+<sdf version="1.9">
+  <model name="Enclosure Walls">
+    <link name="enclosure_walls_link">
+      <visual name="enclosure_walls_visual">
+        <geometry>
+          <mesh>
+            <uri>enclosure_walls_visual.glb</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <collision name="v1015062006_collider_box">
+        <pose>-0.010998 0.734284 1.828798 1.570796 -0.0 -1.570796</pose>
+        <geometry>
+          <box>
+            <size>0.050001 1.3592 1.3784</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="v1015062005_collider_box">
+        <pose>-0.735998 0.009283 1.828798 1.570796 -0.0 -1.570796</pose>
+        <geometry>
+          <box>
+            <size>1.3784 1.3592 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="v1015062007_collider_box">
+        <pose>-0.010998 -0.715717 1.833799 1.570796 -0.0 -1.570796</pose>
+        <geometry>
+          <box>
+            <size>0.05 1.3692 1.3784</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="v1015062008_collider_box">
+        <pose>0.714002 0.009283 1.833798 1.570796 -0.0 -1.570796</pose>
+        <geometry>
+          <box>
+            <size>1.3784 1.3692 0.05</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model>
+</sdf>
