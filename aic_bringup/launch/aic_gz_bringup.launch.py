@@ -178,33 +178,26 @@ def launch_setup(context, *args, **kwargs):
         arguments=["fts_broadcaster", "--controller-manager", "/controller_manager"],
     )
 
-    # Task board description
+    # Task board spawning (conditional)
+    spawn_task_board = LaunchConfiguration("spawn_task_board")
     task_board_description_file = LaunchConfiguration("task_board_description_file")
 
-    task_board_description_content = Command(
-        [
-            PathJoinSubstitution([FindExecutable(name="xacro")]),
-            " ",
-            task_board_description_file,
-            " ",
-            "x:=",
-            task_board_x,
-            " ",
-            "y:=",
-            task_board_y,
-            " ",
-            "z:=",
-            task_board_z,
-            " ",
-            "roll:=",
-            task_board_roll,
-            " ",
-            "pitch:=",
-            task_board_pitch,
-            " ",
-            "yaw:=",
-            task_board_yaw,
-        ]
+    spawn_task_board_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            PathJoinSubstitution(
+                [FindPackageShare("aic_bringup"), "launch", "spawn_task_board.launch.py"]
+            )
+        ),
+        launch_arguments={
+            "task_board_description_file": task_board_description_file,
+            "task_board_x": task_board_x,
+            "task_board_y": task_board_y,
+            "task_board_z": task_board_z,
+            "task_board_roll": task_board_roll,
+            "task_board_pitch": task_board_pitch,
+            "task_board_yaw": task_board_yaw,
+        }.items(),
+        condition=IfCondition(spawn_task_board),
     )
 
     # GZ nodes
@@ -219,32 +212,6 @@ def launch_setup(context, *args, **kwargs):
             "ur5e",
             "-allow_renaming",
             "true",
-        ],
-    )
-
-    gz_spawn_task_board = Node(
-        package="ros_gz_sim",
-        executable="create",
-        output="screen",
-        arguments=[
-            "-string",
-            task_board_description_content,
-            "-name",
-            "task_board",
-            "-allow_renaming",
-            "true",
-            "-x",
-            task_board_x,
-            "-y",
-            task_board_y,
-            "-z",
-            task_board_z,
-            "-R",
-            task_board_roll,
-            "-P",
-            task_board_pitch,
-            "-Y",
-            task_board_yaw,
         ],
     )
 
@@ -283,7 +250,7 @@ def launch_setup(context, *args, **kwargs):
         gzgui,
         ros_gz_bridge,
         gz_spawn_entity,
-        gz_spawn_task_board,
+        spawn_task_board_launch,
     ]
 
     return nodes_to_start
@@ -378,6 +345,13 @@ def generate_launch_description():
     )
     declared_arguments.append(
         DeclareLaunchArgument("launch_rviz", default_value="true", description="Launch RViz?")
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "spawn_task_board",
+            default_value="true",
+            description="Spawn task board in Gazebo?",
+        )
     )
     declared_arguments.append(
         DeclareLaunchArgument(

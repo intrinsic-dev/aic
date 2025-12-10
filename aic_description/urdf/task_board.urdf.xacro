@@ -16,42 +16,42 @@
   <xacro:arg name="pitch" default="0.0"/>
   <xacro:arg name="yaw" default="-3.141"/>
 
-  <!-- LC Mount 01 (left slot) - Y range: -0.010 to -0.2025 -->
+  <!-- LC Mount 01 (left slot) - Base Y: -0.10625, Valid delta Y: -0.09625 to 0.09625 (absolute range: -0.2025 to -0.010) -->
   <xacro:arg name="lc_mount_01_delta_x" default="0.0"/>
   <xacro:arg name="lc_mount_01_delta_y" default="0.0"/>
   <xacro:arg name="lc_mount_01_delta_z" default="0.0"/>
 
-  <!-- SFP Mount 01 (left slot) - Y range: -0.010 to -0.2025 -->
+  <!-- SFP Mount 01 (left slot) - Base Y: -0.10625, Valid delta Y: -0.09625 to 0.09625 (absolute range: -0.2025 to -0.010) -->
   <xacro:arg name="sfp_mount_01_delta_x" default="0.0"/>
   <xacro:arg name="sfp_mount_01_delta_y" default="0.0"/>
   <xacro:arg name="sfp_mount_01_delta_z" default="0.0"/>
 
-  <!-- SC Mount 01 (left slot) - Y range: -0.010 to -0.2025 -->
+  <!-- SC Mount 01 (left slot) - Base Y: -0.10625, Valid delta Y: -0.09625 to 0.09625 (absolute range: -0.2025 to -0.010) -->
   <xacro:arg name="sc_mount_01_delta_x" default="0.0"/>
   <xacro:arg name="sc_mount_01_delta_y" default="0.0"/>
   <xacro:arg name="sc_mount_01_delta_z" default="0.0"/>
 
-  <!-- LC Mount 02 (right slot) - Y range: 0.010 to 0.2025 -->
+  <!-- LC Mount 02 (right slot) - Base Y: 0.10625, Valid delta Y: -0.09625 to 0.09625 (absolute range: 0.010 to 0.2025) -->
   <xacro:arg name="lc_mount_02_delta_x" default="0.0"/>
   <xacro:arg name="lc_mount_02_delta_y" default="0.0"/>
   <xacro:arg name="lc_mount_02_delta_z" default="0.0"/>
 
-  <!-- SFP Mount 02 (right slot) - Y range: 0.010 to 0.2025 -->
+  <!-- SFP Mount 02 (right slot) - Base Y: 0.10625, Valid delta Y: -0.09625 to 0.09625 (absolute range: 0.010 to 0.2025) -->
   <xacro:arg name="sfp_mount_02_delta_x" default="0.0"/>
   <xacro:arg name="sfp_mount_02_delta_y" default="0.0"/>
   <xacro:arg name="sfp_mount_02_delta_z" default="0.0"/>
 
-  <!-- SC Mount 02 (right slot) - Y range: 0.010 to 0.2025 -->
+  <!-- SC Mount 02 (right slot) - Base Y: 0.10625, Valid delta Y: -0.09625 to 0.09625 (absolute range: 0.010 to 0.2025) -->
   <xacro:arg name="sc_mount_02_delta_x" default="0.0"/>
   <xacro:arg name="sc_mount_02_delta_y" default="0.0"/>
   <xacro:arg name="sc_mount_02_delta_z" default="0.0"/>
 
-  <!-- SC Port 01 (left slot) - X range: -0.020 to -0.130 -->
+  <!-- SC Port 01 - Base X: -0.075, Valid delta X: -0.055 to 0.055 (absolute range: -0.130 to -0.020) -->
   <xacro:arg name="sc_port_01_delta_x" default="0.0"/>
   <xacro:arg name="sc_port_01_delta_y" default="0.0"/>
   <xacro:arg name="sc_port_01_delta_z" default="0.0"/>
 
-  <!-- SC Port 02 (right slot) - X range: -0.020 to -0.130 -->
+  <!-- SC Port 02 - Base X: -0.075, Valid delta X: -0.055 to 0.055 (absolute range: -0.130 to -0.020) -->
   <xacro:arg name="sc_port_02_delta_x" default="0.0"/>
   <xacro:arg name="sc_port_02_delta_y" default="0.0"/>
   <xacro:arg name="sc_port_02_delta_z" default="0.0"/>
