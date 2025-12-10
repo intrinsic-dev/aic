@@ -39,14 +39,11 @@ namespace aic_scoring
   };
 
   // The Tier2 scoring interface.
-  class ScoringTier2 : public rclcpp::Node
+  class ScoringTier2
   {
     /// \brief Class constructor.
-    public: ScoringTier2();
-
-    /// \brief Populate the scoring input params from a YAML file.
-    /// \param[in] _yamlFile Input YAML file.
-    public: bool ParseStats(const std::string &_yamlFile);
+    /// \param[in] _node Pointer to the ROS node.
+    public: ScoringTier2(rclcpp::Node *_node);
 
     /// \brief Store the current distance cable-connector.
     public: void Update();
@@ -59,7 +56,25 @@ namespace aic_scoring
 
     /// \brief Plug<->port connections.
     /// The first key is always the plug, followed by "&", follower by port.
+    /// The value is the distance (meters) between the plug and the port.
     public: std::map<std::string, double> pluggableMap;
+
+    /// \brief Pointer to a node.
+    private: rclcpp::Node *node;
+  };
+
+  // The Tier2 class as a node.
+  class ScoringTier2Node : public rclcpp::Node
+  {
+    /// \brief Class constructor.
+    public: ScoringTier2Node();
+
+    /// \brief Populate the scoring input params from a YAML file.
+    /// \param[in] _yamlFile Input YAML file.
+    public: bool ParseStats(const std::string &_yamlFile);
+
+    /// \brief The scoring.
+    public: std::unique_ptr<ScoringTier2> score;
   };
 }
 #endif

@@ -30,13 +30,20 @@
 namespace aic_scoring
 {
 //////////////////////////////////////////////////
-ScoringTier2::ScoringTier2()
-  : Node("score_tier2_node")
+ScoringTier2::ScoringTier2(rclcpp::Node *_node)
+  : node(_node)
 {
 }
 
 //////////////////////////////////////////////////
-bool ScoringTier2::ParseStats(const std::string &_yamlFile)
+ScoringTier2Node::ScoringTier2Node()
+  : Node("score_tier2_node")
+{
+  this->score = std::make_unique<aic_scoring::ScoringTier2>(this);
+}
+
+//////////////////////////////////////////////////
+bool ScoringTier2Node::ParseStats(const std::string &_yamlFile)
 {
   YAML::Node config;
   try
@@ -98,7 +105,7 @@ bool ScoringTier2::ParseStats(const std::string &_yamlFile)
     }
 
     plug.type = plugProperties["type"].as<std::string>();
-    this->plugs.insert({plug.name, std::move(plug)});
+    this->score->plugs.insert({plug.name, std::move(plug)});
   }
 
   // Sanity check: We should have a [ports] map.
@@ -150,8 +157,22 @@ bool ScoringTier2::ParseStats(const std::string &_yamlFile)
     }
 
     port.type = portProperties["type"].as<std::string>();
-    this->ports.insert({port.name, std::move(port)});
+    this->score->ports.insert({port.name, std::move(port)});
   }
+
+  // Populate pluggableMap.
+  for (const auto& [plugName, plugInfo] : this->score->plugs)
+  {
+    for (const auto& [portName, portInfo] : this->score->ports)
+    {
+      if (plugInfo.type == portInfo.type)
+      {
+        std::string connectionName = plugName + "&" + portName;
+        this->score->pluggableMap.insert({connectionName, 0});
+      }
+    }
+  }
+
   return true;
 }
 
@@ -169,27 +190,14 @@ int main(int argc, char * argv[])
 
   rclcpp::init(argc, argv);
 
-  auto scoringTier2 = std::make_shared<aic_scoring::ScoringTier2>();
+  auto scoringTier2 = std::make_shared<aic_scoring::ScoringTier2Node>();
   std::string configFile = std::string(argv[1]);
   if (!scoringTier2->ParseStats(configFile))
     return -1;
 
-  // Populate pluggableMap.
-  for (const auto& [plugName, plugInfo] : scoringTier2->plugs)
-  {
-    for (const auto& [portName, portInfo] : scoringTier2->ports)
-    {
-      if (plugInfo.type == portInfo.type)
-      {
-        std::string connectionName = plugName + "&" + portName;
-        scoringTier2->pluggableMap.insert({connectionName, 0});
-      }
-    }
-  }
-
   // Debug.
-  // for (const auto& [connection, distance] : scoringTier2->pluggableMap)
-  //   std::cout << connection << ": " << distance << " m." << std::endl;
+  for (const auto& [connection, distance] : scoringTier2->score->pluggableMap)
+    std::cout << connection << ": " << distance << " m." << std::endl;
 
   rclcpp::spin(scoringTier2);
   rclcpp::shutdown();
