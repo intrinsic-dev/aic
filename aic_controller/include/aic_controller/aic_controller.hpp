@@ -25,8 +25,9 @@
 #include "aic_controller/actions/cartesian_impedance_action.hpp"
 #include "aic_controller/cartesian_limits.hpp"
 #include "aic_controller/cartesian_state.hpp"
-#include "aic_controller/utils.hpp"
 #include "controller_interface/controller_interface.hpp"
+#include "kinematics_interface/kinematics_interface.hpp"
+#include "pluginlib/class_loader.hpp"
 #include "rclcpp_lifecycle/state.hpp"
 #include "realtime_tools/realtime_publisher.hpp"
 #include "realtime_tools/realtime_thread_safe_box.hpp"
@@ -130,6 +131,91 @@ class Controller : public controller_interface::ControllerInterface {
    */
   void write_state_to_hardware(const JointTrajectoryPoint& state_command);
 
+  /**
+   * @brief Exponential map of the special unitary group SU(2), the group of
+   * unit quaternions
+   *
+   * Let \f$ \exp \f$ be the matrix exponential and \f$ \hat{\cdot} \f$ be the
+   * function which maps a tangent vector in SU(2) to its corresponding (2x2)
+   * matrix representation. It holds that:
+   *
+   * \f$ \exp_{SU(2)}(\delta) = exp(\hat{delta}) \f$
+   *
+   * @param delta Tangent vector of SU(2)
+   * @return Eigen::Quaterniond unit quaternion, a member of SU(2)
+   */
+  Eigen::Quaterniond expMapQuaternion(const Eigen::Vector3d& delta);
+
+  /**
+   * @brief Logarithmic map of the special unitary group SU(2), the group of
+   * unit quaternions. This function is an implementation detail for log(SO3).
+   *
+   * This is the inverse of the 'expMapQuaternion' function
+   *
+   * @param quaternion quaternion q of unit length
+   * @return Eigen::Vector3d Corresponding vector in the tanget space of SU(2)
+   */
+  Eigen::Vector3d logMapQuaternion(const Eigen::Quaterniond& q);
+
+  /**
+   * @brief Interpolates between 2 elements of SU(2) or quaternions
+   * If the angle between the two rotations is exactly 180 degrees there are
+   * theoretically two possible solutions. In this case this implementation
+   * deterministically chooses one.
+   *
+   * @param p
+   * @param quat_a
+   * @param quat_b
+   * @return Eigen::Quaterniond
+   */
+  Eigen::Quaterniond SphericalLinearInterpolation(
+      const double& p, const Eigen::Quaterniond& q_a,
+      const Eigen::Quaterniond& q_b);
+  /**
+   * @brief Euler integration of a pose with the assumption of constant velocity
+   * and zero acceleration
+   *
+   * @param pose
+   * @param control_frequency Frequency of control loop in Hz
+   * @return CartesianState
+   */
+  CartesianState IntegratePose(const CartesianState& pose,
+                               const double& control_frequency);
+
+  /**
+   * @brief
+   *
+   * @param limits
+   * @param mode
+   * @param target_state
+   * @param soft_margin_meters
+   * @param soft_margin_radians
+   * @return true
+   * @return false
+   */
+  bool ClampReferenceToLimits(const CartesianLimits& limits,
+                              const uint8_t& mode, CartesianState& target_state,
+                              double soft_margin_meters = 0.0,
+                              double soft_margin_radians = 0.0);
+
+  /**
+   * @brief
+   *
+   * @param last_reference
+   * @param target_state
+   * @param remaining_time_to_target_seconds
+   * @param control_frequency
+   * @param mode
+   * @param new_reference
+   * @return true
+   * @return false
+   */
+  bool UpdateReferenceLinearInterpolation(
+      const CartesianState& last_reference, const CartesianState& target_state,
+      const double remaining_time_to_target_seconds,
+      const double control_frequency, const uint8_t& mode,
+      CartesianState& new_reference);
+
   // controller parameters
   std::shared_ptr<aic_controller::ParamListener> param_listener_;
   aic_controller::Params params_;
@@ -158,9 +244,21 @@ class Controller : public controller_interface::ControllerInterface {
   std::optional<CartesianState> target_state_;
   // Latest joint states read from hardware interface
   JointTrajectoryPoint current_state_;
+  // todo(johntgz) Any reason why current_tool_state_ should not replace
+  // last_tool_reference_
+  // Latest cartesian state of tool calculatd via forward kinematics from
+  // current_state_
+  CartesianState current_tool_state_;
+  // Reference used for interpolation
+  CartesianState last_tool_reference_;
 
   double time_to_target_seconds_;
   double remaining_time_to_target_seconds_;
+
+  std::shared_ptr<
+      pluginlib::ClassLoader<kinematics_interface::KinematicsInterface>>
+      kinematics_loader_;
+  std::unique_ptr<kinematics_interface::KinematicsInterface> kinematics_;
 };
 
 }  // namespace aic_controller

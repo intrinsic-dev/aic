@@ -46,6 +46,8 @@ struct CartesianLimits {
    *
    */
   CartesianLimits();
+
+  static CartesianLimits GenerateTestParams();
 };
 
 }  // namespace aic_controller
