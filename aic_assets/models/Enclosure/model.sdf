@@ -65,15 +65,6 @@
         </geometry>
       </collision>
     </link>
-    <!--<link name="light_link">
-      <pose>0 0 2.5128 0 3.14 0</pose>
-      <visual name="light_visual">
-        <geometry>
-          <plane>
-            <size>1.4 1.4</size>
-          </plane>
-        </geometry>
-      </visual>
-    </link>-->
   </model>
 </sdf>
+
