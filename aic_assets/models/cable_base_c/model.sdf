@@ -779,20 +779,20 @@
       </inertial>
       <pose relative_to="cable_mount_end">0 0 0 0 0 0</pose>
       <collision name="collision_0">
-        <pose>0.005385164807134504 -0.004 0 0.3805063771123649 1.57079 0</pose>
+        <pose>0.005099019513592785 -0.002 0 0.19739555984988078 1.57079 0</pose>
         <geometry>
           <cylinder>
             <radius>0.001</radius>
-            <length>0.010770329614269008</length>
+            <length>0.01019803902718557</length>
           </cylinder>
         </geometry>
       </collision>
       <visual name="visual_0">
-        <pose>0.005385164807134504 -0.004 0 0.3805063771123649 1.57079 0</pose>
+        <pose>0.005099019513592785 -0.002 0 0.19739555984988078 1.57079 0</pose>
         <geometry>
           <cylinder>
             <radius>0.001</radius>
-            <length>0.010770329614269008</length>
+            <length>0.01019803902718557</length>
           </cylinder>
         </geometry>
         <material>
@@ -807,20 +807,20 @@
         </material>
       </visual>
       <collision name="collision_1">
-        <pose>0.005385164807134504 0.004 0 -0.3805063771123649 1.57079 0</pose>
+        <pose>0.005099019513592785 0.002 0 -0.19739555984988078 1.57079 0</pose>
         <geometry>
           <cylinder>
             <radius>0.001</radius>
-            <length>0.010770329614269008</length>
+            <length>0.01019803902718557</length>
           </cylinder>
         </geometry>
       </collision>
       <visual name="visual_1">
-        <pose>0.005385164807134504 0.004 0 -0.3805063771123649 1.57079 0</pose>
+        <pose>0.005099019513592785 0.002 0 -0.19739555984988078 1.57079 0</pose>
         <geometry>
           <cylinder>
             <radius>0.001</radius>
-            <length>0.010770329614269008</length>
+            <length>0.01019803902718557</length>
           </cylinder>
         </geometry>
         <material>
