@@ -1,9 +1,11 @@
 #include <cstdlib>
 #include <cstring>
 #include <deque>
+#include <format>
 #include <memory>
 
 #include "aic_model_interfaces/msg/observation.hpp"
+#include "geometry_msgs/msg/wrench_stamped.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/image.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
@@ -16,6 +18,25 @@ class AicAdapterNode : public rclcpp::Node {
     observation_pub_ =
         this->create_publisher<aic_model_interfaces::msg::Observation>(
             "observations", 10);
+
+    wrench_deque_ = std::make_unique<
+        std::deque<geometry_msgs::msg::WrenchStamped::UniquePtr>>();
+    wrench_sub_ = this->create_subscription<geometry_msgs::msg::WrenchStamped>(
+        "/axia80_m20/wrench", 5,
+        [this](geometry_msgs::msg::WrenchStamped::UniquePtr msg) -> void {
+          this->wrench_deque_->push_front(std::move(msg));
+          while (this->wrench_deque_->size() > kWrenchDequeMaxLength) {
+            this->wrench_deque_->pop_back();
+          }
+        });
+
+    joint_sort_order_["shoulder_pan_joint"] = 0;
+    joint_sort_order_["shoulder_lift_joint"] = 1;
+    joint_sort_order_["elbow_joint"] = 2;
+    joint_sort_order_["wrist_1_joint"] = 3;
+    joint_sort_order_["wrist_2_joint"] = 4;
+    joint_sort_order_["wrist_3_joint"] = 5;
+    joint_sort_order_["gripper/left_finger_joint"] = 6;
     joint_state_deque_ =
         std::make_unique<std::deque<sensor_msgs::msg::JointState::UniquePtr>>();
     joint_state_sub_ = this->create_subscription<sensor_msgs::msg::JointState>(
@@ -26,12 +47,10 @@ class AicAdapterNode : public rclcpp::Node {
             this->joint_state_deque_->pop_back();
           }
         });
+
     for (size_t camera_idx = 0; camera_idx < kNumCameras; camera_idx++) {
-      char topic_name_buf[64] = {0};
-      snprintf(topic_name_buf, sizeof(topic_name_buf),
-               "/wrist_camera_%zu/image", camera_idx + 1);
       image_subs_.push_back(this->create_subscription<sensor_msgs::msg::Image>(
-          topic_name_buf, 5,
+          std::format("/wrist_camera_{}/image", camera_idx + 1), 5,
           [this, camera_idx](sensor_msgs::msg::Image::UniquePtr msg) -> void {
             this->image_callback(camera_idx, std::move(msg));
           }));
@@ -80,8 +99,8 @@ class AicAdapterNode : public rclcpp::Node {
           std::move(*images_[i]);
     }
 
-    // Avoid a copy by moving the last element into our outbound message
-    // and deleting the empty message that results from the move.
+    // Look for the joint state message that is closest to the timestamp
+    // of the images.
     size_t joint_state_msg_idx = 0;
     for (joint_state_msg_idx = 0;
          joint_state_msg_idx < joint_state_deque_->size();
@@ -92,8 +111,24 @@ class AicAdapterNode : public rclcpp::Node {
       const rclcpp::Time t_joint_state_msg(
           (*joint_state_deque_)[joint_state_msg_idx]->header.stamp);
       if (t_joint_state_msg <= t_image_0) {
-        observation_msg->joint_states =
-            std::move(*(*joint_state_deque_)[joint_state_msg_idx]);
+        SortJointStateMessage(*(*joint_state_deque_)[joint_state_msg_idx],
+                              observation_msg->joint_states);
+        break;
+      }
+    }
+
+    // Look for the wrench message that is closest to the timestamp
+    // of the images.
+    size_t wrench_msg_idx = 0;
+    for (wrench_msg_idx = 0; wrench_msg_idx < wrench_deque_->size();
+         wrench_msg_idx++) {
+      if (!(*wrench_deque_)[wrench_msg_idx]) {
+        continue;
+      }
+      const rclcpp::Time t_wrench_msg(
+          (*wrench_deque_)[wrench_msg_idx]->header.stamp);
+      if (t_wrench_msg <= t_image_0) {
+        observation_msg->wrist_wrench = *(*wrench_deque_)[wrench_msg_idx];
         break;
       }
     }
@@ -101,18 +136,83 @@ class AicAdapterNode : public rclcpp::Node {
     this->observation_pub_->publish(std::move(observation_msg));
   }
 
+  void SortJointStateMessage(const sensor_msgs::msg::JointState& unsorted,
+                             sensor_msgs::msg::JointState& sorted) {
+    sorted.header = unsorted.header;
+    const size_t n_joints = unsorted.name.size();
+    if (n_joints != joint_sort_order_.size()) {
+      RCLCPP_ERROR(get_logger(), "Expected %zu joints. Received %zu",
+                   joint_sort_order_.size(), n_joints);
+      return;
+    }
+
+    if (unsorted.position.size() != n_joints) {
+      RCLCPP_ERROR(get_logger(), "Expected %zu joint positions. Received %zu",
+                   unsorted.position.size(), n_joints);
+      return;
+    }
+
+    if (unsorted.velocity.size() != n_joints) {
+      RCLCPP_ERROR(get_logger(), "Expected %zu joint velocities. Received %zu",
+                   unsorted.velocity.size(), n_joints);
+      return;
+    }
+
+    if (unsorted.effort.size() != n_joints) {
+      RCLCPP_ERROR(get_logger(), "Expected %zu joint efforts. Received %zu",
+                   unsorted.effort.size(), n_joints);
+      return;
+    }
+
+    sorted.name.resize(n_joints);
+    sorted.position.resize(n_joints);
+    sorted.velocity.resize(n_joints);
+    sorted.effort.resize(n_joints);
+
+    for (size_t unsorted_joint_idx = 0; unsorted_joint_idx < n_joints;
+         unsorted_joint_idx++) {
+      if (!joint_sort_order_.contains(unsorted.name[unsorted_joint_idx])) {
+        RCLCPP_ERROR(get_logger(), "Ignoring unexpected joint name: %s",
+                     unsorted.name[unsorted_joint_idx].c_str());
+        continue;
+      }
+      const size_t sorted_idx =
+          joint_sort_order_.at(unsorted.name[unsorted_joint_idx]);
+      sorted.name[sorted_idx] = unsorted.name[unsorted_joint_idx];
+      sorted.position[sorted_idx] = unsorted.position[unsorted_joint_idx];
+      sorted.velocity[sorted_idx] = unsorted.velocity[unsorted_joint_idx];
+      sorted.effort[sorted_idx] = unsorted.effort[unsorted_joint_idx];
+    }
+
+    // Rename the last joint "gripper", and change it to the distance between
+    // the fingers, rather than the prismatic joint motion, just by dividing
+    // the value by 2. Taken from this definition, the "distance between the
+    // gripper fingers" has a velocity twice that of each individual finger.
+    sorted.name[n_joints - 1] = "gripper";
+    sorted.position[n_joints - 1] /= 2.0;
+    sorted.velocity[n_joints - 1] *= 2.0;
+  }
+
   static const int kNumCameras = 3;
   static const int kJointStateDequeMaxLength = 128;
+  static const int kWrenchDequeMaxLength = 128;
   rclcpp::TimerBase::SharedPtr timer_;
+
   std::vector<rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr>
       image_subs_;
   rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr
       joint_state_sub_;
+  rclcpp::Subscription<geometry_msgs::msg::WrenchStamped>::SharedPtr
+      wrench_sub_;
+
   std::vector<sensor_msgs::msg::Image::UniquePtr> images_;
   std::unique_ptr<std::deque<sensor_msgs::msg::JointState::UniquePtr>>
       joint_state_deque_;
+  std::unique_ptr<std::deque<geometry_msgs::msg::WrenchStamped::UniquePtr>>
+      wrench_deque_;
   rclcpp::Publisher<aic_model_interfaces::msg::Observation>::SharedPtr
       observation_pub_;
+  std::unordered_map<std::string, size_t> joint_sort_order_;
 };
 
 int main(int argc, char* argv[]) {

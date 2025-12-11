@@ -24,7 +24,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'model = aic_model.model:main',
+            'model_node = aic_model.model_node:main',
         ],
     },
 )

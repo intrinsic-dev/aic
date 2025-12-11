@@ -11,6 +11,7 @@ endif()
 
 find_package(aic_model_interfaces REQUIRED)
 find_package(ament_cmake REQUIRED)
+find_package(geometry_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 
@@ -18,6 +19,7 @@ add_executable(aic_adapter src/aic_adapter.cpp)
 target_link_libraries(aic_adapter PUBLIC
   rclcpp::rclcpp
   ${aic_model_interfaces_TARGETS}
+  ${geometry_msgs_TARGETS}
   ${sensor_msgs_TARGETS})
 
 install(TARGETS

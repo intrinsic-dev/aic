@@ -15,11 +15,12 @@ class AicModel(Node):
             10)
 
     def observation_callback(self, msg):
-        t0 = msg.wrist_cameras[0].header.stamp.sec + msg.wrist_cameras[0].header.stamp.nanosec / 1e9
-        t1 = msg.wrist_cameras[1].header.stamp.sec + msg.wrist_cameras[1].header.stamp.nanosec / 1e9
-        t2 = msg.wrist_cameras[2].header.stamp.sec + msg.wrist_cameras[2].header.stamp.nanosec / 1e9
-        tj = msg.joint_states.header.stamp.sec + msg.joint_states.header.stamp.nanosec / 1e9
-        self.get_logger().info(f'observation times: images [{t0}, {t1}, {t2}] joints {tj}')
+        t_cam_0 = msg.wrist_cameras[0].header.stamp.sec + msg.wrist_cameras[0].header.stamp.nanosec / 1e9
+        t_cam_1 = msg.wrist_cameras[1].header.stamp.sec + msg.wrist_cameras[1].header.stamp.nanosec / 1e9
+        t_cam_2 = msg.wrist_cameras[2].header.stamp.sec + msg.wrist_cameras[2].header.stamp.nanosec / 1e9
+        t_joints = msg.joint_states.header.stamp.sec + msg.joint_states.header.stamp.nanosec / 1e9
+        t_wrench = msg.wrist_wrench.header.stamp.sec + msg.wrist_wrench.header.stamp.nanosec / 1e9
+        self.get_logger().info(f'observation times: images [{t_cam_0}, {t_cam_1}, {t_cam_2}] joints {t_joints} wrench {t_wrench}')
 
 
 def main(args=None):
