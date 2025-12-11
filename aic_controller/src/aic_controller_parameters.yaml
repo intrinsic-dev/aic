@@ -5,6 +5,12 @@ aic_controller:
     read_only: true
   }
 
+  tool_frame_id: {
+    type: string,
+    default_value: "tool0",
+    description: "Frame ID of control tooltip or end-effector"
+  }
+
   kinematics:
     plugin_name: {
       type: string,
@@ -38,6 +44,12 @@ aic_controller:
     type: string,
     default_value: "admittance_controller",
     description: "Sets the namespace of the admittance controller to chain to"
+  }
+
+  control_frequency: {
+    type: double,
+    default_value: 0.0,
+    description: "Frequency of control loop in Hz"
   }
 
   # general settings

@@ -275,6 +275,8 @@ aic_controller:
     # Namespace of admittance controller for chaining controller interfaces
     admittance_controller_namespace: "admittance_controller"
 
+    tool_frame_id: "tool0"
+
     joints:
       - shoulder_pan_joint
       - shoulder_lift_joint
@@ -290,6 +292,8 @@ aic_controller:
       tip: tool0
       group_name: arm
       alpha: 0.0005 # Specifies the damping coefficient for the Jacobian pseudo inverse.
+
+    control_frequency: 500.0 # [Hz]
 
     # If enabled, the parameters will be dynamically updated while the controller is running.
     enable_parameter_update_without_reactivation: true
