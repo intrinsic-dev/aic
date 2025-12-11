@@ -7,6 +7,7 @@
 #include "aic_model_interfaces/msg/observation.hpp"
 #include "geometry_msgs/msg/wrench_stamped.hpp"
 #include "rclcpp/rclcpp.hpp"
+#include "sensor_msgs/msg/camera_info.hpp"
 #include "sensor_msgs/msg/image.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
 
@@ -15,6 +16,8 @@ class AicAdapterNode : public rclcpp::Node {
   AicAdapterNode() : Node("aic_adapter_node") {
     RCLCPP_INFO(this->get_logger(), "Hello, world!");
     images_.resize(kNumCameras);
+    camera_infos_.resize(kNumCameras);
+
     observation_pub_ =
         this->create_publisher<aic_model_interfaces::msg::Observation>(
             "observations", 10);
@@ -49,6 +52,13 @@ class AicAdapterNode : public rclcpp::Node {
         });
 
     for (size_t camera_idx = 0; camera_idx < kNumCameras; camera_idx++) {
+      camera_info_subs_.push_back(
+          this->create_subscription<sensor_msgs::msg::CameraInfo>(
+              std::format("/wrist_camera_{}/camera_info", camera_idx + 1), 5,
+              [this, camera_idx](
+                  sensor_msgs::msg::CameraInfo::UniquePtr msg) -> void {
+                this->camera_infos_[camera_idx] = std::move(msg);
+              }));
       image_subs_.push_back(this->create_subscription<sensor_msgs::msg::Image>(
           std::format("/wrist_camera_{}/image", camera_idx + 1), 5,
           [this, camera_idx](sensor_msgs::msg::Image::UniquePtr msg) -> void {
@@ -90,13 +100,23 @@ class AicAdapterNode : public rclcpp::Node {
         std::make_unique<aic_model_interfaces::msg::Observation>();
 
     for (size_t i = 0; i < kNumCameras; i++) {
-      if (i >= observation_msg->wrist_cameras.size()) {
+      if (i >= observation_msg->images.size()) {
         RCLCPP_ERROR(this->get_logger(),
                      "Tried to publish an unknown wrist camera: %zu", i);
         continue;
       }
-      observation_msg->wrist_cameras[i] =
-          std::move(*images_[i]);
+      observation_msg->images[i] = std::move(*images_[i]);
+      if (camera_infos_[i]) {
+        // Make a copy of this CameraInfo, in case we need the original again
+        // during the next image cycle.
+        observation_msg->camera_infos[i] = *camera_infos_[i];
+        // Because we know the CameraInfo structs are not changing (these are
+        // fixed-focus cameras), update the timestamp to match the images.
+        // (This is to handle any randomness in the arrival order of the image
+        // and its associated CameraInfo.)
+        observation_msg->camera_infos[i].header.stamp =
+            observation_msg->images[i].header.stamp;
+      }
     }
 
     // Look for the joint state message that is closest to the timestamp
@@ -128,7 +148,7 @@ class AicAdapterNode : public rclcpp::Node {
       const rclcpp::Time t_wrench_msg(
           (*wrench_deque_)[wrench_msg_idx]->header.stamp);
       if (t_wrench_msg <= t_image_0) {
-        observation_msg->wrist_wrench = *(*wrench_deque_)[wrench_msg_idx];
+        observation_msg->wrench = *(*wrench_deque_)[wrench_msg_idx];
         break;
       }
     }
@@ -198,20 +218,26 @@ class AicAdapterNode : public rclcpp::Node {
   static const int kWrenchDequeMaxLength = 128;
   rclcpp::TimerBase::SharedPtr timer_;
 
+  std::vector<sensor_msgs::msg::Image::UniquePtr> images_;
+  std::vector<sensor_msgs::msg::CameraInfo::UniquePtr> camera_infos_;
   std::vector<rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr>
       image_subs_;
+  std::vector<rclcpp::Subscription<sensor_msgs::msg::CameraInfo>::SharedPtr>
+      camera_info_subs_;
+
+  std::unique_ptr<std::deque<sensor_msgs::msg::JointState::UniquePtr>>
+      joint_state_deque_;
   rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr
       joint_state_sub_;
+
+  std::unique_ptr<std::deque<geometry_msgs::msg::WrenchStamped::UniquePtr>>
+      wrench_deque_;
   rclcpp::Subscription<geometry_msgs::msg::WrenchStamped>::SharedPtr
       wrench_sub_;
 
-  std::vector<sensor_msgs::msg::Image::UniquePtr> images_;
-  std::unique_ptr<std::deque<sensor_msgs::msg::JointState::UniquePtr>>
-      joint_state_deque_;
-  std::unique_ptr<std::deque<geometry_msgs::msg::WrenchStamped::UniquePtr>>
-      wrench_deque_;
   rclcpp::Publisher<aic_model_interfaces::msg::Observation>::SharedPtr
       observation_pub_;
+
   std::unordered_map<std::string, size_t> joint_sort_order_;
 };
 
