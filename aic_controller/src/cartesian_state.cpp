@@ -21,15 +21,26 @@ namespace aic_controller {
 
 //==============================================================================
 CartesianState::CartesianState()
-: pose(Eigen::Isometry3d::Identity()),
-	velocity(Eigen::Matrix<double, 6, 1>::Zero()) {};
+    : pose(Eigen::Isometry3d::Identity()),
+      velocity(Eigen::Matrix<double, 6, 1>::Zero()) {};
 
 //==============================================================================
-CartesianState::CartesianState(
-	const geometry_msgs::msg::Pose& pose_msg,
-	const geometry_msgs::msg::Twist& velocity_msg) {
-	tf2::fromMsg(pose_msg, pose);
-	tf2::fromMsg(velocity_msg, velocity);
+CartesianState::CartesianState(const geometry_msgs::msg::Pose& pose_msg,
+                               const geometry_msgs::msg::Twist& velocity_msg) {
+  tf2::fromMsg(pose_msg, pose);
+  tf2::fromMsg(velocity_msg, velocity);
+}
+
+//==============================================================================
+Eigen::Quaterniond CartesianState::getPoseQuaternion() const {
+  // todo(johtngz) validate if this method is correct
+  return Eigen::Quaterniond(pose.rotation());
+}
+
+//==============================================================================
+void CartesianState::setPoseQuaternion(const Eigen::Quaterniond& quaternion) {
+  // todo(johtngz) validate if this method is correct
+  pose.linear() = quaternion.toRotationMatrix();
 }
 
 }  // namespace aic_controller
