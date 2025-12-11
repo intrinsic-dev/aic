@@ -383,7 +383,7 @@
     <include>
       <uri>model://sfp_sc_cable</uri>
       <name>sfp_sc_cable</name>
-      <pose>0.0 0.4 1.15 0 0 0</pose>
+      <pose>-0.35 0.4 1.15 0 0 0</pose>
       <static>false</static>
     </include>
 
