@@ -349,7 +349,7 @@
       <pose>0 0 2.35 0 0 0</pose>
       <cast_shadows>true</cast_shadows>
       <diffuse>1 1 1 1</diffuse>
-      <intensity>3</intensity>
+      <intensity>12</intensity>
       <specular>.1 .1 .1 1</specular>
       <attenuation>
         <range>4</range>

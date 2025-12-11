@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <sdf version="1.9">
-  <model name="Camera Mount">
+  <model name="Tri Cam Mount V2">
     <link name="cam_mount_link">
       <visual name="cam_mount_visual">
         <geometry>
@@ -28,50 +28,74 @@
         </geometry>
       </collision>
       <collision name="cam_mount003_collider_box">
-        <pose>0.068974 0.000189 0.02 0.0 -0.0 0.0</pose>
+        <pose>0.000252 -0.068974 0.0193 0.0 -0.0 -1.570796</pose>
         <geometry>
           <box>
-            <size>0.055675 0.027622 0.003</size>
+            <size>0.055675 0.036898 0.0044</size>
           </box>
         </geometry>
       </collision>
       <collision name="cam_mount003_collider_box.001">
-        <pose>0.096142 0.000189 0.021981 0.0 1.308997 0.0</pose>
+        <pose>0.000189 -0.100267 0.003926 0.0 1.308997 -1.570796</pose>
         <geometry>
           <box>
-            <size>0.035256 0.027622 0.003</size>
+            <size>0.035256 0.04325 0.00858</size>
           </box>
         </geometry>
       </collision>
       <collision name="cam_mount003_collider_box.002">
-        <pose>-0.034323 -0.059827 0.02 0.0 -0.0 -2.094395</pose>
+        <pose>0.000252 -0.076575 0.007442 0.0 0.479966 -1.570796</pose>
         <geometry>
           <box>
-            <size>0.055675 0.027622 0.003</size>
+            <size>0.059567 0.036898 0.010442</size>
           </box>
         </geometry>
       </collision>
       <collision name="cam_mount003_collider_box.003">
-        <pose>-0.047908 -0.083356 0.021981 0.0 1.308997 -2.094395</pose>
+        <pose>0.059859 -0.034268 0.0193 0.0 -0.0 -0.523599</pose>
         <geometry>
           <box>
-            <size>0.035256 0.027622 0.003</size>
+            <size>0.055675 0.036898 0.0044</size>
           </box>
         </geometry>
       </collision>
       <collision name="cam_mount003_collider_box.004">
-        <pose>-0.03465 0.059639 0.02 0.0 -0.0 -4.18879</pose>
+        <pose>0.086928 -0.04997 0.003926 0.0 1.308997 -0.523599</pose>
         <geometry>
           <box>
-            <size>0.055675 0.027622 0.003</size>
+            <size>0.035256 0.04325 0.00858</size>
           </box>
         </geometry>
       </collision>
       <collision name="cam_mount003_collider_box.005">
-        <pose>-0.048235 0.083167 0.021981 0.0 1.308997 -4.18879</pose>
+        <pose>0.06619 -0.037924 0.007593 0.0 0.479965 -0.523599</pose>
         <geometry>
           <box>
-            <size>0.035256 0.027622 0.003</size>
+            <size>0.060221 0.036898 0.010442</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="cam_mount003_collider_box.006">
+        <pose>-0.059607 -0.034705 0.0193 0.0 -0.0 -2.617994</pose>
+        <geometry>
+          <box>
+            <size>0.055675 0.036898 0.0044</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="cam_mount003_collider_box.007">
+        <pose>-0.08674 -0.050297 0.003926 0.0 1.308997 -2.617994</pose>
+        <geometry>
+          <box>
+            <size>0.035256 0.04325 0.00858</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="cam_mount003_collider_box.008">
+        <pose>-0.066139 -0.038476 0.007473 0.0 0.479965 -2.617994</pose>
+        <geometry>
+          <box>
+            <size>0.0597 0.036898 0.010442</size>
           </box>
         </geometry>
       </collision>

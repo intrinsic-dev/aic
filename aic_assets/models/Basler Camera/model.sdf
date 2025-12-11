@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <sdf version="1.9">
-  <model name="Basler Camera">
+  <model name="Basler Camera V2">
     <link name="basler_cam_link">
       <visual name="basler_cam_visual">
         <geometry>
@@ -9,30 +9,29 @@
           </mesh>
         </geometry>
       </visual>
-      <collision name="lens001_collider_cylinder">
-        <pose>-5e-06 1e-06 0.013336 0.0 -0.0 0.0</pose>
-        <geometry>
-          <cylinder>
-            <radius>0.016429</radius>
-            <length>0.040108</length>
-          </cylinder>
-        </geometry>
-      </collision>
-      <collision name="basler ace2 gige027_collider_box">
-        <pose>-1e-06 -1.7e-05 -0.031178 0.0 -0.0 0.0</pose>
+      <collision name="135368670234ip01880201_collider_box">
+        <pose>-0.0 -0.0144 0.00255 3.141593 -0.0 0.0</pose>
         <geometry>
           <box>
-            <size>0.028998 0.028965 0.04919</size>
+            <size>0.029 0.029 0.0483</size>
           </box>
         </geometry>
       </collision>
-      <collision name="basler ace2 gige011_collider_cylinder">
-        <pose>-0.005773 -0.0081 -0.058082 0.0 -0.0 0.0</pose>
+      <collision name="sphere_collider_cylinder">
+        <pose>0.0 -0.014507 0.04833 0.0 0.0 0.0</pose>
         <geometry>
           <cylinder>
-            <radius>0.005145</radius>
-            <length>0.008255</length>
+            <radius>0.015631</radius>
+            <length>0.04326</length>
           </cylinder>
+        </geometry>
+      </collision>
+      <collision name="59871rev000001_collider_box">
+        <pose>-0.008138 -0.000452 0.052687 -1.587325 0.0 -2.633954</pose>
+        <geometry>
+          <box>
+            <size>0.003998 0.011586 0.006875</size>
+          </box>
         </geometry>
       </collision>
     </link>
