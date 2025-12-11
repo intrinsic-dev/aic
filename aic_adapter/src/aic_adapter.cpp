@@ -67,7 +67,7 @@ class AicAdapterNode : public rclcpp::Node {
     }
   }
   virtual ~AicAdapterNode() {}
- 
+
  private:
   void image_callback(size_t camera_idx,
                       sensor_msgs::msg::Image::UniquePtr msg) {
