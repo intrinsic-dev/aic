@@ -179,9 +179,9 @@
   </joint>
 
   <joint name="attach_wrist_camera_1" type="fixed">
-    <origin xyz="0 -0.1077 -.00719" rpy="-0.261799 0 0"/>
+    <origin xyz="0 -0.1077 -.00719" rpy="0 -1.30899630 1.57079623"/>
     <parent link="$(arg cam_mount_tf_prefix)cam_mount_link"/>
-    <child link="$(arg wrist_camera_1_tf_prefix)basler_cam_link"/>
+    <child link="$(arg wrist_camera_1_tf_prefix)camera_link"/>
   </joint>
 
   <!-- ********************
@@ -189,9 +189,9 @@
        ******************** -->
 
   <joint name="attach_wrist_camera_2" type="fixed">
-    <origin xyz="-0.09326 -0.053843 -0.007188" rpy="-0.261799 0.0 -1.047198"/>
+    <origin xyz="-0.09326 -0.053843 -0.007188" rpy="0 -1.30899630 0.523599027"/>
     <parent link="$(arg cam_mount_tf_prefix)cam_mount_link"/>
-    <child link="$(arg wrist_camera_2_tf_prefix)basler_cam_link"/>
+    <child link="$(arg wrist_camera_2_tf_prefix)camera_link"/>
   </joint>
 
   <!-- ********************
@@ -199,9 +199,9 @@
        ******************** -->
 
   <joint name="attach_wrist_camera_3" type="fixed">
-    <origin xyz="0.09326 -0.053843 -0.007188" rpy="-0.261799 0.0 1.047198"/>
+    <origin xyz="0.09326 -0.053843 -0.007188" rpy="0 -1.30899630 2.61799343"/>
     <parent link="$(arg cam_mount_tf_prefix)cam_mount_link"/>
-    <child link="$(arg wrist_camera_3_tf_prefix)basler_cam_link"/>
+    <child link="$(arg wrist_camera_3_tf_prefix)camera_link"/>
   </joint>
 
   <joint name="attach_gripper" type="fixed">

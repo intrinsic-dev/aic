@@ -3,7 +3,7 @@
 
   <xacro:macro name="basler_camera" params="name tf_prefix use_sim_cam">
 
-    <link name="${tf_prefix}basler_cam_link">
+    <link name="${tf_prefix}camera_link">
       <inertial>
         <origin xyz="0 0 0" rpy="0 0 0"/>
         <mass value="0.1"/>
@@ -13,55 +13,26 @@
       </inertial>
 
       <visual name="basler_cam_visual">
+        <origin xyz="0 0 0" rpy="-1.5708 0 -1.5708"/>
         <geometry>
           <mesh filename="package://aic_assets/models/Basler Camera/basler_cam_visual.glb"/>
         </geometry>
       </visual>
 
-      <collision name="135368670234ip01880201_collider_box">
-        <origin xyz="-0.0 -0.0144 0.00255" rpy="3.141593 -0.0 0.0"/>
+      <collision name="body_collider_box">
+        <origin xyz="0.00255 0 0.0145" rpy="0 0 0"/>
         <geometry>
-          <box size="0.029 0.029 0.0483"/>
+          <box size="0.0483 0.029 0.029"/>
         </geometry>
       </collision>
 
-      <collision name="sphere_collider_cylinder">
-        <origin xyz="0.0 -0.014507 0.04833" rpy="0 0 0"/>
+      <collision name="lens_collider_cylinder">
+        <origin xyz="0.04833 0 0.0145" rpy="0 1.5708 0"/>
         <geometry>
           <cylinder radius="0.015631" length="0.04326"/>
         </geometry>
       </collision>
-
-      <!-- the IO connector on the back of the camera -->
-      <collision name="59871rev000001_collider_box">
-        <origin xyz="-0.008138 -0.000452 0.052687" rpy="-1.587325 0.0 -2.633954"/>
-        <geometry>
-          <box size="0.003998 0.011586 0.006875"/>
-        </geometry>
-      </collision>
     </link>
-
-    <link name="${tf_prefix}optical">
-      <!-- inertial property required for valid conversion to SDF,
-        so we set a tiny mass and M.O.I. here -->
-      <inertial>
-        <origin xyz="0 0 0" rpy="0 0 0"/>
-        <mass value="0.001"/>
-        <inertia ixx="0.000001" ixy="0" ixz="0"
-                 iyy="0.000001" iyz="0"
-                 izz="0.000001"/>
-      </inertial>
-    </link>
-
-    <joint name="${tf_prefix}attach_optical" type="fixed">
-      <origin xyz="0 0 0" rpy="-1.5708 0 -1.5708"/>
-      <parent link="${tf_prefix}basler_cam_link"/>
-      <child link="${tf_prefix}optical"/>
-    </joint>
-
-    <gazebo reference="${tf_prefix}attach_optical">
-      <preserveFixedJoint>true</preserveFixedJoint>
-    </gazebo>
 
     <link name="${tf_prefix}sensor_link">
       <!-- inertial property required for valid conversion to SDF,
@@ -75,19 +46,41 @@
       </inertial>
     </link>
 
-    <!-- Currently the sensor_link is the same location as the
-         cam_link frame. However, we may adjust this in the future
-         if the lens focal point ends up being somewhat forward or
-         backward of the current estimate. -->
+    <!-- The sensor surface is 21.174mm in front of the M3 mounting hole -->
     <joint name="${tf_prefix}attach_sensor_link" type="fixed">
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <parent link="${tf_prefix}basler_cam_link"/>
+      <origin xyz="0.02174 0 0.0145" rpy="0 0 0"/>
+      <parent link="${tf_prefix}camera_link"/>
       <child link="${tf_prefix}sensor_link"/>
     </joint>
 
     <gazebo reference="${tf_prefix}attach_sensor_link">
       <preserveFixedJoint>true</preserveFixedJoint>
     </gazebo>
+
+    <link name="${tf_prefix}optical">
+      <!-- inertial property required for valid conversion to SDF,
+        so we set a tiny mass and M.O.I. here -->
+      <inertial>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <mass value="0.001"/>
+        <inertia ixx="0.000001" ixy="0" ixz="0"
+                 iyy="0.000001" iyz="0"
+                 izz="0.000001"/>
+      </inertial>
+    </link>
+
+    <!-- The optical frame is at the same origin as the sensor frame
+         but is Z=forward, rather than Z=up. -->
+    <joint name="${tf_prefix}attach_optical" type="fixed">
+      <origin xyz="0 0 0" rpy="-1.5708 0 -1.5708"/>
+      <parent link="${tf_prefix}sensor_link"/>
+      <child link="${tf_prefix}optical"/>
+    </joint>
+
+    <gazebo reference="${tf_prefix}attach_optical">
+      <preserveFixedJoint>true</preserveFixedJoint>
+    </gazebo>
+
 
     <xacro:if value="${use_sim_cam}">
       <gazebo reference="${tf_prefix}sensor_link">
