@@ -2,13 +2,10 @@
 <robot xmlns:xacro="http://wiki.ros.org/xacro">
 
   <xacro:macro name="basler_camera" params="name tf_prefix use_sim_cam">
-    <xacro:property name="x_rot" value="1.5708"/>
-    <xacro:property name="y_rot" value="0.0"/>
-    <xacro:property name="z_rot" value="1.5708"/>
 
     <link name="${tf_prefix}basler_cam_link">
       <inertial>
-        <origin xyz="0 0 0" rpy="${x_rot} ${y_rot} ${z_rot}"/>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
         <mass value="0.1"/>
         <inertia ixx="0.00002083" ixy="0" ixz="0"
                  iyy="0.00002083" iyz="0"
@@ -16,31 +13,30 @@
       </inertial>
 
       <visual name="basler_cam_visual">
-        <origin xyz="0 0 0" rpy="${x_rot} ${y_rot} ${z_rot}"/>
         <geometry>
           <mesh filename="package://aic_assets/models/Basler Camera/basler_cam_visual.glb"/>
         </geometry>
       </visual>
 
-      <collision name="lens001_collider_cylinder">
-        <origin xyz="0.013336 0 0" rpy="${x_rot} ${y_rot} ${z_rot}"/>
+      <collision name="135368670234ip01880201_collider_box">
+        <origin xyz="-0.0 -0.0144 0.00255" rpy="3.141593 -0.0 0.0"/>
         <geometry>
-          <cylinder radius="0.016429" length="0.040108"/>
+          <box size="0.029 0.029 0.0483"/>
         </geometry>
       </collision>
 
-      <collision name="basler_ace2_gige027_collider_box">
-        <origin xyz="-0.031178 0 0" rpy="0 0 0"/>
+      <collision name="sphere_collider_cylinder">
+        <origin xyz="0.0 -0.014507 0.04833" rpy="0 0 0"/>
         <geometry>
-          <box size="0.04919 0.029 0.029"/>
+          <cylinder radius="0.015631" length="0.04326"/>
         </geometry>
       </collision>
 
       <!-- the IO connector on the back of the camera -->
-      <collision name="basler_ace2_gige011_collider_cylinder">
-        <origin xyz="-0.058082 -0.005773 -0.0081" rpy="0 1.5708 0"/>
+      <collision name="59871rev000001_collider_box">
+        <origin xyz="-0.008138 -0.000452 0.052687" rpy="-1.587325 0.0 -2.633954"/>
         <geometry>
-          <cylinder radius="0.005145" length="0.008255"/>
+          <box size="0.003998 0.011586 0.006875"/>
         </geometry>
       </collision>
     </link>
