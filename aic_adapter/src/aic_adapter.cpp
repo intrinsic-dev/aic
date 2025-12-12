@@ -17,7 +17,6 @@
 class AicAdapterNode : public rclcpp::Node {
  public:
   AicAdapterNode() : Node("aic_adapter_node") {
-    RCLCPP_INFO(this->get_logger(), "Hello, world!");
     tf_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
     tf_listener_ = std::make_unique<tf2_ros::TransformListener>(*tf_buffer_);
 
@@ -71,6 +70,7 @@ class AicAdapterNode : public rclcpp::Node {
             this->image_callback(camera_idx, std::move(msg));
           }));
     }
+    RCLCPP_INFO(this->get_logger(), "Adapter node initialization complete.");
   }
   virtual ~AicAdapterNode() {}
 
@@ -154,17 +154,16 @@ class AicAdapterNode : public rclcpp::Node {
       const rclcpp::Time t_wrench_msg(
           (*wrench_deque_)[wrench_msg_idx]->header.stamp);
       if (t_wrench_msg <= t_image_0) {
-        observation_msg->tcp_wrench = *(*wrench_deque_)[wrench_msg_idx];
+        observation_msg->wrist_wrench = *(*wrench_deque_)[wrench_msg_idx];
         break;
       }
     }
 
     // Try to compute the transform between the TCP and base_link
     try {
-      geometry_msgs::msg::TransformStamped t = tf_buffer_->lookupTransform(
-          "gripper/tool_frame", "base_link", t_image_0);
-      observation_msg->tcp_to_base_link = t;
-      RCLCPP_INFO(get_logger(), "Gripper transform OK");
+      geometry_msgs::msg::TransformStamped t =
+          tf_buffer_->lookupTransform("gripper/tcp", "world", t_image_0);
+      observation_msg->tcp_to_world = t;
     } catch (const tf2::TransformException& ex) {
       RCLCPP_WARN(get_logger(), "Gripper transform not available.");
     }

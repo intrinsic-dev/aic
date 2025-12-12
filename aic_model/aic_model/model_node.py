@@ -20,9 +20,12 @@ class AicModel(Node):
         t_cam_1 = self.get_seconds(msg.images[1].header)
         t_cam_2 = self.get_seconds(msg.images[2].header)
         t_joints = self.get_seconds(msg.joint_states.header)
-        t_wrench = self.get_seconds(msg.wrench.header)
+        t_wrench = self.get_seconds(msg.wrist_wrench.header)
+        tcp_x = msg.tcp_to_world.transform.translation.x
+        tcp_y = msg.tcp_to_world.transform.translation.y
+        tcp_z = msg.tcp_to_world.transform.translation.z
         self.get_logger().info(
-            f"times: images [{t_cam_0}, {t_cam_1}, {t_cam_2}] joints {t_joints} wrench {t_wrench}"
+            f"times: images [{t_cam_0}, {t_cam_1}, {t_cam_2}] joints {t_joints} wrench {t_wrench} tcp: ({tcp_x:+0.4f} {tcp_y:+0.4f}, {tcp_z:+0.4f})"
         )
 
 

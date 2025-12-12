@@ -1,5 +1,5 @@
 sensor_msgs/Image[3] images
 sensor_msgs/CameraInfo[3] camera_infos
 sensor_msgs/JointState joint_states
-geometry_msgs/WrenchStamped tcp_wrench
-geometry_msgs/TransformStamped tcp_to_base_link
+geometry_msgs/WrenchStamped wrist_wrench
+geometry_msgs/TransformStamped tcp_to_world
