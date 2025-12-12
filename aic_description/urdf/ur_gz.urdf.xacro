@@ -178,27 +178,9 @@
     <child link="$(arg ati_tf_prefix)base_link"/>
   </joint>
 
-  <!-- Dummy link to simplify the chain of rotations -->
-  <link name="wrist_camera_1_intermediate_link">
-    <inertial>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <mass value="0.001"/>
-      <inertia ixx="0.000001" ixy="0" ixz="0"
-               iyy="0.000001" iyz="0"
-               izz="0.000001"/>
-    </inertial>
-  </link>
-
-  <joint name="wrist_camera_1_intermediate_joint" type="fixed">
-    <origin xyz="${-cos(30.0*D2R)*$(arg cam_mount_radial_offset)} -${sin(30.0*D2R)*$(arg cam_mount_radial_offset)} $(arg cam_mount_axial_offset)"
-      rpy="${90.0*D2R} ${-90.0*D2R} ${-60.0*D2R}"/>
-    <parent link="$(arg cam_mount_tf_prefix)cam_mount_link"/>
-    <child link="wrist_camera_1_intermediate_link"/>
-  </joint>
-
   <joint name="attach_wrist_camera_1" type="fixed">
-    <origin xyz="0 0 0" rpy="${0.0*D2R} ${15.0*D2R} ${0.0*D2R}"/>
-    <parent link="wrist_camera_1_intermediate_link"/>
+    <origin xyz="0 -0.1077 -.00719" rpy="-0.261799 0 0"/>
+    <parent link="$(arg cam_mount_tf_prefix)cam_mount_link"/>
     <child link="$(arg wrist_camera_1_tf_prefix)basler_cam_link"/>
   </joint>
 
@@ -206,27 +188,9 @@
        ** wrist_camera_2 **
        ******************** -->
 
-  <!-- Dummy link to simplify the chain of rotations -->
-  <link name="wrist_camera_2_intermediate_link">
-    <inertial>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <mass value="0.001"/>
-      <inertia ixx="0.000001" ixy="0" ixz="0"
-               iyy="0.000001" iyz="0"
-               izz="0.000001"/>
-    </inertial>
-  </link>
-
-  <joint name="wrist_camera_2_intermediate_joint" type="fixed">
-    <origin xyz="0 -$(arg cam_mount_radial_offset) $(arg cam_mount_axial_offset)"
-      rpy="${90.0*D2R} ${-90.0*D2R} ${0.0*D2R}"/>
-    <parent link="$(arg cam_mount_tf_prefix)cam_mount_link"/>
-    <child link="wrist_camera_2_intermediate_link"/>
-  </joint>
-
   <joint name="attach_wrist_camera_2" type="fixed">
-    <origin xyz="0 0 0" rpy="${0.0*D2R} ${15.0*D2R} ${0.0*D2R}"/>
-    <parent link="wrist_camera_2_intermediate_link"/>
+    <origin xyz="-0.09326 -0.053843 -0.007188" rpy="-0.261799 0.0 -1.047198"/>
+    <parent link="$(arg cam_mount_tf_prefix)cam_mount_link"/>
     <child link="$(arg wrist_camera_2_tf_prefix)basler_cam_link"/>
   </joint>
 
@@ -234,27 +198,9 @@
        ** wrist_camera_3 **
        ******************** -->
 
-  <!-- Dummy link to simplify the chain of rotations -->
-  <link name="wrist_camera_3_intermediate_link">
-    <inertial>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
-      <mass value="0.001"/>
-      <inertia ixx="0.000001" ixy="0" ixz="0"
-               iyy="0.000001" iyz="0"
-               izz="0.000001"/>
-    </inertial>
-  </link>
-
-  <joint name="wrist_camera_3_intermediate_joint" type="fixed">
-    <origin xyz="${cos(30.0*D2R)*$(arg cam_mount_radial_offset)} -${sin(30.0*D2R)*$(arg cam_mount_radial_offset)} $(arg cam_mount_axial_offset)"
-      rpy="${90.0*D2R} ${-90.0*D2R} ${60.0*D2R}"/>
-    <parent link="$(arg cam_mount_tf_prefix)cam_mount_link"/>
-    <child link="wrist_camera_3_intermediate_link"/>
-  </joint>
-
   <joint name="attach_wrist_camera_3" type="fixed">
-    <origin xyz="0 0 0" rpy="${0.0*D2R} ${15.0*D2R} ${0.0*D2R}"/>
-    <parent link="wrist_camera_3_intermediate_link"/>
+    <origin xyz="0.09326 -0.053843 -0.007188" rpy="-0.261799 0.0 1.047198"/>
+    <parent link="$(arg cam_mount_tf_prefix)cam_mount_link"/>
     <child link="$(arg wrist_camera_3_tf_prefix)basler_cam_link"/>
   </joint>
 
