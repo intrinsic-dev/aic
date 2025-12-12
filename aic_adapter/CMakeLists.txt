@@ -14,13 +14,17 @@ find_package(ament_cmake REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(tf2_ros REQUIRED)
 
 add_executable(aic_adapter src/aic_adapter.cpp)
 target_link_libraries(aic_adapter PUBLIC
   rclcpp::rclcpp
+  tf2::tf2
+  tf2_ros::tf2_ros
   ${aic_model_interfaces_TARGETS}
   ${geometry_msgs_TARGETS}
-  ${sensor_msgs_TARGETS})
+  ${sensor_msgs_TARGETS}
+  ${tf2_ros_TARGETS})
 
 install(TARGETS
   aic_adapter

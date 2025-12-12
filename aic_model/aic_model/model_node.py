@@ -1,7 +1,7 @@
 import rclpy
+from aic_model_interfaces.msg import Observation
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
-from aic_model_interfaces.msg import Observation
 
 
 class AicModel(Node):

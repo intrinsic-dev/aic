@@ -10,11 +10,17 @@
 #include "sensor_msgs/msg/camera_info.hpp"
 #include "sensor_msgs/msg/image.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
+#include "tf2/exceptions.hpp"
+#include "tf2_ros/transform_listener.h"
+#include "tf2_ros/buffer.h"
 
 class AicAdapterNode : public rclcpp::Node {
  public:
   AicAdapterNode() : Node("aic_adapter_node") {
     RCLCPP_INFO(this->get_logger(), "Hello, world!");
+    tf_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
+    tf_listener_ = std::make_unique<tf2_ros::TransformListener>(*tf_buffer_);
+
     images_.resize(kNumCameras);
     camera_infos_.resize(kNumCameras);
 
@@ -148,9 +154,19 @@ class AicAdapterNode : public rclcpp::Node {
       const rclcpp::Time t_wrench_msg(
           (*wrench_deque_)[wrench_msg_idx]->header.stamp);
       if (t_wrench_msg <= t_image_0) {
-        observation_msg->wrench = *(*wrench_deque_)[wrench_msg_idx];
+        observation_msg->tcp_wrench = *(*wrench_deque_)[wrench_msg_idx];
         break;
       }
+    }
+
+    // Try to compute the transform between the TCP and base_link
+    try {
+      geometry_msgs::msg::TransformStamped t = tf_buffer_->lookupTransform(
+          "gripper/tool_frame", "base_link", t_image_0);
+      observation_msg->tcp_to_base_link = t;
+      RCLCPP_INFO(get_logger(), "Gripper transform OK");
+    } catch (const tf2::TransformException& ex) {
+      RCLCPP_WARN(get_logger(), "Gripper transform not available.");
     }
 
     this->observation_pub_->publish(std::move(observation_msg));
@@ -217,6 +233,9 @@ class AicAdapterNode : public rclcpp::Node {
   static const int kJointStateDequeMaxLength = 128;
   static const int kWrenchDequeMaxLength = 128;
   rclcpp::TimerBase::SharedPtr timer_;
+
+  std::unique_ptr<tf2_ros::TransformListener> tf_listener_;
+  std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
 
   std::vector<sensor_msgs::msg::Image::UniquePtr> images_;
   std::vector<sensor_msgs::msg::CameraInfo::UniquePtr> camera_infos_;
