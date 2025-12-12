@@ -3,8 +3,6 @@
 
   <xacro:property name="tf_prefix" value="cam_mount/"/>
 
-  <xacro:property name="z_rot" value="-1.57079"/>
-
   <xacro:macro name="camera_mount" params="tf_prefix">
 
     <link name="${tf_prefix}cam_mount_link">
