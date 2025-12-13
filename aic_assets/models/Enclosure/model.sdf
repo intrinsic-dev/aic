@@ -9,6 +9,13 @@
           </mesh>
         </geometry>
       </visual>
+      <visual name="light_visual">
+        <geometry>
+          <mesh>
+            <uri>light_visual.glb</uri>
+          </mesh>
+        </geometry>
+      </visual>
       <collision name="v1015026001_collider_box">
         <pose>-0.010998 0.009283 0.569706 -1.570796 -3.141593 -0.0</pose>
         <geometry>
@@ -60,3 +67,4 @@
     </link>
   </model>
 </sdf>
+

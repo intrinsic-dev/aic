@@ -58,12 +58,18 @@ def launch_setup(context, *args, **kwargs):
     ros_gz_bridge_config_file = LaunchConfiguration("ros_gz_bridge_config_file")
     gazebo_gui = LaunchConfiguration("gazebo_gui")
     world_file = LaunchConfiguration("world_file")
-    x = LaunchConfiguration("x")
-    y = LaunchConfiguration("y")
-    z = LaunchConfiguration("z")
-    roll = LaunchConfiguration("roll")
-    pitch = LaunchConfiguration("pitch")
-    yaw = LaunchConfiguration("yaw")
+    robot_x = LaunchConfiguration("robot_x")
+    robot_y = LaunchConfiguration("robot_y")
+    robot_z = LaunchConfiguration("robot_z")
+    robot_roll = LaunchConfiguration("robot_roll")
+    robot_pitch = LaunchConfiguration("robot_pitch")
+    robot_yaw = LaunchConfiguration("robot_yaw")
+    task_board_x = LaunchConfiguration("task_board_x")
+    task_board_y = LaunchConfiguration("task_board_y")
+    task_board_z = LaunchConfiguration("task_board_z")
+    task_board_roll = LaunchConfiguration("task_board_roll")
+    task_board_pitch = LaunchConfiguration("task_board_pitch")
+    task_board_yaw = LaunchConfiguration("task_board_yaw")
 
     robot_description_content = Command(
         [
@@ -93,22 +99,22 @@ def launch_setup(context, *args, **kwargs):
             controllers_file,
             " ",
             "x:=",
-            x,
+            robot_x,
             " ",
             "y:=",
-            y,
+            robot_y,
             " ",
             "z:=",
-            z,
+            robot_z,
             " ",
             "roll:=",
-            roll,
+            robot_roll,
             " ",
             "pitch:=",
-            pitch,
+            robot_pitch,
             " ",
             "yaw:=",
-            yaw,
+            robot_yaw,
         ]
     )
     robot_description = {
@@ -193,6 +199,32 @@ def launch_setup(context, *args, **kwargs):
         arguments=["fts_broadcaster", "--controller-manager", "/controller_manager"],
     )
 
+    # Task board spawning (conditional)
+    spawn_task_board = LaunchConfiguration("spawn_task_board")
+    task_board_description_file = LaunchConfiguration("task_board_description_file")
+
+    spawn_task_board_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            PathJoinSubstitution(
+                [
+                    FindPackageShare("aic_bringup"),
+                    "launch",
+                    "spawn_task_board.launch.py",
+                ]
+            )
+        ),
+        launch_arguments={
+            "task_board_description_file": task_board_description_file,
+            "task_board_x": task_board_x,
+            "task_board_y": task_board_y,
+            "task_board_z": task_board_z,
+            "task_board_roll": task_board_roll,
+            "task_board_pitch": task_board_pitch,
+            "task_board_yaw": task_board_yaw,
+        }.items(),
+        condition=IfCondition(spawn_task_board),
+    )
+
     # GZ nodes
     gz_spawn_entity = Node(
         package="ros_gz_sim",
@@ -241,6 +273,7 @@ def launch_setup(context, *args, **kwargs):
         gzgui,
         ros_gz_bridge,
         gz_spawn_entity,
+        spawn_task_board_launch,
     ]
 
     return nodes_to_start
@@ -341,11 +374,27 @@ def generate_launch_description():
     )
     declared_arguments.append(
         DeclareLaunchArgument(
+            "spawn_task_board",
+            default_value="true",
+            description="Spawn task board in Gazebo?",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
             "rviz_config_file",
             default_value=PathJoinSubstitution(
                 [FindPackageShare("aic_bringup"), "rviz", "aic.rviz"]
             ),
             description="Rviz config file (absolute path) to use when launching rviz.",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "task_board_description_file",
+            default_value=PathJoinSubstitution(
+                [FindPackageShare("aic_description"), "urdf", "task_board.urdf.xacro"]
+            ),
+            description="URDF/XACRO description file (absolute path) with the task board.",
         )
     )
     declared_arguments.append(
@@ -373,38 +422,80 @@ def generate_launch_description():
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            "x", default_value="-0.2", description="Robot spawn X position"
+            "robot_x", default_value="-0.2", description="Robot spawn X position"
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            "y", default_value="0.2", description="Robot spawn Y position"
+            "robot_y", default_value="0.2", description="Robot spawn Y position"
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            "z", default_value="1.14", description="Robot spawn Z position"
+            "robot_z", default_value="1.14", description="Robot spawn Z position"
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            "roll",
+            "robot_roll",
             default_value="0.0",
             description="Robot spawn roll orientation (radians)",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            "pitch",
+            "robot_pitch",
             default_value="0.0",
             description="Robot spawn pitch orientation (radians)",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            "yaw",
+            "robot_yaw",
             default_value="-3.141",
             description="Robot spawn yaw orientation (radians)",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "task_board_x",
+            default_value="0.25",
+            description="Task board spawn X position",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "task_board_y",
+            default_value="0.0",
+            description="Task board spawn Y position",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "task_board_z",
+            default_value="1.14",
+            description="Task board spawn Z position",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "task_board_roll",
+            default_value="0.0",
+            description="Task board spawn roll orientation (radians)",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "task_board_pitch",
+            default_value="0.0",
+            description="Task board spawn pitch orientation (radians)",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "task_board_yaw",
+            default_value="0.0",
+            description="Task board spawn yaw orientation (radians)",
         )
     )
 

@@ -1,0 +1,122 @@
+<?xml version="1.0" ?>
+<robot xmlns:xacro="http://wiki.ros.org/xacro">
+
+  <xacro:macro name="nic_card_mount" params="prefix">
+    <!-- NIC Card Mount Link -->
+    <link name="${prefix}link">
+      <inertial>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <mass value="0.1"/>
+        <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
+      </inertial>
+
+      <visual name="nic_card_mount_visual">
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://aic_assets/models/NIC Card Mount/nic_card_mount_visual.glb"/>
+        </geometry>
+      </visual>
+
+      <collision name="v1015085006_collider_box">
+        <origin xyz="0.007 -0.0255 0.0775" rpy="0.0 0.0 1.570796"/>
+        <geometry>
+          <box size="0.005 0.072 0.155"/>
+        </geometry>
+      </collision>
+
+      <collision name="v1015085006_collider_box_001">
+        <origin xyz="-0.048467 -0.0155 0.162" rpy="0.0 0.0 1.570796"/>
+        <geometry>
+          <box size="0.025 0.039374 0.014"/>
+        </geometry>
+      </collision>
+
+      <collision name="v1015085006_collider_box_002">
+        <origin xyz="0.0405 -0.01425 0.1055" rpy="0.0 0.0 1.570796"/>
+        <geometry>
+          <box size="0.0275 0.005 0.103"/>
+        </geometry>
+      </collision>
+
+      <collision name="v1015085006_collider_box_003">
+        <origin xyz="0.0 -0.0125 0.0055" rpy="0.0 0.0 1.570796"/>
+        <geometry>
+          <box size="0.031 0.058 0.011"/>
+        </geometry>
+      </collision>
+
+      <collision name="v1015085006_collider_box004_collider_box">
+        <origin xyz="-0.045132 -0.0255 0.137803" rpy="0.0 0.0 1.570796"/>
+        <geometry>
+          <box size="0.005 0.036343 0.034395"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <!-- NIC Card Link -->
+    <link name="${prefix}card_link">
+      <inertial>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <mass value="0.15"/>
+        <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
+      </inertial>
+
+      <visual name="nic_card_visual">
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://aic_assets/models/NIC Card Mount/nic_card_visual.glb"/>
+        </geometry>
+      </visual>
+
+      <collision name="pcb_collider_box">
+        <origin xyz="0.0 0.0 -0.0008" rpy="0.0 0.0 0.0"/>
+        <geometry>
+          <box size="0.056 0.145 0.0016"/>
+        </geometry>
+      </collision>
+
+      <collision name="pcb_collider_box_001">
+        <origin xyz="0.0065 -0.0025 -0.0008" rpy="0.0 0.0 0.0"/>
+        <geometry>
+          <box size="0.069 0.051 0.0016"/>
+        </geometry>
+      </collision>
+
+      <collision name="pcb_collider_box_002">
+        <origin xyz="0.004 -0.02475 -0.0008" rpy="0.0 0.0 0.0"/>
+        <geometry>
+          <box size="0.064 0.0955 0.0016"/>
+        </geometry>
+      </collision>
+
+      <collision name="cube001_collider_box">
+        <origin xyz="0.025006 -0.00041 0.00575" rpy="0.0 0.0 0.0"/>
+        <geometry>
+          <box size="0.004 0.14 0.0115"/>
+        </geometry>
+      </collision>
+
+      <collision name="cube001_collider_box_001">
+        <origin xyz="-0.0029 -0.0015 0.008" rpy="0.0 0.0 0.0"/>
+        <geometry>
+          <box size="0.047 0.052 0.011"/>
+        </geometry>
+      </collision>
+
+      <collision name="cube001_collider_box_002">
+        <origin xyz="-0.0029 -0.0015 0.001228" rpy="0.0 0.0 0.0"/>
+        <geometry>
+          <box size="0.043 0.048 0.003149"/>
+        </geometry>
+      </collision>
+    </link>
+
+    <!-- Joint connecting card to mount -->
+    <joint name="${prefix}card_joint" type="fixed">
+      <parent link="${prefix}link"/>
+      <child link="${prefix}card_link"/>
+      <origin xyz="0 -0.01785 0.0799" rpy="-1.57 0 0"/>
+    </joint>
+  </xacro:macro>
+
+</robot>
