@@ -42,6 +42,19 @@ install(
   DESTINATION lib/${PROJECT_NAME}
 )
 
+add_library(CablePlugin
+  SHARED
+  src/CablePlugin.cc
+)
+
+target_link_libraries(CablePlugin PRIVATE
+  gz-sim${GZ_SIM_VER}::gz-sim${GZ_SIM_VER})
+
+install(
+  TARGETS CablePlugin
+  DESTINATION lib/${PROJECT_NAME}
+)
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
