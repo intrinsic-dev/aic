@@ -1,0 +1,25 @@
+syntax = "proto3";
+package aic_gazebo.msgs;
+
+/// \brief String message
+
+/// import "gz/msgs/contacts.proto";
+
+message Contact
+{
+  string collision1 = 1;
+  string collision2 = 2;
+}
+
+message ScoringMsg
+{
+  /// \brief Contacts
+  repeated Contact contacts = 1;
+  /// \brief Force feedback
+  double force_feedback     = 2;
+  /// \brief End effector pose.
+
+  /// \brief Plugs.
+
+  /// \brief Ports.
+}
