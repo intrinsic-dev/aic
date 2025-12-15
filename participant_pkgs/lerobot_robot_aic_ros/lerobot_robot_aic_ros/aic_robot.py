@@ -2,9 +2,10 @@
 
 from dataclasses import dataclass, field
 
+from lerobot.cameras import CameraConfig
 from lerobot.robots import RobotConfig
 from lerobot.teleoperators import TeleoperatorConfig
-from lerobot_robot_ros import ROS2Config, ROS2Robot
+from lerobot_robot_ros import ROS2CameraConfig, ROS2Config, ROS2Robot
 from lerobot_robot_ros.config import ActionType, ROS2InterfaceConfig
 from lerobot_teleoperator_devices import KeyboardJointTeleop, KeyboardJointTeleopConfig
 
@@ -30,14 +31,28 @@ gripper_joint_name = "gripper/left_finger_joint"
 class AICRobotConfig(ROS2Config):
     action_type: ActionType = ActionType.JOINT_TRAJECTORY
 
-    # TODO: lerobot-ros does not support ROS cameras yet
-    # camera: dict[str, CameraConfig] = field(
-    #     default_factory=lambda: {
-    #         "wrist_1_camera": CameraConfig(fps=30, width=512, height=512),
-    #         "wrist_2_camera": CameraConfig(fps=30, width=512, height=512),
-    #         "wrist_3_camera": CameraConfig(fps=30, width=512, height=512),
-    #     }
-    # )
+    cameras: dict[str, CameraConfig] = field(
+        default_factory=lambda: {
+            "wrist_camera_1": ROS2CameraConfig(
+                fps=30,
+                width=1420,
+                height=1420,
+                topic="/wrist_camera_1/image",
+            ),
+            "wrist_camera_2": ROS2CameraConfig(
+                fps=30,
+                width=1420,
+                height=1420,
+                topic="/wrist_camera_2/image",
+            ),
+            "wrist_camera_3": ROS2CameraConfig(
+                fps=30,
+                width=1420,
+                height=1420,
+                topic="/wrist_camera_3/image",
+            ),
+        }
+    )
 
     ros2_interface: ROS2InterfaceConfig = field(
         default_factory=lambda: ROS2InterfaceConfig(
