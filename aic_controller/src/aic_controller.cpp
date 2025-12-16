@@ -200,9 +200,17 @@ controller_interface::CallbackReturn Controller::on_configure(
     return controller_interface::CallbackReturn::ERROR;
   }
 
-  // todo(johntgz)
-  // remove cartesian test method and set cartesian limits using parameters
-  cartesian_limits_ = CartesianLimits::GenerateTestParams();
+  state_publisher_ = get_node()->create_publisher<ControllerState>(
+      "~/controller_state", rclcpp::SystemDefaultsQoS());
+  state_publisher_rt_ =
+      std::make_unique<realtime_tools::RealtimePublisher<ControllerState>>(
+          state_publisher_);
+
+  if (!populate_cartesian_limits(params_, cartesian_limits_)) {
+    RCLCPP_ERROR(get_node()->get_logger(),
+                 "Error populating cartesian limits from parameters.");
+    return controller_interface::CallbackReturn::ERROR;
+  }
 
   return controller_interface::CallbackReturn::SUCCESS;
 }
@@ -231,6 +239,8 @@ controller_interface::CallbackReturn Controller::on_activate(
   }
   last_tool_reference_ = current_tool_state_;
 
+  populate_controller_state(state_msg_);
+
   reset_motion_update_msg(motion_update_);
   motion_update_rt_.try_set(motion_update_);
 
@@ -253,6 +263,11 @@ controller_interface::CallbackReturn Controller::on_cleanup(
     const rclcpp_lifecycle::State& /*previous_state*/) {
   param_listener_.reset();
   motion_update_sub_.reset();
+  state_publisher_rt_.reset();
+  state_publisher_.reset();
+  motion_update_received_ = false;
+
+  cartesian_impedance_action_.reset();
 
   last_commanded_state_ = std::nullopt;
   target_state_ = std::nullopt;
@@ -271,6 +286,7 @@ controller_interface::return_type Controller::update(
     const rclcpp::Time& /*time*/, const rclcpp::Duration& /*period*/) {
   // Read and update current states from sensors
   read_state_from_hardware(current_state_);
+
   // Use forward kinematics to update the current cartesian state of tool frame
   if (!kinematics_->calculate_link_transform(current_state_.positions,
                                              params_.tool_frame_id,
@@ -285,8 +301,36 @@ controller_interface::return_type Controller::update(
     auto command_op = motion_update_rt_.try_get();
     if (command_op.has_value()) {
       motion_update_ = command_op.value();
-      target_state_ =
+
+      auto latest_target_state =
           CartesianState(motion_update_.pose, motion_update_.velocity);
+
+      // If target values or time_to_target_seconds is unchanged, then we keep
+      // the current remaining_time_to_target_seconds_ such that the current
+      // spline continues to the target.This is only applicable in pure position
+      // trajectory generation mode with non-zero time_to_target_seconds.
+      bool did_target_or_time_to_target_change =
+          motion_update_.time_to_target_seconds != time_to_target_seconds_ ||
+          !latest_target_state.pose.isApprox(target_state_.value().pose) ||
+          !latest_target_state.velocity.isApprox(
+              target_state_.value().velocity);
+
+      bool is_position_mode_with_zero_velocity_target =
+          latest_target_state.velocity.isApprox(
+              Eigen::VectorXd::Zero(num_joints_)) &&
+          (motion_update_.trajectory_generation_mode.mode ==
+               TrajectoryGenerationMode::MODE_POSITION ||
+           motion_update_.trajectory_generation_mode.mode ==
+               TrajectoryGenerationMode::MODE_POSITION_AND_VELOCITY);
+
+      // Update time to target
+      if (did_target_or_time_to_target_change ||
+          !is_position_mode_with_zero_velocity_target) {
+        remaining_time_to_target_seconds_ =
+            motion_update_.time_to_target_seconds;
+      }
+
+      target_state_ = latest_target_state;
     }
   }
 
@@ -309,7 +353,6 @@ controller_interface::return_type Controller::update(
 
   time_to_target_seconds_ = motion_update_.time_to_target_seconds;
 
-  // UNIMPLEMENTED
   // Apply linear interpolation to the target_state_ to obtain a new
   // reference. Linear interpolation should support MODE_POSITION,
   // MODE_VELOCITY and MODE_POSITION_AND_VELOCITY
@@ -320,6 +363,13 @@ controller_interface::return_type Controller::update(
     RCLCPP_ERROR(get_node()->get_logger(),
                  "Linear interpolation of target failed");
     return controller_interface::return_type::ERROR;
+  }
+
+  // Decrement the remaining time to target
+  if (remaining_time_to_target_seconds_ > 0) {
+    remaining_time_to_target_seconds_ -= 1. / params_.control_frequency;
+    if (remaining_time_to_target_seconds_ < 0)
+      remaining_time_to_target_seconds_ = 0;
   }
 
   // Compute controls
@@ -335,7 +385,6 @@ controller_interface::return_type Controller::update(
     RCLCPP_ERROR(get_node()->get_logger(),
                  "Impedance control is unimplemented.");
 
-    return controller_interface::return_type::ERROR;
   } else if (control_mode_ == ControlMode::Admittance) {
     // todo(johntgz) the code below may cause problems for configurations close
     // to singularity
@@ -352,22 +401,22 @@ controller_interface::return_type Controller::update(
 
     // Calculate the cartesian delta between the current and the reference tool
     // frame
-    Eigen::Matrix<double, 6, 1> cartesian_delta;
+    Eigen::Matrix<double, 6, 1> cartesian_error;
     kinematics_->calculate_frame_difference(
         current_cartesian_frame, reference_cartesian_frame,
-        (1.0 / params_.control_frequency), cartesian_delta);
-    std::vector<double> cartesian_delta_vec(cartesian_delta.begin(),
-                                            cartesian_delta.end());
+        (1.0 / params_.control_frequency), cartesian_error);
+    std::vector<double> cartesian_error_vec(cartesian_error.begin(),
+                                            cartesian_error.end());
 
     // Calculate the joint delta and use it to get the reference joint
     // position
     std::vector<double> joint_reference_delta(num_joints_);
     kinematics_->convert_cartesian_deltas_to_joint_deltas(
-        current_state_.positions, cartesian_delta_vec, params_.tool_frame_id,
+        current_state_.positions, cartesian_error_vec, params_.tool_frame_id,
         joint_reference_delta);
 
     new_joint_reference.positions.resize(num_joints_);
-    for (std::size_t i = 0; i < num_joints_; i++) {
+    for (std::size_t i = 0; i < num_joints_; ++i) {
       new_joint_reference.positions[i] =
           current_state_.positions[i] + joint_reference_delta[i];
     }
@@ -376,6 +425,9 @@ controller_interface::return_type Controller::update(
   write_state_to_hardware(new_joint_reference);
 
   last_tool_reference_ = new_tool_reference;
+
+  populate_controller_state(state_msg_);
+  state_publisher_rt_->try_publish(state_msg_);
 
   return controller_interface::return_type::OK;
 }
@@ -450,6 +502,84 @@ void Controller::write_state_to_hardware(
 }
 
 //==============================================================================
+bool Controller::populate_cartesian_limits(const aic_controller::Params& params,
+                                           CartesianLimits& limits) {
+  for (std::size_t i = 0; i < 3; ++i) {
+    if (params.clamp_to_limits.min_translational_position[i] >=
+        params.clamp_to_limits.max_translational_position[i]) {
+      RCLCPP_ERROR(
+          get_node()->get_logger(),
+          "Error setting cartesian limits at index [%ld]. Minimum "
+          "translational position >= maximum translational position: %f >= %f",
+          i, params.clamp_to_limits.min_translational_position[i],
+          params.clamp_to_limits.max_translational_position[i]);
+      return false;
+    }
+    if (params.clamp_to_limits.min_rotation_angle[i] >=
+        params.clamp_to_limits.max_rotation_angle[i]) {
+      RCLCPP_ERROR(get_node()->get_logger(),
+                   "Error setting cartesian limits at index [%ld]. Minimum "
+                   "rotation angle >= maximum rotation angle: %f >= %f",
+                   i, params.clamp_to_limits.min_rotation_angle[i],
+                   params.clamp_to_limits.max_rotation_angle[i]);
+      return false;
+    }
+  }
+
+  limits.min_translational_position = Eigen::Map<const Eigen::VectorXd>(
+      params.clamp_to_limits.min_translational_position.data(),
+      static_cast<Eigen::Index>(
+          params.clamp_to_limits.min_translational_position.size()));
+
+  limits.max_translational_position = Eigen::Map<const Eigen::VectorXd>(
+      params.clamp_to_limits.max_translational_position.data(),
+      static_cast<Eigen::Index>(
+          params.clamp_to_limits.max_translational_position.size()));
+
+  limits.min_translational_velocity = Eigen::Map<const Eigen::VectorXd>(
+      params.clamp_to_limits.min_translational_velocity.data(),
+      static_cast<Eigen::Index>(
+          params.clamp_to_limits.min_translational_velocity.size()));
+
+  limits.max_translational_velocity = Eigen::Map<const Eigen::VectorXd>(
+      params.clamp_to_limits.max_translational_velocity.data(),
+      static_cast<Eigen::Index>(
+          params.clamp_to_limits.max_translational_velocity.size()));
+
+  limits.min_translational_velocity = Eigen::Map<const Eigen::VectorXd>(
+      params.clamp_to_limits.min_translational_velocity.data(),
+      static_cast<Eigen::Index>(
+          params.clamp_to_limits.min_translational_velocity.size()));
+
+  limits.min_rotation_angle = Eigen::Map<const Eigen::VectorXd>(
+      params.clamp_to_limits.min_rotation_angle.data(),
+      static_cast<Eigen::Index>(
+          params.clamp_to_limits.min_rotation_angle.size()));
+
+  limits.max_rotation_angle = Eigen::Map<const Eigen::VectorXd>(
+      params.clamp_to_limits.max_rotation_angle.data(),
+      static_cast<Eigen::Index>(
+          params.clamp_to_limits.max_rotation_angle.size()));
+
+  limits.max_rotational_velocity =
+      params.clamp_to_limits.max_rotational_velocity;
+
+  return true;
+}
+
+//==============================================================================
+void Controller::populate_controller_state(ControllerState& controller_state) {
+  controller_state.header.stamp = get_node()->now();
+
+  controller_state.tool_pose = tf2::toMsg(last_tool_reference_.pose);
+  controller_state.tool_velocity = tf2::toMsg(last_tool_reference_.velocity);
+
+  if (last_commanded_state_.has_value()) {
+    controller_state.joint_state = last_commanded_state_.value();
+  }
+}
+
+//==============================================================================
 Eigen::Quaterniond Controller::expMapQuaternion(const Eigen::Vector3d& delta) {
   Eigen::Quaterniond q_delta;
   double theta_squared = delta.squaredNorm();
@@ -468,12 +598,13 @@ Eigen::Quaterniond Controller::expMapQuaternion(const Eigen::Vector3d& delta) {
 
 //==============================================================================
 Eigen::Vector3d Controller::logMapQuaternion(const Eigen::Quaterniond& q) {
-  if ((1.0 - q.squaredNorm()) < Eigen::NumTraits<double>::dummy_precision()) {
-    RCLCPP_ERROR(this->get_node()->get_logger(),
-                 "quaternion q must be approx. of unit length. 1.0 - "
-                 "q.squaredNorm() is %f",
-                 1.0 - q.squaredNorm());
-    // todo(johntgz) throw error here?
+  if ((1.0 - q.squaredNorm()) >= Eigen::NumTraits<double>::dummy_precision()) {
+    RCLCPP_ERROR(
+        this->get_node()->get_logger(),
+        "quaternion q must be approx. of unit length. 1.0 - "
+        "q.squaredNorm() is %f. Applying quaternion normalization to q!",
+        1.0 - q.squaredNorm());
+    q.normalize();
   }
 
   // Implementation of the logarithmic map of SU(2) using atan.
@@ -482,7 +613,7 @@ Eigen::Vector3d Controller::logMapQuaternion(const Eigen::Quaterniond& q) {
   // real part of the quaternion.
   // With q = -q we chose the quaternion with positive real part.
 
-  // todo(johntgz) better way to do this?
+  // todo(johntgz) better way to write these?
   const double sign_of_w = q.w() < 0.0 ? -1.0 : 1.0;
   const double abs_w = sign_of_w * q.w();
   const Eigen::Vector3d v = sign_of_w * q.vec();
@@ -515,7 +646,7 @@ Eigen::Quaterniond Controller::SphericalLinearInterpolation(
   } else {
     double omega = std::acos(abs_cos_omega);
     double sin_omega = sin(omega);
-    p0 = sin((1 - p) * omega) / sin_omega;
+    p0 = sin((1.0 - p) * omega) / sin_omega;
     p1 = sin(p * omega) / sin_omega;
   }
 
@@ -690,7 +821,6 @@ bool Controller::ClampReferenceToLimits(const CartesianLimits& limits,
     Eigen::Quaterniond relative_quaternion =
         target_state.getPoseQuaternion() *
         limits.reference_quaternion_for_min_max.inverse();
-    relative_quaternion.normalize();
 
     // The exponential log of the quaternion provides 0.5 * rotational_offset
     // from the reference quaternion. The 0.5 comes from the fact that
@@ -751,8 +881,6 @@ bool Controller::ClampReferenceToLimits(const CartesianLimits& limits,
       }
     }
 
-    // todo(johtngz)
-    // Update pose quaternion with the modified rotational offset.
     if (!rotational_offset.isApprox(new_rotational_offset)) {
       RCLCPP_WARN_STREAM_THROTTLE(
           get_node()->get_logger(), *get_node()->get_clock(), 1000,

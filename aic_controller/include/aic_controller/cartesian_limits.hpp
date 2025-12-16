@@ -32,22 +32,18 @@ struct CartesianLimits {
   Eigen::Vector3d min_translational_velocity;
   Eigen::Vector3d max_translational_velocity;
 
-  // Euler rotation limits
+  // Euler angles rotation limits
   Eigen::Vector3d min_rotation_angle;
   Eigen::Vector3d max_rotation_angle;
+  double max_rotational_velocity;
   // Reference quaternion for this min/max rotation.
   Eigen::Quaterniond reference_quaternion_for_min_max;
-
-  double min_rotational_velocity;
-  double max_rotational_velocity;
 
   /**
    * @brief Default constructor
    *
    */
   CartesianLimits();
-
-  static CartesianLimits GenerateTestParams();
 };
 
 }  // namespace aic_controller

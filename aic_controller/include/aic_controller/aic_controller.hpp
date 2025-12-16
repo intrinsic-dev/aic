@@ -31,8 +31,10 @@
 #include "rclcpp_lifecycle/state.hpp"
 #include "realtime_tools/realtime_publisher.hpp"
 #include "realtime_tools/realtime_thread_safe_box.hpp"
+#include "tf2_eigen/tf2_eigen.hpp"
 
 // Interfaces
+#include "aic_control_interfaces/msg/aic_controller_state.hpp"
 #include "aic_control_interfaces/msg/motion_update.hpp"
 #include "aic_control_interfaces/msg/trajectory_generation_mode.hpp"
 #include "lifecycle_msgs/msg/state.hpp"
@@ -49,6 +51,7 @@ using MotionUpdate = aic_control_interfaces::msg::MotionUpdate;
 using TrajectoryGenerationMode =
     aic_control_interfaces::msg::TrajectoryGenerationMode;
 using JointTrajectoryPoint = trajectory_msgs::msg::JointTrajectoryPoint;
+using ControllerState = aic_control_interfaces::msg::AICControllerState;
 
 //==============================================================================
 enum class ControlMode : uint8_t { Invalid = 0, Admittance = 1, Impedance = 2 };
@@ -132,6 +135,26 @@ class Controller : public controller_interface::ControllerInterface {
   void write_state_to_hardware(const JointTrajectoryPoint& state_command);
 
   /**
+   * @brief Populate the cartesian translation, velocity and rotation limits
+   * from user-defined parameters
+   *
+   * @param cartesian_limits CartesianLimits class to be populated
+   * @param params parameters
+   * @return true
+   * @return false
+   */
+  bool populate_cartesian_limits(const aic_controller::Params& params,
+                                 CartesianLimits& cartesian_limits);
+
+  /**
+   * @brief Populate the controller state message with the computed cartesian
+   * and joint commands.
+   *
+   * @param controller_state Controller state message to be populated
+   */
+  void populate_controller_state(ControllerState& controller_state);
+
+  /**
    * @brief Exponential map of the special unitary group SU(2), the group of
    * unit quaternions
    *
@@ -163,19 +186,20 @@ class Controller : public controller_interface::ControllerInterface {
    * theoretically two possible solutions. In this case this implementation
    * deterministically chooses one.
    *
-   * @param p
-   * @param quat_a
-   * @param quat_b
+   * @param p scalar
+   * @param quat_a Starting quaternion
+   * @param quat_b Desired quaternion
    * @return Eigen::Quaterniond
    */
   Eigen::Quaterniond SphericalLinearInterpolation(
       const double& p, const Eigen::Quaterniond& q_a,
       const Eigen::Quaterniond& q_b);
+
   /**
    * @brief Euler integration of a pose with the assumption of constant velocity
    * and zero acceleration
    *
-   * @param pose
+   * @param pose Starting cartesian state
    * @param control_frequency Frequency of control loop in Hz
    * @return CartesianState
    */
@@ -183,15 +207,15 @@ class Controller : public controller_interface::ControllerInterface {
                                const double& control_frequency);
 
   /**
-   * @brief
+   * @brief Clamp the target_state to given limits
    *
-   * @param limits
-   * @param mode
-   * @param target_state
-   * @param soft_margin_meters
-   * @param soft_margin_radians
-   * @return true
-   * @return false
+   * @param limits Provided Cartesian Limits to be clamped to
+   * @param mode Trajectory generation mode
+   * @param target_state target state to be clamped
+   * @param soft_margin_meters Safety margin for position
+   * @param soft_margin_radians Safety margin for rotation
+   * @return true Successfully clamped target_state
+   * @return false Failed to clamp target_state
    */
   bool ClampReferenceToLimits(const CartesianLimits& limits,
                               const uint8_t& mode, CartesianState& target_state,
@@ -199,16 +223,17 @@ class Controller : public controller_interface::ControllerInterface {
                               double soft_margin_radians = 0.0);
 
   /**
-   * @brief
+   * @brief Linearly interpolate the last_reference to the target_state to
+   * compute new_reference
    *
-   * @param last_reference
-   * @param target_state
-   * @param remaining_time_to_target_seconds
-   * @param control_frequency
-   * @param mode
-   * @param new_reference
-   * @return true
-   * @return false
+   * @param last_reference Starting state
+   * @param target_state Final state
+   * @param remaining_time_to_target_seconds Remaining time to reach the target
+   * @param control_frequency Frequency of control loop in Hz
+   * @param mode Trajectory generation mode
+   * @param new_reference Interpolated reference
+   * @return true Successfully computed new reference
+   * @return false Failed to compute new reference
    */
   bool UpdateReferenceLinearInterpolation(
       const CartesianState& last_reference, const CartesianState& target_state,
@@ -232,6 +257,12 @@ class Controller : public controller_interface::ControllerInterface {
   // ROS2 subscribers for user commands
   rclcpp::Subscription<MotionUpdate>::SharedPtr motion_update_sub_;
 
+  // Real-time publisher for controller state
+  rclcpp::Publisher<ControllerState>::SharedPtr state_publisher_;
+  std::unique_ptr<realtime_tools::RealtimePublisher<ControllerState>>
+      state_publisher_rt_;
+  ControllerState state_msg_;
+
   // Real-time boxes for thread-safe access
   realtime_tools::RealtimeThreadSafeBox<MotionUpdate> motion_update_rt_;
   MotionUpdate motion_update_;
@@ -244,10 +275,10 @@ class Controller : public controller_interface::ControllerInterface {
   std::optional<CartesianState> target_state_;
   // Latest joint states read from hardware interface
   JointTrajectoryPoint current_state_;
+  // Latest cartesian state of tool calculatd via forward kinematics from
+  // joint position values in current_state_
   // todo(johntgz) Any reason why current_tool_state_ should not replace
   // last_tool_reference_
-  // Latest cartesian state of tool calculatd via forward kinematics from
-  // current_state_
   CartesianState current_tool_state_;
   // Reference used for interpolation
   CartesianState last_tool_reference_;
