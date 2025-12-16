@@ -2,13 +2,6 @@
 <sdf version="1.9">
   <model name="Enclosure Walls">
     <link name="enclosure_walls_link">
-      <visual name="enclosure_walls_visual">
-        <geometry>
-          <mesh>
-            <uri>enclosure_walls_visual.glb</uri>
-          </mesh>
-        </geometry>
-      </visual>
       <collision name="v1015062006_collider_box">
         <pose>-0.010998 0.734284 1.828798 1.570796 -0.0 -1.570796</pose>
         <geometry>

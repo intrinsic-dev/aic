@@ -76,3 +76,19 @@ export RMW_IMPLEMENTATION=rmw_zenoh_cpp
 export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
 ros2 topic pub /joint_trajectory_controller/joint_trajectory trajectory_msgs/msg/JointTrajectory '{ joint_names: ["shoulder_pan_joint", "shoulder_lift_joint", "elbow_joint", "wrist_1_joint", "wrist_2_joint", "wrist_3_joint"], points: [ {positions: [0.0, -1.57, -1.57, -1.57, 1.57, 0], time_from_start: {sec: 1} } ] }' --once
 ```
+
+Spawn a task board
+# To bringup the simulation without a default task board launch with spawn_task_board:=False
+```bash
+source ~/ws_aic/install/setup.bash
+export RMW_IMPLEMENTATION=rmw_zenoh_cpp
+export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
+ros2 launch aic_bringup spawn_task_board.launch.py \
+  task_board_x:=0.3 task_board_y:=-0.1 task_board_z:=1.2 task_board_yaw:=0.785 \
+  lc_mount_01_delta_y:=-0.05 sfp_mount_01_delta_y:=-0.08 sc_mount_01_delta_y:=-0.09 \
+  lc_mount_02_delta_y:=0.05 sfp_mount_02_delta_y:=0.08 sc_mount_02_delta_y:=0.09 \
+  sc_port_01_delta_x:=-0.04 sc_port_02_delta_x:=0.04 \
+  nic_card_mount_01_delta_x:=0.005 nic_card_mount_02_delta_x:=-0.008 \
+  nic_card_mount_03_delta_x:=0.012 nic_card_mount_04_delta_x:=-0.015 \
+  nic_card_mount_05_delta_x:=0.01
+```

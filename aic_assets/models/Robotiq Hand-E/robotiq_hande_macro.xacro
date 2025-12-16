@@ -168,12 +168,12 @@
       <mimic joint="${tf_prefix}left_finger_joint" multiplier="1" offset="0"/>
     </joint>
 
-    <link name="${tf_prefix}tool_frame"/>
+    <link name="${tf_prefix}tcp"/>
 
     <joint name="${tf_prefix}attach_tool_frame" type="fixed">
       <origin xyz="0 0 0.172" rpy="0 0 0"/>
       <parent link="${tf_prefix}hande_base_link"/>
-      <child link="${tf_prefix}tool_frame"/>
+      <child link="${tf_prefix}tcp"/>
     </joint>
 
   </xacro:macro>

@@ -1,0 +1,77 @@
+<?xml version="1.0" ?>
+<robot xmlns:xacro="http://wiki.ros.org/xacro">
+
+  <xacro:macro name="sfp_mount" params="prefix">
+    <link name="${prefix}link">
+      <inertial>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <mass value="0.1"/>
+        <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
+      </inertial>
+
+      <visual name="sfp_mount_visual">
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://aic_assets/models/SFP Mount/sfp_mount_visual.glb"/>
+        </geometry>
+      </visual>
+
+      <collision name="iso_4762_m2_x_8072_collider_box">
+        <origin xyz="0.033272 0.0 0.0025" rpy="0.0 0.0 0.0"/>
+        <geometry>
+          <box size="0.029457 0.01775 0.005"/>
+        </geometry>
+      </collision>
+
+      <collision name="iso_4762_m2_x_8072_collider_box_001">
+        <origin xyz="0.016366 0.0 0.017144" rpy="0.0 -0.785398 0.0"/>
+        <geometry>
+          <box size="0.038533 0.01775 0.001728"/>
+        </geometry>
+      </collision>
+
+      <collision name="iso_4762_m2_x_8072_collider_box_002">
+        <origin xyz="0.028636 0.0 0.012684" rpy="0.0 -0.785398 0.0"/>
+        <geometry>
+          <box size="0.027485 0.01775 0.003688"/>
+        </geometry>
+      </collision>
+
+      <collision name="iso_4762_m2_x_8072_collider_box_003">
+        <origin xyz="0.021242 0.007723 0.013979" rpy="0.0 -0.785398 0.0"/>
+        <geometry>
+          <box size="0.036111 0.002305 0.010956"/>
+        </geometry>
+      </collision>
+
+      <collision name="iso_4762_m2_x_8072_collider_box_004">
+        <origin xyz="0.021003 -0.007938 0.014217" rpy="0.0 -0.785398 0.0"/>
+        <geometry>
+          <box size="0.036111 0.001875 0.01163"/>
+        </geometry>
+      </collision>
+
+      <collision name="iso_4762_m2_x_8072_collider_box_005">
+        <origin xyz="0.010017 0.0 0.003231" rpy="0.0 -0.785398 0.0"/>
+        <geometry>
+          <box size="0.005064 0.01775 0.01163"/>
+        </geometry>
+      </collision>
+
+      <collision name="iso_4762_m2_x_8072_collider_box_006">
+        <origin xyz="0.0042 0.0 0.0025" rpy="0.0 0.0 0.0"/>
+        <geometry>
+          <box size="0.014371 0.01775 0.005"/>
+        </geometry>
+      </collision>
+
+      <collision name="iso_4762_m2_x_8072_collider_box_007">
+        <origin xyz="0.036553 0.0 0.011771" rpy="0.0 0.0 0.0"/>
+        <geometry>
+          <box size="0.004893 0.01775 0.016755"/>
+        </geometry>
+      </collision>
+    </link>
+  </xacro:macro>
+
+</robot>
