@@ -26,7 +26,7 @@ void reset_motion_update_msg(aic_controller::MotionUpdate& msg) {
   msg = aic_controller::MotionUpdate();
 }
 
-}  // namespace anonymous
+}  // namespace
 
 //==============================================================================
 namespace aic_controller {
@@ -52,15 +52,17 @@ Controller::command_interface_configuration() const {
   controller_interface::InterfaceConfiguration command_interfaces_config;
   std::vector<std::string> command_interfaces_config_names;
 
-  const std::string controller_prefix = control_mode_ == ControlMode::Admittance
-			? params_.admittance_controller_namespace + "/"
-			: "";
-	const std::string interface = control_mode_ == ControlMode::Admittance
-			? hardware_interface::HW_IF_POSITION
-			: hardware_interface::HW_IF_EFFORT;
+  const std::string controller_prefix =
+      control_mode_ == ControlMode::Admittance
+          ? params_.admittance_controller_namespace + "/"
+          : "";
+  const std::string interface = control_mode_ == ControlMode::Admittance
+                                    ? hardware_interface::HW_IF_POSITION
+                                    : hardware_interface::HW_IF_EFFORT;
 
   for (const auto& joint : params_.joints) {
-    command_interfaces_config_names.push_back(controller_prefix + joint + "/" + interface);
+    command_interfaces_config_names.push_back(controller_prefix + joint + "/" +
+                                              interface);
   }
 
   return {controller_interface::interface_configuration_type::INDIVIDUAL,
@@ -75,10 +77,10 @@ Controller::state_interface_configuration() const {
 
   // Add position and velocity state interfaces
   for (const auto& joint : params_.joints) {
-    state_interfaces_config_names.push_back(
-      joint + "/" + hardware_interface::HW_IF_POSITION);
-    state_interfaces_config_names.push_back(
-      joint + "/" + hardware_interface::HW_IF_VELOCITY);
+    state_interfaces_config_names.push_back(joint + "/" +
+                                            hardware_interface::HW_IF_POSITION);
+    state_interfaces_config_names.push_back(joint + "/" +
+                                            hardware_interface::HW_IF_VELOCITY);
   }
 
   return {controller_interface::interface_configuration_type::INDIVIDUAL,
@@ -136,10 +138,9 @@ controller_interface::CallbackReturn Controller::on_configure(
       "~/motion_update", reliable_qos,
       [this](const MotionUpdate::SharedPtr msg) {
         if (get_node()->get_current_state().id() !=
-          lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE){
+            lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE) {
           RCLCPP_WARN_THROTTLE(get_node()->get_logger(),
-                               *get_node()->get_clock(),
-                               1000,
+                               *get_node()->get_clock(), 1000,
                                "Controller is not in ACTIVE lifecycle state, "
                                "ignoring MotionUpdate message.");
 
@@ -150,8 +151,8 @@ controller_interface::CallbackReturn Controller::on_configure(
         motion_update_received_ = true;
       });
 
-  if (!cartesian_impedance_action_->Configure(
-          get_node(), this->get_robot_description())) {
+  if (!cartesian_impedance_action_->Configure(get_node(),
+                                              this->get_robot_description())) {
     return controller_interface::CallbackReturn::ERROR;
   }
 
@@ -193,7 +194,6 @@ controller_interface::CallbackReturn Controller::on_deactivate(
 //==============================================================================
 controller_interface::CallbackReturn Controller::on_cleanup(
     const rclcpp_lifecycle::State& /*previous_state*/) {
-
   param_listener_.reset();
   motion_update_sub_.reset();
 
@@ -213,15 +213,16 @@ controller_interface::return_type Controller::update(
   read_state_from_hardware(current_state_);
 
   // read user commands
-  if (motion_update_received_){
+  if (motion_update_received_) {
     auto command_op = motion_update_rt_.try_get();
     if (command_op.has_value()) {
       motion_update_ = command_op.value();
-      target_state_ = CartesianState(motion_update_.pose, motion_update_.velocity);
+      target_state_ =
+          CartesianState(motion_update_.pose, motion_update_.velocity);
     }
   }
 
-  if (!target_state_.has_value()){
+  if (!target_state_.has_value()) {
     // If target_state_ has no value, return early as there is nothing
     // to write to the hardware interfaces.
     return controller_interface::return_type::OK;
@@ -273,8 +274,8 @@ controller_interface::return_type Controller::update(
     // Interpolate impedance parameters and feed-forward wrench
     // Compute control torques
 
-    new_reference = cartesian_impedance_action_->Compute(
-      target_state_.value(), current_state_);
+    new_reference = cartesian_impedance_action_->Compute(target_state_.value(),
+                                                         current_state_);
 
     RCLCPP_ERROR(get_node()->get_logger(),
                  "Impedance control is unimplemented.");

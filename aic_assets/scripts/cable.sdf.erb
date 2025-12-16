@@ -24,20 +24,26 @@
   <model name="cable">
 <%
   # cable dimensions
-  cable_len = 0.5
+  cable_len = 0.96
   radius = 0.002
   segments = 8 # number of links in this cable model.
   segment_len = cable_len / segments
 
   # cable plug Y connection at both ends of the cable
   add_cable_y_connections = true
-  connection_baseline = 0.008 # baseline for sc plug
-  # connection_baseline = 0.004 # baseline for lc and sfp plug
   connection_depth = 0.01
-  connection_len = Math.sqrt(connection_baseline*0.5*connection_baseline*0.5 +
-      connection_depth*connection_depth)
-  connection_split_angle = Math.atan(connection_baseline * 0.5 / connection_depth)
   connection_mass = 0.01
+  # Set baseline to 0.008 sc plugs
+  # Set baseline to 0.004 for lc and sfp plugs
+  connection_baseline_0 = 0.008
+  connection_baseline_1 = 0.004
+  connection_len_0 = Math.sqrt(connection_baseline_0*0.5*connection_baseline_0*0.5 +
+      connection_depth*connection_depth)
+  connection_split_angle_0 = Math.atan(connection_baseline_0 * 0.5 / connection_depth)
+  connection_len_1 = Math.sqrt(connection_baseline_1*0.5*connection_baseline_1*0.5 +
+      connection_depth*connection_depth)
+  connection_split_angle_1 = Math.atan(connection_baseline_1 * 0.5 / connection_depth)
+
 
   # physics params
   cable_mass = 0.3 # note: mass increased for stability
@@ -46,7 +52,7 @@
   joint_spring_stiffness = 1.0
 
   # visual params
-  diffuse = '0.6 0.6 0.0'
+  diffuse = '1.0 0.5 0.0'
   specular = '0.2 0.2 0.2'
   roughness = 0.05
   metalness = 0.01
@@ -232,20 +238,20 @@
       </inertial>
       <pose relative_to="cable_mount_base">0 0 0 0 0 0</pose>
       <collision name="collision_0">
-        <pose>-<%= connection_len * 0.5 %> <%= connection_baseline*0.5 %> 0 <%= connection_split_angle %> 1.57079 0</pose>
+        <pose>-<%= connection_len_0 * 0.5 %> <%= connection_baseline_0*0.5 %> 0 <%= connection_split_angle_0 %> 1.57079 0</pose>
         <geometry>
           <cylinder>
             <radius><%= radius*0.5 %></radius>
-            <length><%= connection_len %></length>
+            <length><%= connection_len_0 %></length>
           </cylinder>
         </geometry>
       </collision>
       <visual name="visual_0">
-        <pose>-<%= connection_len * 0.5 %> <%= connection_baseline*0.5 %> 0 <%= connection_split_angle %> 1.57079 0</pose>
+        <pose>-<%= connection_len_0 * 0.5 %> <%= connection_baseline_0*0.5 %> 0 <%= connection_split_angle_0 %> 1.57079 0</pose>
         <geometry>
           <cylinder>
             <radius><%= radius*0.5 %></radius>
-            <length><%= connection_len %></length>
+            <length><%= connection_len_0 %></length>
           </cylinder>
         </geometry>
         <material>
@@ -260,20 +266,20 @@
         </material>
       </visual>
       <collision name="collision_1">
-        <pose>-<%= connection_len * 0.5 %> <%= -connection_baseline*0.5 %> 0 <%= -connection_split_angle %> 1.57079 0</pose>
+        <pose>-<%= connection_len_0 * 0.5 %> <%= -connection_baseline_0*0.5 %> 0 <%= -connection_split_angle_0 %> 1.57079 0</pose>
         <geometry>
           <cylinder>
             <radius><%= radius*0.5 %></radius>
-            <length><%= connection_len %></length>
+            <length><%= connection_len_0 %></length>
           </cylinder>
         </geometry>
       </collision>
       <visual name="visual_1">
-        <pose>-<%= connection_len * 0.5 %> <%= -connection_baseline*0.5 %> 0 <%= -connection_split_angle %> 1.57079 0</pose>
+        <pose>-<%= connection_len_0 * 0.5 %> <%= -connection_baseline_0*0.5 %> 0 <%= -connection_split_angle_0 %> 1.57079 0</pose>
         <geometry>
           <cylinder>
             <radius><%= radius*0.5 %></radius>
-            <length><%= connection_len %></length>
+            <length><%= connection_len_0 %></length>
           </cylinder>
         </geometry>
         <material>
@@ -303,20 +309,20 @@
       </inertial>
       <pose relative_to="cable_mount_end">0 0 0 0 0 0</pose>
       <collision name="collision_0">
-        <pose><%= connection_len * 0.5 %> <%= -connection_baseline*0.5 %> 0 <%= connection_split_angle %> 1.57079 0</pose>
+        <pose><%= connection_len_1 * 0.5 %> <%= -connection_baseline_1*0.5 %> 0 <%= connection_split_angle_1 %> 1.57079 0</pose>
         <geometry>
           <cylinder>
             <radius><%= radius*0.5 %></radius>
-            <length><%= connection_len %></length>
+            <length><%= connection_len_1 %></length>
           </cylinder>
         </geometry>
       </collision>
       <visual name="visual_0">
-        <pose><%= connection_len * 0.5 %> <%= -connection_baseline*0.5 %> 0 <%= connection_split_angle %> 1.57079 0</pose>
+        <pose><%= connection_len_1 * 0.5 %> <%= -connection_baseline_1*0.5 %> 0 <%= connection_split_angle_1 %> 1.57079 0</pose>
         <geometry>
           <cylinder>
             <radius><%= radius*0.5 %></radius>
-            <length><%= connection_len %></length>
+            <length><%= connection_len_1 %></length>
           </cylinder>
         </geometry>
         <material>
@@ -331,20 +337,20 @@
         </material>
       </visual>
       <collision name="collision_1">
-        <pose><%= connection_len * 0.5 %> <%= connection_baseline*0.5 %> 0 <%= -connection_split_angle %> 1.57079 0</pose>
+        <pose><%= connection_len_1 * 0.5 %> <%= connection_baseline_1*0.5 %> 0 <%= -connection_split_angle_1 %> 1.57079 0</pose>
         <geometry>
           <cylinder>
             <radius><%= radius*0.5 %></radius>
-            <length><%= connection_len %></length>
+            <length><%= connection_len_1 %></length>
           </cylinder>
         </geometry>
       </collision>
       <visual name="visual_1">
-        <pose><%= connection_len * 0.5 %> <%= connection_baseline*0.5 %> 0 <%= -connection_split_angle %> 1.57079 0</pose>
+        <pose><%= connection_len_1 * 0.5 %> <%= connection_baseline_1*0.5 %> 0 <%= -connection_split_angle_1 %> 1.57079 0</pose>
         <geometry>
           <cylinder>
             <radius><%= radius*0.5 %></radius>
-            <length><%= connection_len %></length>
+            <length><%= connection_len_1 %></length>
           </cylinder>
         </geometry>
         <material>

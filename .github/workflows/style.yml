@@ -1,0 +1,29 @@
+name: style
+on: [push, pull_request]
+jobs:
+  clang-format:
+    name: C/C++ Style Check
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: clang-format check
+      uses: DoozyX/clang-format-lint-action@v0.20
+      with:
+        source: '.'
+        exclude: ''
+        extensions: 'h,hpp,cc,cpp'
+        clangFormatVersion: 19
+        style: file
+  python-style:
+    name: Python Style Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Install and run black
+        run: |
+          pip install black
+          black --check .

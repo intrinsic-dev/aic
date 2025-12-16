@@ -1,0 +1,35 @@
+<?xml version="1.0" ?>
+<robot xmlns:xacro="http://wiki.ros.org/xacro">
+
+  <xacro:macro name="task_board_base" params="prefix">
+    <link name="${prefix}base_link">
+      <inertial>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <mass value="5.0"/>
+        <inertia ixx="0.1" ixy="0.0" ixz="0.0" iyy="0.1" iyz="0.0" izz="0.1"/>
+      </inertial>
+
+      <visual name="base_visual">
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://aic_assets/models/Task Board Base/base_visual.glb"/>
+        </geometry>
+      </visual>
+
+      <collision name="v1015074_collider_box">
+        <origin xyz="-0.075 0.05 0.0105" rpy="0.0 0.0 0.0"/>
+        <geometry>
+          <box size="0.14 0.087 0.005"/>
+        </geometry>
+      </collision>
+
+      <collision name="v1015083001_collider_box">
+        <origin xyz="0.0 0.0 0.0075" rpy="0.0 0.0 0.0"/>
+        <geometry>
+          <box size="0.3 0.425 0.005"/>
+        </geometry>
+      </collision>
+    </link>
+  </xacro:macro>
+
+</robot>
