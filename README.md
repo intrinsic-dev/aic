@@ -1,16 +1,26 @@
 # AI for Industry Challenge Toolkit
 
+> [!NOTE]
+> This repository is under active development.
+
 ![](../media/aic_banner.png)
 
-The AI for Industry Challenge is an open competition for developers and roboticists who want to tackle some of the hardest, high-impact problems that exist in robotics and manufacturing.
-This repository contains the toolkit for participants to start developing for the challenge.
-For more information on registration, rules and FAQs, please [see](https://www.intrinsic.ai/events/ai-for-industry-challenge).
+The **AI for Industry Challenge** is an open competition for developers and roboticists aimed at solving some of the hardest, high-impact problems in robotics and manufacturing.
 
-For more detailed information, please read the following documentation:
+This repository contains the official toolkit to help participants start developing their solutions. For registration details, official rules, and FAQs, please visit the [AI for Industry Challenge event page](https://www.intrinsic.ai/events/ai-for-industry-challenge).
 
-- [Challenge Overview](./docs/overview.md)
-- [Competition Phases](./docs/phases.md)
-- [Scene Description](./docs/scene_description.md)
-- [Scoring](./docs/scoring.md)
+---
 
-To get started with development, please [see](./docs/getting_started.md).
+## Documentation
+
+Please refer to the following resources for detailed information on the challenge:
+
+* **[Challenge Overview](./docs/overview.md):** High-level summary of the competition goals.
+* **[Competition Phases](./docs/phases.md):** Details on Qualification, Phase 1, and Phase 2.
+* **[Scene Description](./docs/scene_description.md):** Technical details regarding the simulation environment.
+* **[Scoring](./docs/scoring.md):** Metrics and methods used to evaluate performance.
+* **[Submission](./docs/submission.md):** Guidelines for submitting your final model.
+
+## Getting Started
+
+Ready to begin? Please consult the [Getting Started Guide](./docs/getting_started.md) to set up your development environment.

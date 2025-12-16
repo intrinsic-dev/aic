@@ -1,5 +1,27 @@
 # Getting Started
 
+## Container Setup
+
+The challenge workflow relies on two distinct Docker containers. We provide scripts to build both, ensuring your development environment matches the evaluation environment.
+
+### 1. Evaluation Container (`aic_eval`)
+This container hosts the simulation environment (Gazebo), manages task randomization, and acts as the "referee." It sends requests to your model to begin insertion and evaluates the result.
+
+* **Pre-built Image:** For convenience, we publish this image to the repository. We recommend downloading it directly to save time.
+* **Build from Source:** Alternatively, you can build it locally using the provided scripts if you need to inspect the environment internals.
+
+### 2. Participant Container (`aic_model`)
+This is your development workspace. It is designed to package the `aic_model` package, which contains your custom solution.
+
+* **Development:** You will implement your solution within this container.
+* **Submission:** Once your solution is ready, you will build this container image and upload it via our **Submission Portal**.
+
+> **Note:** Detailed build and run instructions for these containers can be found in the **TODO** directory of the repository.
+
+**TODO**
+
+---
+
 ## Local setup
 
 ### Requirements

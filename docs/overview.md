@@ -1,43 +1,51 @@
 # Challenge Overview
 
-The AI for Industry Challenge targets a high-value bottleneck in modern manufacturing: electronics assembly. More specifically dexterous cable management and insertion, which today is a manual, repetitive process.
+The **AI for Industry Challenge** targets a critical bottleneck in modern manufacturing: electronics assembly. Specifically, it focuses on dexterous cable management and insertion—a task that currently remains largely manual and repetitive.
 
-In terms of robotics, this task is notoriously difficult due to the complex physics of flexible cables and the precision required to see, handle and carefully insert connectors.
+From a robotics perspective, this task is notoriously difficult due to the complex physics involved in manipulating flexible cables and the extreme precision required to perceive, handle, and insert connectors.
 
-Train an AI model using open-source simulators (e.g., Isaac Sim, MuJoCo, Gazebo), leveraging ROS for communication. This is your opportunity to bridge the sim-to-real gap and make real progress against a very real problem.
+**The Goal:**
+Participants will train an AI model using open-source simulators (e.g., Isaac Sim, MuJoCo, Gazebo), leveraging ROS for communication. This is your opportunity to bridge the sim-to-real gap and make tangible progress on a significant real-world problem.
 
-Finalists will deploy their models from simulation to a physical workcell which will be hosted at Intrinsic’s HQ. The top five solutions and teams win a share of the $180,000 prize pool.
+**The Reward:**
+Finalists will deploy their models from simulation to a physical workcell hosted at Intrinsic’s HQ. The top five teams will share a **$180,000 prize pool**.
+
+---
 
 ## Phases
 
-The challenge will officially begin on February 11 and run through July 2026. It has three phases:
+The challenge officially begins on **February 11** and runs through **July 2026**. It consists of three distinct phases:
 
-- Qualification (~3 months): Participants will train and test their cable assembly models in simulation.
-- Phase #1: (~1 month): Qualified teams will advance and gain access to Intrinsic Flowstate to develop a complete cable handling solution.
-- Phase #2: (~1 month): Top teams will move on to deploy and refine their solutions on a physical workcell provided by Intrinsic for real-world testing and evaluation.
+* **Qualification (~3 months):** Participants train and test their cable assembly models in simulation.
+* **Phase 1 (~1 month):** Qualified teams advance and gain access to Intrinsic Flowstate to develop a complete cable handling solution.
+* **Phase 2 (~1 month):** Top teams move on to deploy and refine their solutions on a physical workcell provided by Intrinsic for real-world testing and evaluation.
 
-For more details on expectations and deliverables in each phase, click [here](./phases.md).
-
-## Getting Started
-
-To get started, click [here](./getting_started.md)
+For a detailed breakdown of expectations and deliverables, please refer to [Competition Phases](./phases.md).
 
 ## Evaluation
 
-Scoring across all three phases of the challenge will be automated and determined by a combination of the following evaluation criteria:
+Scoring across all three phases is automated. Rankings are determined by a combination of the following criteria:
 
-- Model validity: Submission must load without errors and generate valid robot commands on the required ROS topic. Invalid submissions will not be scored.
-- Task success: A binary metric will be applied per successful cable insertion.
-- Precision: Submissions will be scored based on how closely the connectors are inserted to their respective targets.‍
-- Safety: Penalties will be applied for any collisions or for exerting excessive forces on connectors or cables.‍
-- Efficiency: The overall cycle time to complete the entire set of assembly tasks will be measured, rewarding more efficient solutions.
+* **Model Validity:** Submissions must load without errors and generate valid robot commands on the required ROS topics. Invalid submissions are disqualified.
+* **Task Success:** A binary metric applied to each successful cable insertion.
+* **Precision:** Scores based on how closely the connectors are inserted relative to their target pose.
+* **Safety:** Penalties applied for collisions or excessive force exerted on connectors or cables.
+* **Efficiency:** Measurement of the overall cycle time to complete the assembly tasks; faster solutions are rewarded.
 
 ## Submission
 
-At each phase, teams must submit their models or solutions to be considered for advancement in the challenge and eligibility for prizes. Each team leader will receive a unique authentication token to upload submissions. Teams may make multiple submissions before the submission deadline.
+To advance in the challenge and remain eligible for prizes, teams must submit their models at the end of each phase.
+* **Authentication:** Each team leader will receive a unique authentication token for uploads.
+* **Frequency:** Teams may make multiple submissions prior to the deadline; the final submission will be used for scoring.
 
-For more details, click [here](./submission.md).
+For detailed upload instructions, see [Submission Guidelines](./submission.md).
 
 ## Baseline Solution
 
-TODO
+*TODO*
+
+---
+
+## Getting Started
+
+Ready to begin? Please consult the [Getting Started Guide](./getting_started.md).
