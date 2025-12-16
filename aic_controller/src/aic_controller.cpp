@@ -550,92 +550,6 @@ void Controller::populate_controller_state(ControllerState& controller_state) {
 }
 
 //==============================================================================
-Eigen::Quaterniond Controller::expMapQuaternion(const Eigen::Vector3d& delta) {
-  Eigen::Quaterniond q_delta;
-  double theta_squared = delta.squaredNorm();
-  if (theta_squared > Eigen::NumTraits<double>::dummy_precision()) {
-    double theta = std::sqrt(theta_squared);
-    q_delta.w() = std::cos(theta);
-    q_delta.vec() = (std::sin(theta) / theta) * delta;
-  } else {
-    // taylor expansions around theta_squared==0
-    q_delta.w() = 1.0 - 0.5 * theta_squared;
-    q_delta.vec() = (1.0 - (1.0 / 6.0) * theta_squared) * delta;
-  }
-
-  return q_delta;
-}
-
-//==============================================================================
-Eigen::Vector3d Controller::logMapQuaternion(const Eigen::Quaterniond& q_in) {
-  Eigen::Quaterniond q = q_in;
-  if ((1.0 - q.squaredNorm()) >= Eigen::NumTraits<double>::dummy_precision()) {
-    RCLCPP_ERROR(
-        this->get_node()->get_logger(),
-        "quaternion q must be approx. of unit length. 1.0 - "
-        "q.squaredNorm() is %f. Applying quaternion normalization to q!",
-        1.0 - q.squaredNorm());
-    q.normalize();
-  }
-
-  // Implementation of the logarithmic map of SU(2) using atan.
-  // We use atan2 instead of atan to enable the use of Eigen Autodiff with SU2:
-  // atan2(y,x) is equivalent to atan(y/x) for x > 0. In our case x = w, the
-  // real part of the quaternion.
-  // With q = -q we chose the quaternion with positive real part.
-
-  // todo(johntgz) better way to write these?
-  const double sign_of_w = q.w() < 0.0 ? -1.0 : 1.0;
-  const double abs_w = sign_of_w * q.w();
-  const Eigen::Vector3d v = sign_of_w * q.vec();
-  const double squared_norm_of_v = v.squaredNorm();
-
-  Eigen::Vector3d delta;
-  if (squared_norm_of_v > Eigen::NumTraits<double>::dummy_precision()) {
-    const double norm_of_v = std::sqrt(squared_norm_of_v);
-    delta = (std::atan2(norm_of_v, abs_w) / norm_of_v) * v;
-  } else {
-    // Perform taylor expansion at squared_norm_of_v == 0
-    delta = (1.0 / abs_w - squared_norm_of_v / (3.0 * std::pow(abs_w, 3))) * v;
-  }
-  return delta;
-}
-
-//==============================================================================
-CartesianState Controller::IntegratePose(const CartesianState& pose,
-                                         const double& control_frequency) {
-  CartesianState new_pose = pose;
-
-  // Integrate translation by one timestep
-  new_pose.pose.translation() +=
-      (1.0 / control_frequency) * pose.velocity.head<3>();
-
-  // The orientation component requires the quaternion derivative:
-  // qd = 0.5 * Q(q) * ad, where Q(q) is a matrix composed from the quaternion q
-  // and ad is the angular velocity
-  // Q(q) = [-q.x -q.y -q.z;
-  //          q.w  q.z -q.y;
-  //         -q.z  q.w  q.x;
-  //          q.y -q.x  q.w]
-  Eigen::Quaterniond q = pose.getPoseQuaternion();
-  Eigen::Vector3d ad = pose.velocity.tail<3>();
-  Eigen::Quaterniond qd;
-  qd.w() = 0.5 * (-q.x() * ad(0) - q.y() * ad(1) - q.z() * ad(2));
-  qd.x() = 0.5 * (q.w() * ad(0) + q.z() * ad(1) - q.y() * ad(2));
-  qd.y() = 0.5 * (-q.z() * ad(0) + q.w() * ad(1) + q.x() * ad(2));
-  qd.z() = 0.5 * (q.y() * ad(0) - q.x() * ad(1) + q.w() * ad(2));
-
-  // Integrate quaternion by one timestep
-  Eigen::Quaterniond q_new;
-  q_new.w() = q.w() + (1.0 / control_frequency) * qd.w();
-  q_new.vec() = q.vec() + (1.0 / control_frequency) * qd.vec();
-
-  new_pose.setPoseQuaternion(q_new.normalized());
-
-  return new_pose;
-}
-
-//==============================================================================
 bool Controller::ClampReferenceToLimits(const CartesianLimits& limits,
                                         const uint8_t& mode,
                                         CartesianState& target_state,
@@ -771,7 +685,7 @@ bool Controller::ClampReferenceToLimits(const CartesianLimits& limits,
     // functions. Thus the result of the logMapQuaternion needs to be multiplied
     // by 2.0.
     Eigen::Vector3d rotational_offset =
-        2.0 * logMapQuaternion(relative_quaternion);
+        2.0 * utils::logMapQuaternion(relative_quaternion);
     Eigen::Vector3d new_rotational_offset = rotational_offset;
 
     // Get mask for elements that exceeded soft margins
@@ -830,11 +744,11 @@ bool Controller::ClampReferenceToLimits(const CartesianLimits& limits,
           "Limit violation: Rotational offset clamped to "
               << new_rotational_offset);
 
-      // Divide the rotational offset by 2.0 to apply expMapQuaternion
-      // correctly.
+      // Divide the rotational offset by 2.0 to correctly apply expMapQuaternion
       new_rotational_offset.array() /= 2.0;
-      target_state.setPoseQuaternion(expMapQuaternion(new_rotational_offset) *
-                                     limits.reference_quaternion_for_min_max);
+      target_state.setPoseQuaternion(
+          utils::expMapQuaternion(new_rotational_offset) *
+          limits.reference_quaternion_for_min_max);
 
       mutated = true;
     }
@@ -923,7 +837,7 @@ bool Controller::UpdateReferenceLinearInterpolation(
   }
   if (velocity_only) {
     // Integrate reference pose by one timestep
-    new_reference = IntegratePose(new_reference, control_frequency);
+    new_reference = utils::IntegratePose(new_reference, control_frequency);
   }
 
   return true;

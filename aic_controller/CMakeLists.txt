@@ -38,6 +38,7 @@ add_library(aic_controller SHARED
   src/aic_controller.cpp
 	src/cartesian_state.cpp
 	src/cartesian_limits.cpp
+  src/utils.cpp
   src/actions/cartesian_impedance_action.cpp
 )
 target_compile_features(aic_controller PUBLIC cxx_std_17)

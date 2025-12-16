@@ -25,6 +25,7 @@
 #include "aic_controller/actions/cartesian_impedance_action.hpp"
 #include "aic_controller/cartesian_limits.hpp"
 #include "aic_controller/cartesian_state.hpp"
+#include "aic_controller/utils.hpp"
 #include "controller_interface/controller_interface.hpp"
 #include "kinematics_interface/kinematics_interface.hpp"
 #include "pluginlib/class_loader.hpp"
@@ -153,43 +154,6 @@ class Controller : public controller_interface::ControllerInterface {
    * @param controller_state Controller state message to be populated
    */
   void populate_controller_state(ControllerState& controller_state);
-
-  /**
-   * @brief Exponential map of the special unitary group SU(2), the group of
-   * unit quaternions
-   *
-   * Let \f$ \exp \f$ be the matrix exponential and \f$ \hat{\cdot} \f$ be the
-   * function which maps a tangent vector in SU(2) to its corresponding (2x2)
-   * matrix representation. It holds that:
-   *
-   * \f$ \exp_{SU(2)}(\delta) = exp(\hat{delta}) \f$
-   *
-   * @param delta Tangent vector of SU(2)
-   * @return Eigen::Quaterniond unit quaternion, a member of SU(2)
-   */
-  Eigen::Quaterniond expMapQuaternion(const Eigen::Vector3d& delta);
-
-  /**
-   * @brief Logarithmic map of the special unitary group SU(2), the group of
-   * unit quaternions. This function is an implementation detail for log(SO3).
-   *
-   * This is the inverse of the 'expMapQuaternion' function
-   *
-   * @param quaternion quaternion q of unit length
-   * @return Eigen::Vector3d Corresponding vector in the tanget space of SU(2)
-   */
-  Eigen::Vector3d logMapQuaternion(const Eigen::Quaterniond& q);
-
-  /**
-   * @brief Euler integration of a pose with the assumption of constant velocity
-   * and zero acceleration
-   *
-   * @param pose Starting cartesian state
-   * @param control_frequency Frequency of control loop in Hz
-   * @return CartesianState Integrated cartesian state
-   */
-  CartesianState IntegratePose(const CartesianState& pose,
-                               const double& control_frequency);
 
   /**
    * @brief Clamp the target_state to given limits
