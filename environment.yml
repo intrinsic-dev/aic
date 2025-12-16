@@ -8,8 +8,8 @@ dependencies:
   - pip
   - pip:
       - lerobot==0.4.2
-      - git+https://github.com/koonpeng/lerobot-ros@f8188c532871e043c45f32c508562d8bd2a71fe9#subdirectory=lerobot_robot_ros
-      - git+https://github.com/koonpeng/lerobot-ros@f8188c532871e043c45f32c508562d8bd2a71fe9#subdirectory=lerobot_teleoperator_devices
+      - git+https://github.com/koonpeng/lerobot-ros@13cd1798c82be9a47fa26033973d7bc3bdb6886c#subdirectory=lerobot_robot_ros
+      - git+https://github.com/koonpeng/lerobot-ros@13cd1798c82be9a47fa26033973d7bc3bdb6886c#subdirectory=lerobot_teleoperator_devices
   - rosdep
   - ros-kilted-control-msgs
   - ros-kilted-geometry-msgs

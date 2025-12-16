@@ -33,6 +33,8 @@ Key mapping
 | g   | +wrist_2       |
 | y   | -wrist_3       |
 | h   | +wrist_3       |
+| o   | -gripper       |
+| l   | +gripper       |
 
 ## Record
 
