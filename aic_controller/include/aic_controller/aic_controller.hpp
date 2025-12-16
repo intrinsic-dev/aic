@@ -181,27 +181,12 @@ class Controller : public controller_interface::ControllerInterface {
   Eigen::Vector3d logMapQuaternion(const Eigen::Quaterniond& q);
 
   /**
-   * @brief Interpolates between 2 elements of SU(2) or quaternions
-   * If the angle between the two rotations is exactly 180 degrees there are
-   * theoretically two possible solutions. In this case this implementation
-   * deterministically chooses one.
-   *
-   * @param p scalar
-   * @param quat_a Starting quaternion
-   * @param quat_b Desired quaternion
-   * @return Eigen::Quaterniond
-   */
-  Eigen::Quaterniond SphericalLinearInterpolation(
-      const double& p, const Eigen::Quaterniond& q_a,
-      const Eigen::Quaterniond& q_b);
-
-  /**
    * @brief Euler integration of a pose with the assumption of constant velocity
    * and zero acceleration
    *
    * @param pose Starting cartesian state
    * @param control_frequency Frequency of control loop in Hz
-   * @return CartesianState
+   * @return CartesianState Integrated cartesian state
    */
   CartesianState IntegratePose(const CartesianState& pose,
                                const double& control_frequency);

@@ -382,10 +382,12 @@ controller_interface::return_type Controller::update(
     new_joint_reference = cartesian_impedance_action_->Compute(
         new_tool_reference, current_state_);
 
-    RCLCPP_ERROR(get_node()->get_logger(),
-                 "Impedance control is unimplemented.");
+    RCLCPP_ERROR_THROTTLE(get_node()->get_logger(), *get_node()->get_clock(),
+                          1000, "Impedance control is unimplemented");
 
   } else if (control_mode_ == ControlMode::Admittance) {
+    // UNIMPLEMENTED
+
     // todo(johntgz) the code below may cause problems for configurations close
     // to singularity
 
@@ -420,6 +422,9 @@ controller_interface::return_type Controller::update(
       new_joint_reference.positions[i] =
           current_state_.positions[i] + joint_reference_delta[i];
     }
+
+    RCLCPP_ERROR_THROTTLE(get_node()->get_logger(), *get_node()->get_clock(),
+                          1000, "Admittance control is unimplemented");
   }
 
   write_state_to_hardware(new_joint_reference);
@@ -629,34 +634,6 @@ Eigen::Vector3d Controller::logMapQuaternion(const Eigen::Quaterniond& q_in) {
     delta = (1.0 / abs_w - squared_norm_of_v / (3.0 * std::pow(abs_w, 3))) * v;
   }
   return delta;
-}
-
-//==============================================================================
-Eigen::Quaterniond Controller::SphericalLinearInterpolation(
-    const double& p, const Eigen::Quaterniond& q_a,
-    const Eigen::Quaterniond& q_b) {
-  double p0, p1;
-  double cos_omega = q_a.dot(q_b);
-  double abs_cos_omega = std::abs(cos_omega);
-
-  // If angle is close to zero, perform only linear interpolation
-  // else perform spherical linear interpolation
-  if (abs_cos_omega > (1.0 - Eigen::NumTraits<double>::epsilon())) {
-    p0 = 1.0 - p;
-    p1 = p;
-  } else {
-    double omega = std::acos(abs_cos_omega);
-    double sin_omega = sin(omega);
-    p0 = sin((1.0 - p) * omega) / sin_omega;
-    p1 = sin(p * omega) / sin_omega;
-  }
-
-  // Pick the right direction
-  if (cos_omega < 0) {
-    p1 = -p1;
-  }
-
-  return Eigen::Quaterniond(p0 * q_a.coeffs() + p1 * q_b.coeffs());
 }
 
 //==============================================================================
@@ -949,11 +926,14 @@ bool Controller::UpdateReferenceLinearInterpolation(
            last_reference.pose.translation()) /
           (control_frequency * remaining_time_to_target_seconds);
 
-      // for rotation, we utilise spherical linear interpolation (SLERP)
-      auto p = 1.0 / (control_frequency * remaining_time_to_target_seconds);
-      auto new_quaternion =
-          SphericalLinearInterpolation(p, last_reference.getPoseQuaternion(),
-                                       target_state.getPoseQuaternion());
+      // For interpolating rotation, we utilise spherical linear interpolation
+      // (SLERP) so as to keep the angular velocity constant
+      double t = 1.0 / (control_frequency * remaining_time_to_target_seconds);
+      Eigen::Quaterniond new_quaternion =
+          last_reference.getPoseQuaternion()
+              .slerp(t, target_state.getPoseQuaternion())
+              .normalized();
+
       new_reference.setPoseQuaternion(new_quaternion);
     }
     if (interpolate_velocity) {
