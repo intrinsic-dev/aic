@@ -78,15 +78,11 @@ class HomeTrajectoryNode(Node):
 
     def send_trajectory(self):
         if self.use_aic_control:
-            des_quat = Quaternion(x=0.884, y=-0.466, z=-0.014, w= 0.026)
-            self.normalize_quaternion_msg(des_quat)
-            des_position = Point(x=0.182, y=0.300, z=1.576 + 0.2)
-
             # Home joints configuration
             msg = MotionUpdate()
             msg.pose = Pose(
-                position=des_position,
-                orientation=des_quat
+                position=Point(x=0.182, y=0.300, z=1.576),
+                orientation=Quaternion(x=0.884, y=-0.466, z=-0.014, w= 0.026)
             )
             msg.trajectory_generation_mode.mode = TrajectoryGenerationMode.MODE_POSITION
             msg.time_to_target_seconds = 2.0
@@ -115,21 +111,6 @@ class HomeTrajectoryNode(Node):
 
         self.timer.cancel()  # Send only once.
 
-    def normalize_quaternion_msg(self, q_msg: Quaternion):
-        # Extract
-        q_vec = np.array([q_msg.x, q_msg.y, q_msg.z, q_msg.w])
-
-        norm = np.linalg.norm(q_vec)
-        if norm == 0:
-            q_vec = np.array([0.0, 0.0, 0.0, 1.0])
-        else:
-            q_vec = q_vec / norm
-
-        # Reassign
-        q_msg.x = q_vec[0]
-        q_msg.y = q_vec[1]
-        q_msg.z = q_vec[2]
-        q_msg.w = q_vec[3]
 
 def main(args=None):
     try:
