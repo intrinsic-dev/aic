@@ -4,6 +4,8 @@
 
 During qualification, use your favorite tools, including open source tools and simulators, along with the Intrinsic challenge toolkit, to train your model and solve the cable insertion task. Submitted models will be evaluated using Gazebo.
 
+![](../../media/qualification_overview.png)
+
 - To develop a policy, participants are free to use any approach
   - Real world teleop data
   - Training in simulator of choice (MuJoCo, Isaac Sim, O3DE, etc)

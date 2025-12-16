@@ -1,5 +1,7 @@
 # Scene Description
 
+![](../../media/aic_scene.png)
+
 The simulation environment is defined in the [aic_description](./aic_description) package and includes a robot, a task board, and various objects relevant to the cable insertion task. The 3D models for the scene are located in the [aic_assets](./aic_assets) package.
 
 ### Robot

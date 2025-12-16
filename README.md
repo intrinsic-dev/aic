@@ -1,5 +1,7 @@
 # AI for Industry Challenge Toolkit
 
+![](../media/aic_banner.png)
+
 The AI for Industry Challenge is an open competition for developers and roboticists who want to tackle some of the hardest, high-impact problems that exist in robotics and manufacturing.
 This repository contains the toolkit for participants to start developing for the challenge.
 For more information on registration, rules and FAQs, please [see](https://www.intrinsic.ai/events/ai-for-industry-challenge).
