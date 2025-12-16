@@ -7,15 +7,16 @@ It defines the custom messages and actions required to bridge the robot hardware
 
 The following interfaces are defined.
 
-* **[action/InsertCable.action](./aic_task_interfaces/action/InsertCable.action)**
+* **[action/InsertCable.action](../aic_interfaces/aic_task_interfaces/action/InsertCable.action)**
     * An Action interface used to trigger the Insertion Policy to perform the cable insertion task.
-* **[msg/Task.msg](./aic_task_interfaces/msg/Task.msg)**
+* **[msg/Task.msg](../aic_interfaces/aic_task_interfaces/msg/Task.msg)**
     * Describes the specific parameters and state of the cable insertion task.
-* **[msg/MotionUpdate.msg](./aic_control_interfaces/msg/MotionUpdate.msg)**
+* **[msg/MotionUpdate.msg](../aic_interfaces/aic_control_interfaces/msg/MotionUpdate.msg)**
     * Describes a target pose and the associated tolerances for Cartesian-space control.
-* **[msg/JointMotionUpdate.msg](./aic_control_interfaces/msg/JointMotionUpdate.msg)**
+* **[msg/JointMotionUpdate.msg](../aic_interfaces/aic_control_interfaces/msg/JointMotionUpdate.msg)**
     * Describes a target joint configuration and the associated tolerances for joint-space control.
-
+* **[msg/Observation.msg](../aic_interfaces/aic_model_interfaces/msg/Observation.msg)**
+    * A snapshot of the world that the `aic_model` node subscribes to.
 ---
 
 ### Inputs
@@ -48,7 +49,7 @@ The Insertion Policy controls the robot by publishing to the following topics.
 
 | Topic | Message Type | Description |
 | :--- | :--- | :--- |
-| `/joint_commands` | `aic_control_interfaces/msg/JointMotionUpdate` | Target configurations for joint-space control. |
-| `/pose_commands` | `aic_control_interfaces/msg/MotionUpdate` | Target poses for Cartesian-space control. |
+| `/aic_controller/joint_commands` | `aic_control_interfaces/msg/JointMotionUpdate` | Target configurations for joint-space control. |
+| `/aic_controller/pose_commands` | `aic_control_interfaces/msg/MotionUpdate` | Target poses for Cartesian-space control. |
 
-> **Note:** The model can command the robot using either joint configurations (via `/joint_commands`) or Cartesian poses (via `/pose_commands`). Publishing references to both topics simultaneously is discouraged to avoid control conflicts.
+> **Note:** The model can command the robot using either joint configurations (via `/aic_controller/joint_commands`) or Cartesian poses (via `/aic_controller/pose_commands`). Publishing references to both topics simultaneously is discouraged to avoid control conflicts.
