@@ -33,13 +33,11 @@ CartesianState::CartesianState(const geometry_msgs::msg::Pose& pose_msg,
 
 //==============================================================================
 Eigen::Quaterniond CartesianState::getPoseQuaternion() const {
-  // todo(johntgz) validate if this method is correct
-  return Eigen::Quaterniond(pose.rotation());
+  return Eigen::Quaterniond(pose.linear());
 }
 
 //==============================================================================
 void CartesianState::setPoseQuaternion(const Eigen::Quaterniond& quaternion) {
-  // todo(johntgz) validate if this method is correct
   pose.linear() = quaternion.toRotationMatrix();
 }
 
