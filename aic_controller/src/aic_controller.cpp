@@ -388,41 +388,6 @@ controller_interface::return_type Controller::update(
   } else if (control_mode_ == ControlMode::Admittance) {
     // UNIMPLEMENTED
 
-    // todo(johntgz) the code below may cause problems for configurations close
-    // to singularity
-
-    // Perform IK to get joint targets from target_state_
-    Eigen::Matrix<double, 7, 1> current_cartesian_frame,
-        reference_cartesian_frame;
-    current_cartesian_frame.head<3>() = current_tool_state_.pose.translation();
-    current_cartesian_frame.tail<4>() =
-        current_tool_state_.getPoseQuaternion().coeffs();
-    reference_cartesian_frame.head<3>() = new_tool_reference.pose.translation();
-    reference_cartesian_frame.tail<4>() =
-        new_tool_reference.getPoseQuaternion().coeffs();
-
-    // Calculate the cartesian delta between the current and the reference tool
-    // frame
-    Eigen::Matrix<double, 6, 1> cartesian_error;
-    kinematics_->calculate_frame_difference(
-        current_cartesian_frame, reference_cartesian_frame,
-        (1.0 / params_.control_frequency), cartesian_error);
-    std::vector<double> cartesian_error_vec(cartesian_error.begin(),
-                                            cartesian_error.end());
-
-    // Calculate the joint delta and use it to get the reference joint
-    // position
-    std::vector<double> joint_reference_delta(num_joints_);
-    kinematics_->convert_cartesian_deltas_to_joint_deltas(
-        current_state_.positions, cartesian_error_vec, params_.tool_frame_id,
-        joint_reference_delta);
-
-    new_joint_reference.positions.resize(num_joints_);
-    for (std::size_t i = 0; i < num_joints_; ++i) {
-      new_joint_reference.positions[i] =
-          current_state_.positions[i] + joint_reference_delta[i];
-    }
-
     RCLCPP_ERROR_THROTTLE(get_node()->get_logger(), *get_node()->get_clock(),
                           1000, "Admittance control is unimplemented");
   }
