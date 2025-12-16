@@ -16,9 +16,11 @@
  *
  */
 
+#include "proto/scoring.pb.h"
 #include "aic_gazebo/ScoringPlugin.hh"
 
 #include <gz/common/Console.hh>
+#include <gz/sim/Conversions.hh>
 #include <gz/plugin/Register.hh>
 
 GZ_ADD_PLUGIN(aic_gazebo::ScoringPlugin, gz::sim::System,
@@ -37,11 +39,26 @@ void ScoringPlugin::Configure(
     gz::sim::EventManager& /*_eventManager*/) {
   gzdbg << "aic_gazebo::ScoringPlugin::Configure on entity: " << _entity
         << std::endl;
+
+  this->topic = "/foo";
+  this->pub = this->node.Advertise<msgs::Scoring>(this->topic);
+  if (!pub)
+  {
+    std::cerr << "Error advertising topic [" << this->topic << "]" << std::endl;
+    return;
+  }
 }
 
 //////////////////////////////////////////////////
-void ScoringPlugin::PreUpdate(const gz::sim::UpdateInfo& /*_info*/,
-                              gz::sim::EntityComponentManager& /*_ecm*/) {}
+void ScoringPlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
+                              gz::sim::EntityComponentManager& /*_ecm*/) {
+
+  this->scoringMsg.mutable_header()->mutable_stamp()->CopyFrom(
+    gz::sim::convert<gz::msgs::Time>(_info.simTime));
+
+  if (!this->pub.Publish(this->scoringMsg))
+    return;
+}
 
 //////////////////////////////////////////////////
 void ScoringPlugin::Update(const gz::sim::UpdateInfo& /*_info*/,

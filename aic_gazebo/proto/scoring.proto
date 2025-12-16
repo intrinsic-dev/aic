@@ -1,0 +1,26 @@
+syntax = "proto3";
+package aic_gazebo.msgs;
+
+/// \brief Message containing relevant information for scoring.
+
+import "gz/msgs/contacts.proto";
+import "gz/msgs/header.proto";
+import "gz/msgs/pose.proto";
+import "gz/msgs/pose_v.proto";
+import "gz/msgs/wrench.proto";
+
+message Scoring
+{
+  /// \brief Optional header data.
+  gz.msgs.Header header          = 1;
+  /// \brief Contacts.
+  gz.msgs.Contacts contacts      = 2;
+  /// \brief Force feedback.
+  gz.msgs.Wrench force_feedback  = 3;
+  /// \brief End effector pose.
+  gz.msgs.Pose end_effector_pose = 4;
+  /// \brief Plugs.
+  gz.msgs.Pose_V plugs           = 5;
+  /// \brief Ports.
+  gz.msgs.Pose_V ports           = 6;
+}

@@ -18,8 +18,10 @@
 #ifndef AIC_GAZEBO__SCORING_PLUGIN_HH_
 #define AIC_GAZEBO__SCORING_PLUGIN_HH_
 
+#include "proto/scoring.pb.h"
 #include <gz/sim/EventManager.hh>
 #include <gz/sim/System.hh>
+#include <gz/transport/Node.hh>
 
 namespace aic_gazebo
 {
@@ -53,6 +55,18 @@ namespace aic_gazebo
     // Documentation inherited
     public: void Reset(const gz::sim::UpdateInfo &_info,
                        gz::sim::EntityComponentManager &_ecm) override;
+
+    /// \brief Scoring message.
+    private: msgs::Scoring scoringMsg;
+
+    /// \brief A transport node.
+    private: gz::transport::Node node;
+
+    /// \brief A transport publisher.
+    private: gz::transport::Node::Publisher pub;
+
+    /// \brief The topic to publish scoring information.
+    private: std::string topic;
   };
 }
 #endif
