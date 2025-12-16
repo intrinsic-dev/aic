@@ -597,7 +597,8 @@ Eigen::Quaterniond Controller::expMapQuaternion(const Eigen::Vector3d& delta) {
 }
 
 //==============================================================================
-Eigen::Vector3d Controller::logMapQuaternion(const Eigen::Quaterniond& q) {
+Eigen::Vector3d Controller::logMapQuaternion(const Eigen::Quaterniond& q_in) {
+  Eigen::Quaterniond q = q_in;
   if ((1.0 - q.squaredNorm()) >= Eigen::NumTraits<double>::dummy_precision()) {
     RCLCPP_ERROR(
         this->get_node()->get_logger(),
