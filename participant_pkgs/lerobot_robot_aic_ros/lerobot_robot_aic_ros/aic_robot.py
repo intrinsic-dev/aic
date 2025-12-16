@@ -1,6 +1,7 @@
 """LeRobot driver for AIC robot"""
 
 from dataclasses import dataclass, field
+from math import pi
 
 from lerobot.cameras import CameraConfig
 from lerobot.robots import RobotConfig
@@ -63,8 +64,8 @@ class AICRobotConfig(ROS2Config):
             # gripper_action_type=GripperActionType.TRAJECTORY,
             gripper_open_position=0.0,
             gripper_close_position=0.024,
-            min_joint_positions=[-3.14 for _ in arm_joint_names],
-            max_joint_positions=[3.14 for _ in arm_joint_names],
+            min_joint_positions=[-2 * pi for _ in arm_joint_names],
+            max_joint_positions=[2 * pi for _ in arm_joint_names],
             joint_trajectory_topic="/joint_trajectory_controller/joint_trajectory",
         )
     )
