@@ -28,6 +28,8 @@ from rclpy.node import Node
 from trajectory_msgs.msg import JointTrajectoryPoint
 from aic_control_interfaces.msg import MotionUpdate, TrajectoryGenerationMode
 from geometry_msgs.msg import Pose, Point, Quaternion
+
+
 class HomeTrajectoryNode(Node):
     def __init__(self):
         super().__init__("home_trajectory_node")
@@ -42,7 +44,8 @@ class HomeTrajectoryNode(Node):
         # Create publisher if needed.
         if self.use_aic_control:
             self.publisher = self.create_publisher(
-                MotionUpdate, f'/{self.controller_namespace}/motion_update', 10)
+                MotionUpdate, f"/{self.controller_namespace}/motion_update", 10
+            )
 
             while self.publisher.get_subscription_count() == 0:
                 self.get_logger().info(
@@ -82,7 +85,7 @@ class HomeTrajectoryNode(Node):
             msg = MotionUpdate()
             msg.pose = Pose(
                 position=Point(x=0.182, y=0.300, z=1.576),
-                orientation=Quaternion(x=0.884, y=-0.466, z=-0.014, w= 0.026)
+                orientation=Quaternion(x=0.884, y=-0.466, z=-0.014, w=0.026),
             )
             msg.trajectory_generation_mode.mode = TrajectoryGenerationMode.MODE_POSITION
             msg.time_to_target_seconds = 2.0
