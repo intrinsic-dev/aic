@@ -26,7 +26,7 @@
   # cable dimensions
   cable_len = 0.96
   radius = 0.002
-  segments = 8 # number of links in this cable model.
+  segments = 20 # number of links in this cable model.
   segment_len = cable_len / segments
 
   # cable plug Y connection at both ends of the cable
@@ -35,8 +35,8 @@
   connection_mass = 0.01
   # Set baseline to 0.008 sc plugs
   # Set baseline to 0.004 for lc and sfp plugs
-  connection_baseline_0 = 0.008
-  connection_baseline_1 = 0.004
+  connection_baseline_0 = 0.004
+  connection_baseline_1 = 0.008
   connection_len_0 = Math.sqrt(connection_baseline_0*0.5*connection_baseline_0*0.5 +
       connection_depth*connection_depth)
   connection_split_angle_0 = Math.atan(connection_baseline_0 * 0.5 / connection_depth)
@@ -46,15 +46,15 @@
 
 
   # physics params
-  cable_mass = 0.3 # note: mass increased for stability
+  cable_mass = 0.05
   segment_mass = cable_mass / segments
   joint_damping = 1.0
-  joint_spring_stiffness = 1.0
+  joint_spring_stiffness = 0.05
 
   # visual params
-  diffuse = '1.0 0.5 0.0'
-  specular = '0.2 0.2 0.2'
-  roughness = 0.05
+  diffuse = '1.0 0.22 0.0'
+  specular = '0.5 0.5 0.5'
+  roughness = 0.01
   metalness = 0.01
 
   # For testing: Attach base to world using a fixed joint

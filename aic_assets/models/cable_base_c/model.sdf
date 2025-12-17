@@ -36,11 +36,11 @@
           </sphere>
         </geometry>
         <material>
-          <diffuse>1.0 0.4 0.0</diffuse>
-          <specular>0.2 0.1 0.0</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
@@ -90,11 +90,11 @@
           </cylinder>
         </geometry>
         <material>
-          <diffuse>1.0 0.4 0.0</diffuse>
-          <specular>0.2 0.1 0.0</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
@@ -116,11 +116,11 @@
           </sphere>
         </geometry>
         <material>
-          <diffuse>1.0 0.4 0.0</diffuse>
-          <specular>0.2 0.1 0.0</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
@@ -159,11 +159,11 @@
           </cylinder>
         </geometry>
         <material>
-          <diffuse>1.0 0.4 0.0</diffuse>
-          <specular>0.2 0.1 0.0</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
@@ -185,11 +185,11 @@
           </sphere>
         </geometry>
         <material>
-          <diffuse>1.0 0.4 0.0</diffuse>
-          <specular>0.2 0.1 0.0</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
@@ -228,11 +228,11 @@
           </cylinder>
         </geometry>
         <material>
-          <diffuse>1.0 0.4 0.0</diffuse>
-          <specular>0.2 0.1 0.0</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
@@ -254,11 +254,11 @@
           </sphere>
         </geometry>
         <material>
-          <diffuse>1.0 0.4 0.0</diffuse>
-          <specular>0.2 0.1 0.0</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
@@ -297,11 +297,11 @@
           </cylinder>
         </geometry>
         <material>
-          <diffuse>1.0 0.4 0.0</diffuse>
-          <specular>0.2 0.1 0.0</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
@@ -323,11 +323,11 @@
           </sphere>
         </geometry>
         <material>
-          <diffuse>1.0 0.4 0.0</diffuse>
-          <specular>0.2 0.1 0.0</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
@@ -366,11 +366,11 @@
           </cylinder>
         </geometry>
         <material>
-          <diffuse>1.0 0.4 0.0</diffuse>
-          <specular>0.2 0.1 0.0</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
@@ -392,11 +392,11 @@
           </sphere>
         </geometry>
         <material>
-          <diffuse>1.0 0.4 0.0</diffuse>
-          <specular>0.2 0.1 0.0</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
@@ -435,11 +435,11 @@
           </cylinder>
         </geometry>
         <material>
-          <diffuse>1.0 0.4 0.0</diffuse>
-          <specular>0.2 0.1 0.0</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
@@ -461,11 +461,11 @@
           </sphere>
         </geometry>
         <material>
-          <diffuse>1.0 0.4 0.0</diffuse>
-          <specular>0.2 0.1 0.0</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
@@ -504,11 +504,11 @@
           </cylinder>
         </geometry>
         <material>
-          <diffuse>1.0 0.4 0.0</diffuse>
-          <specular>0.2 0.1 0.0</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
@@ -530,11 +530,11 @@
           </sphere>
         </geometry>
         <material>
-          <diffuse>1.0 0.4 0.0</diffuse>
-          <specular>0.2 0.1 0.0</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
@@ -573,11 +573,11 @@
           </cylinder>
         </geometry>
         <material>
-          <diffuse>1.0 0.4 0.0</diffuse>
-          <specular>0.2 0.1 0.0</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
@@ -599,11 +599,11 @@
           </sphere>
         </geometry>
         <material>
-          <diffuse>1.0 0.4 0.0</diffuse>
-          <specular>0.2 0.1 0.0</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
@@ -642,11 +642,11 @@
           </cylinder>
         </geometry>
         <material>
-          <diffuse>1.0 0.4 0.0</diffuse>
-          <specular>0.2 0.1 0.0</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
@@ -668,11 +668,11 @@
           </sphere>
         </geometry>
         <material>
-          <diffuse>1.0 0.4 0.0</diffuse>
-          <specular>0.2 0.1 0.0</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
@@ -711,11 +711,11 @@
           </cylinder>
         </geometry>
         <material>
-          <diffuse>1.0 0.4 0.0</diffuse>
-          <specular>0.2 0.1 0.0</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
@@ -737,11 +737,11 @@
           </sphere>
         </geometry>
         <material>
-          <diffuse>1.0 0.4 0.0</diffuse>
-          <specular>0.2 0.1 0.0</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
@@ -780,11 +780,11 @@
           </cylinder>
         </geometry>
         <material>
-          <diffuse>1.0 0.4 0.0</diffuse>
-          <specular>0.2 0.1 0.0</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
@@ -806,11 +806,11 @@
           </sphere>
         </geometry>
         <material>
-          <diffuse>1.0 0.4 0.0</diffuse>
-          <specular>0.2 0.1 0.0</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
@@ -849,11 +849,11 @@
           </cylinder>
         </geometry>
         <material>
-          <diffuse>1.0 0.4 0.0</diffuse>
-          <specular>0.2 0.1 0.0</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
@@ -875,11 +875,11 @@
           </sphere>
         </geometry>
         <material>
-          <diffuse>1.0 0.4 0.0</diffuse>
-          <specular>0.2 0.1 0.0</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
@@ -918,11 +918,11 @@
           </cylinder>
         </geometry>
         <material>
-          <diffuse>1.0 0.4 0.0</diffuse>
-          <specular>0.2 0.1 0.0</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
@@ -944,11 +944,11 @@
           </sphere>
         </geometry>
         <material>
-          <diffuse>1.0 0.4 0.0</diffuse>
-          <specular>0.2 0.1 0.0</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
@@ -987,11 +987,11 @@
           </cylinder>
         </geometry>
         <material>
-          <diffuse>1.0 0.4 0.0</diffuse>
-          <specular>0.2 0.1 0.0</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
@@ -1013,11 +1013,11 @@
           </sphere>
         </geometry>
         <material>
-          <diffuse>1.0 0.4 0.0</diffuse>
-          <specular>0.2 0.1 0.0</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
@@ -1056,11 +1056,11 @@
           </cylinder>
         </geometry>
         <material>
-          <diffuse>1.0 0.4 0.0</diffuse>
-          <specular>0.2 0.1 0.0</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
@@ -1082,11 +1082,11 @@
           </sphere>
         </geometry>
         <material>
-          <diffuse>1.0 0.4 0.0</diffuse>
-          <specular>0.2 0.1 0.0</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
@@ -1125,11 +1125,11 @@
           </cylinder>
         </geometry>
         <material>
-          <diffuse>1.0 0.4 0.0</diffuse>
-          <specular>0.2 0.1 0.0</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
@@ -1151,11 +1151,11 @@
           </sphere>
         </geometry>
         <material>
-          <diffuse>1.0 0.4 0.0</diffuse>
-          <specular>0.2 0.1 0.0</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
@@ -1194,11 +1194,11 @@
           </cylinder>
         </geometry>
         <material>
-          <diffuse>1.0 0.4 0.0</diffuse>
-          <specular>0.2 0.1 0.0</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
@@ -1220,11 +1220,11 @@
           </sphere>
         </geometry>
         <material>
-          <diffuse>1.0 0.4 0.0</diffuse>
-          <specular>0.2 0.1 0.0</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
@@ -1263,11 +1263,11 @@
           </cylinder>
         </geometry>
         <material>
-          <diffuse>1.0 0.4 0.0</diffuse>
-          <specular>0.2 0.1 0.0</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
@@ -1289,11 +1289,11 @@
           </sphere>
         </geometry>
         <material>
-          <diffuse>1.0 0.4 0.0</diffuse>
-          <specular>0.2 0.1 0.0</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
@@ -1332,11 +1332,11 @@
           </cylinder>
         </geometry>
         <material>
-          <diffuse>1.0 0.4 0.0</diffuse>
-          <specular>0.2 0.1 0.0</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
@@ -1358,11 +1358,11 @@
           </sphere>
         </geometry>
         <material>
-          <diffuse>1.0 0.4 0.0</diffuse>
-          <specular>0.2 0.1 0.0</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
@@ -1401,11 +1401,11 @@
           </cylinder>
         </geometry>
         <material>
-          <diffuse>1.0 0.4 0.0</diffuse>
-          <specular>0.2 0.1 0.0</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
@@ -1427,11 +1427,11 @@
           </sphere>
         </geometry>
         <material>
-          <diffuse>1.0 0.4 0.0</diffuse>
-          <specular>0.2 0.1 0.0</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
@@ -1685,11 +1685,11 @@
           </cylinder>
         </geometry>
         <material>
-          <diffuse>1.0 0.4 0.0</diffuse>
-          <specular>0.2 0.1 0.0</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
@@ -1713,11 +1713,11 @@
           </cylinder>
         </geometry>
         <material>
-          <diffuse>1.0 0.4 0.0</diffuse>
-          <specular>0.2 0.1 0.0</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
@@ -1756,11 +1756,11 @@
           </cylinder>
         </geometry>
         <material>
-          <diffuse>1.0 0.4 0.0</diffuse>
-          <specular>0.2 0.1 0.0</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
@@ -1784,11 +1784,11 @@
           </cylinder>
         </geometry>
         <material>
-          <diffuse>1.0 0.4 0.0</diffuse>
-          <specular>0.2 0.1 0.0</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
