@@ -166,10 +166,11 @@ class Controller : public controller_interface::ControllerInterface {
    * @return true Successfully clamped target_state
    * @return false Failed to clamp target_state
    */
-  bool ClampReferenceToLimits(const CartesianLimits& limits,
-                              const uint8_t& mode, CartesianState& target_state,
-                              double soft_margin_meters = 0.0,
-                              double soft_margin_radians = 0.0);
+  bool clamp_reference_to_limits(const CartesianLimits& limits,
+                                 const uint8_t& mode,
+                                 CartesianState& target_state,
+                                 double soft_margin_meters = 0.0,
+                                 double soft_margin_radians = 0.0);
 
   /**
    * @brief Linearly interpolate the last_reference to the target_state to
@@ -184,7 +185,7 @@ class Controller : public controller_interface::ControllerInterface {
    * @return true Successfully computed new reference
    * @return false Failed to compute new reference
    */
-  bool UpdateReferenceLinearInterpolation(
+  bool update_reference_linear_interpolation(
       const CartesianState& last_reference, const CartesianState& target_state,
       const double remaining_time_to_target_seconds,
       const double control_frequency, const uint8_t& mode,

@@ -343,9 +343,9 @@ controller_interface::return_type Controller::update(
   CartesianState new_tool_reference = last_tool_reference_;
 
   // Clamp the target states to stay within limits
-  if (ClampReferenceToLimits(cartesian_limits_,
-                             motion_update_.trajectory_generation_mode.mode,
-                             target_state_.value())) {
+  if (clamp_reference_to_limits(cartesian_limits_,
+                                motion_update_.trajectory_generation_mode.mode,
+                                target_state_.value())) {
     RCLCPP_WARN_THROTTLE(get_node()->get_logger(), *get_node()->get_clock(),
                          1000,
                          "Limit violation: Target has been clamped to limits");
@@ -356,7 +356,7 @@ controller_interface::return_type Controller::update(
   // Apply linear interpolation to the target_state_ to obtain a new
   // reference. Linear interpolation should support MODE_POSITION,
   // MODE_VELOCITY and MODE_POSITION_AND_VELOCITY
-  if (!UpdateReferenceLinearInterpolation(
+  if (!update_reference_linear_interpolation(
           last_tool_reference_, target_state_.value(),
           remaining_time_to_target_seconds_, params_.control_frequency,
           motion_update_.trajectory_generation_mode.mode, new_tool_reference)) {
@@ -550,11 +550,11 @@ void Controller::populate_controller_state(ControllerState& controller_state) {
 }
 
 //==============================================================================
-bool Controller::ClampReferenceToLimits(const CartesianLimits& limits,
-                                        const uint8_t& mode,
-                                        CartesianState& target_state,
-                                        double soft_margin_meters,
-                                        double soft_margin_radians) {
+bool Controller::clamp_reference_to_limits(const CartesianLimits& limits,
+                                           const uint8_t& mode,
+                                           CartesianState& target_state,
+                                           double soft_margin_meters,
+                                           double soft_margin_radians) {
   bool mutated = false;
 
   bool clamp_pose =
@@ -630,9 +630,8 @@ bool Controller::ClampReferenceToLimits(const CartesianLimits& limits,
          (limits.min_translational_position.array() + soft_margin_meters));
 
     new_translation =
-        new_translation.cwiseMin(limits.max_translational_position);
-    new_translation =
-        new_translation.cwiseMax(limits.min_translational_position);
+        new_translation.cwiseMin(limits.max_translational_position)
+            .cwiseMax(limits.min_translational_position);
 
     // If translational soft margins are violated, smoothly scale linear
     // velocity to zero based on the distance to the limits
@@ -698,9 +697,8 @@ bool Controller::ClampReferenceToLimits(const CartesianLimits& limits,
 
     // Clamp rotational offsets
     new_rotational_offset =
-        new_rotational_offset.cwiseMax(limits.min_rotation_angle);
-    new_rotational_offset =
-        new_rotational_offset.cwiseMin(limits.max_rotation_angle);
+        new_rotational_offset.cwiseMax(limits.min_rotation_angle)
+            .cwiseMin(limits.max_rotation_angle);
 
     // If rotational soft margins are violated, smoothly scale angular
     // velocity to zero based on the distance to the limits
@@ -742,7 +740,7 @@ bool Controller::ClampReferenceToLimits(const CartesianLimits& limits,
       RCLCPP_WARN_STREAM_THROTTLE(
           get_node()->get_logger(), *get_node()->get_clock(), 1000,
           "Limit violation: Rotational offset clamped to "
-              << new_rotational_offset);
+              << new_rotational_offset.transpose());
 
       // Divide the rotational offset by 2.0 to correctly apply expMapQuaternion
       new_rotational_offset.array() /= 2.0;
@@ -756,15 +754,17 @@ bool Controller::ClampReferenceToLimits(const CartesianLimits& limits,
     if (!target_state.pose.translation().isApprox(new_translation)) {
       RCLCPP_WARN_STREAM_THROTTLE(
           get_node()->get_logger(), *get_node()->get_clock(), 1000,
-          "Limit violation: Pose translation clamped to " << new_translation);
+          "Limit violation: Pose translation clamped to "
+              << new_translation.transpose());
 
       target_state.pose.translation() = new_translation;
       mutated = true;
     }
     if (!target_state.velocity.isApprox(new_velocity)) {
-      RCLCPP_WARN_STREAM_THROTTLE(
-          get_node()->get_logger(), *get_node()->get_clock(), 1000,
-          "Limit violation: Pose velocity clampted to " << new_velocity);
+      RCLCPP_WARN_STREAM_THROTTLE(get_node()->get_logger(),
+                                  *get_node()->get_clock(), 1000,
+                                  "Limit violation: Pose velocity clampted to "
+                                      << new_velocity.transpose());
 
       target_state.velocity = new_velocity;
       mutated = true;
@@ -774,7 +774,7 @@ bool Controller::ClampReferenceToLimits(const CartesianLimits& limits,
   return mutated;
 }
 
-bool Controller::UpdateReferenceLinearInterpolation(
+bool Controller::update_reference_linear_interpolation(
     const CartesianState& last_reference, const CartesianState& target_state,
     const double remaining_time_to_target_seconds,
     const double control_frequency, const uint8_t& mode,
