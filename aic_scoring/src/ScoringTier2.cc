@@ -29,15 +29,14 @@
 
 namespace aic_scoring {
 //////////////////////////////////////////////////
-ScoringTier2::ScoringTier2(rclcpp::Node *_node,
-                           YAML::Node *_config) : node(_node) {
+ScoringTier2::ScoringTier2(rclcpp::Node *_node, YAML::Node *_config)
+    : node(_node) {
   this->yamlNode = YAML::Clone(*_config);
 
-  if (!this->ParseStats())
-    return;
+  if (!this->ParseStats()) return;
 
   // Debug.
-  for (const auto& [connection, distance] : this->pluggableMap)
+  for (const auto &[connection, distance] : this->pluggableMap)
     std::cout << connection << ": " << distance << " m." << std::endl;
 }
 
@@ -158,8 +157,7 @@ ScoringTier2Node::ScoringTier2Node(const std::string &_yamlFile)
     : Node("score_tier2_node") {
   try {
     auto config = YAML::LoadFile(_yamlFile);
-    this->score = std::make_unique<aic_scoring::ScoringTier2>(
-      this, &config);
+    this->score = std::make_unique<aic_scoring::ScoringTier2>(this, &config);
   } catch (const YAML::BadFile &_e) {
     std::cerr << "Unable to open YAML file [" << _yamlFile << "]" << std::endl;
     return;
