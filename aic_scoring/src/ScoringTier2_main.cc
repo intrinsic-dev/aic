@@ -31,7 +31,7 @@ int main(int argc, char* argv[]) {
 
   std::string configFile = std::string(argv[1]);
   auto scoringTier2 =
-    std::make_shared<aic_scoring::ScoringTier2Node>(configFile);
+      std::make_shared<aic_scoring::ScoringTier2Node>(configFile);
 
   rclcpp::spin(scoringTier2);
   rclcpp::shutdown();
