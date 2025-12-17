@@ -29,31 +29,28 @@
 
 namespace aic_scoring {
 //////////////////////////////////////////////////
-ScoringTier2::ScoringTier2(rclcpp::Node *_node) : node(_node) {}
+ScoringTier2::ScoringTier2(rclcpp::Node *_node,
+                           YAML::Node *_config) : node(_node) {
+  this->yamlNode = YAML::Clone(*_config);
 
-//////////////////////////////////////////////////
-ScoringTier2Node::ScoringTier2Node() : Node("score_tier2_node") {
-  this->score = std::make_unique<aic_scoring::ScoringTier2>(this);
+  if (!this->ParseStats())
+    return;
+
+  // Debug.
+  for (const auto& [connection, distance] : this->pluggableMap)
+    std::cout << connection << ": " << distance << " m." << std::endl;
 }
 
 //////////////////////////////////////////////////
-bool ScoringTier2Node::ParseStats(const std::string &_yamlFile) {
-  YAML::Node config;
-  try {
-    config = YAML::LoadFile(_yamlFile);
-  } catch (const YAML::BadFile &_e) {
-    std::cerr << "Unable to open YAML file [" << _yamlFile << "]" << std::endl;
-    return false;
-  }
-
+bool ScoringTier2::ParseStats() {
   // Sanity check: We should have a [plugs] map.
-  if (!config["plugs"]) {
+  if (!this->yamlNode["plugs"]) {
     std::cerr << "Unable to find [plugs] in tier2.yaml" << std::endl;
     return false;
   }
 
   // Sanity check: We should have a sequence of [plug]
-  auto plugs = config["plugs"];
+  auto plugs = this->yamlNode["plugs"];
   if (!plugs.IsSequence()) {
     std::cerr << "Unable to find sequence of plugs within [plugs]" << std::endl;
     return false;
@@ -80,6 +77,7 @@ bool ScoringTier2Node::ParseStats(const std::string &_yamlFile) {
       return false;
     }
     plug.name = plugProperties["name"].as<std::string>();
+    std::cout << "Name: " << plug.name << std::endl;
 
     if (!plugProperties["type"]) {
       std::cerr << "Unable to find [type] within [plug]" << std::endl;
@@ -87,17 +85,21 @@ bool ScoringTier2Node::ParseStats(const std::string &_yamlFile) {
     }
 
     plug.type = plugProperties["type"].as<std::string>();
-    this->score->plugs.insert({plug.name, std::move(plug)});
+
+    if (auto name = plug.name;
+        !this->plugs.insert({plug.name, std::move(plug)}).second) {
+      std::cerr << "Plug [" << name << "] repeated. Ignoring." << std::endl;
+    }
   }
 
   // Sanity check: We should have a [ports] map.
-  if (!config["ports"]) {
+  if (!this->yamlNode["ports"]) {
     std::cerr << "Unable to find [ports] in tier2.yaml" << std::endl;
     return false;
   }
 
   // Sanity check: We should have a sequence of [port]
-  auto ports = config["ports"];
+  auto ports = this->yamlNode["ports"];
   if (!ports.IsSequence()) {
     std::cerr << "Unable to find sequence of ports within [ports]" << std::endl;
     return false;
@@ -131,20 +133,37 @@ bool ScoringTier2Node::ParseStats(const std::string &_yamlFile) {
     }
 
     port.type = portProperties["type"].as<std::string>();
-    this->score->ports.insert({port.name, std::move(port)});
+
+    if (auto name = port.name;
+        !this->ports.insert({port.name, std::move(port)}).second) {
+      std::cerr << "Port [" << name << "] repeated. Ignoring." << std::endl;
+    }
   }
 
   // Populate pluggableMap.
-  for (const auto &[plugName, plugInfo] : this->score->plugs) {
-    for (const auto &[portName, portInfo] : this->score->ports) {
+  for (const auto &[plugName, plugInfo] : this->plugs) {
+    for (const auto &[portName, portInfo] : this->ports) {
       if (plugInfo.type == portInfo.type) {
         std::string connectionName = plugName + "&" + portName;
-        this->score->pluggableMap.insert({connectionName, 0});
+        this->pluggableMap.insert({connectionName, 0});
       }
     }
   }
 
   return true;
+}
+
+//////////////////////////////////////////////////
+ScoringTier2Node::ScoringTier2Node(const std::string &_yamlFile)
+    : Node("score_tier2_node") {
+  try {
+    auto config = YAML::LoadFile(_yamlFile);
+    this->score = std::make_unique<aic_scoring::ScoringTier2>(
+      this, &config);
+  } catch (const YAML::BadFile &_e) {
+    std::cerr << "Unable to open YAML file [" << _yamlFile << "]" << std::endl;
+    return;
+  }
 }
 
 }  // namespace aic_scoring

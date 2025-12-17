@@ -15,6 +15,7 @@
  *
 */
 
+#include <yaml-cpp/yaml.h>
 #include <chrono>
 #include <string>
 
@@ -44,7 +45,12 @@ namespace aic_scoring
   {
     /// \brief Class constructor.
     /// \param[in] _node Pointer to the ROS node.
-    public: ScoringTier2(rclcpp::Node *_node);
+    /// \param[in] _config YAML config node.
+    public: ScoringTier2(rclcpp::Node *_node,
+                         YAML::Node *_config);
+
+    /// \brief Populate the scoring input params from a YAML file.
+    public: bool ParseStats();
 
     /// \brief Store the current distance cable-connector.
     public: void Update();
@@ -62,17 +68,17 @@ namespace aic_scoring
 
     /// \brief Pointer to a node.
     private: rclcpp::Node *node;
+
+    /// \brief A YAML node.
+    private: YAML::Node yamlNode;
   };
 
   // The Tier2 class as a node.
   class ScoringTier2Node : public rclcpp::Node
   {
     /// \brief Class constructor.
-    public: ScoringTier2Node();
-
-    /// \brief Populate the scoring input params from a YAML file.
-    /// \param[in] _yamlFile Input YAML file.
-    public: bool ParseStats(const std::string &_yamlFile);
+    /// \param[in] _yamlFile Path to a YAML config file.
+    public: ScoringTier2Node(const std::string &_yamlFile);
 
     /// \brief The scoring.
     public: std::unique_ptr<ScoringTier2> score;

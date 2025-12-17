@@ -29,13 +29,9 @@ int main(int argc, char* argv[]) {
 
   rclcpp::init(argc, argv);
 
-  auto scoringTier2 = std::make_shared<aic_scoring::ScoringTier2Node>();
   std::string configFile = std::string(argv[1]);
-  if (!scoringTier2->ParseStats(configFile)) return -1;
-
-  // Debug.
-  for (const auto& [connection, distance] : scoringTier2->score->pluggableMap)
-    std::cout << connection << ": " << distance << " m." << std::endl;
+  auto scoringTier2 = std::make_shared<aic_scoring::ScoringTier2Node>(
+    configFile);
 
   rclcpp::spin(scoringTier2);
   rclcpp::shutdown();

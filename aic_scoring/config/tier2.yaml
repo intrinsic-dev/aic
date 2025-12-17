@@ -15,8 +15,14 @@ plugs:
   - plug:
       name: "other_cable::plug_d"
       type: "other"
+  - plug:
+      name: "other_cable::plug_d"
+      type: "other"
 
 ports:
+  - port:
+      name: "sfp_module"
+      type: "sfp"
   - port:
       name: "sfp_module"
       type: "sfp"
