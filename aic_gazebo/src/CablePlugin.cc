@@ -86,12 +86,13 @@ void CablePlugin::Configure(
 
   // \todo(iche033) Make this configurable
   this->cableModelName = "lc_sc_cable";
-  this->cableConnectionLinkName = "cable_connection_0";
+  this->cableConnectionLinkName = "cable_end_0";
 
   this->endEffectorModelName = "ur5e";
   this->endEffectorConnectionLinkName = "ati/tool_link";
 
   this->connectionLocalOffset = math::Pose3d(0, 0, 0.18, 0, 0, 0);
+  // this->connectionLocalOffset = math::Pose3d(0.0, -1.2, -0.5, 0, 0, 0);
 
   this->createJointDelay = std::chrono::seconds(8);
 }
@@ -133,6 +134,7 @@ void CablePlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
       _ecm.CreateComponent(
           this->detachableJointEntity,
           components::DetachableJoint({this->endEffectorLinkEntity,
+          //components::DetachableJoint({worldEntity(_ecm),
                                        this->cableLinkEntity, "fixed"}));
       this->createConnectionJoint = false;
     } else if (this->moveCableToEndEffector) {
@@ -142,6 +144,7 @@ void CablePlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
         endEffectorConnectionLinkWorldPose * connectionLocalOffset;
 
       math::Pose3d cablePlacementPoseWorld = math::Pose3d(
+          // gz::sim::worldPose(this->model.Entity(), _ecm).Pos() + math::Vector3d(0, 0.1, 1.0),
           endEffectorConnectionOffsetWorld.Pos(),
           math::Quaterniond::Identity);
       _ecm.SetComponentData<components::WorldPoseCmd>(this->model.Entity(),

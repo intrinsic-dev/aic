@@ -35,7 +35,7 @@
         <gz-gui>
           <property type="string" key="state">docked_collapsed</property>
         </gz-gui>
-        <enabled>true</enabled>
+        <enabled>false</enabled>
         <highQuality>false</highQuality>
         <resolution>256 256 256</resolution>
         <octantCount>1 1 1</octantCount>
@@ -300,7 +300,7 @@
       name="gz::sim::systems::Sensors">
       <render_engine>ogre2</render_engine>
       <global_illumination type="vct">
-        <enabled>true</enabled>
+        <enabled>false</enabled>
         <resolution>256 256 256</resolution>
         <octant_count>1 1 1</octant_count>
         <bounce_count>3</bounce_count>
