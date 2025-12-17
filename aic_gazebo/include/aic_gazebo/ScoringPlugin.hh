@@ -19,6 +19,7 @@
 #define AIC_GAZEBO__SCORING_PLUGIN_HH_
 
 #include "proto/scoring.pb.h"
+#include <chrono>
 #include <gz/sim/EventManager.hh>
 #include <gz/sim/System.hh>
 #include <gz/transport/Node.hh>
@@ -30,27 +31,17 @@ namespace aic_gazebo
     public gz::sim::System,
     public gz::sim::ISystemConfigure,
     public gz::sim::ISystemPreUpdate,
-    public gz::sim::ISystemUpdate,
-    public gz::sim::ISystemPostUpdate,
     public gz::sim::ISystemReset
   {
     // Documentation inherited
     public: void Configure(const gz::sim::Entity &_entity,
-                           const std::shared_ptr<const sdf::Element> &_element,
+                           const std::shared_ptr<const sdf::Element> &_sdf,
                            gz::sim::EntityComponentManager &_ecm,
                            gz::sim::EventManager &_eventManager) override;
 
     // Documentation inherited
     public: void PreUpdate(const gz::sim::UpdateInfo &_info,
                            gz::sim::EntityComponentManager &_ecm) override;
-
-    // Documentation inherited
-    public: void Update(const gz::sim::UpdateInfo &_info,
-                        gz::sim::EntityComponentManager &_ecm) override;
-
-    // Documentation inherited
-    public: void PostUpdate(const gz::sim::UpdateInfo &_info,
-                          const gz::sim::EntityComponentManager &_ecm) override;
 
     // Documentation inherited
     public: void Reset(const gz::sim::UpdateInfo &_info,
@@ -67,6 +58,12 @@ namespace aic_gazebo
 
     /// \brief The topic to publish scoring information.
     private: std::string topic;
+
+    /// \brief System update period calculated from <update_rate>.
+    private: std::chrono::steady_clock::duration updatePeriod{0};
+
+    /// \brief Last system update simulation time.
+    private: std::chrono::steady_clock::duration lastUpdateTime{0};
   };
 }
 #endif
