@@ -6,15 +6,25 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 find_package(ament_cmake REQUIRED)
+find_package(gz_math_vendor REQUIRED)
+find_package(gz-math REQUIRED)
+set(GZ_MATH_VER ${gz-math_VERSION_MAJOR})
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_components REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(yaml-cpp REQUIRED)
 
 # Create a library that can be linked against
-add_library(${PROJECT_NAME} SHARED src/ScoringTier1.cc)
+add_library(${PROJECT_NAME} SHARED
+  src/ScoringTier1.cc
+  src/ScoringTier2.cc)
+
 target_link_libraries(${PROJECT_NAME}
-  PUBLIC rclcpp::rclcpp ${std_msgs_TARGETS} yaml-cpp)
+  PUBLIC
+    rclcpp::rclcpp
+    ${std_msgs_TARGETS}
+    yaml-cpp
+    gz-math${GZ_MATH_VER}::gz-math${GZ_MATH_VER})
 
 target_include_directories(${PROJECT_NAME}
   PUBLIC
@@ -23,9 +33,14 @@ target_include_directories(${PROJECT_NAME}
 )
 
 # Create executable that uses the library
-add_executable(scoring_tier1 src/ScoringTier1.cc)
-target_link_libraries(scoring_tier1
+add_executable(scoring_tier1_main src/ScoringTier1_main.cc)
+target_link_libraries(scoring_tier1_main
   PRIVATE ${PROJECT_NAME})
+
+# Create executable that uses the library
+add_executable(scoring_tier2_main src/ScoringTier2_main.cc)
+target_link_libraries(scoring_tier2_main
+  PRIVATE ${PROJECT_NAME} )
 
 install(
   DIRECTORY config
@@ -35,7 +50,8 @@ install(
 # Install library and executable with export
 install(TARGETS
   ${PROJECT_NAME}
-  scoring_tier1
+  scoring_tier1_main
+  scoring_tier2_main
   EXPORT ${PROJECT_NAME}_targets
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib

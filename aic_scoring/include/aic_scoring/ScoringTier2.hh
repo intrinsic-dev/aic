@@ -15,8 +15,12 @@
  *
 */
 
+#include <yaml-cpp/yaml.h>
 #include <chrono>
 #include <string>
+
+#include <gz/math/Pose3.hh>
+#include <rclcpp/rclcpp.hpp>
 
 #ifndef AIC_SCORING__SCORING_TIER2_HH_
 #define AIC_SCORING__SCORING_TIER2_HH_
@@ -24,37 +28,60 @@
 namespace aic_scoring
 {
   /// \brief Tier2 POD.
-  class StatsTier2
+  class Pluggable
   {
-    /// \brief Timestamp.
-    public: std::chrono::time_point<std::chrono::steady_clock> timestamp;
+    /// \brief Plug/port name.
+    public: std::string name;
 
-    /// \brief Distance cable-connector in meters.
-    public: double distance;
+    /// \brief Plug/port type.
+    public: std::string type;
 
-    /// \brief Whether the connector and cable are plugged in.
-    public: bool connected = false;
+    /// \brief Position.
+    public: gz::math::Vector3d position;
   };
-  
+
   // The Tier2 scoring interface.
   class ScoringTier2
   {
     /// \brief Class constructor.
-    public: ScoringTier2();
+    /// \param[in] _node Pointer to the ROS node.
+    /// \param[in] _config YAML config node.
+    public: ScoringTier2(rclcpp::Node *_node,
+                         YAML::Node *_config);
 
     /// \brief Populate the scoring input params from a YAML file.
-    /// \param[in] _yamlFile Input YAML file.
-    public: bool ParseStats(const std::string &_yamlFile);
-
-    /// \brief Check distance between the tip of the cable and the connector.
-    /// \return Distance (m) between the cable and connector.
-    public: virtual double Distance() const = 0;
+    public: bool ParseStats();
 
     /// \brief Store the current distance cable-connector.
     public: void Update();
 
-    /// \brief History of tier 2 stats.
-    private: std::vector<StatsTier2> allStats;
+    /// \brief All pluggable plugs.
+    public: std::map<std::string, Pluggable> plugs;
+
+    /// \brief All pluggable ports.
+    public: std::map<std::string, Pluggable> ports;
+
+    /// \brief Plug<->port connections.
+    /// The first key is always the plug, followed by "&", followed by port.
+    /// The value is the distance (meters) between the plug and the port.
+    public: std::map<std::string, double> pluggableMap;
+
+    /// \brief Pointer to a node.
+    private: rclcpp::Node *node;
+
+    /// \brief A YAML node.
+    private: YAML::Node yamlNode;
+  };
+
+  // The Tier2 class as a node.
+  class ScoringTier2Node : public rclcpp::Node
+  {
+    /// \brief Class constructor.
+    /// \param[in] _yamlFile Path to a YAML config file.
+    public: ScoringTier2Node(const std::string &_yamlFile);
+
+    /// \brief The scoring.
+    public: std::unique_ptr<ScoringTier2> score;
   };
 }
 #endif

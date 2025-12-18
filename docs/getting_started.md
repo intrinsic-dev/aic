@@ -63,7 +63,7 @@ Start the Zenoh router.
 ```bash
 source ~/ws_aic/install/setup.bash
 export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
-ros2 run rmw_zenoh_cpp rmw_zenohd`
+ros2 run rmw_zenoh_cpp rmw_zenohd
 ```
 
 Then bringup the simulator.
