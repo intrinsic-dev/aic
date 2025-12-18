@@ -1,137 +1,26 @@
-# aic
-
-## Local setup
-
-### Requirements
-- [Ubuntu 24.04](https://releases.ubuntu.com/noble/)
-- [ROS 2 Kilted Kaiju](https://docs.ros.org/en/kilted/Installation/Ubuntu-Install-Debs.html)
-- [miniforge](https://docs.conda.io/projects/conda/en/stable/) (Other conda distributions should work as well)
-
-## Install
-
-This repo contains 2 workspaces, a "world" workspace using ubuntu 24.04 native packages (apt) dependencies and a "participant" workspace using mamba.
-
-> [!CAUTION]
-> Do not source both workspace in the same environment. The may cause the dependencies to be tainted, a full rebuild will be needed to fix it.
-
-### Install ("world" workspace)
-
-Add `packages.osrfoundation.org` to the apt sources list:
-```bash
-sudo curl https://packages.osrfoundation.org/gazebo.gpg --output /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/gazebo-stable.list > /dev/null
-sudo apt-get update
-```
-
-Build the workspace
-```bash
-sudo apt update && sudo apt upgrade -y
-mkdir ~/ws_aic/src -p
-cd ~/ws_aic/src
-git clone https://github.com/intrinsic-dev/aic
-vcs import . < aic/aic.repos --recursive
-# Install Gazebo dependencies.
-sudo apt -y install $(sort -u $(find . -iname 'packages-'`lsb_release -cs`'.apt' -o -iname 'packages.apt' | grep -v '/\.git/') | sed '/gz\|sdf/d' | tr '\n' ' ')
-cd ~/ws_aic
-# Install ROS dependencies using rosdep.
-rosdep install --from-paths src --ignore-src --rosdistro kilted -yr --skip-keys "gz-cmake3 DART libogre-dev libogre-next-2.3-dev"
-source /opt/ros/kilted/setup.bash
-GZ_BUILD_FROM_SOURCE=1 colcon build --merge-install --cmake-args -DCMAKE_BUILD_TYPE=Release --symlink-install
-```
-
-### Install ("participant" workspace)
-
-Create mamba environment
-
-```bash
-mamba create -f src/aic/environment.yml
-mamba config -n aic prepend --env channels robostack-kilted
-mamba activate aic
-```
-
-Setup workspace
-
-```bash
-AIC_WS=~/ws_aic
-AIC_PWS=~/ws_aic_participant
-mkdir -p "$AIC_PWS/src"
-cd "$AIC_PWS"
-ln -s "$AIC_WS/src/aic/participant_pkgs" src/aic
-vcs import src < "$AIC_WS/src/aic/participant.repos" --recursive
-```
-
-Install dependencies
-
-```bash
-rosdep init
-rosdep update
-rosdep install -yi --skip-keys=ament_python --from-paths "$AIC_PWS/src/aic/aic_lerobot_tools" "$AIC_PWS/src/iblnkn"
-```
-
-Build
-
-```bash
-colcon build --merge-install --cmake-args -DCMAKE_BUILD_TYPE=Release
-```
-
-### Launch
+# AI for Industry Challenge Toolkit
 
 > [!NOTE]
-> We rely on [rmw_zenoh](https://github.com/ros2/rmw_zenoh) as the ROS 2 middleware for this application. Please ensure the `RMW_IMPLEMENTATION` environment variable is set to `rmw_zenoh_cpp` in all terminals.
+> This repository is under active development.
 
-Start the Zenoh router.
+![](../media/aic_banner.png)
 
-```bash
-source ~/ws_aic/install/setup.bash
-export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
-ros2 run rmw_zenoh_cpp rmw_zenohd`
-```
+The **AI for Industry Challenge** is an open competition for developers and roboticists aimed at solving some of the hardest, high-impact problems in robotics and manufacturing.
 
-Then bringup the simulator.
+This repository contains the official toolkit to help participants start developing their solutions. For registration details, official rules, and FAQs, please visit the [AI for Industry Challenge event page](https://www.intrinsic.ai/events/ai-for-industry-challenge).
 
-```bash
-source ~/ws_aic/install/setup.bash
-export RMW_IMPLEMENTATION=rmw_zenoh_cpp
-export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
-ros2 launch aic_bringup aic_gz_bringup.launch.py
-```
+---
 
-Send a reference wrench command (10N in the positive z-axis) to the controller
-```bash
-source ~/ws_aic/install/setup.bash
-export RMW_IMPLEMENTATION=rmw_zenoh_cpp
-export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
-ros2 launch aic_bringup move_to_contact.launch.py contact_force_z:=10.0
-```
+## Documentation
 
-Control the gripper via a ROS2 Action. The joint range of the gripper is from 0.0 to 0.025m
-```bash
-source ~/ws_aic/install/setup.bash
-export RMW_IMPLEMENTATION=rmw_zenoh_cpp
-export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
-ros2 launch aic_bringup gripper_action.launch.py use_position:=true position:=0.024
-```
+Please refer to the following resources for detailed information on the challenge:
 
-Send a joint-position command to the arm as a single-point 1-second trajectory:
-```bash
-source ~/ws_aic/install/setup.bash
-export RMW_IMPLEMENTATION=rmw_zenoh_cpp
-export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
-ros2 topic pub /joint_trajectory_controller/joint_trajectory trajectory_msgs/msg/JointTrajectory '{ joint_names: ["shoulder_pan_joint", "shoulder_lift_joint", "elbow_joint", "wrist_1_joint", "wrist_2_joint", "wrist_3_joint"], points: [ {positions: [0.0, -1.57, -1.57, -1.57, 1.57, 0], time_from_start: {sec: 1} } ] }' --once
-```
+* **[Challenge Overview](./docs/overview.md):** High-level summary of the competition goals.
+* **[Competition Phases](./docs/phases.md):** Details on Qualification, Phase 1, and Phase 2.
+* **[Scene Description](./docs/scene_description.md):** Technical details regarding the simulation environment.
+* **[Scoring](./docs/scoring.md):** Metrics and methods used to evaluate performance.
+* **[Submission](./docs/submission.md):** Guidelines for submitting your final model.
 
-Spawn a task board
-# To bringup the simulation without a default task board launch with spawn_task_board:=False
-```bash
-source ~/ws_aic/install/setup.bash
-export RMW_IMPLEMENTATION=rmw_zenoh_cpp
-export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
-ros2 launch aic_bringup spawn_task_board.launch.py \
-  task_board_x:=0.3 task_board_y:=-0.1 task_board_z:=1.2 task_board_yaw:=0.785 \
-  lc_mount_01_delta_y:=-0.05 sfp_mount_01_delta_y:=-0.08 sc_mount_01_delta_y:=-0.09 \
-  lc_mount_02_delta_y:=0.05 sfp_mount_02_delta_y:=0.08 sc_mount_02_delta_y:=0.09 \
-  sc_port_01_delta_x:=-0.04 sc_port_02_delta_x:=0.04 \
-  nic_card_mount_01_delta_x:=0.005 nic_card_mount_02_delta_x:=-0.008 \
-  nic_card_mount_03_delta_x:=0.012 nic_card_mount_04_delta_x:=-0.015 \
-  nic_card_mount_05_delta_x:=0.01
-```
+## Getting Started
+
+Ready to begin? Please consult the [Getting Started Guide](./docs/getting_started.md) to set up your development environment.

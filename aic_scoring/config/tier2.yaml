@@ -1,0 +1,31 @@
+---
+# Tier2 scoring configuration.
+
+# List of entity pairs to monitor.
+plugs:
+  - plug:
+      name: "sfp_cable::plug_a"
+      type: "sfp"
+  - plug:
+      name: "sfp_cable::plug_b"
+      type: "sfp"
+  - plug:
+      name: "other_cable::plug_c"
+      type: "other"
+  - plug:
+      name: "other_cable::plug_d"
+      type: "other"
+  - plug:
+      name: "other_cable::plug_d"
+      type: "other"
+
+ports:
+  - port:
+      name: "sfp_module"
+      type: "sfp"
+  - port:
+      name: "sfp_module"
+      type: "sfp"
+  - port:
+      name: "other_sfp_module"
+      type: "sfp"
