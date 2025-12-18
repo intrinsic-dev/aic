@@ -36,6 +36,9 @@ Key mapping
 | o   | -gripper       |
 | l   | +gripper       |
 
+> [!NOTE]
+> KDE in wayland by default does not allow an x11 app to listen to keystrokes. You need to go to Settings -> Application Permissions -> Legacy X11App Support to disable the security feature. Even after disabling it, there needs to be an x11 app opened (rviz works) for it to work.
+
 ## Record
 
 ```bash

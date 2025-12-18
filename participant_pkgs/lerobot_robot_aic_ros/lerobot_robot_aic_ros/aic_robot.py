@@ -99,5 +99,5 @@ class AICKeyboardTeleop(KeyboardJointTeleop):
             "wrist_1_joint.pos": -1.57,
             "wrist_2_joint.pos": 1.57,
             "wrist_3_joint.pos": 0.0,
-            "gripper.pos": 0.0,
+            "gripper.pos": 1.0,  # open
         }

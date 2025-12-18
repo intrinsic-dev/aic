@@ -63,8 +63,9 @@ vcs import src < "$AIC_WS/src/aic/participant.repos" --recursive
 Install dependencies
 
 ```bash
+rosdep init
+rosdep update
 rosdep install -yi --skip-keys=ament_python --from-paths "$AIC_PWS/src/aic/aic_lerobot_tools" "$AIC_PWS/src/iblnkn"
-pip install -r "$AIC_WS/src/aic/requirements.txt"
 ```
 
 Build
