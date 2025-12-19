@@ -22,11 +22,34 @@
 
 #include <gz/sim/EventManager.hh>
 #include <gz/sim/Model.hh>
+#include <gz/sim/SdfEntityCreator.hh>
 #include <gz/sim/System.hh>
 
 namespace aic_gazebo
 {
-  // The main AIC scoring plugin.
+  /// \brief State of the cable
+  enum class CableState {
+    /// \brief Harnessed to the world, i.e. made static
+    /// before creating connections
+    INITIALIZATION,
+
+    /// \brief Harnessed to the world, i.e. made static
+    /// before creating connections
+    HARNESS,
+
+    /// \brief Waiting for end-effector / port to be ready
+    WAITING,
+
+    /// \brief Create connections with end-effector / port
+    CREATE_CONNECTIONS,
+
+    /// \brief Cable is connected
+    CONNECTED,
+  };
+
+  /// \brief Plugin for initializing the cable
+  /// It waits for end-effector / port to be ready before creating connections
+  /// with them using detachable joints.
   class CablePlugin:
     public gz::sim::System,
     public gz::sim::ISystemConfigure,
@@ -57,14 +80,28 @@ namespace aic_gazebo
     public: void Reset(const gz::sim::UpdateInfo &_info,
                        gz::sim::EntityComponentManager &_ecm) override;
 
-    /// \brief Entity of attachment link in the parent end effector model
+    /// \brief Entity of attachment link in the end effector model
     private: gz::sim::Entity endEffectorLinkEntity{gz::sim::kNullEntity};
 
-    /// \brief Entity of attachment link in the child cable model
-    private: gz::sim::Entity cableLinkEntity{gz::sim::kNullEntity};
+    /// \brief Entity of attachment link in the target model, e.g. port in
+    /// the task board
+    private: gz::sim::Entity connection1LinkEntity{gz::sim::kNullEntity};
 
-    /// \brief Entity of the detachable joint created by this system
-    private: gz::sim::Entity detachableJointEntity{gz::sim::kNullEntity};
+    /// \brief Entity of connection 0 link in the cable model
+    private: gz::sim::Entity cableConnection0LinkEntity{gz::sim::kNullEntity};
+
+    /// \brief Entity of connection 1 link in the cable model
+    private: gz::sim::Entity cableConnection1LinkEntity{gz::sim::kNullEntity};
+
+    /// \brief Entity of the detachable joint for connection 0
+    private: gz::sim::Entity detachableJoint0Entity{gz::sim::kNullEntity};
+
+    /// \brief Entity of the detachable joint for connection 1
+    private: gz::sim::Entity detachableJoint1Entity{gz::sim::kNullEntity};
+
+    /// \brief Entity of the detachable joint for making the cable static
+    /// see makeStatic function
+    private: gz::sim::Entity detachableJointStaticEntity{gz::sim::kNullEntity};
 
     /// \brief The model associated with this system.
     private: gz::sim::Model model;
@@ -72,21 +109,33 @@ namespace aic_gazebo
     /// \brief Name of the cable model
     private: std::string cableModelName;
 
-    /// \brief Name of the cable link
-    private: std::string cableConnectionLinkName;
+    /// \brief Name of the cable connection 0 link
+    private: std::string cableConnection0LinkName;
 
-    /// \brief Name of the end effector link
+    /// \brief Name of the cable connection 1 link
+    private: std::string cableConnection1LinkName;
+
+    /// \brief Name of the end effector model
     private: std::string endEffectorModelName;
 
     /// \brief Name of the end effector link
-    private: std::string endEffectorConnectionLinkName;
+    private: std::string endEffectorLinkName;
 
-    /// \brief Connection local pose offset relative to parent.
-    private: gz::math::Pose3d connectionLocalOffset;
+    /// \brief Name of the target model for connection 1
+    private: std::string connection1ModelName;
 
-    private: bool moveCableToEndEffector{false};
-    private: bool createConnectionJoint{false};
-    private: std::chrono::steady_clock::duration createJointDelay{0};
+    /// \brief Name of the target link for connection 1
+    private: std::string connection1LinkName;
+
+    /// \brief Delay for creating the connection joints. Used to wait for
+    /// robot arm / end-effector to be ready
+    private: std::chrono::duration<double> createJointDelay{0};
+
+    /// \brief Used to spawn static entities
+    private: std::unique_ptr<gz::sim::SdfEntityCreator> creator{nullptr};
+
+    /// \brief Current state of the cable
+    private: CableState cableState{CableState::INITIALIZATION};
   };
 }
 #endif

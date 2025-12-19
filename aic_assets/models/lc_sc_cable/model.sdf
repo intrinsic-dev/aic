@@ -2,7 +2,7 @@
 <sdf version="1.9">
   <model name="lc_sc_cable">
     <include merge="true">
-      <uri>model://cable_base_c</uri>
+      <uri>model://cable_base_c_rotated</uri>
     </include>
     <include merge="true">
       <uri>model://LC Plug</uri>
@@ -20,8 +20,8 @@
       <parent>cable_connection_1</parent>
       <child>sc_plug_link</child>
     </joint>
-    <plugin filename="CablePlugin"
+   <!-- <plugin filename="CablePlugin"
             name="aic_gazebo::CablePlugin">
-    </plugin>
+    </plugin>-->
   </model>
 </sdf>
