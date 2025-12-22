@@ -25,6 +25,9 @@
 
 #include "aic_controller/cartesian_state.hpp"
 
+// Interfaces
+#include "geometry_msgs/msg/wrench.hpp"
+
 //==============================================================================
 namespace aic_controller {
 
@@ -77,6 +80,9 @@ Eigen::Quaterniond exp_map_quaternion(const Eigen::Vector3d& delta);
  */
 CartesianState integrate_pose(const CartesianState& pose,
                               const double& control_frequency);
+
+void wrenchMsgToEigen(const geometry_msgs::msg::Wrench& wrench_msg,
+                      Eigen::Matrix<double, 6, 1>& wrench_eigen);
 
 }  // namespace utils
 

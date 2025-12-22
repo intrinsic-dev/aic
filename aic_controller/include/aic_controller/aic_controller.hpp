@@ -27,12 +27,15 @@
 #include "aic_controller/cartesian_state.hpp"
 #include "aic_controller/utils.hpp"
 #include "controller_interface/controller_interface.hpp"
+#include "joint_limits/joint_limits.hpp"
+#include "joint_limits/joint_limits_urdf.hpp"
 #include "kinematics_interface/kinematics_interface.hpp"
 #include "pluginlib/class_loader.hpp"
 #include "rclcpp_lifecycle/state.hpp"
 #include "realtime_tools/realtime_publisher.hpp"
 #include "realtime_tools/realtime_thread_safe_box.hpp"
 #include "tf2_eigen/tf2_eigen.hpp"
+#include "urdf/model.hpp"
 
 // Interfaces
 #include "aic_control_interfaces/msg/controller_state.hpp"
@@ -200,9 +203,17 @@ class Controller : public controller_interface::ControllerInterface {
   ControlMode control_mode_;
 
   CartesianLimits cartesian_limits_;
+  // todo(johntgz) should we use JointLimitInterface instead of JointLimits?
+  std::vector<joint_limits::JointLimits> joint_limits_;
 
   // Impedance controller for cartesian targets
   std::unique_ptr<CartesianImpedanceAction> cartesian_impedance_action_;
+  CartesianImpedanceParameters impedance_params_;
+  // todo(johntgz) move this somewhere more appropriate
+  Eigen::Matrix<double, 6, 1> feedforward_wrench_at_tip_;
+  // todo(johntgz) Should we remove this because we don't have a force-torque
+  // sensor?
+  Eigen::Matrix<double, 6, 1> wrench_at_tip_;
 
   // ROS2 subscribers for user commands
   rclcpp::Subscription<MotionUpdate>::SharedPtr motion_update_sub_;

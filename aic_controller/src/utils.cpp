@@ -60,6 +60,17 @@ CartesianState integrate_pose(const CartesianState& pose,
   return new_pose;
 }
 
+//==============================================================================
+void wrenchMsgToEigen(const geometry_msgs::msg::Wrench& msg,
+                      Eigen::Matrix<double, 6, 1>& wrench_eigen) {
+  wrench_eigen(0) = msg.force.x;
+  wrench_eigen(1) = msg.force.y;
+  wrench_eigen(2) = msg.force.z;
+  wrench_eigen(3) = msg.torque.x;
+  wrench_eigen(4) = msg.torque.y;
+  wrench_eigen(5) = msg.torque.z;
+}
+
 }  // namespace utils
 
 }  // namespace aic_controller

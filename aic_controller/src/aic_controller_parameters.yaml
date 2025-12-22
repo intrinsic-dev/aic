@@ -97,6 +97,87 @@ aic_controller:
       description: "Maximum rotational velocity in rad/s"
     }
 
+  # Impedance controller parameters
+  impedance:
+    stiffness_smoothing_constant: {
+      type: double,
+      default_value: 0.0,
+      description: "Constant for exponential smoothing of stiffness matrix. Value ranges from 0 to 1, where 1 means no smoothing and 0 means no change in value."
+    }
+    damping_smoothing_constant: {
+      type: double,
+      default_value: 0.0,
+      description: "Constant for exponential smoothing of damping matrix. Value ranges from 0 to 1, where 1 means no smoothing and 0 means no change in value."
+    }
+    mass_smoothing_constant: {
+      type: double,
+      default_value: 0.0,
+      description: "Constant for exponential smoothing of smoothness matrix. Value ranges from 0 to 1, where 1 means no smoothing and 0 means no change in value."
+    }
+    activation_percentage: {
+      type: double,
+      default_value: 0.0,
+      description: "Specifies the percentage of the range, from the minimum to the maximum joint position, where the joint limit activation potential is active. Value ranges from 0 to 1"
+    }
+    pose_error_integrator:
+      gain: {
+        type: double_array,
+        description: "Gains used in pose integration.",
+        validation: {
+          fixed_size<>: 6
+        }
+      }
+      bound: {
+        type: double_array,
+        description: "Bounds for integrator. Uses units of N for translational axes and units of Nm for rotational axes.",
+        validation: {
+          fixed_size<>: 6
+        }
+      }
+    maximum_wrench: {
+      type: double_array,
+      description: "Limit for the wrench magnitude resulting from the feedback control law after adding the feedforward wrench terms.",
+      validation: {
+        fixed_size<>: 6
+      }
+    }
+    nullspace:
+      target_configuration: {
+        type: double_array,
+        description: "Target configuration for the nullspace of the arm",
+      }
+      stiffness: {
+        type: double_array,
+        description: "Stiffness parameters used in computing the nullspace torque",
+      }
+      damping: {
+        type: double_array,
+        description: "Damping parameters used in computing the nullspace torque",
+      }
+    feedforward_wrench_interpolation:
+      min_wrench: {
+        type: double_array,
+        description: "Minimum limit of target wrench",
+        validation: {
+          fixed_size<>: 6
+        }
+      }
+      max_wrench: {
+        type: double_array,
+        description: "Maximum limit of target wrench",
+        validation: {
+          fixed_size<>: 6
+        }
+      }
+      max_wrench_dot: {
+        type: double_array,
+        description: "Maximum change in target wrench after interpolation",
+        validation: {
+          fixed_size<>: 6
+        }
+      }
+
+
   # general settings
   enable_parameter_update_without_reactivation: {
     type: bool,

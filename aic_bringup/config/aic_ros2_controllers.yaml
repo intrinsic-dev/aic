@@ -283,6 +283,24 @@ aic_controller:
       - wrist_2_joint
       - wrist_3_joint
 
+    impedance:
+      stiffness_smoothing_constant: 0.1
+      damping_smoothing_constant: 0.1
+      mass_smoothing_constant: 0.1
+      activation_percentage: 0.0
+      pose_error_integrator:
+        gain: [0., 0., 0., 0., 0., 0.]
+        bound: [10., 10., 10., 2., 2., 2.]
+      maximum_wrench: [25.0, 25.0, 25.0, 10.0, 10.0, 10.0]
+      nullspace:
+        target_configuration: [0., 0., 0., -1.5708, 0., 0.]
+        stiffness: [30., 30., 30., 30., 30., 30.]
+        damping: [1., 1., 1., 1., 1., 1.]
+      feedforward_wrench_interpolation:
+        min_wrench: [-10., -10., -10., -5., -5., -5.]
+        max_wrench: [10., 10., 10., 5., 5., 5.]
+        max_wrench_dot: [50., 50., 50., 25., 25., 25.]
+
     kinematics:
       plugin_name: kinematics_interface_kdl/KinematicsInterfaceKDL
       plugin_package: kinematics_interface
