@@ -381,12 +381,10 @@
     </include>
 
     <include>
-      <uri>model://lc_sc_cable</uri>
-      <name>lc_sc_cable</name>
+      <uri>model://sfp_sc_cable</uri>
+      <name>sfp_sc_cable</name>
       <pose>-0.35 0.4 1.15 0 0 0</pose>
       <static>false</static>
     </include>
-
-    <!-- Task board and components are now spawned via task_board.urdf.xacro in launch file -->
   </world>
 </sdf>

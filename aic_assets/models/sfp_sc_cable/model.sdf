@@ -1,0 +1,33 @@
+<?xml version="1.0" ?>
+<sdf version="1.9">
+  <model name="lc_sc_cable">
+    <include merge="true">
+      <uri>model://cable_base_c</uri>
+    </include>
+    <include merge="true">
+      <uri>model://LC Plug</uri>
+      <pose relative_to="cable_connection_0">-0.048 0 0 0 0 1.57079</pose>
+    </include>
+    <include merge="true">
+      <uri>model://SC Plug</uri>
+      <pose relative_to="cable_connection_1">0.055 0 0 0 0 0.0</pose>
+    </include>
+    <include merge="true">
+      <uri>model://SFP Module</uri>
+      <pose relative_to="lc_plug_link">0 0.037 0 0 3.14159 3.14159</pose>
+    </include>
+    <joint name="plug_0_joint" type="fixed">
+      <parent>cable_connection_0</parent>
+      <child>lc_plug_link</child>
+    </joint>
+    <joint name="plug_1_joint" type="fixed">
+      <parent>cable_connection_1</parent>
+      <child>sc_plug_link</child>
+    </joint>
+    <joint name="sfp_module_joint" type="fixed">
+      <parent>lc_plug_link</parent>
+      <child>sfp_module_link</child>
+    </joint>
+  </model>
+
+</sdf>
