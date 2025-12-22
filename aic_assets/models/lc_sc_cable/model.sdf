@@ -20,8 +20,5 @@
       <parent>cable_connection_1</parent>
       <child>sc_plug_link</child>
     </joint>
-   <!-- <plugin filename="CablePlugin"
-            name="aic_gazebo::CablePlugin">
-    </plugin>-->
   </model>
 </sdf>

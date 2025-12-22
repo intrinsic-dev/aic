@@ -87,21 +87,23 @@ namespace aic_gazebo
     /// the task board
     private: gz::sim::Entity connection1LinkEntity{gz::sim::kNullEntity};
 
-    /// \brief Entity of connection 0 link in the cable model
+    /// \brief Connection 0 link entity in the cable model
     private: gz::sim::Entity cableConnection0LinkEntity{gz::sim::kNullEntity};
 
-    /// \brief Entity of connection 1 link in the cable model
+    /// \brief Connection 1 link entity in the cable model
     private: gz::sim::Entity cableConnection1LinkEntity{gz::sim::kNullEntity};
 
-    /// \brief Entity of the detachable joint for connection 0
+    /// \brief Detachable joint entity for connection 0
     private: gz::sim::Entity detachableJoint0Entity{gz::sim::kNullEntity};
 
-    /// \brief Entity of the detachable joint for connection 1
+    /// \brief Detachable joint entity for connection 1
     private: gz::sim::Entity detachableJoint1Entity{gz::sim::kNullEntity};
 
-    /// \brief Entity of the detachable joint for making the cable static
-    /// see makeStatic function
-    private: gz::sim::Entity detachableJointStaticEntity{gz::sim::kNullEntity};
+    /// \brief Detachable joint entity for making cable connection 0 static
+    private: gz::sim::Entity detachableJointStatic0Entity{gz::sim::kNullEntity};
+
+    /// \brief Detachable joint entity for making cable connection 1 static
+    private: gz::sim::Entity detachableJointStatic1Entity{gz::sim::kNullEntity};
 
     /// \brief The model associated with this system.
     private: gz::sim::Model model;
@@ -127,11 +129,11 @@ namespace aic_gazebo
     /// \brief Name of the target link for connection 1
     private: std::string connection1LinkName;
 
-    /// \brief Delay for creating the connection joints. Used to wait for
-    /// robot arm / end-effector to be ready
+    /// \brief Delay for creating the connection joints.
     private: std::chrono::duration<double> createJointDelay{0};
 
-    /// \brief Used to spawn static entities
+    /// \brief Sdf entity creator for spawning static entities
+    /// Used for holding cable connections in place
     private: std::unique_ptr<gz::sim::SdfEntityCreator> creator{nullptr};
 
     /// \brief Current state of the cable
