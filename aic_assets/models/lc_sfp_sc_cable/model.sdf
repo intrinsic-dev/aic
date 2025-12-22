@@ -4,35 +4,32 @@
     <include merge="true">
       <uri>model://cable_base_c</uri>
     </include>
-    <include>
+    <include merge="true">
       <name>plug_0</name>
       <uri>model://LC Plug</uri>
       <pose relative_to="cable_connection_0">-0.048 0 0 0 0 1.57079</pose>
     </include>
-    <include>
-      <name>connector</name>
+    <include merge="true">
+      <name>plug_0_connector</name>
       <uri>model://SFP Module</uri>
-      <pose relative_to="plug_0">-0.078 0 0 0 0 1.57079</pose>
+      <pose relative_to="cable_connection_0">-0.0861 0 0 0 3.14159 -1.57079</pose>
     </include>
-    <include>
+    <include merge="true">
       <name>plug_1</name>
       <uri>model://SC Plug</uri>
       <pose relative_to="cable_connection_1">0.055 0 0 0 0 0.0</pose>
     </include>
     <joint name="plug_0_joint" type="fixed">
       <parent>cable_connection_0</parent>
-      <child>plug_0::lc_plug_link</child>
+      <child>lc_plug_link</child>
+    </joint>
+    <joint name="plug_0_connector_joint" type="fixed">
+      <parent>cable_connection_0</parent>
+      <child>sfp_module_link</child>
     </joint>
     <joint name="plug_1_joint" type="fixed">
       <parent>cable_connection_1</parent>
-      <child>plug_1::sc_plug_link</child>
+      <child>sc_plug_link</child>
     </joint>
-    <joint name="lc_sfp_joint" type="fixed">
-      <parent>cable_connection_0</parent>
-      <child>connector::sfp_module_link</child>
-    </joint>
-<!--    <plugin filename="CablePlugin"
-            name="aic_gazebo::CablePlugin">
-    </plugin>-->
   </model>
 </sdf>
