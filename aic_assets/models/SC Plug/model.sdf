@@ -2,10 +2,9 @@
 <sdf version="1.9">
   <model name="SC Plug">
     <link name="sc_plug_link">
-<!--      <inertial auto="true">
+-      <inertial auto="true">
         <mass>0.04</mass>
       </inertial>
--->
       <visual name="sc_plug_visual">
         <geometry>
           <mesh>
@@ -13,7 +12,7 @@
           </mesh>
         </geometry>
       </visual>
-<!--      <collision name="housing blue_predeterminado005_collider_box">
+      <collision name="housing blue_predeterminado005_collider_box">
         <pose>0.002539 0.006344 4e-06 0.0 0.0 0.0</pose>
         <geometry>
           <box>
@@ -73,7 +72,6 @@
           </cylinder>
         </geometry>
       </collision>
--->
     </link>
   </model>
 </sdf>

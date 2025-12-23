@@ -43,6 +43,10 @@ GZ_ADD_PLUGIN(aic_gazebo::CablePlugin, gz::sim::System,
 
 namespace {
 
+/// \brief Find link in a model
+/// \param[in] _modelName Name of model
+/// \param[in] _linkName Name of link to find
+/// \param[in] _ecm Entity component manager
 Entity findLinkInModel(const std::string &_modelName,
                        const std::string _linkName,
                        const gz::sim::EntityComponentManager &_ecm) {
@@ -186,16 +190,6 @@ void CablePlugin::Configure(
     return;
   }
 
-  // this->cableModelName = "lc_sc_cable";
-  // this->cableConnection0LinkName = "lc_plug_link";
-  // this->cableConnection1LinkName = "sc_plug_link";
-
-  // this->endEffectorModelName = "ur5e";
-  // this->endEffectorLinkName = "ati/tool_link";
-
-  this->connection1ModelName = "task_board";
-  this->connection1LinkName = "task_board_base_link";
-
   double delay = _sdf->Get<double>("create_connection_delay_s", 0.0).first;
   this->createJointDelay = std::chrono::duration<double>(delay);
   this->creator = std::make_unique<SdfEntityCreator>(_ecm, _eventManager);
@@ -231,16 +225,7 @@ void CablePlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
       gzerr << "Unable to find end effector connection link" << std::endl;
   }
 
-  if (this->connection1LinkEntity == kNullEntity) {
-    this->connection1LinkEntity =
-        findLinkInModel(this->connection1ModelName, connection1LinkName, _ecm);
-
-    if (this->connection1LinkEntity == kNullEntity)
-      gzerr << "Unable to find connection 1 link" << std::endl;
-  }
-
   if (this->endEffectorLinkEntity == kNullEntity ||
-      this->connection1LinkEntity == kNullEntity ||
       this->cableConnection0LinkEntity == kNullEntity ||
       this->cableConnection1LinkEntity == kNullEntity)
     return;
@@ -282,22 +267,6 @@ void CablePlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
                                 this->cableConnection0LinkEntity,
                                 "fixed"}));
     }
-/*
-    if (this->detachableJoint0Entity != kNullEntity &&
-        this->detachableJoint1Entity == kNullEntity) {
-      this->detachableJoint1Entity = _ecm.CreateEntity();
-        _ecm.CreateComponent(
-          this->detachableJoint1Entity,
-          components::DetachableJoint({this->cableConnection1LinkEntity,
-                                       this->connection1LinkEntity,
-                                       "fixed"}));
-    }
-
-    if (this->detachableJoint0Entity != kNullEntity &&
-        this->detachableJoint1Entity != kNullEntity) {
-      this->cableState = CableState::CONNECTED;
-    }
-*/
   }
 }
 
