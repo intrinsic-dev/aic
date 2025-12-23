@@ -275,8 +275,6 @@ aic_controller:
     # Namespace of admittance controller for chaining controller interfaces
     admittance_controller_namespace: "admittance_controller"
 
-    tool_frame_id: "tool0"
-
     joints:
       - shoulder_pan_joint
       - shoulder_lift_joint
@@ -289,19 +287,18 @@ aic_controller:
       plugin_name: kinematics_interface_kdl/KinematicsInterfaceKDL
       plugin_package: kinematics_interface
       base: base_link # Assumed to be stationary
-      tip: tool0
-      group_name: arm
+      tip: gripper/tcp # Frame ID of tool center point
       alpha: 0.0005 # Specifies the damping coefficient for the Jacobian pseudo inverse.
 
     clamp_to_limits:
       min_translational_position:
-        - -5.0 # x
-        - -5.0 # y
-        - -5.0 # z
+        - -1.0 # x
+        - -1.0 # y
+        - -1.0 # z
       max_translational_position:
-        - 5.0 # x
-        - 5.0 # y
-        - 5.0 # z
+        - 1.0 # x
+        - 1.0 # y
+        - 1.0 # z
       min_translational_velocity:
         - -0.5 # x
         - -0.5 # y

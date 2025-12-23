@@ -56,14 +56,14 @@ struct CartesianState {
    *
    * @return Eigen::Quaterniond
    */
-  Eigen::Quaterniond getPoseQuaternion() const;
+  Eigen::Quaterniond get_pose_quaternion() const;
 
   /**
    * @brief Set quaternion of pose
    *
    * @param quaternion
    */
-  void setPoseQuaternion(const Eigen::Quaterniond& quaternion);
+  void set_pose_quaternion(const Eigen::Quaterniond& quaternion);
 };
 
 }  // namespace aic_controller

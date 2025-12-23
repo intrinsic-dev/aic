@@ -27,7 +27,7 @@ CartesianLimits::CartesianLimits()
       max_translational_velocity(Eigen::Vector3d::Zero()),
       min_rotation_angle(Eigen::Vector3d::Constant(-M_PI)),
       max_rotation_angle(Eigen::Vector3d::Constant(M_PI)),
-      reference_quaternion_for_min_max(Eigen::Quaterniond::Identity()),
-      max_rotational_velocity(0.0) {};
+      max_rotational_velocity(0.0),
+      reference_quaternion_for_min_max(Eigen::Quaterniond::Identity()) {};
 
 }  // namespace aic_controller

@@ -5,12 +5,6 @@ aic_controller:
     read_only: true
   }
 
-  tool_frame_id: {
-    type: string,
-    default_value: "tool0",
-    description: "Frame ID of control tooltip or end-effector"
-  }
-
   kinematics:
     plugin_name: {
       type: string,
@@ -26,7 +20,7 @@ aic_controller:
     }
     tip: {
       type: string,
-      description: "Specifies the end effector link of the robot description used by the kinematics plugin."
+      description: "Frame ID of tool center point"
     }
     alpha: {
       type: double,

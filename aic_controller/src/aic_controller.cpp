@@ -231,7 +231,7 @@ controller_interface::CallbackReturn Controller::on_activate(
   }
 
   if (!kinematics_->calculate_link_transform(current_state_.positions,
-                                             params_.tool_frame_id,
+                                             params_.kinematics.tip,
                                              current_tool_state_.pose)) {
     RCLCPP_ERROR(get_node()->get_logger(),
                  "Unable to compute current cartesian state of tool frame");
@@ -289,7 +289,7 @@ controller_interface::return_type Controller::update(
 
   // Use forward kinematics to update the current cartesian state of tool frame
   if (!kinematics_->calculate_link_transform(current_state_.positions,
-                                             params_.tool_frame_id,
+                                             params_.kinematics.tip,
                                              current_tool_state_.pose)) {
     RCLCPP_ERROR(get_node()->get_logger(),
                  "Unable to compute current cartesian state of tool frame");
@@ -541,8 +541,8 @@ bool Controller::populate_cartesian_limits(const aic_controller::Params& params,
 void Controller::populate_controller_state(ControllerState& controller_state) {
   controller_state.header.stamp = get_node()->now();
 
-  controller_state.tool_pose = tf2::toMsg(last_tool_reference_.pose);
-  controller_state.tool_velocity = tf2::toMsg(last_tool_reference_.velocity);
+  controller_state.tcp_pose = tf2::toMsg(last_tool_reference_.pose);
+  controller_state.tcp_velocity = tf2::toMsg(last_tool_reference_.velocity);
 
   if (last_commanded_state_.has_value()) {
     controller_state.joint_state = last_commanded_state_.value();
@@ -675,18 +675,15 @@ bool Controller::clamp_reference_to_limits(const CartesianLimits& limits,
 
     // compute relative quaternion between current and reference quaternion
     Eigen::Quaterniond relative_quaternion =
-        target_state.getPoseQuaternion() *
+        target_state.get_pose_quaternion() *
         limits.reference_quaternion_for_min_max.inverse();
 
-    // The exponential log of the quaternion provides 0.5 * rotational_offset
-    // from the reference quaternion. The 0.5 comes from the fact that
-    // quaternions use rotation angles divided by 2 in sin() and cos()
-    // functions. Thus the result of the logMapQuaternion needs to be multiplied
-    // by 2.0.
+    // Compute the logarithmic map of the unit quaternion to obtain the
+    // corresponding tangent vector.
     Eigen::Vector3d rotational_offset =
-        2.0 * utils::logMapQuaternion(relative_quaternion);
-    Eigen::Vector3d new_rotational_offset = rotational_offset;
+        utils::log_map_quaternion(relative_quaternion);
 
+    Eigen::Vector3d new_rotational_offset = rotational_offset;
     // Get mask for elements that exceeded soft margins
     auto rot_exceed_max_margin_mask =
         new_rotational_offset.array() >=
@@ -741,12 +738,12 @@ bool Controller::clamp_reference_to_limits(const CartesianLimits& limits,
           get_node()->get_logger(), *get_node()->get_clock(), 1000,
           "Limit violation: Rotational offset clamped to "
               << new_rotational_offset.transpose());
-
-      // Divide the rotational offset by 2.0 to correctly apply expMapQuaternion
-      new_rotational_offset.array() /= 2.0;
-      target_state.setPoseQuaternion(
-          utils::expMapQuaternion(new_rotational_offset) *
-          limits.reference_quaternion_for_min_max);
+      // Compute the exponential map of the rotational offset tangent vector to
+      // obtain the unit quaternion
+      Eigen::Quaterniond new_quaternion =
+          utils::exp_map_quaternion(new_rotational_offset);
+      target_state.set_pose_quaternion(new_quaternion *
+                                       limits.reference_quaternion_for_min_max);
 
       mutated = true;
     }
@@ -809,11 +806,11 @@ bool Controller::update_reference_linear_interpolation(
       // (SLERP) so as to keep the angular velocity constant
       double t = 1.0 / (control_frequency * remaining_time_to_target_seconds);
       Eigen::Quaterniond new_quaternion =
-          last_reference.getPoseQuaternion()
-              .slerp(t, target_state.getPoseQuaternion())
+          last_reference.get_pose_quaternion()
+              .slerp(t, target_state.get_pose_quaternion())
               .normalized();
 
-      new_reference.setPoseQuaternion(new_quaternion);
+      new_reference.set_pose_quaternion(new_quaternion);
     }
     if (interpolate_velocity) {
       // Linearly interpolate the velocity
@@ -837,7 +834,7 @@ bool Controller::update_reference_linear_interpolation(
   }
   if (velocity_only) {
     // Integrate reference pose by one timestep
-    new_reference = utils::IntegratePose(new_reference, control_frequency);
+    new_reference = utils::integrate_pose(new_reference, control_frequency);
   }
 
   return true;

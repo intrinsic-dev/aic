@@ -35,7 +35,7 @@
 #include "tf2_eigen/tf2_eigen.hpp"
 
 // Interfaces
-#include "aic_control_interfaces/msg/aic_controller_state.hpp"
+#include "aic_control_interfaces/msg/controller_state.hpp"
 #include "aic_control_interfaces/msg/motion_update.hpp"
 #include "aic_control_interfaces/msg/trajectory_generation_mode.hpp"
 #include "lifecycle_msgs/msg/state.hpp"
@@ -52,7 +52,7 @@ using MotionUpdate = aic_control_interfaces::msg::MotionUpdate;
 using TrajectoryGenerationMode =
     aic_control_interfaces::msg::TrajectoryGenerationMode;
 using JointTrajectoryPoint = trajectory_msgs::msg::JointTrajectoryPoint;
-using ControllerState = aic_control_interfaces::msg::AICControllerState;
+using ControllerState = aic_control_interfaces::msg::ControllerState;
 
 //==============================================================================
 enum class ControlMode : uint8_t { Invalid = 0, Admittance = 1, Impedance = 2 };
@@ -227,10 +227,10 @@ class Controller : public controller_interface::ControllerInterface {
   JointTrajectoryPoint current_state_;
   // Latest cartesian state of tool calculatd via forward kinematics from
   // joint position values in current_state_
-  // todo(johntgz) Any reason why current_tool_state_ should not replace
-  // last_tool_reference_
   CartesianState current_tool_state_;
   // Reference used for interpolation
+  // todo(johntgz) Investigate if we can replace last_tool_reference_ with
+  // current_tool_state_
   CartesianState last_tool_reference_;
 
   double time_to_target_seconds_;

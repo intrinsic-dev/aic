@@ -20,36 +20,52 @@
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
+#include <sophus/se3.hpp>
+#include <sophus/so3.hpp>
 
 #include "aic_controller/cartesian_state.hpp"
 
+//==============================================================================
 namespace aic_controller {
 
+//==============================================================================
 namespace utils {
 
 /**
- * @brief Logarithmic map of the unit quaternion.
+ * @brief Computes the logarithmic map for SU(2), converting a Unit Quaternion
+ * to it's corresponding tanget vector
  *
- * This is the inverse of the 'expMapQuaternion' function
+ * This is the inverse of the 'exp_map_quaternion' function
  *
- * @param quaternion quaternion q of unit length
+ * @param quaternion A quaternion of unit length
  * @return Eigen::Vector3d Corresponding vector in the tangent space of SU(2)
  */
-Eigen::Vector3d logMapQuaternion(const Eigen::Quaterniond& q);
+Eigen::Vector3d log_map_quaternion(const Eigen::Quaterniond& q);
 
 /**
- * @brief Exponential map to the unit quaternion, a member of the SU(2) group.
+ * @brief Computes the Exponential Map for SU(2), converting a tangent vector to
+ * a Unit Quaternion.
  *
- * Let \f$ \exp \f$ be the matrix exponential and \f$ \hat{\cdot} \f$ be the
- * function which maps a tangent vector in SU(2) to its corresponding (2x2)
- * matrix representation. It holds that:
+ * This function implements the mapping from Lie Algebra to the Lie Group in
+ * SU(2). Given a 3D tangent vector δ (representing an axis-angle rotation), it
+ * calculates:
  *
- * \f$ \exp_{SU(2)}(\delta) = exp(\hat{delta}) \f$
+ * R = exp(δ_hat)
  *
- * @param delta Tangent vector of SU(2)
- * @return Eigen::Quaterniond unit quaternion, a member of SU(2)
+ * Where:
+ * - δ (delta): A 3D vector in the tangent space (Lie Algebra).
+ * - hat (^):   The operator mapping a 3D vector to a 2x2 skew-Hermitian matrix
+ * - exp:       The matrix exponential function.
+ *
+ * Relationship:
+ * The resulting quaternion represents a rotation of θ = ||δ|| radians around
+ * the unit axis u = δ / ||δ||.
+ *
+ * @param delta A 3D tangent vector (Eigen::Vector3d) representing the rotation.
+ * @return Eigen::Quaterniond The equivalent Unit Quaternion
+ * (Eigen::Quaterniond)
  */
-Eigen::Quaterniond expMapQuaternion(const Eigen::Vector3d& delta);
+Eigen::Quaterniond exp_map_quaternion(const Eigen::Vector3d& delta);
 
 /**
  * @brief Euler integration of a pose with the assumption of constant velocity
@@ -59,8 +75,8 @@ Eigen::Quaterniond expMapQuaternion(const Eigen::Vector3d& delta);
  * @param control_frequency Frequency of control loop in Hz
  * @return CartesianState Integrated cartesian state
  */
-CartesianState IntegratePose(const CartesianState& pose,
-                             const double& control_frequency);
+CartesianState integrate_pose(const CartesianState& pose,
+                              const double& control_frequency);
 
 }  // namespace utils
 
