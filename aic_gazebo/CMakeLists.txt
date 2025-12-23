@@ -19,23 +19,37 @@ find_package(gz_common_vendor REQUIRED)
 find_package(gz-common REQUIRED COMPONENTS profiler)
 set(GZ_COMMON_VER ${gz-common_VERSION_MAJOR})
 
+find_package(gz_msgs_vendor REQUIRED)
+find_package(gz-msgs REQUIRED)
+set(GZ_MSGS_VER ${gz-msgs_VERSION_MAJOR})
+
 find_package(gz_sim_vendor REQUIRED)
 find_package(gz-sim REQUIRED)
 set(GZ_SIM_VER ${gz-sim_VERSION_MAJOR})
+
+find_package(Protobuf REQUIRED)
 
 message(STATUS "Compiling against Gazebo Ionic")
 
 add_library(ScoringPlugin
   SHARED
   src/ScoringPlugin.cc
+  proto/scoring.proto
 )
 
+protobuf_generate(TARGET ScoringPlugin
+  IMPORT_DIRS "${gz-msgs11_PROTO_PATH}/../gz/gz-msgs${GZ_MSGS_VER}/protos")
+
 target_include_directories(
-  ScoringPlugin PRIVATE include
+  ScoringPlugin PRIVATE
+    include
+    ${CMAKE_CURRENT_BINARY_DIR}
 )
 
 target_link_libraries(ScoringPlugin PRIVATE
-  gz-sim${GZ_SIM_VER}::gz-sim${GZ_SIM_VER})
+  gz-sim${GZ_SIM_VER}::gz-sim${GZ_SIM_VER}
+  ${PROTO_SRC}
+  protobuf::libprotobuf)
 
 install(
   TARGETS ScoringPlugin
