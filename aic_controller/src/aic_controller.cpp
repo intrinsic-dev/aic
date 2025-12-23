@@ -569,10 +569,10 @@ controller_interface::return_type Controller::update(
     Eigen::Matrix<double, 7, 1> current_tool_frame, target_tool_frame;
     current_tool_frame.head<3>() = current_tool_state_.pose.translation();
     current_tool_frame.tail<4>() =
-        current_tool_state_.getPoseQuaternion().coeffs();
+        current_tool_state_.get_pose_quaternion().coeffs();
     target_tool_frame.head<3>() = target_state_.value().pose.translation();
     target_tool_frame.tail<4>() =
-        target_state_.value().getPoseQuaternion().coeffs();
+        target_state_.value().get_pose_quaternion().coeffs();
 
     Eigen::Matrix<double, 6, 1> tool_pose_error;
     if (!kinematics_->calculate_frame_difference(
@@ -591,7 +591,7 @@ controller_interface::return_type Controller::update(
     Eigen::Matrix<double, 6, Eigen::Dynamic> jacobian;
     jacobian.resize(6, num_joints_);
     if (!kinematics_->calculate_jacobian(current_joint_positions,
-                                         params_.tool_frame_id, jacobian)) {
+                                         params_.kinematics.tip, jacobian)) {
       RCLCPP_ERROR(get_node()->get_logger(), "Failed to calculate jacobian");
       return controller_interface::return_type::ERROR;
     }
