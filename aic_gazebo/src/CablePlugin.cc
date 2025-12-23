@@ -49,7 +49,6 @@ namespace {
 Entity findLinkInModel(const std::string& _modelName,
                        const std::string& _linkName,
                        const gz::sim::EntityComponentManager& _ecm) {
-
   auto entitiesMatchingName = entitiesFromScopedName(_modelName, _ecm);
 
   Entity modelEntity{kNullEntity};
@@ -61,8 +60,7 @@ Entity findLinkInModel(const std::string& _modelName,
                                    components::ParentEntity(modelEntity),
                                    components::Name(_linkName));
   } else {
-    gzwarn << "Model " << _modelName
-            << " could not be found.\n";
+    gzwarn << "Model " << _modelName << " could not be found.\n";
   }
   return kNullEntity;
 }

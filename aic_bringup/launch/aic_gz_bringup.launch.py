@@ -254,7 +254,7 @@ def launch_setup(context, *args, **kwargs):
             "cable_roll": cable_roll,
             "cable_pitch": cable_pitch,
             "cable_yaw": cable_yaw,
-            #"attach_cable_to_gripper": attach_cable_to_gripper,
+            "attach_cable_to_gripper": attach_cable_to_gripper,
         }.items(),
         condition=IfCondition(spawn_cable),
     )
@@ -554,7 +554,7 @@ def generate_launch_description():
             default_value=PathJoinSubstitution(
                 [FindPackageShare("aic_description"), "urdf", "cable.sdf.xacro"]
             ),
-            description="URDF/XACRO file to use for cable.",
+            description="SDF/XACRO file to use for cable.",
         )
     )
     declared_arguments.append(

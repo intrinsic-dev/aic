@@ -141,4 +141,6 @@ def generate_launch_description():
             description="Whether to attach cable to gripper",
         )
     )
-    return LaunchDescription(declared_arguments + [OpaqueFunction(function=launch_setup)])
+    return LaunchDescription(
+        declared_arguments + [OpaqueFunction(function=launch_setup)]
+    )
