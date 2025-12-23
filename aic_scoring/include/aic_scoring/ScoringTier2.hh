@@ -43,6 +43,12 @@ namespace aic_scoring
   // The Tier2 scoring interface.
   class ScoringTier2
   {
+    public: static bool ParsePlugsFromYaml(YAML::Node &_yaml,
+                                      std::map<std::string, Pluggable> &_plugs);
+
+    public: static bool ParsePortsFromYaml(YAML::Node &_yaml,
+                                      std::map<std::string, Pluggable> &_ports);
+
     /// \brief Class constructor.
     /// \param[in] _node Pointer to the ROS node.
     /// \param[in] _config YAML config node.

@@ -27,6 +27,7 @@ find_package(gz_sim_vendor REQUIRED)
 find_package(gz-sim REQUIRED)
 set(GZ_SIM_VER ${gz-sim_VERSION_MAJOR})
 
+find_package(aic_scoring REQUIRED)
 find_package(Protobuf REQUIRED)
 
 message(STATUS "Compiling against Gazebo Ionic")
@@ -47,6 +48,7 @@ target_include_directories(
 )
 
 target_link_libraries(ScoringPlugin PRIVATE
+  aic_scoring::aic_scoring
   gz-sim${GZ_SIM_VER}::gz-sim${GZ_SIM_VER}
   ${PROTO_SRC}
   protobuf::libprotobuf)

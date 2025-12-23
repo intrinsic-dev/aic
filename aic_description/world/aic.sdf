@@ -322,6 +322,7 @@
     <plugin
       filename="ScoringPlugin"
       name="aic_gazebo::ScoringPlugin">
+      <yaml_file>/home/caguero/ws_aic/src/aic/aic_scoring/config/tier2.yaml</yaml_file>
     </plugin>
     <plugin
       filename="gz-sim-contact-system"

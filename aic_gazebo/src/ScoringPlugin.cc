@@ -38,6 +38,14 @@ void ScoringPlugin::Configure(const gz::sim::Entity& _entity,
   gzdbg << "aic_gazebo::ScoringPlugin::Configure on entity: " << _entity
         << std::endl;
 
+  // Initialize plugs and ports.
+  auto yamlFile = _sdf->Get<std::string>("yaml_file", "scoring.yaml").first;
+  auto config = YAML::LoadFile(yamlFile);
+  if (!aic_scoring::ScoringTier2::ParsePlugsFromYaml(config, this->plugs))
+    return;
+  if (!aic_scoring::ScoringTier2::ParsePortsFromYaml(config, this->ports))
+    return;
+
   // Initialize system update period.
   double rate = _sdf->Get<double>("update_rate", 1).first;
   std::chrono::duration<double> period{rate > 0 ? 1 / rate : 0};

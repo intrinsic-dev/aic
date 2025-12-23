@@ -29,27 +29,15 @@
 
 namespace aic_scoring {
 //////////////////////////////////////////////////
-ScoringTier2::ScoringTier2(rclcpp::Node *_node, YAML::Node *_config)
-    : node(_node) {
-  this->yamlNode = YAML::Clone(*_config);
-
-  if (!this->ParseStats()) return;
-
-  // Debug.
-  for (const auto &[connection, distance] : this->pluggableMap)
-    std::cout << connection << ": " << distance << " m." << std::endl;
-}
-
-//////////////////////////////////////////////////
-bool ScoringTier2::ParseStats() {
-  // Sanity check: We should have a [plugs] map.
-  if (!this->yamlNode["plugs"]) {
-    std::cerr << "Unable to find [plugs] in tier2.yaml" << std::endl;
+bool ScoringTier2::ParsePlugsFromYaml(YAML::Node &_yaml,
+                                     std::map<std::string, Pluggable> &_plugs) {
+  if (!_yaml["plugs"]) {
+    std::cerr << "Unable to find [plugs] in yaml" << std::endl;
     return false;
   }
 
   // Sanity check: We should have a sequence of [plug]
-  auto plugs = this->yamlNode["plugs"];
+  auto plugs = _yaml["plugs"];
   if (!plugs.IsSequence()) {
     std::cerr << "Unable to find sequence of plugs within [plugs]" << std::endl;
     return false;
@@ -76,29 +64,31 @@ bool ScoringTier2::ParseStats() {
       return false;
     }
     plug.name = plugProperties["name"].as<std::string>();
-    std::cout << "Name: " << plug.name << std::endl;
 
     if (!plugProperties["type"]) {
       std::cerr << "Unable to find [type] within [plug]" << std::endl;
       return false;
     }
-
     plug.type = plugProperties["type"].as<std::string>();
 
     if (auto name = plug.name;
-        !this->plugs.insert({plug.name, std::move(plug)}).second) {
+        !_plugs.insert({plug.name, std::move(plug)}).second) {
       std::cerr << "Plug [" << name << "] repeated. Ignoring." << std::endl;
     }
   }
+  return true;
+}
 
-  // Sanity check: We should have a [ports] map.
-  if (!this->yamlNode["ports"]) {
-    std::cerr << "Unable to find [ports] in tier2.yaml" << std::endl;
+//////////////////////////////////////////////////
+bool ScoringTier2::ParsePortsFromYaml(YAML::Node &_yaml,
+                                     std::map<std::string, Pluggable> &_ports) {
+  if (!_yaml["ports"]) {
+    std::cerr << "Unable to find [ports] in yaml" << std::endl;
     return false;
   }
 
   // Sanity check: We should have a sequence of [port]
-  auto ports = this->yamlNode["ports"];
+  auto ports = _yaml["ports"];
   if (!ports.IsSequence()) {
     std::cerr << "Unable to find sequence of ports within [ports]" << std::endl;
     return false;
@@ -130,14 +120,35 @@ bool ScoringTier2::ParseStats() {
       std::cerr << "Unable to find [type] within [port]" << std::endl;
       return false;
     }
-
     port.type = portProperties["type"].as<std::string>();
 
     if (auto name = port.name;
-        !this->ports.insert({port.name, std::move(port)}).second) {
+        !_ports.insert({port.name, std::move(port)}).second) {
       std::cerr << "Port [" << name << "] repeated. Ignoring." << std::endl;
     }
   }
+  return true;
+}
+
+//////////////////////////////////////////////////
+ScoringTier2::ScoringTier2(rclcpp::Node *_node, YAML::Node *_config)
+    : node(_node) {
+  this->yamlNode = YAML::Clone(*_config);
+
+  if (!this->ParseStats()) return;
+
+  // Debug.
+  // for (const auto &[connection, distance] : this->pluggableMap)
+  //   std::cout << connection << ": " << distance << " m." << std::endl;
+}
+
+//////////////////////////////////////////////////
+bool ScoringTier2::ParseStats() {
+  if (!ParsePlugsFromYaml(this->yamlNode, this->plugs))
+    return false;
+
+  if (!ParsePortsFromYaml(this->yamlNode, this->ports))
+    return false;
 
   // Populate pluggableMap.
   for (const auto &[plugName, plugInfo] : this->plugs) {

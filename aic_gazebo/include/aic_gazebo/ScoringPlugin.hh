@@ -20,6 +20,7 @@
 
 #include "proto/scoring.pb.h"
 #include <chrono>
+#include <aic_scoring/ScoringTier2.hh>
 #include <gz/sim/EventManager.hh>
 #include <gz/sim/System.hh>
 #include <gz/transport/Node.hh>
@@ -64,6 +65,12 @@ namespace aic_gazebo
 
     /// \brief Last system update simulation time.
     private: std::chrono::steady_clock::duration lastUpdateTime{0};
+
+    /// \brief All pluggable plugs.
+    public: std::map<std::string, aic_scoring::Pluggable> plugs;
+
+    /// \brief All pluggable ports.
+    public: std::map<std::string, aic_scoring::Pluggable> ports;
   };
 }
 #endif
