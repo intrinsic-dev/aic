@@ -4,11 +4,9 @@
   <xacro:arg name="attach_cable_to_gripper" default="false"/>
 
   <model name="cable">
+    <static>false</static>
     <include merge="true">
-      <uri>model://lc_sc_cable</uri>
-      <!--<pose>0.16258051991462708 0.29270303249359131 1.3965834379196167 0.18688329167429171 -0.93647880751055723 2.9948154665877094</pose>-->
-      <static>false</static>
-
+      <uri>model://sfp_sc_cable</uri>
       <xacro:if value="$(arg attach_cable_to_gripper)">
       <plugin filename="CablePlugin" name="aic_gazebo::CablePlugin">
         <cable_connection_0_link>lc_plug_link</cable_connection_0_link>

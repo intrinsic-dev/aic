@@ -2,7 +2,7 @@
 <sdf version="1.9">
   <model name="lc_sc_cable">
     <include merge="true">
-      <uri>model://cable_base_c_rotated</uri>
+      <uri>model://cable_base_c</uri>
     </include>
     <include merge="true">
       <uri>model://LC Plug</uri>

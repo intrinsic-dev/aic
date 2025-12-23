@@ -552,7 +552,7 @@ def generate_launch_description():
         DeclareLaunchArgument(
             "cable_description_file",
             default_value=PathJoinSubstitution(
-                [FindPackageShare("aic_description"), "urdf", "cable.urdf.xacro"]
+                [FindPackageShare("aic_description"), "urdf", "cable.sdf.xacro"]
             ),
             description="URDF/XACRO file to use for cable.",
         )
