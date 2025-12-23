@@ -18,8 +18,10 @@
 #include "aic_engine.hpp"
 
 #include <filesystem>
+#include <sstream>
 
 #include "aic_task_interfaces/msg/task.hpp"
+#include "ament_index_cpp/get_package_share_directory.hpp"
 
 namespace aic {
 
@@ -61,6 +63,80 @@ Engine::Engine(const rclcpp::NodeOptions& options)
 
   insert_cable_action_client_ =
       rclcpp_action::create_client<InsertCableAction>(this, "/insert_cable");
+
+  spawn_entity_client_ =
+      this->create_client<SpawnEntitySrv>("/world/aic/create");
+}
+
+//==============================================================================
+bool Engine::spawn_task_board(double x, double y, double z, double roll,
+                               double pitch, double yaw) {
+  if (!spawn_entity_client_->wait_for_service(std::chrono::seconds(5))) {
+    RCLCPP_ERROR(this->get_logger(),
+                 "Spawn entity service not available after waiting");
+    return false;
+  }
+
+  // Get the task board xacro file path
+  const std::string aic_description_share =
+      ament_index_cpp::get_package_share_directory("aic_description");
+  const std::string xacro_file =
+      aic_description_share + "/urdf/task_board.urdf.xacro";
+
+  // Convert xacro to URDF using xacro command
+  std::stringstream cmd;
+  cmd << "xacro " << xacro_file << " x:=" << x << " y:=" << y << " z:=" << z
+      << " roll:=" << roll << " pitch:=" << pitch << " yaw:=" << yaw;
+
+  FILE* pipe = popen(cmd.str().c_str(), "r");
+  if (!pipe) {
+    RCLCPP_ERROR(this->get_logger(), "Failed to execute xacro command");
+    return false;
+  }
+
+  std::stringstream urdf_stream;
+  char buffer[128];
+  while (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
+    urdf_stream << buffer;
+  }
+  int result = pclose(pipe);
+  if (result != 0) {
+    RCLCPP_ERROR(this->get_logger(), "xacro command failed with code %d",
+                 result);
+    return false;
+  }
+
+  std::string urdf_string = urdf_stream.str();
+  if (urdf_string.empty()) {
+    RCLCPP_ERROR(this->get_logger(), "Generated URDF is empty");
+    return false;
+  }
+
+  // Create spawn request
+  auto request = std::make_shared<SpawnEntitySrv::Request>();
+  request->name = "task_board";
+  request->xml = urdf_string;
+  request->allow_renaming = true;
+
+  // Call service synchronously
+  auto future = spawn_entity_client_->async_send_request(request);
+
+  if (rclcpp::spin_until_future_complete(this->get_node_base_interface(),
+                                         future) !=
+      rclcpp::FutureReturnCode::SUCCESS) {
+    RCLCPP_ERROR(this->get_logger(), "Failed to call spawn entity service");
+    return false;
+  }
+
+  auto response = future.get();
+  if (!response->success) {
+    RCLCPP_ERROR(this->get_logger(), "Failed to spawn task board: %s",
+                 response->status_message.c_str());
+    return false;
+  }
+
+  RCLCPP_INFO(this->get_logger(), "Successfully spawned task board");
+  return true;
 }
 
 }  // namespace aic

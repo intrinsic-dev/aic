@@ -27,6 +27,7 @@
 #include "geometry_msgs/msg/wrench_stamped.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
+#include "ros_gz_interfaces/srv/spawn_entity.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
 #include "yaml-cpp/yaml.h"
 
@@ -37,6 +38,7 @@ using InsertCableAction = aic_task_interfaces::action::InsertCable;
 using InsertCableGoalHandle =
     rclcpp_action::ServerGoalHandle<InsertCableAction>;
 using JointStateMsg = sensor_msgs::msg::JointState;
+using SpawnEntitySrv = ros_gz_interfaces::srv::SpawnEntity;
 using Task = aic_task_interfaces::msg::Task;
 using WrenchStampedMsg = geometry_msgs::msg::WrenchStamped;
 
@@ -73,6 +75,17 @@ class Engine : public rclcpp::Node {
   /// \brief Constructor.
   Engine(const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
 
+  /// \brief Spawn the task board in Gazebo.
+  /// \param[in] x X position
+  /// \param[in] y Y position
+  /// \param[in] z Z position
+  /// \param[in] roll Roll orientation (radians)
+  /// \param[in] pitch Pitch orientation (radians)
+  /// \param[in] yaw Yaw orientation (radians)
+  /// \return True if spawning succeeded, false otherwise
+  bool spawn_task_board(double x, double y, double z, double roll,
+                        double pitch, double yaw);
+
  private:
   // Subscriptions.
   rclcpp::Subscription<WrenchStampedMsg>::SharedPtr wrench_sub_;
@@ -83,6 +96,9 @@ class Engine : public rclcpp::Node {
   // Action clients.
   rclcpp_action::Client<InsertCableAction>::SharedPtr
       insert_cable_action_client_;
+
+  // Service clients.
+  rclcpp::Client<SpawnEntitySrv>::SharedPtr spawn_entity_client_;
 
   // Strings.
   // Name of the aic_adapter node for lifecycle transitions.

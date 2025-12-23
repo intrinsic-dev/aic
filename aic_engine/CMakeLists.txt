@@ -10,10 +10,12 @@ find_package(ament_cmake REQUIRED)
 
 find_package(aic_scoring REQUIRED)
 find_package(aic_task_interfaces REQUIRED)
+find_package(ament_index_cpp REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
 find_package(rclcpp_components REQUIRED)
+find_package(ros_gz_interfaces REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(yaml_cpp_vendor REQUIRED)
 find_package(yaml-cpp REQUIRED)
@@ -23,12 +25,14 @@ add_library(aic_engine_component SHARED
 )
 target_link_libraries(aic_engine_component
   aic_scoring::aic_scoring
+  ament_index_cpp::ament_index_cpp
   rclcpp::rclcpp
   rclcpp_action::rclcpp_action
   rclcpp_components::component
   yaml-cpp
   ${aic_task_interfaces_TARGETS}
   ${geometry_msgs_TARGETS}
+  ${ros_gz_interfaces_TARGETS}
   ${sensor_msgs_TARGETS}
 )
 rclcpp_components_register_node(aic_engine_component
