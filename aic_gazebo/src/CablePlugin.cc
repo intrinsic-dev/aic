@@ -17,6 +17,9 @@
 
 #include "CablePlugin.hh"
 
+#include <gz/common/Console.hh>
+#include <gz/plugin/Register.hh>
+#include <gz/sim/Util.hh>
 #include <gz/sim/components/CanonicalLink.hh>
 #include <gz/sim/components/DetachableJoint.hh>
 #include <gz/sim/components/Link.hh>
@@ -26,10 +29,6 @@
 #include <gz/sim/components/Pose.hh>
 #include <gz/sim/components/PoseCmd.hh>
 #include <gz/sim/components/World.hh>
-#include <gz/sim/Util.hh>
-
-#include <gz/common/Console.hh>
-#include <gz/plugin/Register.hh>
 
 using namespace gz;
 using namespace sim;
@@ -47,12 +46,11 @@ namespace {
 /// \param[in] _modelName Name of model
 /// \param[in] _linkName Name of link to find
 /// \param[in] _ecm Entity component manager
-Entity findLinkInModel(const std::string &_modelName,
-                       const std::string _linkName,
-                       const gz::sim::EntityComponentManager &_ecm) {
+Entity findLinkInModel(const std::string& _modelName,
+                       const std::string& _linkName,
+                       const gz::sim::EntityComponentManager& _ecm) {
 
-  auto entitiesMatchingName = entitiesFromScopedName(
-    _modelName, _ecm);
+  auto entitiesMatchingName = entitiesFromScopedName(_modelName, _ecm);
 
   Entity modelEntity{kNullEntity};
   if (entitiesMatchingName.size() == 1) {
@@ -60,10 +58,9 @@ Entity findLinkInModel(const std::string &_modelName,
   }
   if (kNullEntity != modelEntity) {
     return _ecm.EntityByComponents(components::Link(),
-        components::ParentEntity(modelEntity),
-        components::Name(_linkName));
-  }
-  else {
+                                   components::ParentEntity(modelEntity),
+                                   components::Name(_linkName));
+  } else {
     gzwarn << "Model " << _modelName
             << " could not be found.\n";
   }
@@ -76,16 +73,13 @@ Entity findLinkInModel(const std::string &_modelName,
 /// the detachable joint.
 /// \param[in] _creator_ Sdf entity creator for creating a static model
 /// \param[in] _ecm Entity component manager
-Entity makeStatic(Entity _entity,
-                  bool _attachEntityAsParentOfJoint,
-                  SdfEntityCreator *_creator,
-                  EntityComponentManager &_ecm)
+Entity makeStatic(Entity _entity, bool _attachEntityAsParentOfJoint,
+                  SdfEntityCreator* _creator, EntityComponentManager& _ecm)
 {
   Entity detachableJointEntity = kNullEntity;
 
   static sdf::Model staticModelToSpawn;
-  if (staticModelToSpawn.LinkCount() == 0u)
-  {
+  if (staticModelToSpawn.LinkCount() == 0u) {
     sdf::ElementPtr staticModelSDF(new sdf::Element);
     sdf::initFile("model.sdf", staticModelSDF);
     staticModelSDF->GetAttribute("name")->Set("static_model");
@@ -103,16 +97,14 @@ Entity makeStatic(Entity _entity,
                       _ecm.EntityByComponents(components::World()));
 
   Entity staticLinkEntity = _ecm.EntityByComponents(
-      components::Link(),
-      components::ParentEntity(staticEntity),
+      components::Link(), components::ParentEntity(staticEntity),
       components::Name("static_link"));
 
-  if (staticLinkEntity == kNullEntity)
-    return detachableJointEntity;
+  if (staticLinkEntity == kNullEntity) return detachableJointEntity;
 
   Entity parentLinkEntity;
   Entity childLinkEntity;
-  if ( _attachEntityAsParentOfJoint) {
+  if (_attachEntityAsParentOfJoint) {
     parentLinkEntity = _entity;
     childLinkEntity = staticLinkEntity;
   } else {
@@ -122,29 +114,28 @@ Entity makeStatic(Entity _entity,
 
   detachableJointEntity = _ecm.CreateEntity();
   _ecm.CreateComponent(detachableJointEntity,
-      components::DetachableJoint(
-      {parentLinkEntity, childLinkEntity, "fixed"}));
+                       components::DetachableJoint(
+                           {parentLinkEntity, childLinkEntity, "fixed"}));
 
   return detachableJointEntity;
 }
 
-} // namespace
+}  // namespace
 
 namespace aic_gazebo {
 
 //////////////////////////////////////////////////
-void CablePlugin::Configure(
-    const gz::sim::Entity& _entity,
-    const std::shared_ptr<const sdf::Element>& _sdf,
-    gz::sim::EntityComponentManager& _ecm,
-    gz::sim::EventManager& _eventManager) {
+void CablePlugin::Configure(const gz::sim::Entity& _entity,
+                            const std::shared_ptr<const sdf::Element> &_sdf,
+                            gz::sim::EntityComponentManager &_ecm,
+                            gz::sim::EventManager &_eventManager) {
   gzdbg << "aic_gazebo::CablePlugin::Configure on entity: " << _entity
         << std::endl;
 
   this->model = Model(_entity);
   if (!this->model.Valid(_ecm)) {
     gzerr << "CablePlugin should be attached to a model entity. "
-           << "Failed to initialize." << std::endl;
+          << "Failed to initialize." << std::endl;
     return;
   }
 
@@ -153,40 +144,31 @@ void CablePlugin::Configure(
   if (_sdf->HasElement("cable_connection_0_link")) {
     this->cableConnection0LinkName =
         _sdf->Get<std::string>("cable_connection_0_link");
-  }
-  else {
-    gzerr << "Missing <cable_connection_0_link> parameter."
-          << std::endl;
+  } else {
+    gzerr << "Missing <cable_connection_0_link> parameter." << std::endl;
     return;
   }
 
   if (_sdf->HasElement("cable_connection_1_link")) {
     this->cableConnection1LinkName =
         _sdf->Get<std::string>("cable_connection_1_link");
-  }
-  else {
-    gzerr << "Missing <cable_connection_1_link> parameter."
-          << std::endl;
+  } else {
+    gzerr << "Missing <cable_connection_1_link> parameter." << std::endl;
     return;
   }
 
   if (_sdf->HasElement("end_effector_model")) {
-    this->endEffectorModelName =
-        _sdf->Get<std::string>("end_effector_model");
-  }
-  else {
-    gzerr << "Missing <end_effector_model> parameter."
-          << std::endl;
+    this->endEffectorModelName = _sdf->Get<std::string>("end_effector_model");
+  } else {
+    gzerr << "Missing <end_effector_model> parameter." << std::endl;
     return;
   }
 
   if (_sdf->HasElement("end_effector_link")) {
     this->endEffectorLinkName =
         _sdf->Get<std::string>("end_effector_link");
-  }
-  else {
-    gzerr << "Missing <end_effector_link> parameter."
-          << std::endl;
+  } else {
+    gzerr << "Missing <end_effector_link> parameter." << std::endl;
     return;
   }
 
@@ -200,7 +182,6 @@ void CablePlugin::Configure(
 //////////////////////////////////////////////////
 void CablePlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
                             gz::sim::EntityComponentManager& _ecm) {
-
   if (this->cableConnection0LinkEntity == kNullEntity) {
     this->cableConnection0LinkEntity =
         findLinkInModel(this->cableModelName, cableConnection0LinkName, _ecm);
@@ -211,7 +192,7 @@ void CablePlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
 
   if (this->cableConnection1LinkEntity == kNullEntity) {
     this->cableConnection1LinkEntity =
-        findLinkInModel( this->cableModelName, cableConnection1LinkName, _ecm);
+        findLinkInModel(this->cableModelName, cableConnection1LinkName, _ecm);
 
     if (this->cableConnection1LinkEntity == kNullEntity)
       gzerr << "Uable to find cable connection 1 link" << std::endl;
@@ -232,12 +213,10 @@ void CablePlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
 
   if (this->cableState == CableState::HARNESS) {
     // Hold both connections of the cable in place
-    this->detachableJointStatic0Entity =
-        makeStatic(this->cableConnection0LinkEntity, false,
-                   this->creator.get(), _ecm);
-    this->detachableJointStatic1Entity =
-        makeStatic(this->cableConnection1LinkEntity, true,
-                   this->creator.get(), _ecm);
+    this->detachableJointStatic0Entity = makeStatic(
+        this->cableConnection0LinkEntity, false, this->creator.get(), _ecm);
+    this->detachableJointStatic1Entity = makeStatic(
+        this->cableConnection1LinkEntity, true, this->creator.get(), _ecm);
     this->cableState = CableState::WAITING;
   }
 
@@ -260,12 +239,11 @@ void CablePlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
 
     // Attach cable connection 0 to end effector
     if (this->detachableJoint0Entity == kNullEntity) {
-        this->detachableJoint0Entity = _ecm.CreateEntity();
+      this->detachableJoint0Entity = _ecm.CreateEntity();
       _ecm.CreateComponent(this->detachableJoint0Entity,
                            components::DetachableJoint(
                                {this->endEffectorLinkEntity,
-                                this->cableConnection0LinkEntity,
-                                "fixed"}));
+                                this->cableConnection0LinkEntity, "fixed"}));
     }
   }
 }
