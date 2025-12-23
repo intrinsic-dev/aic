@@ -48,6 +48,14 @@ namespace aic_gazebo
     public: void Reset(const gz::sim::UpdateInfo &_info,
                        gz::sim::EntityComponentManager &_ecm) override;
 
+    /// \brief Retrieve the relevant link entity.
+    /// \param[in out] _ecm Entity component manager.
+    private: void GetChildModelAndLinkEntities(
+      const std::string &_modelName,
+      const std::string &_linkName,
+      gz::sim::EntityComponentManager &_ecm,
+      gz::sim::Entity &_entity);
+
     /// \brief Scoring message.
     private: msgs::Scoring scoringMsg;
 

@@ -20,7 +20,12 @@
 
 #include <gz/common/Console.hh>
 #include <gz/plugin/Register.hh>
+#include "gz/sim/components/Link.hh"
+#include "gz/sim/components/Model.hh"
+#include "gz/sim/components/Name.hh"
+#include "gz/sim/components/ParentEntity.hh"
 #include <gz/sim/Conversions.hh>
+#include <gz/sim/Util.hh>
 
 #include "proto/scoring.pb.h"
 
@@ -81,5 +86,43 @@ void ScoringPlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
 void ScoringPlugin::Reset(const gz::sim::UpdateInfo& /*_info*/,
                           gz::sim::EntityComponentManager& /*_ecm*/) {
   gzdbg << "aic_gazebo::ScoringPlugin::Reset" << std::endl;
+}
+
+//////////////////////////////////////////////////
+void ScoringPlugin::GetChildModelAndLinkEntities(
+  const std::string &_modelName,
+  const std::string &_linkName,
+  gz::sim::EntityComponentManager &_ecm,
+  gz::sim::Entity &_entity)
+{
+  _entity = gz::sim::kNullEntity;
+  // Look for the child model and link
+  gz::sim::Entity modelEntity{gz::sim::kNullEntity};
+
+
+  auto entitiesMatchingName = gz::sim::entitiesFromScopedName(
+    _modelName, _ecm);
+
+  // Filter for entities with only models
+  std::vector<gz::sim::Entity> candidateEntities;
+  std::copy_if(entitiesMatchingName.begin(), entitiesMatchingName.end(),
+              std::back_inserter(candidateEntities),
+              [&_ecm](gz::sim::Entity e) {
+                return _ecm.EntityHasComponentType(e,
+                          gz::sim::components::Model::typeId);
+              });
+
+  if (candidateEntities.size() == 1)
+  {
+    // If there is one entity select that entity itself
+    modelEntity = *candidateEntities.begin();
+  }
+  if (gz::sim::kNullEntity != modelEntity)
+  {
+    _entity = _ecm.EntityByComponents(
+        gz::sim::components::Link(),
+        gz::sim::components::ParentEntity(modelEntity),
+        gz::sim::components::Name(_linkName));
+  }
 }
 }  // namespace aic_gazebo
