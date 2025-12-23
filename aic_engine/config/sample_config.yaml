@@ -4,6 +4,7 @@ trials:
         task_board:
           nic_rail_0:
             present: True # True if a NIC card is present on this rail.
+            spawn_entity_name: "nic_card_0" # Name of the NIC card entity to spawn.
             translation: 0.05 # 0 to 1. Will be scaled to length of rail.
             roll: 0.0 # roll orientation for the NIC card.
             pitch: 0.0 # pitch orientation for the NIC card.
@@ -18,6 +19,7 @@ trials:
             present: False
           sc_rail_0:
             present: True
+            spawn_entity_name: "sc_mount_0" # Name of the SC port entity to spawn.
             translation: 0.1 # 0 to 1. Will be scaled to length of rail.
             roll: 0.0 # roll orientation for the SC port.
             pitch: 0.0 # pitch orientation for the SC port.
@@ -27,7 +29,8 @@ trials:
           rail_0:
             ports:
               port_0:
-                type: "lc"
+                type: "sfp"
+                spawn_entity_name: "sfp_port_0" # Name of the port entity to spawn.
                 translation: 0.9 # 0 to 1. Will be scaled to length of rail.
                 roll: 0.0 # roll orientation for the port.
                 pitch: 0.0 # pitch orientation for the port.
@@ -48,6 +51,7 @@ trials:
         plug_name:  "sfp_plug"
         port_type: "sfp"
         port_name: "sfp_port_0"
+        target_module_name: "nic_card_0"
         time_limit: 300
     scoring:
       - tier_1

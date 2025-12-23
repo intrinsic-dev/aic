@@ -60,7 +60,8 @@ struct Trial {
   Trial(const std::string& id, const std::string& cable_type,
         const std::string& cable_name, const std::string& plug_type,
         const std::string& plug_name, const std::string& port_type,
-        const std::string& port_name, std::size_t time_limit);
+        const std::string& port_name, const std::string& target_module_name,
+        std::size_t time_limit);
 
   Task task;
   TrialState state;

@@ -27,7 +27,8 @@ namespace aic {
 Trial::Trial(const std::string& id, const std::string& cable_type,
              const std::string& cable_name, const std::string& plug_type,
              const std::string& plug_name, const std::string& port_type,
-             const std::string& port_name, std::size_t time_limit) {
+             const std::string& port_name,
+             const std::string& target_module_name, std::size_t time_limit) {
   task = aic_task_interfaces::build<aic_task_interfaces::msg::Task>()
              .id(id)
              .cable_type(cable_type)
@@ -36,6 +37,7 @@ Trial::Trial(const std::string& id, const std::string& cable_type,
              .plug_name(plug_name)
              .port_type(port_type)
              .port_name(port_name)
+             .target_module_name(target_module_name)
              .time_limit(time_limit);
 
   state = TrialState::Uninitialized;
@@ -54,7 +56,7 @@ Engine::Engine(const rclcpp::NodeOptions& options)
   const std::filesystem::path config_file_path =
       this->declare_parameter("config_file_path", std::string(""));
   // If file path is valid, load contents into config_ as YAML.
-	// Note: exception will be thrown if file is not found or invalid YAML.
+  // Note: exception will be thrown if file is not found or invalid YAML.
   config_ = YAML::LoadFile(config_file_path);
 
   insert_cable_action_client_ =
