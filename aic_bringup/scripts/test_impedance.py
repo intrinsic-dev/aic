@@ -31,6 +31,7 @@ from geometry_msgs.msg import Pose, Point, Quaternion
 
 # TODO(johntgz) refactor script for just sending MotionUpdate commands for AIC Controller
 
+
 class HomeTrajectoryNode(Node):
     def __init__(self):
         super().__init__("home_trajectory_node")
