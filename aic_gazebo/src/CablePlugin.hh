@@ -83,10 +83,6 @@ namespace aic_gazebo
     /// \brief Entity of attachment link in the end effector model
     private: gz::sim::Entity endEffectorLinkEntity{gz::sim::kNullEntity};
 
-    /// \brief Entity of attachment link in the target model, e.g. port in
-    /// the task board
-    private: gz::sim::Entity connection1LinkEntity{gz::sim::kNullEntity};
-
     /// \brief Connection 0 link entity in the cable model
     private: gz::sim::Entity cableConnection0LinkEntity{gz::sim::kNullEntity};
 
@@ -125,9 +121,6 @@ namespace aic_gazebo
 
     /// \brief Name of the target model for connection 1
     private: std::string connection1ModelName;
-
-    /// \brief Name of the target link for connection 1
-    private: std::string connection1LinkName;
 
     /// \brief Delay for creating the connection joints.
     private: std::chrono::duration<double> createJointDelay{0};

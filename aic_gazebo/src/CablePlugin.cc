@@ -74,8 +74,7 @@ Entity findLinkInModel(const std::string& _modelName,
 /// \param[in] _creator_ Sdf entity creator for creating a static model
 /// \param[in] _ecm Entity component manager
 Entity makeStatic(Entity _entity, bool _attachEntityAsParentOfJoint,
-                  SdfEntityCreator* _creator, EntityComponentManager& _ecm)
-{
+                  SdfEntityCreator* _creator, EntityComponentManager& _ecm) {
   Entity detachableJointEntity = kNullEntity;
 
   static sdf::Model staticModelToSpawn;
@@ -126,9 +125,9 @@ namespace aic_gazebo {
 
 //////////////////////////////////////////////////
 void CablePlugin::Configure(const gz::sim::Entity& _entity,
-                            const std::shared_ptr<const sdf::Element> &_sdf,
-                            gz::sim::EntityComponentManager &_ecm,
-                            gz::sim::EventManager &_eventManager) {
+                            const std::shared_ptr<const sdf::Element>& _sdf,
+                            gz::sim::EntityComponentManager& _ecm,
+                            gz::sim::EventManager& _eventManager) {
   gzdbg << "aic_gazebo::CablePlugin::Configure on entity: " << _entity
         << std::endl;
 
@@ -165,8 +164,7 @@ void CablePlugin::Configure(const gz::sim::Entity& _entity,
   }
 
   if (_sdf->HasElement("end_effector_link")) {
-    this->endEffectorLinkName =
-        _sdf->Get<std::string>("end_effector_link");
+    this->endEffectorLinkName = _sdf->Get<std::string>("end_effector_link");
   } else {
     gzerr << "Missing <end_effector_link> parameter." << std::endl;
     return;
