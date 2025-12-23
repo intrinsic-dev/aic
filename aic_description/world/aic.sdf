@@ -380,20 +380,7 @@
       <static>true</static>
     </include>
 
-    <include>
-      <name>lc_sc_cable</name>
-      <uri>model://lc_sc_cable</uri>
-      <pose>0.16258051991462708 0.29270303249359131 1.3965834379196167 0.18688329167429171 -0.93647880751055723 2.9948154665877094</pose>
-      <static>false</static>
-      <plugin filename="CablePlugin" name="aic_gazebo::CablePlugin">
-        <cable_connection_0_link>lc_plug_link</cable_connection_0_link>
-        <cable_connection_1_link>sc_plug_link</cable_connection_1_link>
-        <end_effector_model>ur5e</end_effector_model>
-        <end_effector_link>ati/tool_link</end_effector_link>
-        <create_connection_delay_s>0</create_connection_delay_s>
-      </plugin>
-    </include>
-
+    <!-- Cable is now spawned via cable.sdf.xacro in launch file -->
     <!-- Task board and components are now spawned via task_board.urdf.xacro in launch file -->
   </world>
 </sdf>
