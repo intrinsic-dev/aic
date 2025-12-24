@@ -190,4 +190,7 @@
     <origin xyz="${-0.081418 + $(arg nic_card_mount_05_delta_x)} ${-0.1745 + $(arg nic_card_mount_05_delta_y)} ${0.01 + $(arg nic_card_mount_05_delta_z)}" rpy="0 0 0"/>
   </joint>
 
+  <gazebo>
+    <static>true</static>
+  </gazebo>
 </robot>

@@ -4,23 +4,21 @@
     <include merge="true">
       <uri>model://cable_base_c</uri>
     </include>
-    <include>
-      <name>plug_a</name>
-      <uri>model://SC Plug</uri>
-      <pose relative_to="cable_connection_0">-0.055 0 0 0 0 3.14159</pose>
-    </include>
-    <include>
-      <name>plug_b</name>
+    <include merge="true">
       <uri>model://LC Plug</uri>
-      <pose relative_to="cable_connection_1">0.048 0 0 0 0 -1.57079</pose>
+      <pose relative_to="cable_connection_0">-0.048 0 0 0 0 1.57079</pose>
+    </include>
+    <include merge="true">
+      <uri>model://SC Plug</uri>
+      <pose relative_to="cable_connection_1">0.055 0 0 0 0 0.0</pose>
     </include>
     <joint name="plug_0_joint" type="fixed">
       <parent>cable_connection_0</parent>
-      <child>plug_a::sc_plug_link</child>
+      <child>lc_plug_link</child>
     </joint>
     <joint name="plug_1_joint" type="fixed">
       <parent>cable_connection_1</parent>
-      <child>plug_b::lc_plug_link</child>
+      <child>sc_plug_link</child>
     </joint>
   </model>
 </sdf>
