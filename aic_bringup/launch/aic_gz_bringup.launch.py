@@ -375,7 +375,7 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             "spawn_task_board",
-            default_value="false",
+            default_value="true",
             description="Spawn task board in Gazebo?",
         )
     )
