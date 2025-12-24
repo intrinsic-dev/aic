@@ -75,6 +75,12 @@ export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
 ros2 launch aic_bringup aic_gz_bringup.launch.py
 ```
 
+> [!NOTE]
+> To spawn a cable and attach it to the gripper, pass `spawn_cable:=True` and `attach_cable_to_gripper:=True` to the launch command.
+
+
+#### Debugging
+
 Send a reference wrench command (10N in the positive z-axis) to the controller
 ```bash
 source ~/ws_aic/install/setup.bash
