@@ -17,6 +17,7 @@
 
 #include "aic_engine.hpp"
 
+#include <cmath>
 #include <filesystem>
 #include <sstream>
 
@@ -65,12 +66,41 @@ Engine::Engine(const rclcpp::NodeOptions& options)
       rclcpp_action::create_client<InsertCableAction>(this, "/insert_cable");
 
   spawn_entity_client_ =
-      this->create_client<SpawnEntitySrv>("/world/aic/create");
+      this->create_client<SpawnEntitySrv>("/gz_server/spawn_entity");
+
+  RCLCPP_INFO(this->get_logger(), "AIC Engine started.");
+
+  // TODO(Yadunund): Remove this temporary code for spawning the task board.
+  task_thread_ = std::thread([this]() {
+    // TODO(Yadunund): Implement state machine logic to manage stages of
+    // different trials. For now, just spawn the task board after a delay.
+    std::this_thread::sleep_for(std::chrono::seconds(5));
+    RCLCPP_INFO(this->get_logger(), "Spawning task board.");
+    const auto& task_board_config =
+        config_["trials"]["trial_1"]["scene"]["task_board"];
+    if (this->spawn_task_board(task_board_config["pose"]["x"].as<double>(),
+                               task_board_config["pose"]["y"].as<double>(),
+                               task_board_config["pose"]["z"].as<double>(),
+                               task_board_config["pose"]["roll"].as<double>(),
+                               task_board_config["pose"]["pitch"].as<double>(),
+                               task_board_config["pose"]["yaw"].as<double>())) {
+      RCLCPP_INFO(this->get_logger(), "Task board spawned successfully.");
+    } else {
+      RCLCPP_ERROR(this->get_logger(), "Failed to spawn task board.");
+    }
+  });
+}
+
+//==============================================================================
+Engine::~Engine() {
+  if (task_thread_.joinable()) {
+    task_thread_.join();
+  }
 }
 
 //==============================================================================
 bool Engine::spawn_task_board(double x, double y, double z, double roll,
-                               double pitch, double yaw) {
+                              double pitch, double yaw) {
   if (!spawn_entity_client_->wait_for_service(std::chrono::seconds(5))) {
     RCLCPP_ERROR(this->get_logger(),
                  "Spawn entity service not available after waiting");
@@ -83,10 +113,9 @@ bool Engine::spawn_task_board(double x, double y, double z, double roll,
   const std::string xacro_file =
       aic_description_share + "/urdf/task_board.urdf.xacro";
 
-  // Convert xacro to URDF using xacro command
+  // Convert xacro to URDF using xacro command (without pose args)
   std::stringstream cmd;
-  cmd << "xacro " << xacro_file << " x:=" << x << " y:=" << y << " z:=" << z
-      << " roll:=" << roll << " pitch:=" << pitch << " yaw:=" << yaw;
+  cmd << "xacro " << xacro_file;
 
   FILE* pipe = popen(cmd.str().c_str(), "r");
   if (!pipe) {
@@ -112,30 +141,54 @@ bool Engine::spawn_task_board(double x, double y, double z, double roll,
     return false;
   }
 
+  // Convert roll, pitch, yaw to quaternion
+  double cy = cos(yaw * 0.5);
+  double sy = sin(yaw * 0.5);
+  double cp = cos(pitch * 0.5);
+  double sp = sin(pitch * 0.5);
+  double cr = cos(roll * 0.5);
+  double sr = sin(roll * 0.5);
+
+  double qw = cr * cp * cy + sr * sp * sy;
+  double qx = sr * cp * cy - cr * sp * sy;
+  double qy = cr * sp * cy + sr * cp * sy;
+  double qz = cr * cp * sy - sr * sp * cy;
+
   // Create spawn request
   auto request = std::make_shared<SpawnEntitySrv::Request>();
   request->name = "task_board";
-  request->xml = urdf_string;
   request->allow_renaming = true;
+  request->uri = "";
+  request->resource_string = urdf_string;
+  request->entity_namespace = "";
+  request->initial_pose.header.frame_id = "world";
+  request->initial_pose.pose.position.x = x;
+  request->initial_pose.pose.position.y = y;
+  request->initial_pose.pose.position.z = z;
+  request->initial_pose.pose.orientation.x = qx;
+  request->initial_pose.pose.orientation.y = qy;
+  request->initial_pose.pose.orientation.z = qz;
+  request->initial_pose.pose.orientation.w = qw;
 
-  // Call service synchronously
+  // Call service asynchronously
   auto future = spawn_entity_client_->async_send_request(request);
 
-  if (rclcpp::spin_until_future_complete(this->get_node_base_interface(),
-                                         future) !=
-      rclcpp::FutureReturnCode::SUCCESS) {
+  // Wait for the response with a timeout
+  auto status = future.wait_for(std::chrono::seconds(10));
+  if (status != std::future_status::ready) {
     RCLCPP_ERROR(this->get_logger(), "Failed to call spawn entity service");
     return false;
   }
 
   auto response = future.get();
-  if (!response->success) {
+  if (response->result.result != 1) {  // RESULT_OK = 1
     RCLCPP_ERROR(this->get_logger(), "Failed to spawn task board: %s",
-                 response->status_message.c_str());
+                 response->result.error_message.c_str());
     return false;
   }
 
-  RCLCPP_INFO(this->get_logger(), "Successfully spawned task board");
+  RCLCPP_INFO(this->get_logger(), "Successfully spawned task board as '%s'",
+              response->entity_name.c_str());
   return true;
 }
 

@@ -22,13 +22,14 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <thread>
 
 #include "aic_task_interfaces/action/insert_cable.hpp"
 #include "geometry_msgs/msg/wrench_stamped.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
-#include "ros_gz_interfaces/srv/spawn_entity.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
+#include "simulation_interfaces/srv/spawn_entity.hpp"
 #include "yaml-cpp/yaml.h"
 
 //==============================================================================
@@ -38,7 +39,7 @@ using InsertCableAction = aic_task_interfaces::action::InsertCable;
 using InsertCableGoalHandle =
     rclcpp_action::ServerGoalHandle<InsertCableAction>;
 using JointStateMsg = sensor_msgs::msg::JointState;
-using SpawnEntitySrv = ros_gz_interfaces::srv::SpawnEntity;
+using SpawnEntitySrv = simulation_interfaces::srv::SpawnEntity;
 using Task = aic_task_interfaces::msg::Task;
 using WrenchStampedMsg = geometry_msgs::msg::WrenchStamped;
 
@@ -83,8 +84,11 @@ class Engine : public rclcpp::Node {
   /// \param[in] pitch Pitch orientation (radians)
   /// \param[in] yaw Yaw orientation (radians)
   /// \return True if spawning succeeded, false otherwise
-  bool spawn_task_board(double x, double y, double z, double roll,
-                        double pitch, double yaw);
+  bool spawn_task_board(double x, double y, double z, double roll, double pitch,
+                        double yaw);
+
+  /// \brief Destructor.
+  ~Engine();
 
  private:
   // Subscriptions.
@@ -111,6 +115,9 @@ class Engine : public rclcpp::Node {
 
   // The active trial.
   std::optional<Trial> active_trial_;
+
+  // Task thread.
+  std::thread task_thread_;
 };
 
 }  // namespace aic

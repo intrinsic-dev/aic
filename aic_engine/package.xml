@@ -16,8 +16,8 @@
   <depend>rclcpp</depend>
   <depend>rclcpp_action</depend>
   <depend>rclcpp_components</depend>
-  <depend>ros_gz_interfaces</depend>
   <depend>sensor_msgs</depend>
+  <depend>simulation_interfaces</depend>
   <depend>yaml_cpp_vendor</depend>
 
   <export>
