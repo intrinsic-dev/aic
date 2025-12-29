@@ -23,13 +23,19 @@
 #include <string>
 
 #include "aic_controller/actions/cartesian_impedance_action.hpp"
+#include "aic_controller/cartesian_limits.hpp"
 #include "aic_controller/cartesian_state.hpp"
+#include "aic_controller/utils.hpp"
 #include "controller_interface/controller_interface.hpp"
+#include "kinematics_interface/kinematics_interface.hpp"
+#include "pluginlib/class_loader.hpp"
 #include "rclcpp_lifecycle/state.hpp"
 #include "realtime_tools/realtime_publisher.hpp"
 #include "realtime_tools/realtime_thread_safe_box.hpp"
+#include "tf2_eigen/tf2_eigen.hpp"
 
 // Interfaces
+#include "aic_control_interfaces/msg/controller_state.hpp"
 #include "aic_control_interfaces/msg/motion_update.hpp"
 #include "aic_control_interfaces/msg/trajectory_generation_mode.hpp"
 #include "lifecycle_msgs/msg/state.hpp"
@@ -46,6 +52,7 @@ using MotionUpdate = aic_control_interfaces::msg::MotionUpdate;
 using TrajectoryGenerationMode =
     aic_control_interfaces::msg::TrajectoryGenerationMode;
 using JointTrajectoryPoint = trajectory_msgs::msg::JointTrajectoryPoint;
+using ControllerState = aic_control_interfaces::msg::ControllerState;
 
 //==============================================================================
 enum class ControlMode : uint8_t { Invalid = 0, Admittance = 1, Impedance = 2 };
@@ -128,6 +135,62 @@ class Controller : public controller_interface::ControllerInterface {
    */
   void write_state_to_hardware(const JointTrajectoryPoint& state_command);
 
+  /**
+   * @brief Populate the cartesian translation, velocity and rotation limits
+   * from user-defined parameters
+   *
+   * @param cartesian_limits CartesianLimits class to be populated
+   * @param params parameters
+   * @return true
+   * @return false
+   */
+  bool populate_cartesian_limits(const aic_controller::Params& params,
+                                 CartesianLimits& cartesian_limits);
+
+  /**
+   * @brief Populate the controller state message with the computed cartesian
+   * and joint commands.
+   *
+   * @param controller_state Controller state message to be populated
+   */
+  void populate_controller_state(ControllerState& controller_state);
+
+  /**
+   * @brief Clamp the target_state to given limits
+   *
+   * @param limits Provided Cartesian Limits to be clamped to
+   * @param mode Trajectory generation mode
+   * @param target_state target state to be clamped
+   * @param soft_margin_meters Safety margin for position
+   * @param soft_margin_radians Safety margin for rotation
+   * @return true Successfully clamped target_state
+   * @return false Failed to clamp target_state
+   */
+  bool clamp_reference_to_limits(const CartesianLimits& limits,
+                                 const uint8_t& mode,
+                                 CartesianState& target_state,
+                                 double soft_margin_meters = 0.0,
+                                 double soft_margin_radians = 0.0);
+
+  /**
+   * @brief Linearly interpolate the last_reference to the target_state to
+   * compute new_reference
+   *
+   * @param last_reference Starting state
+   * @param target_state Final state
+   * @param remaining_time_to_target_seconds Remaining time to reach the target
+   * @param control_frequency Frequency of control loop in Hz
+   * @param mode Trajectory generation mode
+   * @param new_reference Interpolated reference
+   * @return true Successfully computed new reference
+   * @return false Failed to compute new reference
+   */
+  bool update_reference_linear_interpolation(
+      const CartesianState& last_reference, const CartesianState& target_state,
+      const double remaining_time_to_target_seconds,
+      const double control_frequency, const uint8_t& mode,
+      CartesianState& new_reference);
+
   // controller parameters
   std::shared_ptr<aic_controller::ParamListener> param_listener_;
   aic_controller::Params params_;
@@ -136,11 +199,19 @@ class Controller : public controller_interface::ControllerInterface {
 
   ControlMode control_mode_;
 
+  CartesianLimits cartesian_limits_;
+
   // Impedance controller for cartesian targets
   std::unique_ptr<CartesianImpedanceAction> cartesian_impedance_action_;
 
   // ROS2 subscribers for user commands
   rclcpp::Subscription<MotionUpdate>::SharedPtr motion_update_sub_;
+
+  // Real-time publisher for controller state
+  rclcpp::Publisher<ControllerState>::SharedPtr state_publisher_;
+  std::unique_ptr<realtime_tools::RealtimePublisher<ControllerState>>
+      state_publisher_rt_;
+  ControllerState state_msg_;
 
   // Real-time boxes for thread-safe access
   realtime_tools::RealtimeThreadSafeBox<MotionUpdate> motion_update_rt_;
@@ -154,9 +225,21 @@ class Controller : public controller_interface::ControllerInterface {
   std::optional<CartesianState> target_state_;
   // Latest joint states read from hardware interface
   JointTrajectoryPoint current_state_;
+  // Latest cartesian state of tool calculatd via forward kinematics from
+  // joint position values in current_state_
+  CartesianState current_tool_state_;
+  // Reference used for interpolation
+  // todo(johntgz) Investigate if we can replace last_tool_reference_ with
+  // current_tool_state_
+  CartesianState last_tool_reference_;
 
   double time_to_target_seconds_;
   double remaining_time_to_target_seconds_;
+
+  std::shared_ptr<
+      pluginlib::ClassLoader<kinematics_interface::KinematicsInterface>>
+      kinematics_loader_;
+  std::unique_ptr<kinematics_interface::KinematicsInterface> kinematics_;
 };
 
 }  // namespace aic_controller

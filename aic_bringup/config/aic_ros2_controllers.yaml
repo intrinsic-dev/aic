@@ -270,7 +270,7 @@ aic_controller:
     # Admittance requires position command interfaces for specified joints.
     # Impedance requires effort command interfaces for specified joints.
     # Both modes require position state interfaces for specified joints.
-    control_mode: "admittance"
+    control_mode: "impedance"
 
     # Namespace of admittance controller for chaining controller interfaces
     admittance_controller_namespace: "admittance_controller"
@@ -287,9 +287,37 @@ aic_controller:
       plugin_name: kinematics_interface_kdl/KinematicsInterfaceKDL
       plugin_package: kinematics_interface
       base: base_link # Assumed to be stationary
-      tip: tool0
-      group_name: arm
+      tip: gripper/tcp # Frame ID of tool center point
       alpha: 0.0005 # Specifies the damping coefficient for the Jacobian pseudo inverse.
+
+    clamp_to_limits:
+      min_translational_position:
+        - -1.0 # x
+        - -1.0 # y
+        - -1.0 # z
+      max_translational_position:
+        - 1.0 # x
+        - 1.0 # y
+        - 1.0 # z
+      min_translational_velocity:
+        - -0.5 # x
+        - -0.5 # y
+        - -0.5 # z
+      max_translational_velocity:
+        - 0.5 # x
+        - 0.5 # y
+        - 0.5 # z
+      min_rotation_angle:
+        - -3.14159 # x
+        - -3.14159 # y
+        - -3.14159 # z
+      max_rotation_angle:
+        - 3.14159 # x
+        - 3.14159 # y
+        - 3.14159 # z
+      max_rotational_velocity: 3.14159 # [rad/s]
+
+    control_frequency: 500.0 # [Hz]
 
     # If enabled, the parameters will be dynamically updated while the controller is running.
     enable_parameter_update_without_reactivation: true

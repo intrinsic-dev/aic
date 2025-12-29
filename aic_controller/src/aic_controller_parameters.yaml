@@ -20,7 +20,7 @@ aic_controller:
     }
     tip: {
       type: string,
-      description: "Specifies the end effector link of the robot description used by the kinematics plugin."
+      description: "Frame ID of tool center point"
     }
     alpha: {
       type: double,
@@ -39,6 +39,63 @@ aic_controller:
     default_value: "admittance_controller",
     description: "Sets the namespace of the admittance controller to chain to"
   }
+
+  control_frequency: {
+    type: double,
+    default_value: 0.0,
+    description: "Frequency of control loop in Hz"
+  }
+
+  clamp_to_limits:
+    min_translational_position: {
+      type: double_array,
+      description: "Minimum translational position in meters",
+      validation: {
+        fixed_size<>: 3
+      }
+    }
+    max_translational_position: {
+      type: double_array,
+      description: "Maximum translational position in meters",
+      validation: {
+        fixed_size<>: 3
+      }
+    }
+    min_translational_velocity: {
+      type: double_array,
+      description: "Minimum translational velocity in m/s",
+      validation: {
+        fixed_size<>: 3
+      }
+    }
+    max_translational_velocity: {
+      type: double_array,
+      description: "Maximum translational velocity in m/s",
+      validation: {
+        fixed_size<>: 3
+      }
+    }
+    min_rotation_angle: {
+      type: double_array,
+      description: "Minimum rotation angle in radians",
+      validation: {
+        fixed_size<>: 3,
+        element_bounds<>: [ -3.1415926535, 3.1415926535 ]
+      }
+    }
+    max_rotation_angle: {
+      type: double_array,
+      description: "Maximum rotation angle in radians",
+      validation: {
+        fixed_size<>: 3,
+        element_bounds<>: [ -3.1415926535, 3.1415926535 ]
+      }
+    }
+    max_rotational_velocity: {
+      type: double,
+      default_value: 0.0,
+      description: "Maximum rotational velocity in rad/s"
+    }
 
   # general settings
   enable_parameter_update_without_reactivation: {

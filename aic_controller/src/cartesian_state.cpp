@@ -31,4 +31,14 @@ CartesianState::CartesianState(const geometry_msgs::msg::Pose& pose_msg,
   tf2::fromMsg(velocity_msg, velocity);
 }
 
+//==============================================================================
+Eigen::Quaterniond CartesianState::get_pose_quaternion() const {
+  return Eigen::Quaterniond(pose.linear());
+}
+
+//==============================================================================
+void CartesianState::set_pose_quaternion(const Eigen::Quaterniond& quaternion) {
+  pose.linear() = quaternion.toRotationMatrix();
+}
+
 }  // namespace aic_controller

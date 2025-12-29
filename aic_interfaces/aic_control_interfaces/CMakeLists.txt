@@ -25,6 +25,7 @@ find_package(trajectory_msgs REQUIRED)
 
 
 set(msg_files
+  "msg/ControllerState.msg"
   "msg/JointMotionUpdate.msg"
   "msg/MotionUpdate.msg"
   "msg/TrajectoryGenerationMode.msg"

@@ -1,0 +1,44 @@
+<?xml version="1.0" ?>
+<sdf version="1.9">
+  <model name="sfp_sc_cable">
+    <include merge="true">
+      <uri>model://cable_base_c_rotated</uri>
+    </include>
+    <include merge="true">
+      <uri>model://LC Plug</uri>
+      <pose relative_to="cable_connection_0">-0.048 0 0 0 0 1.57079</pose>
+    </include>
+    <include merge="true">
+      <!--
+         TODO: Workaround SC plug-port insertion by removing some collision elements in plug
+         This is temporary. The collisions need to be updated for proper insertion.
+      -->
+      <experimental:params>
+        <collision element_id="sc_plug_link::housing blue_predeterminado005_collider_box" action="remove"/>
+        <collision element_id="sc_plug_link::housing blue_predeterminado005_collider_box.001" action="remove"/>
+        <collision element_id="sc_plug_link::ferula_predeterminado005_collider_cylinder" action="remove"/>
+        <collision element_id="sc_plug_link::ferula_predeterminado003_collider_cylinder" action="remove"/>
+      </experimental:params>
+
+      <uri>model://SC Plug</uri>
+      <pose relative_to="cable_connection_1">0.055 0 0 0 0 0.0</pose>
+    </include>
+    <include merge="true">
+      <uri>model://SFP Module</uri>
+      <pose relative_to="lc_plug_link">0 0.0381 0 0 3.14159 3.14159</pose>
+    </include>
+    <joint name="plug_0_joint" type="fixed">
+      <parent>cable_connection_0</parent>
+      <child>lc_plug_link</child>
+    </joint>
+    <joint name="plug_1_joint" type="fixed">
+      <parent>cable_connection_1</parent>
+      <child>sc_plug_link</child>
+    </joint>
+    <joint name="sfp_module_joint" type="fixed">
+      <parent>lc_plug_link</parent>
+      <child>sfp_module_link</child>
+    </joint>
+  </model>
+
+</sdf>

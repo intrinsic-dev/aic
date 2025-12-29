@@ -50,6 +50,20 @@ struct CartesianState {
    */
   CartesianState(const geometry_msgs::msg::Pose& pose_msg,
                  const geometry_msgs::msg::Twist& velocity_msg);
+
+  /**
+   * @brief Get quaternion of pose
+   *
+   * @return Eigen::Quaterniond
+   */
+  Eigen::Quaterniond get_pose_quaternion() const;
+
+  /**
+   * @brief Set quaternion of pose
+   *
+   * @param quaternion
+   */
+  void set_pose_quaternion(const Eigen::Quaterniond& quaternion);
 };
 
 }  // namespace aic_controller

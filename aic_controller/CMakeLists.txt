@@ -29,6 +29,7 @@ foreach(pkg ${DEP_PKGS})
 endforeach()
 
 find_package(Eigen3 REQUIRED NO_MODULE)
+find_package(Sophus REQUIRED)
 
 generate_parameter_library(aic_controller_parameters
   src/aic_controller_parameters.yaml
@@ -36,7 +37,9 @@ generate_parameter_library(aic_controller_parameters
 
 add_library(aic_controller SHARED
   src/aic_controller.cpp
-	src/cartesian_state.cpp
+  src/cartesian_state.cpp
+  src/cartesian_limits.cpp
+  src/utils.cpp
   src/actions/cartesian_impedance_action.cpp
 )
 target_compile_features(aic_controller PUBLIC cxx_std_17)
@@ -56,6 +59,7 @@ target_link_libraries(aic_controller PUBLIC
   rclcpp::rclcpp
   rclcpp_lifecycle::rclcpp_lifecycle
   realtime_tools::realtime_tools
+  Sophus::Sophus
   tf2_eigen::tf2_eigen
   ${aic_control_interfaces_TARGETS}
   ${geometry_msgs_TARGETS}

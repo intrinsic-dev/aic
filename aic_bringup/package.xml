@@ -12,10 +12,12 @@
   <exec_depend>admittance_controller</exec_depend>
   <exec_depend>controller_manager</exec_depend>
   <exec_depend>aic_assets</exec_depend>
+  <exec_depend>aic_controller</exec_depend>
   <exec_depend>aic_description</exec_depend>
   <exec_depend>kinematics_interface_kdl</exec_depend>
   <exec_depend>launch</exec_depend>
   <exec_depend>launch_ros</exec_depend>
+  <exec_depend>numpy</exec_depend>
   <exec_depend>parallel_gripper_controller</exec_depend>
   <exec_depend>rmw_zenoh_cpp</exec_depend>
   <exec_depend>robot_state_publisher</exec_depend>
