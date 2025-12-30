@@ -28,17 +28,23 @@ namespace aic {
 
 // Static arrays for ROS graph entities to check for
 static const std::vector<std::string> REQUIRED_NODES = {
-    "/aic_adapter_node", "/aic_model_node", "/controller_manager",
-    "/robot_state_publisher"};
+	// "/aic_adapter_node",
+	// "/aic_model_node",
+};
 
 static const std::vector<std::string> REQUIRED_TOPICS = {
-    "/joint_states", "/tf", "/tf_static", "/fts_broadcaster/wrench"};
+	"/joint_states",
+	"/tf",
+	"/axia80_m20/wrench"
+};
 
 static const std::vector<std::string> REQUIRED_SERVICES = {
-    "/controller_manager/list_controllers",
-    "/controller_manager/switch_controller", "/gz_server/spawn_entity"};
+ 	"/gz_server/spawn_entity"
+};
 
-static const std::vector<std::string> REQUIRED_ACTIONS = {"/insert_cable"};
+static const std::vector<std::string> REQUIRED_ACTIONS = {
+	// "/insert_cable"
+};
 
 //==============================================================================
 Trial::Trial(const std::string& _id, YAML::Node _config) : id(std::move(_id)) {
@@ -421,6 +427,7 @@ bool Engine::check_required_endpoints() {
   // TODO(Yadunund): Implement actual checks for nodes, topics, services,
   // actions.
   RCLCPP_INFO(node_->get_logger(), "Checking required endpoints...");
+	const auto time_now = std::chrono::system_clock::now();
 
   // For now, assume all required endpoints are available.
   return true;
