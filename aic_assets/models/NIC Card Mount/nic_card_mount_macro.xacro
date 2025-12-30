@@ -204,6 +204,24 @@
       <child link="${prefix}card_link"/>
       <origin xyz="0 -0.01785 0.0799" rpy="-1.57 0 0"/>
     </joint>
+
+    <!-- SFP Port 0 Link -->
+    <link name="${prefix}sfp_port_0_link"/>
+
+    <joint name="${prefix}sfp_port_0_joint" type="fixed">
+      <parent link="${prefix}card_link"/>
+      <child link="${prefix}sfp_port_0_link"/>
+      <origin xyz="0.01295 -0.031572 0.00501" rpy="4.69895 0 0"/>
+    </joint>
+
+    <!-- SFP Port 1 Link -->
+    <link name="${prefix}sfp_port_1_link"/>
+
+    <joint name="${prefix}sfp_port_1_joint" type="fixed">
+      <parent link="${prefix}card_link"/>
+      <child link="${prefix}sfp_port_1_link"/>
+      <origin xyz="-0.01025 -0.031572 0.00501" rpy="4.69895 0 0"/>
+    </joint>
   </xacro:macro>
 
 </robot>
