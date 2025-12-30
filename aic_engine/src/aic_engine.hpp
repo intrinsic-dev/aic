@@ -30,12 +30,14 @@
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
+#include "simulation_interfaces/srv/delete_entity.hpp"
 #include "simulation_interfaces/srv/spawn_entity.hpp"
 #include "yaml-cpp/yaml.h"
 
 //==============================================================================
 namespace aic {
 
+using DeleteEntitySrv = simulation_interfaces::srv::DeleteEntity;
 using InsertCableAction = aic_task_interfaces::action::InsertCable;
 using InsertCableGoalHandle =
     rclcpp_action::ServerGoalHandle<InsertCableAction>;
@@ -78,6 +80,7 @@ struct Trial {
   Trial(const std::string& id, YAML::Node config);
 
   std::string id;
+  std::optional<std::string> spawned_task_board_name;
   YAML::Node config;
   std::unordered_map<std::string, Task> tasks;  // Map of task_id -> Task
   TrialState state;
@@ -109,8 +112,7 @@ class Engine {
   TrialState handle_trial(const Trial& trial);
 
   /// \brief Reset internal and simulator states after a trial is completed.
-  /// \param[in] state The state at which the trial ended.
-  void reset_after_trial(TrialState state);
+  void reset_after_trial();
 
   /// \brief Check if required endpoints are available.
   /// \return True if all required endpoints are available, false otherwise.
@@ -157,6 +159,7 @@ class Engine {
 
   // Service clients.
   rclcpp::Client<SpawnEntitySrv>::SharedPtr spawn_entity_client_;
+  rclcpp::Client<DeleteEntitySrv>::SharedPtr delete_entity_client_;
 
   // Strings.
   // Name of the aic_adapter node for lifecycle transitions.

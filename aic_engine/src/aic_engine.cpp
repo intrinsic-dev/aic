@@ -39,7 +39,8 @@ static const std::vector<std::string> REQUIRED_NODES = {
 }  // anonymous namespace
 
 //==============================================================================
-Trial::Trial(const std::string& _id, YAML::Node _config) : id(std::move(_id)) {
+Trial::Trial(const std::string& _id, YAML::Node _config)
+    : id(std::move(_id)), spawned_task_board_name(std::nullopt) {
   // Validate config structure
   if (!_config["scene"]) {
     throw std::runtime_error("Config missing required key: 'scene'");
@@ -188,7 +189,7 @@ Trial::Trial(const std::string& _id, YAML::Node _config) : id(std::move(_id)) {
   // Validate and parse all tasks
   for (auto it = tasks.begin(); it != tasks.end(); ++it) {
     const std::string task_id = it->first.as<std::string>();
-    const auto& task_config = it->second;
+    const YAML::Node task_config = it->second;
     for (const auto& key :
          {"id", "cable_type", "cable_name", "plug_type", "plug_name",
           "port_type", "port_name", "target_module_name", "time_limit"}) {
@@ -258,7 +259,7 @@ void Engine::start() {
         RCLCPP_ERROR(node_->get_logger(), "Engine failed to initialize");
         return;
       }
-      // Fall through to run
+      [[fallthrough]];
     case EngineState::Initialized:
       this->run();
       break;
@@ -339,17 +340,21 @@ EngineState Engine::initialize() {
   const rclcpp::QoS reliable_qos = rclcpp::QoS(rclcpp::KeepLast(10)).reliable();
   wrench_sub_ = node_->create_subscription<WrenchStampedMsg>(
       "/axia80_m20/wrench", reliable_qos,
-      [](const WrenchStampedMsg::SharedPtr msg) {
+      [](WrenchStampedMsg::ConstSharedPtr msg) {
+        (void)msg;
         // TODO(Yadunund): Pass to scoring.
       });
   joint_state_sub_ = node_->create_subscription<JointStateMsg>(
-      "/joint_states", reliable_qos, [](const JointStateMsg::SharedPtr msg) {
+      "/joint_states", reliable_qos, [](JointStateMsg::ConstSharedPtr msg) {
+        (void)msg;
         // TODO(Yadunund): Pass to scoring.
       });
   insert_cable_action_client_ =
       rclcpp_action::create_client<InsertCableAction>(node_, "/insert_cable");
   spawn_entity_client_ =
       node_->create_client<SpawnEntitySrv>("/gz_server/spawn_entity");
+  delete_entity_client_ =
+      node_->create_client<DeleteEntitySrv>("/gz_server/delete_entity");
 
   engine_state_ = EngineState::Initialized;
   RCLCPP_INFO(node_->get_logger(), "AIC Engine initialized successfully.");
@@ -392,40 +397,40 @@ TrialState Engine::handle_trial(const Trial& trial) {
   if (!this->check_required_endpoints()) {
     RCLCPP_ERROR(node_->get_logger(), "Required endpoints are not available.");
     current_state = TrialState::Uninitialized;
-    reset_after_trial(current_state);
+    reset_after_trial();
     return current_state;
   }
   current_state = TrialState::EndpointsAvailable;
 
   if (!this->ready_simulator()) {
     RCLCPP_ERROR(node_->get_logger(), "Simulator is not ready.");
-    reset_after_trial(current_state);
+    reset_after_trial();
     return current_state;
   }
   current_state = TrialState::SimulatorReady;
 
   if (!this->ready_scoring()) {
     RCLCPP_ERROR(node_->get_logger(), "Scoring system is not ready.");
-    reset_after_trial(current_state);
+    reset_after_trial();
     return current_state;
   }
   current_state = TrialState::ScoringReady;
 
   if (!this->start_task()) {
     RCLCPP_ERROR(node_->get_logger(), "Failed to start task.");
-    reset_after_trial(current_state);
+    reset_after_trial();
     return current_state;
   }
   current_state = TrialState::TaskStarted;
 
   if (!this->task_completed_successfully()) {
     RCLCPP_ERROR(node_->get_logger(), "Task was not completed successfully.");
-    reset_after_trial(current_state);
+    reset_after_trial();
     return current_state;
   }
   current_state = TrialState::TaskCompleted;
 
-  reset_after_trial(current_state);
+  reset_after_trial();
   return current_state;
 }
 
@@ -553,8 +558,35 @@ bool Engine::task_completed_successfully() {
   return true;
 }
 
-void Engine::reset_after_trial(TrialState state) {
+void Engine::reset_after_trial() {
   RCLCPP_INFO(node_->get_logger(), "Resetting after trial completion...");
+
+  // Remove spawned task board from simulator
+  if (active_trial_.has_value() &&
+      active_trial_->spawned_task_board_name.has_value()) {
+    // Delete spawned task board
+    auto request = std::make_shared<DeleteEntitySrv::Request>();
+    request->entity = active_trial_->spawned_task_board_name.value();
+
+    auto future = delete_entity_client_->async_send_request(request);
+    if (future.wait_for(std::chrono::seconds(10)) !=
+        std::future_status::ready) {
+      RCLCPP_ERROR(node_->get_logger(),
+                   "Delete entity service call timed out for entity '%s'",
+                   request->entity.c_str());
+    } else {
+      auto response = future.get();
+      if (response->result.result !=
+          simulation_interfaces::msg::Result::RESULT_OK) {  // RESULT_OK = 1
+        RCLCPP_ERROR(node_->get_logger(), "Failed to delete entity '%s': %s",
+                     request->entity.c_str(),
+                     response->result.error_message.c_str());
+      } else {
+        RCLCPP_INFO(node_->get_logger(), "Successfully deleted entity '%s'",
+                    request->entity.c_str());
+      }
+    }
+  }
 
   RCLCPP_INFO(node_->get_logger(), "Reset after trial completed.");
 }
@@ -641,10 +673,15 @@ bool Engine::spawn_task_board(double x, double y, double z, double roll,
 
   auto response = future.get();
 
-  if (response->result.result != 1) {  // RESULT_OK = 1
+  if (response->result.result !=
+      simulation_interfaces::msg::Result::RESULT_OK) {
     RCLCPP_ERROR(node_->get_logger(), "Failed to spawn task board: %s",
                  response->result.error_message.c_str());
     return false;
+  }
+
+  if (active_trial_.has_value()) {
+    active_trial_->spawned_task_board_name = response->entity_name;
   }
 
   RCLCPP_INFO(node_->get_logger(), "Successfully spawned task board as '%s'",
