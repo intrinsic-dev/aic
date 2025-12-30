@@ -51,6 +51,20 @@
 //==============================================================================
 namespace aic_controller {
 
+// Template function to overload the << operator for std::vector
+template <typename T>
+std::ostream& operator<<(std::ostream& os, const std::vector<T>& vec) {
+    os << "[";
+    for (size_t i = 0; i < vec.size(); ++i) {
+        os << vec[i];
+        if (i != vec.size() - 1) {
+            os << ", "; // Add comma separator except for the last element
+        }
+    }
+    os << "]";
+    return os;
+}
+
 using MotionUpdate = aic_control_interfaces::msg::MotionUpdate;
 using TrajectoryGenerationMode =
     aic_control_interfaces::msg::TrajectoryGenerationMode;
@@ -243,6 +257,12 @@ class Controller : public controller_interface::ControllerInterface {
   // todo(johntgz) Investigate if we can replace last_tool_reference_ with
   // current_tool_state_
   CartesianState last_tool_reference_;
+
+  //todo(johntgz) remove after debugging
+  Eigen::Matrix<double, 6, 1> joint_positions_on_activate_;
+  Eigen::Matrix<double, 6, 1> dq_filtered_;
+  Eigen::Matrix<double, 6, 1> k_gains_;
+  Eigen::Matrix<double, 6, 1> d_gains_;
 
   double time_to_target_seconds_;
   double remaining_time_to_target_seconds_;

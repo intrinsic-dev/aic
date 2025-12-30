@@ -84,15 +84,15 @@ class HomeTrajectoryNode(Node):
     def send_trajectory(self):
         if self.use_aic_control:
             POSE_HOME = Pose(
-                position=Point(x=0.182, y=0.300, z=1.576),
+                position=Point(x=0.382, y=0.300, z=0.576),
                 orientation=Quaternion(x=0.884, y=-0.466, z=-0.014, w=0.026),
             )
 
             # Home joints configuration
             msg = MotionUpdate()
             msg.pose = POSE_HOME
-            msg.target_stiffness = np.diag([0.1, 0.1, 0.1, 0.1, 0.1, 0.1]).flatten()
-            msg.target_damping = np.diag([0.1, 0.1, 0.1, 0.1, 0.1, 0.1]).flatten()
+            msg.target_stiffness = np.diag([50.0, 50.0, 50.0, 50.0, 50.0, 50.0]).flatten()
+            msg.target_damping = np.diag([5.0, 5.0, 5.0, 5.0, 5.0, 5.0]).flatten()
             msg.target_mass = np.diag([0.1, 0.1, 0.1, 0.1, 0.1, 0.1]).flatten()
             msg.trajectory_generation_mode.mode = TrajectoryGenerationMode.MODE_POSITION
             msg.time_to_target_seconds = 2.0

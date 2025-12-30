@@ -293,9 +293,9 @@ aic_controller:
         bound: [10., 10., 10., 2., 2., 2.]
       maximum_wrench: [25.0, 25.0, 25.0, 10.0, 10.0, 10.0]
       nullspace:
-        target_configuration: [0., 0., 0., -1.5708, 0., 0.]
-        stiffness: [30., 30., 30., 30., 30., 30.]
-        damping: [1., 1., 1., 1., 1., 1.]
+        target_configuration: [0., -1.3, -1.9, -1.5708, 0., 0.]
+        stiffness: [20., 20., 20., 20., 20., 20.]
+        damping: [5., 5., 5., 5., 5., 5.]
       feedforward_wrench_interpolation:
         min_wrench: [-10., -10., -10., -5., -5., -5.]
         max_wrench: [10., 10., 10., 5., 5., 5.]
@@ -310,13 +310,13 @@ aic_controller:
 
     clamp_to_limits:
       min_translational_position:
-        - -1.0 # x
-        - -1.0 # y
-        - -1.0 # z
+        - -2.0 # x
+        - -2.0 # y
+        - -2.0 # z
       max_translational_position:
-        - 1.0 # x
-        - 1.0 # y
-        - 1.0 # z
+        - 2.0 # x
+        - 2.0 # y
+        - 2.0 # z
       min_translational_velocity:
         - -0.5 # x
         - -0.5 # y

@@ -288,6 +288,42 @@ controller_interface::CallbackReturn Controller::on_activate(
   }
   last_tool_reference_ = current_tool_state_;
 
+  std::cerr << "current_state_.positions: [";
+  for (std::size_t i = 0; i < current_state_.positions.size(); ++i){
+        std::cerr << current_state_.positions[i];
+        if (i != current_state_.positions.size() - 1) {
+            std::cerr << ", "; // Add comma separator except for the last element
+        }
+  }
+  std::cerr << "]";
+
+  // joint_positions_on_activate_ =
+  //     Eigen::Map<const Eigen::Matrix<double, 6, 1>>(
+  //         current_state_.positions.data());
+
+  joint_positions_on_activate_(0) = 0.0;
+  joint_positions_on_activate_(1) = -1.3;
+  joint_positions_on_activate_(2) = -1.9;
+  joint_positions_on_activate_(3) = -1.57;
+  joint_positions_on_activate_(4) = 1.57;
+  joint_positions_on_activate_(5) = 0.0;
+
+  dq_filtered_.setZero();
+
+  k_gains_(0) = 6.0;
+  k_gains_(1) = 6.0;
+  k_gains_(2) = 6.0;
+  k_gains_(3) = 6.0;
+  k_gains_(4) = 2.5;
+  k_gains_(5) = 1.5;
+
+  d_gains_(0) = 2.0;
+  d_gains_(1) = 2.0;
+  d_gains_(2) = 2.0;
+  d_gains_(3) = 1.0;
+  d_gains_(4) = 1.0;
+  d_gains_(5) = 1.0;
+
   populate_controller_state(state_msg_);
 
   reset_motion_update_msg(motion_update_);
@@ -381,6 +417,36 @@ controller_interface::return_type Controller::update(
 
       target_state_ = latest_target_state;
     }
+  } else {
+    // todo(johntgz) remove after debug
+    // hold the position
+    Eigen::Matrix<double, 6, 1> q =
+        Eigen::Map<const Eigen::Matrix<double, 6, 1>>(
+            current_state_.positions.data());
+    Eigen::Matrix<double, 6, 1> dq =
+        Eigen::Map<const Eigen::Matrix<double, 6, 1>>(
+            current_state_.velocities.data());
+
+    Eigen::Matrix<double, 6, 1> q_goal = joint_positions_on_activate_;
+
+    const double kAlpha = 0.99;
+    dq_filtered_ = (1 - kAlpha) * dq_filtered_ + kAlpha * dq;
+    Eigen::Matrix<double, 6, 1> tau_d_calculated =
+        k_gains_.cwiseProduct(q_goal - q) + d_gains_.cwiseProduct(-dq_filtered_);
+
+    // tau_d_calculated.setZero();
+
+    JointTrajectoryPoint new_joint_reference;
+    new_joint_reference.effort.resize(num_joints_);
+    Eigen::VectorXd::Map(new_joint_reference.effort.data(),
+                        new_joint_reference.effort.size()) = tau_d_calculated;
+
+    write_state_to_hardware(new_joint_reference);
+
+    populate_controller_state(state_msg_);
+    state_publisher_rt_->try_publish(state_msg_);
+
+    return controller_interface::return_type::OK;
   }
 
   if (!target_state_.has_value()) {
