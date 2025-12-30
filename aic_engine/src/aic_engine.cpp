@@ -20,31 +20,23 @@
 #include <cmath>
 #include <filesystem>
 #include <sstream>
+#include <unordered_set>
 
 #include "aic_task_interfaces/msg/task.hpp"
 #include "ament_index_cpp/get_package_share_directory.hpp"
 
 namespace aic {
 
+//==============================================================================
+namespace {
 // Static arrays for ROS graph entities to check for
+// TODO(Yadunund): Uncomment and fill in required nodes when available.
 static const std::vector<std::string> REQUIRED_NODES = {
-	// "/aic_adapter_node",
-	// "/aic_model_node",
+    // "/aic_adapter_node",
+    // "/aic_model_node",
 };
 
-static const std::vector<std::string> REQUIRED_TOPICS = {
-	"/joint_states",
-	"/tf",
-	"/axia80_m20/wrench"
-};
-
-static const std::vector<std::string> REQUIRED_SERVICES = {
- 	"/gz_server/spawn_entity"
-};
-
-static const std::vector<std::string> REQUIRED_ACTIONS = {
-	// "/insert_cable"
-};
+}  // anonymous namespace
 
 //==============================================================================
 Trial::Trial(const std::string& _id, YAML::Node _config) : id(std::move(_id)) {
@@ -235,6 +227,10 @@ Trial::Trial(const std::string& _id, YAML::Node _config) : id(std::move(_id)) {
 //==============================================================================
 Engine::Engine(const rclcpp::NodeOptions& options)
     : node_(std::make_shared<rclcpp::Node>("aic_engine", options)),
+      wrench_sub_(nullptr),
+      joint_state_sub_(nullptr),
+      insert_cable_action_client_(nullptr),
+      spawn_entity_client_(nullptr),
       active_trial_(std::nullopt),
       engine_state_(EngineState::Uninitialized) {
   RCLCPP_INFO(node_->get_logger(), "Creating AIC Engine...");
@@ -245,6 +241,7 @@ Engine::Engine(const rclcpp::NodeOptions& options)
   model_node_name_ = node_->declare_parameter("model_node_name",
                                               std::string("aic_model_node"));
   node_->declare_parameter("config_file_path", std::string(""));
+  node_->declare_parameter("endpoint_discovery_timeout_seconds", 10);
 
   spin_thread_ = std::thread([node = node_]() {
     rclcpp::executors::SingleThreadedExecutor executor;
@@ -339,6 +336,16 @@ EngineState Engine::initialize() {
               trials_.size());
 
   // Create ROS endpoints.
+  const rclcpp::QoS reliable_qos = rclcpp::QoS(rclcpp::KeepLast(10)).reliable();
+  wrench_sub_ = node_->create_subscription<WrenchStampedMsg>(
+      "/axia80_m20/wrench", reliable_qos,
+      [](const WrenchStampedMsg::SharedPtr msg) {
+        // TODO(Yadunund): Pass to scoring.
+      });
+  joint_state_sub_ = node_->create_subscription<JointStateMsg>(
+      "/joint_states", reliable_qos, [](const JointStateMsg::SharedPtr msg) {
+        // TODO(Yadunund): Pass to scoring.
+      });
   insert_cable_action_client_ =
       rclcpp_action::create_client<InsertCableAction>(node_, "/insert_cable");
   spawn_entity_client_ =
@@ -424,12 +431,62 @@ TrialState Engine::handle_trial(const Trial& trial) {
 
 //==============================================================================
 bool Engine::check_required_endpoints() {
-  // TODO(Yadunund): Implement actual checks for nodes, topics, services,
-  // actions.
   RCLCPP_INFO(node_->get_logger(), "Checking required endpoints...");
-	const auto time_now = std::chrono::system_clock::now();
 
-  // For now, assume all required endpoints are available.
+  // Check nodes
+  bool all_available = false;
+  rclcpp::Time start_time = this->node_->now();
+  const rclcpp::Duration timeout = rclcpp::Duration::from_seconds(
+      this->node_->get_parameter("endpoint_discovery_timeout_seconds")
+          .as_int());
+  const auto& node_graph = node_->get_node_graph_interface();
+
+  while (!all_available && !(this->node_->now() - start_time > timeout)) {
+    all_available = true;
+    const std::vector<std::string> graph_nodes = node_graph->get_node_names();
+    std::unordered_set<std::string> node_set(graph_nodes.begin(),
+                                             graph_nodes.end());
+    for (const auto& node_name : REQUIRED_NODES) {
+      all_available = all_available && (node_set.count(node_name) > 0);
+    }
+  }
+  if (!all_available) {
+    RCLCPP_ERROR(node_->get_logger(), "Not all required nodes are available.");
+    return false;
+  }
+
+  // Check topics
+  // TODO(Yadunund): Consider checking for messages received on topics.
+  all_available = false;
+  start_time = this->node_->now();
+  while (!all_available && !(this->node_->now() - start_time > timeout)) {
+    all_available = true;
+    all_available = all_available &&
+                    (this->wrench_sub_->get_publisher_count() > 0) &&
+                    (this->joint_state_sub_->get_publisher_count() > 0);
+  }
+  if (!all_available) {
+    RCLCPP_ERROR(node_->get_logger(), "Not all required topics are available.");
+    return false;
+  }
+
+  // Check services
+  if (!spawn_entity_client_->wait_for_service(
+          timeout.to_chrono<std::chrono::nanoseconds>())) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "Spawn entity service not available after waiting");
+    return false;
+  }
+
+  // Check actioins
+  // TODO(Yadunund): Re-enable action server check aic_model is implemented.
+  // if (!insert_cable_action_client_->wait_for_action_server(timeout)) {
+  // 	RCLCPP_ERROR(node_->get_logger(),
+  // 								"Insert cable
+  // action server not available after waiting"); 	return false;
+  // }
+
+  RCLCPP_INFO(node_->get_logger(), "All required endpoints are available.");
   return true;
 }
 
@@ -468,7 +525,7 @@ bool Engine::ready_scoring() {
   RCLCPP_INFO(node_->get_logger(), "Checking scoring system readiness...");
 
   // TODO(Yadunund): Implement actual scoring system readiness checks.
-
+  std::this_thread::sleep_for(std::chrono::seconds(1));
   // For now, assume scoring system is ready.
   return true;
 }
@@ -478,6 +535,7 @@ bool Engine::start_task() {
   RCLCPP_INFO(node_->get_logger(), "Starting task for active trial...");
 
   // TODO(Yadunund): Implement actual task start logic.
+  std::this_thread::sleep_for(std::chrono::seconds(1));
 
   // For now, assume task started successfully.
   return true;
@@ -489,6 +547,7 @@ bool Engine::task_completed_successfully() {
               "Checking if task was completed successfully...");
 
   // TODO(Yadunund): Implement actual task completion check.
+  std::this_thread::sleep_for(std::chrono::seconds(1));
 
   // For now, assume task was completed successfully.
   return true;
@@ -510,12 +569,6 @@ Engine::~Engine() {
 //==============================================================================
 bool Engine::spawn_task_board(double x, double y, double z, double roll,
                               double pitch, double yaw) {
-  if (!spawn_entity_client_->wait_for_service(std::chrono::seconds(5))) {
-    RCLCPP_ERROR(node_->get_logger(),
-                 "Spawn entity service not available after waiting");
-    return false;
-  }
-
   // Get the task board xacro file path
   const std::string aic_description_share =
       ament_index_cpp::get_package_share_directory("aic_description");
