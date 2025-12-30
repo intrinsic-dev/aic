@@ -316,7 +316,7 @@ EngineState Engine::initialize() {
 
     try {
       Trial trial(trial_id, std::move(trial_config));
-      trials_.emplace(trial_id, std::move(trial));
+      trials_.emplace_back(trial_id, std::move(trial));
       RCLCPP_INFO(node_->get_logger(), "Successfully parsed trial '%s'",
                   trial_id.c_str());
     } catch (const std::runtime_error& e) {
@@ -368,7 +368,9 @@ EngineState Engine::run() {
 
   engine_state_ = EngineState::Running;
 
-  for (const auto& [trial_id, trial] : trials_) {
+  for (const auto& trial_entry : trials_) {
+    const std::string& trial_id = trial_entry.first;
+    const Trial& trial = trial_entry.second;
     RCLCPP_INFO(node_->get_logger(), "Handling trial '%s'...",
                 trial_id.c_str());
     TrialState trial_result = this->handle_trial(trial);

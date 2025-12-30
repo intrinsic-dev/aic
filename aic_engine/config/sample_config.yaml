@@ -51,7 +51,6 @@ trials:
           rail_3:
           rail_4:
           rail_5:
-
         cable:
     tasks:
       task_1:
@@ -62,6 +61,63 @@ trials:
         port_type: "sfp"
         port_name: "sfp_port_0"
         target_module_name: "nic_card_0"
+        time_limit: 300
+    scoring:
+      - tier_1
+      - tier_2
+      - tier_3
+  trial_2:
+    scene:
+        task_board:
+          pose:
+            x: 0.4
+            y: -0.1
+            z: 1.14
+            roll: 0.0
+            pitch: 0.0
+            yaw: 0.814
+          nic_rail_0:
+            entity_present: False
+          nic_rail_1:
+            entity_present: True
+            entity_name: "nic_card_1"
+            entity_pose:
+              translation: 0.5
+              roll: 0.0
+              pitch: 0.0
+              yaw: 0.0
+          nic_rail_2:
+            entity_present: False
+          nic_rail_3:
+            entity_present: False
+          nic_rail_4:
+            entity_present: False
+          sc_rail_0:
+            entity_present: False
+          sc_rail_1:
+            entity_present: True
+            entity_name: "sc_mount_1"
+            entity_pose:
+              translation: 0.8
+              roll: 0.0
+              pitch: 0.0
+              yaw: 0.0
+          rail_0:
+          rail_1:
+          rail_2:
+          rail_3:
+          rail_4:
+          rail_5:
+        cable:
+    tasks:
+      task_1:
+        cable_type: "sfp_sc"
+        cable_name: "cable_1"
+        plug_type: "sc"
+        plug_name:  "sc_plug"
+        port_type: "sc"
+        port_name: "sc_mount_1"
+        target_module_name: "nic_card_1"
         time_limit: 300
     scoring:
       - tier_1

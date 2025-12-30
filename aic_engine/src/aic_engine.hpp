@@ -171,7 +171,7 @@ class Engine {
   YAML::Node config_;
 
   // All trials parsed from config.
-  std::unordered_map<std::string, Trial> trials_;
+  std::vector<std::pair<std::string, Trial>> trials_;
 
   // The active trial.
   std::optional<Trial> active_trial_;
