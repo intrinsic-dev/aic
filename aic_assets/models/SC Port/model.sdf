@@ -24,7 +24,31 @@
         <pose>0.0 0.0 0.004225 0.0 0.0 0.0</pose>
         <geometry>
           <box>
-            <size>0.025781 0.027432 0.00085</size>
+            <size>0.025781 0.0108 0.00085</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="cube_collider_box_mid">
+        <pose>0.0 0.0 0.004225 0.0 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.0103 0.027432 0.00085</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="cube_collider_box_mid02">
+        <pose>0.01 0.0 0.004225 0.0 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.005 0.027432 0.00085</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="cube_collider_box_mid03">
+        <pose>-0.01 0.0 0.004225 0.0 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.005 0.027432 0.00085</size>
           </box>
         </geometry>
       </collision>
@@ -65,14 +89,6 @@
         <geometry>
           <box>
             <size>0.003492 0.027432 0.0093</size>
-          </box>
-        </geometry>
-      </collision>
-      <collision name="foa-005a_3d_collider_box">
-        <pose>0.0 0.0 -0.0 3.141593 -0.0 0.0</pose>
-        <geometry>
-          <box>
-            <size>0.025 0.002946 0.009</size>
           </box>
         </geometry>
       </collision>
