@@ -16,7 +16,7 @@ This is your development workspace. It is designed to package the `aic_model` pa
 * **Development:** You will implement your solution within this container.
 * **Submission:** Once your solution is ready, you will build this container image and upload it via our **Submission Portal**.
 
-> **Note:** Detailed build and run instructions for these containers can be found in the **TODO** directory of the repository.
+> **Note:** Detailed build and run instructions for these containers can be found in the [docker/aic_eval](../docker/aic_eval/README.md) and [docker/aic_model](../docker/aic_model/README.md) directory of the repository.
 
 **TODO**
 
