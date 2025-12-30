@@ -14,36 +14,30 @@ find_package(ament_index_cpp REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
-find_package(rclcpp_components REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(simulation_interfaces REQUIRED)
 find_package(yaml_cpp_vendor REQUIRED)
 find_package(yaml-cpp REQUIRED)
 
-add_library(aic_engine_component SHARED
+add_executable(aic_engine
   src/aic_engine.cpp
+	src/main.cpp
 )
-target_link_libraries(aic_engine_component
+target_link_libraries(aic_engine
   aic_scoring::aic_scoring
   ament_index_cpp::ament_index_cpp
   rclcpp::rclcpp
   rclcpp_action::rclcpp_action
-  rclcpp_components::component
   yaml-cpp
   ${aic_task_interfaces_TARGETS}
   ${geometry_msgs_TARGETS}
   ${sensor_msgs_TARGETS}
   ${simulation_interfaces_TARGETS}
 )
-rclcpp_components_register_node(aic_engine_component
-  PLUGIN "aic::Engine"
-  EXECUTABLE aic_engine
-  EXECUTOR SingleThreadedExecutor
-)
 
 install(
-  TARGETS aic_engine_component
-  EXPORT aic_engine_component
+  TARGETS aic_engine
+  EXPORT aic_engine
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin
