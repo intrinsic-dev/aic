@@ -191,8 +191,8 @@ Trial::Trial(const std::string& _id, YAML::Node _config)
     const std::string task_id = it->first.as<std::string>();
     const YAML::Node task_config = it->second;
     for (const auto& key :
-         {"id", "cable_type", "cable_name", "plug_type", "plug_name",
-          "port_type", "port_name", "target_module_name", "time_limit"}) {
+         {"cable_type", "cable_name", "plug_type", "plug_name", "port_type",
+          "port_name", "target_module_name", "time_limit"}) {
       if (!task_config[key]) {
         throw std::runtime_error("Config missing required key: 'tasks[" +
                                  task_id + "]." + key + "'");
@@ -201,7 +201,7 @@ Trial::Trial(const std::string& _id, YAML::Node _config)
 
     // Parse and store task
     auto task = aic_task_interfaces::build<aic_task_interfaces::msg::Task>()
-                    .id(task_config["id"].as<std::string>())
+                    .id(task_id)
                     .cable_type(task_config["cable_type"].as<std::string>())
                     .cable_name(task_config["cable_name"].as<std::string>())
                     .plug_type(task_config["plug_type"].as<std::string>())

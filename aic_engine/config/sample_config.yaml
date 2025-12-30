@@ -55,7 +55,6 @@ trials:
         cable:
     tasks:
       task_1:
-        id: "task_1"
         cable_type: "sfp_sc"
         cable_name: "cable_0"
         plug_type: "sfp"
