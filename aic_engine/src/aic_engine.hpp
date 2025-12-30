@@ -47,10 +47,10 @@ using WrenchStampedMsg = geometry_msgs::msg::WrenchStamped;
 //==============================================================================
 enum class EngineState : uint8_t {
   Uninitialized = 0,
-	Initialized,
-	Running,
-	Error,
-	Completed
+  Initialized,
+  Running,
+  Error,
+  Completed
 };
 
 //==============================================================================
@@ -66,7 +66,7 @@ enum class TrialState : uint8_t {
   Uninitialized = 0,
   EndpointsAvailable,
   SimulatorReady,
-	ScoringReady,
+  ScoringReady,
   TaskStarted,
   TaskCompleted
 };
@@ -74,65 +74,63 @@ enum class TrialState : uint8_t {
 //==============================================================================
 struct Trial {
   // Constructor.
-	// Throws std::runtime_error error if config is invalid.
-	Trial(const std::string & id, YAML::Node config);
+  // Throws std::runtime_error error if config is invalid.
+  Trial(const std::string& id, YAML::Node config);
 
-	std::string id;
-	YAML::Node config;
+  std::string id;
+  YAML::Node config;
   std::unordered_map<std::string, Task> tasks;  // Map of task_id -> Task
   TrialState state;
 };
 
 //==============================================================================
 // Ensure rclcpp::init has been called before creating an instance.
-class Engine
-{
+class Engine {
  public:
   /// \brief Constructor.
   Engine(const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
 
-	/// \brief Destructor.
+  /// \brief Destructor.
   ~Engine();
 
-	/// \brief Start the engine.
-	void start();
+  /// \brief Start the engine.
+  void start();
 
  private:
+  // Initializes the engine.
+  EngineState initialize();
 
- 	// Initializes the engine.
-	EngineState initialize();
+  /// \brief Run the engine.
+  EngineState run();
 
-	/// \brief Run the engine.
-	EngineState run();
+  /// \brief Handle the logic for a given trial.
+  /// \param[in] trial The trial to handle.
+  /// \return The resulting state of the trial after handling.
+  TrialState handle_trial(const Trial& trial);
 
-	/// \brief Handle the logic for a given trial.
-	/// \param[in] trial The trial to handle.
-	/// \return The resulting state of the trial after handling.
-	TrialState handle_trial(const Trial& trial);
+  /// \brief Reset internal and simulator states after a trial is completed.
+  /// \param[in] state The state at which the trial ended.
+  void reset_after_trial(TrialState state);
 
-	/// \brief Reset internal and simulator states after a trial is completed.
-	/// \param[in] state The state at which the trial ended.
-	void reset_after_trial(TrialState state);
+  /// \brief Check if required endpoints are available.
+  /// \return True if all required endpoints are available, false otherwise.
+  bool check_required_endpoints();
 
-	/// \brief Check if required endpoints are available.
-	/// \return True if all required endpoints are available, false otherwise.
-	bool check_required_endpoints();
+  /// \brief Check if the simulator is ready.
+  /// \return True if the simulator is ready, false otherwise.
+  bool ready_simulator();
 
-	/// \brief Check if the simulator is ready.
-	/// \return True if the simulator is ready, false otherwise.
-	bool ready_simulator();
+  /// \brief Check if the scoring system is ready.
+  /// \return True if the scoring system is ready, false otherwise.
+  bool ready_scoring();
 
-	/// \brief Check if the scoring system is ready.
-	/// \return True if the scoring system is ready, false otherwise.
-	bool ready_scoring();
+  /// \brief Start the task.
+  /// \return True if the task started successfully, false otherwise.
+  bool start_task();
 
-	/// \brief Start the task.
-	/// \return True if the task started successfully, false otherwise.
-	bool start_task();
-
-	/// \brief Check if the task was completed successfully.
-	/// \return True if the task was completed successfully, false otherwise.
-	bool task_completed_successfully();
+  /// \brief Check if the task was completed successfully.
+  /// \return True if the task was completed successfully, false otherwise.
+  bool task_completed_successfully();
 
   /// \brief Spawn the task board in Gazebo.
   /// \param[in] x X position
@@ -145,8 +143,8 @@ class Engine
   bool spawn_task_board(double x, double y, double z, double roll, double pitch,
                         double yaw);
 
-	// Internal ROS 2 node.
-	rclcpp::Node::SharedPtr node_;
+  // Internal ROS 2 node.
+  rclcpp::Node::SharedPtr node_;
   // Subscriptions.
   rclcpp::Subscription<WrenchStampedMsg>::SharedPtr wrench_sub_;
   rclcpp::Subscription<JointStateMsg>::SharedPtr joint_state_sub_;
@@ -178,8 +176,8 @@ class Engine
   // Thread to spin ROS 2 node.
   std::thread spin_thread_;
 
-	// Engine state.
-	EngineState engine_state_;
+  // Engine state.
+  EngineState engine_state_;
 };
 
 }  // namespace aic

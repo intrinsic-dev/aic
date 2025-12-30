@@ -28,446 +28,469 @@ namespace aic {
 
 // Static arrays for ROS graph entities to check for
 static const std::vector<std::string> REQUIRED_NODES = {
-	"/aic_adapter_node",
-	"/aic_model_node",
-	"/controller_manager",
-	"/robot_state_publisher"
-};
+    "/aic_adapter_node", "/aic_model_node", "/controller_manager",
+    "/robot_state_publisher"};
 
 static const std::vector<std::string> REQUIRED_TOPICS = {
-	"/joint_states",
-	"/tf",
-	"/tf_static",
-	"/fts_broadcaster/wrench"
-};
+    "/joint_states", "/tf", "/tf_static", "/fts_broadcaster/wrench"};
 
 static const std::vector<std::string> REQUIRED_SERVICES = {
-	"/controller_manager/list_controllers",
-	"/controller_manager/switch_controller",
-	"/gz_server/spawn_entity"
-};
+    "/controller_manager/list_controllers",
+    "/controller_manager/switch_controller", "/gz_server/spawn_entity"};
 
-static const std::vector<std::string> REQUIRED_ACTIONS = {
-	"/insert_cable"
-};
+static const std::vector<std::string> REQUIRED_ACTIONS = {"/insert_cable"};
 
 //==============================================================================
-Trial::Trial(const std::string & _id, YAML::Node _config)
-: id(std::move(_id))
-{
-	// Validate config structure
-	if (!_config["scene"]) {
-		throw std::runtime_error("Config missing required key: 'scene'");
-	}
-	if (!_config["tasks"]) {
-		throw std::runtime_error("Config missing required key: 'tasks'");
-	}
-	if (!_config["scoring"]) {
-		throw std::runtime_error("Config missing required key: 'scoring'");
-	}
+Trial::Trial(const std::string& _id, YAML::Node _config) : id(std::move(_id)) {
+  // Validate config structure
+  if (!_config["scene"]) {
+    throw std::runtime_error("Config missing required key: 'scene'");
+  }
+  if (!_config["tasks"]) {
+    throw std::runtime_error("Config missing required key: 'tasks'");
+  }
+  if (!_config["scoring"]) {
+    throw std::runtime_error("Config missing required key: 'scoring'");
+  }
 
-	// Validate scene.task_board
-	const auto& scene = _config["scene"];
-	if (!scene["task_board"]) {
-		throw std::runtime_error("Config missing required key: 'scene.task_board'");
-	}
-	const auto& task_board = scene["task_board"];
-	if (!task_board["pose"]) {
-		throw std::runtime_error("Config missing required key: 'scene.task_board.pose'");
-	}
-	const auto& pose = task_board["pose"];
-	for (const auto& key : {"x", "y", "z", "roll", "pitch", "yaw"}) {
-		if (!pose[key]) {
-			throw std::runtime_error(std::string("Config missing required key: 'scene.task_board.pose.") + key + "'");
-		}
-	}
+  // Validate scene.task_board
+  const auto& scene = _config["scene"];
+  if (!scene["task_board"]) {
+    throw std::runtime_error("Config missing required key: 'scene.task_board'");
+  }
+  const auto& task_board = scene["task_board"];
+  if (!task_board["pose"]) {
+    throw std::runtime_error(
+        "Config missing required key: 'scene.task_board.pose'");
+  }
+  const auto& pose = task_board["pose"];
+  for (const auto& key : {"x", "y", "z", "roll", "pitch", "yaw"}) {
+    if (!pose[key]) {
+      throw std::runtime_error(
+          std::string("Config missing required key: 'scene.task_board.pose.") +
+          key + "'");
+    }
+  }
 
-	// Validate NIC rails (nic_rail_0 through nic_rail_4)
-	for (int i = 0; i < 5; ++i) {
-		std::string rail_key = "nic_rail_" + std::to_string(i);
-		if (!task_board[rail_key]) {
-			throw std::runtime_error("Config missing required key: 'scene.task_board." + rail_key + "'");
-		}
-		const auto& rail = task_board[rail_key];
-		if (!rail["entity_present"]) {
-			throw std::runtime_error("Config missing required key: 'scene.task_board." + rail_key + ".entity_present'");
-		}
-		if (rail["entity_present"].as<bool>()) {
-			if (!rail["entity_name"]) {
-				throw std::runtime_error("Config missing required key: 'scene.task_board." + rail_key + ".entity_name'");
-			}
-			if (!rail["entity_pose"]) {
-				throw std::runtime_error("Config missing required key: 'scene.task_board." + rail_key + ".entity_pose'");
-			}
-			const auto& entity_pose = rail["entity_pose"];
-			for (const auto& key : {"translation", "roll", "pitch", "yaw"}) {
-				if (!entity_pose[key]) {
-					throw std::runtime_error("Config missing required key: 'scene.task_board." + rail_key + ".entity_pose." + key + "'");
-				}
-			}
-		}
-	}
+  // Validate NIC rails (nic_rail_0 through nic_rail_4)
+  for (int i = 0; i < 5; ++i) {
+    std::string rail_key = "nic_rail_" + std::to_string(i);
+    if (!task_board[rail_key]) {
+      throw std::runtime_error(
+          "Config missing required key: 'scene.task_board." + rail_key + "'");
+    }
+    const auto& rail = task_board[rail_key];
+    if (!rail["entity_present"]) {
+      throw std::runtime_error(
+          "Config missing required key: 'scene.task_board." + rail_key +
+          ".entity_present'");
+    }
+    if (rail["entity_present"].as<bool>()) {
+      if (!rail["entity_name"]) {
+        throw std::runtime_error(
+            "Config missing required key: 'scene.task_board." + rail_key +
+            ".entity_name'");
+      }
+      if (!rail["entity_pose"]) {
+        throw std::runtime_error(
+            "Config missing required key: 'scene.task_board." + rail_key +
+            ".entity_pose'");
+      }
+      const auto& entity_pose = rail["entity_pose"];
+      for (const auto& key : {"translation", "roll", "pitch", "yaw"}) {
+        if (!entity_pose[key]) {
+          throw std::runtime_error(
+              "Config missing required key: 'scene.task_board." + rail_key +
+              ".entity_pose." + key + "'");
+        }
+      }
+    }
+  }
 
-	// Validate SC rails (sc_rail_0 and sc_rail_1)
-	for (int i = 0; i < 2; ++i) {
-		std::string rail_key = "sc_rail_" + std::to_string(i);
-		if (!task_board[rail_key]) {
-			throw std::runtime_error("Config missing required key: 'scene.task_board." + rail_key + "'");
-		}
-		const auto& rail = task_board[rail_key];
-		if (!rail["entity_present"]) {
-			throw std::runtime_error("Config missing required key: 'scene.task_board." + rail_key + ".entity_present'");
-		}
-		if (rail["entity_present"].as<bool>()) {
-			if (!rail["entity_name"]) {
-				throw std::runtime_error("Config missing required key: 'scene.task_board." + rail_key + ".entity_name'");
-			}
-			if (!rail["entity_pose"]) {
-				throw std::runtime_error("Config missing required key: 'scene.task_board." + rail_key + ".entity_pose'");
-			}
-			const auto& entity_pose = rail["entity_pose"];
-			for (const auto& key : {"translation", "roll", "pitch", "yaw"}) {
-				if (!entity_pose[key]) {
-					throw std::runtime_error("Config missing required key: 'scene.task_board." + rail_key + ".entity_pose." + key + "'");
-				}
-			}
-		}
-	}
+  // Validate SC rails (sc_rail_0 and sc_rail_1)
+  for (int i = 0; i < 2; ++i) {
+    std::string rail_key = "sc_rail_" + std::to_string(i);
+    if (!task_board[rail_key]) {
+      throw std::runtime_error(
+          "Config missing required key: 'scene.task_board." + rail_key + "'");
+    }
+    const auto& rail = task_board[rail_key];
+    if (!rail["entity_present"]) {
+      throw std::runtime_error(
+          "Config missing required key: 'scene.task_board." + rail_key +
+          ".entity_present'");
+    }
+    if (rail["entity_present"].as<bool>()) {
+      if (!rail["entity_name"]) {
+        throw std::runtime_error(
+            "Config missing required key: 'scene.task_board." + rail_key +
+            ".entity_name'");
+      }
+      if (!rail["entity_pose"]) {
+        throw std::runtime_error(
+            "Config missing required key: 'scene.task_board." + rail_key +
+            ".entity_pose'");
+      }
+      const auto& entity_pose = rail["entity_pose"];
+      for (const auto& key : {"translation", "roll", "pitch", "yaw"}) {
+        if (!entity_pose[key]) {
+          throw std::runtime_error(
+              "Config missing required key: 'scene.task_board." + rail_key +
+              ".entity_pose." + key + "'");
+        }
+      }
+    }
+  }
 
-	// Validate rail structure if rails exist
-	for (int i = 0; i < 6; ++i) {
-		std::string rail_key = "rail_" + std::to_string(i);
-		if (task_board[rail_key]) {
-			// If rail exists and has ports, validate port structure
-			const auto& rail = task_board[rail_key];
-			if (rail["ports"]) {
-				const auto& ports = rail["ports"];
-				for (auto it = ports.begin(); it != ports.end(); ++it) {
-					const auto& port = it->second;
-					if (!port["type"]) {
-						throw std::runtime_error("Config missing required key: 'scene.task_board." + rail_key + ".ports." + it->first.as<std::string>() + ".type'");
-					}
-					if (!port["entity_name"]) {
-						throw std::runtime_error("Config missing required key: 'scene.task_board." + rail_key + ".ports." + it->first.as<std::string>() + ".entity_name'");
-					}
-					if (!port["entity_pose"]) {
-						throw std::runtime_error("Config missing required key: 'scene.task_board." + rail_key + ".ports." + it->first.as<std::string>() + ".entity_pose'");
-					}
-					const auto& entity_pose = port["entity_pose"];
-					for (const auto& key : {"translation", "roll", "pitch", "yaw"}) {
-						if (!entity_pose[key]) {
-							throw std::runtime_error("Config missing required key: 'scene.task_board." + rail_key + ".ports." + it->first.as<std::string>() + ".entity_pose." + key + "'");
-						}
-					}
-				}
-			}
-		}
-	}
+  // Validate rail structure if rails exist
+  for (int i = 0; i < 6; ++i) {
+    std::string rail_key = "rail_" + std::to_string(i);
+    if (task_board[rail_key]) {
+      // If rail exists and has ports, validate port structure
+      const auto& rail = task_board[rail_key];
+      if (rail["ports"]) {
+        const auto& ports = rail["ports"];
+        for (auto it = ports.begin(); it != ports.end(); ++it) {
+          const auto& port = it->second;
+          if (!port["type"]) {
+            throw std::runtime_error(
+                "Config missing required key: 'scene.task_board." + rail_key +
+                ".ports." + it->first.as<std::string>() + ".type'");
+          }
+          if (!port["entity_name"]) {
+            throw std::runtime_error(
+                "Config missing required key: 'scene.task_board." + rail_key +
+                ".ports." + it->first.as<std::string>() + ".entity_name'");
+          }
+          if (!port["entity_pose"]) {
+            throw std::runtime_error(
+                "Config missing required key: 'scene.task_board." + rail_key +
+                ".ports." + it->first.as<std::string>() + ".entity_pose'");
+          }
+          const auto& entity_pose = port["entity_pose"];
+          for (const auto& key : {"translation", "roll", "pitch", "yaw"}) {
+            if (!entity_pose[key]) {
+              throw std::runtime_error(
+                  "Config missing required key: 'scene.task_board." + rail_key +
+                  ".ports." + it->first.as<std::string>() + ".entity_pose." +
+                  key + "'");
+            }
+          }
+        }
+      }
+    }
+  }
 
-	// Validate tasks array
-	const auto& tasks = _config["tasks"];
-	if (!tasks.IsMap() || tasks.size() == 0) {
-		throw std::runtime_error("Config 'tasks' must be a non-empty dictionary");
-	}
+  // Validate tasks array
+  const auto& tasks = _config["tasks"];
+  if (!tasks.IsMap() || tasks.size() == 0) {
+    throw std::runtime_error("Config 'tasks' must be a non-empty dictionary");
+  }
 
-	// Validate and parse all tasks
-	for (auto it = tasks.begin(); it != tasks.end(); ++it) {
-		const std::string task_id = it->first.as<std::string>();
-		const auto& task_config = it->second;
-		for (const auto& key : {"id", "cable_type", "cable_name", "plug_type", "plug_name", "port_type", "port_name", "target_module_name", "time_limit"}) {
-			if (!task_config[key]) {
-				throw std::runtime_error("Config missing required key: 'tasks[" + task_id + "]." + key + "'");
-			}
-		}
+  // Validate and parse all tasks
+  for (auto it = tasks.begin(); it != tasks.end(); ++it) {
+    const std::string task_id = it->first.as<std::string>();
+    const auto& task_config = it->second;
+    for (const auto& key :
+         {"id", "cable_type", "cable_name", "plug_type", "plug_name",
+          "port_type", "port_name", "target_module_name", "time_limit"}) {
+      if (!task_config[key]) {
+        throw std::runtime_error("Config missing required key: 'tasks[" +
+                                 task_id + "]." + key + "'");
+      }
+    }
 
-		// Parse and store task
-		auto task = aic_task_interfaces::build<aic_task_interfaces::msg::Task>()
-			.id(task_config["id"].as<std::string>())
-			.cable_type(task_config["cable_type"].as<std::string>())
-			.cable_name(task_config["cable_name"].as<std::string>())
-			.plug_type(task_config["plug_type"].as<std::string>())
-			.plug_name(task_config["plug_name"].as<std::string>())
-			.port_type(task_config["port_type"].as<std::string>())
-			.port_name(task_config["port_name"].as<std::string>())
-			.target_module_name(task_config["target_module_name"].as<std::string>())
-			.time_limit(task_config["time_limit"].as<std::size_t>());
+    // Parse and store task
+    auto task = aic_task_interfaces::build<aic_task_interfaces::msg::Task>()
+                    .id(task_config["id"].as<std::string>())
+                    .cable_type(task_config["cable_type"].as<std::string>())
+                    .cable_name(task_config["cable_name"].as<std::string>())
+                    .plug_type(task_config["plug_type"].as<std::string>())
+                    .plug_name(task_config["plug_name"].as<std::string>())
+                    .port_type(task_config["port_type"].as<std::string>())
+                    .port_name(task_config["port_name"].as<std::string>())
+                    .target_module_name(
+                        task_config["target_module_name"].as<std::string>())
+                    .time_limit(task_config["time_limit"].as<std::size_t>());
 
-		this->tasks[task_id] = task;
-	}
+    this->tasks[task_id] = task;
+  }
 
-	// Validate scoring array
-	const auto& scoring = _config["scoring"];
-	if (!scoring.IsSequence() || scoring.size() == 0) {
-		throw std::runtime_error("Config 'scoring' must be a non-empty array");
-	}
+  // Validate scoring array
+  const auto& scoring = _config["scoring"];
+  if (!scoring.IsSequence() || scoring.size() == 0) {
+    throw std::runtime_error("Config 'scoring' must be a non-empty array");
+  }
 
-	config = _config;
-	state = TrialState::Uninitialized;
+  config = _config;
+  state = TrialState::Uninitialized;
 }
 
 //==============================================================================
 Engine::Engine(const rclcpp::NodeOptions& options)
-: node_(std::make_shared<rclcpp::Node>("aic_engine", options)),
-	active_trial_(std::nullopt),
-	engine_state_(EngineState::Uninitialized)
-{
+    : node_(std::make_shared<rclcpp::Node>("aic_engine", options)),
+      active_trial_(std::nullopt),
+      engine_state_(EngineState::Uninitialized) {
   RCLCPP_INFO(node_->get_logger(), "Creating AIC Engine...");
 
   // Declare ROS parameters.
-  adapter_node_name_ = node_->declare_parameter("adapter_node_name",
-                                               std::string("aic_adapter_node"));
-  model_node_name_ =
-      node_->declare_parameter("model_node_name", std::string("aic_model_node"));
+  adapter_node_name_ = node_->declare_parameter(
+      "adapter_node_name", std::string("aic_adapter_node"));
+  model_node_name_ = node_->declare_parameter("model_node_name",
+                                              std::string("aic_model_node"));
   node_->declare_parameter("config_file_path", std::string(""));
 
-	spin_thread_ = std::thread(
-		[node = node_]() {
-			rclcpp::executors::SingleThreadedExecutor executor;
-			executor.add_node(node);
-			executor.spin();
-		}
-	);
+  spin_thread_ = std::thread([node = node_]() {
+    rclcpp::executors::SingleThreadedExecutor executor;
+    executor.add_node(node);
+    executor.spin();
+  });
 }
-
 
 //==============================================================================
 void Engine::start() {
-	switch (engine_state_) {
-		case EngineState::Uninitialized:
-			if (this->initialize() != EngineState::Initialized) {
-				RCLCPP_ERROR(node_->get_logger(), "Engine failed to initialize");
-				return;
-			}
-			// Fall through to run
-		case EngineState::Initialized:
-			this->run();
-			break;
-		case EngineState::Running:
-			RCLCPP_WARN(node_->get_logger(), "Engine is already running");
-			break;
-		case EngineState::Error:
-			RCLCPP_ERROR(node_->get_logger(), "Engine is in error state. Cannot start.");
-			break;
-		case EngineState::Completed:
-			RCLCPP_INFO(node_->get_logger(), "Engine has already completed.");
-			break;
-		default:
-			RCLCPP_ERROR(node_->get_logger(), "Unknown engine state. Cannot start.");
-			break;
-	}
+  switch (engine_state_) {
+    case EngineState::Uninitialized:
+      if (this->initialize() != EngineState::Initialized) {
+        RCLCPP_ERROR(node_->get_logger(), "Engine failed to initialize");
+        return;
+      }
+      // Fall through to run
+    case EngineState::Initialized:
+      this->run();
+      break;
+    case EngineState::Running:
+      RCLCPP_WARN(node_->get_logger(), "Engine is already running");
+      break;
+    case EngineState::Error:
+      RCLCPP_ERROR(node_->get_logger(),
+                   "Engine is in error state. Cannot start.");
+      break;
+    case EngineState::Completed:
+      RCLCPP_INFO(node_->get_logger(), "Engine has already completed.");
+      break;
+    default:
+      RCLCPP_ERROR(node_->get_logger(), "Unknown engine state. Cannot start.");
+      break;
+  }
 }
 
 //==============================================================================
 EngineState Engine::initialize() {
-	RCLCPP_INFO(node_->get_logger(), "Initializing AIC Engine...");
+  RCLCPP_INFO(node_->get_logger(), "Initializing AIC Engine...");
 
-	// Initialize the trials.
-	const std::filesystem::path config_file_path =
-		node_->get_parameter("config_file_path").as_string();
+  // Initialize the trials.
+  const std::filesystem::path config_file_path =
+      node_->get_parameter("config_file_path").as_string();
 
-	// Try to load config file as YAML
-	try {
-		config_ = YAML::LoadFile(config_file_path);
-	} catch (const YAML::Exception& e) {
-		RCLCPP_ERROR(node_->get_logger(), "Failed to load config file '%s': %s",
-			config_file_path.c_str(), e.what());
-		engine_state_ = EngineState::Error;
-		return engine_state_;
-	} catch (const std::exception& e) {
-		RCLCPP_ERROR(node_->get_logger(), "Failed to load config file '%s': %s",
-			config_file_path.c_str(), e.what());
-		engine_state_ = EngineState::Error;
-		return engine_state_;
-	}
+  // Try to load config file as YAML
+  try {
+    config_ = YAML::LoadFile(config_file_path);
+  } catch (const YAML::Exception& e) {
+    RCLCPP_ERROR(node_->get_logger(), "Failed to load config file '%s': %s",
+                 config_file_path.c_str(), e.what());
+    engine_state_ = EngineState::Error;
+    return engine_state_;
+  } catch (const std::exception& e) {
+    RCLCPP_ERROR(node_->get_logger(), "Failed to load config file '%s': %s",
+                 config_file_path.c_str(), e.what());
+    engine_state_ = EngineState::Error;
+    return engine_state_;
+  }
 
-	// Parse trials from config
-	if (!config_["trials"]) {
-		RCLCPP_ERROR(node_->get_logger(), "Config missing required key: 'trials'");
-		engine_state_ = EngineState::Error;
-		return engine_state_;
-	}
+  // Parse trials from config
+  if (!config_["trials"]) {
+    RCLCPP_ERROR(node_->get_logger(), "Config missing required key: 'trials'");
+    engine_state_ = EngineState::Error;
+    return engine_state_;
+  }
 
-	const auto& trials_config = config_["trials"];
-	for (auto it = trials_config.begin(); it != trials_config.end(); ++it) {
-		const std::string trial_id = it->first.as<std::string>();
-		const YAML::Node trial_config = it->second;
+  const auto& trials_config = config_["trials"];
+  for (auto it = trials_config.begin(); it != trials_config.end(); ++it) {
+    const std::string trial_id = it->first.as<std::string>();
+    const YAML::Node trial_config = it->second;
 
-		try {
-			Trial trial(trial_id, std::move(trial_config));
-			trials_.emplace(trial_id, std::move(trial));
-			RCLCPP_INFO(node_->get_logger(), "Successfully parsed trial '%s'", trial_id.c_str());
-		} catch (const std::runtime_error& e) {
-			RCLCPP_ERROR(node_->get_logger(), "Failed to parse trial '%s': %s",
-				trial_id.c_str(), e.what());
-			engine_state_ = EngineState::Error;
-			return engine_state_;
-		}
-	}
+    try {
+      Trial trial(trial_id, std::move(trial_config));
+      trials_.emplace(trial_id, std::move(trial));
+      RCLCPP_INFO(node_->get_logger(), "Successfully parsed trial '%s'",
+                  trial_id.c_str());
+    } catch (const std::runtime_error& e) {
+      RCLCPP_ERROR(node_->get_logger(), "Failed to parse trial '%s': %s",
+                   trial_id.c_str(), e.what());
+      engine_state_ = EngineState::Error;
+      return engine_state_;
+    }
+  }
 
-	if (trials_.empty()) {
-		RCLCPP_ERROR(node_->get_logger(), "No trials found in config");
-		engine_state_ = EngineState::Error;
-		return engine_state_;
-	}
+  if (trials_.empty()) {
+    RCLCPP_ERROR(node_->get_logger(), "No trials found in config");
+    engine_state_ = EngineState::Error;
+    return engine_state_;
+  }
 
-	RCLCPP_INFO(node_->get_logger(), "Successfully parsed %zu trial(s)", trials_.size());
+  RCLCPP_INFO(node_->get_logger(), "Successfully parsed %zu trial(s)",
+              trials_.size());
 
-	// Create ROS endpoints.
+  // Create ROS endpoints.
   insert_cable_action_client_ =
       rclcpp_action::create_client<InsertCableAction>(node_, "/insert_cable");
   spawn_entity_client_ =
       node_->create_client<SpawnEntitySrv>("/gz_server/spawn_entity");
 
-	engine_state_ = EngineState::Initialized;
+  engine_state_ = EngineState::Initialized;
   RCLCPP_INFO(node_->get_logger(), "AIC Engine initialized successfully.");
 
-	return engine_state_;
+  return engine_state_;
 }
 
 //==============================================================================
 EngineState Engine::run() {
-	RCLCPP_INFO(node_->get_logger(), "Running AIC Engine...");
+  RCLCPP_INFO(node_->get_logger(), "Running AIC Engine...");
 
-	engine_state_ = EngineState::Running;
+  engine_state_ = EngineState::Running;
 
-	for (const auto& [trial_id, trial] : trials_) {
-		RCLCPP_INFO(node_->get_logger(), "Handling trial '%s'...", trial_id.c_str());
-		TrialState trial_result = this->handle_trial(trial);
-		if (trial_result == TrialState::TaskCompleted) {
-			RCLCPP_INFO(node_->get_logger(), "Trial '%s' completed successfully.", trial_id.c_str());
-		} else {
-			RCLCPP_ERROR(node_->get_logger(), "Trial '%s' failed or was not completed.", trial_id.c_str());
-			engine_state_ = EngineState::Error;
-			return engine_state_;
-		}
-	}
+  for (const auto& [trial_id, trial] : trials_) {
+    RCLCPP_INFO(node_->get_logger(), "Handling trial '%s'...",
+                trial_id.c_str());
+    TrialState trial_result = this->handle_trial(trial);
+    if (trial_result == TrialState::TaskCompleted) {
+      RCLCPP_INFO(node_->get_logger(), "Trial '%s' completed successfully.",
+                  trial_id.c_str());
+    } else {
+      RCLCPP_ERROR(node_->get_logger(),
+                   "Trial '%s' failed or was not completed.", trial_id.c_str());
+      engine_state_ = EngineState::Error;
+      return engine_state_;
+    }
+  }
 
-	return engine_state_;
+  return engine_state_;
 }
 
 //==============================================================================
 TrialState Engine::handle_trial(const Trial& trial) {
-	RCLCPP_INFO(node_->get_logger(), "Starting trial '%s'...", trial.id.c_str());
+  RCLCPP_INFO(node_->get_logger(), "Starting trial '%s'...", trial.id.c_str());
 
-	active_trial_ = trial;
+  active_trial_ = trial;
 
-	TrialState current_state = TrialState::Uninitialized;
+  TrialState current_state = TrialState::Uninitialized;
 
-	if (!this->check_required_endpoints()) {
-		RCLCPP_ERROR(node_->get_logger(), "Required endpoints are not available.");
-		current_state = TrialState::Uninitialized;
-		reset_after_trial(current_state);
-		return current_state;
-	}
-	current_state = TrialState::EndpointsAvailable;
+  if (!this->check_required_endpoints()) {
+    RCLCPP_ERROR(node_->get_logger(), "Required endpoints are not available.");
+    current_state = TrialState::Uninitialized;
+    reset_after_trial(current_state);
+    return current_state;
+  }
+  current_state = TrialState::EndpointsAvailable;
 
-	if (!this->ready_simulator()) {
-		RCLCPP_ERROR(node_->get_logger(), "Simulator is not ready.");
-		reset_after_trial(current_state);
-		return current_state;
-	}
-	current_state = TrialState::SimulatorReady;
+  if (!this->ready_simulator()) {
+    RCLCPP_ERROR(node_->get_logger(), "Simulator is not ready.");
+    reset_after_trial(current_state);
+    return current_state;
+  }
+  current_state = TrialState::SimulatorReady;
 
-	if (!this->ready_scoring()) {
-		RCLCPP_ERROR(node_->get_logger(), "Scoring system is not ready.");
-		reset_after_trial(current_state);
-		return current_state;
-	}
-	current_state = TrialState::ScoringReady;
+  if (!this->ready_scoring()) {
+    RCLCPP_ERROR(node_->get_logger(), "Scoring system is not ready.");
+    reset_after_trial(current_state);
+    return current_state;
+  }
+  current_state = TrialState::ScoringReady;
 
-	if (!this->start_task()) {
-		RCLCPP_ERROR(node_->get_logger(), "Failed to start task.");
-		reset_after_trial(current_state);
-		return current_state;
-	}
-	current_state = TrialState::TaskStarted;
+  if (!this->start_task()) {
+    RCLCPP_ERROR(node_->get_logger(), "Failed to start task.");
+    reset_after_trial(current_state);
+    return current_state;
+  }
+  current_state = TrialState::TaskStarted;
 
-	if (!this->task_completed_successfully()) {
-		RCLCPP_ERROR(node_->get_logger(), "Task was not completed successfully.");
-		reset_after_trial(current_state);
-		return current_state;
-	}
-	current_state = TrialState::TaskCompleted;
+  if (!this->task_completed_successfully()) {
+    RCLCPP_ERROR(node_->get_logger(), "Task was not completed successfully.");
+    reset_after_trial(current_state);
+    return current_state;
+  }
+  current_state = TrialState::TaskCompleted;
 
-	reset_after_trial(current_state);
-	return current_state;
+  reset_after_trial(current_state);
+  return current_state;
 }
 
 //==============================================================================
 bool Engine::check_required_endpoints() {
-	// TODO(Yadunund): Implement actual checks for nodes, topics, services, actions.
-	RCLCPP_INFO(node_->get_logger(), "Checking required endpoints...");
+  // TODO(Yadunund): Implement actual checks for nodes, topics, services,
+  // actions.
+  RCLCPP_INFO(node_->get_logger(), "Checking required endpoints...");
 
-	// For now, assume all required endpoints are available.
-	return true;
+  // For now, assume all required endpoints are available.
+  return true;
 }
 
 //==============================================================================
 bool Engine::ready_simulator() {
+  if (!this->active_trial_.has_value()) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "No active trial set in engine. Report this bug.");
+    return false;
+  }
 
-	if (!this->active_trial_.has_value()) {
-		RCLCPP_ERROR(node_->get_logger(), "No active trial set in engine. Report this bug.");
-		return false;
-	}
+  RCLCPP_INFO(node_->get_logger(), "Readying simulator for trial '%s'...",
+              this->active_trial_->id.c_str());
 
-	RCLCPP_INFO(node_->get_logger(), "Readying simulator for trial '%s'...",
-		this->active_trial_->id.c_str());
+  // Spawn the task board.
+  RCLCPP_INFO(node_->get_logger(), "Spawning task board.");
+  const auto& task_board_config = active_trial_->config["scene"]["task_board"];
+  if (this->spawn_task_board(task_board_config["pose"]["x"].as<double>(),
+                             task_board_config["pose"]["y"].as<double>(),
+                             task_board_config["pose"]["z"].as<double>(),
+                             task_board_config["pose"]["roll"].as<double>(),
+                             task_board_config["pose"]["pitch"].as<double>(),
+                             task_board_config["pose"]["yaw"].as<double>())) {
+    RCLCPP_INFO(node_->get_logger(), "Task board spawned successfully.");
+  } else {
+    RCLCPP_ERROR(node_->get_logger(), "Failed to spawn task board.");
+  }
 
-	// Spawn the task board.
-	RCLCPP_INFO(node_->get_logger(), "Spawning task board.");
-	const auto& task_board_config =
-			active_trial_->config["scene"]["task_board"];
-	if (this->spawn_task_board(task_board_config["pose"]["x"].as<double>(),
-															task_board_config["pose"]["y"].as<double>(),
-															task_board_config["pose"]["z"].as<double>(),
-															task_board_config["pose"]["roll"].as<double>(),
-															task_board_config["pose"]["pitch"].as<double>(),
-															task_board_config["pose"]["yaw"].as<double>())) {
-		RCLCPP_INFO(node_->get_logger(), "Task board spawned successfully.");
-	} else {
-		RCLCPP_ERROR(node_->get_logger(), "Failed to spawn task board.");
-	}
+  // TODO(Yadunund): Implement other simulator readiness checks.
 
-	// TODO(Yadunund): Implement other simulator readiness checks.
-
-	return true;
+  return true;
 }
 
 //==============================================================================
 bool Engine::ready_scoring() {
-	RCLCPP_INFO(node_->get_logger(), "Checking scoring system readiness...");
+  RCLCPP_INFO(node_->get_logger(), "Checking scoring system readiness...");
 
-	// TODO(Yadunund): Implement actual scoring system readiness checks.
+  // TODO(Yadunund): Implement actual scoring system readiness checks.
 
-	// For now, assume scoring system is ready.
-	return true;
+  // For now, assume scoring system is ready.
+  return true;
 }
 
 //==============================================================================
 bool Engine::start_task() {
-	RCLCPP_INFO(node_->get_logger(), "Starting task for active trial...");
+  RCLCPP_INFO(node_->get_logger(), "Starting task for active trial...");
 
-	// TODO(Yadunund): Implement actual task start logic.
+  // TODO(Yadunund): Implement actual task start logic.
 
-	// For now, assume task started successfully.
-	return true;
+  // For now, assume task started successfully.
+  return true;
 }
 
 //==============================================================================
 bool Engine::task_completed_successfully() {
-	RCLCPP_INFO(node_->get_logger(), "Checking if task was completed successfully...");
+  RCLCPP_INFO(node_->get_logger(),
+              "Checking if task was completed successfully...");
 
-	// TODO(Yadunund): Implement actual task completion check.
+  // TODO(Yadunund): Implement actual task completion check.
 
-	// For now, assume task was completed successfully.
-	return true;
+  // For now, assume task was completed successfully.
+  return true;
 }
 
 void Engine::reset_after_trial(TrialState state) {
-	RCLCPP_INFO(node_->get_logger(), "Resetting after trial completion...");
+  RCLCPP_INFO(node_->get_logger(), "Resetting after trial completion...");
 
-
-	RCLCPP_INFO(node_->get_logger(), "Reset after trial completed.");
+  RCLCPP_INFO(node_->get_logger(), "Reset after trial completed.");
 }
 
 //==============================================================================
