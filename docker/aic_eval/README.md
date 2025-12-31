@@ -16,7 +16,7 @@ ros2 run rmw_zenoh_cpp rmw_zenohd
 It is recommended to use [distrobox](https://distrobox.it/#installation) for easy gui, gpu and network setup.
 
 ```bash
-distrobox create -r -i aic_eval
+distrobox create -r -i ghcr.io/intrinsic-dev/aic_eval aic_eval
 distrobox enter -r aic_eval
 /entrypoint.sh
 ```
@@ -26,5 +26,5 @@ distrobox enter -r aic_eval
 <!--TODO: Release on docker hub?-->
 
 ```bash
-docker build -t aic_eval -f docker/aic_eval/Dockerfile .
+docker buildx build -t ghcr.io/intrinsic-dev/aic_eval -f docker/aic_eval/Dockerfile .
 ```
