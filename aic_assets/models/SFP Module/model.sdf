@@ -221,5 +221,15 @@
         </geometry>
       </collision>
     </link>
+    
+    <link name="sfp_tip_link">
+      <pose>0 -0.02365 0 1.5708 0 0</pose>
+    </link>
+    
+    <joint name="sfp_tip_joint" type="fixed">
+      <parent>sfp_module_link</parent>
+      <child>sfp_tip_link</child>
+    </joint>
+    
   </model>
 </sdf>
