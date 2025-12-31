@@ -16,10 +16,14 @@ ros2 run rmw_zenoh_cpp rmw_zenohd
 It is recommended to use [distrobox](https://distrobox.it/#installation) for easy gui, gpu and network setup.
 
 ```bash
-distrobox create -r -i ghcr.io/intrinsic-dev/aic_eval:latest aic_eval
+docker network create --internal aic
+distrobox create -r -i ghcr.io/intrinsic-dev/aic_eval:latest --unshare-netns -a --network=aic aic_eval
 distrobox enter -r aic_eval
 /entrypoint.sh
 ```
+
+> [!TIP]
+> You may omit `--unshare-netns -a --network=aic` flags to let the container use the host network. Note that during evaluation, there will be no external network access so it is recommended to test with a private network.
 
 ## Building
 
