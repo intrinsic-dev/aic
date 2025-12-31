@@ -135,60 +135,67 @@
   </joint>
 
   <!-- SC Port 01 -->
-  <xacro:sc_port prefix="sc_port_01_"/>
-  <joint name="sc_port_01_joint" type="fixed">
-    <parent link="task_board_base_link"/>
-    <child link="sc_port_01_link"/>
-    <origin xyz="${-0.075 + $(arg sc_port_01_delta_x)} ${0.0295 + $(arg sc_port_01_delta_y)} ${0.01 + $(arg sc_port_01_delta_z)}" rpy="1.57 0 1.57"/>
-  </joint>
+  <xacro:sc_port prefix="sc_port_01" pose="${-0.075 + $(arg sc_port_01_delta_x)} ${0.0295 + $(arg sc_port_01_delta_y)} ${0.01 + $(arg sc_port_01_delta_z)} 1.57 0 1.57"/>
+  <gazebo>
+    <joint name="sc_port_01_joint" type="fixed">
+      <parent> task_board_base_link</parent>
+      <child>sc_port_01::sc_port_link</child>
+    </joint>
+  </gazebo>
 
   <!-- SC Port 02 -->
-  <xacro:sc_port prefix="sc_port_02_"/>
-  <joint name="sc_port_02_joint" type="fixed">
-    <parent link="task_board_base_link"/>
-    <child link="sc_port_02_link"/>
-    <origin xyz="${-0.075 + $(arg sc_port_02_delta_x)} ${0.0705 + $(arg sc_port_02_delta_y)} ${0.01 + $(arg sc_port_02_delta_z)}" rpy="1.57 0 1.57"/>
-  </joint>
+  <xacro:sc_port prefix="sc_port_02" pose="${-0.075 + $(arg sc_port_02_delta_x)} ${0.0705 + $(arg sc_port_02_delta_y)} ${0.01 + $(arg sc_port_02_delta_z)} 1.57 0 1.57"/>
+  <gazebo>
+    <joint name="sc_port_02_joint" type="fixed">
+      <parent> task_board_base_link</parent>
+      <child>sc_port_02::sc_port_link</child>
+    </joint>
+  </gazebo>
 
   <!-- NIC Card Mount 01 -->
-  <xacro:nic_card_mount prefix="nic_card_mount_01_"/>
-  <joint name="nic_card_mount_01_joint" type="fixed">
-    <parent link="task_board_base_link"/>
-    <child link="nic_card_mount_01_link"/>
-    <origin xyz="${-0.081418 + $(arg nic_card_mount_01_delta_x)} ${-0.0145 + $(arg nic_card_mount_01_delta_y)} ${0.01 + $(arg nic_card_mount_01_delta_z)}" rpy="0 0 0"/>
-  </joint>
+  <xacro:nic_card_mount prefix="nic_card_mount_01" pose="${-0.081418 + $(arg nic_card_mount_01_delta_x)} ${-0.0145 + $(arg nic_card_mount_01_delta_y)} ${0.01 + $(arg nic_card_mount_01_delta_z)} 0 0 0"/>
+  <gazebo>
+    <joint name="nic_card_mount_01_joint" type="fixed">
+      <parent>task_board_base_link</parent>
+      <child>nic_card_mount_01::nic_card_mount_link</child>
+    </joint>
+  </gazebo>
 
   <!-- NIC Card Mount 02 -->
-  <xacro:nic_card_mount prefix="nic_card_mount_02_"/>
-  <joint name="nic_card_mount_02_joint" type="fixed">
-    <parent link="task_board_base_link"/>
-    <child link="nic_card_mount_02_link"/>
-    <origin xyz="${-0.081418 + $(arg nic_card_mount_02_delta_x)} ${-0.0545 + $(arg nic_card_mount_02_delta_y)} ${0.01 + $(arg nic_card_mount_02_delta_z)}" rpy="0 0 0"/>
-  </joint>
+  <xacro:nic_card_mount prefix="nic_card_mount_02" pose="${-0.081418 + $(arg nic_card_mount_02_delta_x)} ${-0.0545 + $(arg nic_card_mount_02_delta_y)} ${0.01 + $(arg nic_card_mount_02_delta_z)} 0 0 0"/>
+  <gazebo>
+    <joint name="nic_card_mount_02_joint" type="fixed">
+      <parent>task_board_base_link</parent>
+      <child>nic_card_mount_02::nic_card_mount_link</child>
+    </joint>
+  </gazebo>
 
   <!-- NIC Card Mount 03 -->
-  <xacro:nic_card_mount prefix="nic_card_mount_03_"/>
-  <joint name="nic_card_mount_03_joint" type="fixed">
-    <parent link="task_board_base_link"/>
-    <child link="nic_card_mount_03_link"/>
-    <origin xyz="${-0.081418 + $(arg nic_card_mount_03_delta_x)} ${-0.0945 + $(arg nic_card_mount_03_delta_y)} ${0.01 + $(arg nic_card_mount_03_delta_z)}" rpy="0 0 0"/>
-  </joint>
+  <xacro:nic_card_mount prefix="nic_card_mount_03" pose="${-0.081418 + $(arg nic_card_mount_03_delta_x)} ${-0.0945 + $(arg nic_card_mount_03_delta_y)} ${0.01 + $(arg nic_card_mount_03_delta_z)} 0 0 0"/>
+  <gazebo>
+    <joint name="nic_card_mount_03_joint" type="fixed">
+      <parent>task_board_base_link</parent>
+      <child>nic_card_mount_03::nic_card_mount_link</child>
+    </joint>
+  </gazebo>
 
   <!-- NIC Card Mount 04 -->
-  <xacro:nic_card_mount prefix="nic_card_mount_04_"/>
-  <joint name="nic_card_mount_04_joint" type="fixed">
-    <parent link="task_board_base_link"/>
-    <child link="nic_card_mount_04_link"/>
-    <origin xyz="${-0.081418 + $(arg nic_card_mount_04_delta_x)} ${-0.1345 + $(arg nic_card_mount_04_delta_y)} ${0.01 + $(arg nic_card_mount_04_delta_z)}" rpy="0 0 0"/>
-  </joint>
+  <xacro:nic_card_mount prefix="nic_card_mount_04" pose="${-0.081418 + $(arg nic_card_mount_04_delta_x)} ${-0.1345 + $(arg nic_card_mount_04_delta_y)} ${0.01 + $(arg nic_card_mount_04_delta_z)} 0 0 0"/>
+  <gazebo>
+    <joint name="nic_card_mount_04_joint" type="fixed">
+      <parent>task_board_base_link</parent>
+      <child>nic_card_mount_04::nic_card_mount_link</child>
+    </joint>
+  </gazebo>
 
   <!-- NIC Card Mount 05 -->
-  <xacro:nic_card_mount prefix="nic_card_mount_05_"/>
-  <joint name="nic_card_mount_05_joint" type="fixed">
-    <parent link="task_board_base_link"/>
-    <child link="nic_card_mount_05_link"/>
-    <origin xyz="${-0.081418 + $(arg nic_card_mount_05_delta_x)} ${-0.1745 + $(arg nic_card_mount_05_delta_y)} ${0.01 + $(arg nic_card_mount_05_delta_z)}" rpy="0 0 0"/>
-  </joint>
+  <xacro:nic_card_mount prefix="nic_card_mount_05" pose="${-0.081418 + $(arg nic_card_mount_05_delta_x)} ${-0.1745 + $(arg nic_card_mount_05_delta_y)} ${0.01 + $(arg nic_card_mount_05_delta_z)} 0 0 0"/>
+  <gazebo>
+    <joint name="nic_card_mount_05_joint" type="fixed">
+      <parent>task_board_base_link</parent>
+      <child>nic_card_mount_05::nic_card_mount_link</child>
+    </joint>
+  </gazebo>
 
   <gazebo>
     <static>true</static>
