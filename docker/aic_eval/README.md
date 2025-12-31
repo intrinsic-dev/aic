@@ -17,7 +17,7 @@ It is recommended to use [distrobox](https://distrobox.it/#installation) for eas
 
 ```bash
 docker network create --internal aic
-distrobox create -r -i ghcr.io/intrinsic-dev/aic_eval:latest --unshare-netns -a --network=aic aic_eval
+distrobox create -r -i ghcr.io/intrinsic-dev/aic_eval:latest --unshare-all -a --network=aic aic_eval
 distrobox enter -r aic_eval
 /entrypoint.sh
 ```

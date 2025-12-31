@@ -27,7 +27,7 @@ set -e
 
 source /ws_aic/install/setup.bash
 export RMW_IMPLEMENTATION=rmw_zenoh_cpp
-export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
+# export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
 exec ros2 launch aic_bringup aic_gz_bringup.launch.py "\$@"
 EOF
 
