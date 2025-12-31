@@ -56,30 +56,40 @@
   <xacro:arg name="sc_port_02_delta_y" default="0.0"/>
   <xacro:arg name="sc_port_02_delta_z" default="0.0"/>
 
+  <!-- NIC Card Mount 00 -->
+  <xacro:arg name="nic_card_mount_00_present" default="true"/>
+  <xacro:arg name="nic_card_mount_00_translation" default="0.0"/>
+  <xacro:arg name="nic_card_mount_00_roll" default="0.0"/>
+  <xacro:arg name="nic_card_mount_00_pitch" default="0.0"/>
+  <xacro:arg name="nic_card_mount_00_yaw" default="0.0"/>
+
   <!-- NIC Card Mount 01 -->
-  <xacro:arg name="nic_card_mount_01_delta_x" default="0.0"/>
-  <xacro:arg name="nic_card_mount_01_delta_y" default="0.0"/>
-  <xacro:arg name="nic_card_mount_01_delta_z" default="0.0"/>
+  <xacro:arg name="nic_card_mount_01_present" default="true"/>
+  <xacro:arg name="nic_card_mount_01_translation" default="0.0"/>
+  <xacro:arg name="nic_card_mount_01_roll" default="0.0"/>
+  <xacro:arg name="nic_card_mount_01_pitch" default="0.0"/>
+  <xacro:arg name="nic_card_mount_01_yaw" default="0.0"/>
 
   <!-- NIC Card Mount 02 -->
-  <xacro:arg name="nic_card_mount_02_delta_x" default="0.0"/>
-  <xacro:arg name="nic_card_mount_02_delta_y" default="0.0"/>
-  <xacro:arg name="nic_card_mount_02_delta_z" default="0.0"/>
+  <xacro:arg name="nic_card_mount_02_present" default="true"/>
+  <xacro:arg name="nic_card_mount_02_translation" default="0.0"/>
+  <xacro:arg name="nic_card_mount_02_roll" default="0.0"/>
+  <xacro:arg name="nic_card_mount_02_pitch" default="0.0"/>
+  <xacro:arg name="nic_card_mount_02_yaw" default="0.0"/>
 
   <!-- NIC Card Mount 03 -->
-  <xacro:arg name="nic_card_mount_03_delta_x" default="0.0"/>
-  <xacro:arg name="nic_card_mount_03_delta_y" default="0.0"/>
-  <xacro:arg name="nic_card_mount_03_delta_z" default="0.0"/>
+  <xacro:arg name="nic_card_mount_03_present" default="true"/>
+  <xacro:arg name="nic_card_mount_03_translation" default="0.0"/>
+  <xacro:arg name="nic_card_mount_03_roll" default="0.0"/>
+  <xacro:arg name="nic_card_mount_03_pitch" default="0.0"/>
+  <xacro:arg name="nic_card_mount_03_yaw" default="0.0"/>
 
   <!-- NIC Card Mount 04 -->
-  <xacro:arg name="nic_card_mount_04_delta_x" default="0.0"/>
-  <xacro:arg name="nic_card_mount_04_delta_y" default="0.0"/>
-  <xacro:arg name="nic_card_mount_04_delta_z" default="0.0"/>
-
-  <!-- NIC Card Mount 05 -->
-  <xacro:arg name="nic_card_mount_05_delta_x" default="0.0"/>
-  <xacro:arg name="nic_card_mount_05_delta_y" default="0.0"/>
-  <xacro:arg name="nic_card_mount_05_delta_z" default="0.0"/>
+  <xacro:arg name="nic_card_mount_04_present" default="true"/>
+  <xacro:arg name="nic_card_mount_04_translation" default="0.0"/>
+  <xacro:arg name="nic_card_mount_04_roll" default="0.0"/>
+  <xacro:arg name="nic_card_mount_04_pitch" default="0.0"/>
+  <xacro:arg name="nic_card_mount_04_yaw" default="0.0"/>
 
   <!-- Calculate absolute positions relative to task board base -->
   <!-- Task Board Base is at (0.25, 0, 1.14) relative to world in original SDF -->
@@ -150,45 +160,55 @@
     <origin xyz="${-0.075 + $(arg sc_port_02_delta_x)} ${0.0705 + $(arg sc_port_02_delta_y)} ${0.01 + $(arg sc_port_02_delta_z)}" rpy="1.57 0 1.57"/>
   </joint>
 
-  <!-- NIC Card Mount 01 -->
-  <xacro:nic_card_mount prefix="nic_card_mount_01_"/>
-  <joint name="nic_card_mount_01_joint" type="fixed">
-    <parent link="task_board_base_link"/>
-    <child link="nic_card_mount_01_link"/>
-    <origin xyz="${-0.081418 + $(arg nic_card_mount_01_delta_x)} ${-0.0145 + $(arg nic_card_mount_01_delta_y)} ${0.01 + $(arg nic_card_mount_01_delta_z)}" rpy="0 0 0"/>
-  </joint>
+  <!-- NIC Card Mount 00 (left-most) -->
+  <xacro:if value="$(arg nic_card_mount_00_present)">
+    <xacro:nic_card_mount prefix="nic_card_mount_00_"/>
+    <joint name="nic_card_mount_00_joint" type="fixed">
+      <parent link="task_board_base_link"/>
+      <child link="nic_card_mount_00_link"/>
+      <origin xyz="${-0.081418 + $(arg nic_card_mount_00_translation)} -0.1745 0.01" rpy="$(arg nic_card_mount_00_roll) $(arg nic_card_mount_00_pitch) $(arg nic_card_mount_00_yaw)"/>
+    </joint>
+  </xacro:if>
 
-  <!-- NIC Card Mount 02 -->
-  <xacro:nic_card_mount prefix="nic_card_mount_02_"/>
-  <joint name="nic_card_mount_02_joint" type="fixed">
-    <parent link="task_board_base_link"/>
-    <child link="nic_card_mount_02_link"/>
-    <origin xyz="${-0.081418 + $(arg nic_card_mount_02_delta_x)} ${-0.0545 + $(arg nic_card_mount_02_delta_y)} ${0.01 + $(arg nic_card_mount_02_delta_z)}" rpy="0 0 0"/>
-  </joint>
+  <!-- NIC Card Mount 01 -->
+  <xacro:if value="$(arg nic_card_mount_01_present)">
+    <xacro:nic_card_mount prefix="nic_card_mount_01_"/>
+    <joint name="nic_card_mount_01_joint" type="fixed">
+      <parent link="task_board_base_link"/>
+      <child link="nic_card_mount_01_link"/>
+      <origin xyz="${-0.081418 + $(arg nic_card_mount_01_translation)} -0.1345 0.01" rpy="$(arg nic_card_mount_01_roll) $(arg nic_card_mount_01_pitch) $(arg nic_card_mount_01_yaw)"/>
+    </joint>
+  </xacro:if>
+
+  <!-- NIC Card Mount 02 (center) -->
+  <xacro:if value="$(arg nic_card_mount_02_present)">
+    <xacro:nic_card_mount prefix="nic_card_mount_02_"/>
+    <joint name="nic_card_mount_02_joint" type="fixed">
+      <parent link="task_board_base_link"/>
+      <child link="nic_card_mount_02_link"/>
+      <origin xyz="${-0.081418 + $(arg nic_card_mount_02_translation)} -0.0945 0.01" rpy="$(arg nic_card_mount_02_roll) $(arg nic_card_mount_02_pitch) $(arg nic_card_mount_02_yaw)"/>
+    </joint>
+  </xacro:if>
 
   <!-- NIC Card Mount 03 -->
-  <xacro:nic_card_mount prefix="nic_card_mount_03_"/>
-  <joint name="nic_card_mount_03_joint" type="fixed">
-    <parent link="task_board_base_link"/>
-    <child link="nic_card_mount_03_link"/>
-    <origin xyz="${-0.081418 + $(arg nic_card_mount_03_delta_x)} ${-0.0945 + $(arg nic_card_mount_03_delta_y)} ${0.01 + $(arg nic_card_mount_03_delta_z)}" rpy="0 0 0"/>
-  </joint>
+  <xacro:if value="$(arg nic_card_mount_03_present)">
+    <xacro:nic_card_mount prefix="nic_card_mount_03_"/>
+    <joint name="nic_card_mount_03_joint" type="fixed">
+      <parent link="task_board_base_link"/>
+      <child link="nic_card_mount_03_link"/>
+      <origin xyz="${-0.081418 + $(arg nic_card_mount_03_translation)} -0.0545 0.01" rpy="$(arg nic_card_mount_03_roll) $(arg nic_card_mount_03_pitch) $(arg nic_card_mount_03_yaw)"/>
+    </joint>
+  </xacro:if>
 
-  <!-- NIC Card Mount 04 -->
-  <xacro:nic_card_mount prefix="nic_card_mount_04_"/>
-  <joint name="nic_card_mount_04_joint" type="fixed">
-    <parent link="task_board_base_link"/>
-    <child link="nic_card_mount_04_link"/>
-    <origin xyz="${-0.081418 + $(arg nic_card_mount_04_delta_x)} ${-0.1345 + $(arg nic_card_mount_04_delta_y)} ${0.01 + $(arg nic_card_mount_04_delta_z)}" rpy="0 0 0"/>
-  </joint>
-
-  <!-- NIC Card Mount 05 -->
-  <xacro:nic_card_mount prefix="nic_card_mount_05_"/>
-  <joint name="nic_card_mount_05_joint" type="fixed">
-    <parent link="task_board_base_link"/>
-    <child link="nic_card_mount_05_link"/>
-    <origin xyz="${-0.081418 + $(arg nic_card_mount_05_delta_x)} ${-0.1745 + $(arg nic_card_mount_05_delta_y)} ${0.01 + $(arg nic_card_mount_05_delta_z)}" rpy="0 0 0"/>
-  </joint>
+  <!-- NIC Card Mount 04 (right-most) -->
+  <xacro:if value="$(arg nic_card_mount_04_present)">
+    <xacro:nic_card_mount prefix="nic_card_mount_04_"/>
+    <joint name="nic_card_mount_04_joint" type="fixed">
+      <parent link="task_board_base_link"/>
+      <child link="nic_card_mount_04_link"/>
+      <origin xyz="${-0.081418 + $(arg nic_card_mount_04_translation)} -0.0145 0.01" rpy="$(arg nic_card_mount_04_roll) $(arg nic_card_mount_04_pitch) $(arg nic_card_mount_04_yaw)"/>
+    </joint>
+  </xacro:if>
 
   <gazebo>
     <static>true</static>

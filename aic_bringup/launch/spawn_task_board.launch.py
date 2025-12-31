@@ -62,21 +62,37 @@ def launch_setup(context, *args, **kwargs):
     sc_port_02_delta_x = LaunchConfiguration("sc_port_02_delta_x")
     sc_port_02_delta_y = LaunchConfiguration("sc_port_02_delta_y")
     sc_port_02_delta_z = LaunchConfiguration("sc_port_02_delta_z")
-    nic_card_mount_01_delta_x = LaunchConfiguration("nic_card_mount_01_delta_x")
-    nic_card_mount_01_delta_y = LaunchConfiguration("nic_card_mount_01_delta_y")
-    nic_card_mount_01_delta_z = LaunchConfiguration("nic_card_mount_01_delta_z")
-    nic_card_mount_02_delta_x = LaunchConfiguration("nic_card_mount_02_delta_x")
-    nic_card_mount_02_delta_y = LaunchConfiguration("nic_card_mount_02_delta_y")
-    nic_card_mount_02_delta_z = LaunchConfiguration("nic_card_mount_02_delta_z")
-    nic_card_mount_03_delta_x = LaunchConfiguration("nic_card_mount_03_delta_x")
-    nic_card_mount_03_delta_y = LaunchConfiguration("nic_card_mount_03_delta_y")
-    nic_card_mount_03_delta_z = LaunchConfiguration("nic_card_mount_03_delta_z")
-    nic_card_mount_04_delta_x = LaunchConfiguration("nic_card_mount_04_delta_x")
-    nic_card_mount_04_delta_y = LaunchConfiguration("nic_card_mount_04_delta_y")
-    nic_card_mount_04_delta_z = LaunchConfiguration("nic_card_mount_04_delta_z")
-    nic_card_mount_05_delta_x = LaunchConfiguration("nic_card_mount_05_delta_x")
-    nic_card_mount_05_delta_y = LaunchConfiguration("nic_card_mount_05_delta_y")
-    nic_card_mount_05_delta_z = LaunchConfiguration("nic_card_mount_05_delta_z")
+
+    # NIC Card Mount parameters (0-based indexing)
+    nic_card_mount_00_present = LaunchConfiguration("nic_card_mount_00_present")
+    nic_card_mount_00_translation = LaunchConfiguration("nic_card_mount_00_translation")
+    nic_card_mount_00_roll = LaunchConfiguration("nic_card_mount_00_roll")
+    nic_card_mount_00_pitch = LaunchConfiguration("nic_card_mount_00_pitch")
+    nic_card_mount_00_yaw = LaunchConfiguration("nic_card_mount_00_yaw")
+
+    nic_card_mount_01_present = LaunchConfiguration("nic_card_mount_01_present")
+    nic_card_mount_01_translation = LaunchConfiguration("nic_card_mount_01_translation")
+    nic_card_mount_01_roll = LaunchConfiguration("nic_card_mount_01_roll")
+    nic_card_mount_01_pitch = LaunchConfiguration("nic_card_mount_01_pitch")
+    nic_card_mount_01_yaw = LaunchConfiguration("nic_card_mount_01_yaw")
+
+    nic_card_mount_02_present = LaunchConfiguration("nic_card_mount_02_present")
+    nic_card_mount_02_translation = LaunchConfiguration("nic_card_mount_02_translation")
+    nic_card_mount_02_roll = LaunchConfiguration("nic_card_mount_02_roll")
+    nic_card_mount_02_pitch = LaunchConfiguration("nic_card_mount_02_pitch")
+    nic_card_mount_02_yaw = LaunchConfiguration("nic_card_mount_02_yaw")
+
+    nic_card_mount_03_present = LaunchConfiguration("nic_card_mount_03_present")
+    nic_card_mount_03_translation = LaunchConfiguration("nic_card_mount_03_translation")
+    nic_card_mount_03_roll = LaunchConfiguration("nic_card_mount_03_roll")
+    nic_card_mount_03_pitch = LaunchConfiguration("nic_card_mount_03_pitch")
+    nic_card_mount_03_yaw = LaunchConfiguration("nic_card_mount_03_yaw")
+
+    nic_card_mount_04_present = LaunchConfiguration("nic_card_mount_04_present")
+    nic_card_mount_04_translation = LaunchConfiguration("nic_card_mount_04_translation")
+    nic_card_mount_04_roll = LaunchConfiguration("nic_card_mount_04_roll")
+    nic_card_mount_04_pitch = LaunchConfiguration("nic_card_mount_04_pitch")
+    nic_card_mount_04_yaw = LaunchConfiguration("nic_card_mount_04_yaw")
 
     # Process task board description
     task_board_description_content = Command(
@@ -175,50 +191,80 @@ def launch_setup(context, *args, **kwargs):
             "sc_port_02_delta_z:=",
             sc_port_02_delta_z,
             " ",
-            "nic_card_mount_01_delta_x:=",
-            nic_card_mount_01_delta_x,
+            "nic_card_mount_00_present:=",
+            nic_card_mount_00_present,
             " ",
-            "nic_card_mount_01_delta_y:=",
-            nic_card_mount_01_delta_y,
+            "nic_card_mount_00_translation:=",
+            nic_card_mount_00_translation,
             " ",
-            "nic_card_mount_01_delta_z:=",
-            nic_card_mount_01_delta_z,
+            "nic_card_mount_00_roll:=",
+            nic_card_mount_00_roll,
             " ",
-            "nic_card_mount_02_delta_x:=",
-            nic_card_mount_02_delta_x,
+            "nic_card_mount_00_pitch:=",
+            nic_card_mount_00_pitch,
             " ",
-            "nic_card_mount_02_delta_y:=",
-            nic_card_mount_02_delta_y,
+            "nic_card_mount_00_yaw:=",
+            nic_card_mount_00_yaw,
             " ",
-            "nic_card_mount_02_delta_z:=",
-            nic_card_mount_02_delta_z,
+            "nic_card_mount_01_present:=",
+            nic_card_mount_01_present,
             " ",
-            "nic_card_mount_03_delta_x:=",
-            nic_card_mount_03_delta_x,
+            "nic_card_mount_01_translation:=",
+            nic_card_mount_01_translation,
             " ",
-            "nic_card_mount_03_delta_y:=",
-            nic_card_mount_03_delta_y,
+            "nic_card_mount_01_roll:=",
+            nic_card_mount_01_roll,
             " ",
-            "nic_card_mount_03_delta_z:=",
-            nic_card_mount_03_delta_z,
+            "nic_card_mount_01_pitch:=",
+            nic_card_mount_01_pitch,
             " ",
-            "nic_card_mount_04_delta_x:=",
-            nic_card_mount_04_delta_x,
+            "nic_card_mount_01_yaw:=",
+            nic_card_mount_01_yaw,
             " ",
-            "nic_card_mount_04_delta_y:=",
-            nic_card_mount_04_delta_y,
+            "nic_card_mount_02_present:=",
+            nic_card_mount_02_present,
             " ",
-            "nic_card_mount_04_delta_z:=",
-            nic_card_mount_04_delta_z,
+            "nic_card_mount_02_translation:=",
+            nic_card_mount_02_translation,
             " ",
-            "nic_card_mount_05_delta_x:=",
-            nic_card_mount_05_delta_x,
+            "nic_card_mount_02_roll:=",
+            nic_card_mount_02_roll,
             " ",
-            "nic_card_mount_05_delta_y:=",
-            nic_card_mount_05_delta_y,
+            "nic_card_mount_02_pitch:=",
+            nic_card_mount_02_pitch,
             " ",
-            "nic_card_mount_05_delta_z:=",
-            nic_card_mount_05_delta_z,
+            "nic_card_mount_02_yaw:=",
+            nic_card_mount_02_yaw,
+            " ",
+            "nic_card_mount_03_present:=",
+            nic_card_mount_03_present,
+            " ",
+            "nic_card_mount_03_translation:=",
+            nic_card_mount_03_translation,
+            " ",
+            "nic_card_mount_03_roll:=",
+            nic_card_mount_03_roll,
+            " ",
+            "nic_card_mount_03_pitch:=",
+            nic_card_mount_03_pitch,
+            " ",
+            "nic_card_mount_03_yaw:=",
+            nic_card_mount_03_yaw,
+            " ",
+            "nic_card_mount_04_present:=",
+            nic_card_mount_04_present,
+            " ",
+            "nic_card_mount_04_translation:=",
+            nic_card_mount_04_translation,
+            " ",
+            "nic_card_mount_04_roll:=",
+            nic_card_mount_04_roll,
+            " ",
+            "nic_card_mount_04_pitch:=",
+            nic_card_mount_04_pitch,
+            " ",
+            "nic_card_mount_04_yaw:=",
+            nic_card_mount_04_yaw,
         ]
     )
 
@@ -491,118 +537,188 @@ def generate_launch_description():
         )
     )
 
-    # NIC Card Mount 01 delta arguments
+    # NIC Card Mount 00 arguments
     declared_arguments.append(
         DeclareLaunchArgument(
-            "nic_card_mount_01_delta_x",
-            default_value="0.0",
-            description="NIC Card Mount 01 delta X position",
+            "nic_card_mount_00_present",
+            default_value="true",
+            description="Whether NIC Card Mount 00 is present",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            "nic_card_mount_01_delta_y",
+            "nic_card_mount_00_translation",
             default_value="0.0",
-            description="NIC Card Mount 01 delta Y position",
+            description="NIC Card Mount 00 translation along rail (meters)",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            "nic_card_mount_01_delta_z",
+            "nic_card_mount_00_roll",
             default_value="0.0",
-            description="NIC Card Mount 01 delta Z position",
-        )
-    )
-
-    # NIC Card Mount 02 delta arguments
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            "nic_card_mount_02_delta_x",
-            default_value="0.0",
-            description="NIC Card Mount 02 delta X position",
+            description="NIC Card Mount 00 roll orientation (radians)",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            "nic_card_mount_02_delta_y",
+            "nic_card_mount_00_pitch",
             default_value="0.0",
-            description="NIC Card Mount 02 delta Y position",
+            description="NIC Card Mount 00 pitch orientation (radians)",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            "nic_card_mount_02_delta_z",
+            "nic_card_mount_00_yaw",
             default_value="0.0",
-            description="NIC Card Mount 02 delta Z position",
+            description="NIC Card Mount 00 yaw orientation (radians)",
         )
     )
 
-    # NIC Card Mount 03 delta arguments
+    # NIC Card Mount 01 arguments
     declared_arguments.append(
         DeclareLaunchArgument(
-            "nic_card_mount_03_delta_x",
-            default_value="0.0",
-            description="NIC Card Mount 03 delta X position",
+            "nic_card_mount_01_present",
+            default_value="true",
+            description="Whether NIC Card Mount 01 is present",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            "nic_card_mount_03_delta_y",
+            "nic_card_mount_01_translation",
             default_value="0.0",
-            description="NIC Card Mount 03 delta Y position",
+            description="NIC Card Mount 01 translation along rail (meters)",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            "nic_card_mount_03_delta_z",
+            "nic_card_mount_01_roll",
             default_value="0.0",
-            description="NIC Card Mount 03 delta Z position",
-        )
-    )
-
-    # NIC Card Mount 04 delta arguments
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            "nic_card_mount_04_delta_x",
-            default_value="0.0",
-            description="NIC Card Mount 04 delta X position",
+            description="NIC Card Mount 01 roll orientation (radians)",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            "nic_card_mount_04_delta_y",
+            "nic_card_mount_01_pitch",
             default_value="0.0",
-            description="NIC Card Mount 04 delta Y position",
+            description="NIC Card Mount 01 pitch orientation (radians)",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            "nic_card_mount_04_delta_z",
+            "nic_card_mount_01_yaw",
             default_value="0.0",
-            description="NIC Card Mount 04 delta Z position",
+            description="NIC Card Mount 01 yaw orientation (radians)",
         )
     )
 
-    # NIC Card Mount 05 delta arguments
+    # NIC Card Mount 02 arguments
     declared_arguments.append(
         DeclareLaunchArgument(
-            "nic_card_mount_05_delta_x",
-            default_value="0.0",
-            description="NIC Card Mount 05 delta X position",
+            "nic_card_mount_02_present",
+            default_value="true",
+            description="Whether NIC Card Mount 02 is present",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            "nic_card_mount_05_delta_y",
+            "nic_card_mount_02_translation",
             default_value="0.0",
-            description="NIC Card Mount 05 delta Y position",
+            description="NIC Card Mount 02 translation along rail (meters)",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            "nic_card_mount_05_delta_z",
+            "nic_card_mount_02_roll",
             default_value="0.0",
-            description="NIC Card Mount 05 delta Z position",
+            description="NIC Card Mount 02 roll orientation (radians)",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "nic_card_mount_02_pitch",
+            default_value="0.0",
+            description="NIC Card Mount 02 pitch orientation (radians)",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "nic_card_mount_02_yaw",
+            default_value="0.0",
+            description="NIC Card Mount 02 yaw orientation (radians)",
+        )
+    )
+
+    # NIC Card Mount 03 arguments
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "nic_card_mount_03_present",
+            default_value="true",
+            description="Whether NIC Card Mount 03 is present",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "nic_card_mount_03_translation",
+            default_value="0.0",
+            description="NIC Card Mount 03 translation along rail (meters)",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "nic_card_mount_03_roll",
+            default_value="0.0",
+            description="NIC Card Mount 03 roll orientation (radians)",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "nic_card_mount_03_pitch",
+            default_value="0.0",
+            description="NIC Card Mount 03 pitch orientation (radians)",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "nic_card_mount_03_yaw",
+            default_value="0.0",
+            description="NIC Card Mount 03 yaw orientation (radians)",
+        )
+    )
+
+    # NIC Card Mount 04 arguments
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "nic_card_mount_04_present",
+            default_value="true",
+            description="Whether NIC Card Mount 04 is present",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "nic_card_mount_04_translation",
+            default_value="0.0",
+            description="NIC Card Mount 04 translation along rail (meters)",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "nic_card_mount_04_roll",
+            default_value="0.0",
+            description="NIC Card Mount 04 roll orientation (radians)",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "nic_card_mount_04_pitch",
+            default_value="0.0",
+            description="NIC Card Mount 04 pitch orientation (radians)",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "nic_card_mount_04_yaw",
+            default_value="0.0",
+            description="NIC Card Mount 04 yaw orientation (radians)",
         )
     )
 

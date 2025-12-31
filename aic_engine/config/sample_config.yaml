@@ -82,10 +82,10 @@ trials:
             entity_present: True
             entity_name: "nic_card_1"
             entity_pose:
-              translation: 0.5
-              roll: 0.0
-              pitch: 0.0
-              yaw: 0.0
+              translation: 0.1
+              roll: -0.0157  # ~-0.9 degrees in radians
+              pitch: 0.0192  # ~1.1 degrees in radians
+              yaw: -0.0297  # ~-1.7 degrees in radians
           nic_rail_2:
             entity_present: False
           nic_rail_3:

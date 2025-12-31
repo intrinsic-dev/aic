@@ -603,15 +603,53 @@ Engine::~Engine() {
 //==============================================================================
 bool Engine::spawn_task_board(double x, double y, double z, double roll,
                               double pitch, double yaw) {
+  if (!active_trial_.has_value()) {
+    RCLCPP_ERROR(node_->get_logger(), "No active trial to get config from");
+    return false;
+  }
+
   // Get the task board xacro file path
   const std::string aic_description_share =
       ament_index_cpp::get_package_share_directory("aic_description");
   const std::string xacro_file =
       aic_description_share + "/urdf/task_board.urdf.xacro";
 
-  // Convert xacro to URDF using xacro command (without pose args)
+  // Build xacro command with parameters from config
   std::stringstream cmd;
   cmd << "xacro " << xacro_file;
+
+  const auto& task_board_config = active_trial_->config["scene"]["task_board"];
+
+  // Add NIC rail parameters (nic_rail_0 through nic_rail_4)
+  for (int i = 0; i < 5; ++i) {
+    std::string rail_key = "nic_rail_" + std::to_string(i);
+    std::string mount_prefix = "nic_card_mount_0" + std::to_string(i);
+
+    if (task_board_config[rail_key] &&
+        task_board_config[rail_key]["entity_present"] &&
+        task_board_config[rail_key]["entity_present"].as<bool>()) {
+      cmd << " " << mount_prefix << "_present:=true";
+
+      if (task_board_config[rail_key]["entity_pose"]) {
+        const auto& pose = task_board_config[rail_key]["entity_pose"];
+
+        // Scale translation (0 to 1) to actual Y offset range (-0.09625 to 0.09625)
+        double translation = pose["translation"].as<double>();
+        double delta_y = (translation - 0.5) * 0.1925;
+        cmd << " " << mount_prefix << "_translation:=" << delta_y;
+
+        // Add orientation parameters
+        double roll = pose["roll"].as<double>();
+        double pitch = pose["pitch"].as<double>();
+        double yaw = pose["yaw"].as<double>();
+        cmd << " " << mount_prefix << "_roll:=" << roll;
+        cmd << " " << mount_prefix << "_pitch:=" << pitch;
+        cmd << " " << mount_prefix << "_yaw:=" << yaw;
+      }
+    } else {
+      cmd << " " << mount_prefix << "_present:=false";
+    }
+  }
 
   FILE* pipe = popen(cmd.str().c_str(), "r");
   if (!pipe) {
