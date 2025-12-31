@@ -122,7 +122,7 @@ repositories:
   gazebo/gz-physics:
     type: git
     url: https://github.com/gazebosim/gz-physics
-    version: gz-physics8
+    version: iche033/bullet_get_contacts
   gazebo/gz-plugin:
     type: git
     url: https://github.com/gazebosim/gz-plugin
