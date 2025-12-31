@@ -23,7 +23,7 @@ distrobox enter -r aic_eval
 ```
 
 > [!TIP]
-> You may omit `--unshare-netns -a --network=aic` flags to let the container use the host network. Note that during evaluation, there will be no external network access so it is recommended to test with a private network.
+> You may omit `--unshare-all -a --network=aic` flags to let the container use the host network. Note that during evaluation, there will be no external network access so it is recommended to test with a private network.
 
 ## Building
 
