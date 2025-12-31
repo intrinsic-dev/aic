@@ -7,6 +7,14 @@
         <name>${prefix}</name>
         <uri>package://aic_assets/models/NIC Card Mount</uri>
         <pose>${pose}</pose>
+        <plugin
+          filename="gz-sim-touchplugin-system"
+          name="gz::sim::systems::TouchPlugin">
+          <target>sfp_module</target>
+          <time>1</time>
+          <namespace>nic_card_mount</namespace>
+          <enabled>true</enabled>
+        </plugin>
       </include>
     </gazebo>
   </xacro:macro>

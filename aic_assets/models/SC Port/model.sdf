@@ -92,6 +92,22 @@
           </box>
         </geometry>
       </collision>
+
+      <collision name="contact_collision">
+        <pose>0.0 -0.0034 -0.0 3.141593 -0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.025 0.002946 0.009</size>
+          </box>
+        </geometry>
+      </collision>
+
+      <sensor name="sc_port_sensor" type="contact">
+        <contact>
+          <collision>contact_collision</collision>
+        </contact>
+      </sensor>
+
     </link>
   </model>
 </sdf>
