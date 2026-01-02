@@ -47,8 +47,8 @@ bool CartesianImpedanceAction::Compute(
   // control_wrench = - D * (v_obs - v_des) - S * (x_obs - x_des) + w_f
   // where D is damping, S is stiffness and w_f the feedforward wrench
   Eigen::Matrix<double, 6, 1> control_wrench =
-      -params.stiffness_matrix * tool_pose_error;
-  control_wrench -= params.damping_matrix * tool_vel_error;
+      params.stiffness_matrix * tool_pose_error;
+  control_wrench += params.damping_matrix * tool_vel_error;
   control_wrench += params.feedforward_wrench;
 
   // Integral term
@@ -66,6 +66,8 @@ bool CartesianImpedanceAction::Compute(
                             << params.pose_error_integrator_bound);
     return false;
   }
+
+  // todo(johntgz) add integrator logic
 
   if ((params.pose_error_integrator_gain.array() > 0).any()) {
     pose_error_integrated_ += tool_pose_error;
@@ -198,7 +200,7 @@ bool CartesianImpedanceAction::ComputeNullspaceStiffnessTorque(
 
   // Compute the control torque resulting from the nullspace stiffness.
   Eigen::VectorXd nullspace_torque =
-      -nullspace_stiffness.cwiseProduct(joint_positions - nullspace_goal);
+      nullspace_stiffness.cwiseProduct(nullspace_goal - joint_positions);
   // Compute the nullspace damping.
   nullspace_torque -= nullspace_damping.cwiseProduct(joint_velocities);
 
@@ -251,7 +253,7 @@ bool CartesianImpedanceAction::ComputeSmoothRightPseudoInverse(
 
   Eigen::VectorXd singular_values = svd.singularValues();
   const double max_singular_value = singular_values(0);
-  if (std::abs(max_singular_value) < std::numeric_limits<double>::epsilon()) {
+  if (std::abs(max_singular_value) <= std::numeric_limits<double>::epsilon()) {
     RCLCPP_ERROR(logging_if_->get_logger(),
                  "Matrix is all-zero, cannot compute pseudo-inversion.");
     return false;
@@ -261,7 +263,7 @@ bool CartesianImpedanceAction::ComputeSmoothRightPseudoInverse(
   Eigen::MatrixXd S(M_MT.rows(), M_MT.cols());
   S.setZero();
   for (std::size_t i = 0; i < std::size_t(singular_values.size()); ++i) {
-    double cn_i = max_singular_value / (singular_values(i) + 1.e-10);
+    double cn_i = max_singular_value / (singular_values(i) + 1e-10);
     double lambda_i_squared = 0.0;
 
     if (cn_i > condition_number_threshold) {
