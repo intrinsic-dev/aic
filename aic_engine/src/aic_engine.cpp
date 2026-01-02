@@ -651,6 +651,38 @@ bool Engine::spawn_task_board(double x, double y, double z, double roll,
     }
   }
 
+  // Add SC rail parameters (sc_rail_0 and sc_rail_1)
+  for (int i = 0; i < 2; ++i) {
+    std::string rail_key = "sc_rail_" + std::to_string(i);
+    std::string port_prefix = "sc_port_0" + std::to_string(i);
+
+    if (task_board_config[rail_key] &&
+        task_board_config[rail_key]["entity_present"] &&
+        task_board_config[rail_key]["entity_present"].as<bool>()) {
+      cmd << " " << port_prefix << "_present:=true";
+
+      if (task_board_config[rail_key]["entity_pose"]) {
+        const auto& pose = task_board_config[rail_key]["entity_pose"];
+
+        // Scale translation (0 to 1) to actual X offset range
+        // SC ports can translate along X axis within their rail
+        double translation = pose["translation"].as<double>();
+        double delta_x = (translation - 0.5) * 0.11;  // Scaling factor for SC rail range
+        cmd << " " << port_prefix << "_translation:=" << delta_x;
+
+        // Add orientation parameters
+        double roll = pose["roll"].as<double>();
+        double pitch = pose["pitch"].as<double>();
+        double yaw = pose["yaw"].as<double>();
+        cmd << " " << port_prefix << "_roll:=" << roll;
+        cmd << " " << port_prefix << "_pitch:=" << pitch;
+        cmd << " " << port_prefix << "_yaw:=" << yaw;
+      }
+    } else {
+      cmd << " " << port_prefix << "_present:=false";
+    }
+  }
+
   FILE* pipe = popen(cmd.str().c_str(), "r");
   if (!pipe) {
     RCLCPP_ERROR(node_->get_logger(), "Failed to execute xacro command");

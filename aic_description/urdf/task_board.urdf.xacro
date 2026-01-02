@@ -46,15 +46,19 @@
   <xacro:arg name="sc_mount_02_delta_y" default="0.0"/>
   <xacro:arg name="sc_mount_02_delta_z" default="0.0"/>
 
-  <!-- SC Port 01 - Base X: -0.075, Valid delta X: -0.055 to 0.055 (absolute range: -0.130 to -0.020) -->
-  <xacro:arg name="sc_port_01_delta_x" default="0.0"/>
-  <xacro:arg name="sc_port_01_delta_y" default="0.0"/>
-  <xacro:arg name="sc_port_01_delta_z" default="0.0"/>
+  <!-- SC Port 00 -->
+  <xacro:arg name="sc_port_00_present" default="false"/>
+  <xacro:arg name="sc_port_00_translation" default="0.0"/>
+  <xacro:arg name="sc_port_00_roll" default="0.0"/>
+  <xacro:arg name="sc_port_00_pitch" default="0.0"/>
+  <xacro:arg name="sc_port_00_yaw" default="0.0"/>
 
-  <!-- SC Port 02 - Base X: -0.075, Valid delta X: -0.055 to 0.055 (absolute range: -0.130 to -0.020) -->
-  <xacro:arg name="sc_port_02_delta_x" default="0.0"/>
-  <xacro:arg name="sc_port_02_delta_y" default="0.0"/>
-  <xacro:arg name="sc_port_02_delta_z" default="0.0"/>
+  <!-- SC Port 01 -->
+  <xacro:arg name="sc_port_01_present" default="false"/>
+  <xacro:arg name="sc_port_01_translation" default="0.0"/>
+  <xacro:arg name="sc_port_01_roll" default="0.0"/>
+  <xacro:arg name="sc_port_01_pitch" default="0.0"/>
+  <xacro:arg name="sc_port_01_yaw" default="0.0"/>
 
   <!-- NIC Card Mount 00 -->
   <xacro:arg name="nic_card_mount_00_present" default="false"/>
@@ -94,6 +98,7 @@
   <!-- Calculate absolute positions relative to task board base -->
   <!-- Task Board Base is at (0.25, 0, 1.14) relative to world in original SDF -->
 	<!-- NIC Card mounts are centered at the middle of the slot. Each mount can be translated [-0.048, 0.036] along X axis to adjust position within slot. -->
+	<!-- SC Ports are centered at the middle of the slot. Each port can be translated [-0.055, 0.055] along X axis to adjust position within slot. -->
   <!-- Components are positioned relative to base -->
 
   <!-- Instantiate Task Board Base -->
@@ -145,21 +150,25 @@
     <origin xyz="${0.0985 + $(arg sc_mount_02_delta_x)} ${0.10625 + $(arg sc_mount_02_delta_y)} ${0.01 + $(arg sc_mount_02_delta_z)}" rpy="0 0 0"/>
   </joint>
 
-  <!-- SC Port 01 -->
-  <xacro:sc_port prefix="sc_port_01_"/>
-  <joint name="sc_port_01_joint" type="fixed">
-    <parent link="task_board_base_link"/>
-    <child link="sc_port_01_link"/>
-    <origin xyz="${-0.075 + $(arg sc_port_01_delta_x)} ${0.0295 + $(arg sc_port_01_delta_y)} ${0.01 + $(arg sc_port_01_delta_z)}" rpy="1.57 0 1.57"/>
-  </joint>
+  <!-- SC Port 00 -->
+  <xacro:if value="$(arg sc_port_00_present)">
+    <xacro:sc_port prefix="sc_port_00_"/>
+    <joint name="sc_port_00_joint" type="fixed">
+      <parent link="task_board_base_link"/>
+      <child link="sc_port_00_link"/>
+      <origin xyz="${-0.075 + $(arg sc_port_00_translation)} 0.0295 0.0145" rpy="${1.57 + $(arg sc_port_00_roll)} $(arg sc_port_00_pitch) ${1.57 + $(arg sc_port_00_yaw)}"/>
+    </joint>
+  </xacro:if>
 
-  <!-- SC Port 02 -->
-  <xacro:sc_port prefix="sc_port_02_"/>
-  <joint name="sc_port_02_joint" type="fixed">
-    <parent link="task_board_base_link"/>
-    <child link="sc_port_02_link"/>
-    <origin xyz="${-0.075 + $(arg sc_port_02_delta_x)} ${0.0705 + $(arg sc_port_02_delta_y)} ${0.01 + $(arg sc_port_02_delta_z)}" rpy="1.57 0 1.57"/>
-  </joint>
+  <!-- SC Port 01 -->
+  <xacro:if value="$(arg sc_port_01_present)">
+    <xacro:sc_port prefix="sc_port_01_"/>
+    <joint name="sc_port_01_joint" type="fixed">
+      <parent link="task_board_base_link"/>
+      <child link="sc_port_01_link"/>
+      <origin xyz="${-0.075 + $(arg sc_port_01_translation)} 0.0705 0.0145" rpy="${1.57 + $(arg sc_port_01_roll)} $(arg sc_port_01_pitch) ${1.57 + $(arg sc_port_01_yaw)}"/>
+    </joint>
+  </xacro:if>
 
   <!-- NIC Card Mount 00 (left-most) -->
   <xacro:if value="$(arg nic_card_mount_00_present)">

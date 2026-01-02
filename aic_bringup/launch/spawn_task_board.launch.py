@@ -63,6 +63,19 @@ def launch_setup(context, *args, **kwargs):
     sc_port_02_delta_y = LaunchConfiguration("sc_port_02_delta_y")
     sc_port_02_delta_z = LaunchConfiguration("sc_port_02_delta_z")
 
+    # SC Port parameters (0-based indexing)
+    sc_port_00_present = LaunchConfiguration("sc_port_00_present")
+    sc_port_00_translation = LaunchConfiguration("sc_port_00_translation")
+    sc_port_00_roll = LaunchConfiguration("sc_port_00_roll")
+    sc_port_00_pitch = LaunchConfiguration("sc_port_00_pitch")
+    sc_port_00_yaw = LaunchConfiguration("sc_port_00_yaw")
+
+    sc_port_01_present = LaunchConfiguration("sc_port_01_present")
+    sc_port_01_translation = LaunchConfiguration("sc_port_01_translation")
+    sc_port_01_roll = LaunchConfiguration("sc_port_01_roll")
+    sc_port_01_pitch = LaunchConfiguration("sc_port_01_pitch")
+    sc_port_01_yaw = LaunchConfiguration("sc_port_01_yaw")
+
     # NIC Card Mount parameters (0-based indexing)
     nic_card_mount_00_present = LaunchConfiguration("nic_card_mount_00_present")
     nic_card_mount_00_translation = LaunchConfiguration("nic_card_mount_00_translation")
@@ -173,23 +186,35 @@ def launch_setup(context, *args, **kwargs):
             "sc_mount_02_delta_z:=",
             sc_mount_02_delta_z,
             " ",
-            "sc_port_01_delta_x:=",
-            sc_port_01_delta_x,
+            "sc_port_00_present:=",
+            sc_port_00_present,
             " ",
-            "sc_port_01_delta_y:=",
-            sc_port_01_delta_y,
+            "sc_port_00_translation:=",
+            sc_port_00_translation,
             " ",
-            "sc_port_01_delta_z:=",
-            sc_port_01_delta_z,
+            "sc_port_00_roll:=",
+            sc_port_00_roll,
             " ",
-            "sc_port_02_delta_x:=",
-            sc_port_02_delta_x,
+            "sc_port_00_pitch:=",
+            sc_port_00_pitch,
             " ",
-            "sc_port_02_delta_y:=",
-            sc_port_02_delta_y,
+            "sc_port_00_yaw:=",
+            sc_port_00_yaw,
             " ",
-            "sc_port_02_delta_z:=",
-            sc_port_02_delta_z,
+            "sc_port_01_present:=",
+            sc_port_01_present,
+            " ",
+            "sc_port_01_translation:=",
+            sc_port_01_translation,
+            " ",
+            "sc_port_01_roll:=",
+            sc_port_01_roll,
+            " ",
+            "sc_port_01_pitch:=",
+            sc_port_01_pitch,
+            " ",
+            "sc_port_01_yaw:=",
+            sc_port_01_yaw,
             " ",
             "nic_card_mount_00_present:=",
             nic_card_mount_00_present,
@@ -491,49 +516,77 @@ def generate_launch_description():
         )
     )
 
-    # SC Port 01 delta arguments
+    # SC Port 00 arguments
     declared_arguments.append(
         DeclareLaunchArgument(
-            "sc_port_01_delta_x",
-            default_value="0.0",
-            description="SC Port 01 delta X position (valid delta: -0.055 to 0.055)",
+            "sc_port_00_present",
+            default_value="false",
+            description="Whether SC Port 00 is present",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            "sc_port_01_delta_y",
+            "sc_port_00_translation",
             default_value="0.0",
-            description="SC Port 01 delta Y position",
+            description="SC Port 00 translation along rail (meters)",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            "sc_port_01_delta_z",
+            "sc_port_00_roll",
             default_value="0.0",
-            description="SC Port 01 delta Z position",
+            description="SC Port 00 roll orientation (radians)",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "sc_port_00_pitch",
+            default_value="0.0",
+            description="SC Port 00 pitch orientation (radians)",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "sc_port_00_yaw",
+            default_value="0.0",
+            description="SC Port 00 yaw orientation (radians)",
         )
     )
 
-    # SC Port 02 delta arguments
+    # SC Port 01 arguments
     declared_arguments.append(
         DeclareLaunchArgument(
-            "sc_port_02_delta_x",
-            default_value="0.0",
-            description="SC Port 02 delta X position (valid delta: -0.055 to 0.055)",
+            "sc_port_01_present",
+            default_value="false",
+            description="Whether SC Port 01 is present",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            "sc_port_02_delta_y",
+            "sc_port_01_translation",
             default_value="0.0",
-            description="SC Port 02 delta Y position",
+            description="SC Port 01 translation along rail (meters)",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            "sc_port_02_delta_z",
+            "sc_port_01_roll",
             default_value="0.0",
-            description="SC Port 02 delta Z position",
+            description="SC Port 01 roll orientation (radians)",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "sc_port_01_pitch",
+            default_value="0.0",
+            description="SC Port 01 pitch orientation (radians)",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "sc_port_01_yaw",
+            default_value="0.0",
+            description="SC Port 01 yaw orientation (radians)",
         )
     )
 
