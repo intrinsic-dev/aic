@@ -541,7 +541,7 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             "nic_card_mount_00_present",
-            default_value="true",
+            default_value="false",
             description="Whether NIC Card Mount 00 is present",
         )
     )
@@ -578,7 +578,7 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             "nic_card_mount_01_present",
-            default_value="true",
+            default_value="false",
             description="Whether NIC Card Mount 01 is present",
         )
     )
@@ -615,7 +615,7 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             "nic_card_mount_02_present",
-            default_value="true",
+            default_value="false",
             description="Whether NIC Card Mount 02 is present",
         )
     )
@@ -652,7 +652,7 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             "nic_card_mount_03_present",
-            default_value="true",
+            default_value="false",
             description="Whether NIC Card Mount 03 is present",
         )
     )
@@ -689,7 +689,7 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             "nic_card_mount_04_present",
-            default_value="true",
+            default_value="false",
             description="Whether NIC Card Mount 04 is present",
         )
     )

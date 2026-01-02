@@ -57,35 +57,35 @@
   <xacro:arg name="sc_port_02_delta_z" default="0.0"/>
 
   <!-- NIC Card Mount 00 -->
-  <xacro:arg name="nic_card_mount_00_present" default="true"/>
+  <xacro:arg name="nic_card_mount_00_present" default="false"/>
   <xacro:arg name="nic_card_mount_00_translation" default="0.0"/>
   <xacro:arg name="nic_card_mount_00_roll" default="0.0"/>
   <xacro:arg name="nic_card_mount_00_pitch" default="0.0"/>
   <xacro:arg name="nic_card_mount_00_yaw" default="0.0"/>
 
   <!-- NIC Card Mount 01 -->
-  <xacro:arg name="nic_card_mount_01_present" default="true"/>
+  <xacro:arg name="nic_card_mount_01_present" default="false"/>
   <xacro:arg name="nic_card_mount_01_translation" default="0.0"/>
   <xacro:arg name="nic_card_mount_01_roll" default="0.0"/>
   <xacro:arg name="nic_card_mount_01_pitch" default="0.0"/>
   <xacro:arg name="nic_card_mount_01_yaw" default="0.0"/>
 
   <!-- NIC Card Mount 02 -->
-  <xacro:arg name="nic_card_mount_02_present" default="true"/>
+  <xacro:arg name="nic_card_mount_02_present" default="false"/>
   <xacro:arg name="nic_card_mount_02_translation" default="0.0"/>
   <xacro:arg name="nic_card_mount_02_roll" default="0.0"/>
   <xacro:arg name="nic_card_mount_02_pitch" default="0.0"/>
   <xacro:arg name="nic_card_mount_02_yaw" default="0.0"/>
 
   <!-- NIC Card Mount 03 -->
-  <xacro:arg name="nic_card_mount_03_present" default="true"/>
+  <xacro:arg name="nic_card_mount_03_present" default="false"/>
   <xacro:arg name="nic_card_mount_03_translation" default="0.0"/>
   <xacro:arg name="nic_card_mount_03_roll" default="0.0"/>
   <xacro:arg name="nic_card_mount_03_pitch" default="0.0"/>
   <xacro:arg name="nic_card_mount_03_yaw" default="0.0"/>
 
   <!-- NIC Card Mount 04 -->
-  <xacro:arg name="nic_card_mount_04_present" default="true"/>
+  <xacro:arg name="nic_card_mount_04_present" default="false"/>
   <xacro:arg name="nic_card_mount_04_translation" default="0.0"/>
   <xacro:arg name="nic_card_mount_04_roll" default="0.0"/>
   <xacro:arg name="nic_card_mount_04_pitch" default="0.0"/>
