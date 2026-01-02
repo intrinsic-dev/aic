@@ -298,6 +298,18 @@ controller_interface::CallbackReturn Controller::on_configure(
     return controller_interface::CallbackReturn::ERROR;
   }
 
+  state_publisher_ = get_node()->create_publisher<ControllerState>(
+      "~/controller_state", rclcpp::SystemDefaultsQoS());
+  state_publisher_rt_ =
+      std::make_unique<realtime_tools::RealtimePublisher<ControllerState>>(
+          state_publisher_);
+
+  if (!populate_cartesian_limits(params_, cartesian_limits_)) {
+    RCLCPP_ERROR(get_node()->get_logger(),
+                 "Error populating cartesian limits from parameters.");
+    return controller_interface::CallbackReturn::ERROR;
+  }
+
   return controller_interface::CallbackReturn::SUCCESS;
 }
 

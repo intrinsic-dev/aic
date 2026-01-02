@@ -1,0 +1,69 @@
+trials:
+  trial_1:
+    scene:
+        task_board:
+          pose:
+            x: 0.25
+            y: 0.0
+            z: 1.14
+            roll: 0.0
+            pitch: 0.0
+            yaw: 0.0
+          nic_rail_0:
+            entity_present: True # True if a NIC card is present on this rail.
+            entity_name: "nic_card_0" # Name of the NIC card entity to spawn.
+            entity_pose:
+              translation: 0.05 # 0 to 1. Will be scaled to length of rail.
+              roll: 0.0 # roll orientation for the NIC card.
+              pitch: 0.0 # pitch orientation for the NIC card.
+              yaw: 0.0 # yaw orientation for the NIC card.
+          nic_rail_1:
+            entity_present: False
+          nic_rail_2:
+            entity_present: False
+          nic_rail_3:
+            entity_present: False
+          nic_rail_4:
+            entity_present: False
+          sc_rail_0:
+            entity_present: True
+            entity_name: "sc_mount_0" # Name of the SC port entity to spawn.
+            entity_pose:
+              translation: 0.1 # 0 to 1. Will be scaled to length of rail.
+              roll: 0.0 # roll orientation for the SC port.
+              pitch: 0.0 # pitch orientation for the SC port.
+              yaw: 0.0 # yaw orientation for the SC port.
+          sc_rail_1:
+            entity_present: False
+          rail_0:
+            ports:
+              port_0:
+                type: "sfp"
+                entity_name: "sfp_port_0" # Name of the port entity to spawn.
+                entity_pose:
+                  translation: 0.9 # 0 to 1. Will be scaled to length of rail.
+                  roll: 0.0 # roll orientation for the port.
+                  pitch: 0.0 # pitch orientation for the port.
+                  yaw: 0.0 # yaw orientation for the port.
+          rail_1:
+          rail_2:
+          rail_3:
+          rail_3:
+          rail_4:
+          rail_5:
+
+        cable:
+    tasks:
+      task_1:
+        cable_type: "sfp_sc"
+        cable_name: "cable_0"
+        plug_type: "sfp"
+        plug_name:  "sfp_plug"
+        port_type: "sfp"
+        port_name: "sfp_port_0"
+        target_module_name: "nic_card_0"
+        time_limit: 300
+    scoring:
+      - tier_1
+      - tier_2
+      - tier_3

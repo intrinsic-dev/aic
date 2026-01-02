@@ -177,22 +177,3 @@ bool ScoringTier1::ParseStats(const std::string& _yamlFile) {
 }
 
 }  // namespace aic_scoring
-
-//////////////////////////////////////////////////
-int main(int argc, char* argv[]) {
-  // Sanity check: There should be one argument.
-  if (argc != 2) {
-    std::cerr << "Usage: scoring_tier1 <tier1_yaml_file>" << std::endl;
-    return -1;
-  }
-
-  rclcpp::init(argc, argv);
-
-  auto scoringTier1 = std::make_shared<aic_scoring::ScoringTier1>();
-  std::string configFile = std::string(argv[1]);
-  if (!scoringTier1->ParseStats(configFile)) return -1;
-
-  rclcpp::spin(scoringTier1);
-  rclcpp::shutdown();
-  return 0;
-}

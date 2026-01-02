@@ -10,7 +10,7 @@
       <pose>0.000000 0.000000 0.000000 0.000000 -0.000000 0.000000</pose>
       <inertial>
         <pose>0.000000 0.000000 0.000000 0.000000 -0.000000 0.000000</pose>
-        <mass>0.0375</mass>
+        <mass>0.0025</mass>
         <inertia>
           <ixx>0.010000</ixx>
           <ixy>0.000000</ixy>
@@ -36,11 +36,11 @@
           </sphere>
         </geometry>
         <material>
-          <diffuse>1.0 0.5 0.0</diffuse>
-          <specular>0.2 0.2 0.2</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
@@ -48,21 +48,21 @@
       </visual>
     </link>
     <joint name="joint_end_0" type="ball">
-      <pose>0.00000 0.000000 -0.06 0.000000 0 0.000000</pose>
+      <pose>0.00000 0.000000 -0.024 0.000000 0 0.000000</pose>
       <child>link_1</child>
       <parent>cable_end_0</parent>
       <axis>
         <dynamics>
           <damping>1.0</damping>
-          <spring_stiffness>1.0</spring_stiffness>
+          <spring_stiffness>0.05</spring_stiffness>
         </dynamics>
       </axis>
     </joint>
     <link name="link_1">
-      <pose>0.06 0.000000 0.000000 0.000000 1.570790 0.000000</pose>
+      <pose>0.024 0.000000 0.000000 0.000000 1.570790 0.000000</pose>
       <inertial>
         <pose>0.000000 0.000000 0.000000 0.000000 -0.000000 0.000000</pose>
-        <mass>0.0375</mass>
+        <mass>0.0025</mass>
         <inertia>
           <ixx>0.010000</ixx>
           <ixy>0.000000</ixy>
@@ -76,7 +76,7 @@
         <pose>0.00000 0.000000 0.000000 0.000000 0 0.000000</pose>
         <geometry>
           <cylinder>
-            <length>0.12</length>
+            <length>0.048</length>
             <radius>0.002</radius>
           </cylinder>
         </geometry>
@@ -85,23 +85,23 @@
         <pose>0.00000 0.000000 0.000000 0.000000 0 0.000000</pose>
         <geometry>
           <cylinder>
-            <length>0.12</length>
+            <length>0.048</length>
             <radius>0.002</radius>
           </cylinder>
         </geometry>
         <material>
-          <diffuse>1.0 0.5 0.0</diffuse>
-          <specular>0.2 0.2 0.2</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
         </material>
       </visual>
       <collision name="sphere_1_collision">
-        <pose>0.000000 0.000000 0.06 0.000000 -0.000000 0.000000</pose>
+        <pose>0.000000 0.000000 0.024 0.000000 -0.000000 0.000000</pose>
         <geometry>
           <sphere>
             <radius>0.002</radius>
@@ -109,18 +109,18 @@
         </geometry>
       </collision>
       <visual name="sphere_1_vis">
-        <pose>0.000000 0.000000 0.06 0.000000 -0.000000 0.000000</pose>
+        <pose>0.000000 0.000000 0.024 0.000000 -0.000000 0.000000</pose>
         <geometry>
           <sphere>
             <radius>0.002</radius>
           </sphere>
         </geometry>
         <material>
-          <diffuse>1.0 0.5 0.0</diffuse>
-          <specular>0.2 0.2 0.2</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
@@ -128,10 +128,10 @@
       </visual>
     </link>
     <link name="link_2">
-      <pose>0.18 0.000000 0.000000 0.000000 1.570790 0.000000</pose>
+      <pose>0.07200000000000001 0.000000 0.000000 0.000000 1.570790 0.000000</pose>
       <inertial>
         <pose>0.000000 0.000000 0.000000 0.000000 -0.000000 0.000000</pose>
-        <mass>0.0375</mass>
+        <mass>0.0025</mass>
         <inertia>
           <ixx>0.010000</ixx>
           <ixy>0.000000</ixy>
@@ -145,7 +145,7 @@
         <pose>0.00000 0.000000 0.000000 0.000000 0 0.000000</pose>
         <geometry>
           <cylinder>
-            <length>0.12</length>
+            <length>0.048</length>
             <radius>0.002</radius>
           </cylinder>
         </geometry>
@@ -154,23 +154,23 @@
         <pose>0.00000 0.000000 0.000000 0.000000 0 0.000000</pose>
         <geometry>
           <cylinder>
-            <length>0.12</length>
+            <length>0.048</length>
             <radius>0.002</radius>
           </cylinder>
         </geometry>
         <material>
-          <diffuse>1.0 0.5 0.0</diffuse>
-          <specular>0.2 0.2 0.2</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
         </material>
       </visual>
       <collision name="sphere_2_collision">
-        <pose>0.000000 0.000000 0.06 0.000000 -0.000000 0.000000</pose>
+        <pose>0.000000 0.000000 0.024 0.000000 -0.000000 0.000000</pose>
         <geometry>
           <sphere>
             <radius>0.002</radius>
@@ -178,18 +178,18 @@
         </geometry>
       </collision>
       <visual name="sphere_2_vis">
-        <pose>0.000000 0.000000 0.06 0.000000 -0.000000 0.000000</pose>
+        <pose>0.000000 0.000000 0.024 0.000000 -0.000000 0.000000</pose>
         <geometry>
           <sphere>
             <radius>0.002</radius>
           </sphere>
         </geometry>
         <material>
-          <diffuse>1.0 0.5 0.0</diffuse>
-          <specular>0.2 0.2 0.2</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
@@ -197,10 +197,10 @@
       </visual>
     </link>
     <link name="link_3">
-      <pose>0.3 0.000000 0.000000 0.000000 1.570790 0.000000</pose>
+      <pose>0.12 0.000000 0.000000 0.000000 1.570790 0.000000</pose>
       <inertial>
         <pose>0.000000 0.000000 0.000000 0.000000 -0.000000 0.000000</pose>
-        <mass>0.0375</mass>
+        <mass>0.0025</mass>
         <inertia>
           <ixx>0.010000</ixx>
           <ixy>0.000000</ixy>
@@ -214,7 +214,7 @@
         <pose>0.00000 0.000000 0.000000 0.000000 0 0.000000</pose>
         <geometry>
           <cylinder>
-            <length>0.12</length>
+            <length>0.048</length>
             <radius>0.002</radius>
           </cylinder>
         </geometry>
@@ -223,23 +223,23 @@
         <pose>0.00000 0.000000 0.000000 0.000000 0 0.000000</pose>
         <geometry>
           <cylinder>
-            <length>0.12</length>
+            <length>0.048</length>
             <radius>0.002</radius>
           </cylinder>
         </geometry>
         <material>
-          <diffuse>1.0 0.5 0.0</diffuse>
-          <specular>0.2 0.2 0.2</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
         </material>
       </visual>
       <collision name="sphere_3_collision">
-        <pose>0.000000 0.000000 0.06 0.000000 -0.000000 0.000000</pose>
+        <pose>0.000000 0.000000 0.024 0.000000 -0.000000 0.000000</pose>
         <geometry>
           <sphere>
             <radius>0.002</radius>
@@ -247,18 +247,18 @@
         </geometry>
       </collision>
       <visual name="sphere_3_vis">
-        <pose>0.000000 0.000000 0.06 0.000000 -0.000000 0.000000</pose>
+        <pose>0.000000 0.000000 0.024 0.000000 -0.000000 0.000000</pose>
         <geometry>
           <sphere>
             <radius>0.002</radius>
           </sphere>
         </geometry>
         <material>
-          <diffuse>1.0 0.5 0.0</diffuse>
-          <specular>0.2 0.2 0.2</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
@@ -266,10 +266,10 @@
       </visual>
     </link>
     <link name="link_4">
-      <pose>0.42 0.000000 0.000000 0.000000 1.570790 0.000000</pose>
+      <pose>0.168 0.000000 0.000000 0.000000 1.570790 0.000000</pose>
       <inertial>
         <pose>0.000000 0.000000 0.000000 0.000000 -0.000000 0.000000</pose>
-        <mass>0.0375</mass>
+        <mass>0.0025</mass>
         <inertia>
           <ixx>0.010000</ixx>
           <ixy>0.000000</ixy>
@@ -283,7 +283,7 @@
         <pose>0.00000 0.000000 0.000000 0.000000 0 0.000000</pose>
         <geometry>
           <cylinder>
-            <length>0.12</length>
+            <length>0.048</length>
             <radius>0.002</radius>
           </cylinder>
         </geometry>
@@ -292,23 +292,23 @@
         <pose>0.00000 0.000000 0.000000 0.000000 0 0.000000</pose>
         <geometry>
           <cylinder>
-            <length>0.12</length>
+            <length>0.048</length>
             <radius>0.002</radius>
           </cylinder>
         </geometry>
         <material>
-          <diffuse>1.0 0.5 0.0</diffuse>
-          <specular>0.2 0.2 0.2</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
         </material>
       </visual>
       <collision name="sphere_4_collision">
-        <pose>0.000000 0.000000 0.06 0.000000 -0.000000 0.000000</pose>
+        <pose>0.000000 0.000000 0.024 0.000000 -0.000000 0.000000</pose>
         <geometry>
           <sphere>
             <radius>0.002</radius>
@@ -316,18 +316,18 @@
         </geometry>
       </collision>
       <visual name="sphere_4_vis">
-        <pose>0.000000 0.000000 0.06 0.000000 -0.000000 0.000000</pose>
+        <pose>0.000000 0.000000 0.024 0.000000 -0.000000 0.000000</pose>
         <geometry>
           <sphere>
             <radius>0.002</radius>
           </sphere>
         </geometry>
         <material>
-          <diffuse>1.0 0.5 0.0</diffuse>
-          <specular>0.2 0.2 0.2</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
@@ -335,10 +335,10 @@
       </visual>
     </link>
     <link name="link_5">
-      <pose>0.54 0.000000 0.000000 0.000000 1.570790 0.000000</pose>
+      <pose>0.216 0.000000 0.000000 0.000000 1.570790 0.000000</pose>
       <inertial>
         <pose>0.000000 0.000000 0.000000 0.000000 -0.000000 0.000000</pose>
-        <mass>0.0375</mass>
+        <mass>0.0025</mass>
         <inertia>
           <ixx>0.010000</ixx>
           <ixy>0.000000</ixy>
@@ -352,7 +352,7 @@
         <pose>0.00000 0.000000 0.000000 0.000000 0 0.000000</pose>
         <geometry>
           <cylinder>
-            <length>0.12</length>
+            <length>0.048</length>
             <radius>0.002</radius>
           </cylinder>
         </geometry>
@@ -361,23 +361,23 @@
         <pose>0.00000 0.000000 0.000000 0.000000 0 0.000000</pose>
         <geometry>
           <cylinder>
-            <length>0.12</length>
+            <length>0.048</length>
             <radius>0.002</radius>
           </cylinder>
         </geometry>
         <material>
-          <diffuse>1.0 0.5 0.0</diffuse>
-          <specular>0.2 0.2 0.2</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
         </material>
       </visual>
       <collision name="sphere_5_collision">
-        <pose>0.000000 0.000000 0.06 0.000000 -0.000000 0.000000</pose>
+        <pose>0.000000 0.000000 0.024 0.000000 -0.000000 0.000000</pose>
         <geometry>
           <sphere>
             <radius>0.002</radius>
@@ -385,18 +385,18 @@
         </geometry>
       </collision>
       <visual name="sphere_5_vis">
-        <pose>0.000000 0.000000 0.06 0.000000 -0.000000 0.000000</pose>
+        <pose>0.000000 0.000000 0.024 0.000000 -0.000000 0.000000</pose>
         <geometry>
           <sphere>
             <radius>0.002</radius>
           </sphere>
         </geometry>
         <material>
-          <diffuse>1.0 0.5 0.0</diffuse>
-          <specular>0.2 0.2 0.2</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
@@ -404,10 +404,10 @@
       </visual>
     </link>
     <link name="link_6">
-      <pose>0.6599999999999999 0.000000 0.000000 0.000000 1.570790 0.000000</pose>
+      <pose>0.264 0.000000 0.000000 0.000000 1.570790 0.000000</pose>
       <inertial>
         <pose>0.000000 0.000000 0.000000 0.000000 -0.000000 0.000000</pose>
-        <mass>0.0375</mass>
+        <mass>0.0025</mass>
         <inertia>
           <ixx>0.010000</ixx>
           <ixy>0.000000</ixy>
@@ -421,7 +421,7 @@
         <pose>0.00000 0.000000 0.000000 0.000000 0 0.000000</pose>
         <geometry>
           <cylinder>
-            <length>0.12</length>
+            <length>0.048</length>
             <radius>0.002</radius>
           </cylinder>
         </geometry>
@@ -430,23 +430,23 @@
         <pose>0.00000 0.000000 0.000000 0.000000 0 0.000000</pose>
         <geometry>
           <cylinder>
-            <length>0.12</length>
+            <length>0.048</length>
             <radius>0.002</radius>
           </cylinder>
         </geometry>
         <material>
-          <diffuse>1.0 0.5 0.0</diffuse>
-          <specular>0.2 0.2 0.2</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
         </material>
       </visual>
       <collision name="sphere_6_collision">
-        <pose>0.000000 0.000000 0.06 0.000000 -0.000000 0.000000</pose>
+        <pose>0.000000 0.000000 0.024 0.000000 -0.000000 0.000000</pose>
         <geometry>
           <sphere>
             <radius>0.002</radius>
@@ -454,18 +454,18 @@
         </geometry>
       </collision>
       <visual name="sphere_6_vis">
-        <pose>0.000000 0.000000 0.06 0.000000 -0.000000 0.000000</pose>
+        <pose>0.000000 0.000000 0.024 0.000000 -0.000000 0.000000</pose>
         <geometry>
           <sphere>
             <radius>0.002</radius>
           </sphere>
         </geometry>
         <material>
-          <diffuse>1.0 0.5 0.0</diffuse>
-          <specular>0.2 0.2 0.2</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
@@ -473,10 +473,10 @@
       </visual>
     </link>
     <link name="link_7">
-      <pose>0.78 0.000000 0.000000 0.000000 1.570790 0.000000</pose>
+      <pose>0.31200000000000006 0.000000 0.000000 0.000000 1.570790 0.000000</pose>
       <inertial>
         <pose>0.000000 0.000000 0.000000 0.000000 -0.000000 0.000000</pose>
-        <mass>0.0375</mass>
+        <mass>0.0025</mass>
         <inertia>
           <ixx>0.010000</ixx>
           <ixy>0.000000</ixy>
@@ -490,7 +490,7 @@
         <pose>0.00000 0.000000 0.000000 0.000000 0 0.000000</pose>
         <geometry>
           <cylinder>
-            <length>0.12</length>
+            <length>0.048</length>
             <radius>0.002</radius>
           </cylinder>
         </geometry>
@@ -499,23 +499,23 @@
         <pose>0.00000 0.000000 0.000000 0.000000 0 0.000000</pose>
         <geometry>
           <cylinder>
-            <length>0.12</length>
+            <length>0.048</length>
             <radius>0.002</radius>
           </cylinder>
         </geometry>
         <material>
-          <diffuse>1.0 0.5 0.0</diffuse>
-          <specular>0.2 0.2 0.2</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
         </material>
       </visual>
       <collision name="sphere_7_collision">
-        <pose>0.000000 0.000000 0.06 0.000000 -0.000000 0.000000</pose>
+        <pose>0.000000 0.000000 0.024 0.000000 -0.000000 0.000000</pose>
         <geometry>
           <sphere>
             <radius>0.002</radius>
@@ -523,18 +523,18 @@
         </geometry>
       </collision>
       <visual name="sphere_7_vis">
-        <pose>0.000000 0.000000 0.06 0.000000 -0.000000 0.000000</pose>
+        <pose>0.000000 0.000000 0.024 0.000000 -0.000000 0.000000</pose>
         <geometry>
           <sphere>
             <radius>0.002</radius>
           </sphere>
         </geometry>
         <material>
-          <diffuse>1.0 0.5 0.0</diffuse>
-          <specular>0.2 0.2 0.2</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
@@ -542,10 +542,10 @@
       </visual>
     </link>
     <link name="link_8">
-      <pose>0.8999999999999999 0.000000 0.000000 0.000000 1.570790 0.000000</pose>
+      <pose>0.36000000000000004 0.000000 0.000000 0.000000 1.570790 0.000000</pose>
       <inertial>
         <pose>0.000000 0.000000 0.000000 0.000000 -0.000000 0.000000</pose>
-        <mass>0.0375</mass>
+        <mass>0.0025</mass>
         <inertia>
           <ixx>0.010000</ixx>
           <ixy>0.000000</ixy>
@@ -559,7 +559,7 @@
         <pose>0.00000 0.000000 0.000000 0.000000 0 0.000000</pose>
         <geometry>
           <cylinder>
-            <length>0.12</length>
+            <length>0.048</length>
             <radius>0.002</radius>
           </cylinder>
         </geometry>
@@ -568,23 +568,23 @@
         <pose>0.00000 0.000000 0.000000 0.000000 0 0.000000</pose>
         <geometry>
           <cylinder>
-            <length>0.12</length>
+            <length>0.048</length>
             <radius>0.002</radius>
           </cylinder>
         </geometry>
         <material>
-          <diffuse>1.0 0.5 0.0</diffuse>
-          <specular>0.2 0.2 0.2</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
         </material>
       </visual>
       <collision name="sphere_8_collision">
-        <pose>0.000000 0.000000 0.06 0.000000 -0.000000 0.000000</pose>
+        <pose>0.000000 0.000000 0.024 0.000000 -0.000000 0.000000</pose>
         <geometry>
           <sphere>
             <radius>0.002</radius>
@@ -592,18 +592,846 @@
         </geometry>
       </collision>
       <visual name="sphere_8_vis">
-        <pose>0.000000 0.000000 0.06 0.000000 -0.000000 0.000000</pose>
+        <pose>0.000000 0.000000 0.024 0.000000 -0.000000 0.000000</pose>
         <geometry>
           <sphere>
             <radius>0.002</radius>
           </sphere>
         </geometry>
         <material>
-          <diffuse>1.0 0.5 0.0</diffuse>
-          <specular>0.2 0.2 0.2</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+    </link>
+    <link name="link_9">
+      <pose>0.40800000000000003 0.000000 0.000000 0.000000 1.570790 0.000000</pose>
+      <inertial>
+        <pose>0.000000 0.000000 0.000000 0.000000 -0.000000 0.000000</pose>
+        <mass>0.0025</mass>
+        <inertia>
+          <ixx>0.010000</ixx>
+          <ixy>0.000000</ixy>
+          <ixz>0.000000</ixz>
+          <iyy>0.010000</iyy>
+          <iyz>0.000000</iyz>
+          <izz>0.010000</izz>
+        </inertia>
+      </inertial>
+      <collision name="link_9_collision">
+        <pose>0.00000 0.000000 0.000000 0.000000 0 0.000000</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name="link_9_vis">
+        <pose>0.00000 0.000000 0.000000 0.000000 0 0.000000</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <collision name="sphere_9_collision">
+        <pose>0.000000 0.000000 0.024 0.000000 -0.000000 0.000000</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+      </collision>
+      <visual name="sphere_9_vis">
+        <pose>0.000000 0.000000 0.024 0.000000 -0.000000 0.000000</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+    </link>
+    <link name="link_10">
+      <pose>0.456 0.000000 0.000000 0.000000 1.570790 0.000000</pose>
+      <inertial>
+        <pose>0.000000 0.000000 0.000000 0.000000 -0.000000 0.000000</pose>
+        <mass>0.0025</mass>
+        <inertia>
+          <ixx>0.010000</ixx>
+          <ixy>0.000000</ixy>
+          <ixz>0.000000</ixz>
+          <iyy>0.010000</iyy>
+          <iyz>0.000000</iyz>
+          <izz>0.010000</izz>
+        </inertia>
+      </inertial>
+      <collision name="link_10_collision">
+        <pose>0.00000 0.000000 0.000000 0.000000 0 0.000000</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name="link_10_vis">
+        <pose>0.00000 0.000000 0.000000 0.000000 0 0.000000</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <collision name="sphere_10_collision">
+        <pose>0.000000 0.000000 0.024 0.000000 -0.000000 0.000000</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+      </collision>
+      <visual name="sphere_10_vis">
+        <pose>0.000000 0.000000 0.024 0.000000 -0.000000 0.000000</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+    </link>
+    <link name="link_11">
+      <pose>0.504 0.000000 0.000000 0.000000 1.570790 0.000000</pose>
+      <inertial>
+        <pose>0.000000 0.000000 0.000000 0.000000 -0.000000 0.000000</pose>
+        <mass>0.0025</mass>
+        <inertia>
+          <ixx>0.010000</ixx>
+          <ixy>0.000000</ixy>
+          <ixz>0.000000</ixz>
+          <iyy>0.010000</iyy>
+          <iyz>0.000000</iyz>
+          <izz>0.010000</izz>
+        </inertia>
+      </inertial>
+      <collision name="link_11_collision">
+        <pose>0.00000 0.000000 0.000000 0.000000 0 0.000000</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name="link_11_vis">
+        <pose>0.00000 0.000000 0.000000 0.000000 0 0.000000</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <collision name="sphere_11_collision">
+        <pose>0.000000 0.000000 0.024 0.000000 -0.000000 0.000000</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+      </collision>
+      <visual name="sphere_11_vis">
+        <pose>0.000000 0.000000 0.024 0.000000 -0.000000 0.000000</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+    </link>
+    <link name="link_12">
+      <pose>0.552 0.000000 0.000000 0.000000 1.570790 0.000000</pose>
+      <inertial>
+        <pose>0.000000 0.000000 0.000000 0.000000 -0.000000 0.000000</pose>
+        <mass>0.0025</mass>
+        <inertia>
+          <ixx>0.010000</ixx>
+          <ixy>0.000000</ixy>
+          <ixz>0.000000</ixz>
+          <iyy>0.010000</iyy>
+          <iyz>0.000000</iyz>
+          <izz>0.010000</izz>
+        </inertia>
+      </inertial>
+      <collision name="link_12_collision">
+        <pose>0.00000 0.000000 0.000000 0.000000 0 0.000000</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name="link_12_vis">
+        <pose>0.00000 0.000000 0.000000 0.000000 0 0.000000</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <collision name="sphere_12_collision">
+        <pose>0.000000 0.000000 0.024 0.000000 -0.000000 0.000000</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+      </collision>
+      <visual name="sphere_12_vis">
+        <pose>0.000000 0.000000 0.024 0.000000 -0.000000 0.000000</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+    </link>
+    <link name="link_13">
+      <pose>0.6000000000000001 0.000000 0.000000 0.000000 1.570790 0.000000</pose>
+      <inertial>
+        <pose>0.000000 0.000000 0.000000 0.000000 -0.000000 0.000000</pose>
+        <mass>0.0025</mass>
+        <inertia>
+          <ixx>0.010000</ixx>
+          <ixy>0.000000</ixy>
+          <ixz>0.000000</ixz>
+          <iyy>0.010000</iyy>
+          <iyz>0.000000</iyz>
+          <izz>0.010000</izz>
+        </inertia>
+      </inertial>
+      <collision name="link_13_collision">
+        <pose>0.00000 0.000000 0.000000 0.000000 0 0.000000</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name="link_13_vis">
+        <pose>0.00000 0.000000 0.000000 0.000000 0 0.000000</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <collision name="sphere_13_collision">
+        <pose>0.000000 0.000000 0.024 0.000000 -0.000000 0.000000</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+      </collision>
+      <visual name="sphere_13_vis">
+        <pose>0.000000 0.000000 0.024 0.000000 -0.000000 0.000000</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+    </link>
+    <link name="link_14">
+      <pose>0.648 0.000000 0.000000 0.000000 1.570790 0.000000</pose>
+      <inertial>
+        <pose>0.000000 0.000000 0.000000 0.000000 -0.000000 0.000000</pose>
+        <mass>0.0025</mass>
+        <inertia>
+          <ixx>0.010000</ixx>
+          <ixy>0.000000</ixy>
+          <ixz>0.000000</ixz>
+          <iyy>0.010000</iyy>
+          <iyz>0.000000</iyz>
+          <izz>0.010000</izz>
+        </inertia>
+      </inertial>
+      <collision name="link_14_collision">
+        <pose>0.00000 0.000000 0.000000 0.000000 0 0.000000</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name="link_14_vis">
+        <pose>0.00000 0.000000 0.000000 0.000000 0 0.000000</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <collision name="sphere_14_collision">
+        <pose>0.000000 0.000000 0.024 0.000000 -0.000000 0.000000</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+      </collision>
+      <visual name="sphere_14_vis">
+        <pose>0.000000 0.000000 0.024 0.000000 -0.000000 0.000000</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+    </link>
+    <link name="link_15">
+      <pose>0.6960000000000001 0.000000 0.000000 0.000000 1.570790 0.000000</pose>
+      <inertial>
+        <pose>0.000000 0.000000 0.000000 0.000000 -0.000000 0.000000</pose>
+        <mass>0.0025</mass>
+        <inertia>
+          <ixx>0.010000</ixx>
+          <ixy>0.000000</ixy>
+          <ixz>0.000000</ixz>
+          <iyy>0.010000</iyy>
+          <iyz>0.000000</iyz>
+          <izz>0.010000</izz>
+        </inertia>
+      </inertial>
+      <collision name="link_15_collision">
+        <pose>0.00000 0.000000 0.000000 0.000000 0 0.000000</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name="link_15_vis">
+        <pose>0.00000 0.000000 0.000000 0.000000 0 0.000000</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <collision name="sphere_15_collision">
+        <pose>0.000000 0.000000 0.024 0.000000 -0.000000 0.000000</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+      </collision>
+      <visual name="sphere_15_vis">
+        <pose>0.000000 0.000000 0.024 0.000000 -0.000000 0.000000</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+    </link>
+    <link name="link_16">
+      <pose>0.744 0.000000 0.000000 0.000000 1.570790 0.000000</pose>
+      <inertial>
+        <pose>0.000000 0.000000 0.000000 0.000000 -0.000000 0.000000</pose>
+        <mass>0.0025</mass>
+        <inertia>
+          <ixx>0.010000</ixx>
+          <ixy>0.000000</ixy>
+          <ixz>0.000000</ixz>
+          <iyy>0.010000</iyy>
+          <iyz>0.000000</iyz>
+          <izz>0.010000</izz>
+        </inertia>
+      </inertial>
+      <collision name="link_16_collision">
+        <pose>0.00000 0.000000 0.000000 0.000000 0 0.000000</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name="link_16_vis">
+        <pose>0.00000 0.000000 0.000000 0.000000 0 0.000000</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <collision name="sphere_16_collision">
+        <pose>0.000000 0.000000 0.024 0.000000 -0.000000 0.000000</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+      </collision>
+      <visual name="sphere_16_vis">
+        <pose>0.000000 0.000000 0.024 0.000000 -0.000000 0.000000</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+    </link>
+    <link name="link_17">
+      <pose>0.792 0.000000 0.000000 0.000000 1.570790 0.000000</pose>
+      <inertial>
+        <pose>0.000000 0.000000 0.000000 0.000000 -0.000000 0.000000</pose>
+        <mass>0.0025</mass>
+        <inertia>
+          <ixx>0.010000</ixx>
+          <ixy>0.000000</ixy>
+          <ixz>0.000000</ixz>
+          <iyy>0.010000</iyy>
+          <iyz>0.000000</iyz>
+          <izz>0.010000</izz>
+        </inertia>
+      </inertial>
+      <collision name="link_17_collision">
+        <pose>0.00000 0.000000 0.000000 0.000000 0 0.000000</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name="link_17_vis">
+        <pose>0.00000 0.000000 0.000000 0.000000 0 0.000000</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <collision name="sphere_17_collision">
+        <pose>0.000000 0.000000 0.024 0.000000 -0.000000 0.000000</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+      </collision>
+      <visual name="sphere_17_vis">
+        <pose>0.000000 0.000000 0.024 0.000000 -0.000000 0.000000</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+    </link>
+    <link name="link_18">
+      <pose>0.8400000000000001 0.000000 0.000000 0.000000 1.570790 0.000000</pose>
+      <inertial>
+        <pose>0.000000 0.000000 0.000000 0.000000 -0.000000 0.000000</pose>
+        <mass>0.0025</mass>
+        <inertia>
+          <ixx>0.010000</ixx>
+          <ixy>0.000000</ixy>
+          <ixz>0.000000</ixz>
+          <iyy>0.010000</iyy>
+          <iyz>0.000000</iyz>
+          <izz>0.010000</izz>
+        </inertia>
+      </inertial>
+      <collision name="link_18_collision">
+        <pose>0.00000 0.000000 0.000000 0.000000 0 0.000000</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name="link_18_vis">
+        <pose>0.00000 0.000000 0.000000 0.000000 0 0.000000</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <collision name="sphere_18_collision">
+        <pose>0.000000 0.000000 0.024 0.000000 -0.000000 0.000000</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+      </collision>
+      <visual name="sphere_18_vis">
+        <pose>0.000000 0.000000 0.024 0.000000 -0.000000 0.000000</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+    </link>
+    <link name="link_19">
+      <pose>0.888 0.000000 0.000000 0.000000 1.570790 0.000000</pose>
+      <inertial>
+        <pose>0.000000 0.000000 0.000000 0.000000 -0.000000 0.000000</pose>
+        <mass>0.0025</mass>
+        <inertia>
+          <ixx>0.010000</ixx>
+          <ixy>0.000000</ixy>
+          <ixz>0.000000</ixz>
+          <iyy>0.010000</iyy>
+          <iyz>0.000000</iyz>
+          <izz>0.010000</izz>
+        </inertia>
+      </inertial>
+      <collision name="link_19_collision">
+        <pose>0.00000 0.000000 0.000000 0.000000 0 0.000000</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name="link_19_vis">
+        <pose>0.00000 0.000000 0.000000 0.000000 0 0.000000</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <collision name="sphere_19_collision">
+        <pose>0.000000 0.000000 0.024 0.000000 -0.000000 0.000000</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+      </collision>
+      <visual name="sphere_19_vis">
+        <pose>0.000000 0.000000 0.024 0.000000 -0.000000 0.000000</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+    </link>
+    <link name="link_20">
+      <pose>0.936 0.000000 0.000000 0.000000 1.570790 0.000000</pose>
+      <inertial>
+        <pose>0.000000 0.000000 0.000000 0.000000 -0.000000 0.000000</pose>
+        <mass>0.0025</mass>
+        <inertia>
+          <ixx>0.010000</ixx>
+          <ixy>0.000000</ixy>
+          <ixz>0.000000</ixz>
+          <iyy>0.010000</iyy>
+          <iyz>0.000000</iyz>
+          <izz>0.010000</izz>
+        </inertia>
+      </inertial>
+      <collision name="link_20_collision">
+        <pose>0.00000 0.000000 0.000000 0.000000 0 0.000000</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name="link_20_vis">
+        <pose>0.00000 0.000000 0.000000 0.000000 0 0.000000</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <collision name="sphere_20_collision">
+        <pose>0.000000 0.000000 0.024 0.000000 -0.000000 0.000000</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+      </collision>
+      <visual name="sphere_20_vis">
+        <pose>0.000000 0.000000 0.024 0.000000 -0.000000 0.000000</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
@@ -611,79 +1439,211 @@
       </visual>
     </link>
     <joint name="joint_1" type="ball">
-      <pose>0.00000 0.000000 -0.06 0.000000 0 0.000000</pose>
+      <pose>0.00000 0.000000 -0.024 0.000000 0 0.000000</pose>
       <parent>link_1</parent>
       <child>link_2</child>
       <axis>
         <dynamics>
           <damping>1.0</damping>
-          <spring_stiffness>1.0</spring_stiffness>
+          <spring_stiffness>0.05</spring_stiffness>
         </dynamics>
       </axis>
     </joint>
     <joint name="joint_2" type="ball">
-      <pose>0.00000 0.000000 -0.06 0.000000 0 0.000000</pose>
+      <pose>0.00000 0.000000 -0.024 0.000000 0 0.000000</pose>
       <parent>link_2</parent>
       <child>link_3</child>
       <axis>
         <dynamics>
           <damping>1.0</damping>
-          <spring_stiffness>1.0</spring_stiffness>
+          <spring_stiffness>0.05</spring_stiffness>
         </dynamics>
       </axis>
     </joint>
     <joint name="joint_3" type="ball">
-      <pose>0.00000 0.000000 -0.06 0.000000 0 0.000000</pose>
+      <pose>0.00000 0.000000 -0.024 0.000000 0 0.000000</pose>
       <parent>link_3</parent>
       <child>link_4</child>
       <axis>
         <dynamics>
           <damping>1.0</damping>
-          <spring_stiffness>1.0</spring_stiffness>
+          <spring_stiffness>0.05</spring_stiffness>
         </dynamics>
       </axis>
     </joint>
     <joint name="joint_4" type="ball">
-      <pose>0.00000 0.000000 -0.06 0.000000 0 0.000000</pose>
+      <pose>0.00000 0.000000 -0.024 0.000000 0 0.000000</pose>
       <parent>link_4</parent>
       <child>link_5</child>
       <axis>
         <dynamics>
           <damping>1.0</damping>
-          <spring_stiffness>1.0</spring_stiffness>
+          <spring_stiffness>0.05</spring_stiffness>
         </dynamics>
       </axis>
     </joint>
     <joint name="joint_5" type="ball">
-      <pose>0.00000 0.000000 -0.06 0.000000 0 0.000000</pose>
+      <pose>0.00000 0.000000 -0.024 0.000000 0 0.000000</pose>
       <parent>link_5</parent>
       <child>link_6</child>
       <axis>
         <dynamics>
           <damping>1.0</damping>
-          <spring_stiffness>1.0</spring_stiffness>
+          <spring_stiffness>0.05</spring_stiffness>
         </dynamics>
       </axis>
     </joint>
     <joint name="joint_6" type="ball">
-      <pose>0.00000 0.000000 -0.06 0.000000 0 0.000000</pose>
+      <pose>0.00000 0.000000 -0.024 0.000000 0 0.000000</pose>
       <parent>link_6</parent>
       <child>link_7</child>
       <axis>
         <dynamics>
           <damping>1.0</damping>
-          <spring_stiffness>1.0</spring_stiffness>
+          <spring_stiffness>0.05</spring_stiffness>
         </dynamics>
       </axis>
     </joint>
     <joint name="joint_7" type="ball">
-      <pose>0.00000 0.000000 -0.06 0.000000 0 0.000000</pose>
+      <pose>0.00000 0.000000 -0.024 0.000000 0 0.000000</pose>
       <parent>link_7</parent>
       <child>link_8</child>
       <axis>
         <dynamics>
           <damping>1.0</damping>
-          <spring_stiffness>1.0</spring_stiffness>
+          <spring_stiffness>0.05</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <joint name="joint_8" type="ball">
+      <pose>0.00000 0.000000 -0.024 0.000000 0 0.000000</pose>
+      <parent>link_8</parent>
+      <child>link_9</child>
+      <axis>
+        <dynamics>
+          <damping>1.0</damping>
+          <spring_stiffness>0.05</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <joint name="joint_9" type="ball">
+      <pose>0.00000 0.000000 -0.024 0.000000 0 0.000000</pose>
+      <parent>link_9</parent>
+      <child>link_10</child>
+      <axis>
+        <dynamics>
+          <damping>1.0</damping>
+          <spring_stiffness>0.05</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <joint name="joint_10" type="ball">
+      <pose>0.00000 0.000000 -0.024 0.000000 0 0.000000</pose>
+      <parent>link_10</parent>
+      <child>link_11</child>
+      <axis>
+        <dynamics>
+          <damping>1.0</damping>
+          <spring_stiffness>0.05</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <joint name="joint_11" type="ball">
+      <pose>0.00000 0.000000 -0.024 0.000000 0 0.000000</pose>
+      <parent>link_11</parent>
+      <child>link_12</child>
+      <axis>
+        <dynamics>
+          <damping>1.0</damping>
+          <spring_stiffness>0.05</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <joint name="joint_12" type="ball">
+      <pose>0.00000 0.000000 -0.024 0.000000 0 0.000000</pose>
+      <parent>link_12</parent>
+      <child>link_13</child>
+      <axis>
+        <dynamics>
+          <damping>1.0</damping>
+          <spring_stiffness>0.05</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <joint name="joint_13" type="ball">
+      <pose>0.00000 0.000000 -0.024 0.000000 0 0.000000</pose>
+      <parent>link_13</parent>
+      <child>link_14</child>
+      <axis>
+        <dynamics>
+          <damping>1.0</damping>
+          <spring_stiffness>0.05</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <joint name="joint_14" type="ball">
+      <pose>0.00000 0.000000 -0.024 0.000000 0 0.000000</pose>
+      <parent>link_14</parent>
+      <child>link_15</child>
+      <axis>
+        <dynamics>
+          <damping>1.0</damping>
+          <spring_stiffness>0.05</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <joint name="joint_15" type="ball">
+      <pose>0.00000 0.000000 -0.024 0.000000 0 0.000000</pose>
+      <parent>link_15</parent>
+      <child>link_16</child>
+      <axis>
+        <dynamics>
+          <damping>1.0</damping>
+          <spring_stiffness>0.05</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <joint name="joint_16" type="ball">
+      <pose>0.00000 0.000000 -0.024 0.000000 0 0.000000</pose>
+      <parent>link_16</parent>
+      <child>link_17</child>
+      <axis>
+        <dynamics>
+          <damping>1.0</damping>
+          <spring_stiffness>0.05</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <joint name="joint_17" type="ball">
+      <pose>0.00000 0.000000 -0.024 0.000000 0 0.000000</pose>
+      <parent>link_17</parent>
+      <child>link_18</child>
+      <axis>
+        <dynamics>
+          <damping>1.0</damping>
+          <spring_stiffness>0.05</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <joint name="joint_18" type="ball">
+      <pose>0.00000 0.000000 -0.024 0.000000 0 0.000000</pose>
+      <parent>link_18</parent>
+      <child>link_19</child>
+      <axis>
+        <dynamics>
+          <damping>1.0</damping>
+          <spring_stiffness>0.05</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <joint name="joint_19" type="ball">
+      <pose>0.00000 0.000000 -0.024 0.000000 0 0.000000</pose>
+      <parent>link_19</parent>
+      <child>link_20</child>
+      <axis>
+        <dynamics>
+          <damping>1.0</damping>
+          <spring_stiffness>0.05</spring_stiffness>
         </dynamics>
       </axis>
     </joint>
@@ -708,56 +1668,56 @@
       </inertial>
       <pose relative_to="cable_mount_base">0 0 0 0 0 0</pose>
       <collision name="collision_0">
-        <pose>-0.005385164807134504 0.004 0 0.3805063771123649 1.57079 0</pose>
+        <pose>-0.005099019513592785 0.002 0 0.19739555984988078 1.57079 0</pose>
         <geometry>
           <cylinder>
             <radius>0.001</radius>
-            <length>0.010770329614269008</length>
+            <length>0.01019803902718557</length>
           </cylinder>
         </geometry>
       </collision>
       <visual name="visual_0">
-        <pose>-0.005385164807134504 0.004 0 0.3805063771123649 1.57079 0</pose>
+        <pose>-0.005099019513592785 0.002 0 0.19739555984988078 1.57079 0</pose>
         <geometry>
           <cylinder>
             <radius>0.001</radius>
-            <length>0.010770329614269008</length>
+            <length>0.01019803902718557</length>
           </cylinder>
         </geometry>
         <material>
-          <diffuse>1.0 0.5 0.0</diffuse>
-          <specular>0.2 0.2 0.2</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
         </material>
       </visual>
       <collision name="collision_1">
-        <pose>-0.005385164807134504 -0.004 0 -0.3805063771123649 1.57079 0</pose>
+        <pose>-0.005099019513592785 -0.002 0 -0.19739555984988078 1.57079 0</pose>
         <geometry>
           <cylinder>
             <radius>0.001</radius>
-            <length>0.010770329614269008</length>
+            <length>0.01019803902718557</length>
           </cylinder>
         </geometry>
       </collision>
       <visual name="visual_1">
-        <pose>-0.005385164807134504 -0.004 0 -0.3805063771123649 1.57079 0</pose>
+        <pose>-0.005099019513592785 -0.002 0 -0.19739555984988078 1.57079 0</pose>
         <geometry>
           <cylinder>
             <radius>0.001</radius>
-            <length>0.010770329614269008</length>
+            <length>0.01019803902718557</length>
           </cylinder>
         </geometry>
         <material>
-          <diffuse>1.0 0.5 0.0</diffuse>
-          <specular>0.2 0.2 0.2</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
@@ -779,56 +1739,56 @@
       </inertial>
       <pose relative_to="cable_mount_end">0 0 0 0 0 0</pose>
       <collision name="collision_0">
-        <pose>0.005099019513592785 -0.002 0 0.19739555984988078 1.57079 0</pose>
+        <pose>0.005385164807134504 -0.004 0 0.3805063771123649 1.57079 0</pose>
         <geometry>
           <cylinder>
             <radius>0.001</radius>
-            <length>0.01019803902718557</length>
+            <length>0.010770329614269008</length>
           </cylinder>
         </geometry>
       </collision>
       <visual name="visual_0">
-        <pose>0.005099019513592785 -0.002 0 0.19739555984988078 1.57079 0</pose>
+        <pose>0.005385164807134504 -0.004 0 0.3805063771123649 1.57079 0</pose>
         <geometry>
           <cylinder>
             <radius>0.001</radius>
-            <length>0.01019803902718557</length>
+            <length>0.010770329614269008</length>
           </cylinder>
         </geometry>
         <material>
-          <diffuse>1.0 0.5 0.0</diffuse>
-          <specular>0.2 0.2 0.2</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
         </material>
       </visual>
       <collision name="collision_1">
-        <pose>0.005099019513592785 0.002 0 -0.19739555984988078 1.57079 0</pose>
+        <pose>0.005385164807134504 0.004 0 -0.3805063771123649 1.57079 0</pose>
         <geometry>
           <cylinder>
             <radius>0.001</radius>
-            <length>0.01019803902718557</length>
+            <length>0.010770329614269008</length>
           </cylinder>
         </geometry>
       </collision>
       <visual name="visual_1">
-        <pose>0.005099019513592785 0.002 0 -0.19739555984988078 1.57079 0</pose>
+        <pose>0.005385164807134504 0.004 0 -0.3805063771123649 1.57079 0</pose>
         <geometry>
           <cylinder>
             <radius>0.001</radius>
-            <length>0.01019803902718557</length>
+            <length>0.010770329614269008</length>
           </cylinder>
         </geometry>
         <material>
-          <diffuse>1.0 0.5 0.0</diffuse>
-          <specular>0.2 0.2 0.2</specular>
+          <diffuse>1.0 0.22 0.0</diffuse>
+          <specular>0.5 0.5 0.5</specular>
           <pbr>
             <metal>
-              <roughness>0.05</roughness>
+              <roughness>0.01</roughness>
               <metalness>0.01</metalness>
             </metal>
           </pbr>
@@ -842,18 +1802,18 @@
       <axis>
         <dynamics>
           <damping>1.0</damping>
-          <spring_stiffness>1.0</spring_stiffness>
+          <spring_stiffness>0.05</spring_stiffness>
         </dynamics>
       </axis>
     </joint>
     <joint name="joint_connection_end_1" type="ball">
       <pose>0.00000 0.000000 0 0.000000 0 0.000000</pose>
-      <parent>link_8</parent>
+      <parent>link_20</parent>
       <child>cable_connection_1</child>
       <axis>
         <dynamics>
           <damping>1.0</damping>
-          <spring_stiffness>1.0</spring_stiffness>
+          <spring_stiffness>0.05</spring_stiffness>
         </dynamics>
       </axis>
     </joint>

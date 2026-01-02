@@ -70,6 +70,13 @@ def launch_setup(context, *args, **kwargs):
     task_board_roll = LaunchConfiguration("task_board_roll")
     task_board_pitch = LaunchConfiguration("task_board_pitch")
     task_board_yaw = LaunchConfiguration("task_board_yaw")
+    cable_x = LaunchConfiguration("cable_x")
+    cable_y = LaunchConfiguration("cable_y")
+    cable_z = LaunchConfiguration("cable_z")
+    cable_roll = LaunchConfiguration("cable_roll")
+    cable_pitch = LaunchConfiguration("cable_pitch")
+    cable_yaw = LaunchConfiguration("cable_yaw")
+    attach_cable_to_gripper = LaunchConfiguration("attach_cable_to_gripper")
 
     robot_description_content = Command(
         [
@@ -225,6 +232,33 @@ def launch_setup(context, *args, **kwargs):
         condition=IfCondition(spawn_task_board),
     )
 
+    # Cable spawning (conditional)
+    spawn_cable = LaunchConfiguration("spawn_cable")
+    cable_description_file = LaunchConfiguration("cable_description_file")
+
+    spawn_cable_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            PathJoinSubstitution(
+                [
+                    FindPackageShare("aic_bringup"),
+                    "launch",
+                    "spawn_cable.launch.py",
+                ]
+            )
+        ),
+        launch_arguments={
+            "cable_description_file": cable_description_file,
+            "cable_x": cable_x,
+            "cable_y": cable_y,
+            "cable_z": cable_z,
+            "cable_roll": cable_roll,
+            "cable_pitch": cable_pitch,
+            "cable_yaw": cable_yaw,
+            "attach_cable_to_gripper": attach_cable_to_gripper,
+        }.items(),
+        condition=IfCondition(spawn_cable),
+    )
+
     # GZ nodes
     gz_spawn_entity = Node(
         package="ros_gz_sim",
@@ -274,6 +308,7 @@ def launch_setup(context, *args, **kwargs):
         ros_gz_bridge,
         gz_spawn_entity,
         spawn_task_board_launch,
+        spawn_cable_launch,
     ]
 
     return nodes_to_start
@@ -496,6 +531,72 @@ def generate_launch_description():
             "task_board_yaw",
             default_value="0.0",
             description="Task board spawn yaw orientation (radians)",
+        )
+    )
+
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "attach_cable_to_gripper",
+            default_value="false",
+            description="Whether to attach cable to gripper (applicable only if spawn_cable is true)",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "spawn_cable",
+            default_value="false",
+            description="Whether to spawn the cable",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "cable_description_file",
+            default_value=PathJoinSubstitution(
+                [FindPackageShare("aic_description"), "urdf", "cable.sdf.xacro"]
+            ),
+            description="SDF/XACRO file to use for cable.",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "cable_x",
+            default_value="0.162",
+            description="Cable spawn X position",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "cable_y",
+            default_value="0.292",
+            description="Cable spawn Y position",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "cable_z",
+            default_value="1.397",
+            description="Cable spawn Z position",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "cable_roll",
+            default_value="0.187",
+            description="Cable spawn roll orientation (radians)",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "cable_pitch",
+            default_value="-0.936",
+            description="Cable spawn pitch orientation (radians)",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "cable_yaw",
+            default_value="2.995",
+            description="Cable spawn yaw orientation (radians)",
         )
     )
 

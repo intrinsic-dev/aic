@@ -239,5 +239,24 @@
         </geometry>
       </collision>
     </link>
+
+    <link name="sfp_port_0_link">
+      <pose>0.01295 -0.031572 0.00501 4.69895 0 0</pose>
+    </link>
+
+    <joint name="sfp_port_0_joint" type="fixed">
+      <parent>nic_card_link</parent>
+      <child>sfp_port_0_link</child>
+    </joint>
+
+    <link name="sfp_port_1_link">
+      <pose>-0.01025 -0.031572 0.00501 4.69895 0 0</pose>
+    </link>
+
+    <joint name="sfp_port_1_joint" type="fixed">
+      <parent>nic_card_link</parent>
+      <child>sfp_port_1_link</child>
+    </joint>
+
   </model>
 </sdf>

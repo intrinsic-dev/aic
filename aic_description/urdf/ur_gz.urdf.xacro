@@ -158,7 +158,7 @@
     grip_vel_max="0.05"
     grip_effort_min="20"
     grip_effort_max="130"
-    initial_pos="0.02"
+    initial_pos="0.01"
     >
   </xacro:robotiq_hande>
 
@@ -233,7 +233,7 @@
         elbow_joint=-1.9,
         wrist_1_joint=-1.5708,
         wrist_2_joint=1.5708,
-        wrist_3_joint=0.0)}"
+        wrist_3_joint=0.6)}"
     />
 
   </ros2_control>
