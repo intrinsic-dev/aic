@@ -93,6 +93,7 @@
 
   <!-- Calculate absolute positions relative to task board base -->
   <!-- Task Board Base is at (0.25, 0, 1.14) relative to world in original SDF -->
+	<!-- NIC Card mounts are centered at the middle of the slot. Each mount can be translated [-0.048, 0.036] along X axis to adjust position within slot. -->
   <!-- Components are positioned relative to base -->
 
   <!-- Instantiate Task Board Base -->
