@@ -23,7 +23,7 @@ trials:
             entity_present: True # True if a NIC card is present on this rail.
             entity_name: "nic_card_0" # Name of the NIC card entity to spawn.
             entity_pose:
-              translation: 0.03 # 0 to 1. Will be scaled to length of rail.
+              translation: 0.036
               roll: 0.0 # roll orientation for the NIC card.
               pitch: 0.0 # pitch orientation for the NIC card.
               yaw: 0.0 # yaw orientation for the NIC card.
@@ -39,7 +39,7 @@ trials:
             entity_present: True
             entity_name: "sc_mount_0" # Name of the SC port entity to spawn.
             entity_pose:
-              translation: 0.042 # 0 to 1. Will be scaled to length of rail.
+              translation: 0.042
               roll: 0.0 # roll orientation for the SC port.
               pitch: 0.0 # pitch orientation for the SC port.
               yaw: 0.1 # yaw orientation for the SC port.
@@ -51,7 +51,7 @@ trials:
                 type: "sfp"
                 entity_name: "sfp_port_0" # Name of the port entity to spawn.
                 entity_pose:
-                  translation: 0.9 # 0 to 1. Will be scaled to length of rail.
+                  translation: 0.9
                   roll: 0.0 # roll orientation for the port.
                   pitch: 0.0 # pitch orientation for the port.
                   yaw: 0.0 # yaw orientation for the port.
@@ -80,12 +80,12 @@ trials:
     scene:
         task_board:
           pose:
-            x: 0.4
-            y: -0.1
+            x: 0.30
+            y: -0.02
             z: 1.14
             roll: 0.0
             pitch: 0.0
-            yaw: 0.814
+            yaw: 0.1
           nic_rail_0:
             entity_present: False
           nic_rail_1:
@@ -93,9 +93,9 @@ trials:
             entity_name: "nic_card_1"
             entity_pose:
               translation: -0.02
-              roll: -0.0157  # ~-0.9 degrees in radians
-              pitch: 0.0192  # ~1.1 degrees in radians
-              yaw: -0.0297  # ~-1.7 degrees in radians
+              roll: -0.0157
+              pitch: 0.0192
+              yaw: -0.0297
           nic_rail_2:
             entity_present: False
           nic_rail_3:
@@ -108,7 +108,7 @@ trials:
             entity_present: True
             entity_name: "sc_mount_1"
             entity_pose:
-              translation: 0.55
+              translation: -0.055
               roll: 0.2
               pitch: 0.0
               yaw: 0.0

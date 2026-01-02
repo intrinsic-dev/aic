@@ -633,10 +633,8 @@ bool Engine::spawn_task_board(double x, double y, double z, double roll,
       if (task_board_config[rail_key]["entity_pose"]) {
         const auto& pose = task_board_config[rail_key]["entity_pose"];
 
-        // Scale translation (0 to 1) to actual Y offset range (-0.09625 to 0.09625)
         double translation = pose["translation"].as<double>();
-        double delta_y = (translation - 0.5) * 0.1925;
-        cmd << " " << mount_prefix << "_translation:=" << delta_y;
+        cmd << " " << mount_prefix << "_translation:=" << translation;
 
         // Add orientation parameters
         double roll = pose["roll"].as<double>();
@@ -664,11 +662,8 @@ bool Engine::spawn_task_board(double x, double y, double z, double roll,
       if (task_board_config[rail_key]["entity_pose"]) {
         const auto& pose = task_board_config[rail_key]["entity_pose"];
 
-        // Scale translation (0 to 1) to actual X offset range
-        // SC ports can translate along X axis within their rail
         double translation = pose["translation"].as<double>();
-        double delta_x = (translation - 0.5) * 0.11;  // Scaling factor for SC rail range
-        cmd << " " << port_prefix << "_translation:=" << delta_x;
+        cmd << " " << port_prefix << "_translation:=" << translation;
 
         // Add orientation parameters
         double roll = pose["roll"].as<double>();
