@@ -16,7 +16,7 @@
   <xacro:arg name="pitch" default="0.0"/>
   <xacro:arg name="yaw" default="-3.141"/>
 
-  <!-- Rail 0: X=0.0215, Y=-0.10625. Mounts can be translated [-0.09625, 0.09625] along Y axis (rail direction) -->
+  <!-- Rail 0: X=0.0275, Y=-0.10625. Mounts can be translated [-0.09625, 0.09625] along Y axis (rail direction) -->
   <xacro:arg name="rail_0_mount_type" default="none"/>
   <xacro:arg name="rail_0_present" default="false"/>
   <xacro:arg name="rail_0_translation" default="0.0"/>
@@ -40,7 +40,7 @@
   <xacro:arg name="rail_2_pitch" default="0.0"/>
   <xacro:arg name="rail_2_yaw" default="0.0"/>
 
-  <!-- Rail 3: X=0.0215, Y=0.10625. Mounts can be translated [-0.09625, 0.09625] along Y axis (rail direction) -->
+  <!-- Rail 3: X=0.0275, Y=0.10625. Mounts can be translated [-0.09625, 0.09625] along Y axis (rail direction) -->
   <xacro:arg name="rail_3_mount_type" default="none"/>
   <xacro:arg name="rail_3_present" default="false"/>
   <xacro:arg name="rail_3_translation" default="0.0"/>
@@ -122,14 +122,14 @@
   <!-- Instantiate Task Board Base -->
   <xacro:task_board_base prefix="task_board_"/>
 
-  <!-- Rail 0: X=0.0215, Y=-0.10625 -->
+  <!-- Rail 0: X=0.0275, Y=-0.10625 -->
   <xacro:if value="$(arg rail_0_present)">
     <xacro:if value="${'$(arg rail_0_mount_type)' == 'lc_mount'}">
       <xacro:lc_mount prefix="rail_0_"/>
       <joint name="rail_0_joint" type="fixed">
         <parent link="task_board_base_link"/>
         <child link="rail_0_link"/>
-        <origin xyz="0.0215 ${-0.10625 + $(arg rail_0_translation)} 0.01" rpy="$(arg rail_0_roll) $(arg rail_0_pitch) $(arg rail_0_yaw)"/>
+        <origin xyz="0.0275 ${-0.10625 + $(arg rail_0_translation)} 0.01" rpy="$(arg rail_0_roll) $(arg rail_0_pitch) $(arg rail_0_yaw)"/>
       </joint>
     </xacro:if>
     <xacro:if value="${'$(arg rail_0_mount_type)' == 'sfp_mount'}">
@@ -137,7 +137,7 @@
       <joint name="rail_0_joint" type="fixed">
         <parent link="task_board_base_link"/>
         <child link="rail_0_link"/>
-        <origin xyz="0.0215 ${-0.10625 + $(arg rail_0_translation)} 0.01" rpy="$(arg rail_0_roll) $(arg rail_0_pitch) $(arg rail_0_yaw)"/>
+        <origin xyz="0.0275 ${-0.10625 + $(arg rail_0_translation)} 0.01" rpy="$(arg rail_0_roll) $(arg rail_0_pitch) $(arg rail_0_yaw)"/>
       </joint>
     </xacro:if>
     <xacro:if value="${'$(arg rail_0_mount_type)' == 'sc_mount'}">
@@ -145,7 +145,7 @@
       <joint name="rail_0_joint" type="fixed">
         <parent link="task_board_base_link"/>
         <child link="rail_0_link"/>
-        <origin xyz="0.0215 ${-0.10625 + $(arg rail_0_translation)} 0.01" rpy="$(arg rail_0_roll) $(arg rail_0_pitch) $(arg rail_0_yaw)"/>
+        <origin xyz="0.0275 ${-0.10625 + $(arg rail_0_translation)} 0.01" rpy="$(arg rail_0_roll) $(arg rail_0_pitch) $(arg rail_0_yaw)"/>
       </joint>
     </xacro:if>
   </xacro:if>
@@ -206,14 +206,14 @@
     </xacro:if>
   </xacro:if>
 
-  <!-- Rail 3: X=0.0215, Y=0.10625 -->
+  <!-- Rail 3: X=0.0275, Y=0.10625 -->
   <xacro:if value="$(arg rail_3_present)">
     <xacro:if value="${'$(arg rail_3_mount_type)' == 'lc_mount'}">
       <xacro:lc_mount prefix="rail_3_"/>
       <joint name="rail_3_joint" type="fixed">
         <parent link="task_board_base_link"/>
         <child link="rail_3_link"/>
-        <origin xyz="0.0215 ${0.10625 + $(arg rail_3_translation)} 0.01" rpy="$(arg rail_3_roll) $(arg rail_3_pitch) $(arg rail_3_yaw)"/>
+        <origin xyz="0.0275 ${0.10625 + $(arg rail_3_translation)} 0.01" rpy="$(arg rail_3_roll) $(arg rail_3_pitch) $(arg rail_3_yaw)"/>
       </joint>
     </xacro:if>
     <xacro:if value="${'$(arg rail_3_mount_type)' == 'sfp_mount'}">
@@ -221,7 +221,7 @@
       <joint name="rail_3_joint" type="fixed">
         <parent link="task_board_base_link"/>
         <child link="rail_3_link"/>
-        <origin xyz="0.0215 ${0.10625 + $(arg rail_3_translation)} 0.01" rpy="$(arg rail_3_roll) $(arg rail_3_pitch) $(arg rail_3_yaw)"/>
+        <origin xyz="0.0275 ${0.10625 + $(arg rail_3_translation)} 0.01" rpy="$(arg rail_3_roll) $(arg rail_3_pitch) $(arg rail_3_yaw)"/>
       </joint>
     </xacro:if>
     <xacro:if value="${'$(arg rail_3_mount_type)' == 'sc_mount'}">
@@ -229,7 +229,7 @@
       <joint name="rail_3_joint" type="fixed">
         <parent link="task_board_base_link"/>
         <child link="rail_3_link"/>
-        <origin xyz="0.0215 ${0.10625 + $(arg rail_3_translation)} 0.01" rpy="$(arg rail_3_roll) $(arg rail_3_pitch) $(arg rail_3_yaw)"/>
+        <origin xyz="0.0275 ${0.10625 + $(arg rail_3_translation)} 0.01" rpy="$(arg rail_3_roll) $(arg rail_3_pitch) $(arg rail_3_yaw)"/>
       </joint>
     </xacro:if>
   </xacro:if>
