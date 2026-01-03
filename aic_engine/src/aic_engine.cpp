@@ -560,6 +560,7 @@ bool Engine::task_completed_successfully() {
   return true;
 }
 
+//==============================================================================
 void Engine::reset_after_trial() {
   RCLCPP_INFO(node_->get_logger(), "Resetting after trial completion...");
 
