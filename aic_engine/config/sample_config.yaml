@@ -45,31 +45,29 @@ trials:
               yaw: 0.1 # yaw orientation for the SC port.
           sc_rail_1:
             entity_present: False
-          rail_0:
+          lc_mount_rail_0:
             entity_present: True
-            mount_type: "lc_mount"  # Mount type: lc_mount, sfp_mount, or sc_mount
-            entity_name: "lc_mount_0"  # Name of the mount entity
+            entity_name: "lc_mount_0"  # Name of the LC mount entity
             entity_pose:
               translation: 0.02  # Translation along Y axis
               roll: 0.0
               pitch: 0.0
               yaw: 0.0
-          rail_1:
+          sfp_mount_rail_0:ail_0:
             entity_present: False
-          rail_2:
+          sc_mount_rail_0:
             entity_present: False
-          rail_3:
+          lc_mount_rail_1:ail_1:
             entity_present: True
-            mount_type: "sfp_mount"
-            entity_name: "sfp_mount_3"
+            entity_name: "lc_mount_1"
             entity_pose:
               translation: -0.01
               roll: 0.0
               pitch: 0.0
               yaw: 0.0
-          rail_4:
+          sfp_mount_rail_1:
             entity_present: False
-          rail_5:
+          sc_mount_rail_1:
             entity_present: False
         cable:
     tasks:
@@ -122,24 +120,23 @@ trials:
               roll: 0.2
               pitch: 0.0
               yaw: 0.0
-          rail_0:
+          lc_mount_rail_0:
             entity_present: False
-          rail_1:
+          sfp_mount_rail_0:
             entity_present: True
-            mount_type: "sc_mount"
-            entity_name: "sc_mount_rail_1"
+            entity_name: "sfp_mount_0"
             entity_pose:
               translation: 0.05
               roll: 0.0
               pitch: 0.0
               yaw: 0.0
-          rail_2:
+          sc_mount_rail_0:ail_0:
             entity_present: False
-          rail_3:
+          lc_mount_rail_1:
             entity_present: False
-          rail_4:
+          sfp_mount_rail_1:
             entity_present: False
-          rail_5:
+          sc_mount_rail_1:
             entity_present: False
         cable:
     tasks:

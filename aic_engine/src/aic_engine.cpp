@@ -678,41 +678,34 @@ bool Engine::spawn_task_board(double x, double y, double z, double roll,
     }
   }
 
-  // Add rail parameters (rail_0 through rail_5)
-  for (int i = 0; i < 6; ++i) {
-    std::string rail_key = "rail_" + std::to_string(i);
-    std::string rail_prefix = "rail_" + std::to_string(i);
+  // Add rail parameters (type-specific rails: lc_mount_rail_0/1, sfp_mount_rail_0/1, sc_mount_rail_0/1)
+  std::vector<std::string> rail_keys = {
+    "lc_mount_rail_0", "sfp_mount_rail_0", "sc_mount_rail_0",
+    "lc_mount_rail_1", "sfp_mount_rail_1", "sc_mount_rail_1"
+  };
 
+  for (const auto& rail_key : rail_keys) {
     if (task_board_config[rail_key] &&
         task_board_config[rail_key]["entity_present"] &&
         task_board_config[rail_key]["entity_present"].as<bool>()) {
-      cmd << " " << rail_prefix << "_present:=true";
-
-      // Get mount type
-      if (task_board_config[rail_key]["mount_type"]) {
-        std::string mount_type = task_board_config[rail_key]["mount_type"].as<std::string>();
-        cmd << " " << rail_prefix << "_mount_type:=" << mount_type;
-      } else {
-        cmd << " " << rail_prefix << "_mount_type:=none";
-      }
+      cmd << " " << rail_key << "_present:=true";
 
       if (task_board_config[rail_key]["entity_pose"]) {
         const auto& pose = task_board_config[rail_key]["entity_pose"];
 
         double translation = pose["translation"].as<double>();
-        cmd << " " << rail_prefix << "_translation:=" << translation;
+        cmd << " " << rail_key << "_translation:=" << translation;
 
         // Add orientation parameters
         double roll = pose["roll"].as<double>();
         double pitch = pose["pitch"].as<double>();
         double yaw = pose["yaw"].as<double>();
-        cmd << " " << rail_prefix << "_roll:=" << roll;
-        cmd << " " << rail_prefix << "_pitch:=" << pitch;
-        cmd << " " << rail_prefix << "_yaw:=" << yaw;
+        cmd << " " << rail_key << "_roll:=" << roll;
+        cmd << " " << rail_key << "_pitch:=" << pitch;
+        cmd << " " << rail_key << "_yaw:=" << yaw;
       }
     } else {
-      cmd << " " << rail_prefix << "_present:=false";
-      cmd << " " << rail_prefix << "_mount_type:=none";
+      cmd << " " << rail_key << "_present:=false";
     }
   }
 

@@ -38,47 +38,41 @@ def launch_setup(context, *args, **kwargs):
     task_board_yaw = LaunchConfiguration("task_board_yaw")
 
     # Component delta arguments
-    rail_0_mount_type = LaunchConfiguration("rail_0_mount_type")
-    rail_0_present = LaunchConfiguration("rail_0_present")
-    rail_0_translation = LaunchConfiguration("rail_0_translation")
-    rail_0_roll = LaunchConfiguration("rail_0_roll")
-    rail_0_pitch = LaunchConfiguration("rail_0_pitch")
-    rail_0_yaw = LaunchConfiguration("rail_0_yaw")
+    lc_mount_rail_0_present = LaunchConfiguration("lc_mount_rail_0_present")
+    lc_mount_rail_0_translation = LaunchConfiguration("lc_mount_rail_0_translation")
+    lc_mount_rail_0_roll = LaunchConfiguration("lc_mount_rail_0_roll")
+    lc_mount_rail_0_pitch = LaunchConfiguration("lc_mount_rail_0_pitch")
+    lc_mount_rail_0_yaw = LaunchConfiguration("lc_mount_rail_0_yaw")
 
-    rail_1_mount_type = LaunchConfiguration("rail_1_mount_type")
-    rail_1_present = LaunchConfiguration("rail_1_present")
-    rail_1_translation = LaunchConfiguration("rail_1_translation")
-    rail_1_roll = LaunchConfiguration("rail_1_roll")
-    rail_1_pitch = LaunchConfiguration("rail_1_pitch")
-    rail_1_yaw = LaunchConfiguration("rail_1_yaw")
+    sfp_mount_rail_0_present = LaunchConfiguration("sfp_mount_rail_0_present")
+    sfp_mount_rail_0_translation = LaunchConfiguration("sfp_mount_rail_0_translation")
+    sfp_mount_rail_0_roll = LaunchConfiguration("sfp_mount_rail_0_roll")
+    sfp_mount_rail_0_pitch = LaunchConfiguration("sfp_mount_rail_0_pitch")
+    sfp_mount_rail_0_yaw = LaunchConfiguration("sfp_mount_rail_0_yaw")
 
-    rail_2_mount_type = LaunchConfiguration("rail_2_mount_type")
-    rail_2_present = LaunchConfiguration("rail_2_present")
-    rail_2_translation = LaunchConfiguration("rail_2_translation")
-    rail_2_roll = LaunchConfiguration("rail_2_roll")
-    rail_2_pitch = LaunchConfiguration("rail_2_pitch")
-    rail_2_yaw = LaunchConfiguration("rail_2_yaw")
+    sc_mount_rail_0_present = LaunchConfiguration("sc_mount_rail_0_present")
+    sc_mount_rail_0_translation = LaunchConfiguration("sc_mount_rail_0_translation")
+    sc_mount_rail_0_roll = LaunchConfiguration("sc_mount_rail_0_roll")
+    sc_mount_rail_0_pitch = LaunchConfiguration("sc_mount_rail_0_pitch")
+    sc_mount_rail_0_yaw = LaunchConfiguration("sc_mount_rail_0_yaw")
 
-    rail_3_mount_type = LaunchConfiguration("rail_3_mount_type")
-    rail_3_present = LaunchConfiguration("rail_3_present")
-    rail_3_translation = LaunchConfiguration("rail_3_translation")
-    rail_3_roll = LaunchConfiguration("rail_3_roll")
-    rail_3_pitch = LaunchConfiguration("rail_3_pitch")
-    rail_3_yaw = LaunchConfiguration("rail_3_yaw")
+    lc_mount_rail_1_present = LaunchConfiguration("lc_mount_rail_1_present")
+    lc_mount_rail_1_translation = LaunchConfiguration("lc_mount_rail_1_translation")
+    lc_mount_rail_1_roll = LaunchConfiguration("lc_mount_rail_1_roll")
+    lc_mount_rail_1_pitch = LaunchConfiguration("lc_mount_rail_1_pitch")
+    lc_mount_rail_1_yaw = LaunchConfiguration("lc_mount_rail_1_yaw")
 
-    rail_4_mount_type = LaunchConfiguration("rail_4_mount_type")
-    rail_4_present = LaunchConfiguration("rail_4_present")
-    rail_4_translation = LaunchConfiguration("rail_4_translation")
-    rail_4_roll = LaunchConfiguration("rail_4_roll")
-    rail_4_pitch = LaunchConfiguration("rail_4_pitch")
-    rail_4_yaw = LaunchConfiguration("rail_4_yaw")
+    sfp_mount_rail_1_present = LaunchConfiguration("sfp_mount_rail_1_present")
+    sfp_mount_rail_1_translation = LaunchConfiguration("sfp_mount_rail_1_translation")
+    sfp_mount_rail_1_roll = LaunchConfiguration("sfp_mount_rail_1_roll")
+    sfp_mount_rail_1_pitch = LaunchConfiguration("sfp_mount_rail_1_pitch")
+    sfp_mount_rail_1_yaw = LaunchConfiguration("sfp_mount_rail_1_yaw")
 
-    rail_5_mount_type = LaunchConfiguration("rail_5_mount_type")
-    rail_5_present = LaunchConfiguration("rail_5_present")
-    rail_5_translation = LaunchConfiguration("rail_5_translation")
-    rail_5_roll = LaunchConfiguration("rail_5_roll")
-    rail_5_pitch = LaunchConfiguration("rail_5_pitch")
-    rail_5_yaw = LaunchConfiguration("rail_5_yaw")
+    sc_mount_rail_1_present = LaunchConfiguration("sc_mount_rail_1_present")
+    sc_mount_rail_1_translation = LaunchConfiguration("sc_mount_rail_1_translation")
+    sc_mount_rail_1_roll = LaunchConfiguration("sc_mount_rail_1_roll")
+    sc_mount_rail_1_pitch = LaunchConfiguration("sc_mount_rail_1_pitch")
+    sc_mount_rail_1_yaw = LaunchConfiguration("sc_mount_rail_1_yaw")
 
     # SC Port parameters
     sc_port_0_present = LaunchConfiguration("sc_port_0_present")
@@ -149,113 +143,95 @@ def launch_setup(context, *args, **kwargs):
             "yaw:=",
             task_board_yaw,
             " ",
-            "rail_0_mount_type:=",
-            rail_0_mount_type,
+            "lc_mount_rail_0_present:=",
+            lc_mount_rail_0_present,
             " ",
-            "rail_0_present:=",
-            rail_0_present,
+            "lc_mount_rail_0_translation:=",
+            lc_mount_rail_0_translation,
             " ",
-            "rail_0_translation:=",
-            rail_0_translation,
+            "lc_mount_rail_0_roll:=",
+            lc_mount_rail_0_roll,
             " ",
-            "rail_0_roll:=",
-            rail_0_roll,
+            "lc_mount_rail_0_pitch:=",
+            lc_mount_rail_0_pitch,
             " ",
-            "rail_0_pitch:=",
-            rail_0_pitch,
+            "lc_mount_rail_0_yaw:=",
+            lc_mount_rail_0_yaw,
             " ",
-            "rail_0_yaw:=",
-            rail_0_yaw,
+            "sfp_mount_rail_0_present:=",
+            sfp_mount_rail_0_present,
             " ",
-            "rail_1_mount_type:=",
-            rail_1_mount_type,
+            "sfp_mount_rail_0_translation:=",
+            sfp_mount_rail_0_translation,
             " ",
-            "rail_1_present:=",
-            rail_1_present,
+            "sfp_mount_rail_0_roll:=",
+            sfp_mount_rail_0_roll,
             " ",
-            "rail_1_translation:=",
-            rail_1_translation,
+            "sfp_mount_rail_0_pitch:=",
+            sfp_mount_rail_0_pitch,
             " ",
-            "rail_1_roll:=",
-            rail_1_roll,
+            "sfp_mount_rail_0_yaw:=",
+            sfp_mount_rail_0_yaw,
             " ",
-            "rail_1_pitch:=",
-            rail_1_pitch,
+            "sc_mount_rail_0_present:=",
+            sc_mount_rail_0_present,
             " ",
-            "rail_1_yaw:=",
-            rail_1_yaw,
+            "sc_mount_rail_0_translation:=",
+            sc_mount_rail_0_translation,
             " ",
-            "rail_2_mount_type:=",
-            rail_2_mount_type,
+            "sc_mount_rail_0_roll:=",
+            sc_mount_rail_0_roll,
             " ",
-            "rail_2_present:=",
-            rail_2_present,
+            "sc_mount_rail_0_pitch:=",
+            sc_mount_rail_0_pitch,
             " ",
-            "rail_2_translation:=",
-            rail_2_translation,
+            "sc_mount_rail_0_yaw:=",
+            sc_mount_rail_0_yaw,
             " ",
-            "rail_2_roll:=",
-            rail_2_roll,
+            "lc_mount_rail_1_present:=",
+            lc_mount_rail_1_present,
             " ",
-            "rail_2_pitch:=",
-            rail_2_pitch,
+            "lc_mount_rail_1_translation:=",
+            lc_mount_rail_1_translation,
             " ",
-            "rail_2_yaw:=",
-            rail_2_yaw,
+            "lc_mount_rail_1_roll:=",
+            lc_mount_rail_1_roll,
             " ",
-            "rail_3_mount_type:=",
-            rail_3_mount_type,
+            "lc_mount_rail_1_pitch:=",
+            lc_mount_rail_1_pitch,
             " ",
-            "rail_3_present:=",
-            rail_3_present,
+            "lc_mount_rail_1_yaw:=",
+            lc_mount_rail_1_yaw,
             " ",
-            "rail_3_translation:=",
-            rail_3_translation,
+            "sfp_mount_rail_1_present:=",
+            sfp_mount_rail_1_present,
             " ",
-            "rail_3_roll:=",
-            rail_3_roll,
+            "sfp_mount_rail_1_translation:=",
+            sfp_mount_rail_1_translation,
             " ",
-            "rail_3_pitch:=",
-            rail_3_pitch,
+            "sfp_mount_rail_1_roll:=",
+            sfp_mount_rail_1_roll,
             " ",
-            "rail_3_yaw:=",
-            rail_3_yaw,
+            "sfp_mount_rail_1_pitch:=",
+            sfp_mount_rail_1_pitch,
             " ",
-            "rail_4_mount_type:=",
-            rail_4_mount_type,
+            "sfp_mount_rail_1_yaw:=",
+            sfp_mount_rail_1_yaw,
             " ",
-            "rail_4_present:=",
-            rail_4_present,
+            "sc_mount_rail_1_present:=",
+            sc_mount_rail_1_present,
             " ",
-            "rail_4_translation:=",
-            rail_4_translation,
+            "sc_mount_rail_1_translation:=",
+            sc_mount_rail_1_translation,
             " ",
-            "rail_4_roll:=",
-            rail_4_roll,
+            "sc_mount_rail_1_roll:=",
+            sc_mount_rail_1_roll,
             " ",
-            "rail_4_pitch:=",
-            rail_4_pitch,
+            "sc_mount_rail_1_pitch:=",
+            sc_mount_rail_1_pitch,
             " ",
-            "rail_4_yaw:=",
-            rail_4_yaw,
-            " ",
-            "rail_5_mount_type:=",
-            rail_5_mount_type,
-            " ",
-            "rail_5_present:=",
-            rail_5_present,
-            " ",
-            "rail_5_translation:=",
-            rail_5_translation,
-            " ",
-            "rail_5_roll:=",
-            rail_5_roll,
-            " ",
-            "rail_5_pitch:=",
-            rail_5_pitch,
-            " ",
-            "rail_5_yaw:=",
-            rail_5_yaw,
+            "sc_mount_rail_1_yaw:=",
+            sc_mount_rail_1_yaw,
             " ",
             "sc_port_0_present:=",
             sc_port_0_present,
@@ -449,267 +425,225 @@ def generate_launch_description():
         )
     )
 
-    # Rail 0 arguments
+    # LC Mount Rail 0 arguments (left side, mount rail)
     declared_arguments.append(
         DeclareLaunchArgument(
-            "rail_0_mount_type",
-            default_value="none",
-            description="Mount type for rail 0 (lc_mount, sfp_mount, sc_mount, or none)",
-        )
-    )
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            "rail_0_present",
+            "lc_mount_rail_0_present",
             default_value="false",
-            description="Whether rail 0 mount is present",
+            description="Whether LC Mount Rail 0 is present",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            "rail_0_translation",
+            "lc_mount_rail_0_translation",
             default_value="0.0",
-            description="Rail 0 mount translation along rail (meters, valid range: -0.09625 to 0.09625)",
+            description="LC Mount Rail 0 translation along rail (meters, valid range: -0.09625 to 0.09625)",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            "rail_0_roll",
+            "lc_mount_rail_0_roll",
             default_value="0.0",
-            description="Rail 0 mount roll orientation (radians)",
+            description="LC Mount Rail 0 roll orientation (radians)",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            "rail_0_pitch",
+            "lc_mount_rail_0_pitch",
             default_value="0.0",
-            description="Rail 0 mount pitch orientation (radians)",
+            description="LC Mount Rail 0 pitch orientation (radians)",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            "rail_0_yaw",
+            "lc_mount_rail_0_yaw",
             default_value="0.0",
-            description="Rail 0 mount yaw orientation (radians)",
+            description="LC Mount Rail 0 yaw orientation (radians)",
         )
     )
 
-    # Rail 1 arguments
+    # SFP Mount Rail 0 arguments (left side, mount rail)
     declared_arguments.append(
         DeclareLaunchArgument(
-            "rail_1_mount_type",
-            default_value="none",
-            description="Mount type for rail 1 (lc_mount, sfp_mount, sc_mount, or none)",
-        )
-    )
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            "rail_1_present",
+            "sfp_mount_rail_0_present",
             default_value="false",
-            description="Whether rail 1 mount is present",
+            description="Whether SFP Mount Rail 0 is present",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            "rail_1_translation",
+            "sfp_mount_rail_0_translation",
             default_value="0.0",
-            description="Rail 1 mount translation along rail (meters, valid range: -0.09625 to 0.09625)",
+            description="SFP Mount Rail 0 translation along rail (meters, valid range: -0.09625 to 0.09625)",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            "rail_1_roll",
+            "sfp_mount_rail_0_roll",
             default_value="0.0",
-            description="Rail 1 mount roll orientation (radians)",
+            description="SFP Mount Rail 0 roll orientation (radians)",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            "rail_1_pitch",
+            "sfp_mount_rail_0_pitch",
             default_value="0.0",
-            description="Rail 1 mount pitch orientation (radians)",
+            description="SFP Mount Rail 0 pitch orientation (radians)",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            "rail_1_yaw",
+            "sfp_mount_rail_0_yaw",
             default_value="0.0",
-            description="Rail 1 mount yaw orientation (radians)",
+            description="SFP Mount Rail 0 yaw orientation (radians)",
         )
     )
 
-    # Rail 2 arguments
+    # SC Mount Rail 0 arguments (left side, mount rail)
     declared_arguments.append(
         DeclareLaunchArgument(
-            "rail_2_mount_type",
-            default_value="none",
-            description="Mount type for rail 2 (lc_mount, sfp_mount, sc_mount, or none)",
-        )
-    )
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            "rail_2_present",
+            "sc_mount_rail_0_present",
             default_value="false",
-            description="Whether rail 2 mount is present",
+            description="Whether SC Mount Rail 0 is present",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            "rail_2_translation",
+            "sc_mount_rail_0_translation",
             default_value="0.0",
-            description="Rail 2 mount translation along rail (meters, valid range: -0.09625 to 0.09625)",
+            description="SC Mount Rail 0 translation along rail (meters, valid range: -0.09625 to 0.09625)",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            "rail_2_roll",
+            "sc_mount_rail_0_roll",
             default_value="0.0",
-            description="Rail 2 mount roll orientation (radians)",
+            description="SC Mount Rail 0 roll orientation (radians)",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            "rail_2_pitch",
+            "sc_mount_rail_0_pitch",
             default_value="0.0",
-            description="Rail 2 mount pitch orientation (radians)",
+            description="SC Mount Rail 0 pitch orientation (radians)",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            "rail_2_yaw",
+            "sc_mount_rail_0_yaw",
             default_value="0.0",
-            description="Rail 2 mount yaw orientation (radians)",
+            description="SC Mount Rail 0 yaw orientation (radians)",
         )
     )
 
-    # Rail 3 arguments
+    # LC Mount Rail 1 arguments (right side, mount rail)
     declared_arguments.append(
         DeclareLaunchArgument(
-            "rail_3_mount_type",
-            default_value="none",
-            description="Mount type for rail 3 (lc_mount, sfp_mount, sc_mount, or none)",
-        )
-    )
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            "rail_3_present",
+            "lc_mount_rail_1_present",
             default_value="false",
-            description="Whether rail 3 mount is present",
+            description="Whether LC Mount Rail 1 is present",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            "rail_3_translation",
+            "lc_mount_rail_1_translation",
             default_value="0.0",
-            description="Rail 3 mount translation along rail (meters, valid range: -0.09625 to 0.09625)",
+            description="LC Mount Rail 1 translation along rail (meters, valid range: -0.09625 to 0.09625)",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            "rail_3_roll",
+            "lc_mount_rail_1_roll",
             default_value="0.0",
-            description="Rail 3 mount roll orientation (radians)",
+            description="LC Mount Rail 1 roll orientation (radians)",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            "rail_3_pitch",
+            "lc_mount_rail_1_pitch",
             default_value="0.0",
-            description="Rail 3 mount pitch orientation (radians)",
+            description="LC Mount Rail 1 pitch orientation (radians)",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            "rail_3_yaw",
+            "lc_mount_rail_1_yaw",
             default_value="0.0",
-            description="Rail 3 mount yaw orientation (radians)",
+            description="LC Mount Rail 1 yaw orientation (radians)",
         )
     )
 
-    # Rail 4 arguments
+    # SFP Mount Rail 1 arguments (right side, mount rail)
     declared_arguments.append(
         DeclareLaunchArgument(
-            "rail_4_mount_type",
-            default_value="none",
-            description="Mount type for rail 4 (lc_mount, sfp_mount, sc_mount, or none)",
-        )
-    )
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            "rail_4_present",
+            "sfp_mount_rail_1_present",
             default_value="false",
-            description="Whether rail 4 mount is present",
+            description="Whether SFP Mount Rail 1 is present",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            "rail_4_translation",
+            "sfp_mount_rail_1_translation",
             default_value="0.0",
-            description="Rail 4 mount translation along rail (meters, valid range: -0.09625 to 0.09625)",
+            description="SFP Mount Rail 1 translation along rail (meters, valid range: -0.09625 to 0.09625)",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            "rail_4_roll",
+            "sfp_mount_rail_1_roll",
             default_value="0.0",
-            description="Rail 4 mount roll orientation (radians)",
+            description="SFP Mount Rail 1 roll orientation (radians)",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            "rail_4_pitch",
+            "sfp_mount_rail_1_pitch",
             default_value="0.0",
-            description="Rail 4 mount pitch orientation (radians)",
+            description="SFP Mount Rail 1 pitch orientation (radians)",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            "rail_4_yaw",
+            "sfp_mount_rail_1_yaw",
             default_value="0.0",
-            description="Rail 4 mount yaw orientation (radians)",
+            description="SFP Mount Rail 1 yaw orientation (radians)",
         )
     )
 
-    # Rail 5 arguments
+    # SC Mount Rail 1 arguments (right side, mount rail)
     declared_arguments.append(
         DeclareLaunchArgument(
-            "rail_5_mount_type",
-            default_value="none",
-            description="Mount type for rail 5 (lc_mount, sfp_mount, sc_mount, or none)",
-        )
-    )
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            "rail_5_present",
+            "sc_mount_rail_1_present",
             default_value="false",
-            description="Whether rail 5 mount is present",
+            description="Whether SC Mount Rail 1 is present",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            "rail_5_translation",
+            "sc_mount_rail_1_translation",
             default_value="0.0",
-            description="Rail 5 mount translation along rail (meters, valid range: -0.09625 to 0.09625)",
+            description="SC Mount Rail 1 translation along rail (meters, valid range: -0.09625 to 0.09625)",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            "rail_5_roll",
+            "sc_mount_rail_1_roll",
             default_value="0.0",
-            description="Rail 5 mount roll orientation (radians)",
+            description="SC Mount Rail 1 roll orientation (radians)",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            "rail_5_pitch",
+            "sc_mount_rail_1_pitch",
             default_value="0.0",
-            description="Rail 5 mount pitch orientation (radians)",
+            description="SC Mount Rail 1 pitch orientation (radians)",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            "rail_5_yaw",
+            "sc_mount_rail_1_yaw",
             default_value="0.0",
-            description="Rail 5 mount yaw orientation (radians)",
+            description="SC Mount Rail 1 yaw orientation (radians)",
         )
     )
 
