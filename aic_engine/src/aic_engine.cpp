@@ -678,11 +678,11 @@ bool Engine::spawn_task_board(double x, double y, double z, double roll,
     }
   }
 
-  // Add rail parameters (type-specific rails: lc_mount_rail_0/1, sfp_mount_rail_0/1, sc_mount_rail_0/1)
-  std::vector<std::string> rail_keys = {
-    "lc_mount_rail_0", "sfp_mount_rail_0", "sc_mount_rail_0",
-    "lc_mount_rail_1", "sfp_mount_rail_1", "sc_mount_rail_1"
-  };
+  // Add rail parameters (type-specific rails: lc_mount_rail_0/1,
+  // sfp_mount_rail_0/1, sc_mount_rail_0/1)
+  std::vector<std::string> rail_keys = {"lc_mount_rail_0",  "sfp_mount_rail_0",
+                                        "sc_mount_rail_0",  "lc_mount_rail_1",
+                                        "sfp_mount_rail_1", "sc_mount_rail_1"};
 
   for (const auto& rail_key : rail_keys) {
     if (task_board_config[rail_key] &&
