@@ -56,6 +56,9 @@ GZ_BUILD_FROM_SOURCE=1 colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release --sy
 ### Launch
 
 > [!NOTE]
+> For detailed information about all available launch files and their configurable parameters, see the [aic_bringup README](../aic_bringup/README.md).
+
+> [!NOTE]
 > We rely on [rmw_zenoh](https://github.com/ros2/rmw_zenoh) as the ROS 2 middleware for this application. Please ensure the `RMW_IMPLEMENTATION` environment variable is set to `rmw_zenoh_cpp` in all terminals.
 
 Start the Zenoh router.
