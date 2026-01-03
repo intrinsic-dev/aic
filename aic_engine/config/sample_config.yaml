@@ -5,9 +5,9 @@ task_board_limits:
   sc_rail:
     min_translation: -0.055  # Minimum translation from center along the rail (in meters)
     max_translation: 0.055   # Maximum translation from center along the rail (in meters)
-  port_rail:
-    min_translation: 0.0     # Minimum translation from center along the rail (in meters)
-    max_translation: 0.18    # Maximum translation from center along the rail (in meters)
+  rail:
+    min_translation: -0.09625  # Minimum translation from center along the rail (in meters)
+    max_translation: 0.09625   # Maximum translation from center along the rail (in meters)
 trials:
   trial_1:
     scene:
@@ -46,21 +46,31 @@ trials:
           sc_rail_1:
             entity_present: False
           rail_0:
-            ports:
-              port_0:
-                type: "sfp"
-                entity_name: "sfp_port_0" # Name of the port entity to spawn.
-                entity_pose:
-                  translation: 0.9
-                  roll: 0.0 # roll orientation for the port.
-                  pitch: 0.0 # pitch orientation for the port.
-                  yaw: 0.0 # yaw orientation for the port.
+            entity_present: True
+            mount_type: "lc_mount"  # Mount type: lc_mount, sfp_mount, or sc_mount
+            entity_name: "lc_mount_0"  # Name of the mount entity
+            entity_pose:
+              translation: 0.02  # Translation along Y axis
+              roll: 0.0
+              pitch: 0.0
+              yaw: 0.0
           rail_1:
+            entity_present: False
           rail_2:
+            entity_present: False
           rail_3:
-          rail_3:
+            entity_present: True
+            mount_type: "sfp_mount"
+            entity_name: "sfp_mount_3"
+            entity_pose:
+              translation: -0.01
+              roll: 0.0
+              pitch: 0.0
+              yaw: 0.0
           rail_4:
+            entity_present: False
           rail_5:
+            entity_present: False
         cable:
     tasks:
       task_1:
@@ -113,11 +123,24 @@ trials:
               pitch: 0.0
               yaw: 0.0
           rail_0:
+            entity_present: False
           rail_1:
+            entity_present: True
+            mount_type: "sc_mount"
+            entity_name: "sc_mount_rail_1"
+            entity_pose:
+              translation: 0.05
+              roll: 0.0
+              pitch: 0.0
+              yaw: 0.0
           rail_2:
+            entity_present: False
           rail_3:
+            entity_present: False
           rail_4:
+            entity_present: False
           rail_5:
+            entity_present: False
         cable:
     tasks:
       task_1:

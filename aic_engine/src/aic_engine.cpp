@@ -623,7 +623,7 @@ bool Engine::spawn_task_board(double x, double y, double z, double roll,
   // Add NIC rail parameters (nic_rail_0 through nic_rail_4)
   for (int i = 0; i < 5; ++i) {
     std::string rail_key = "nic_rail_" + std::to_string(i);
-    std::string mount_prefix = "nic_card_mount_0" + std::to_string(i);
+    std::string mount_prefix = "nic_card_mount_" + std::to_string(i);
 
     if (task_board_config[rail_key] &&
         task_board_config[rail_key]["entity_present"] &&
@@ -652,7 +652,7 @@ bool Engine::spawn_task_board(double x, double y, double z, double roll,
   // Add SC rail parameters (sc_rail_0 and sc_rail_1)
   for (int i = 0; i < 2; ++i) {
     std::string rail_key = "sc_rail_" + std::to_string(i);
-    std::string port_prefix = "sc_port_0" + std::to_string(i);
+    std::string port_prefix = "sc_port_" + std::to_string(i);
 
     if (task_board_config[rail_key] &&
         task_board_config[rail_key]["entity_present"] &&
@@ -675,6 +675,44 @@ bool Engine::spawn_task_board(double x, double y, double z, double roll,
       }
     } else {
       cmd << " " << port_prefix << "_present:=false";
+    }
+  }
+
+  // Add rail parameters (rail_0 through rail_5)
+  for (int i = 0; i < 6; ++i) {
+    std::string rail_key = "rail_" + std::to_string(i);
+    std::string rail_prefix = "rail_" + std::to_string(i);
+
+    if (task_board_config[rail_key] &&
+        task_board_config[rail_key]["entity_present"] &&
+        task_board_config[rail_key]["entity_present"].as<bool>()) {
+      cmd << " " << rail_prefix << "_present:=true";
+
+      // Get mount type
+      if (task_board_config[rail_key]["mount_type"]) {
+        std::string mount_type = task_board_config[rail_key]["mount_type"].as<std::string>();
+        cmd << " " << rail_prefix << "_mount_type:=" << mount_type;
+      } else {
+        cmd << " " << rail_prefix << "_mount_type:=none";
+      }
+
+      if (task_board_config[rail_key]["entity_pose"]) {
+        const auto& pose = task_board_config[rail_key]["entity_pose"];
+
+        double translation = pose["translation"].as<double>();
+        cmd << " " << rail_prefix << "_translation:=" << translation;
+
+        // Add orientation parameters
+        double roll = pose["roll"].as<double>();
+        double pitch = pose["pitch"].as<double>();
+        double yaw = pose["yaw"].as<double>();
+        cmd << " " << rail_prefix << "_roll:=" << roll;
+        cmd << " " << rail_prefix << "_pitch:=" << pitch;
+        cmd << " " << rail_prefix << "_yaw:=" << yaw;
+      }
+    } else {
+      cmd << " " << rail_prefix << "_present:=false";
+      cmd << " " << rail_prefix << "_mount_type:=none";
     }
   }
 
