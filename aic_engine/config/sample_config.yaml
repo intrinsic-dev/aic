@@ -5,7 +5,7 @@ task_board_limits:
   sc_rail:
     min_translation: -0.055  # Minimum translation from center along the rail (in meters)
     max_translation: 0.055   # Maximum translation from center along the rail (in meters)
-  rail:
+  mount_rail:
     min_translation: -0.09625  # Minimum translation from center along the rail (in meters)
     max_translation: 0.09625   # Maximum translation from center along the rail (in meters)
 trials:
@@ -53,11 +53,23 @@ trials:
               roll: 0.0
               pitch: 0.0
               yaw: 0.0
-          sfp_mount_rail_0:ail_0:
-            entity_present: False
+          sfp_mount_rail_0:
+            entity_present: True
+            entity_name: "sfp_mount_0"
+            entity_pose:
+              translation: 0.03
+              roll: 0.0
+              pitch: 0.0
+              yaw: 0.0
           sc_mount_rail_0:
-            entity_present: False
-          lc_mount_rail_1:ail_1:
+            entity_present: True
+            entity_name: "sc_mount_0"
+            entity_pose:
+              translation: -0.02
+              roll: 0.0
+              pitch: 0.0
+              yaw: 0.0
+          lc_mount_rail_1:
             entity_present: True
             entity_name: "lc_mount_1"
             entity_pose:
@@ -130,10 +142,22 @@ trials:
               roll: 0.0
               pitch: 0.0
               yaw: 0.0
-          sc_mount_rail_0:ail_0:
-            entity_present: False
+          sc_mount_rail_0:
+            entity_present: True
+            entity_name: "sc_mount_2"
+            entity_pose:
+              translation: -0.03
+              roll: 0.0
+              pitch: 0.0
+              yaw: 0.0
           lc_mount_rail_1:
-            entity_present: False
+            entity_present: True
+            entity_name: "lc_mount_1"
+            entity_pose:
+              translation: 0.04
+              roll: 0.0
+              pitch: 0.0
+              yaw: 0.0
           sfp_mount_rail_1:
             entity_present: False
           sc_mount_rail_1:

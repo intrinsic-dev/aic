@@ -614,6 +614,31 @@ bool Engine::spawn_task_board(double x, double y, double z, double roll,
   const std::string xacro_file =
       aic_description_share + "/urdf/task_board.urdf.xacro";
 
+  // Read task board limits from config
+  const auto& config_root = active_trial_->config;
+  double nic_rail_min = -0.048;  // Default values
+  double nic_rail_max = 0.036;
+  double sc_rail_min = -0.055;
+  double sc_rail_max = 0.055;
+  double mount_rail_min = -0.09625;
+  double mount_rail_max = 0.09625;
+
+  if (config_root["task_board_limits"]) {
+    const auto& limits = config_root["task_board_limits"];
+    if (limits["nic_rail"]) {
+      nic_rail_min = limits["nic_rail"]["min_translation"].as<double>();
+      nic_rail_max = limits["nic_rail"]["max_translation"].as<double>();
+    }
+    if (limits["sc_rail"]) {
+      sc_rail_min = limits["sc_rail"]["min_translation"].as<double>();
+      sc_rail_max = limits["sc_rail"]["max_translation"].as<double>();
+    }
+    if (limits["mount_rail"]) {
+      mount_rail_min = limits["mount_rail"]["min_translation"].as<double>();
+      mount_rail_max = limits["mount_rail"]["max_translation"].as<double>();
+    }
+  }
+
   // Build xacro command with parameters from config
   std::stringstream cmd;
   cmd << "xacro " << xacro_file;
@@ -634,6 +659,8 @@ bool Engine::spawn_task_board(double x, double y, double z, double roll,
         const auto& pose = task_board_config[rail_key]["entity_pose"];
 
         double translation = pose["translation"].as<double>();
+        // Clamp translation to NIC rail limits
+        translation = std::clamp(translation, nic_rail_min, nic_rail_max);
         cmd << " " << mount_prefix << "_translation:=" << translation;
 
         // Add orientation parameters
@@ -663,6 +690,8 @@ bool Engine::spawn_task_board(double x, double y, double z, double roll,
         const auto& pose = task_board_config[rail_key]["entity_pose"];
 
         double translation = pose["translation"].as<double>();
+        // Clamp translation to SC rail limits
+        translation = std::clamp(translation, sc_rail_min, sc_rail_max);
         cmd << " " << port_prefix << "_translation:=" << translation;
 
         // Add orientation parameters
@@ -694,6 +723,8 @@ bool Engine::spawn_task_board(double x, double y, double z, double roll,
         const auto& pose = task_board_config[rail_key]["entity_pose"];
 
         double translation = pose["translation"].as<double>();
+        // Clamp translation to mount rail limits
+        translation = std::clamp(translation, mount_rail_min, mount_rail_max);
         cmd << " " << rail_key << "_translation:=" << translation;
 
         // Add orientation parameters
