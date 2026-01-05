@@ -14,7 +14,7 @@ The task board provides a standardized physical interface for the manipulation o
 
 This zone represents the networking switch or server compute tray where data links are established.
 
-* **Rails:** Contains five mounting rails named `NIC_CARD_0` through `NIC_CARD_4`.
+* **Rails:** Contains five mounting rails named `NIC_RAIL_0` through `NIC_RAIL_4`.
 * **Components:** Supports up to five dual-port network cards, named `NIC_CARD_0` through `NIC_CARD_4`.
 * **Ports:** Each card features two SFP ports named `SFP_PORT_0` and `SFP_PORT_1`.
 * **Mobility:** Cards are designed to slide along their respective rails to allow for randomized positional and orientation offsets during the challenge.
@@ -25,7 +25,7 @@ This zone represents the networking switch or server compute tray where data lin
 This zone emulates the optical patch panel or backplane of a server rack.
 
 * **Rails:** Features two parallel rails named `SC_RAIL_0` and `SC_RAIL_1`.
-* **Ports:** Supports up to ten SC ports in total, named `SC_PORT_0` through `SC_PORT_9`.
+* **Ports:** Supports up to five SC ports in total, named `SC_PORT_0` through `SC_PORT_4`.
 * **Mobility:** Ports are designed to be positioned on either rails, and slide along them to allow for randomized positional offsets during the challenge.
   * *TODO: Specify slide travel limits for rail positioning.*
 
@@ -36,11 +36,12 @@ Zone 3 serves as the organized supply area for components before they are routed
 * **Rails:** Three mounting rails named `PICK_RAIL_0` through `PICK_RAIL_2`.
 * **Fixtures:** Holds "ports" (fixtures) for either SC plugs or SFP modules.
 * **Naming Convention:**
-  * **SC Plugs:** `SC_PORT_0` through `SC_PORT_N` (where N is the total count for the task).
-  * **SFP Modules:** `SFP_PORT_0` through `SFP_PORT_M` (where M is the total count for the task).
+  * **SC Ports:** `SC_PORT_0` through `SC_PORT_N` (where N is the total count for the task).
+  * **SC Plugs:** `SC_PLUG_0` through `SC_PLUG_N` (where N is the total count for the task).
+  * **SFP Ports:** `SFP_PORT_0` through `SFP_PORT_M` (where M is the total count for the task).
+  * **SFP Modules:** `SFP_MODULE_0` through `SFP_MODULE_M` (where M is the total count for the task).
 * **Customization:** Fixtures can be placed on any rail in any order, creating a high-mix environment.
   * *TODO: Specify minimum spacing between fixtures to prevent gripper collisions.*
-
 
 ### Zone 4: Secondary Pick Location
 
@@ -56,12 +57,14 @@ To ensure precision during dexterous manipulation and seamless sim-to-real trans
 * **World Frame (`world`):** The global origin, located at the base of the workcell.
 * **Robot Frame (`robot`):** The robot base frame, location at the base of the robot.
 * **Board Frame (`task_board_base`):** The primary reference for all zones, located at the bottom-left corner of the modular baseplate.
-* **Zone Frames (`zone_1` to `zone_4`):** Local origins for each functional area to simplify relative positioning of rails and fixtures.
+* **Zone Frames (`zone_1` to `zone_4`):** Local origins for each functional area to simplify relative positioning of rails and fixtures. Located at the bottom-left corner of each zone.
+* **`Tool_frame`:** The Tool Center Point located between the fingers.
 * **Component Frames:**
   * **`NIC_CARD_N`:** Centered on the leading edge of the network card.
-  * **`SFP_PORT_N`:** Located at the center of the port aperture, with the Z-axis pointing into the insertion direction.
-  * **`SC_PORT_N`:** Centered on the optical port opening.
-  * **`Tool_frame`:** The Tool Center Point located between the custom Schunk fingertips.
+  * **`SFP_PORT_N`:** TODO: Define frame.
+  * **`SC_PORT_N`:** TODO: Define frame.
+  * **`SC_PLUG_N`:** TODO: Define frame.
+  * **`SFP_MODULE_N`:** TODO: Define frame.
 
 ## 4. YAML Configuration Structure
 
@@ -77,39 +80,36 @@ metadata:
 
 zones:
   zone_1:
-    nic_cards:
-      - id: "NIC_CARD_0"
-        rail: "NIC_CARD_0"
-        position: 0.02e  # Meters along rail
-        ports: ["SFP_PORT_0", "SFP_PORT_1"]
-      - id: "NIC_CARD_1"
-        rail: "NIC_CARD_1"
-        position: 0.150
+    - id: "NIC_CARD_0"
+      rail: "NIC_CARD_0"
+      position: 0.02  # Meters along rail
+      ports: ["SFP_PORT_0", "SFP_PORT_1"]
+    - id: "NIC_CARD_1"
+      rail: "NIC_CARD_1"
+      position: 0.035
         
   zone_2:
-    sc_ports:
-      - id: "SC_PORT_0"
-        rail: "SC_RAIL_0"
-        position: 0.050  # Randomized position along rail
-      - id: "SC_PORT_1"
-        rail: "SC_RAIL_1"
-        position: 0.080
+    - id: "SC_PORT_0"
+      rail: "SC_RAIL_0"
+      position: 0.05  # Randomized position along rail
+    - id: "SC_PORT_1"
+      rail: "SC_RAIL_1"
+      position: 0.03
 
   zone_3:
-    pick_locations:
-      - id: "SC_PLUG_0"
-        fixture_type: "SC_FIXTURE"
-        rail: "PICK_RAIL_0"
-        position: 0.020
-      - id: "SFP_MODULE_0"
-        fixture_type: "SFP_FIXTURE"
-        rail: "PICK_RAIL_1"
-        position: 0.045
+    - id: "SC_PORT_0"
+      rail: "PICK_RAIL_0"
+      position: 0.02
+    - id: "SFP_PORT_0"
+      rail: "PICK_RAIL_1"
+      position: 0.045
 
-# Global constraints for randomizer validation
-constraints:
-  nic_slide_limit: [0.0, 0.300]  # Total travel in meters
-  sc_rail_limit: [0.0, 0.450]
-  [cite_start]min_fixture_spacing: 0.035     # Safety buffer to prevent jitter/collisions [cite: 1045, 1046]
+  zone_4:
+    - id: "SC_PORT_1"
+      rail: "PICK_RAIL_3"
+      position: 0.04
+    - id: "SFP_PORT_1"
+      rail: "PICK_RAIL_5"
+      position: 0.045
 
 ```
