@@ -14,24 +14,34 @@ The task board provides a standardized physical interface for the manipulation o
 
 This zone represents the networking switch or server compute tray where data links are established.
 
+![AIC Task Board](./aic_board_zone_1.png)
+
 * **Rails:** Contains five mounting rails named `NIC_RAIL_0` through `NIC_RAIL_4`.
 * **Components:** Supports up to five dual-port network cards, named `NIC_CARD_0` through `NIC_CARD_4`.
 * **Ports:** Each card features two SFP ports named `SFP_PORT_0` and `SFP_PORT_1`.
 * **Mobility:** Cards are designed to slide along their respective rails to allow for randomized positional and orientation offsets during the challenge.
   * *TODO: Specify slide travel limits (e.g., +/- X mm).*
 
+![AIC Task Board](./aic_board_zone_1_legend.png)
+
 ### Zone 2: SC Optical Ports
 
 This zone emulates the optical patch panel or backplane of a server rack.
+
+![AIC Task Board](./aic_board_zone_2.png)
 
 * **Rails:** Features two parallel rails named `SC_RAIL_0` and `SC_RAIL_1`.
 * **Ports:** Supports up to five SC ports in total, named `SC_PORT_0` through `SC_PORT_4`.
 * **Mobility:** Ports are designed to be positioned on either rails, and slide along them to allow for randomized positional offsets during the challenge.
   * *TODO: Specify slide travel limits for rail positioning.*
 
+![AIC Task Board](./aic_board_zone_2_legend.png)
+
 ### Zone 3: Primary Pick Location
 
 Zone 3 serves as the organized supply area for components before they are routed and inserted.
+
+![AIC Task Board](./aic_board_zone_3.png)
 
 * **Rails:** Three mounting rails named `PICK_RAIL_0` through `PICK_RAIL_2`.
 * **Fixtures:** Holds "ports" (fixtures) for either SC plugs or SFP modules.
@@ -43,9 +53,14 @@ Zone 3 serves as the organized supply area for components before they are routed
 * **Customization:** Fixtures can be placed on any rail in any order, creating a high-mix environment.
   * *TODO: Specify minimum spacing between fixtures to prevent gripper collisions.*
 
+![AIC Task Board](./aic_board_zone_3_legend_1.png)
+![AIC Task Board](./aic_board_zone_3_legend_2.png)
+
 ### Zone 4: Secondary Pick Location
 
 Zone 4 is identical in function and layout to Zone 3, providing additional capacity for complex, high-density assembly tasks.
+
+![AIC Task Board](./aic_board_zone_4.png)
 
 * **Rails:** Named `PICK_RAIL_3` through `PICK_RAIL_5`.
 * **Configuration:** Mirroring Zone 3, this area holds the remaining SC plugs and SFP modules required for full assembly completion.
@@ -65,6 +80,9 @@ To ensure precision during dexterous manipulation and seamless sim-to-real trans
   * **`SC_PORT_N`:** TODO: Define frame.
   * **`SC_PLUG_N`:** TODO: Define frame.
   * **`SFP_MODULE_N`:** TODO: Define frame.
+
+![AIC Task Board](./aic_board_zone_4_legend_1.png)
+![AIC Task Board](./aic_board_zone_4_legend_2.png)
 
 ## 4. YAML Configuration Structure
 
