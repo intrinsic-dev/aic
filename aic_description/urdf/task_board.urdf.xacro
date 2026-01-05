@@ -16,179 +16,235 @@
   <xacro:arg name="pitch" default="0.0"/>
   <xacro:arg name="yaw" default="-3.141"/>
 
-  <!-- LC Mount 01 (left slot) - Base Y: -0.10625, Valid delta Y: -0.09625 to 0.09625 (absolute range: -0.2025 to -0.010) -->
-  <xacro:arg name="lc_mount_01_delta_x" default="0.0"/>
-  <xacro:arg name="lc_mount_01_delta_y" default="0.0"/>
-  <xacro:arg name="lc_mount_01_delta_z" default="0.0"/>
+  <!-- LC Mount Rail 0: X=0.0275, Y=-0.10625 (left side, mount rail). LC mounts can be translated [-0.09625, 0.09625] along Y axis (rail direction) -->
+  <xacro:arg name="lc_mount_rail_0_present" default="false"/>
+  <xacro:arg name="lc_mount_rail_0_translation" default="0.0"/>
+  <xacro:arg name="lc_mount_rail_0_roll" default="0.0"/>
+  <xacro:arg name="lc_mount_rail_0_pitch" default="0.0"/>
+  <xacro:arg name="lc_mount_rail_0_yaw" default="0.0"/>
 
-  <!-- SFP Mount 01 (left slot) - Base Y: -0.10625, Valid delta Y: -0.09625 to 0.09625 (absolute range: -0.2025 to -0.010) -->
-  <xacro:arg name="sfp_mount_01_delta_x" default="0.0"/>
-  <xacro:arg name="sfp_mount_01_delta_y" default="0.0"/>
-  <xacro:arg name="sfp_mount_01_delta_z" default="0.0"/>
+  <!-- SFP Mount Rail 0: X=0.0535, Y=-0.10625 (left side, mount rail). SFP mounts can be translated [-0.09625, 0.09625] along Y axis (rail direction) -->
+  <xacro:arg name="sfp_mount_rail_0_present" default="false"/>
+  <xacro:arg name="sfp_mount_rail_0_translation" default="0.0"/>
+  <xacro:arg name="sfp_mount_rail_0_roll" default="0.0"/>
+  <xacro:arg name="sfp_mount_rail_0_pitch" default="0.0"/>
+  <xacro:arg name="sfp_mount_rail_0_yaw" default="0.0"/>
 
-  <!-- SC Mount 01 (left slot) - Base Y: -0.10625, Valid delta Y: -0.09625 to 0.09625 (absolute range: -0.2025 to -0.010) -->
-  <xacro:arg name="sc_mount_01_delta_x" default="0.0"/>
-  <xacro:arg name="sc_mount_01_delta_y" default="0.0"/>
-  <xacro:arg name="sc_mount_01_delta_z" default="0.0"/>
+  <!-- SC Mount Rail 0: X=0.0985, Y=-0.10625 (left side, mount rail). SC mounts can be translated [-0.09625, 0.09625] along Y axis (rail direction) -->
+  <xacro:arg name="sc_mount_rail_0_present" default="false"/>
+  <xacro:arg name="sc_mount_rail_0_translation" default="0.0"/>
+  <xacro:arg name="sc_mount_rail_0_roll" default="0.0"/>
+  <xacro:arg name="sc_mount_rail_0_pitch" default="0.0"/>
+  <xacro:arg name="sc_mount_rail_0_yaw" default="0.0"/>
 
-  <!-- LC Mount 02 (right slot) - Base Y: 0.10625, Valid delta Y: -0.09625 to 0.09625 (absolute range: 0.010 to 0.2025) -->
-  <xacro:arg name="lc_mount_02_delta_x" default="0.0"/>
-  <xacro:arg name="lc_mount_02_delta_y" default="0.0"/>
-  <xacro:arg name="lc_mount_02_delta_z" default="0.0"/>
+  <!-- LC Mount Rail 1: X=0.0275, Y=0.10625 (right side, mount rail). LC mounts can be translated [-0.09625, 0.09625] along Y axis (rail direction) -->
+  <xacro:arg name="lc_mount_rail_1_present" default="false"/>
+  <xacro:arg name="lc_mount_rail_1_translation" default="0.0"/>
+  <xacro:arg name="lc_mount_rail_1_roll" default="0.0"/>
+  <xacro:arg name="lc_mount_rail_1_pitch" default="0.0"/>
+  <xacro:arg name="lc_mount_rail_1_yaw" default="0.0"/>
 
-  <!-- SFP Mount 02 (right slot) - Base Y: 0.10625, Valid delta Y: -0.09625 to 0.09625 (absolute range: 0.010 to 0.2025) -->
-  <xacro:arg name="sfp_mount_02_delta_x" default="0.0"/>
-  <xacro:arg name="sfp_mount_02_delta_y" default="0.0"/>
-  <xacro:arg name="sfp_mount_02_delta_z" default="0.0"/>
+  <!-- SFP Mount Rail 1: X=0.0535, Y=0.10625 (right side, mount rail). SFP mounts can be translated [-0.09625, 0.09625] along Y axis (rail direction) -->
+  <xacro:arg name="sfp_mount_rail_1_present" default="false"/>
+  <xacro:arg name="sfp_mount_rail_1_translation" default="0.0"/>
+  <xacro:arg name="sfp_mount_rail_1_roll" default="0.0"/>
+  <xacro:arg name="sfp_mount_rail_1_pitch" default="0.0"/>
+  <xacro:arg name="sfp_mount_rail_1_yaw" default="0.0"/>
 
-  <!-- SC Mount 02 (right slot) - Base Y: 0.10625, Valid delta Y: -0.09625 to 0.09625 (absolute range: 0.010 to 0.2025) -->
-  <xacro:arg name="sc_mount_02_delta_x" default="0.0"/>
-  <xacro:arg name="sc_mount_02_delta_y" default="0.0"/>
-  <xacro:arg name="sc_mount_02_delta_z" default="0.0"/>
+  <!-- SC Mount Rail 1: X=0.0985, Y=0.10625 (right side, mount rail). SC mounts can be translated [-0.09625, 0.09625] along Y axis (rail direction) -->
+  <xacro:arg name="sc_mount_rail_1_present" default="false"/>
+  <xacro:arg name="sc_mount_rail_1_translation" default="0.0"/>
+  <xacro:arg name="sc_mount_rail_1_roll" default="0.0"/>
+  <xacro:arg name="sc_mount_rail_1_pitch" default="0.0"/>
+  <xacro:arg name="sc_mount_rail_1_yaw" default="0.0"/>
 
-  <!-- SC Port 01 - Base X: -0.075, Valid delta X: -0.055 to 0.055 (absolute range: -0.130 to -0.020) -->
-  <xacro:arg name="sc_port_01_delta_x" default="0.0"/>
-  <xacro:arg name="sc_port_01_delta_y" default="0.0"/>
-  <xacro:arg name="sc_port_01_delta_z" default="0.0"/>
+  <!-- SC Port 0 -->
+  <xacro:arg name="sc_port_0_present" default="false"/>
+  <xacro:arg name="sc_port_0_translation" default="0.0"/>
+  <xacro:arg name="sc_port_0_roll" default="0.0"/>
+  <xacro:arg name="sc_port_0_pitch" default="0.0"/>
+  <xacro:arg name="sc_port_0_yaw" default="0.0"/>
 
-  <!-- SC Port 02 - Base X: -0.075, Valid delta X: -0.055 to 0.055 (absolute range: -0.130 to -0.020) -->
-  <xacro:arg name="sc_port_02_delta_x" default="0.0"/>
-  <xacro:arg name="sc_port_02_delta_y" default="0.0"/>
-  <xacro:arg name="sc_port_02_delta_z" default="0.0"/>
+  <!-- SC Port 1 -->
+  <xacro:arg name="sc_port_1_present" default="false"/>
+  <xacro:arg name="sc_port_1_translation" default="0.0"/>
+  <xacro:arg name="sc_port_1_roll" default="0.0"/>
+  <xacro:arg name="sc_port_1_pitch" default="0.0"/>
+  <xacro:arg name="sc_port_1_yaw" default="0.0"/>
 
-  <!-- NIC Card Mount 01 -->
-  <xacro:arg name="nic_card_mount_01_delta_x" default="0.0"/>
-  <xacro:arg name="nic_card_mount_01_delta_y" default="0.0"/>
-  <xacro:arg name="nic_card_mount_01_delta_z" default="0.0"/>
+  <!-- NIC Card Mount 0 -->
+  <xacro:arg name="nic_card_mount_0_present" default="false"/>
+  <xacro:arg name="nic_card_mount_0_translation" default="0.0"/>
+  <xacro:arg name="nic_card_mount_0_roll" default="0.0"/>
+  <xacro:arg name="nic_card_mount_0_pitch" default="0.0"/>
+  <xacro:arg name="nic_card_mount_0_yaw" default="0.0"/>
 
-  <!-- NIC Card Mount 02 -->
-  <xacro:arg name="nic_card_mount_02_delta_x" default="0.0"/>
-  <xacro:arg name="nic_card_mount_02_delta_y" default="0.0"/>
-  <xacro:arg name="nic_card_mount_02_delta_z" default="0.0"/>
+  <!-- NIC Card Mount 1 -->
+  <xacro:arg name="nic_card_mount_1_present" default="false"/>
+  <xacro:arg name="nic_card_mount_1_translation" default="0.0"/>
+  <xacro:arg name="nic_card_mount_1_roll" default="0.0"/>
+  <xacro:arg name="nic_card_mount_1_pitch" default="0.0"/>
+  <xacro:arg name="nic_card_mount_1_yaw" default="0.0"/>
 
-  <!-- NIC Card Mount 03 -->
-  <xacro:arg name="nic_card_mount_03_delta_x" default="0.0"/>
-  <xacro:arg name="nic_card_mount_03_delta_y" default="0.0"/>
-  <xacro:arg name="nic_card_mount_03_delta_z" default="0.0"/>
+  <!-- NIC Card Mount 2 -->
+  <xacro:arg name="nic_card_mount_2_present" default="false"/>
+  <xacro:arg name="nic_card_mount_2_translation" default="0.0"/>
+  <xacro:arg name="nic_card_mount_2_roll" default="0.0"/>
+  <xacro:arg name="nic_card_mount_2_pitch" default="0.0"/>
+  <xacro:arg name="nic_card_mount_2_yaw" default="0.0"/>
 
-  <!-- NIC Card Mount 04 -->
-  <xacro:arg name="nic_card_mount_04_delta_x" default="0.0"/>
-  <xacro:arg name="nic_card_mount_04_delta_y" default="0.0"/>
-  <xacro:arg name="nic_card_mount_04_delta_z" default="0.0"/>
+  <!-- NIC Card Mount 3 -->
+  <xacro:arg name="nic_card_mount_3_present" default="false"/>
+  <xacro:arg name="nic_card_mount_3_translation" default="0.0"/>
+  <xacro:arg name="nic_card_mount_3_roll" default="0.0"/>
+  <xacro:arg name="nic_card_mount_3_pitch" default="0.0"/>
+  <xacro:arg name="nic_card_mount_3_yaw" default="0.0"/>
 
-  <!-- NIC Card Mount 05 -->
-  <xacro:arg name="nic_card_mount_05_delta_x" default="0.0"/>
-  <xacro:arg name="nic_card_mount_05_delta_y" default="0.0"/>
-  <xacro:arg name="nic_card_mount_05_delta_z" default="0.0"/>
+  <!-- NIC Card Mount 4 -->
+  <xacro:arg name="nic_card_mount_4_present" default="false"/>
+  <xacro:arg name="nic_card_mount_4_translation" default="0.0"/>
+  <xacro:arg name="nic_card_mount_4_roll" default="0.0"/>
+  <xacro:arg name="nic_card_mount_4_pitch" default="0.0"/>
+  <xacro:arg name="nic_card_mount_4_yaw" default="0.0"/>
 
   <!-- Calculate absolute positions relative to task board base -->
   <!-- Task Board Base is at (0.25, 0, 1.14) relative to world in original SDF -->
+	<!-- NIC Card mounts are centered at the middle of the slot. Each mount can be translated [-0.048, 0.036] along X axis to adjust position within slot. -->
+	<!-- SC Ports are centered at the middle of the slot. Each port can be translated [-0.055, 0.055] along X axis to adjust position within slot. -->
   <!-- Components are positioned relative to base -->
 
   <!-- Instantiate Task Board Base -->
-  <xacro:task_board_base prefix="task_board_"/>  <!-- LC Mount 01 -->
-  <xacro:lc_mount prefix="lc_mount_01_"/>
-  <joint name="lc_mount_01_joint" type="fixed">
-    <parent link="task_board_base_link"/>
-    <child link="lc_mount_01_link"/>
-    <origin xyz="${0.0215 + $(arg lc_mount_01_delta_x)} ${-0.10625 + $(arg lc_mount_01_delta_y)} ${0.01 + $(arg lc_mount_01_delta_z)}" rpy="0 0 0"/>
-  </joint>
+  <xacro:task_board_base prefix="task_board_"/>
 
-  <!-- SFP Mount 01 -->
-  <xacro:sfp_mount prefix="sfp_mount_01_"/>
-  <joint name="sfp_mount_01_joint" type="fixed">
-    <parent link="task_board_base_link"/>
-    <child link="sfp_mount_01_link"/>
-    <origin xyz="${0.0535 + $(arg sfp_mount_01_delta_x)} ${-0.10625 + $(arg sfp_mount_01_delta_y)} ${0.01 + $(arg sfp_mount_01_delta_z)}" rpy="0 0 0"/>
-  </joint>
+  <!-- LC Mount Rail 0: X=0.0275, Y=-0.10625 (left side, mount rail) -->
+  <xacro:if value="$(arg lc_mount_rail_0_present)">
+    <xacro:lc_mount prefix="lc_mount_rail_0_"/>
+    <joint name="lc_mount_rail_0_joint" type="fixed">
+      <parent link="task_board_base_link"/>
+      <child link="lc_mount_rail_0_link"/>
+      <origin xyz="0.0275 ${-0.10625 + $(arg lc_mount_rail_0_translation)} 0.01" rpy="$(arg lc_mount_rail_0_roll) $(arg lc_mount_rail_0_pitch) $(arg lc_mount_rail_0_yaw)"/>
+    </joint>
+  </xacro:if>
 
-  <!-- SC Mount 01 -->
-  <xacro:sc_mount prefix="sc_mount_01_"/>
-  <joint name="sc_mount_01_joint" type="fixed">
-    <parent link="task_board_base_link"/>
-    <child link="sc_mount_01_link"/>
-    <origin xyz="${0.0985 + $(arg sc_mount_01_delta_x)} ${-0.10625 + $(arg sc_mount_01_delta_y)} ${0.01 + $(arg sc_mount_01_delta_z)}" rpy="0 0 0"/>
-  </joint>
+  <!-- SFP Mount Rail 0: X=0.0535, Y=-0.10625 (left side, mount rail) -->
+  <xacro:if value="$(arg sfp_mount_rail_0_present)">
+    <xacro:sfp_mount prefix="sfp_mount_rail_0_"/>
+    <joint name="sfp_mount_rail_0_joint" type="fixed">
+      <parent link="task_board_base_link"/>
+      <child link="sfp_mount_rail_0_link"/>
+      <origin xyz="0.0535 ${-0.10625 + $(arg sfp_mount_rail_0_translation)} 0.01" rpy="$(arg sfp_mount_rail_0_roll) $(arg sfp_mount_rail_0_pitch) $(arg sfp_mount_rail_0_yaw)"/>
+    </joint>
+  </xacro:if>
 
-  <!-- LC Mount 02 -->
-  <xacro:lc_mount prefix="lc_mount_02_"/>
-  <joint name="lc_mount_02_joint" type="fixed">
-    <parent link="task_board_base_link"/>
-    <child link="lc_mount_02_link"/>
-    <origin xyz="${0.0215 + $(arg lc_mount_02_delta_x)} ${0.10625 + $(arg lc_mount_02_delta_y)} ${0.01 + $(arg lc_mount_02_delta_z)}" rpy="0 0 0"/>
-  </joint>
+  <!-- SC Mount Rail 0: X=0.0985, Y=-0.10625 (left side, mount rail) -->
+  <xacro:if value="$(arg sc_mount_rail_0_present)">
+    <xacro:sc_mount prefix="sc_mount_rail_0_"/>
+    <joint name="sc_mount_rail_0_joint" type="fixed">
+      <parent link="task_board_base_link"/>
+      <child link="sc_mount_rail_0_link"/>
+      <origin xyz="0.0985 ${-0.10625 + $(arg sc_mount_rail_0_translation)} 0.01" rpy="$(arg sc_mount_rail_0_roll) $(arg sc_mount_rail_0_pitch) $(arg sc_mount_rail_0_yaw)"/>
+    </joint>
+  </xacro:if>
 
-  <!-- SFP Mount 02 -->
-  <xacro:sfp_mount prefix="sfp_mount_02_"/>
-  <joint name="sfp_mount_02_joint" type="fixed">
-    <parent link="task_board_base_link"/>
-    <child link="sfp_mount_02_link"/>
-    <origin xyz="${0.0535 + $(arg sfp_mount_02_delta_x)} ${0.10625 + $(arg sfp_mount_02_delta_y)} ${0.01 + $(arg sfp_mount_02_delta_z)}" rpy="0 0 0"/>
-  </joint>
+  <!-- LC Mount Rail 1: X=0.0275, Y=0.10625 (right side, mount rail) -->
+  <xacro:if value="$(arg lc_mount_rail_1_present)">
+    <xacro:lc_mount prefix="lc_mount_rail_1_"/>
+    <joint name="lc_mount_rail_1_joint" type="fixed">
+      <parent link="task_board_base_link"/>
+      <child link="lc_mount_rail_1_link"/>
+      <origin xyz="0.0275 ${0.10625 + $(arg lc_mount_rail_1_translation)} 0.01" rpy="$(arg lc_mount_rail_1_roll) $(arg lc_mount_rail_1_pitch) $(arg lc_mount_rail_1_yaw)"/>
+    </joint>
+  </xacro:if>
 
-  <!-- SC Mount 02 -->
-  <xacro:sc_mount prefix="sc_mount_02_"/>
-  <joint name="sc_mount_02_joint" type="fixed">
-    <parent link="task_board_base_link"/>
-    <child link="sc_mount_02_link"/>
-    <origin xyz="${0.0985 + $(arg sc_mount_02_delta_x)} ${0.10625 + $(arg sc_mount_02_delta_y)} ${0.01 + $(arg sc_mount_02_delta_z)}" rpy="0 0 0"/>
-  </joint>
+  <!-- SFP Mount Rail 1: X=0.0535, Y=0.10625 (right side, mount rail) -->
+  <xacro:if value="$(arg sfp_mount_rail_1_present)">
+    <xacro:sfp_mount prefix="sfp_mount_rail_1_"/>
+    <joint name="sfp_mount_rail_1_joint" type="fixed">
+      <parent link="task_board_base_link"/>
+      <child link="sfp_mount_rail_1_link"/>
+      <origin xyz="0.0535 ${0.10625 + $(arg sfp_mount_rail_1_translation)} 0.01" rpy="$(arg sfp_mount_rail_1_roll) $(arg sfp_mount_rail_1_pitch) $(arg sfp_mount_rail_1_yaw)"/>
+    </joint>
+  </xacro:if>
 
-  <!-- SC Port 01 -->
-  <xacro:sc_port prefix="sc_port_01_"/>
-  <joint name="sc_port_01_joint" type="fixed">
-    <parent link="task_board_base_link"/>
-    <child link="sc_port_01_link"/>
-    <origin xyz="${-0.075 + $(arg sc_port_01_delta_x)} ${0.0295 + $(arg sc_port_01_delta_y)} ${0.01 + $(arg sc_port_01_delta_z)}" rpy="1.57 0 1.57"/>
-  </joint>
+  <!-- SC Mount Rail 1: X=0.0985, Y=0.10625 (right side, mount rail) -->
+  <xacro:if value="$(arg sc_mount_rail_1_present)">
+    <xacro:sc_mount prefix="sc_mount_rail_1_"/>
+    <joint name="sc_mount_rail_1_joint" type="fixed">
+      <parent link="task_board_base_link"/>
+      <child link="sc_mount_rail_1_link"/>
+      <origin xyz="0.0985 ${0.10625 + $(arg sc_mount_rail_1_translation)} 0.01" rpy="$(arg sc_mount_rail_1_roll) $(arg sc_mount_rail_1_pitch) $(arg sc_mount_rail_1_yaw)"/>
+    </joint>
+  </xacro:if>
 
-  <!-- SC Port 02 -->
-  <xacro:sc_port prefix="sc_port_02_"/>
-  <joint name="sc_port_02_joint" type="fixed">
-    <parent link="task_board_base_link"/>
-    <child link="sc_port_02_link"/>
-    <origin xyz="${-0.075 + $(arg sc_port_02_delta_x)} ${0.0705 + $(arg sc_port_02_delta_y)} ${0.01 + $(arg sc_port_02_delta_z)}" rpy="1.57 0 1.57"/>
-  </joint>
+  <!-- SC Port 0 -->
+  <xacro:if value="$(arg sc_port_0_present)">
+    <xacro:sc_port prefix="sc_port_0_"/>
+    <joint name="sc_port_0_joint" type="fixed">
+      <parent link="task_board_base_link"/>
+      <child link="sc_port_0_link"/>
+      <origin xyz="${-0.075 + $(arg sc_port_0_translation)} 0.0295 0.0145" rpy="${1.57 + $(arg sc_port_0_roll)} $(arg sc_port_0_pitch) ${1.57 + $(arg sc_port_0_yaw)}"/>
+    </joint>
+  </xacro:if>
 
-  <!-- NIC Card Mount 01 -->
-  <xacro:nic_card_mount prefix="nic_card_mount_01_"/>
-  <joint name="nic_card_mount_01_joint" type="fixed">
-    <parent link="task_board_base_link"/>
-    <child link="nic_card_mount_01_link"/>
-    <origin xyz="${-0.081418 + $(arg nic_card_mount_01_delta_x)} ${-0.0145 + $(arg nic_card_mount_01_delta_y)} ${0.01 + $(arg nic_card_mount_01_delta_z)}" rpy="0 0 0"/>
-  </joint>
+  <!-- SC Port 1 -->
+  <xacro:if value="$(arg sc_port_1_present)">
+    <xacro:sc_port prefix="sc_port_1_"/>
+    <joint name="sc_port_1_joint" type="fixed">
+      <parent link="task_board_base_link"/>
+      <child link="sc_port_1_link"/>
+      <origin xyz="${-0.075 + $(arg sc_port_1_translation)} 0.0705 0.0145" rpy="${1.57 + $(arg sc_port_1_roll)} $(arg sc_port_1_pitch) ${1.57 + $(arg sc_port_1_yaw)}"/>
+    </joint>
+  </xacro:if>
 
-  <!-- NIC Card Mount 02 -->
-  <xacro:nic_card_mount prefix="nic_card_mount_02_"/>
-  <joint name="nic_card_mount_02_joint" type="fixed">
-    <parent link="task_board_base_link"/>
-    <child link="nic_card_mount_02_link"/>
-    <origin xyz="${-0.081418 + $(arg nic_card_mount_02_delta_x)} ${-0.0545 + $(arg nic_card_mount_02_delta_y)} ${0.01 + $(arg nic_card_mount_02_delta_z)}" rpy="0 0 0"/>
-  </joint>
+  <!-- NIC Card Mount 0 (left-most) -->
+  <xacro:if value="$(arg nic_card_mount_0_present)">
+    <xacro:nic_card_mount prefix="nic_card_mount_0_"/>
+    <joint name="nic_card_mount_0_joint" type="fixed">
+      <parent link="task_board_base_link"/>
+      <child link="nic_card_mount_0_link"/>
+      <origin xyz="${-0.081418 + $(arg nic_card_mount_0_translation)} -0.1745 0.01" rpy="$(arg nic_card_mount_0_roll) $(arg nic_card_mount_0_pitch) $(arg nic_card_mount_0_yaw)"/>
+    </joint>
+  </xacro:if>
 
-  <!-- NIC Card Mount 03 -->
-  <xacro:nic_card_mount prefix="nic_card_mount_03_"/>
-  <joint name="nic_card_mount_03_joint" type="fixed">
-    <parent link="task_board_base_link"/>
-    <child link="nic_card_mount_03_link"/>
-    <origin xyz="${-0.081418 + $(arg nic_card_mount_03_delta_x)} ${-0.0945 + $(arg nic_card_mount_03_delta_y)} ${0.01 + $(arg nic_card_mount_03_delta_z)}" rpy="0 0 0"/>
-  </joint>
+  <!-- NIC Card Mount 1 -->
+  <xacro:if value="$(arg nic_card_mount_1_present)">
+    <xacro:nic_card_mount prefix="nic_card_mount_1_"/>
+    <joint name="nic_card_mount_1_joint" type="fixed">
+      <parent link="task_board_base_link"/>
+      <child link="nic_card_mount_1_link"/>
+      <origin xyz="${-0.081418 + $(arg nic_card_mount_1_translation)} -0.1345 0.01" rpy="$(arg nic_card_mount_1_roll) $(arg nic_card_mount_1_pitch) $(arg nic_card_mount_1_yaw)"/>
+    </joint>
+  </xacro:if>
 
-  <!-- NIC Card Mount 04 -->
-  <xacro:nic_card_mount prefix="nic_card_mount_04_"/>
-  <joint name="nic_card_mount_04_joint" type="fixed">
-    <parent link="task_board_base_link"/>
-    <child link="nic_card_mount_04_link"/>
-    <origin xyz="${-0.081418 + $(arg nic_card_mount_04_delta_x)} ${-0.1345 + $(arg nic_card_mount_04_delta_y)} ${0.01 + $(arg nic_card_mount_04_delta_z)}" rpy="0 0 0"/>
-  </joint>
+  <!-- NIC Card Mount 2 (center) -->
+  <xacro:if value="$(arg nic_card_mount_2_present)">
+    <xacro:nic_card_mount prefix="nic_card_mount_2_"/>
+    <joint name="nic_card_mount_2_joint" type="fixed">
+      <parent link="task_board_base_link"/>
+      <child link="nic_card_mount_2_link"/>
+      <origin xyz="${-0.081418 + $(arg nic_card_mount_2_translation)} -0.0945 0.01" rpy="$(arg nic_card_mount_2_roll) $(arg nic_card_mount_2_pitch) $(arg nic_card_mount_2_yaw)"/>
+    </joint>
+  </xacro:if>
 
-  <!-- NIC Card Mount 05 -->
-  <xacro:nic_card_mount prefix="nic_card_mount_05_"/>
-  <joint name="nic_card_mount_05_joint" type="fixed">
-    <parent link="task_board_base_link"/>
-    <child link="nic_card_mount_05_link"/>
-    <origin xyz="${-0.081418 + $(arg nic_card_mount_05_delta_x)} ${-0.1745 + $(arg nic_card_mount_05_delta_y)} ${0.01 + $(arg nic_card_mount_05_delta_z)}" rpy="0 0 0"/>
-  </joint>
+  <!-- NIC Card Mount 3 -->
+  <xacro:if value="$(arg nic_card_mount_3_present)">
+    <xacro:nic_card_mount prefix="nic_card_mount_3_"/>
+    <joint name="nic_card_mount_3_joint" type="fixed">
+      <parent link="task_board_base_link"/>
+      <child link="nic_card_mount_3_link"/>
+      <origin xyz="${-0.081418 + $(arg nic_card_mount_3_translation)} -0.0545 0.01" rpy="$(arg nic_card_mount_3_roll) $(arg nic_card_mount_3_pitch) $(arg nic_card_mount_3_yaw)"/>
+    </joint>
+  </xacro:if>
+
+  <!-- NIC Card Mount 4 (right-most) -->
+  <xacro:if value="$(arg nic_card_mount_4_present)">
+    <xacro:nic_card_mount prefix="nic_card_mount_4_"/>
+    <joint name="nic_card_mount_4_joint" type="fixed">
+      <parent link="task_board_base_link"/>
+      <child link="nic_card_mount_4_link"/>
+      <origin xyz="${-0.081418 + $(arg nic_card_mount_4_translation)} -0.0145 0.01" rpy="$(arg nic_card_mount_4_roll) $(arg nic_card_mount_4_pitch) $(arg nic_card_mount_4_yaw)"/>
+    </joint>
+  </xacro:if>
 
   <gazebo>
     <static>true</static>

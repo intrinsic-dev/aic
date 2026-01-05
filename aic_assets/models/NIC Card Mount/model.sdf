@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 <sdf version="1.9">
   <model name="NIC Card Mount">
-  
+
     <link name="nic_card_mount_link">
       <visual name="nic_card_mount_visual">
         <geometry>
@@ -51,7 +51,7 @@
         </geometry>
       </collision>
     </link>
-    
+
     <link name="nic_card_link">
       <pose>0 -0.01785 0.0799 -1.57 0 0</pose>
       <inertial auto="true">
@@ -291,13 +291,29 @@
         </geometry>
       </collision>
     </link>
-    
+
     <joint name="card_joint" type="fixed">
       <parent>nic_card_mount_link</parent>
       <child>nic_card_link</child>
     </joint>
-    
+
+    <link name="sfp_port_0_link">
+      <pose relative_to="nic_card_link">0.01295 -0.031572 0.00501 4.69895 0 0</pose>
+    </link>
+
+    <joint name="sfp_port_0_joint" type="fixed">
+      <parent>nic_card_link</parent>
+      <child>sfp_port_0_link</child>
+    </joint>
+
+    <link name="sfp_port_1_link">
+      <pose relative_to="nic_card_link">-0.01025 -0.031572 0.00501 4.69895 0 0</pose>
+    </link>
+
+    <joint name="sfp_port_1_joint" type="fixed">
+      <parent>nic_card_link</parent>
+      <child>sfp_port_1_link</child>
+    </joint>
+
   </model>
 </sdf>
-
-

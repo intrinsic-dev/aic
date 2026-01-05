@@ -26,7 +26,28 @@
       <collision name="cube_collider_box_001">
         <origin xyz="0.0 0.0 0.004225" rpy="0.0 0.0 0.0"/>
         <geometry>
-          <box size="0.025781 0.027432 0.00085"/>
+          <box size="0.025781 0.0108 0.00085"/>
+        </geometry>
+      </collision>
+
+      <collision name="cube_collider_box_mid">
+        <origin xyz="0.0 0.0 0.004225" rpy="0.0 0.0 0.0"/>
+        <geometry>
+          <box size="0.0103 0.027432 0.00085"/>
+        </geometry>
+      </collision>
+
+      <collision name="cube_collider_box_mid02">
+        <origin xyz="0.01 0.0 0.004225" rpy="0.0 0.0 0.0"/>
+        <geometry>
+          <box size="0.005 0.027432 0.00085"/>
+        </geometry>
+      </collision>
+
+      <collision name="cube_collider_box_mid03">
+        <origin xyz="-0.01 0.0 0.004225" rpy="0.0 0.0 0.0"/>
+        <geometry>
+          <box size="0.005 0.027432 0.00085"/>
         </geometry>
       </collision>
 
@@ -65,12 +86,6 @@
         </geometry>
       </collision>
 
-      <collision name="foa_005a_3d_collider_box">
-        <origin xyz="0.0 0.0 0.0" rpy="3.141593 0.0 0.0"/>
-        <geometry>
-          <box size="0.025 0.002946 0.009"/>
-        </geometry>
-      </collision>
     </link>
   </xacro:macro>
 

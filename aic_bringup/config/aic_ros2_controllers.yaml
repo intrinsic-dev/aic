@@ -300,13 +300,13 @@ aic_controller:
         - 1.0 # y
         - 1.0 # z
       min_translational_velocity:
-        - -0.5 # x
-        - -0.5 # y
-        - -0.5 # z
+        - -0.25 # x
+        - -0.25 # y
+        - -0.25 # z
       max_translational_velocity:
-        - 0.5 # x
-        - 0.5 # y
-        - 0.5 # z
+        - 0.25 # x
+        - 0.25 # y
+        - 0.25 # z
       min_rotation_angle:
         - -3.14159 # x
         - -3.14159 # y
@@ -315,7 +315,7 @@ aic_controller:
         - 3.14159 # x
         - 3.14159 # y
         - 3.14159 # z
-      max_rotational_velocity: 3.14159 # [rad/s]
+      max_rotational_velocity: 2.0 # [rad/s]
 
     control_frequency: 500.0 # [Hz]
 
