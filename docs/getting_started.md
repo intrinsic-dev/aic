@@ -16,7 +16,7 @@ This is your development workspace. It is designed to package the `aic_model` pa
 * **Development:** You will implement your solution within this container.
 * **Submission:** Once your solution is ready, you will build this container image and upload it via our **Submission Portal**.
 
-> **Note:** Detailed build and run instructions for these containers can be found in the **TODO** directory of the repository.
+> **Note:** Detailed build and run instructions for these containers can be found in the [docker/aic_eval](../docker/aic_eval/README.md) and [docker/aic_model](../docker/aic_model/README.md) directory of the repository.
 
 **TODO**
 
@@ -54,6 +54,9 @@ GZ_BUILD_FROM_SOURCE=1 colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release --sy
 ```
 
 ### Launch
+
+> [!NOTE]
+> For detailed information about all available launch files and their configurable parameters, see the [aic_bringup README](../aic_bringup/README.md).
 
 > [!NOTE]
 > We rely on [rmw_zenoh](https://github.com/ros2/rmw_zenoh) as the ROS 2 middleware for this application. Please ensure the `RMW_IMPLEMENTATION` environment variable is set to `rmw_zenoh_cpp` in all terminals.
