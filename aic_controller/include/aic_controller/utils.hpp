@@ -41,7 +41,8 @@ namespace utils {
  * This is the inverse of the 'exp_map_quaternion' function
  *
  * @param quaternion A quaternion of unit length
- * @return Eigen::Vector3d Corresponding vector in the tangent space of SU(2)
+ * @return Eigen::Vector3d Corresponding rotation vector in the tangent space of
+ * SU(2)
  */
 Eigen::Vector3d log_map_quaternion(const Eigen::Quaterniond& q);
 
@@ -81,6 +82,12 @@ Eigen::Quaterniond exp_map_quaternion(const Eigen::Vector3d& delta);
 CartesianState integrate_pose(const CartesianState& pose,
                               const double& control_frequency);
 
+/**
+ * @brief Converts a Wrench message to a Eigen 6x1 Matrix type
+ *
+ * @param wrench_msg The ROS Wrench mesage to convert
+ * @param wrench_eigen The converted 6x1 Eigen Matrix.
+ */
 void wrenchMsgToEigen(const geometry_msgs::msg::Wrench& wrench_msg,
                       Eigen::Matrix<double, 6, 1>& wrench_eigen);
 

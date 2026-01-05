@@ -31,49 +31,14 @@ void reset_motion_update_msg(aic_controller::MotionUpdate& msg) {
 //==============================================================================
 namespace aic_controller {
 
-// todo(johntgz) remove after debugging
-
-//  Function to stream Isometry in a readable format: "P: [x,y,z] R: [w, x,y,z]"
-void streamIsometry(std::ostream& os, const Eigen::Isometry3d& iso) {
-  const Eigen::Vector3d& t = iso.translation();
-  const Eigen::Quaterniond q(
-      iso.rotation());  // Convert rotation part to quaternion
-
-  os << std::fixed << std::setprecision(3) << "Translation [" << t.x() << ", "
-     << t.y() << ", " << t.z() << "] "
-     << "Rotation (x,y,z,w) [" << q.x() << ", " << q.y() << ", " << q.z()
-     << ", " << q.w() << "]\n";
-}
-
-// Returns a string like: "[1.000, 2.000, 3.000]"
-std::string vecToString(const Eigen::VectorXd& vec) {
-  std::stringstream ss;
-  // Precision: 3, Flags: 0, CoeffSeparator: ", ", RowSeparator: " ", RowPrefix:
-  // "[", RowSuffix: "]"
-  static const Eigen::IOFormat CleanFmt(3, 0, ", ", " ", "[", "]");
-
-  // .transpose() is critical here to print it horizontally rather than
-  // vertically
-  ss << vec.transpose().format(CleanFmt);
-  return ss.str();
-}
-
-void print6x6Matrix(const Eigen::Matrix<double, 6, 6>& mat) {
-  // Precision: 4, Flags: 0, CoeffSep: ", ", RowSep: "\n", RowPre: "[", RowSuf:
-  // "]"
-  static const Eigen::IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
-
-  std::cerr << mat.format(CleanFmt) << std::endl;
-}
-
 //==============================================================================
 Controller::Controller()
     : param_listener_(nullptr),
       num_joints_(0),
       control_mode_(ControlMode::Invalid),
       cartesian_impedance_action_(nullptr),
-      feedforward_wrench_at_tip_(Eigen::Matrix<double, 6, 1>::Zero()),
-      wrench_at_tip_(Eigen::Matrix<double, 6, 1>::Zero()),
+      feedforward_wrench_(Eigen::Matrix<double, 6, 1>::Zero()),
+      current_wrench_(Eigen::Matrix<double, 6, 1>::Zero()),
       motion_update_sub_(nullptr),
       motion_update_received_(false),
       last_commanded_state_(std::nullopt),
@@ -234,7 +199,31 @@ controller_interface::CallbackReturn Controller::on_configure(
     return controller_interface::CallbackReturn::ERROR;
   }
 
-  // todo(johntgz) Validate impedance control parameters
+  urdf::Model urdf_model;
+  if (!urdf_model.initString(this->get_robot_description())) {
+    RCLCPP_ERROR(get_node()->get_logger(),
+                 "Failed to parse URDF from robot_description string");
+    return controller_interface::CallbackReturn::ERROR;
+  }
+
+  // Initialize joint limits
+  joint_limits_.resize(num_joints_);
+  for (std::size_t i = 0; i < num_joints_; ++i) {
+    auto urdf_joint = urdf_model.getJoint(params_.joints[i]);
+    if (!urdf_joint) {
+      RCLCPP_ERROR(get_node()->get_logger(), "Joint %s not found in the URDF",
+                   params_.joints[i].c_str());
+      return controller_interface::CallbackReturn::ERROR;
+    }
+    if (!joint_limits::getJointLimits(urdf_joint, joint_limits_[i])) {
+      RCLCPP_ERROR(get_node()->get_logger(),
+                   "Unable to get joint limit for joint %s",
+                   params_.joints[i].c_str());
+      return controller_interface::CallbackReturn::ERROR;
+    }
+  }
+
+  // Validate impedance control parameters
   for (const double& gain : params_.impedance.pose_error_integrator.gain) {
     if (gain < 0.0) {
       RCLCPP_ERROR(get_node()->get_logger(),
@@ -254,33 +243,49 @@ controller_interface::CallbackReturn Controller::on_configure(
     }
   }
 
+  // Populate impedance control parameters
   CartesianImpedanceParameters resized_impedance_params(num_joints_);
   impedance_params_ = resized_impedance_params;
 
-  urdf::Model urdf_model;
-  if (!urdf_model.initString(this->get_robot_description())) {
-    RCLCPP_ERROR(get_node()->get_logger(),
-                 "Failed to parse URDF from robot_description string");
-    return controller_interface::CallbackReturn::ERROR;
-  }
+  impedance_params_.nullspace_goal = Eigen::Map<const Eigen::VectorXd>(
+      params_.impedance.nullspace.target_configuration.data(),
+      static_cast<Eigen::Index>(num_joints_));
+  impedance_params_.nullspace_stiffness = Eigen::Map<const Eigen::VectorXd>(
+      params_.impedance.nullspace.stiffness.data(),
+      static_cast<Eigen::Index>(num_joints_));
+  impedance_params_.nullspace_damping = Eigen::Map<const Eigen::VectorXd>(
+      params_.impedance.nullspace.damping.data(),
+      static_cast<Eigen::Index>(num_joints_));
 
-  joint_limits_.resize(num_joints_);
+  // Update torque limits
   for (std::size_t i = 0; i < num_joints_; ++i) {
-    auto urdf_joint = urdf_model.getJoint(params_.joints[i]);
-    if (!urdf_joint) {
-      RCLCPP_ERROR(get_node()->get_logger(), "Joint %s not found in the URDF",
-                   params_.joints[i].c_str());
-      return controller_interface::CallbackReturn::ERROR;
-    }
-    if (!joint_limits::getJointLimits(urdf_joint, joint_limits_[i])) {
-      RCLCPP_ERROR(get_node()->get_logger(),
-                   "Unable to get joint limit for joint %s",
-                   params_.joints[i].c_str());
-      return controller_interface::CallbackReturn::ERROR;
-    }
+    impedance_params_.joint_torque_limits(i) = joint_limits_[i].max_effort;
   }
 
-  if (!cartesian_impedance_action_->Configure(
+  impedance_params_.activation_percentage =
+      params_.impedance.activation_percentage;
+  impedance_params_.maximum_wrench =
+      Eigen::Map<const Eigen::Matrix<double, 6, 1>>(
+          params_.impedance.maximum_wrench.data());
+
+  impedance_params_.feedforward_interpolation_wrench_min =
+      Eigen::Map<const Eigen::Matrix<double, 6, 1>>(
+          params_.impedance.feedforward_interpolation.min_wrench.data());
+  impedance_params_.feedforward_interpolation_wrench_max =
+      Eigen::Map<const Eigen::Matrix<double, 6, 1>>(
+          params_.impedance.feedforward_interpolation.max_wrench.data());
+  impedance_params_.feedforward_interpolation_max_wrench_dot =
+      Eigen::Map<const Eigen::Matrix<double, 6, 1>>(
+          params_.impedance.feedforward_interpolation.max_wrench_dot.data());
+
+  impedance_params_.pose_error_integrator_gain =
+      Eigen::Map<const Eigen::Matrix<double, 6, 1>>(
+          params_.impedance.pose_error_integrator.gain.data());
+  impedance_params_.pose_error_integrator_bound =
+      Eigen::Map<const Eigen::Matrix<double, 6, 1>>(
+          params_.impedance.pose_error_integrator.bound.data());
+
+  if (!cartesian_impedance_action_->configure(
           joint_limits_, get_node()->get_node_logging_interface(),
           get_node()->get_node_clock_interface())) {
     return controller_interface::CallbackReturn::ERROR;
@@ -342,19 +347,22 @@ controller_interface::CallbackReturn Controller::on_activate(
 
   dq_filtered_.setZero();
 
-  k_gains_(0) = 100.0;
-  k_gains_(1) = 100.0;
-  k_gains_(2) = 100.0;
-  k_gains_(3) = 100.0;
-  k_gains_(4) = 100.0;
-  k_gains_(5) = 100.0;
+  const double k_gain = 100.0;
+  const double d_gain = 25.0;
 
-  d_gains_(0) = 5.0;
-  d_gains_(1) = 5.0;
-  d_gains_(2) = 5.0;
-  d_gains_(3) = 3.0;
-  d_gains_(4) = 3.0;
-  d_gains_(5) = 3.0;
+  k_gains_(0) = k_gain;
+  k_gains_(1) = k_gain;
+  k_gains_(2) = k_gain;
+  k_gains_(3) = k_gain;
+  k_gains_(4) = k_gain;
+  k_gains_(5) = k_gain;
+
+  d_gains_(0) = d_gain;
+  d_gains_(1) = d_gain;
+  d_gains_(2) = d_gain;
+  d_gains_(3) = d_gain;
+  d_gains_(4) = d_gain;
+  d_gains_(5) = d_gain;
 
   populate_controller_state(state_msg_);
 
@@ -413,6 +421,18 @@ controller_interface::return_type Controller::update(
     return controller_interface::return_type::ERROR;
   }
 
+  // Retrieve the cartesian velocity of the tool frame
+  std::vector<double> cartesian_velocity(6);
+  if (!kinematics_->convert_joint_deltas_to_cartesian_deltas(
+          current_state_.positions, current_state_.velocities,
+          params_.kinematics.tip, cartesian_velocity)) {
+    RCLCPP_ERROR(get_node()->get_logger(),
+                 "Unable to compute current cartesian velocity of tool frame");
+    return controller_interface::return_type::ERROR;
+  }
+  current_tool_state_.velocity =
+      Eigen::Map<const Eigen::Matrix<double, 6, 1>>(cartesian_velocity.data());
+
   // read user commands
   if (motion_update_received_) {
     auto command_op = motion_update_rt_.try_get();
@@ -424,8 +444,9 @@ controller_interface::return_type Controller::update(
 
       // If target values or time_to_target_seconds is unchanged, then we keep
       // the current remaining_time_to_target_seconds_ such that the current
-      // spline continues to the target.This is only applicable in pure position
-      // trajectory generation mode with non-zero time_to_target_seconds.
+      // spline continues to the target.This is only applicable in pure
+      // position trajectory generation mode with non-zero
+      // time_to_target_seconds.
       bool did_target_or_time_to_target_change =
           motion_update_.time_to_target_seconds != time_to_target_seconds_ ||
           !latest_target_state.pose.isApprox(target_state_.value().pose) ||
@@ -450,8 +471,7 @@ controller_interface::return_type Controller::update(
       target_state_ = latest_target_state;
     }
   } else {
-    // todo(johntgz) remove after debug
-    // hold the position
+    // todo(johntgz) refactor to hold the starting position
     Eigen::Matrix<double, 6, 1> q =
         Eigen::Map<const Eigen::Matrix<double, 6, 1>>(
             current_state_.positions.data());
@@ -524,171 +544,30 @@ controller_interface::return_type Controller::update(
   // Compute controls
   JointTrajectoryPoint new_joint_reference;
   if (control_mode_ == ControlMode::Impedance) {
-    // UNIMPLEMENTED
+    interpolate_impedance_parameters();
 
-    //=============
-    // Interpolate impedance parameters
-    //=============
-
-    // todo(johntgz) Here, we replace task_settings_ with params_
-    // How should we encapsulate stiffness_matrix_, damping_matrix_ and
-    // mass_matrix_ neatly to show that it is purely for impedance control?
-
-    // Follows the equation: S_(n+1) = (1-c) * S_n + c * S_target
-    // where n+1 is the next control iteration
-
-    impedance_params_.stiffness_matrix *=
-        1. - params_.impedance.stiffness_smoothing_constant;
-    impedance_params_.stiffness_matrix +=
-        params_.impedance.stiffness_smoothing_constant *
-        Eigen::Map<const Eigen::Matrix<double, 6, 6, Eigen::RowMajor>>(
-            motion_update_.target_stiffness.data());
-
-    impedance_params_.damping_matrix *=
-        1. - params_.impedance.damping_smoothing_constant;
-    impedance_params_.damping_matrix +=
-        params_.impedance.damping_smoothing_constant *
-        Eigen::Map<const Eigen::Matrix<double, 6, 6, Eigen::RowMajor>>(
-            motion_update_.target_damping.data());
-
-    impedance_params_.mass_matrix *=
-        1. - params_.impedance.mass_smoothing_constant;
-    impedance_params_.mass_matrix +=
-        params_.impedance.mass_smoothing_constant *
-        Eigen::Map<const Eigen::Matrix<double, 6, 6, Eigen::RowMajor>>(
-            motion_update_.target_mass.data());
-
-    //=============
-    // Interpolate feed-forward wrench
-    //=============
-    Eigen::Matrix<double, 6, 1> min_wrench =
-        Eigen::Map<const Eigen::Matrix<double, 6, 1>>(
-            params_.impedance.feedforward_wrench_interpolation.min_wrench
-                .data());
-    Eigen::Matrix<double, 6, 1> max_wrench =
-        Eigen::Map<const Eigen::Matrix<double, 6, 1>>(
-            params_.impedance.feedforward_wrench_interpolation.max_wrench
-                .data());
-    Eigen::Matrix<double, 6, 1> max_wrench_dot =
-        Eigen::Map<const Eigen::Matrix<double, 6, 1>>(
-            params_.impedance.feedforward_wrench_interpolation.max_wrench_dot
-                .data());
-
-    // todo(johntgz) target_wrench should be updated when motion_update_ is
-    // received
-    Eigen::Matrix<double, 6, 1> target_wrench;
-    // todo(johntgz) Replace with function to convert from Wrench to
-    // Eigen::Matrix6d (if it exists)
-    utils::wrenchMsgToEigen(motion_update_.feedforward_wrench_at_tip,
-                            target_wrench);
-
-    // Clamp target wrench
-    const Eigen::Matrix<double, 6, 1> clamped_target_wrench =
-        target_wrench.cwiseMin(max_wrench).cwiseMax(min_wrench);
-
-    // Interpolate from current wrench to clamped_target_wrench
-    // todo(johntgz) can we simply modify feedforward_wrench_at_tip_ in place?
-    Eigen::Matrix<double, 6, 1> next_wrench = feedforward_wrench_at_tip_;
-    for (int i = 0; i < 6; ++i) {
-      if (clamped_target_wrench(i) > feedforward_wrench_at_tip_(i)) {
-        next_wrench(i) =
-            feedforward_wrench_at_tip_(i) +
-            (max_wrench_dot(i) * (1.0 / params_.control_frequency));
-        next_wrench(i) = std::min(clamped_target_wrench(i), next_wrench(i));
-      } else if (clamped_target_wrench(i) < feedforward_wrench_at_tip_(i)) {
-        next_wrench(i) =
-            feedforward_wrench_at_tip_(i) -
-            (max_wrench_dot(i) * (1.0 / params_.control_frequency));
-        next_wrench(i) = std::max(clamped_target_wrench(i), next_wrench(i));
-      } else {
-        next_wrench(i) = feedforward_wrench_at_tip_(i);
-      }
-    }
-    feedforward_wrench_at_tip_ = next_wrench;
-
-    //=============
-    // Populate cartesian impedance parameters
-    //=============
-
-    // todo(johntgz) Some of these can be moved to on_configure() method
-    impedance_params_.nullspace_goal = Eigen::Map<const Eigen::VectorXd>(
-        params_.impedance.nullspace.target_configuration.data(),
-        static_cast<Eigen::Index>(num_joints_));
-    impedance_params_.nullspace_stiffness = Eigen::Map<const Eigen::VectorXd>(
-        params_.impedance.nullspace.stiffness.data(),
-        static_cast<Eigen::Index>(num_joints_));
-    impedance_params_.nullspace_damping = Eigen::Map<const Eigen::VectorXd>(
-        params_.impedance.nullspace.damping.data(),
-        static_cast<Eigen::Index>(num_joints_));
-
-    // Update torque limits
-    for (std::size_t i = 0; i < num_joints_; ++i) {
-      impedance_params_.joint_torque_limits(i) = joint_limits_[i].max_effort;
-    }
-
-    impedance_params_.activation_percentage =
-        params_.impedance.activation_percentage;
-    impedance_params_.maximum_wrench =
-        Eigen::Map<const Eigen::Matrix<double, 6, 1>>(
-            params_.impedance.maximum_wrench.data());
-
-    // Force control via feedforward_wrench and wrench_feedback_gains.
-    // todo(johntgz) wrench_feedback_gains_at_tip should be updated when
-    // motion_update_ is received
-    Eigen::Matrix<double, 6, 1> wrench_feedback_gains_at_tip;
-    utils::wrenchMsgToEigen(motion_update_.wrench_feedback_gains_at_tip,
-                            wrench_feedback_gains_at_tip);
-    // todo(johntgz) wrench_at_tip_ is zero, remove it?
-    Eigen::Matrix<double, 6, 1> total_wrench_at_tip =
-        feedforward_wrench_at_tip_ +
-        wrench_feedback_gains_at_tip.cwiseProduct(feedforward_wrench_at_tip_ -
-                                                  wrench_at_tip_);
-
-    // Rotate wrench at tool tip into base frame.
-    impedance_params_.feedforward_wrench.head<3>() =
-        current_tool_state_.pose.rotation() * total_wrench_at_tip.head<3>();
-    impedance_params_.feedforward_wrench.tail<3>() =
-        current_tool_state_.pose.rotation() * total_wrench_at_tip.tail<3>();
-
-    // Integral control parameters
-    // todo(johntgz) explore if this should be updated on each control cycle
-    // via MotionUpdate
-    impedance_params_.pose_error_integrator_gain =
-        Eigen::Map<const Eigen::Matrix<double, 6, 1>>(
-            params_.impedance.pose_error_integrator.gain.data());
-    impedance_params_.pose_error_integrator_bound =
-        Eigen::Map<const Eigen::Matrix<double, 6, 1>>(
-            params_.impedance.pose_error_integrator.bound.data());
-
-    //=============
-    // Compute control torques
-    //=============
-    // todo(johntgz) maybe encapsulate the following subroutine into a method
-
-    //  Calculate tool pose and velocity error
-    Eigen::Matrix<double, 7, 1> current_tool_frame, target_tool_frame;
-    current_tool_frame.head<3>() = current_tool_state_.pose.translation();
-    current_tool_frame.tail<4>() =
-        current_tool_state_.get_pose_quaternion().coeffs();
-    target_tool_frame.head<3>() = target_state_.value().pose.translation();
-    target_tool_frame.tail<4>() =
-        target_state_.value().get_pose_quaternion().coeffs();
-
+    // Compute the tool pose and velocity error between the current and
+    // target tool state.
+    Eigen::Matrix<double, 7, 1> current_pose_vec =
+        current_tool_state_.get_pose_vector();
+    Eigen::Matrix<double, 7, 1> target_pose_vec =
+        new_tool_reference.get_pose_vector();
     Eigen::Matrix<double, 6, 1> tool_pose_error;
     if (!kinematics_->calculate_frame_difference(
-            current_tool_frame, target_tool_frame, 1.0, tool_pose_error)) {
+            current_pose_vec, target_pose_vec, 1.0, tool_pose_error)) {
       RCLCPP_ERROR(get_node()->get_logger(),
-                   "Failed to calculate tool_pose_error");
+                   "Failed to calculate frame difference between current and "
+                   "target tool frame");
       return controller_interface::return_type::ERROR;
     }
+    last_tool_pose_error_ = tool_pose_error;
     Eigen::Matrix<double, 6, 1> tool_vel_error =
-        current_tool_state_.velocity - target_state_.value().velocity;
+        new_tool_reference.velocity - current_tool_state_.velocity;
 
-    // Calculate jacobian
+    // Calculate the current Jacobian.
     Eigen::VectorXd current_joint_positions = Eigen::Map<const Eigen::VectorXd>(
         current_state_.positions.data(),
         static_cast<Eigen::Index>(current_state_.positions.size()));
-
     Eigen::Matrix<double, 6, Eigen::Dynamic> jacobian;
     jacobian.resize(6, num_joints_);
     if (!kinematics_->calculate_jacobian(current_joint_positions,
@@ -697,7 +576,7 @@ controller_interface::return_type Controller::update(
       return controller_interface::return_type::ERROR;
     }
 
-    if (!cartesian_impedance_action_->Compute(
+    if (!cartesian_impedance_action_->compute(
             tool_pose_error, tool_vel_error, current_state_, jacobian,
             impedance_params_, new_joint_reference)) {
       // todo(johntgz) should we throw an error here or set the previous
@@ -864,6 +743,8 @@ void Controller::populate_controller_state(ControllerState& controller_state) {
 
   controller_state.tcp_pose = tf2::toMsg(last_tool_reference_.pose);
   controller_state.tcp_velocity = tf2::toMsg(last_tool_reference_.velocity);
+
+  controller_state.tcp_error = tf2::toMsg(last_tool_pose_error_);
 
   if (last_commanded_state_.has_value()) {
     controller_state.joint_state = last_commanded_state_.value();
@@ -1159,6 +1040,80 @@ bool Controller::update_reference_linear_interpolation(
   }
 
   return true;
+}
+
+void Controller::interpolate_impedance_parameters() {
+  // We use exponential smoothing to interpolate the stiffness, damping and mass
+  // matrices with the equation:
+  //
+  //   S_(n+1) = (1-c) * S_n + c * S_target
+  //
+  // where n+1 is the next control iteration
+  impedance_params_.stiffness_matrix *=
+      1. - params_.impedance.stiffness_smoothing_constant;
+  impedance_params_.stiffness_matrix +=
+      params_.impedance.stiffness_smoothing_constant *
+      Eigen::Map<const Eigen::Matrix<double, 6, 6, Eigen::RowMajor>>(
+          motion_update_.target_stiffness.data());
+
+  impedance_params_.damping_matrix *=
+      1. - params_.impedance.damping_smoothing_constant;
+  impedance_params_.damping_matrix +=
+      params_.impedance.damping_smoothing_constant *
+      Eigen::Map<const Eigen::Matrix<double, 6, 6, Eigen::RowMajor>>(
+          motion_update_.target_damping.data());
+
+  impedance_params_.mass_matrix *=
+      1. - params_.impedance.mass_smoothing_constant;
+  impedance_params_.mass_matrix +=
+      params_.impedance.mass_smoothing_constant *
+      Eigen::Map<const Eigen::Matrix<double, 6, 6, Eigen::RowMajor>>(
+          motion_update_.target_mass.data());
+
+  // Clamp feedforward target wrench to limits
+  Eigen::Matrix<double, 6, 1> target_wrench;
+  utils::wrenchMsgToEigen(motion_update_.feedforward_wrench_at_tip,
+                          target_wrench);
+  const Eigen::Matrix<double, 6, 1> clamped_target_wrench =
+      target_wrench
+          .cwiseMin(impedance_params_.feedforward_interpolation_wrench_max)
+          .cwiseMax(impedance_params_.feedforward_interpolation_wrench_min);
+
+  // Interpolate from current wrench to clamped_target_wrench
+  Eigen::Matrix<double, 6, 1> next_wrench = feedforward_wrench_;
+  for (int i = 0; i < 6; ++i) {
+    if (clamped_target_wrench(i) > feedforward_wrench_(i)) {
+      next_wrench(i) =
+          feedforward_wrench_(i) +
+          (impedance_params_.feedforward_interpolation_max_wrench_dot(i) *
+           (1.0 / params_.control_frequency));
+      next_wrench(i) = std::min(clamped_target_wrench(i), next_wrench(i));
+    } else if (clamped_target_wrench(i) < feedforward_wrench_(i)) {
+      next_wrench(i) =
+          feedforward_wrench_(i) -
+          (impedance_params_.feedforward_interpolation_max_wrench_dot(i) *
+           (1.0 / params_.control_frequency));
+      next_wrench(i) = std::max(clamped_target_wrench(i), next_wrench(i));
+    } else {
+      next_wrench(i) = feedforward_wrench_(i);
+    }
+  }
+  feedforward_wrench_ = next_wrench;
+
+  // Compute the total wrench at the tool tip
+  // Force control via feedforward_wrench and wrench_feedback_gains.
+  Eigen::Matrix<double, 6, 1> wrench_feedback_gains_at_tip;
+  utils::wrenchMsgToEigen(motion_update_.wrench_feedback_gains_at_tip,
+                          wrench_feedback_gains_at_tip);
+  Eigen::Matrix<double, 6, 1> total_wrench_at_tip =
+      feedforward_wrench_ + wrench_feedback_gains_at_tip.cwiseProduct(
+                                feedforward_wrench_ - current_wrench_);
+
+  // Rotate wrench at tool tip into base frame.
+  impedance_params_.feedforward_wrench.head<3>() =
+      current_tool_state_.pose.rotation() * total_wrench_at_tip.head<3>();
+  impedance_params_.feedforward_wrench.tail<3>() =
+      current_tool_state_.pose.rotation() * total_wrench_at_tip.tail<3>();
 }
 
 }  // namespace aic_controller

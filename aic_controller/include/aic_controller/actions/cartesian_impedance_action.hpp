@@ -52,8 +52,11 @@ struct CartesianImpedanceParameters {
   Eigen::Matrix<double, 6, 1> pose_error_integrator_gain;
   Eigen::Matrix<double, 6, 1> pose_error_integrator_bound;
   Eigen::VectorXd joint_torque_limits;
-  Eigen::Matrix<double, 6, 1> feedforward_wrench;
   Eigen::Matrix<double, 6, 1> maximum_wrench;
+  Eigen::Matrix<double, 6, 1> feedforward_wrench;
+  Eigen::Matrix<double, 6, 1> feedforward_interpolation_wrench_min;
+  Eigen::Matrix<double, 6, 1> feedforward_interpolation_wrench_max;
+  Eigen::Matrix<double, 6, 1> feedforward_interpolation_max_wrench_dot;
   // The activation_percentage specifies the percentage (0,1) of the range in
   // which the activation potential is active.
   // It is used as follows:
@@ -64,16 +67,17 @@ struct CartesianImpedanceParameters {
   // the whole range of joint positions.
   double activation_percentage;
 
-  // todo(johntgz) do we need default constructor?
   CartesianImpedanceParameters() : activation_percentage(0.0) {
     stiffness_matrix.setZero();
     damping_matrix.setZero();
     mass_matrix.setZero();
     pose_error_integrator_gain.setZero();
     pose_error_integrator_bound.setZero();
-    feedforward_wrench.setZero();
-
     maximum_wrench.setConstant(std::numeric_limits<double>::infinity());
+    feedforward_wrench.setZero();
+    feedforward_interpolation_wrench_min.setZero();
+    feedforward_interpolation_wrench_max.setZero();
+    feedforward_interpolation_max_wrench_dot.setZero();
   }
 
   explicit CartesianImpedanceParameters(int num_joints)
@@ -86,9 +90,15 @@ struct CartesianImpedanceParameters {
         pose_error_integrator_gain(Eigen::Matrix<double, 6, 1>::Zero()),
         pose_error_integrator_bound(Eigen::Matrix<double, 6, 1>::Zero()),
         joint_torque_limits(Eigen::VectorXd::Zero(num_joints)),
-        feedforward_wrench(Eigen::Matrix<double, 6, 1>::Zero()),
         maximum_wrench(Eigen::Matrix<double, 6, 1>::Constant(
-            std::numeric_limits<double>::infinity())) {}
+            std::numeric_limits<double>::infinity())),
+        feedforward_wrench(Eigen::Matrix<double, 6, 1>::Zero()),
+        feedforward_interpolation_wrench_min(
+            Eigen::Matrix<double, 6, 1>::Zero()),
+        feedforward_interpolation_wrench_max(
+            Eigen::Matrix<double, 6, 1>::Zero()),
+        feedforward_interpolation_max_wrench_dot(
+            Eigen::Matrix<double, 6, 1>::Zero()) {}
 };
 
 //==============================================================================
@@ -97,7 +107,8 @@ class CartesianImpedanceAction {
   CartesianImpedanceAction(std::size_t num_joints);
 
   /**
-   * @brief todo(johntgz)
+   * @brief Configure the cartesian impedance action with joint limits and
+   * relevant node interfaces
    *
    * @param joint_limits Joint limits on joint position, velocity, accelration
    * @param logging_if Node interface for logging
@@ -105,7 +116,7 @@ class CartesianImpedanceAction {
    * @return false
    */
   [[nodiscard]]
-  bool Configure(
+  bool configure(
       const std::vector<joint_limits::JointLimits>& joint_limits,
       const rclcpp::node_interfaces::NodeLoggingInterface::SharedPtr&
           logging_if,
@@ -126,7 +137,7 @@ class CartesianImpedanceAction {
    * @return true
    * @return false
    */
-  bool Compute(const Eigen::Matrix<double, 6, 1>& tool_pose_error,
+  bool compute(const Eigen::Matrix<double, 6, 1>& tool_pose_error,
                const Eigen::Matrix<double, 6, 1>& tool_vel_error,
                const JointTrajectoryPoint& current_joint_state,
                const Eigen::MatrixXd& jacobian,
@@ -134,98 +145,89 @@ class CartesianImpedanceAction {
                JointTrajectoryPoint& new_joint_reference);
 
  private:
-  // todo(johntgz) docstrings
-
-  // Returns the nullspace stiffness control torque for a desired nullspace
-  // configuration given a measured joint configuration with joint space
-  // damping. Real time safe with a static N_DOF. Params nullspace_stiffness
-  //   the control stiffness for each joint
-  // nullspace_joint_position_goal
-  //   the desired nullsapce joint configuration
-  // sensed_joint_position
-  //   the current sensed position of the joints
-  // jacobian
-  //   the current jacobian of the robot
-  // svd_threshold
-  //   the threshold percentage over the maximum singular value used to cancel
-  //   small singular values. Passed as input to the pseudoinverse function
-  bool ComputeNullspaceStiffnessTorque(
-      const Eigen::VectorXd& nullspace_stiffness,
-      const Eigen::VectorXd& nullspace_damping,
-      const Eigen::VectorXd& nullspace_goal,
-      const JointTrajectoryPoint& current_joint_state,
-      const Eigen::MatrixXd& jacobian,
-      Eigen::VectorXd& nullspace_stiffness_torque,
-      double svd_threshold = 0.001);
-
-  // todo(johntgz) docstrings
-
-  // Computes matrix right pseudo-inverse with SVD smoothed regularization,
-  // including an optional weight matrix 'W'. This follows largely the paper:
-  //
-  // Chiaverini, S. (1997). Singularity-robust task-priority redundancy
-  // resolution for real-time kinematic control of robot manipulators. IEEE
-  // Transactions on Robotics and Automation, 13(3), 398–410.
-  // doi: 10.1109/70.585902
-  //
-  // The SVD of the weighted matrix inversion is:
-  //
-  //  M * W * M^T = U * S * V^T
-  //
-  // where U and V are orthonormal matrices, S is a diagonal matrix, and W is a
-  // positive definite square weight matrix.
-  //
-  // The pseudo-inverse is computed as
-  //
-  //  m^dagger = W * M^T * inv(U * S * V^T)
-  //           = W * M^T * V * inv(S) * U^T
-  //
-  // For the smoothed regularized pseudo-inverse this becomes:
-  //  m^dagger = W * M^T * V * S^dagger * U^T
-  //
-  // where S^dagger is the diagonal matrix with entries
-  //
-  //  S^dagger_{ii} = S_{ii} / (S_{ii}^2 + lambda_{i}^2)
-  //
-  //  cn_{i} = S_{0} / S_{ii}
-  //
-  //  lambda_{i}^2 = (1 - (condition_number_threshold / cn_{i})^2)^2 *
-  //                 (1 / epsilon)  for cn_{i} > condition_number_threshold
-  //
-  //  lambda_{i}^2 = 0              for cn_{i} <= condition_number_threshold
-  //
-  // for i = 0, ..., m.cols()-1.
-  //
-  // The epsilon regularizer is a small positive number to avoid numerical
-  // issues, equivalent to a ridge regression regularization.
-  //
-  // In contrast to the Tikhonov regularization, the lambda_{i} are adapted per
-  // dimension to the condition number of this dimension, and regularization is
-  // added in a smooth continuous/differentiable way. For robot control, this
-  // ensures that regularization does not create discountinous jumps in the
-  // control signals.
-  //
-  // Returns an error status if M has all zero singular values or matrix M and
-  // weight matrix W have incompatible dimensions or incorrect input arguments.
-  //
-  // Default values for `epsilon` and `condition_number_threshold` are set to
-  // conservative values as useful for robot control.
-  //
+  /**
+   * @brief Returns the nullspace control torque for a desired
+   * nullspace configuration.
+   *
+   * @param nullspace_stiffness Control stiffness for each joint
+   * @param nullspace_damping Control damping for each joint
+   * @param nullspace_goal Desired nullspace joint configurations
+   * @param current_joint_state Current position of the joints
+   * @param jacobian Current jacobian matrix of the robot arm
+   * @param nullspace_stiffness_torque Output nullspace stiffness control torque
+   * @param svd_threshold Used to calculate the condition_number_threshold,
+   * which determines the threshold value of the maximum singular value
+   * over other singular values before applying regularization.
+   * Passed as input to the pseudoinverse function.
+   * @return true Computation is successful
+   * @return false Computation unsuccessful due to failed conditional checks
+   */
+  bool compute_nullspace_torque(const Eigen::VectorXd& nullspace_stiffness,
+                                const Eigen::VectorXd& nullspace_damping,
+                                const Eigen::VectorXd& nullspace_goal,
+                                const JointTrajectoryPoint& current_joint_state,
+                                const Eigen::MatrixXd& jacobian,
+                                Eigen::VectorXd& nullspace_stiffness_torque,
+                                double svd_threshold = 0.001);
 
   /**
-   * @brief
+   * @brief Computes the right pseudo-inverse of matrix M using SVD smoothed
+   * regulatization. This largely follows the paper:
+   *
+   * Chiaverini, S. (1997). Singularity-robust task-priority redundancy
+   * resolution for real-time kinematic control of robot manipulators. IEEE
+   * Transactions on Robotics and Automation, 13(3), 398–410.
+   * doi: 10.1109/70.585902
+   *
+   * The SVD of the weighted matrix inversion is:
+   *
+   *   M * M^T = U * S * V^T
+   *
+   * where U and V are orthonormal matrices, S is a diagonal matrix, and W is a
+   * positive definite square weight matrix.
+   *
+   * The pseudo-inverse is computed as:
+   *
+   *   M^dagger = M^T * inv(U * S * V^T)
+   *            = M^T * V * inv(S) * U^T
+   *
+   * For the smoothed regularized pseudo-inverse this becomes:
+   *   M^dagger = M^T * V * S^dagger * U^T
+   *
+   * where S^dagger is the diagonal matrix with the entries:
+   *
+   *   S^dagger_{ii} = S_{ii} / (S_{ii}^2 + lambda_{i}^2)
+   *
+   *   lambda_{i}^2 = (1 - (condition_number_threshold / cn_{i})^2)^2 *
+   *                  (1 / epsilon)  for cn_{i} > condition_number_threshold
+   *   lambda_{i}^2 = 0              for cn_{i} <= condition_number_threshold
+   *
+   *   for i = 0, ..., m.cols()-1
+   *
+   * The epsilon regularizer is a small positive number to avoid numerical
+   * issues, equivalent to ridge regression regularization.
+   *
+   * In contrast to the Tikhonov regularization, the lambda_{i} are adapted per
+   * dimension to the condition number of this dimension, and regularization is
+   * added in a smooth continuous/differentiable way. For robot control, this
+   * ensures that regularization does not create discountinous jumps in the
+   * control signals.
+   *
+   * The default values for `condition_number_threshold` and `epsilon` are set
+   * to conservative values practical for the control of robot arms.
    *
    * @param M Matrix to compute right pseudo-inverse on
    * @param M_pinv Matrix with right pseudo-inverse
-   * @param condition_number_threshold
-   * @param epsilon
-   * @return true
-   * @return false
+   * @param condition_number_threshold Determines the threshold value of the
+   * maximum singular value over other singular values before applying
+   * regularization.
+   * @param epsilon Small tolerance value used in regularization
+   * @return true Computation is successful
+   * @return false Computation unsuccessful due to failed conditional checks
    */
-  bool ComputeSmoothRightPseudoInverse(const Eigen::MatrixXd& M,
-                                       Eigen::MatrixXd& M_pinv,
-                                       double condition_number_threshold = 1500,
-                                       double epsilon = 1e-6);
+  bool compute_smooth_right_pseudo_inverse(
+      const Eigen::MatrixXd& M, Eigen::MatrixXd& M_pinv,
+      double condition_number_threshold = 1500, double epsilon = 1e-6);
 
   /**
    * @brief Implementation of a quadratic potential field that computes the
@@ -237,22 +239,25 @@ class CartesianImpedanceAction {
    * If the joint states exeeds the joint limits, the saturated torque output at
    * minimum_absolute_torque or maximum_absolute_torque is used.
    *
-   * @param lower_joint_state_limit
-   * @param lower_activation_threshold
-   * @param upper_joint_state_limit
-   * @param upper_activation_threshold
-   * @param minimum_absolute_torque
-   * @param maximum_absolute_torque
-   * @param joint_state
-   * @return double
+   * @param lower_joint_state_limit Minimum joint limit
+   * @param lower_activation_threshold Minimum threshold for activation of
+   * avoidance torque
+   * @param upper_joint_state_limit Maximum joint limit
+   * @param upper_activation_threshold Maximum threshold for activation of
+   * avoidance torque
+   * @param minimum_absolute_torque Minimum torque magnitude
+   * @param maximum_absolute_torque Maximum torque magnitude
+   * @param joint_state Current joint position
+   * @return double Joint avoidance torque that moves joint state away from
+   * given joint limit.
    */
-  double SingleJointAvoidanceTorque(double lower_joint_state_limit,
-                                    double lower_activation_threshold,
-                                    double upper_joint_state_limit,
-                                    double upper_activation_threshold,
-                                    double minimum_absolute_torque,
-                                    double maximum_absolute_torque,
-                                    double joint_state);
+  double single_joint_avoidance_torque(double lower_joint_state_limit,
+                                       double lower_activation_threshold,
+                                       double upper_joint_state_limit,
+                                       double upper_activation_threshold,
+                                       double minimum_absolute_torque,
+                                       double maximum_absolute_torque,
+                                       double joint_state);
 
   // Number of robot joints
   const std::size_t num_joints_;

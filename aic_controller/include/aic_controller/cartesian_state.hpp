@@ -64,6 +64,15 @@ struct CartesianState {
    * @param quaternion
    */
   void set_pose_quaternion(const Eigen::Quaterniond& quaternion);
+
+  /**
+   * @brief Get the pose vector in the form of (x, y, z, qx, qy, qz, qw) where
+   * (x, y, z) is the translation and (qx, qy, qz, qw) are the quaternion
+   * coefficients.
+   *
+   * @return Eigen::Matrix<double, 7, 1> Pose vector
+   */
+  Eigen::Matrix<double, 7, 1> get_pose_vector() const;
 };
 
 }  // namespace aic_controller

@@ -51,20 +51,6 @@
 //==============================================================================
 namespace aic_controller {
 
-// Template function to overload the << operator for std::vector
-template <typename T>
-std::ostream& operator<<(std::ostream& os, const std::vector<T>& vec) {
-    os << "[";
-    for (size_t i = 0; i < vec.size(); ++i) {
-        os << vec[i];
-        if (i != vec.size() - 1) {
-            os << ", "; // Add comma separator except for the last element
-        }
-    }
-    os << "]";
-    return os;
-}
-
 using MotionUpdate = aic_control_interfaces::msg::MotionUpdate;
 using TrajectoryGenerationMode =
     aic_control_interfaces::msg::TrajectoryGenerationMode;
@@ -208,6 +194,12 @@ class Controller : public controller_interface::ControllerInterface {
       const double control_frequency, const uint8_t& mode,
       CartesianState& new_reference);
 
+  /**
+   * @brief
+   *
+   */
+  void interpolate_impedance_parameters();
+
   // controller parameters
   std::shared_ptr<aic_controller::ParamListener> param_listener_;
   aic_controller::Params params_;
@@ -223,11 +215,10 @@ class Controller : public controller_interface::ControllerInterface {
   // Impedance controller for cartesian targets
   std::unique_ptr<CartesianImpedanceAction> cartesian_impedance_action_;
   CartesianImpedanceParameters impedance_params_;
-  // todo(johntgz) move this somewhere more appropriate
-  Eigen::Matrix<double, 6, 1> feedforward_wrench_at_tip_;
-  // todo(johntgz) Should we remove this because we don't have a force-torque
-  // sensor?
-  Eigen::Matrix<double, 6, 1> wrench_at_tip_;
+  // Feedforward wrench at tool tip
+  Eigen::Matrix<double, 6, 1> feedforward_wrench_;
+  // Current wrench sensed from force torque sensor at tool tip
+  Eigen::Matrix<double, 6, 1> current_wrench_;
 
   // ROS2 subscribers for user commands
   rclcpp::Subscription<MotionUpdate>::SharedPtr motion_update_sub_;
@@ -257,8 +248,10 @@ class Controller : public controller_interface::ControllerInterface {
   // todo(johntgz) Investigate if we can replace last_tool_reference_ with
   // current_tool_state_
   CartesianState last_tool_reference_;
+  // The last computed error between the current and target tool pose
+  Eigen::Matrix<double, 6, 1> last_tool_pose_error_;
 
-  //todo(johntgz) remove after debugging
+  // todo(johntgz) remove after refactor
   Eigen::Matrix<double, 6, 1> joint_positions_on_activate_;
   Eigen::Matrix<double, 6, 1> dq_filtered_;
   Eigen::Matrix<double, 6, 1> k_gains_;

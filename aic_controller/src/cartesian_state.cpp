@@ -41,4 +41,13 @@ void CartesianState::set_pose_quaternion(const Eigen::Quaterniond& quaternion) {
   pose.linear() = quaternion.toRotationMatrix();
 }
 
+//==============================================================================
+Eigen::Matrix<double, 7, 1> CartesianState::get_pose_vector() const {
+  Eigen::Matrix<double, 7, 1> pose_vec;
+  pose_vec.head<3>() = pose.translation();
+  pose_vec.tail<4>() = get_pose_quaternion().coeffs();
+
+  return pose_vec;
+}
+
 }  // namespace aic_controller

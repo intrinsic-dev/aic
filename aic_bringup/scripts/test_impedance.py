@@ -31,110 +31,66 @@ from geometry_msgs.msg import Pose, Point, Quaternion
 
 # TODO(johntgz) refactor script for just sending MotionUpdate commands for AIC Controller
 
-
-class HomeTrajectoryNode(Node):
+class TestImpedanceNode(Node):
     def __init__(self):
-        super().__init__("home_trajectory_node")
-        self.get_logger().info("HomeTrajectoryNode started")
+        super().__init__("test_impedance_node")
+        self.get_logger().info("TestImpedanceNode started")
 
         # Declare parameters.
-        self.use_aic_control = self.declare_parameter("use_aic_controller", False).value
         self.controller_namespace = self.declare_parameter(
             "controller_namespace", "aic_controller"
         ).value
-        self.home_joint_positions = [0.0, -1.3, -1.9, -1.57, 1.57, 0.0]
         # Create publisher if needed.
-        if self.use_aic_control:
-            self.publisher = self.create_publisher(
-                MotionUpdate, f"/{self.controller_namespace}/motion_update", 10
-            )
+        self.publisher = self.create_publisher(
+            MotionUpdate, f"/{self.controller_namespace}/motion_update", 10
+        )
 
-            while self.publisher.get_subscription_count() == 0:
-                self.get_logger().info(
-                    f"Waiting for subscriber to '{self.controller_namespace}/motion_update'..."
-                )
-                time.sleep(1.0)
-
-        else:
-            # todo(Yadunund): We could also directly publish a JouintTrajectory message
-            # to /joint_trajectory_controller/joint_trajectory.
-            self.action_client = ActionClient(
-                self,
-                FollowJointTrajectory,
-                "/joint_trajectory_controller/follow_joint_trajectory",
+        while self.publisher.get_subscription_count() == 0:
+            self.get_logger().info(
+                f"Waiting for subscriber to '{self.controller_namespace}/motion_update'..."
             )
-            while not self.action_client.wait_for_server(timeout_sec=1.0):
-                self.get_logger().info(f"Waiting for {self.action_client._action_name}")
+            time.sleep(1.0)
 
         # A timer that will send the trajectory only once.
-        self.timer = self.create_timer(1.0, self.send_trajectory)
+        self.timer = self.create_timer(1.0, self.send_motion_update)
 
-    def goal_response_callback(self, future):
-        goal_handle = future.result()
-        if not goal_handle.accepted:
-            self.get_logger().error("Goal rejected")
-            return
-        self.get_logger().info("Home trajectory goal accepted")
-        self.get_result_future = goal_handle.get_result_async()
-        self.get_result_future.add_done_callback(self.get_result_callback)
+    def send_motion_update(self):
 
-    def get_result_callback(self, future):
-        rclpy.shutdown()
+        quat = [ 0.7071068, 0.7071068, 0.0, 0.0] # ZYX = (180, 0, 90), z axis normal to plane and (x,y) axes are aligned with base_link axes (but not necessarily in the same direction)
+        # quat = [0.3826834, 0.9238795, 0., 0.] # ZYX = (180, 0, 135),
+        # quat = [0.3535534, 0.8535534, 0.3535534, 0.1464466 ] # ZYX = (135, 0, 135),
+        # quat = [ 0.681, 0.681, 0.266, 0.051]
 
-    def send_trajectory(self):
-        if self.use_aic_control:
-            POSE_HOME = Pose(
-                # position=Point(x=-0.350, y=-0.2, z=0.469),
-                # orientation=Quaternion(x=0.462, y=0.876, z=0.126, w=0.066),
-                position=Point(x=-0.250, y=0.2, z=0.769),
-                orientation=Quaternion(x=-0.4005763, y=0.79923, z=-0.400576, w=0.20077),
-            )
+        POSE_HOME = Pose(
+            # position=Point(x=-0.3, y=-0.3, z=0.2),
+            position=Point(x=-0.35, y=-0.25, z=0.5),
+            # position=Point(x=-0.55, y=-0.55, z=0.4),
+            orientation=Quaternion(x=quat[0], y=quat[1], z=quat[2], w=quat[3]),
+        )
 
-            # Home joints configuration
-            msg = MotionUpdate()
-            msg.pose = POSE_HOME
-            msg.target_stiffness = np.diag([5.0, 5.0, 5.0, 5.0, 5.0, 5.0]).flatten()
-            msg.target_damping = np.diag([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]).flatten()
-            msg.target_mass = np.diag([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]).flatten()
-            msg.trajectory_generation_mode.mode = TrajectoryGenerationMode.MODE_POSITION
-            msg.time_to_target_seconds = 5.0
-            self.publisher.publish(msg)
-            self.get_logger().info(
-                "Published home joint motion update to aic_controller"
-            )
-            # Shutdown after a short delay to ensure message is sent.
-            time.sleep(1.0)
-        else:
-            goal = FollowJointTrajectory.Goal()
-            goal.trajectory.joint_names = [
-                "shoulder_pan_joint",
-                "shoulder_lift_joint",
-                "elbow_joint",
-                "wrist_1_joint",
-                "wrist_2_joint",
-                "wrist_3_joint",
-            ]
-            home_point = JointTrajectoryPoint()
-            home_point.positions = self.home_joint_positions
-            home_point.time_from_start.sec = 1
-            goal.trajectory.points.append(home_point)
-            self.send_goal_future = self.action_client.send_goal_async(goal)
-            self.send_goal_future.add_done_callback(self.goal_response_callback)
+        msg = MotionUpdate()
+        msg.pose = POSE_HOME
+        msg.target_stiffness = np.diag([
+            250.0, 200.0, 550.0, 250.0, 250.0, 100.0]).flatten()
+        msg.target_damping = np.diag([
+            75.0, 50.0, 150.0, 50.0, 50.0, 50.0]).flatten()
+        msg.trajectory_generation_mode.mode = TrajectoryGenerationMode.MODE_POSITION
+        msg.time_to_target_seconds = 2.0
+        self.publisher.publish(msg)
+        self.get_logger().info(
+            "Published home joint motion update to aic_controller"
+        )
+        # Shutdown after a short delay to ensure message is sent.
+        time.sleep(1.0)
 
         self.timer.cancel()  # Send only once.
-
 
 def main(args=None):
     try:
         with rclpy.init(args=args):
-            node = HomeTrajectoryNode()
-            node.send_trajectory()
-            if node.use_aic_control:
-                # Keep alive for a short duration to ensure message delivery.
-                rclpy.spin_once(node, timeout_sec=2.0)
-                rclpy.shutdown()
-            else:
-                rclpy.spin(node)
+            node = TestImpedanceNode()
+            node.send_motion_update()
+            rclpy.spin(node)
     except (KeyboardInterrupt, ExternalShutdownException):
         pass
 

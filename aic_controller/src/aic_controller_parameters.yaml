@@ -154,24 +154,24 @@ aic_controller:
         type: double_array,
         description: "Damping parameters used in computing the nullspace torque",
       }
-    feedforward_wrench_interpolation:
+    feedforward_interpolation:
       min_wrench: {
         type: double_array,
-        description: "Minimum limit of target wrench",
+        description: "Minimum limit of feedforward target wrench",
         validation: {
           fixed_size<>: 6
         }
       }
       max_wrench: {
         type: double_array,
-        description: "Maximum limit of target wrench",
+        description: "Maximum limit of feedforward target wrench",
         validation: {
           fixed_size<>: 6
         }
       }
       max_wrench_dot: {
         type: double_array,
-        description: "Maximum change in target wrench after interpolation",
+        description: "Maximum change in feedforward target wrench after interpolation",
         validation: {
           fixed_size<>: 6
         }
