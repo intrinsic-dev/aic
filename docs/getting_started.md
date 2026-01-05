@@ -69,9 +69,11 @@ Setup workspace
 ```bash
 AIC_WS=~/ws_aic
 AIC_PWS=~/ws_aic_participant
-mkdir -p "$AIC_PWS/src"
+mkdir -p "$AIC_PWS/src/aic"
 cd "$AIC_PWS"
-ln -s "$AIC_WS/src/aic/participant_pkgs" src/aic
+ln -s "$AIC_WS/src/aic/aic_lerobot_tools" src/aic/
+ln -s "$AIC_WS/src/aic/lerobot_robot_aic_ros" src/aic/
+ln -s "$AIC_WS/src/aic/aic_interfaces" src/aic/
 vcs import src < "$AIC_WS/src/aic/participant.repos" --recursive
 ```
 
