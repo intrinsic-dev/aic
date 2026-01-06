@@ -27,7 +27,7 @@ This is your development workspace. It is designed to package the `aic_model` pa
 ### Requirements
 - [Ubuntu 24.04](https://releases.ubuntu.com/noble/)
 - [ROS 2 Kilted Kaiju](https://docs.ros.org/en/kilted/Installation/Ubuntu-Install-Debs.html)
-- [miniforge](https://docs.conda.io/projects/conda/en/stable/) (Other conda distributions should work as well)
+- [pixi](https://pixi.prefix.dev/latest/installation/)
 
 ### Install
 
@@ -51,44 +51,7 @@ cd ~/ws_aic
 # Install ROS dependencies using rosdep.
 rosdep install --from-paths src --ignore-src --rosdistro kilted -yr --skip-keys "gz-cmake3 DART libogre-dev libogre-next-2.3-dev"
 source /opt/ros/kilted/setup.bash
-GZ_BUILD_FROM_SOURCE=1 colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release --symlink-install
-```
-
-### Install (participant workspace)
-
-Create mamba environment
-
-```bash
-mamba create -f src/aic/environment.yml
-mamba config -n aic prepend --env channels robostack-kilted
-mamba activate aic
-```
-
-Setup workspace
-
-```bash
-AIC_WS=~/ws_aic
-AIC_PWS=~/ws_aic_participant
-mkdir -p "$AIC_PWS/src/aic"
-cd "$AIC_PWS"
-ln -s "$AIC_WS/src/aic/aic_lerobot_tools" src/aic/
-ln -s "$AIC_WS/src/aic/lerobot_robot_aic_ros" src/aic/
-ln -s "$AIC_WS/src/aic/aic_interfaces" src/aic/
-vcs import src < "$AIC_WS/src/aic/participant.repos" --recursive
-```
-
-Install dependencies
-
-```bash
-rosdep init
-rosdep update
-rosdep install -yi --skip-keys=ament_python --from-paths "$AIC_PWS/src/aic/aic_lerobot_tools" "$AIC_PWS/src/iblnkn"
-```
-
-Build
-
-```bash
-colcon build --merge-install --cmake-args -DCMAKE_BUILD_TYPE=Release
+GZ_BUILD_FROM_SOURCE=1 colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release --symlink-install --packages-up-to aic_bringup
 ```
 
 ### Launch
@@ -119,6 +82,57 @@ ros2 launch aic_bringup aic_gz_bringup.launch.py
 > [!NOTE]
 > To spawn a cable and attach it to the gripper, pass `spawn_cable:=True` and `attach_cable_to_gripper:=True` to the launch command.
 
+### LeRobot Support
+
+A LeRobot driver is available to train a policy using [lerobot](https://huggingface.co/lerobot). This describe some of the things you can do with lerobot, for more information, see the official [lerobot docs](https://huggingface.co/docs/lerobot/en/index).
+
+The LeRobot driver is installed in a [pixi](https://prefix.dev/tools/pixi) workspace. In general, you can prefix a command with `pixi run` or enter the environment with `pixi shell`.
+
+<!-- TODO: We can release the driver as a conda package -->
+
+#### Teleoperating
+
+```bash
+cd ~/ws_aic/src/aic
+pixi run lerobot-teleoperate \
+  --robot.type=aic_ros2_control --robot.id=aic \
+  --teleop.type=aic_keyboard --teleop.id=aic \
+  --display_data=true
+```
+
+Key mapping
+
+| Key | Joint          |
+| --- | -------------- |
+| q   | -shoulder_pan  |
+| a   | +shoulder_pan  |
+| w   | -shoulder_lift |
+| s   | +shoulder_lift |
+| e   | -elbow         |
+| d   | +elbow         |
+| r   | -wrist_1       |
+| f   | +wrist_1       |
+| t   | -wrist_2       |
+| g   | +wrist_2       |
+| y   | -wrist_3       |
+| h   | +wrist_3       |
+| o   | -gripper       |
+| l   | +gripper       |
+
+### Recording Training Data
+
+```bash
+cd ~/ws_aic/src/aic
+pixi run lerobot-record \
+  --robot.type=aic_ros2_control --robot.id=aic \
+  --teleop.type=aic_keyboard --teleop.id=aic \
+  --dataset.repo_id=<hf-repo> \
+  --dataset.single_task=<task-prompt> \
+  --dataset.push_to_hub=false \
+  --dataset.private=true \
+  --play_sounds=false \
+  --display_data=true
+```
 
 #### Debugging
 

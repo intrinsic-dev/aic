@@ -1,0 +1,8 @@
+[package.build.backend]
+name = "pixi-build-ros"
+version = "*"
+channels = [
+  "https://prefix.dev/pixi-build-backends",
+  "robostack-kilted",
+  "conda-forge",
+]
