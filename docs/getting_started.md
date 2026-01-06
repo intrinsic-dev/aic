@@ -84,7 +84,7 @@ ros2 launch aic_bringup aic_gz_bringup.launch.py
 
 ### LeRobot Support
 
-A LeRobot driver is available to train a policy using [LeRobot](https://huggingface.co/lerobot). This describe some of the things you can do with lerobot, for more information, see the official [LeRobot docs](https://huggingface.co/docs/lerobot/en/index).
+A LeRobot driver is available to train a policy using [LeRobot](https://huggingface.co/lerobot). This describe some of the things you can do with LeRobot, for more information, see the official [LeRobot docs](https://huggingface.co/docs/lerobot/en/index).
 
 The LeRobot driver is installed in a [pixi](https://prefix.dev/tools/pixi) workspace. In general, you can prefix a command with `pixi run` or enter the environment with `pixi shell`.
 
