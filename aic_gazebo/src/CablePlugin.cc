@@ -17,10 +17,11 @@
 
 #include "CablePlugin.hh"
 
+#include <gz/msgs/boolean.pb.h>
+
 #include <functional>
 
 #include <gz/common/Console.hh>
-#include <gz/msgs/boolean.pb.h>
 #include <gz/plugin/Register.hh>
 #include <gz/sim/Util.hh>
 #include <gz/sim/components/CanonicalLink.hh>
@@ -91,8 +92,8 @@ Entity makeStatic(Entity _entity, bool _attachEntityAsParentOfJoint,
 
   auto nameComp = _ecm.Component<components::Name>(_entity);
   std::string staticEntName = nameComp->Data() + "__static__";
-  Entity staticEntity = _ecm.EntityByComponents(
-      components::Name(staticEntName));
+  Entity staticEntity =
+      _ecm.EntityByComponents(components::Name(staticEntName));
   if (staticEntity == kNullEntity) {
     staticModelToSpawn.SetName(staticEntName);
     staticEntity = _creator->CreateEntities(&staticModelToSpawn);
