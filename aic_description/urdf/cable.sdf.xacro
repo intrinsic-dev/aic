@@ -10,6 +10,8 @@
       <xacro:if value="$(arg attach_cable_to_gripper)">
       <plugin filename="CablePlugin" name="aic_gazebo::CablePlugin">
         <cable_connection_0_link>lc_plug_link</cable_connection_0_link>
+        <!-- this should match the target port's <namespace> parameter in its xacro file -->
+        <cable_connection_0_port>nic_card_mount_0</cable_connection_0_port>
         <cable_connection_1_link>sc_plug_link</cable_connection_1_link>
         <end_effector_model>ur5e</end_effector_model>
         <end_effector_link>ati/tool_link</end_effector_link>
