@@ -8,6 +8,7 @@
   <license>Apache License 2.0</license>
 
   <exec_depend>aic_control_interfaces</exec_depend>
+  <exec_depend>aic_model_interfaces</exec_depend>
   <exec_depend>speech-dispatcher</exec_depend>
 
   <export>

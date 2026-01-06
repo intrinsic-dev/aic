@@ -12,7 +12,7 @@ ros2 launch aic_bringup aic_gz_bringup.launch.py
 
 ```bash
 lerobot-teleoperate \
-  --robot.type=aic_ros --robot.id=aic \
+  --robot.type=aic_ros2_control --robot.id=aic \
   --teleop.type=aic_keyboard --teleop.id=aic \
   --display_data=true
 ```
@@ -43,7 +43,7 @@ Key mapping
 
 ```bash
 lerobot-record \
-  --robot.type=aic_ros --robot.id=aic \
+  --robot.type=aic_ros2_control --robot.id=aic \
   --teleop.type=aic_keyboard --teleop.id=aic \
   --dataset.repo_id=<hf-repo> \
   --dataset.single_task=<task-prompt> \
