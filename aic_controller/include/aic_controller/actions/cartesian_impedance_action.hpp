@@ -26,9 +26,6 @@
 #include "rclcpp_lifecycle/lifecycle_node.hpp"
 
 // Interfaces
-#include "geometry_msgs/msg/pose.hpp"
-#include "geometry_msgs/msg/twist.hpp"
-#include "geometry_msgs/msg/wrench.hpp"
 #include "trajectory_msgs/msg/joint_trajectory_point.hpp"
 
 //==============================================================================

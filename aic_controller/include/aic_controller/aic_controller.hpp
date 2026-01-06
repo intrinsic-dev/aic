@@ -216,9 +216,9 @@ class Controller : public controller_interface::ControllerInterface {
   std::unique_ptr<CartesianImpedanceAction> cartesian_impedance_action_;
   CartesianImpedanceParameters impedance_params_;
   // Feedforward wrench at tool tip
-  Eigen::Matrix<double, 6, 1> feedforward_wrench_;
+  Eigen::Matrix<double, 6, 1> feedforward_wrench_at_tip_;
   // Current wrench sensed from force torque sensor at tool tip
-  Eigen::Matrix<double, 6, 1> current_wrench_;
+  Eigen::Matrix<double, 6, 1> current_wrench_at_tip_;
 
   // ROS2 subscribers for user commands
   rclcpp::Subscription<MotionUpdate>::SharedPtr motion_update_sub_;

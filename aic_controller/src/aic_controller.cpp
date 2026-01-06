@@ -37,8 +37,8 @@ Controller::Controller()
       num_joints_(0),
       control_mode_(ControlMode::Invalid),
       cartesian_impedance_action_(nullptr),
-      feedforward_wrench_(Eigen::Matrix<double, 6, 1>::Zero()),
-      current_wrench_(Eigen::Matrix<double, 6, 1>::Zero()),
+      feedforward_wrench_at_tip_(Eigen::Matrix<double, 6, 1>::Zero()),
+      current_wrench_at_tip_(Eigen::Matrix<double, 6, 1>::Zero()),
       motion_update_sub_(nullptr),
       motion_update_received_(false),
       last_commanded_state_(std::nullopt),
@@ -1033,25 +1033,25 @@ void Controller::interpolate_impedance_parameters() {
           .cwiseMax(impedance_params_.feedforward_interpolation_wrench_min);
 
   // Interpolate from current wrench to clamped_target_wrench
-  Eigen::Matrix<double, 6, 1> next_wrench = feedforward_wrench_;
+  Eigen::Matrix<double, 6, 1> next_wrench = feedforward_wrench_at_tip_;
   for (int i = 0; i < 6; ++i) {
-    if (clamped_target_wrench(i) > feedforward_wrench_(i)) {
+    if (clamped_target_wrench(i) > feedforward_wrench_at_tip_(i)) {
       next_wrench(i) =
-          feedforward_wrench_(i) +
+          feedforward_wrench_at_tip_(i) +
           (impedance_params_.feedforward_interpolation_max_wrench_dot(i) *
            (1.0 / params_.control_frequency));
       next_wrench(i) = std::min(clamped_target_wrench(i), next_wrench(i));
-    } else if (clamped_target_wrench(i) < feedforward_wrench_(i)) {
+    } else if (clamped_target_wrench(i) < feedforward_wrench_at_tip_(i)) {
       next_wrench(i) =
-          feedforward_wrench_(i) -
+          feedforward_wrench_at_tip_(i) -
           (impedance_params_.feedforward_interpolation_max_wrench_dot(i) *
            (1.0 / params_.control_frequency));
       next_wrench(i) = std::max(clamped_target_wrench(i), next_wrench(i));
     } else {
-      next_wrench(i) = feedforward_wrench_(i);
+      next_wrench(i) = feedforward_wrench_at_tip_(i);
     }
   }
-  feedforward_wrench_ = next_wrench;
+  feedforward_wrench_at_tip_ = next_wrench;
 
   // Compute the total wrench at the tool tip
   // Force control via feedforward_wrench and wrench_feedback_gains.
@@ -1059,8 +1059,9 @@ void Controller::interpolate_impedance_parameters() {
   utils::wrenchMsgToEigen(motion_update_.wrench_feedback_gains_at_tip,
                           wrench_feedback_gains_at_tip);
   Eigen::Matrix<double, 6, 1> total_wrench_at_tip =
-      feedforward_wrench_ + wrench_feedback_gains_at_tip.cwiseProduct(
-                                feedforward_wrench_ - current_wrench_);
+      feedforward_wrench_at_tip_ +
+      wrench_feedback_gains_at_tip.cwiseProduct(feedforward_wrench_at_tip_ -
+                                                current_wrench_at_tip_);
 
   // Rotate wrench at tool tip into base frame.
   impedance_params_.feedforward_wrench.head<3>() =
