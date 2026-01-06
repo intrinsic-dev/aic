@@ -20,7 +20,6 @@
 #include <gz/msgs/boolean.pb.h>
 
 #include <functional>
-
 #include <gz/common/Console.hh>
 #include <gz/plugin/Register.hh>
 #include <gz/sim/Util.hh>
