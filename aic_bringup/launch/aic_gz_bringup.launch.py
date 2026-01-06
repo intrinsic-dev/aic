@@ -139,7 +139,7 @@ def launch_setup(context, *args, **kwargs):
         package="rviz2",
         executable="rviz2",
         name="rviz2",
-        # output="log",
+        output="log",
         arguments=["-d", rviz_config_file],
         condition=IfCondition(launch_rviz),
     )
@@ -169,7 +169,7 @@ def launch_setup(context, *args, **kwargs):
         executable="spawner",
         arguments=[
             initial_joint_controller,
-            # "admittance_controller",
+            "admittance_controller",
             "--activate-as-group",
             "-c",
             "/controller_manager",
@@ -182,7 +182,7 @@ def launch_setup(context, *args, **kwargs):
         executable="spawner",
         arguments=[
             initial_joint_controller,
-            # "admittance_controller",
+            "admittance_controller",
             "-c",
             "/controller_manager",
             "--inactive",
