@@ -263,27 +263,27 @@ void CablePlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
       std::vector<std::string> allTopics;
       this->node.TopicList(allTopics);
 
-      for (const auto& topic: allTopics) {
+      for (const auto& topic : allTopics) {
         if (topic.find(this->cableConnection0PortName) != std::string::npos) {
           this->cableConnection0PortTopic = topic;
           break;
         }
       }
 
-      if (this->cableConnection0PortTopic.empty())
-        return;
+      if (this->cableConnection0PortTopic.empty()) return;
 
       std::function<void(const msgs::Boolean&)> callback =
           [this](const msgs::Boolean& _msg) {
-        this->attachCableConnection0ToPort = _msg.data();
-        gzdbg << "Cable connection 0 touched: " << _msg.data() << std::endl;
-      };
+            this->attachCableConnection0ToPort = _msg.data();
+            gzdbg << "Cable connection 0 touched: " << _msg.data() << std::endl;
+          };
       this->cableConnection0PortSub = this->node.CreateSubscriber(
           this->cableConnection0PortTopic, callback);
     }
 
     if (this->attachCableConnection0ToPort) {
-      gzmsg << "Cable transitioning to ATTACH_CABLE_TO_PORT state." << std::endl;
+      gzmsg << "Cable transitioning to ATTACH_CABLE_TO_PORT state."
+            << std::endl;
       this->cableState = CableState::ATTACH_CABLE_TO_PORT;
     }
   }
