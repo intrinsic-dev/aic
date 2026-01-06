@@ -362,11 +362,11 @@
       </spot>
     </light>
 
-    <!-- <include>
+    <include>
       <uri>model://Enclosure</uri>
       <name>enclosure</name>
       <static>true</static>
-    </include> -->
+    </include>
 
     <include>
       <uri>model://Enclosure Walls</uri>

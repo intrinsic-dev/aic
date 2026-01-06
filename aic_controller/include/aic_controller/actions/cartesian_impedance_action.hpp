@@ -48,7 +48,6 @@ struct CartesianImpedanceParameters {
   // Parameters for impedance control.
   Eigen::Matrix<double, 6, 6> stiffness_matrix;
   Eigen::Matrix<double, 6, 6> damping_matrix;
-  Eigen::Matrix<double, 6, 6> mass_matrix;
   Eigen::Matrix<double, 6, 1> pose_error_integrator_gain;
   Eigen::Matrix<double, 6, 1> pose_error_integrator_bound;
   Eigen::VectorXd joint_torque_limits;
@@ -70,7 +69,6 @@ struct CartesianImpedanceParameters {
   CartesianImpedanceParameters() : activation_percentage(0.0) {
     stiffness_matrix.setZero();
     damping_matrix.setZero();
-    mass_matrix.setZero();
     pose_error_integrator_gain.setZero();
     pose_error_integrator_bound.setZero();
     maximum_wrench.setConstant(std::numeric_limits<double>::infinity());
@@ -86,7 +84,6 @@ struct CartesianImpedanceParameters {
         nullspace_damping(Eigen::VectorXd::Zero(num_joints)),
         stiffness_matrix(Eigen::Matrix<double, 6, 6>::Zero()),
         damping_matrix(Eigen::Matrix<double, 6, 6>::Zero()),
-        mass_matrix(Eigen::Matrix<double, 6, 6>::Zero()),
         pose_error_integrator_gain(Eigen::Matrix<double, 6, 1>::Zero()),
         pose_error_integrator_bound(Eigen::Matrix<double, 6, 1>::Zero()),
         joint_torque_limits(Eigen::VectorXd::Zero(num_joints)),

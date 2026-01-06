@@ -43,6 +43,7 @@ Controller::Controller()
       motion_update_received_(false),
       last_commanded_state_(std::nullopt),
       target_state_(std::nullopt),
+      last_tool_pose_error_(Eigen::Matrix<double, 6, 1>::Zero()),
       time_to_target_seconds_(0.0),
       remaining_time_to_target_seconds_(0.0),
       kinematics_loader_(nullptr),
@@ -247,6 +248,19 @@ controller_interface::CallbackReturn Controller::on_configure(
   CartesianImpedanceParameters resized_impedance_params(num_joints_);
   impedance_params_ = resized_impedance_params;
 
+  // Set default parameters for stiffness and damping matrices
+  impedance_params_.stiffness_matrix =
+      Eigen::Map<const Eigen::Matrix<double, 6, 1>>(
+          params_.impedance.default_values.control_stiffness.data(),
+          params_.impedance.default_values.control_stiffness.size())
+          .asDiagonal();
+  impedance_params_.damping_matrix =
+      Eigen::Map<const Eigen::Matrix<double, 6, 1>>(
+          params_.impedance.default_values.control_damping.data(),
+          params_.impedance.default_values.control_damping.size())
+          .asDiagonal();
+
+  // set desired nullspace configuration, stiffness and damping
   impedance_params_.nullspace_goal = Eigen::Map<const Eigen::VectorXd>(
       params_.impedance.nullspace.target_configuration.data(),
       static_cast<Eigen::Index>(num_joints_));
@@ -341,30 +355,6 @@ controller_interface::CallbackReturn Controller::on_activate(
     return controller_interface::CallbackReturn::ERROR;
   }
   last_tool_reference_ = current_tool_state_;
-
-  joint_positions_on_activate_ = Eigen::Map<const Eigen::Matrix<double, 6, 1>>(
-      current_state_.positions.data());
-
-  dq_filtered_.setZero();
-
-  const double k_gain = 100.0;
-  const double d_gain = 25.0;
-
-  k_gains_(0) = k_gain;
-  k_gains_(1) = k_gain;
-  k_gains_(2) = k_gain;
-  k_gains_(3) = k_gain;
-  k_gains_(4) = k_gain;
-  k_gains_(5) = k_gain;
-
-  d_gains_(0) = d_gain;
-  d_gains_(1) = d_gain;
-  d_gains_(2) = d_gain;
-  d_gains_(3) = d_gain;
-  d_gains_(4) = d_gain;
-  d_gains_(5) = d_gain;
-
-  populate_controller_state(state_msg_);
 
   reset_motion_update_msg(motion_update_);
   motion_update_rt_.try_set(motion_update_);
@@ -470,82 +460,52 @@ controller_interface::return_type Controller::update(
 
       target_state_ = latest_target_state;
     }
-  } else {
-    // todo(johntgz) refactor to hold the starting position
-    Eigen::Matrix<double, 6, 1> q =
-        Eigen::Map<const Eigen::Matrix<double, 6, 1>>(
-            current_state_.positions.data());
-    Eigen::Matrix<double, 6, 1> dq =
-        Eigen::Map<const Eigen::Matrix<double, 6, 1>>(
-            current_state_.velocities.data());
-
-    Eigen::Matrix<double, 6, 1> q_goal = joint_positions_on_activate_;
-
-    const double kAlpha = 0.99;
-    dq_filtered_ = (1 - kAlpha) * dq_filtered_ + kAlpha * dq;
-    Eigen::Matrix<double, 6, 1> tau_d_calculated =
-        k_gains_.cwiseProduct(q_goal - q) +
-        d_gains_.cwiseProduct(-dq_filtered_);
-
-    JointTrajectoryPoint new_joint_reference;
-    new_joint_reference.effort.resize(num_joints_);
-    Eigen::VectorXd::Map(new_joint_reference.effort.data(),
-                         new_joint_reference.effort.size()) = tau_d_calculated;
-
-    write_state_to_hardware(new_joint_reference);
-
-    populate_controller_state(state_msg_);
-    state_publisher_rt_->try_publish(state_msg_);
-
-    // Update last_tool_reference_
-    last_tool_reference_ = current_tool_state_;
-
-    return controller_interface::return_type::OK;
   }
 
-  if (!target_state_.has_value()) {
-    // If target_state_ has no value, return early as there is nothing
-    // to write to the hardware interfaces.
-    return controller_interface::return_type::OK;
-  }
-
+  // If target_state_ has a value, then we set the new tool reference to that of
+  // the target and interpolate it.
+  // Else, maintain the current position of the robot.
   CartesianState new_tool_reference = last_tool_reference_;
 
-  // Clamp the target states to stay within limits
-  if (clamp_reference_to_limits(cartesian_limits_,
-                                motion_update_.trajectory_generation_mode.mode,
-                                target_state_.value())) {
-    RCLCPP_WARN_THROTTLE(get_node()->get_logger(), *get_node()->get_clock(),
-                         1000,
-                         "Limit violation: Target has been clamped to limits");
-  }
+  if (target_state_.has_value()) {
+    // Clamp the target states to stay within limits
+    if (clamp_reference_to_limits(
+            cartesian_limits_, motion_update_.trajectory_generation_mode.mode,
+            target_state_.value())) {
+      RCLCPP_WARN_THROTTLE(
+          get_node()->get_logger(), *get_node()->get_clock(), 1000,
+          "Limit violation: Target has been clamped to limits");
+    }
 
-  time_to_target_seconds_ = motion_update_.time_to_target_seconds;
+    time_to_target_seconds_ = motion_update_.time_to_target_seconds;
 
-  // Apply linear interpolation to the target_state_ to obtain a new
-  // reference. Linear interpolation should support MODE_POSITION,
-  // MODE_VELOCITY and MODE_POSITION_AND_VELOCITY
-  if (!update_reference_linear_interpolation(
-          last_tool_reference_, target_state_.value(),
-          remaining_time_to_target_seconds_, params_.control_frequency,
-          motion_update_.trajectory_generation_mode.mode, new_tool_reference)) {
-    RCLCPP_ERROR(get_node()->get_logger(),
-                 "Linear interpolation of target failed");
-    return controller_interface::return_type::ERROR;
-  }
+    // Apply linear interpolation to the target_state_ to obtain a new
+    // reference. Linear interpolation should support MODE_POSITION,
+    // MODE_VELOCITY and MODE_POSITION_AND_VELOCITY
+    if (!update_reference_linear_interpolation(
+            last_tool_reference_, target_state_.value(),
+            remaining_time_to_target_seconds_, params_.control_frequency,
+            motion_update_.trajectory_generation_mode.mode,
+            new_tool_reference)) {
+      RCLCPP_ERROR(get_node()->get_logger(),
+                   "Linear interpolation of target failed");
+      return controller_interface::return_type::ERROR;
+    }
 
-  // Decrement the remaining time to target
-  if (remaining_time_to_target_seconds_ > 0) {
-    remaining_time_to_target_seconds_ -= 1. / params_.control_frequency;
-    if (remaining_time_to_target_seconds_ < 0)
-      remaining_time_to_target_seconds_ = 0;
+    // Decrement the remaining time to target
+    if (remaining_time_to_target_seconds_ > 0) {
+      remaining_time_to_target_seconds_ -= 1. / params_.control_frequency;
+      if (remaining_time_to_target_seconds_ < 0)
+        remaining_time_to_target_seconds_ = 0;
+    }
+
+    interpolate_impedance_parameters();
   }
 
   // Compute controls
   JointTrajectoryPoint new_joint_reference;
-  if (control_mode_ == ControlMode::Impedance) {
-    interpolate_impedance_parameters();
 
+  if (control_mode_ == ControlMode::Impedance) {
     // Compute the tool pose and velocity error between the current and
     // target tool state.
     Eigen::Matrix<double, 7, 1> current_pose_vec =
@@ -579,8 +539,6 @@ controller_interface::return_type Controller::update(
     if (!cartesian_impedance_action_->compute(
             tool_pose_error, tool_vel_error, current_state_, jacobian,
             impedance_params_, new_joint_reference)) {
-      // todo(johntgz) should we throw an error here or set the previous
-      // reference joint?
       RCLCPP_ERROR(get_node()->get_logger(),
                    "Cartesian Impedance Action failed to compute controls!");
       return controller_interface::return_type::ERROR;
@@ -744,7 +702,9 @@ void Controller::populate_controller_state(ControllerState& controller_state) {
   controller_state.tcp_pose = tf2::toMsg(last_tool_reference_.pose);
   controller_state.tcp_velocity = tf2::toMsg(last_tool_reference_.velocity);
 
-  controller_state.tcp_error = tf2::toMsg(last_tool_pose_error_);
+  std::copy(last_tool_pose_error_.data(),
+            last_tool_pose_error_.data() + last_tool_pose_error_.size(),
+            controller_state.tcp_error.begin());
 
   if (last_commanded_state_.has_value()) {
     controller_state.joint_state = last_commanded_state_.value();
@@ -1043,7 +1003,7 @@ bool Controller::update_reference_linear_interpolation(
 }
 
 void Controller::interpolate_impedance_parameters() {
-  // We use exponential smoothing to interpolate the stiffness, damping and mass
+  // We use exponential smoothing to interpolate the stiffness and damping
   // matrices with the equation:
   //
   //   S_(n+1) = (1-c) * S_n + c * S_target
@@ -1062,13 +1022,6 @@ void Controller::interpolate_impedance_parameters() {
       params_.impedance.damping_smoothing_constant *
       Eigen::Map<const Eigen::Matrix<double, 6, 6, Eigen::RowMajor>>(
           motion_update_.target_damping.data());
-
-  impedance_params_.mass_matrix *=
-      1. - params_.impedance.mass_smoothing_constant;
-  impedance_params_.mass_matrix +=
-      params_.impedance.mass_smoothing_constant *
-      Eigen::Map<const Eigen::Matrix<double, 6, 6, Eigen::RowMajor>>(
-          motion_update_.target_mass.data());
 
   // Clamp feedforward target wrench to limits
   Eigen::Matrix<double, 6, 1> target_wrench;

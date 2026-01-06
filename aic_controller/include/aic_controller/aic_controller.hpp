@@ -195,7 +195,8 @@ class Controller : public controller_interface::ControllerInterface {
       CartesianState& new_reference);
 
   /**
-   * @brief
+   * @brief Interpolate the parameters for the cartesian impedance control
+   * stiffness and damping matrix, and the feedforward wrench at the tip.
    *
    */
   void interpolate_impedance_parameters();
@@ -209,7 +210,6 @@ class Controller : public controller_interface::ControllerInterface {
   ControlMode control_mode_;
 
   CartesianLimits cartesian_limits_;
-  // todo(johntgz) should we use JointLimitInterface instead of JointLimits?
   std::vector<joint_limits::JointLimits> joint_limits_;
 
   // Impedance controller for cartesian targets
@@ -250,12 +250,6 @@ class Controller : public controller_interface::ControllerInterface {
   CartesianState last_tool_reference_;
   // The last computed error between the current and target tool pose
   Eigen::Matrix<double, 6, 1> last_tool_pose_error_;
-
-  // todo(johntgz) remove after refactor
-  Eigen::Matrix<double, 6, 1> joint_positions_on_activate_;
-  Eigen::Matrix<double, 6, 1> dq_filtered_;
-  Eigen::Matrix<double, 6, 1> k_gains_;
-  Eigen::Matrix<double, 6, 1> d_gains_;
 
   double time_to_target_seconds_;
   double remaining_time_to_target_seconds_;
