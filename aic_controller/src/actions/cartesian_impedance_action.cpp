@@ -44,8 +44,8 @@ bool CartesianImpedanceAction::compute(
     const Eigen::MatrixXd& jacobian, const CartesianImpedanceParameters& params,
     JointTrajectoryPoint& new_joint_reference) {
   // Compute the wrench using the equation
-  // control_wrench = S * (x_des - x_obs) + D * (v_des - v_obs) + w_f
-  // where D is damping, S is stiffness and w_f the feedforward wrench
+  // control_wrench = K * (x_des - x) + D * (v_des - v) + w_f
+  // where D is damping, K is stiffness and w_f the feedforward wrench
   Eigen::Matrix<double, 6, 1> control_wrench =
       params.stiffness_matrix * tool_pose_error;
   control_wrench += params.damping_matrix * tool_vel_error;
