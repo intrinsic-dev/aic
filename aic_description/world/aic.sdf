@@ -6,6 +6,7 @@
       <ambient>0 0 0</ambient>
       <grid>false</grid>
       <!-- <sky></sky> -->
+      <background>0.15 0.15 0.15 1</background>
     </scene>
 
     <gui fullscreen="0">
@@ -330,36 +331,51 @@
 
     <gravity>0 0 -9.8</gravity>
 
-    <light type="directional" name="sun">
-      <intensity>1.0</intensity>
-      <cast_shadows>false</cast_shadows>
-      <pose>0 0 3 0 0 0</pose>
-      <diffuse>0.8 0.8 0.8 1</diffuse>
-      <specular>0.2 0.2 0.2 1</specular>
-      <attenuation>
-        <range>10</range>
-        <constant>0.9</constant>
-        <linear>0.01</linear>
-        <quadratic>0.001</quadratic>
-      </attenuation>
-      <direction>-0.2 -0.2 -1.0</direction>
-    </light>
-
-    <light type="spot" name="spot">
-      <pose>0 0 2.35 0 0 0</pose>
+    <light type="spot" name="enclosure_light">
+      <pose>0 0 2.5 0 0 0</pose>
       <cast_shadows>true</cast_shadows>
       <diffuse>1 1 1 1</diffuse>
-      <intensity>6</intensity>
+      <intensity>0.4</intensity> 
       <specular>.1 .1 .1 1</specular>
       <attenuation>
-        <range>4</range>
-        <constant>0.05</constant>
-        <linear>1.2</linear>
-        <quadratic>2.0</quadratic>
-      </attenuation>
+        <range>2</range>       
+        <constant>1.0</constant>  
+        <linear>0.01</linear>    
+        <quadratic>0.001</quadratic> 
+        </attenuation>
       <spot>
-        <outer_angle>1.5</outer_angle>
+        <inner_angle>0.1</inner_angle> 
+        <outer_angle>2</outer_angle> 
+        <falloff>1.0</falloff>         
       </spot>
+    </light>
+
+    <light type="point" name="ceiling_01">
+      <pose>2 2 6 0 0 0</pose>
+      <cast_shadows>false</cast_shadows>
+      <diffuse>1 1 1 1</diffuse>
+      <intensity>2</intensity> 
+      <specular>.1 .1 .1 1</specular>
+      <attenuation>
+        <range>9</range>       
+        <constant>1.0</constant>  
+        <linear>0.01</linear>    
+        <quadratic>0.001</quadratic> 
+      </attenuation>
+    </light>
+
+    <light type="point" name="ceiling_02">
+      <pose>-2 -2 6 0 0 0</pose>
+      <cast_shadows>false</cast_shadows>
+      <diffuse>1 1 1 1</diffuse>
+      <intensity>2</intensity> 
+      <specular>.1 .1 .1 1</specular>
+      <attenuation>
+        <range>9</range>       
+        <constant>1.0</constant>  
+        <linear>0.01</linear>    
+        <quadratic>0.001</quadratic> 
+      </attenuation>
     </light>
 
     <include>
