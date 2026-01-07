@@ -25,8 +25,8 @@
         </shadows>-->
 
         <camera_clip>
-          <near>0.05</near>
-          <far>50000</far>
+          <near>0.01</near>
+          <far>500</far>
         </camera_clip>
         <camera_pose>0.95 -0.1 1.3 0.0 0.0 3.14</camera_pose>
       </plugin>
