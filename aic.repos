@@ -2,7 +2,7 @@ repositories:
   UniversalRobots/Universal_Robots_Client_Library:
     type: git
     url: https://github.com/UniversalRobots/Universal_Robots_Client_Library.git
-    version: master
+    version: c35be114c0a765eeee0558d73182f1593179cc8d
   UniversalRobots/Universal_Robots_ROS2_Description:
     type: git
     url: https://github.com/UniversalRobots/Universal_Robots_ROS2_Description.git
@@ -10,7 +10,7 @@ repositories:
   UniversalRobots/Universal_Robots_ROS2_Driver:
     type: git
     url: https://github.com/UniversalRobots/Universal_Robots_ROS2_Driver.git
-    version: main
+    version: c1d3656bcaeb998636dad0b5577c2ea563499290
   UniversalRobots/Universal_Robots_ROS2_GZ_Simulation:
     type: git
     url: https://github.com/UniversalRobots/Universal_Robots_ROS2_GZ_Simulation.git
@@ -78,7 +78,7 @@ repositories:
   gazebo/gz_utils_vendor:
     type: git
     url: https://github.com/gazebo-release/gz_utils_vendor.git
-    version: 0.3.0
+    version: 3112207a812556e667e7f4eaa9e4321861dfc759
   gazebo/sdformat_vendor:
     type: git
     url: https://github.com/gazebo-release/sdformat_vendor.git
@@ -94,39 +94,39 @@ repositories:
   gazebo/gz-cmake:
     type: git
     url: https://github.com/gazebosim/gz-cmake
-    version: gz-cmake4
+    version: 7bfc784b208028e83b6367281030cabfcd0b8bd1
   gazebo/gz-common:
     type: git
     url: https://github.com/gazebosim/gz-common
-    version: gz-common6
+    version: 72978e6b7c0e653b400363fc9547e6418cee331a
   gazebo/gz-fuel-tools:
     type: git
     url: https://github.com/gazebosim/gz-fuel-tools
-    version: gz-fuel-tools10
+    version: 7f795546383e6faf2e0b294b610b2cc77b295b36
   gazebo/gz-sim:
     type: git
     url: https://github.com/gazebosim/gz-sim
-    version: gz-sim9
+    version: 04580a28e285271e65185065f5507f8cb491ed27
   gazebo/gz-gui:
     type: git
     url: https://github.com/gazebosim/gz-gui
-    version: gz-gui9
+    version: gz-gui9_9.0.2
   gazebo/gz-math:
     type: git
     url: https://github.com/gazebosim/gz-math
-    version: gz-math8
+    version: b779522d210a09d163b4b79071ac9a56e0668f0f
   gazebo/gz-msgs:
     type: git
     url: https://github.com/gazebosim/gz-msgs
-    version: gz-msgs11
+    version: 1f95a52c25a3adf11c53c8b7340135c5b4525376
   gazebo/gz-physics:
     type: git
     url: https://github.com/gazebosim/gz-physics
-    version: gz-physics8
+    version: f56db230c945d62bb8cdca81dbb7d8cf35ad5861
   gazebo/gz-plugin:
     type: git
     url: https://github.com/gazebosim/gz-plugin
-    version: gz-plugin3
+    version: 2e12344637ba468ae6332873d60bb9e342f3ff45
   gazebo/gz-rendering:
     type: git
     url: https://github.com/gazebosim/gz-rendering
@@ -134,20 +134,20 @@ repositories:
   gazebo/gz-sensors:
     type: git
     url: https://github.com/gazebosim/gz-sensors
-    version: gz-sensors9
+    version: 1d691704065918b7f18d84bc523288e8efdc5c00
   gazebo/gz-tools:
     type: git
     url: https://github.com/gazebosim/gz-tools
-    version: gz-tools2
+    version: gz-tools2_2.0.3
   gazebo/gz-transport:
     type: git
     url: https://github.com/gazebosim/gz-transport
-    version: gz-transport14
+    version: 264315858d0ca3099230a27d63aa9060b1da7dde
   gazebo/gz-utils:
     type: git
     url: https://github.com/gazebosim/gz-utils
-    version: gz-utils3
+    version: 30bd55d1793639f362110ebc6f3619f8512caba9
   gazebo/sdformat:
     type: git
     url: https://github.com/gazebosim/sdformat
-    version: sdf15
+    version: 940be3dcf9e9a0a43ded60703985fa7ebed40980
