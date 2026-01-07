@@ -58,11 +58,11 @@ class TestImpedanceNode(Node):
             orientation=Quaternion(x=quat[0], y=quat[1], z=quat[2], w=quat[3]),
         )
         msg.target_stiffness = np.diag(
-            [250.0, 250.0, 750.0, 250.0, 250.0, 250.0]
+            [100.0, 100.0, 100.0, 50.0, 50.0, 50.0]
         ).flatten()
-        msg.target_damping = np.diag([50.0, 50.0, 150.0, 50.0, 50.0, 50.0]).flatten()
+        msg.target_damping = np.diag([25.0, 25.0, 25.0, 15.0, 15.0, 15.0]).flatten()
         msg.feedforward_wrench_at_tip = Wrench(
-            force=Vector3(x=0.0, y=0.0, z=-27.1),
+            force=Vector3(x=0.0, y=0.0, z=0.0),
             torque=Vector3(x=0.0, y=0.0, z=0.0),
         )
         msg.trajectory_generation_mode.mode = TrajectoryGenerationMode.MODE_POSITION

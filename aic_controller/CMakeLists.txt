@@ -16,6 +16,7 @@ set(DEP_PKGS
   geometry_msgs
   hardware_interface
   joint_limits
+  kdl_parser
   kinematics_interface
   pluginlib
   rclcpp
@@ -54,6 +55,7 @@ target_link_libraries(aic_controller PUBLIC
   Eigen3::Eigen
   hardware_interface::hardware_interface
   joint_limits::joint_limits
+  kdl_parser::kdl_parser
   kinematics_interface::kinematics_interface
   pluginlib::pluginlib
   rclcpp::rclcpp

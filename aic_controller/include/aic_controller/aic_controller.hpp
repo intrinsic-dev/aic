@@ -48,6 +48,14 @@
 #include "aic_controller/aic_controller_parameters.hpp"
 #include "hardware_interface/types/hardware_interface_type_values.hpp"
 
+#include <kdl/tree.hpp>
+#include <kdl_parser/kdl_parser.hpp>
+#include <kdl/solveri.hpp>
+#include <kdl/jntarray.hpp>
+#include <kdl/chain.hpp>
+#include <kdl/solveri.hpp>
+#include <kdl/chaindynparam.hpp>
+
 //==============================================================================
 namespace aic_controller {
 
@@ -201,6 +209,11 @@ class Controller : public controller_interface::ControllerInterface {
    */
   void interpolate_impedance_parameters();
 
+  //todo(johntgz) rename, docstrings and move to another class
+  bool compute_gravity_compensation_torque(
+    const Eigen::VectorXd& current_joint_positions, 
+    Eigen::VectorXd& output_joint_torques) ;
+
   // controller parameters
   std::shared_ptr<aic_controller::ParamListener> param_listener_;
   aic_controller::Params params_;
@@ -258,6 +271,9 @@ class Controller : public controller_interface::ControllerInterface {
       pluginlib::ClassLoader<kinematics_interface::KinematicsInterface>>
       kinematics_loader_;
   std::unique_ptr<kinematics_interface::KinematicsInterface> kinematics_;
+
+  //todo(johntgz) move to another class
+  KDL::Chain chain_; // Robot's kinematic chain
 };
 
 }  // namespace aic_controller

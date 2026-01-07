@@ -207,6 +207,19 @@ controller_interface::CallbackReturn Controller::on_configure(
     return controller_interface::CallbackReturn::ERROR;
   }
 
+  // Get kinematic chain
+  //todo(johntgz) encapsulate within constructor in a separate class 
+  KDL::Tree tree;
+  if (!kdl_parser::treeFromUrdfModel(urdf_model, tree)) {
+    RCLCPP_ERROR(get_node()->get_logger(), "Cannot construct KDL tree from URDF");
+    return controller_interface::CallbackReturn::ERROR;
+  }
+  if (!tree.getChain(params_.kinematics.base, params_.kinematics.tip, chain_)) {
+    RCLCPP_ERROR(get_node()->get_logger(), "Cannot find chain within URDF tree from root '%s' to tip '%s'.", 
+      params_.kinematics.base.c_str(), params_.kinematics.tip.c_str());
+    return controller_interface::CallbackReturn::ERROR;
+  }
+
   // Initialize joint limits
   joint_limits_.resize(num_joints_);
   for (std::size_t i = 0; i < num_joints_; ++i) {
@@ -543,6 +556,20 @@ controller_interface::return_type Controller::update(
                    "Cartesian Impedance Action failed to compute controls!");
       return controller_interface::return_type::ERROR;
     }
+
+    // Add gravity compensation torque
+    Eigen::VectorXd gravity_compensation_torques;
+    if (!compute_gravity_compensation_torque(
+      current_joint_positions, gravity_compensation_torques)){
+      RCLCPP_ERROR(get_node()->get_logger(),
+                   "Failed to calculate torques for gravity compensation!");
+
+      return controller_interface::return_type::ERROR;
+    }
+    for (std::size_t i = 0; i < num_joints_; ++i) {
+     new_joint_reference.effort[i] += gravity_compensation_torques[i];
+    }
+
   } else if (control_mode_ == ControlMode::Admittance) {
     // UNIMPLEMENTED
 
@@ -1068,6 +1095,27 @@ void Controller::interpolate_impedance_parameters() {
       current_tool_state_.pose.rotation() * total_wrench_at_tip.head<3>();
   impedance_params_.feedforward_wrench.tail<3>() =
       current_tool_state_.pose.rotation() * total_wrench_at_tip.tail<3>();
+}
+
+bool Controller::compute_gravity_compensation_torque(
+  const Eigen::VectorXd& current_joint_positions,
+  Eigen::VectorXd& output_joint_torques)  {
+  KDL::Vector gravity(0.0, 0.0, -9.80665);
+  KDL::JntArray joint_positions(num_joints_);
+  joint_positions.data = current_joint_positions;
+
+  KDL::Chain chain = this->chain_;  // Make a copy of the chain at this point in time
+  KDL::ChainDynParam solver(chain, gravity);
+
+  KDL::JntArray gravity_torques(num_joints_);
+  int error = solver.JntToGravity(joint_positions, gravity_torques);
+  if (error != KDL::SolverI::E_NOERROR) {
+    return false;
+  }
+
+  output_joint_torques = gravity_torques.data;
+
+  return true;
 }
 
 }  // namespace aic_controller

@@ -300,8 +300,8 @@ aic_controller:
         max_wrench: [40., 40., 40., 5., 5., 5.]
         max_wrench_dot: [500., 500., 500., 25., 25., 25.]
       default_values:
-        control_stiffness: [250., 250., 500., 250., 250., 250.]
-        control_damping: [50., 50., 50., 50., 50., 50.]
+        control_stiffness: [100., 100., 100., 50., 50., 50.]
+        control_damping: [15.0, 15.0, 15.0, 15.0, 15.0, 15.0]
 
     kinematics:
       plugin_name: kinematics_interface_kdl/KinematicsInterfaceKDL
