@@ -1,7 +1,7 @@
 ### Recording an episode
 
-> [!NOTE]
-> All commands should be run from the participant workspace.
+> [!CAUTION]
+> Prefer using LeRobot instead, `rosetta` currently has bugs which causes some data collected to be corrupted.
 
 Start the episode recorder node:
 
@@ -26,9 +26,6 @@ Convert the recording to leRobot dataset:
 ```bash
 python -m bag_to_lerobot --contract src/aic/aic_lerobot_tools/contracts/aic_phase0.yaml --timestamp bag --out recording --bags episodes/*
 ```
-
-> [!CAUTION]
-> Converting actions are currently broken in `rosetta`, all actions will have 0 values.
 
 ### Contracts
 

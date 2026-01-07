@@ -5,7 +5,7 @@
   <version>0.0.1</version>
   <description>This package contains tools to work with LeRobot for the challenge</description>
   <maintainer email="koonpeng@intrinsic.ai">Teo Koon Peng</maintainer>
-  <license>Apache License 2.0</license>
+  <license>Apache-2.0</license>
 
   <exec_depend>rosbag2</exec_depend>
   <exec_depend>rosbag2_py</exec_depend>

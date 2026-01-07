@@ -13,6 +13,7 @@ ros-kilted-aic-control-interfaces = { path = "aic_interfaces/aic_control_interfa
 ros-kilted-aic-model-interfaces = { path = "aic_interfaces/aic_model_interfaces" }
 ros-kilted-control-msgs = "*"                                                          # lerobot_robot_ros
 ros-kilted-geometry-msgs = "*"                                                         # lerobot_robot_ros
+ros-kilted-rmw-zenoh-cpp = "*"
 ros-kilted-lerobot-robot-aic = { path = "lerobot_robot_aic" }
 ros-kilted-moveit-msgs = "*"                                                           # lerobot_robot_ros
 ros-kilted-rclpy = "*"
@@ -24,3 +25,6 @@ ros-kilted-std-srvs = "*"                                                       
 lerobot = "==0.4.2"
 lerobot_robot_ros = { git = "https://github.com/koonpeng/lerobot-ros", rev = "13cd1798c82be9a47fa26033973d7bc3bdb6886c", subdirectory = "lerobot_robot_ros" }
 lerobot_teleoperator_devices = { git = "https://github.com/koonpeng/lerobot-ros", rev = "13cd1798c82be9a47fa26033973d7bc3bdb6886c", subdirectory = "lerobot_teleoperator_devices" }
+
+[activation.env]
+RMW_IMPLEMENTATION = "rmw_zenoh_cpp"
