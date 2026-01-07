@@ -8,6 +8,7 @@
   <license>Apache-2.0</license>
 
   <depend>aic_model_interfaces</depend>
+  <depend>aic_task_interfaces</depend>
   <depend>rclpy</depend>
   <depend>sensor_msgs</depend>
 
