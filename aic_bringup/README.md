@@ -46,9 +46,9 @@ ros2 launch aic_bringup aic_gz_bringup.launch.py
 - `cable_x` (default: `"0.16"`) - Cable spawn X position (meters)
 - `cable_y` (default: `"0.2927"`) - Cable spawn Y position (meters)
 - `cable_z` (default: `"1.4166"`) - Cable spawn Z position (meters)
-- `cable_roll` (default: `"0.3129"`) - Cable spawn roll orientation (radians)
-- `cable_pitch` (default: `"-0.7994"`) - Cable spawn pitch orientation (radians)
-- `cable_yaw` (default: `"2.8656"`) - Cable spawn yaw orientation (radians)
+- `cable_roll` (default: `"0.5"`) - Cable spawn roll orientation (radians)
+- `cable_pitch` (default: `"-0.6605"`) - Cable spawn pitch orientation (radians)
+- `cable_yaw` (default: `"2.6928"`) - Cable spawn yaw orientation (radians)
 
 **Gazebo Configuration:**
 - `world_file` (default: `"aic.sdf"`) - Gazebo world file

@@ -15,7 +15,7 @@
         <cable_connection_1_link>sc_plug_link</cable_connection_1_link>
         <end_effector_model>ur5e</end_effector_model>
         <end_effector_link>ati/tool_link</end_effector_link>
-        <create_connection_delay_s>0</create_connection_delay_s>
+        <create_connection_delay_s>0.0</create_connection_delay_s>
       </plugin>
       </xacro:if>
     </include>

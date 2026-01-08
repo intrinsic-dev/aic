@@ -581,21 +581,21 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             "cable_roll",
-            default_value="0.3129",
+            default_value="0.5",
             description="Cable spawn roll orientation (radians)",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
             "cable_pitch",
-            default_value="-0.7994",
+            default_value="-0.6605",
             description="Cable spawn pitch orientation (radians)",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
             "cable_yaw",
-            default_value="2.8656",
+            default_value="2.6928",
             description="Cable spawn yaw orientation (radians)",
         )
     )
