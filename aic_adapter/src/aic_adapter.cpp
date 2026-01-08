@@ -165,7 +165,7 @@ class AicAdapterNode : public rclcpp::Node {
           tf_buffer_->lookupTransform("gripper/tcp", "world", t_image_0);
       observation_msg->tcp_to_world = t;
     } catch (const tf2::TransformException& ex) {
-      RCLCPP_WARN(get_logger(), "Gripper transform not available.");
+      RCLCPP_WARN(get_logger(), "Gripper transform not available: %s", ex.what());
     }
 
     this->observation_pub_->publish(std::move(observation_msg));

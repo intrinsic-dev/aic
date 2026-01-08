@@ -2,6 +2,7 @@
 
 import rclpy
 
+from action_msgs.msg import GoalStatus
 from aic_task_interfaces.action import InsertCable
 from rclpy.action import ActionClient
 from rclpy.executors import ExternalShutdownException
@@ -29,8 +30,10 @@ class CreateAndCancelTaskNode(Node):
             self.get_logger().info("Goal rejected")
             return
         self.goal_handle = goal_handle
-        self.get_logger().info("Waiting 2 seconds before canceling goal....")
-        self.timer = self.create_timer(2.0, self.timer_callback)
+        self.get_logger().info("Waiting 5 seconds before canceling goal....")
+        self.timer = self.create_timer(5.0, self.timer_callback)
+        self.get_result_future = goal_handle.get_result_async()
+        self.get_result_future.add_done_callback(self.get_result_callback)
 
     def feedback_callback(self, feedback):
         self.get_logger().info(f"Received feedback: {feedback}")
@@ -47,6 +50,16 @@ class CreateAndCancelTaskNode(Node):
             self.get_logger().info("Goal successfully canceled")
         else:
             self.get_logger().info("Goal failed to cancel")
+        rclpy.shutdown()
+
+    def get_result_callback(self, future):
+        self.get_logger().info("Received result")
+        result = future.result().result
+        status = future.result().status
+        if status == GoalStatus.STATUS_SUCCEEDED:
+            self.get_logger().info(f"Goal succeeded. Result: {result}")
+        else:
+            self.get_logger().info(f"Goal failed. Status: {status} result: {result}")
         rclpy.shutdown()
 
 
