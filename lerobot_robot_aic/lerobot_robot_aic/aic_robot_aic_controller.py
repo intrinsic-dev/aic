@@ -26,6 +26,7 @@ from lerobot.cameras import CameraConfig, make_cameras_from_configs
 from lerobot.robots import Robot, RobotConfig
 from lerobot.utils.errors import DeviceAlreadyConnectedError, DeviceNotConnectedError
 from rclpy.node import Node
+from sensor_msgs.msg import JointState
 
 from .aic_robot import aic_cameras, arm_joint_names, gripper_joint_name
 
@@ -49,6 +50,7 @@ class AICRobot(Robot):
         self.cameras = make_cameras_from_configs(config.cameras)
         self.robot_node: Node | None = None
         self.spin_thread: Thread | None = None
+        self._last_joint_state: dict[str, dict[str, float]] | None = None
 
     @property
     def _cameras_ft(self) -> dict[str, tuple]:
@@ -80,9 +82,35 @@ class AICRobot(Robot):
             and all(cam.is_connected for cam in self.cameras.values())
         )
 
+    def _joint_state_callback(self, msg: JointState) -> None:
+        self._last_joint_state = self._last_joint_state or {}
+        positions = {}
+        velocities = {}
+        name_to_index = {name: i for i, name in enumerate(msg.name)}
+        for joint_name in self.config.arm_joint_names:
+            idx = name_to_index.get(joint_name)
+            if idx is None:
+                raise ValueError(f"Joint '{joint_name}' not found in joint state.")
+            positions[joint_name] = msg.position[idx]
+            velocities[joint_name] = msg.velocity[idx]
+
+        if self.config.gripper_joint_name:
+            idx = name_to_index.get(self.config.gripper_joint_name)
+            if idx is None:
+                raise ValueError(
+                    f"Gripper joint '{self.config.gripper_joint_name}' not found in joint state."
+                )
+            positions[self.config.gripper_joint_name] = msg.position[idx]
+            velocities[self.config.gripper_joint_name] = msg.velocity[idx]
+
+        self._last_joint_state["position"] = positions
+        self._last_joint_state["velocity"] = velocities
+
     def connect(self, calibrate: bool = True) -> None:
-        if self.is_connected:
+        if self.robot_node is not None:
             raise DeviceAlreadyConnectedError(f"{self} already connected")
+
+        self.robot_node = Node("aic_robot_node")
 
         if calibrate is True:
             print(
@@ -92,7 +120,10 @@ class AICRobot(Robot):
         for cam in self.cameras.values():
             cam.connect()
 
-        # TODO: Subscribe to aic controller topics.
+        self.robot_node.create_subscription(
+            JointState, "joint_states", self._joint_state_callback, 10
+        )
+
         raise NotImplementedError("aic_controller interface not implemented yet.")
 
     @property

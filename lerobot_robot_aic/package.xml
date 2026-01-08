@@ -8,7 +8,6 @@
   <license>Apache-2.0</license>
 
   <exec_depend>aic_control_interfaces</exec_depend>
-  <exec_depend>aic_model_interfaces</exec_depend>
 
   <export>
     <build_type>ament_python</build_type>
