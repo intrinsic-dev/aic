@@ -244,6 +244,14 @@ void CablePlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
       return;
     }
 
+    if (this->detachableJointStatic0Entity != kNullEntity ||
+        this->detachableJointStatic1Entity != kNullEntity) {
+      _ecm.RequestRemoveEntity(this->detachableJointStatic0Entity);
+      _ecm.RequestRemoveEntity(this->detachableJointStatic1Entity);
+      this->detachableJointStatic0Entity = kNullEntity;
+      this->detachableJointStatic1Entity = kNullEntity;
+    }
+
     // Attach cable connection 0 to end effector
     if (this->detachableJoint0Entity == kNullEntity) {
       this->detachableJoint0Entity = _ecm.CreateEntity();
@@ -293,8 +301,6 @@ void CablePlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
     if (this->detachableJoint0Entity != kNullEntity) {
       _ecm.RequestRemoveEntity(this->detachableJoint0Entity);
       this->detachableJoint0Entity = kNullEntity;
-      _ecm.RequestRemoveEntity(this->detachableJointStatic1Entity);
-      this->detachableJointStatic1Entity = kNullEntity;
       return;
     }
 
