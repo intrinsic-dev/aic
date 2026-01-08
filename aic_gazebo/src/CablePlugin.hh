@@ -18,8 +18,10 @@
 #ifndef AIC_GAZEBO__CABLE_PLUGIN_HH_
 #define AIC_GAZEBO__CABLE_PLUGIN_HH_
 
+#include <atomic>
 #include <chrono>
 
+#include <gz/transport/Node.hh>
 #include <gz/sim/EventManager.hh>
 #include <gz/sim/Model.hh>
 #include <gz/sim/SdfEntityCreator.hh>
@@ -43,8 +45,14 @@ namespace aic_gazebo
     /// \brief Create connections with end-effector / port
     CREATE_CONNECTIONS,
 
-    /// \brief Cable is connected
-    CONNECTED,
+    /// \brief Cable connection 0 is attached to gripper
+    CABLE_ATTACHED_TO_GRIPPER,
+
+    /// \brief Attach cable connection 0 to port
+    ATTACH_CABLE_TO_PORT,
+
+    /// \brief Task complete - cable 0 is connected to port
+    COMPLETED,
   };
 
   /// \brief Plugin for initializing the cable
@@ -110,6 +118,9 @@ namespace aic_gazebo
     /// \brief Name of the cable connection 0 link
     private: std::string cableConnection0LinkName;
 
+    /// \brief Name of the cable connection 0 port
+    private: std::string cableConnection0PortName;
+
     /// \brief Name of the cable connection 1 link
     private: std::string cableConnection1LinkName;
 
@@ -131,6 +142,19 @@ namespace aic_gazebo
 
     /// \brief Current state of the cable
     private: CableState cableState{CableState::INITIALIZATION};
-  };
+
+    /// \brief Name of the cable connection 0 port topic
+    private: std::string cableConnection0PortTopic;
+
+    /// \brief Cable connection 0 port subscriber
+    private: gz::transport::Node::Subscriber cableConnection0PortSub;
+
+    /// \brief Whether to attach cable connection 0 to port
+    /// This is set on cableConnection0PortSub callback
+    private: std::atomic<bool> attachCableConnection0ToPort{false};
+
+    /// \brief Gazebo transport node
+    private: gz::transport::Node node;
+};
 }
 #endif

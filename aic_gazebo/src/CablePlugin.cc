@@ -17,6 +17,9 @@
 
 #include "CablePlugin.hh"
 
+#include <gz/msgs/boolean.pb.h>
+
+#include <functional>
 #include <gz/common/Console.hh>
 #include <gz/plugin/Register.hh>
 #include <gz/sim/Util.hh>
@@ -87,11 +90,15 @@ Entity makeStatic(Entity _entity, bool _attachEntityAsParentOfJoint,
   }
 
   auto nameComp = _ecm.Component<components::Name>(_entity);
-  staticModelToSpawn.SetName(nameComp->Data() + "__static__");
-
-  Entity staticEntity = _creator->CreateEntities(&staticModelToSpawn);
-  _creator->SetParent(staticEntity,
-                      _ecm.EntityByComponents(components::World()));
+  std::string staticEntName = nameComp->Data() + "__static__";
+  Entity staticEntity =
+      _ecm.EntityByComponents(components::Name(staticEntName));
+  if (staticEntity == kNullEntity) {
+    staticModelToSpawn.SetName(staticEntName);
+    staticEntity = _creator->CreateEntities(&staticModelToSpawn);
+    _creator->SetParent(staticEntity,
+                        _ecm.EntityByComponents(components::World()));
+  }
 
   Entity staticLinkEntity = _ecm.EntityByComponents(
       components::Link(), components::ParentEntity(staticEntity),
@@ -146,6 +153,14 @@ void CablePlugin::Configure(const gz::sim::Entity& _entity,
     return;
   }
 
+  if (_sdf->HasElement("cable_connection_0_port")) {
+    this->cableConnection0PortName =
+        _sdf->Get<std::string>("cable_connection_0_port");
+  } else {
+    gzerr << "Missing <cable_connection_0_port> parameter." << std::endl;
+    return;
+  }
+
   if (_sdf->HasElement("cable_connection_1_link")) {
     this->cableConnection1LinkName =
         _sdf->Get<std::string>("cable_connection_1_link");
@@ -172,6 +187,7 @@ void CablePlugin::Configure(const gz::sim::Entity& _entity,
   this->createJointDelay = std::chrono::duration<double>(delay);
   this->creator = std::make_unique<SdfEntityCreator>(_ecm, _eventManager);
 
+  gzmsg << "Cable transitioning to HARNESS state." << std::endl;
   this->cableState = CableState::HARNESS;
 }
 
@@ -181,25 +197,16 @@ void CablePlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
   if (this->cableConnection0LinkEntity == kNullEntity) {
     this->cableConnection0LinkEntity =
         findLinkInModel(this->cableModelName, cableConnection0LinkName, _ecm);
-
-    if (this->cableConnection0LinkEntity == kNullEntity)
-      gzerr << "Uable to find cable connection 0 link" << std::endl;
   }
 
   if (this->cableConnection1LinkEntity == kNullEntity) {
     this->cableConnection1LinkEntity =
         findLinkInModel(this->cableModelName, cableConnection1LinkName, _ecm);
-
-    if (this->cableConnection1LinkEntity == kNullEntity)
-      gzerr << "Uable to find cable connection 1 link" << std::endl;
   }
 
   if (this->endEffectorLinkEntity == kNullEntity) {
     this->endEffectorLinkEntity =
         findLinkInModel(this->endEffectorModelName, endEffectorLinkName, _ecm);
-
-    if (this->endEffectorLinkEntity == kNullEntity)
-      gzerr << "Unable to find end effector connection link" << std::endl;
   }
 
   if (this->endEffectorLinkEntity == kNullEntity ||
@@ -213,6 +220,8 @@ void CablePlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
         this->cableConnection0LinkEntity, false, this->creator.get(), _ecm);
     this->detachableJointStatic1Entity = makeStatic(
         this->cableConnection1LinkEntity, true, this->creator.get(), _ecm);
+
+    gzmsg << "Cable transitioning to WAITING state." << std::endl;
     this->cableState = CableState::WAITING;
   }
 
@@ -222,6 +231,8 @@ void CablePlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
     if (_info.simTime < this->createJointDelay) {
       return;
     }
+
+    gzmsg << "Cable transitioning to CREATE_CONNECTIONS state." << std::endl;
     this->cableState = CableState::CREATE_CONNECTIONS;
   }
 
@@ -241,6 +252,60 @@ void CablePlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
                                {this->endEffectorLinkEntity,
                                 this->cableConnection0LinkEntity, "fixed"}));
     }
+
+    gzmsg << "Cable transitioning to CABLE_ATTACHED_TO_GRIPPER state."
+          << std::endl;
+    this->cableState = CableState::CABLE_ATTACHED_TO_GRIPPER;
+  }
+
+  if (this->cableState == CableState::CABLE_ATTACHED_TO_GRIPPER) {
+    if (this->cableConnection0PortTopic.empty()) {
+      std::vector<std::string> allTopics;
+      this->node.TopicList(allTopics);
+
+      for (const auto& topic : allTopics) {
+        if (topic.find(this->cableConnection0PortName) != std::string::npos) {
+          this->cableConnection0PortTopic = topic;
+          break;
+        }
+      }
+
+      if (this->cableConnection0PortTopic.empty()) return;
+
+      std::function<void(const msgs::Boolean&)> callback =
+          [this](const msgs::Boolean& _msg) {
+            this->attachCableConnection0ToPort = _msg.data();
+            gzdbg << "Cable connection 0 touched: " << _msg.data() << std::endl;
+          };
+      this->cableConnection0PortSub = this->node.CreateSubscriber(
+          this->cableConnection0PortTopic, callback);
+    }
+
+    if (this->attachCableConnection0ToPort) {
+      gzmsg << "Cable transitioning to ATTACH_CABLE_TO_PORT state."
+            << std::endl;
+      this->cableState = CableState::ATTACH_CABLE_TO_PORT;
+    }
+  }
+
+  if (this->cableState == CableState::ATTACH_CABLE_TO_PORT) {
+    // Detach all connection joints first
+    if (this->detachableJoint0Entity != kNullEntity) {
+      _ecm.RequestRemoveEntity(this->detachableJoint0Entity);
+      this->detachableJoint0Entity = kNullEntity;
+      _ecm.RequestRemoveEntity(this->detachableJointStatic1Entity);
+      this->detachableJointStatic1Entity = kNullEntity;
+      return;
+    }
+
+    // Attach cable connection 0 to port
+    // Simulate this by making all cable connections static
+    this->detachableJointStatic0Entity = makeStatic(
+        this->cableConnection0LinkEntity, true, this->creator.get(), _ecm);
+    this->detachableJointStatic1Entity = makeStatic(
+        this->cableConnection1LinkEntity, true, this->creator.get(), _ecm);
+    gzmsg << "Cable transitioning to COMPLETED state." << std::endl;
+    this->cableState = CableState::COMPLETED;
   }
 }
 
