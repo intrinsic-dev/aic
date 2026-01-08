@@ -9,6 +9,8 @@ from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import ExternalShutdownException
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.node import Node
+from rclpy.task import Future
+from std_srvs.srv import Empty
 
 
 class AicModel(Node):
@@ -18,6 +20,8 @@ class AicModel(Node):
         self.subscription = self.create_subscription(
             Observation, "observations", self.observation_callback, 10
         )
+        self.cancel_service = self.create_service(
+            Empty, 'cancel_task', self.cancel_task_callback)
         self.goal_handle = None
         self.goal_handle_lock = threading.Lock()
         self.action_server = ActionServer(
@@ -28,6 +32,13 @@ class AicModel(Node):
             cancel_callback=self.insert_cable_cancel_callback,
             callback_group=ReentrantCallbackGroup()
         )
+
+    def cancel_task_callback(self, request, response):
+        self.get_logger().info("cancel_task_callback()")
+        with self.goal_handle_lock:
+            if self.goal_handle and self.goal_handle.is_active:
+                self.goal_handle.abort()
+        return Empty.Response()
 
     def get_seconds(self, header):
         return header.stamp.sec + header.stamp.nanosec / 1e9
@@ -59,7 +70,7 @@ class AicModel(Node):
             port_name: {task.port_name}
             target_module_name: {task.target_module_name}
             time_limit: {task.time_limit}
-        """
+        """)
 
     def insert_cable_goal_callback(self, goal_request):
         with self.goal_handle_lock:
@@ -71,23 +82,57 @@ class AicModel(Node):
                 return GoalResponse.ACCEPT
 
     def insert_cable_accepted_goal_callback(self, goal_handle):
-        self.get_logger().info(f"Accepted insert cable goal:\n" + self.task_to_string(goal_handle.request.task))
+        self.get_logger().info(f"Accepted insert_cable goal:\n" + self.task_to_string(goal_handle.request.task))
         self.goal_handle = goal_handle
         self.goal_handle.execute()
 
+    def insert_cable_cancel_callback(self, goal_handle):
+        self.get_logger().info("Received insert_cable cancel request")
+        return CancelResponse.ACCEPT
+
     async def insert_cable_execute_callback(self, goal_handle):
+        self.get_logger().info("Entering insert_cable_execute_callback()")
+        while rclpy.ok():
+            self.get_logger().info("insert_cable execute loop")
+
+            # First, wait a bit (async!)
+            wait_future = Future()
+            def done_waiting():
+                wait_future.set_result(None)
+            wait_timer = self.create_timer(1.0, done_waiting, clock=self.get_clock())
+            await wait_future
+            wait_timer.cancel()
+            self.destroy_timer(wait_timer)
+
+            # See if a cancellation request has arrived
+            if goal_handle.is_cancel_requested:
+                goal_handle.canceled()
+                result = InsertCable.Result()
+                result.success = False
+                result.message = "Canceled via action client"
+                self.get_logger().info("Exiting insert_cable execute loop due to cancelation request.")
+                with self.goal_handle_lock:
+                    self.goal_handle = None
+                return result
+
+            # See if the goal was aborted via the cancel_task service
+            if not goal_handle.is_active:
+                result = InsertCable.Result()
+                result.success = False
+                result.message = "Canceled via cancel_task service"
+                self.get_logger().info("Exiting insert_cable execute loop due to cancel_task request.")
+                with self.goal_handle_lock:
+                    self.goal_handle = None
+                return result
 
 
-    def finish_active_task(self):
-        if not self.goal_handle:
-            self.get_logger().error("finish_active_task(): No active goal")
-            return
-        self.goal_handle.
+            # Send a feedback message
+            # TODO
 
-        result = InsertCable.Result()
-        result.success = True
-        result.message = "Hooray!"
-        return result
+            # Check if the task has been completed
+            # TODO
+
+        self.get_logger().info("Exiting insert_cable execute loop")
 
 
 def main(args=None):
