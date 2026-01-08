@@ -252,9 +252,14 @@ controller_interface::CallbackReturn Controller::on_configure(
   impedance_params_ = resized_impedance_params;
 
   if (params_.impedance.gravity_compensation) {
-    gravity_compensation_action_->configure(
-        urdf_model, params_.kinematics.base, params_.kinematics.tip,
-        get_node()->get_node_logging_interface());
+    if (!gravity_compensation_action_->configure(
+            urdf_model, params_.kinematics.base, params_.kinematics.tip,
+            get_node()->get_node_logging_interface())) {
+      RCLCPP_ERROR(get_node()->get_logger(),
+                   "Failed to configure GravityCompensationAction!");
+
+      return controller_interface::CallbackReturn::ERROR;
+    }
   }
 
   // Set default parameters for stiffness and damping matrices
