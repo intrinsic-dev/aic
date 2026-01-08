@@ -22,10 +22,12 @@ from dataclasses import dataclass, field
 from threading import Thread
 from typing import Any
 
+import rclpy
 from lerobot.cameras import CameraConfig, make_cameras_from_configs
 from lerobot.robots import Robot, RobotConfig
 from lerobot.utils.errors import DeviceAlreadyConnectedError, DeviceNotConnectedError
 from rclpy.node import Node
+from rclpy.executors import SingleThreadedExecutor
 from sensor_msgs.msg import JointState
 
 from .aic_robot import aic_cameras, arm_joint_names, gripper_joint_name
@@ -33,23 +35,25 @@ from .aic_robot import aic_cameras, arm_joint_names, gripper_joint_name
 logger = logging.getLogger(__name__)
 
 
-@RobotConfig.register_subclass("aic_aic_controller")
+@RobotConfig.register_subclass("aic_controller")
 @dataclass(kw_only=True)
-class AICRobotAICConfig(RobotConfig):
+class AICRobotAICControllerConfig(RobotConfig):
     arm_joint_names: list[str] = field(default_factory=lambda: arm_joint_names.copy())
     gripper_joint_name: str = gripper_joint_name
     cameras: dict[str, CameraConfig] = field(default_factory=lambda: aic_cameras.copy())
 
 
-class AICRobot(Robot):
+class AICRobotAICController(Robot):
     name = "ur5e_aic"
 
-    def __init__(self, config: AICRobotAICConfig):
+    def __init__(self, config: AICRobotAICControllerConfig):
         super().__init__(config)
         self.config = config
         self.cameras = make_cameras_from_configs(config.cameras)
         self.robot_node: Node | None = None
-        self.spin_thread: Thread | None = None
+        self.executor: SingleThreadedExecutor | None = None
+        self.executor_thread: Thread | None = None
+        self._is_connected = False
         self._last_joint_state: dict[str, dict[str, float]] | None = None
 
     @property
@@ -76,11 +80,7 @@ class AICRobot(Robot):
 
     @property
     def is_connected(self) -> bool:
-        return (
-            self.robot_node is not None
-            and self.spin_thread is not None
-            and all(cam.is_connected for cam in self.cameras.values())
-        )
+        return self._is_connected
 
     def _joint_state_callback(self, msg: JointState) -> None:
         self._last_joint_state = self._last_joint_state or {}
@@ -110,21 +110,30 @@ class AICRobot(Robot):
         if self.robot_node is not None:
             raise DeviceAlreadyConnectedError(f"{self} already connected")
 
-        self.robot_node = Node("aic_robot_node")
+        if not rclpy.ok():
+            rclpy.init()
 
         if calibrate is True:
             print(
                 "Warning: Calibration is not supported, ensure the robot is already calibrated before running lerobot."
             )
 
-        for cam in self.cameras.values():
-            cam.connect()
+        self.robot_node = Node("aic_robot_node")
 
         self.robot_node.create_subscription(
             JointState, "joint_states", self._joint_state_callback, 10
         )
 
-        raise NotImplementedError("aic_controller interface not implemented yet.")
+        self.executor = SingleThreadedExecutor()
+        self.executor.add_node(self.robot_node)
+        self.executor_thread = Thread(target=self.executor.spin, daemon=True)
+        self.executor_thread.start()
+        time.sleep(3)  # Give some time to connect to services and receive messages
+
+        for cam in self.cameras.values():
+            cam.connect()
+
+        self._is_connected = True
 
     @property
     def is_calibrated(self) -> bool:
@@ -156,6 +165,10 @@ class AICRobot(Robot):
 
         return obs_dict
 
+    def send_action(self, action: dict[str, Any]) -> dict[str, Any]:
+        # TODO:
+        return {}
+
     def disconnect(self) -> None:
         if not self.is_connected:
             raise DeviceNotConnectedError(f"{self} is not connected.")
@@ -167,6 +180,8 @@ class AICRobot(Robot):
             self.robot_node.destroy_node()
             self.robot_node = None
 
-        if self.spin_thread is not None:
-            self.spin_thread.join()
-            self.spin_thread = None
+        if self.executor_thread is not None:
+            self.executor_thread.join()
+            self.executor_thread = None
+
+        self._is_connected = False
