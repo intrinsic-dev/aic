@@ -284,6 +284,7 @@ aic_controller:
       - wrist_3_joint
 
     impedance:
+      gravity_compensation: true
       stiffness_smoothing_constant: 0.1
       damping_smoothing_constant: 0.1
       activation_percentage: 0.0

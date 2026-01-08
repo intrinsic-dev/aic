@@ -99,6 +99,11 @@ aic_controller:
 
   # Cartesian impedance controller parameters
   impedance:
+    gravity_compensation: {
+      type: bool,
+      default_value: false,
+      description: "If enabled, compensate for gravitational force on robot arm in joint torque output."
+    }
     stiffness_smoothing_constant: {
       type: double,
       default_value: 0.0,

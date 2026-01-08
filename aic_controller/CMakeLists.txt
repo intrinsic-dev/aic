@@ -42,6 +42,7 @@ add_library(aic_controller SHARED
   src/cartesian_limits.cpp
   src/utils.cpp
   src/actions/cartesian_impedance_action.cpp
+  src/actions/gravity_compensation_action.cpp
 )
 target_compile_features(aic_controller PUBLIC cxx_std_17)
 target_include_directories(aic_controller PUBLIC

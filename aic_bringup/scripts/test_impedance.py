@@ -60,7 +60,7 @@ class TestImpedanceNode(Node):
         msg.target_stiffness = np.diag(
             [100.0, 100.0, 100.0, 50.0, 50.0, 50.0]
         ).flatten()
-        msg.target_damping = np.diag([25.0, 25.0, 25.0, 15.0, 15.0, 15.0]).flatten()
+        msg.target_damping = np.diag([40.0, 40.0, 40.0, 15.0, 15.0, 15.0]).flatten()
         msg.feedforward_wrench_at_tip = Wrench(
             force=Vector3(x=0.0, y=0.0, z=0.0),
             torque=Vector3(x=0.0, y=0.0, z=0.0),
@@ -88,14 +88,14 @@ class TestImpedanceNode(Node):
             "Published MotionUpdate for tool up configuration to aic_controller"
         )
 
-        time.sleep(5.0)
+        # time.sleep(5.0)
 
-        self.publisher.publish(
-            self.generate_motion_update(pos_tool_down, quat_upright, time_to_target=2.0)
-        )
-        self.get_logger().info(
-            "Published MotionUpdate for tool down configuration to aic_controller"
-        )
+        # self.publisher.publish(
+        #     self.generate_motion_update(pos_tool_down, quat_upright, time_to_target=2.0)
+        # )
+        # self.get_logger().info(
+        #     "Published MotionUpdate for tool down configuration to aic_controller"
+        # )
 
         # Shutdown after a short delay to ensure message is sent.
         time.sleep(1.0)
