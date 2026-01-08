@@ -38,7 +38,7 @@ Controller::Controller()
       control_mode_(ControlMode::Invalid),
       cartesian_impedance_action_(nullptr),
       feedforward_wrench_at_tip_(Eigen::Matrix<double, 6, 1>::Zero()),
-      current_wrench_at_tip_(Eigen::Matrix<double, 6, 1>::Zero()),
+      sensed_wrench_at_tip_(Eigen::Matrix<double, 6, 1>::Zero()),
       motion_update_sub_(nullptr),
       motion_update_received_(false),
       last_commanded_state_(std::nullopt),
@@ -88,6 +88,14 @@ Controller::state_interface_configuration() const {
   for (const auto& joint : params_.joints) {
     state_interfaces_config_names.push_back(joint + "/" +
                                             hardware_interface::HW_IF_VELOCITY);
+  }
+
+  if (control_mode_ == ControlMode::Impedance) {
+    auto ft_state_interfaces =
+        force_torque_sensor_->get_state_interface_names();
+    state_interfaces_config_names.insert(state_interfaces_config_names.end(),
+                                         ft_state_interfaces.begin(),
+                                         ft_state_interfaces.end());
   }
 
   return {controller_interface::interface_configuration_type::INDIVIDUAL,
@@ -227,6 +235,12 @@ controller_interface::CallbackReturn Controller::on_configure(
     }
   }
 
+  if (control_mode_ == ControlMode::Impedance) {
+    force_torque_sensor_ =
+        std::make_unique<semantic_components::ForceTorqueSensor>(
+            params_.force_torque_sensor.name);
+  }
+
   // Validate impedance control parameters
   for (const double& gain : params_.impedance.pose_error_integrator.gain) {
     if (gain < 0.0) {
@@ -349,10 +363,14 @@ controller_interface::CallbackReturn Controller::on_configure(
 //==============================================================================
 controller_interface::CallbackReturn Controller::on_activate(
     const rclcpp_lifecycle::State& /*previous_state*/) {
+  if (control_mode_ == ControlMode::Impedance) {
+    force_torque_sensor_->assign_loaned_state_interfaces(state_interfaces_);
+  }
+
   // read and initialize current joint states
   current_state_.positions.assign(num_joints_, 0.0);
   current_state_.velocities.assign(num_joints_, 0.0);
-  read_state_from_hardware(current_state_);
+  read_state_from_hardware(current_state_, sensed_wrench_at_tip_);
   for (const auto& val : current_state_.positions) {
     if (std::isnan(val)) {
       RCLCPP_ERROR(get_node()->get_logger(),
@@ -379,6 +397,9 @@ controller_interface::CallbackReturn Controller::on_activate(
 //==============================================================================
 controller_interface::CallbackReturn Controller::on_deactivate(
     const rclcpp_lifecycle::State& /*previous_state*/) {
+  if (control_mode_ == ControlMode::Impedance) {
+    force_torque_sensor_->release_interfaces();
+  }
   release_interfaces();
 
   reset_motion_update_msg(motion_update_);
@@ -414,7 +435,7 @@ controller_interface::CallbackReturn Controller::on_cleanup(
 controller_interface::return_type Controller::update(
     const rclcpp::Time& /*time*/, const rclcpp::Duration& /*period*/) {
   // Read and update current states from sensors
-  read_state_from_hardware(current_state_);
+  read_state_from_hardware(current_state_, sensed_wrench_at_tip_);
 
   // Use forward kinematics to update the current cartesian state of tool frame
   if (!kinematics_->calculate_link_transform(current_state_.positions,
@@ -590,7 +611,9 @@ controller_interface::return_type Controller::update(
 }
 
 //==============================================================================
-void Controller::read_state_from_hardware(JointTrajectoryPoint& state_current) {
+void Controller::read_state_from_hardware(
+    JointTrajectoryPoint& state_current,
+    Eigen::Matrix<double, 6, 1>& sensed_wrench_at_tip) {
   // Set state_current to last commanded state if any of the hardware interface
   // values are NaN
   bool nan_position = false;
@@ -629,6 +652,30 @@ void Controller::read_state_from_hardware(JointTrajectoryPoint& state_current) {
                  "current velocity to last_commanded_state_");
     if (last_commanded_state_.has_value()) {
       state_current.velocities = last_commanded_state_.value().velocities;
+    }
+  }
+
+  if (control_mode_ == ControlMode::Impedance) {
+    // Retrieve readings from force torque sensor and in the event of NaN
+    // readings, set all values to zero.
+    auto ft_forces = force_torque_sensor_->get_forces();
+    auto ft_torques = force_torque_sensor_->get_torques();
+
+    bool nan_ft_value = false;
+    nan_ft_value |= std::any_of(ft_forces.begin(), ft_forces.end(),
+                                [](double val) { return std::isnan(val); });
+    nan_ft_value |= std::any_of(ft_torques.begin(), ft_torques.end(),
+                                [](double val) { return std::isnan(val); });
+    if (nan_ft_value) {
+      RCLCPP_ERROR(this->get_node()->get_logger(),
+                   "Read NaN value from force-torque sensor. Setting sensed "
+                   "values to zero.");
+      sensed_wrench_at_tip.setZero();
+    } else {
+      sensed_wrench_at_tip.head<3>() =
+          Eigen::Map<const Eigen::Vector3d>(ft_forces.data());
+      sensed_wrench_at_tip.tail<3>() =
+          Eigen::Map<const Eigen::Vector3d>(ft_torques.data());
     }
   }
 }
@@ -1090,7 +1137,7 @@ void Controller::interpolate_impedance_parameters() {
   Eigen::Matrix<double, 6, 1> total_wrench_at_tip =
       feedforward_wrench_at_tip_ +
       wrench_feedback_gains_at_tip.cwiseProduct(feedforward_wrench_at_tip_ -
-                                                current_wrench_at_tip_);
+                                                sensed_wrench_at_tip_);
 
   // Rotate wrench at tool tip into base frame.
   impedance_params_.feedforward_wrench.head<3>() =

@@ -28,6 +28,12 @@ aic_controller:
       description: "Specifies the damping coefficient for the Jacobian pseudo inverse."
     }
 
+  force_torque_sensor:
+    name: {
+      type: string,
+      description: "Name of the force torque sensor as defined in the robot description."
+    }
+
   control_mode: {
     type: string,
     default_value: "admittance",

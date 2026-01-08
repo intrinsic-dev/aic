@@ -289,7 +289,7 @@ aic_controller:
       damping_smoothing_constant: 0.1
       activation_percentage: 0.0
       pose_error_integrator:
-        gain: [0.0, 0.0, 0.0, 0., 0., 0.]
+        gain: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         bound: [10., 10., 10., 2., 2., 2.]
       maximum_wrench: [50.0, 50.0, 50.0, 10.0, 10.0, 10.0]
       nullspace:
@@ -310,6 +310,9 @@ aic_controller:
       base: base_link # Assumed to be stationary
       tip: gripper/tcp # Frame ID of tool center point
       alpha: 0.0005 # Specifies the damping coefficient for the Jacobian pseudo inverse.
+
+    force_torque_sensor:
+      name: AtiForceTorqueSensor
 
     clamp_to_limits:
       min_translational_position:

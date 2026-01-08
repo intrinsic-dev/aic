@@ -35,6 +35,7 @@
 #include "rclcpp_lifecycle/state.hpp"
 #include "realtime_tools/realtime_publisher.hpp"
 #include "realtime_tools/realtime_thread_safe_box.hpp"
+#include "semantic_components/force_torque_sensor.hpp"
 #include "tf2_eigen/tf2_eigen.hpp"
 #include "urdf/model.hpp"
 
@@ -130,7 +131,9 @@ class Controller : public controller_interface::ControllerInterface {
    *
    * @param state_current Sensed joint states
    */
-  void read_state_from_hardware(JointTrajectoryPoint& state_current);
+  void read_state_from_hardware(
+      JointTrajectoryPoint& state_current,
+      Eigen::Matrix<double, 6, 1>& sensed_wrench_at_tip);
 
   /**
    * @brief Write values from state_command to claimed command interfaces
@@ -219,7 +222,7 @@ class Controller : public controller_interface::ControllerInterface {
   // Feedforward wrench at tool tip
   Eigen::Matrix<double, 6, 1> feedforward_wrench_at_tip_;
   // Current wrench sensed from force torque sensor at tool tip
-  Eigen::Matrix<double, 6, 1> current_wrench_at_tip_;
+  Eigen::Matrix<double, 6, 1> sensed_wrench_at_tip_;
 
   // Gravity Compensation action
   std::unique_ptr<GravityCompensationAction> gravity_compensation_action_;
@@ -262,6 +265,9 @@ class Controller : public controller_interface::ControllerInterface {
       pluginlib::ClassLoader<kinematics_interface::KinematicsInterface>>
       kinematics_loader_;
   std::unique_ptr<kinematics_interface::KinematicsInterface> kinematics_;
+
+  // force torque sensor
+  std::unique_ptr<semantic_components::ForceTorqueSensor> force_torque_sensor_;
 };
 
 }  // namespace aic_controller
