@@ -20,8 +20,8 @@ class CreateAndCancelTaskNode(Node):
         goal_msg = InsertCable.Goal()
         self.get_logger().info("Sending goal request...")
         self.send_goal_future = self.client.send_goal_async(
-            goal_msg,
-            feedback_callback=self.feedback_callback)
+            goal_msg, feedback_callback=self.feedback_callback
+        )
         self.send_goal_future.add_done_callback(self.goal_response_callback)
 
     def goal_response_callback(self, future):
@@ -73,5 +73,5 @@ def main(args=None):
         pass
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

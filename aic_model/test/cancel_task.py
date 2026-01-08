@@ -26,5 +26,5 @@ def main(args=None):
         node.call_cancel_task()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -20,11 +20,14 @@ class AicModel(Node):
             Observation, "observations", self.observation_callback, 10
         )
         self.cancel_service = self.create_service(
-            Empty, 'cancel_task', self.cancel_task_callback)
+            Empty, "cancel_task", self.cancel_task_callback
+        )
         self.goal_handle = None
         self.goal_completed = False
         self.action_server = ActionServer(
-            self, InsertCable, "insert_cable",
+            self,
+            InsertCable,
+            "insert_cable",
             execute_callback=self.insert_cable_execute_callback,
             goal_callback=self.insert_cable_goal_callback,
             handle_accepted_callback=self.insert_cable_accepted_goal_callback,
@@ -53,29 +56,20 @@ class AicModel(Node):
             f"times: images [{t_cam_0:.2f}, {t_cam_1:.2f}, {t_cam_2:.2f}] joints {t_joints:.2f} wrench {t_wrench:.2f} tcp: ({tcp_x:+0.4f} {tcp_y:+0.4f}, {tcp_z:+0.4f})"
         )
 
-    def task_to_string(self, task):
-        return textwrap.dedent(f"""
-            id: {task.id}
-            cable_type: {task.cable_type}
-            cable_name: {task.cable_name}
-            plug_type: {task.plug_type}
-            plug_name: {task.plug_name}
-            port_type: {task.port_type}
-            port_name: {task.port_name}
-            target_module_name: {task.target_module_name}
-            time_limit: {task.time_limit}
-        """)
-
     def insert_cable_goal_callback(self, goal_request):
         if self.goal_handle is not None and self.goal_handle.is_active:
-            self.get_logger().error("A goal is active and must be canceled before a new insert_cable goal can begin")
+            self.get_logger().error(
+                "A goal is active and must be canceled before a new insert_cable goal can begin"
+            )
             return GoalResponse.REJECT
         else:
             self.get_logger().info("Goal accepted")
             return GoalResponse.ACCEPT
 
     def insert_cable_accepted_goal_callback(self, goal_handle):
-        self.get_logger().info(f"Accepted insert_cable goal:\n" + self.task_to_string(goal_handle.request.task))
+        self.get_logger().info(
+            f"Accepted insert_cable goal: {goal_handle.request.task}"
+        )
         self.goal_completed = False
         self.goal_handle = goal_handle
         self.goal_handle.execute()
@@ -91,8 +85,10 @@ class AicModel(Node):
 
             # First, wait a bit (async!)
             wait_future = Future()
+
             def done_waiting():
                 wait_future.set_result(None)
+
             wait_timer = self.create_timer(1.0, done_waiting, clock=self.get_clock())
             await wait_future
             wait_timer.cancel()
@@ -104,7 +100,9 @@ class AicModel(Node):
                 result = InsertCable.Result()
                 result.success = False
                 result.message = "Canceled via action client"
-                self.get_logger().info("Exiting insert_cable execute loop due to cancelation request.")
+                self.get_logger().info(
+                    "Exiting insert_cable execute loop due to cancelation request."
+                )
                 self.goal_handle = None
                 return result
 
@@ -113,13 +111,17 @@ class AicModel(Node):
                 result = InsertCable.Result()
                 result.success = False
                 result.message = "Canceled via cancel_task service"
-                self.get_logger().info("Exiting insert_cable execute loop due to cancel_task request.")
+                self.get_logger().info(
+                    "Exiting insert_cable execute loop due to cancel_task request."
+                )
                 self.goal_handle = None
                 return result
 
             # Check if the task has been completed
             if self.goal_completed:
-                self.get_logger().info("Exiting insert_cable execute loop due after success.")
+                self.get_logger().info(
+                    "Exiting insert_cable execute loop after success."
+                )
                 goal_handle.succeed()
                 result = InsertCable.Result()
                 result.success = True
@@ -130,7 +132,6 @@ class AicModel(Node):
             feedback = InsertCable.Feedback()
             feedback.message = "Here is a feedback message"
             goal_handle.publish_feedback(feedback)
-
 
         self.get_logger().info("Exiting insert_cable execute loop")
 
