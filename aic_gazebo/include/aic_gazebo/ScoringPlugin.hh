@@ -79,6 +79,18 @@ namespace aic_gazebo
 
     /// \brief All pluggable ports.
     public: std::map<std::string, aic_scoring::Pluggable> ports;
+
+    /// \brief End effector model name.
+    public: std::string endEffectorModelName;
+
+    /// \brief End effector link name.
+    public: std::string endEffectorLinkName;
+
+    /// \brief End effector entity.
+    public: gz::sim::Entity endEffectorEntity = gz::sim::kNullEntity;
+
+    /// \brief End effector pose.
+    public: gz::math::Pose3d endEffectorPose;
   };
 }
 #endif

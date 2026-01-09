@@ -43,6 +43,9 @@ void ScoringPlugin::Configure(const gz::sim::Entity& _entity,
   gzdbg << "aic_gazebo::ScoringPlugin::Configure on entity: " << _entity
         << std::endl;
 
+  this->endEffectorModelName = "ur5e";
+  this->endEffectorLinkName = "ati/tool_link";
+
   // Initialize plugs and ports.
   auto yamlFile = _sdf->Get<std::string>("yaml_file", "scoring.yaml").first;
   auto config = YAML::LoadFile(yamlFile);
@@ -67,7 +70,7 @@ void ScoringPlugin::Configure(const gz::sim::Entity& _entity,
 
 //////////////////////////////////////////////////
 void ScoringPlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
-                              gz::sim::EntityComponentManager& /*_ecm*/) {
+                              gz::sim::EntityComponentManager& _ecm) {
   // Throttle update rate.
   auto elapsed = _info.simTime - this->lastUpdateTime;
   if (elapsed > std::chrono::steady_clock::duration::zero() &&
@@ -76,8 +79,34 @@ void ScoringPlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
   }
   this->lastUpdateTime = _info.simTime;
 
+  if (this->endEffectorEntity == gz::sim::kNullEntity)
+  {
+    this->GetChildModelAndLinkEntities(this->endEffectorModelName,
+      this->endEffectorLinkName, _ecm, this->endEffectorEntity);
+
+    return;
+  }
+
+  this->endEffectorPose = gz::sim::worldPose(this->endEffectorEntity, _ecm);
+
   this->scoringMsg.mutable_header()->mutable_stamp()->CopyFrom(
       gz::sim::convert<gz::msgs::Time>(_info.simTime));
+  this->scoringMsg.mutable_end_effector_pose()->set_name("end_effector");
+  this->scoringMsg.mutable_end_effector_pose()->set_id(this->endEffectorEntity);
+  this->scoringMsg.mutable_end_effector_pose()->mutable_position()->set_x(
+    this->endEffectorPose.X());
+  this->scoringMsg.mutable_end_effector_pose()->mutable_position()->set_y(
+    this->endEffectorPose.Y());
+  this->scoringMsg.mutable_end_effector_pose()->mutable_position()->set_z(
+    this->endEffectorPose.Z());
+  this->scoringMsg.mutable_end_effector_pose()->mutable_orientation()->set_x(
+    this->endEffectorPose.Rot().X());
+  this->scoringMsg.mutable_end_effector_pose()->mutable_orientation()->set_y(
+    this->endEffectorPose.Rot().Y());
+  this->scoringMsg.mutable_end_effector_pose()->mutable_orientation()->set_z(
+    this->endEffectorPose.Rot().Z());
+  this->scoringMsg.mutable_end_effector_pose()->mutable_orientation()->set_w(
+    this->endEffectorPose.Rot().W());
 
   if (!this->pub.Publish(this->scoringMsg)) return;
 }

@@ -4,20 +4,11 @@
 # List of entity pairs to monitor.
 plugs:
   - plug:
-      name: "sfp_cable::plug_a"
+      name: "sfp_sc_cable::sfp_module_link"
       type: "sfp"
   - plug:
-      name: "sfp_cable::plug_b"
-      type: "sfp"
-  - plug:
-      name: "other_cable::plug_c"
-      type: "other"
-  - plug:
-      name: "other_cable::plug_d"
-      type: "other"
-  - plug:
-      name: "other_cable::plug_d"
-      type: "other"
+      name: "sfp_sc_cable::sc_plug_link"
+      type: "sc"
 
 ports:
   - port:
