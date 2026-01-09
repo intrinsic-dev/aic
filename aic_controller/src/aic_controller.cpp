@@ -236,108 +236,103 @@ controller_interface::CallbackReturn Controller::on_configure(
   }
 
   if (control_mode_ == ControlMode::Impedance) {
+    // Initialize force torque sensor
     force_torque_sensor_ =
         std::make_unique<semantic_components::ForceTorqueSensor>(
             params_.force_torque_sensor.name);
-  }
 
-  // Validate impedance control parameters
-  for (const double& gain : params_.impedance.pose_error_integrator.gain) {
-    if (gain < 0.0) {
-      RCLCPP_ERROR(get_node()->get_logger(),
-                   "Invalid impedance pose_error_integrator gain. "
-                   "Required: >= 0. Received: %f",
-                   gain);
+    // Validate impedance control parameters
+    for (const double& gain : params_.impedance.pose_error_integrator.gain) {
+      if (gain < 0.0) {
+        RCLCPP_ERROR(get_node()->get_logger(),
+                     "Invalid impedance pose_error_integrator gain. "
+                     "Required: >= 0. Received: %f",
+                     gain);
+        return controller_interface::CallbackReturn::ERROR;
+      }
+    }
+    for (const double& bound : params_.impedance.pose_error_integrator.bound) {
+      if (bound < 0.0) {
+        RCLCPP_ERROR(get_node()->get_logger(),
+                     "Invalid impedance pose_error_integrator bound. "
+                     "Required: >= 0. Received: %f",
+                     bound);
+        return controller_interface::CallbackReturn::ERROR;
+      }
+    }
+
+    // Populate impedance control parameters
+    CartesianImpedanceParameters resized_impedance_params(num_joints_);
+    impedance_params_ = resized_impedance_params;
+
+    if (params_.impedance.gravity_compensation) {
+      if (!gravity_compensation_action_->configure(
+              urdf_model, params_.kinematics.base, params_.kinematics.tip,
+              get_node()->get_node_logging_interface())) {
+        RCLCPP_ERROR(get_node()->get_logger(),
+                     "Failed to configure GravityCompensationAction!");
+
+        return controller_interface::CallbackReturn::ERROR;
+      }
+    }
+
+    // Set default parameters for stiffness and damping matrices
+    impedance_params_.stiffness_matrix =
+        Eigen::Map<const Eigen::Matrix<double, 6, 1>>(
+            params_.impedance.default_values.control_stiffness.data(),
+            params_.impedance.default_values.control_stiffness.size())
+            .asDiagonal();
+    impedance_params_.damping_matrix =
+        Eigen::Map<const Eigen::Matrix<double, 6, 1>>(
+            params_.impedance.default_values.control_damping.data(),
+            params_.impedance.default_values.control_damping.size())
+            .asDiagonal();
+
+    // set desired nullspace configuration, stiffness and damping
+    impedance_params_.nullspace_goal = Eigen::Map<const Eigen::VectorXd>(
+        params_.impedance.nullspace.target_configuration.data(),
+        static_cast<Eigen::Index>(num_joints_));
+    impedance_params_.nullspace_stiffness = Eigen::Map<const Eigen::VectorXd>(
+        params_.impedance.nullspace.stiffness.data(),
+        static_cast<Eigen::Index>(num_joints_));
+    impedance_params_.nullspace_damping = Eigen::Map<const Eigen::VectorXd>(
+        params_.impedance.nullspace.damping.data(),
+        static_cast<Eigen::Index>(num_joints_));
+
+    // Update torque limits
+    for (std::size_t i = 0; i < num_joints_; ++i) {
+      impedance_params_.joint_torque_limits(i) = joint_limits_[i].max_effort;
+    }
+
+    impedance_params_.activation_percentage =
+        params_.impedance.activation_percentage;
+    impedance_params_.maximum_wrench =
+        Eigen::Map<const Eigen::Matrix<double, 6, 1>>(
+            params_.impedance.maximum_wrench.data());
+
+    impedance_params_.feedforward_interpolation_wrench_min =
+        Eigen::Map<const Eigen::Matrix<double, 6, 1>>(
+            params_.impedance.feedforward_interpolation.min_wrench.data());
+    impedance_params_.feedforward_interpolation_wrench_max =
+        Eigen::Map<const Eigen::Matrix<double, 6, 1>>(
+            params_.impedance.feedforward_interpolation.max_wrench.data());
+    impedance_params_.feedforward_interpolation_max_wrench_dot =
+        Eigen::Map<const Eigen::Matrix<double, 6, 1>>(
+            params_.impedance.feedforward_interpolation.max_wrench_dot.data());
+
+    impedance_params_.pose_error_integrator_gain =
+        Eigen::Map<const Eigen::Matrix<double, 6, 1>>(
+            params_.impedance.pose_error_integrator.gain.data());
+    impedance_params_.pose_error_integrator_bound =
+        Eigen::Map<const Eigen::Matrix<double, 6, 1>>(
+            params_.impedance.pose_error_integrator.bound.data());
+
+    if (!cartesian_impedance_action_->configure(
+            joint_limits_, get_node()->get_node_logging_interface(),
+            get_node()->get_node_clock_interface())) {
       return controller_interface::CallbackReturn::ERROR;
     }
   }
-  for (const double& bound : params_.impedance.pose_error_integrator.bound) {
-    if (bound < 0.0) {
-      RCLCPP_ERROR(get_node()->get_logger(),
-                   "Invalid impedance pose_error_integrator bound. "
-                   "Required: >= 0. Received: %f",
-                   bound);
-      return controller_interface::CallbackReturn::ERROR;
-    }
-  }
-
-  // Populate impedance control parameters
-  CartesianImpedanceParameters resized_impedance_params(num_joints_);
-  impedance_params_ = resized_impedance_params;
-
-  if (params_.impedance.gravity_compensation) {
-    if (!gravity_compensation_action_->configure(
-            urdf_model, params_.kinematics.base, params_.kinematics.tip,
-            get_node()->get_node_logging_interface())) {
-      RCLCPP_ERROR(get_node()->get_logger(),
-                   "Failed to configure GravityCompensationAction!");
-
-      return controller_interface::CallbackReturn::ERROR;
-    }
-  }
-
-  // Set default parameters for stiffness and damping matrices
-  impedance_params_.stiffness_matrix =
-      Eigen::Map<const Eigen::Matrix<double, 6, 1>>(
-          params_.impedance.default_values.control_stiffness.data(),
-          params_.impedance.default_values.control_stiffness.size())
-          .asDiagonal();
-  impedance_params_.damping_matrix =
-      Eigen::Map<const Eigen::Matrix<double, 6, 1>>(
-          params_.impedance.default_values.control_damping.data(),
-          params_.impedance.default_values.control_damping.size())
-          .asDiagonal();
-
-  // set desired nullspace configuration, stiffness and damping
-  impedance_params_.nullspace_goal = Eigen::Map<const Eigen::VectorXd>(
-      params_.impedance.nullspace.target_configuration.data(),
-      static_cast<Eigen::Index>(num_joints_));
-  impedance_params_.nullspace_stiffness = Eigen::Map<const Eigen::VectorXd>(
-      params_.impedance.nullspace.stiffness.data(),
-      static_cast<Eigen::Index>(num_joints_));
-  impedance_params_.nullspace_damping = Eigen::Map<const Eigen::VectorXd>(
-      params_.impedance.nullspace.damping.data(),
-      static_cast<Eigen::Index>(num_joints_));
-
-  // Update torque limits
-  for (std::size_t i = 0; i < num_joints_; ++i) {
-    impedance_params_.joint_torque_limits(i) = joint_limits_[i].max_effort;
-  }
-
-  impedance_params_.activation_percentage =
-      params_.impedance.activation_percentage;
-  impedance_params_.maximum_wrench =
-      Eigen::Map<const Eigen::Matrix<double, 6, 1>>(
-          params_.impedance.maximum_wrench.data());
-
-  impedance_params_.feedforward_interpolation_wrench_min =
-      Eigen::Map<const Eigen::Matrix<double, 6, 1>>(
-          params_.impedance.feedforward_interpolation.min_wrench.data());
-  impedance_params_.feedforward_interpolation_wrench_max =
-      Eigen::Map<const Eigen::Matrix<double, 6, 1>>(
-          params_.impedance.feedforward_interpolation.max_wrench.data());
-  impedance_params_.feedforward_interpolation_max_wrench_dot =
-      Eigen::Map<const Eigen::Matrix<double, 6, 1>>(
-          params_.impedance.feedforward_interpolation.max_wrench_dot.data());
-
-  impedance_params_.pose_error_integrator_gain =
-      Eigen::Map<const Eigen::Matrix<double, 6, 1>>(
-          params_.impedance.pose_error_integrator.gain.data());
-  impedance_params_.pose_error_integrator_bound =
-      Eigen::Map<const Eigen::Matrix<double, 6, 1>>(
-          params_.impedance.pose_error_integrator.bound.data());
-
-  if (!cartesian_impedance_action_->configure(
-          joint_limits_, get_node()->get_node_logging_interface(),
-          get_node()->get_node_clock_interface())) {
-    return controller_interface::CallbackReturn::ERROR;
-  }
-
-  state_publisher_ = get_node()->create_publisher<ControllerState>(
-      "~/controller_state", rclcpp::SystemDefaultsQoS());
-  state_publisher_rt_ =
-      std::make_unique<realtime_tools::RealtimePublisher<ControllerState>>(
-          state_publisher_);
 
   if (!populate_cartesian_limits(params_, cartesian_limits_)) {
     RCLCPP_ERROR(get_node()->get_logger(),
@@ -350,12 +345,6 @@ controller_interface::CallbackReturn Controller::on_configure(
   state_publisher_rt_ =
       std::make_unique<realtime_tools::RealtimePublisher<ControllerState>>(
           state_publisher_);
-
-  if (!populate_cartesian_limits(params_, cartesian_limits_)) {
-    RCLCPP_ERROR(get_node()->get_logger(),
-                 "Error populating cartesian limits from parameters.");
-    return controller_interface::CallbackReturn::ERROR;
-  }
 
   return controller_interface::CallbackReturn::SUCCESS;
 }
