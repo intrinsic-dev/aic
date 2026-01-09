@@ -52,7 +52,7 @@ def launch_setup(context, *args, **kwargs):
     ur_tf_prefix = LaunchConfiguration("ur_tf_prefix")
     activate_joint_controller = LaunchConfiguration("activate_joint_controller")
     initial_joint_controller = LaunchConfiguration("initial_joint_controller")
-    admittance_mode = LaunchConfiguration("admittance_mode")
+    spawn_admittance_controller = LaunchConfiguration("spawn_admittance_controller")
     description_file = LaunchConfiguration("description_file")
     launch_rviz = LaunchConfiguration("launch_rviz")
     rviz_config_file = LaunchConfiguration("rviz_config_file")
@@ -165,7 +165,7 @@ def launch_setup(context, *args, **kwargs):
     )
 
     initial_joint_controllers = [initial_joint_controller]
-    if IfCondition(admittance_mode).evaluate(context):
+    if IfCondition(spawn_admittance_controller).evaluate(context):
         initial_joint_controllers.append("admittance_controller")
 
     # There may be other controllers of the joints, but this is the initially-started one
@@ -398,7 +398,7 @@ def generate_launch_description():
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            "admittance_mode",
+            "spawn_admittance_controller",
             default_value="true",
             description="If true, then the admittance controller is spawned alongside the initial_joint_controller. Else, only the initial_joint_controller is spawned.",
         )
