@@ -585,8 +585,10 @@ controller_interface::return_type Controller::update(
   } else if (control_mode_ == ControlMode::Admittance) {
     // UNIMPLEMENTED
 
-    RCLCPP_ERROR_THROTTLE(get_node()->get_logger(), *get_node()->get_clock(),
-                          1000, "Admittance control is unimplemented");
+    RCLCPP_ERROR(get_node()->get_logger(),
+                 "Admittance control is unimplemented");
+
+    return controller_interface::return_type::ERROR;
   }
 
   write_state_to_hardware(new_joint_reference);
