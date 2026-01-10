@@ -142,11 +142,11 @@ void OffLimitContactsPlugin::CreateCollisionData(EntityComponentManager &_ecm) {
       [&](const Entity &_entity, const components::Collision *) -> bool {
         auto parentEntity = topLevelModel(_entity, _ecm);
         if (parentEntity != this->modelEntity) return true;
-          
+
         // Check if ContactSensorData has already been created
         bool collisionHasContactSensor = _ecm.EntityHasComponentType(
             _entity, components::ContactSensorData::typeId);
-          
+
         if (collisionHasContactSensor) {
           gzdbg << "ContactSensorData detected in collision [" << _entity << "]"
                 << std::endl;
