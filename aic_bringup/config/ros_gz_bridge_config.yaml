@@ -53,3 +53,10 @@
   gz_type_name: "gz.msgs.CameraInfo"
   direction: GZ_TO_ROS
   lazy: true
+
+- ros_topic_name: "/aic/gazebo/contacts/off_limit"
+  gz_topic_name: "/aic/gazebo/contacts/off_limit"
+  ros_type_name: "ros_gz_interfaces/msg/Contacts"
+  gz_type_name: "gz.msgs.Contacts"
+  direction: GZ_TO_ROS
+  lazy: true

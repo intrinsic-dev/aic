@@ -20,7 +20,14 @@
 
 #include <gz/common/Console.hh>
 #include <gz/plugin/Register.hh>
+#include <gz/sim/components/Collision.hh>
+#include <gz/sim/components/ContactSensor.hh>
+#include <gz/sim/components/ContactSensorData.hh>
+#include <gz/sim/components/Model.hh>
+#include <gz/sim/components/Name.hh>
+#include <gz/sim/components/World.hh>
 #include <gz/sim/Conversions.hh>
+#include <gz/sim/Util.hh>
 
 #include "proto/scoring.pb.h"
 
@@ -74,4 +81,5 @@ void ScoringPlugin::Reset(const gz::sim::UpdateInfo& /*_info*/,
                           gz::sim::EntityComponentManager& /*_ecm*/) {
   gzdbg << "aic_gazebo::ScoringPlugin::Reset" << std::endl;
 }
+
 }  // namespace aic_gazebo
