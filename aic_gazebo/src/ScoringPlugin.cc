@@ -81,5 +81,4 @@ void ScoringPlugin::Reset(const gz::sim::UpdateInfo& /*_info*/,
                           gz::sim::EntityComponentManager& /*_ecm*/) {
   gzdbg << "aic_gazebo::ScoringPlugin::Reset" << std::endl;
 }
-
 }  // namespace aic_gazebo
