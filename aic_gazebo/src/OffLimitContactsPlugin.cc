@@ -36,8 +36,8 @@ GZ_ADD_PLUGIN(aic_gazebo::OffLimitContactsPlugin, gz::sim::System,
 namespace aic_gazebo {
 //////////////////////////////////////////////////
 void OffLimitContactsPlugin::Configure(
-    const Entity& _entity, const std::shared_ptr<const sdf::Element>& _sdf,
-    EntityComponentManager& _ecm, EventManager& /*_eventManager*/) {
+    const Entity &_entity, const std::shared_ptr<const sdf::Element> &_sdf,
+    EntityComponentManager &_ecm, EventManager & /*_eventManager*/) {
   gzdbg << "aic_gazebo::OffLimitContactsPlugin::Configure on entity: "
         << _entity << std::endl;
 
@@ -170,8 +170,8 @@ bool OffLimitContactsPlugin::InitializeOffLimitEntities(
     std::vector<Entity> candidateEntities;
     std::copy_if(entitiesMatchingName.begin(), entitiesMatchingName.end(),
                  std::back_inserter(candidateEntities), [&_ecm](Entity e) {
-                   return _ecm.EntityHasComponentType(e, 
-                       components::Model::typeId);
+                   return _ecm.EntityHasComponentType(
+                       e, components::Model::typeId);
                  });
 
     if (candidateEntities.size() == 1) {
