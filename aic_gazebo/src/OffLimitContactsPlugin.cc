@@ -54,7 +54,6 @@ void OffLimitContactsPlugin::Configure(
   this->CreateCollisionData(_ecm);
 }
 
-
 //////////////////////////////////////////////////
 void OffLimitContactsPlugin::PreUpdate(const UpdateInfo &_info,
                                        EntityComponentManager &_ecm) {
