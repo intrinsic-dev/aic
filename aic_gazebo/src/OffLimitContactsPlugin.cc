@@ -36,8 +36,8 @@ GZ_ADD_PLUGIN(aic_gazebo::OffLimitContactsPlugin, gz::sim::System,
 namespace aic_gazebo {
 //////////////////////////////////////////////////
 void OffLimitContactsPlugin::Configure(
-  const Entity& _entity, const std::shared_ptr<const sdf::Element>& _sdf,
-  EntityComponentManager& _ecm, EventManager& /*_eventManager*/) {
+    const Entity& _entity, const std::shared_ptr<const sdf::Element>& _sdf,
+    EntityComponentManager& _ecm, EventManager& /*_eventManager*/) {
   gzdbg << "aic_gazebo::OffLimitContactsPlugin::Configure on entity: "
         << _entity << std::endl;
 
@@ -75,21 +75,21 @@ void OffLimitContactsPlugin::PreUpdate(const UpdateInfo &_info,
   _ecm.Each<components::ContactSensorData>(
       [&](const Entity &,
           const components::ContactSensorData *_contacts) -> bool {
-          // Only consider contacts with off-limit models (e.g. enclosure).
-          for (const auto &contact : _contacts->Data().contact()) {
-            for (int i = 0; i < contact.position_size(); ++i) {
-              auto found1 = this->offLimitEntities.find(
-                                topLevelModel(contact.collision1().id(), _ecm)) !=
-                            this->offLimitEntities.end();
-              auto found2 = this->offLimitEntities.find(
-                                topLevelModel(contact.collision2().id(), _ecm)) !=
-                            this->offLimitEntities.end();
-              shouldPublish = shouldPublish || found1 || found2;
-            }
+        // Only consider contacts with off-limit models (e.g. enclosure).
+        for (const auto &contact : _contacts->Data().contact()) {
+          for (int i = 0; i < contact.position_size(); ++i) {
+            auto found1 = this->offLimitEntities.find(
+                              topLevelModel(contact.collision1().id(), _ecm)) !=
+                          this->offLimitEntities.end();
+            auto found2 = this->offLimitEntities.find(
+                              topLevelModel(contact.collision2().id(), _ecm)) !=
+                          this->offLimitEntities.end();
+            shouldPublish = shouldPublish || found1 || found2;
           }
-          if (shouldPublish) this->publisher.Publish(_contacts->Data());
+        }
+        if (shouldPublish) this->publisher.Publish(_contacts->Data());
 
-          return true;
+        return true;
       });
 }
 
@@ -102,7 +102,7 @@ bool OffLimitContactsPlugin::ParseSDF(sdf::ElementPtr _sdf) {
       std::chrono::duration_cast<std::chrono::steady_clock::duration>(period);
 
   this->topic =
-     _sdf->Get<std::string>("topic", "/aic/gazebo/contacts/off_limit").first;
+      _sdf->Get<std::string>("topic", "/aic/gazebo/contacts/off_limit").first;
 
   if (!_sdf->HasElement("off_limit_models")) {
     gzerr << "Unable to find <off_limit_models> element in SDF." << std::endl;
@@ -140,22 +140,22 @@ void OffLimitContactsPlugin::CreateCollisionData(EntityComponentManager &_ecm) {
   // Enable contacts for all the model collisions.
   _ecm.Each<components::Collision>(
       [&](const Entity &_entity, const components::Collision *) -> bool {
-          auto parentEntity = topLevelModel(_entity, _ecm);
-          if (parentEntity != this->modelEntity) return true;
+        auto parentEntity = topLevelModel(_entity, _ecm);
+        if (parentEntity != this->modelEntity) return true;
           
-          // Check if ContactSensorData has already been created
-          bool collisionHasContactSensor = _ecm.EntityHasComponentType(
-              _entity, components::ContactSensorData::typeId);
+        // Check if ContactSensorData has already been created
+        bool collisionHasContactSensor = _ecm.EntityHasComponentType(
+            _entity, components::ContactSensorData::typeId);
           
-          if (collisionHasContactSensor) {
-            gzdbg << "ContactSensorData detected in collision [" << _entity << "]"
-                  << std::endl;
-            return true;
-          }
-
-          _ecm.CreateComponent(_entity, components::ContactSensorData());
-          gzdbg << "Enabled collision [" << _entity << "]" << std::endl;
+        if (collisionHasContactSensor) {
+          gzdbg << "ContactSensorData detected in collision [" << _entity << "]"
+                << std::endl;
           return true;
+        }
+
+        _ecm.CreateComponent(_entity, components::ContactSensorData());
+        gzdbg << "Enabled collision [" << _entity << "]" << std::endl;
+        return true;
       });
 }
 
@@ -169,10 +169,9 @@ bool OffLimitContactsPlugin::InitializeOffLimitEntities(
     // Filter for entities with only models
     std::vector<Entity> candidateEntities;
     std::copy_if(entitiesMatchingName.begin(), entitiesMatchingName.end(),
-                 std::back_inserter(candidateEntities),
-                 [&_ecm](Entity e) {
+                 std::back_inserter(candidateEntities), [&_ecm](Entity e) {
                    return _ecm.EntityHasComponentType(e, 
-                     components::Model::typeId);
+                       components::Model::typeId);
                  });
 
     if (candidateEntities.size() == 1) {
