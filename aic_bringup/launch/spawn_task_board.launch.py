@@ -36,6 +36,7 @@ def launch_setup(context, *args, **kwargs):
     task_board_roll = LaunchConfiguration("task_board_roll")
     task_board_pitch = LaunchConfiguration("task_board_pitch")
     task_board_yaw = LaunchConfiguration("task_board_yaw")
+    publish_ground_truth = LaunchConfiguration("publish_ground_truth")
 
     # Component delta arguments
     lc_mount_rail_0_present = LaunchConfiguration("lc_mount_rail_0_present")
@@ -337,6 +338,9 @@ def launch_setup(context, *args, **kwargs):
             " ",
             "nic_card_mount_4_yaw:=",
             nic_card_mount_4_yaw,
+            " ",
+            "publish_ground_truth:=",
+            publish_ground_truth,
         ]
     )
 
@@ -903,6 +907,13 @@ def generate_launch_description():
             "nic_card_mount_4_yaw",
             default_value="0.0",
             description="NIC Card Mount 04 yaw orientation (radians)",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "publish_ground_truth",
+            default_value="false",
+            description="Whether to publish ground truth poses",
         )
     )
 

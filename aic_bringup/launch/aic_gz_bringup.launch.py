@@ -78,6 +78,7 @@ def launch_setup(context, *args, **kwargs):
     cable_pitch = LaunchConfiguration("cable_pitch")
     cable_yaw = LaunchConfiguration("cable_yaw")
     attach_cable_to_gripper = LaunchConfiguration("attach_cable_to_gripper")
+    publish_ground_truth = LaunchConfiguration("publish_ground_truth")
 
     robot_description_content = Command(
         [
@@ -234,6 +235,7 @@ def launch_setup(context, *args, **kwargs):
             "task_board_roll": task_board_roll,
             "task_board_pitch": task_board_pitch,
             "task_board_yaw": task_board_yaw,
+            "publish_ground_truth": publish_ground_truth,
         }.items(),
         condition=IfCondition(spawn_task_board),
     )
@@ -261,6 +263,7 @@ def launch_setup(context, *args, **kwargs):
             "cable_pitch": cable_pitch,
             "cable_yaw": cable_yaw,
             "attach_cable_to_gripper": attach_cable_to_gripper,
+            "publish_ground_truth": publish_ground_truth,
         }.items(),
         condition=IfCondition(spawn_cable),
     )
@@ -610,6 +613,13 @@ def generate_launch_description():
             "cable_yaw",
             default_value="2.995",
             description="Cable spawn yaw orientation (radians)",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "publish_ground_truth",
+            default_value="false",
+            description="Whether to publish ground truth poses",
         )
     )
 
