@@ -47,7 +47,7 @@ void OffLimitContactsPlugin::Configure(
 
   this->publisher = this->node.Advertise<gz::msgs::Contacts>(this->topic);
   if (!this->publisher) {
-    std::cerr << "Error advertising topic [" << this->topic << "]" << std::endl;
+    gzerr << "Error advertising topic [" << this->topic << "]" << std::endl;
     return;
   }
 
@@ -163,7 +163,6 @@ void OffLimitContactsPlugin::CreateCollisionData(EntityComponentManager &_ecm) {
 bool OffLimitContactsPlugin::InitializeOffLimitEntities(
     EntityComponentManager &_ecm) {
   for (auto modelName : this->offLimitModelNames) {
-    std::cout << "Checking [" << modelName << "]" << std::endl;
     Entity entity = kNullEntity;
     auto entitiesMatchingName = entitiesFromScopedName(modelName, _ecm);
     // Filter for entities with only models
@@ -184,7 +183,6 @@ bool OffLimitContactsPlugin::InitializeOffLimitEntities(
     }
 
     this->offLimitEntities.insert(entity);
-    std::cout << "  " << entity << std::endl;
   }
   return true;
 }
