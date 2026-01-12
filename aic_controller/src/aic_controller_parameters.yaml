@@ -198,6 +198,32 @@ aic_controller:
         }
       }
 
+  # Joint impedance controller parameters
+  joint_impedance:
+    interpolator:
+      min_value: {
+        type: double_array,
+        description: "Minimum allowed value for feedforward torque",
+        validation: {
+          fixed_size<>: 6
+        }
+      }
+      max_value: {
+        type: double_array,
+        description: "Maximum allowed value for feedforward torque",
+        validation: {
+          fixed_size<>: 6
+        }
+      }
+      max_step_size: {
+        type: double_array,
+        description: "Maximum step size used to interpolate the feedforward torque",
+        validation: {
+          fixed_size<>: 6
+        }
+      }
+
+
   # general settings
   enable_parameter_update_without_reactivation: {
     type: bool,

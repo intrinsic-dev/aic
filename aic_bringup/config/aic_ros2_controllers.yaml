@@ -304,6 +304,12 @@ aic_controller:
         control_stiffness: [100., 100., 100., 50., 50., 50.]
         control_damping: [15.0, 15.0, 15.0, 15.0, 15.0, 15.0]
 
+    joint_impedance:
+      interpolator:
+        min_value: [-40., -40., -40., -6., -6., -6.]
+        max_value: [40., 40., 40., 5., 5., 5.]
+        max_step_size: [1., 1., 1., 1., 1., 1.]
+
     kinematics:
       plugin_name: kinematics_interface_kdl/KinematicsInterfaceKDL
       plugin_package: kinematics_interface
