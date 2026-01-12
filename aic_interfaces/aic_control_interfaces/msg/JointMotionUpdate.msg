@@ -13,6 +13,8 @@ float64[] target_damping
 # [OPTIONAL] The mode of trajectory generation.
 TrajectoryGenerationMode trajectory_generation_mode
 
+float64[] target_feedforward_torque
+
 # When provided, gives this action a SUGGESTED time to reach the given target
 # at. It is not guaranteed that the target will be reached at this time as it
 # may be infeasible given the pos/vel/acc/jerk limits. This value may also be
