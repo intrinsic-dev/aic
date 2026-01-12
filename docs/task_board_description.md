@@ -98,46 +98,6 @@ The toolkit uses a YAML-based "Scene Description File" to define the board's sta
 
 See ... for the full scene scene YAML.
 
-### Example `board_config.yaml`
+### Task board YAML configuration
 
-```yaml
-# AIC Task Board Configuration
-metadata:
-  version: "1.0"
-  description: "Qualification Randomized Setup"
-
-zones:
-  zone_1:
-    - id: "NIC_CARD_0"
-      rail: "NIC_CARD_0"
-      position: 0.02  # Meters along rail
-      ports: ["SFP_PORT_0", "SFP_PORT_1"]
-    - id: "NIC_CARD_1"
-      rail: "NIC_CARD_1"
-      position: 0.035
-        
-  zone_2:
-    - id: "SC_PORT_0"
-      rail: "SC_RAIL_0"
-      position: 0.05  # Randomized position along rail
-    - id: "SC_PORT_1"
-      rail: "SC_RAIL_1"
-      position: 0.03
-
-  zone_3:
-    - id: "SC_PORT_0"
-      rail: "PICK_RAIL_0"
-      position: 0.02
-    - id: "SFP_PORT_0"
-      rail: "PICK_RAIL_1"
-      position: 0.045
-
-  zone_4:
-    - id: "SC_PORT_1"
-      rail: "PICK_RAIL_3"
-      position: 0.04
-    - id: "SFP_PORT_1"
-      rail: "PICK_RAIL_5"
-      position: 0.045
-
-```
+See the AIC engine ![sample config](../aic_engine/config/sample_config.yaml)
