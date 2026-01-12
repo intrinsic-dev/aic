@@ -24,8 +24,10 @@
 
 #include "aic_controller/actions/cartesian_impedance_action.hpp"
 #include "aic_controller/actions/gravity_compensation_action.hpp"
+#include "aic_controller/actions/joint_impedance_action.hpp"
 #include "aic_controller/cartesian_limits.hpp"
 #include "aic_controller/cartesian_state.hpp"
+#include "aic_controller/joint_state.hpp"
 #include "aic_controller/utils.hpp"
 #include "controller_interface/controller_interface.hpp"
 #include "joint_limits/joint_limits.hpp"
@@ -41,6 +43,7 @@
 
 // Interfaces
 #include "aic_control_interfaces/msg/controller_state.hpp"
+#include "aic_control_interfaces/msg/joint_motion_update.hpp"
 #include "aic_control_interfaces/msg/motion_update.hpp"
 #include "aic_control_interfaces/msg/trajectory_generation_mode.hpp"
 #include "lifecycle_msgs/msg/state.hpp"
@@ -54,13 +57,17 @@
 namespace aic_controller {
 
 using MotionUpdate = aic_control_interfaces::msg::MotionUpdate;
+using JointMotionUpdate = aic_control_interfaces::msg::JointMotionUpdate;
 using TrajectoryGenerationMode =
     aic_control_interfaces::msg::TrajectoryGenerationMode;
 using JointTrajectoryPoint = trajectory_msgs::msg::JointTrajectoryPoint;
 using ControllerState = aic_control_interfaces::msg::ControllerState;
+using JointLimits = joint_limits::JointLimits;
 
 //==============================================================================
 enum class ControlMode : uint8_t { Invalid = 0, Admittance = 1, Impedance = 2 };
+
+enum class TargetMode : uint8_t { Invalid = 0, Joint = 1, Cartesian = 2 };
 
 //==============================================================================
 /**
@@ -132,7 +139,7 @@ class Controller : public controller_interface::ControllerInterface {
    * @param state_current Sensed joint states
    */
   void read_state_from_hardware(
-      JointTrajectoryPoint& state_current,
+      JointTrajectoryPoint& state_current, CartesianState& tool_state_current,
       Eigen::Matrix<double, 6, 1>& sensed_wrench_at_tip);
 
   /**
@@ -163,7 +170,7 @@ class Controller : public controller_interface::ControllerInterface {
   void populate_controller_state(ControllerState& controller_state);
 
   /**
-   * @brief Clamp the target_state to given limits
+   * @brief For Cartesian targets, clamp the target_state to given limits
    *
    * @param limits Provided Cartesian Limits to be clamped to
    * @param mode Trajectory generation mode
@@ -180,8 +187,23 @@ class Controller : public controller_interface::ControllerInterface {
                                  double soft_margin_radians = 0.0);
 
   /**
-   * @brief Linearly interpolate the last_reference to the target_state to
-   * compute new_reference
+   * @brief For joint targets, clamp the target_state to given limits
+   *
+   * @param limits Provided Joint Limits to be clamped to
+   * @param mode Trajectory generation mode
+   * @param target_state target state to be clamped
+   * @param soft_margin_radians Safety margin for joint positions
+   * @return true Successfully clamped target_state
+   * @return false Failed to clamp target_state
+   */
+  bool clamp_joint_reference_to_limits(const std::vector<JointLimits>& limits,
+                                       const uint8_t& mode,
+                                       JointState& target_state,
+                                       double soft_margin_radians = 0.0);
+
+  /**
+   * @brief For Cartesian targets, linearly interpolate the last_reference to
+   * the target_state to compute new_reference
    *
    * @param last_reference Starting state
    * @param target_state Final state
@@ -199,11 +221,47 @@ class Controller : public controller_interface::ControllerInterface {
       CartesianState& new_reference);
 
   /**
-   * @brief Interpolate the parameters for the cartesian impedance control
-   * stiffness and damping matrix, and the feedforward wrench at the tip.
+   * @brief For joint targets, linearly interpolate the last_reference to
+   * the target_state to compute new_reference
+   *
+   * @param last_reference Starting state
+   * @param target_state Final state
+   * @param remaining_time_to_target_seconds Remaining time to reach the target
+   * @param control_frequency Frequency of control loop in Hz
+   * @param mode Trajectory generation mode
+   * @param new_reference Interpolated reference
+   * @return true Successfully computed new reference
+   * @return false Failed to compute new reference
+   */
+  bool update_joint_reference_linear_interpolation(
+      const JointState& last_reference, const JointState& target_state,
+      const double remaining_time_to_target_seconds,
+      const double control_frequency, const uint8_t& mode,
+      JointState& new_reference);
+
+  /**
+   * @brief Interpolate the parameters for the impedance control parameters and
+   * the feedforward wrench at the tip.
+   * Based on the current target_mode, it will interpolate either the joint
+   * impedance parameters or the Cartesian impedance parameters.
    *
    */
   void interpolate_impedance_parameters();
+
+  // todo(johntgz) improve docs for reset_cartesian_target and
+  // reset_joint_target
+
+  /**
+   * @brief Reset the MotionUpdate target and data associated with it
+   *
+   */
+  void reset_cartesian_target();
+
+  /**
+   * @brief Reset the JointMotionUpdate target and data associated with it
+   *
+   */
+  void reset_joint_target();
 
   // controller parameters
   std::shared_ptr<aic_controller::ParamListener> param_listener_;
@@ -212,9 +270,10 @@ class Controller : public controller_interface::ControllerInterface {
   std::size_t num_joints_;
 
   ControlMode control_mode_;
+  TargetMode target_mode_;
 
   CartesianLimits cartesian_limits_;
-  std::vector<joint_limits::JointLimits> joint_limits_;
+  std::vector<JointLimits> joint_limits_;
 
   // Impedance controller for cartesian targets
   std::unique_ptr<CartesianImpedanceAction> cartesian_impedance_action_;
@@ -224,11 +283,16 @@ class Controller : public controller_interface::ControllerInterface {
   // Current wrench sensed from force torque sensor at tool tip
   Eigen::Matrix<double, 6, 1> sensed_wrench_at_tip_;
 
+  // Impedance controller for joint targets
+  std::unique_ptr<JointImpedanceAction> joint_impedance_action_;
+  JointImpedanceParameters joint_impedance_params_;
+
   // Gravity Compensation action
   std::unique_ptr<GravityCompensationAction> gravity_compensation_action_;
 
   // ROS2 subscribers for user commands
   rclcpp::Subscription<MotionUpdate>::SharedPtr motion_update_sub_;
+  rclcpp::Subscription<JointMotionUpdate>::SharedPtr joint_motion_update_sub_;
 
   // Real-time publisher for controller state
   rclcpp::Publisher<ControllerState>::SharedPtr state_publisher_;
@@ -239,13 +303,18 @@ class Controller : public controller_interface::ControllerInterface {
   // Real-time boxes for thread-safe access
   realtime_tools::RealtimeThreadSafeBox<MotionUpdate> motion_update_rt_;
   MotionUpdate motion_update_;
+  realtime_tools::RealtimeThreadSafeBox<JointMotionUpdate>
+      joint_motion_update_rt_;
+  JointMotionUpdate joint_motion_update_;
 
-  std::atomic<bool> motion_update_received_;
+  std::atomic<bool> motion_update_received_, joint_motion_update_received_;
 
   // Last value written to controller interfaces
   std::optional<JointTrajectoryPoint> last_commanded_state_;
-  // Desired target state read from JointMotionUpdate user commands
+  // Desired target state read from MotionUpdate user commands
   std::optional<CartesianState> target_state_;
+  // Desired target state read from JointMotionUpdate user commands
+  std::optional<JointState> joint_target_state_;
   // Latest joint states read from hardware interface
   JointTrajectoryPoint current_state_;
   // Latest cartesian state of tool calculatd via forward kinematics from
@@ -255,6 +324,8 @@ class Controller : public controller_interface::ControllerInterface {
   // todo(johntgz) Investigate if we can replace last_tool_reference_ with
   // current_tool_state_
   CartesianState last_tool_reference_;
+  // Joint reference used for interpolation
+  JointState last_joint_reference_;
   // The last computed error between the current and target tool pose
   Eigen::Matrix<double, 6, 1> last_tool_pose_error_;
 

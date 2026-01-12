@@ -18,17 +18,6 @@
 #include "aic_controller/aic_controller.hpp"
 
 //==============================================================================
-namespace {
-
-//==============================================================================
-// called from RT control loop
-void reset_motion_update_msg(aic_controller::MotionUpdate& msg) {
-  msg = aic_controller::MotionUpdate();
-}
-
-}  // namespace
-
-//==============================================================================
 namespace aic_controller {
 
 //==============================================================================
@@ -39,15 +28,21 @@ Controller::Controller()
       cartesian_impedance_action_(nullptr),
       feedforward_wrench_at_tip_(Eigen::Matrix<double, 6, 1>::Zero()),
       sensed_wrench_at_tip_(Eigen::Matrix<double, 6, 1>::Zero()),
+      joint_impedance_action_(nullptr),
+      gravity_compensation_action_(nullptr),
       motion_update_sub_(nullptr),
+      joint_motion_update_sub_(nullptr),
+      state_publisher_rt_(nullptr),
       motion_update_received_(false),
+      joint_motion_update_received_(false),
       last_commanded_state_(std::nullopt),
       target_state_(std::nullopt),
       last_tool_pose_error_(Eigen::Matrix<double, 6, 1>::Zero()),
       time_to_target_seconds_(0.0),
       remaining_time_to_target_seconds_(0.0),
       kinematics_loader_(nullptr),
-      kinematics_(nullptr) {
+      kinematics_(nullptr),
+      force_torque_sensor_(nullptr) {
   // Do nothing.
 }
 
@@ -127,6 +122,8 @@ controller_interface::CallbackReturn Controller::on_init() {
   cartesian_impedance_action_ =
       std::make_unique<CartesianImpedanceAction>(num_joints_);
 
+  joint_impedance_action_ = std::make_unique<JointImpedanceAction>(num_joints_);
+
   gravity_compensation_action_ =
       std::make_unique<GravityCompensationAction>(num_joints_);
 
@@ -174,9 +171,132 @@ controller_interface::CallbackReturn Controller::on_configure(
           return;
         }
 
+        if (msg->trajectory_generation_mode.mode ==
+            TrajectoryGenerationMode::MODE_UNSPECIFIED) {
+          RCLCPP_WARN(
+              get_node()->get_logger(),
+              "The trajectory_generation_mode is set to MODE_UNSPECIFIED. "
+              "Please set to either MODE_POSITION, MODE_VELOCITY or "
+              "MODE_POSITION_AND_VELOCITY. Ignoring MotionUpdate "
+              "message.");
+
+          return;
+        }
+        if (msg->time_to_target_seconds <= 0.0) {
+          RCLCPP_WARN(get_node()->get_logger(),
+                      "time_to_target_seconds needs to be a positive "
+                      "value. Ignoring MotionUpdate message.");
+
+          return;
+        }
+
         motion_update_rt_.set(*msg);
         motion_update_received_ = true;
+
+        // Reset any previously set JointMotionUpdate target
+        reset_joint_target();
+        target_mode_ = TargetMode::Cartesian;
       });
+
+  joint_motion_update_sub_ =
+      this->get_node()->create_subscription<JointMotionUpdate>(
+          "~/joint_motion_update", reliable_qos,
+          [this](const JointMotionUpdate::SharedPtr msg) {
+            if (get_node()->get_current_state().id() !=
+                lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE) {
+              RCLCPP_WARN_THROTTLE(
+                  get_node()->get_logger(), *get_node()->get_clock(), 1000,
+                  "Controller is not in ACTIVE lifecycle state. "
+                  "Ignoring JointMotionUpdate message.");
+
+              return;
+            }
+
+            if (msg->target_stiffness.size() != num_joints_) {
+              RCLCPP_WARN(get_node()->get_logger(),
+                          "The size of the target_stiffness does not match the "
+                          "number of joints. Expected size %ld. "
+                          "Ignoring JointMotionUpdate message.",
+                          num_joints_);
+
+              return;
+            }
+            if (msg->target_damping.size() != num_joints_) {
+              RCLCPP_WARN(
+                  get_node()->get_logger(),
+                  "The size of the target_damping does not match the number "
+                  "of joints. Expected size %ld. "
+                  "Ignoring JointMotionUpdate message.",
+                  num_joints_);
+
+              return;
+            }
+            if (!msg->target_feedforward_torque.empty()) {
+              if (msg->target_feedforward_torque.size() != num_joints_) {
+                RCLCPP_WARN(get_node()->get_logger(),
+                            "The size of the target_feedforward_torque does "
+                            "not match the number "
+                            "of joints. Expected size %ld. "
+                            "Ignoring JointMotionUpdate message.",
+                            num_joints_);
+
+                return;
+              }
+            }
+            if (msg->trajectory_generation_mode.mode ==
+                TrajectoryGenerationMode::MODE_UNSPECIFIED) {
+              RCLCPP_WARN(
+                  get_node()->get_logger(),
+                  "The trajectory_generation_mode is set to MODE_UNSPECIFIED. "
+                  "Please set to either MODE_POSITION, MODE_VELOCITY or "
+                  "MODE_POSITION_AND_VELOCITY. Ignoring JointMotionUpdate "
+                  "message.");
+
+              return;
+            }
+            if (msg->trajectory_generation_mode.mode ==
+                    TrajectoryGenerationMode::MODE_POSITION ||
+                msg->trajectory_generation_mode.mode ==
+                    TrajectoryGenerationMode::MODE_POSITION_AND_VELOCITY) {
+              if (msg->target_state.positions.size() != num_joints_) {
+                RCLCPP_WARN(get_node()->get_logger(),
+                            "The size of the target_state does not match the "
+                            "number of joints. Expected size %ld. "
+                            "Ignoring JointMotionUpdate message.",
+                            num_joints_);
+
+                return;
+              }
+            }
+            if (msg->trajectory_generation_mode.mode ==
+                    TrajectoryGenerationMode::MODE_VELOCITY ||
+                msg->trajectory_generation_mode.mode ==
+                    TrajectoryGenerationMode::MODE_POSITION_AND_VELOCITY) {
+              if (msg->target_state.velocities.size() != num_joints_) {
+                RCLCPP_WARN(get_node()->get_logger(),
+                            "The size of the target_state does not match the "
+                            "number of joints. Expected size %ld. "
+                            "Ignoring JointMotionUpdate message.",
+                            num_joints_);
+
+                return;
+              }
+            }
+            if (msg->time_to_target_seconds <= 0.0) {
+              RCLCPP_WARN(get_node()->get_logger(),
+                          "time_to_target_seconds needs to be a positive "
+                          "value. Ignoring JointMotionUpdate message.");
+
+              return;
+            }
+
+            joint_motion_update_rt_.set(*msg);
+            joint_motion_update_received_ = true;
+
+            // Reset any previously set MotionUpdate target
+            reset_cartesian_target();
+            target_mode_ = TargetMode::Joint;
+          });
 
   // Load the kinematics plugin
   if (!params_.kinematics.plugin_name.empty()) {
@@ -261,20 +381,9 @@ controller_interface::CallbackReturn Controller::on_configure(
       }
     }
 
-    // Populate impedance control parameters
+    // Populate Cartesian impedance control parameters
     CartesianImpedanceParameters resized_impedance_params(num_joints_);
     impedance_params_ = resized_impedance_params;
-
-    if (params_.impedance.gravity_compensation) {
-      if (!gravity_compensation_action_->configure(
-              urdf_model, params_.kinematics.base, params_.kinematics.tip,
-              get_node()->get_node_logging_interface())) {
-        RCLCPP_ERROR(get_node()->get_logger(),
-                     "Failed to configure GravityCompensationAction!");
-
-        return controller_interface::CallbackReturn::ERROR;
-      }
-    }
 
     // Set default parameters for stiffness and damping matrices
     impedance_params_.stiffness_matrix =
@@ -298,11 +407,6 @@ controller_interface::CallbackReturn Controller::on_configure(
     impedance_params_.nullspace_damping = Eigen::Map<const Eigen::VectorXd>(
         params_.impedance.nullspace.damping.data(),
         static_cast<Eigen::Index>(num_joints_));
-
-    // Update torque limits
-    for (std::size_t i = 0; i < num_joints_; ++i) {
-      impedance_params_.joint_torque_limits(i) = joint_limits_[i].max_effort;
-    }
 
     impedance_params_.activation_percentage =
         params_.impedance.activation_percentage;
@@ -332,6 +436,76 @@ controller_interface::CallbackReturn Controller::on_configure(
             get_node()->get_node_clock_interface())) {
       return controller_interface::CallbackReturn::ERROR;
     }
+
+    // Validate joint impedance control parameters
+    if (params_.joint_impedance.interpolator.min_value.size() != num_joints_) {
+      RCLCPP_ERROR(
+          get_node()->get_logger(),
+          "The size of the joint_impedance.interpolator.min_value does "
+          "not match the number of joints. Expected size %ld.",
+          num_joints_);
+
+      return controller_interface::CallbackReturn::ERROR;
+    }
+    if (params_.joint_impedance.interpolator.max_value.size() != num_joints_) {
+      RCLCPP_ERROR(
+          get_node()->get_logger(),
+          "The size of the joint_impedance.interpolator.max_value does "
+          "not match the number of joints. Expected size %ld.",
+          num_joints_);
+
+      return controller_interface::CallbackReturn::ERROR;
+    }
+    if (params_.joint_impedance.interpolator.max_step_size.size() !=
+        num_joints_) {
+      RCLCPP_ERROR(
+          get_node()->get_logger(),
+          "The size of the joint_impedance.interpolator.max_step_size does "
+          "not match the number of joints. Expected size %ld.",
+          num_joints_);
+
+      return controller_interface::CallbackReturn::ERROR;
+    }
+
+    // Populate joint impedance control parameters
+    JointImpedanceParameters resized_joint_impedance_params(num_joints_);
+    joint_impedance_params_ = resized_joint_impedance_params;
+
+    joint_impedance_params_.interpolator_min_value =
+        Eigen::Map<const Eigen::VectorXd>(
+            params_.joint_impedance.interpolator.min_value.data(),
+            static_cast<Eigen::Index>(
+                params_.joint_impedance.interpolator.min_value.size()));
+
+    joint_impedance_params_.interpolator_max_value =
+        Eigen::Map<const Eigen::VectorXd>(
+            params_.joint_impedance.interpolator.max_value.data(),
+            static_cast<Eigen::Index>(
+                params_.joint_impedance.interpolator.max_value.size()));
+
+    joint_impedance_params_.interpolator_max_step_size =
+        Eigen::Map<const Eigen::VectorXd>(
+            params_.joint_impedance.interpolator.max_step_size.data(),
+            static_cast<Eigen::Index>(
+                params_.joint_impedance.interpolator.max_step_size.size()));
+
+    if (!joint_impedance_action_->configure(
+            joint_limits_, get_node()->get_node_logging_interface(),
+            get_node()->get_node_clock_interface())) {
+      return controller_interface::CallbackReturn::ERROR;
+    }
+
+    // Initialize GravityCompensationAction if enabled
+    if (params_.impedance.gravity_compensation) {
+      if (!gravity_compensation_action_->configure(
+              urdf_model, params_.kinematics.base, params_.kinematics.tip,
+              get_node()->get_node_logging_interface())) {
+        RCLCPP_ERROR(get_node()->get_logger(),
+                     "Failed to configure GravityCompensationAction!");
+
+        return controller_interface::CallbackReturn::ERROR;
+      }
+    }
   }
 
   if (!populate_cartesian_limits(params_, cartesian_limits_)) {
@@ -359,7 +533,8 @@ controller_interface::CallbackReturn Controller::on_activate(
   // read and initialize current joint states
   current_state_.positions.assign(num_joints_, 0.0);
   current_state_.velocities.assign(num_joints_, 0.0);
-  read_state_from_hardware(current_state_, sensed_wrench_at_tip_);
+  read_state_from_hardware(current_state_, current_tool_state_,
+                           sensed_wrench_at_tip_);
   for (const auto& val : current_state_.positions) {
     if (std::isnan(val)) {
       RCLCPP_ERROR(get_node()->get_logger(),
@@ -368,17 +543,11 @@ controller_interface::CallbackReturn Controller::on_activate(
     }
   }
 
-  if (!kinematics_->calculate_link_transform(current_state_.positions,
-                                             params_.kinematics.tip,
-                                             current_tool_state_.pose)) {
-    RCLCPP_ERROR(get_node()->get_logger(),
-                 "Unable to compute current cartesian state of tool frame");
-    return controller_interface::CallbackReturn::ERROR;
-  }
   last_tool_reference_ = current_tool_state_;
+  last_joint_reference_ = JointState(current_state_, num_joints_);
 
-  reset_motion_update_msg(motion_update_);
-  motion_update_rt_.try_set(motion_update_);
+  reset_cartesian_target();
+  reset_joint_target();
 
   return controller_interface::CallbackReturn::SUCCESS;
 }
@@ -391,8 +560,8 @@ controller_interface::CallbackReturn Controller::on_deactivate(
   }
   release_interfaces();
 
-  reset_motion_update_msg(motion_update_);
-  motion_update_rt_.try_set(motion_update_);
+  reset_cartesian_target();
+  reset_joint_target();
 
   return controller_interface::CallbackReturn::SUCCESS;
 }
@@ -402,11 +571,14 @@ controller_interface::CallbackReturn Controller::on_cleanup(
     const rclcpp_lifecycle::State& /*previous_state*/) {
   param_listener_.reset();
   motion_update_sub_.reset();
+  joint_motion_update_sub_.reset();
   state_publisher_rt_.reset();
   state_publisher_.reset();
-  motion_update_received_ = false;
 
   cartesian_impedance_action_.reset();
+  joint_impedance_action_.reset();
+  gravity_compensation_action_.reset();
+  force_torque_sensor_.reset();
 
   last_commanded_state_ = std::nullopt;
   target_state_ = std::nullopt;
@@ -424,28 +596,12 @@ controller_interface::CallbackReturn Controller::on_cleanup(
 controller_interface::return_type Controller::update(
     const rclcpp::Time& /*time*/, const rclcpp::Duration& /*period*/) {
   // Read and update current states from sensors
-  read_state_from_hardware(current_state_, sensed_wrench_at_tip_);
+  read_state_from_hardware(current_state_, current_tool_state_,
+                           sensed_wrench_at_tip_);
 
-  // Use forward kinematics to update the current cartesian state of tool frame
-  if (!kinematics_->calculate_link_transform(current_state_.positions,
-                                             params_.kinematics.tip,
-                                             current_tool_state_.pose)) {
-    RCLCPP_ERROR(get_node()->get_logger(),
-                 "Unable to compute current cartesian state of tool frame");
-    return controller_interface::return_type::ERROR;
-  }
+  auto current_joint_state = JointState(current_state_, num_joints_);
 
-  // Retrieve the cartesian velocity of the tool frame
-  std::vector<double> cartesian_velocity(6);
-  if (!kinematics_->convert_joint_deltas_to_cartesian_deltas(
-          current_state_.positions, current_state_.velocities,
-          params_.kinematics.tip, cartesian_velocity)) {
-    RCLCPP_ERROR(get_node()->get_logger(),
-                 "Unable to compute current cartesian velocity of tool frame");
-    return controller_interface::return_type::ERROR;
-  }
-  current_tool_state_.velocity =
-      Eigen::Map<const Eigen::Matrix<double, 6, 1>>(cartesian_velocity.data());
+  // todo(johntgz) make reading user commands cleaner
 
   // read user commands
   if (motion_update_received_) {
@@ -461,15 +617,17 @@ controller_interface::return_type Controller::update(
       // spline continues to the target.This is only applicable in pure
       // position trajectory generation mode with non-zero
       // time_to_target_seconds.
-      bool did_target_or_time_to_target_change =
-          motion_update_.time_to_target_seconds != time_to_target_seconds_ ||
-          !latest_target_state.pose.isApprox(target_state_.value().pose) ||
-          !latest_target_state.velocity.isApprox(
-              target_state_.value().velocity);
+      bool did_target_or_time_to_target_change = true;
+      if (target_state_.has_value()) {
+        did_target_or_time_to_target_change =
+            motion_update_.time_to_target_seconds != time_to_target_seconds_ ||
+            !latest_target_state.pose.isApprox(target_state_.value().pose) ||
+            !latest_target_state.velocity.isApprox(
+                target_state_.value().velocity);
+      }
 
       bool is_position_mode_with_zero_velocity_target =
-          latest_target_state.velocity.isApprox(
-              Eigen::VectorXd::Zero(num_joints_)) &&
+          latest_target_state.velocity.isApprox(Eigen::VectorXd::Zero(6)) &&
           (motion_update_.trajectory_generation_mode.mode ==
                TrajectoryGenerationMode::MODE_POSITION ||
            motion_update_.trajectory_generation_mode.mode ==
@@ -484,21 +642,70 @@ controller_interface::return_type Controller::update(
 
       target_state_ = latest_target_state;
     }
+  } else if (joint_motion_update_received_) {
+    auto command_op = joint_motion_update_rt_.try_get();
+    if (command_op.has_value()) {
+      joint_motion_update_ = command_op.value();
+
+      auto latest_target_state =
+          JointState(joint_motion_update_.target_state, num_joints_);
+
+      // If target values or time_to_target_seconds is unchanged, then we keep
+      // the current remaining_time_to_target_seconds_ such that the current
+      // spline continues to the target.This is only applicable in pure
+      // position trajectory generation mode with non-zero
+      // time_to_target_seconds.
+      bool did_target_or_time_to_target_change = true;
+      if (joint_target_state_.has_value()) {
+        did_target_or_time_to_target_change =
+            joint_motion_update_.time_to_target_seconds !=
+                time_to_target_seconds_ ||
+            !latest_target_state.positions.isApprox(
+                joint_target_state_.value().positions) ||
+            !latest_target_state.velocities.isApprox(
+                joint_target_state_.value().velocities);
+      }
+
+      bool is_position_mode_with_zero_velocity_target =
+          latest_target_state.velocities.isApprox(
+              Eigen::VectorXd::Zero(num_joints_)) &&
+          (joint_motion_update_.trajectory_generation_mode.mode ==
+               TrajectoryGenerationMode::MODE_POSITION ||
+           joint_motion_update_.trajectory_generation_mode.mode ==
+               TrajectoryGenerationMode::MODE_POSITION_AND_VELOCITY);
+
+      // Update time to target
+      if (did_target_or_time_to_target_change ||
+          !is_position_mode_with_zero_velocity_target) {
+        remaining_time_to_target_seconds_ =
+            joint_motion_update_.time_to_target_seconds;
+      }
+
+      joint_target_state_ = latest_target_state;
+    }
   }
 
   // If target_state_ has a value, then we set the new tool reference to that of
   // the target and interpolate it.
   // Else, maintain the current position of the robot.
-  CartesianState new_tool_reference = last_tool_reference_;
 
-  if (target_state_.has_value()) {
+  // todo(johntgz) Can we let CartesianState and JointState inherit from the
+  // same base class?
+  CartesianState new_tool_reference = last_tool_reference_;
+  JointState new_joint_reference = last_joint_reference_;
+
+  if (target_mode_ == TargetMode::Cartesian && target_state_.has_value()) {
+    // todo(johntgz) remove after debug
+    RCLCPP_INFO_THROTTLE(get_node()->get_logger(), *get_node()->get_clock(),
+                         1000, "HAS CARTESIAN TARGET");
+
     // Clamp the target states to stay within limits
     if (clamp_reference_to_limits(
             cartesian_limits_, motion_update_.trajectory_generation_mode.mode,
             target_state_.value())) {
       RCLCPP_WARN_THROTTLE(
           get_node()->get_logger(), *get_node()->get_clock(), 1000,
-          "Limit violation: Target has been clamped to limits");
+          "Limit violation: Cartesian target has been clamped to limits");
     }
 
     time_to_target_seconds_ = motion_update_.time_to_target_seconds;
@@ -512,7 +719,48 @@ controller_interface::return_type Controller::update(
             motion_update_.trajectory_generation_mode.mode,
             new_tool_reference)) {
       RCLCPP_ERROR(get_node()->get_logger(),
-                   "Linear interpolation of target failed");
+                   "Linear interpolation of Cartesian target failed");
+      return controller_interface::return_type::ERROR;
+    }
+
+    // todo(johntgz) merge this time decrement routine with the joint version
+    //  Decrement the remaining time to target
+    if (remaining_time_to_target_seconds_ > 0) {
+      remaining_time_to_target_seconds_ -= 1. / params_.control_frequency;
+      if (remaining_time_to_target_seconds_ < 0)
+        remaining_time_to_target_seconds_ = 0;
+    }
+
+    // todo(johntgz) remove after debugging
+    /////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////
+  } else if (target_mode_ == TargetMode::Joint &&
+             joint_target_state_.has_value()) {
+    // todo(johntgz) remove after debug
+    RCLCPP_INFO_THROTTLE(get_node()->get_logger(), *get_node()->get_clock(),
+                         1000, "HAS JOINT TARGET");
+
+    // Clamp the target states to stay within limits
+    if (clamp_joint_reference_to_limits(
+            joint_limits_, joint_motion_update_.trajectory_generation_mode.mode,
+            joint_target_state_.value())) {
+      RCLCPP_WARN_THROTTLE(
+          get_node()->get_logger(), *get_node()->get_clock(), 1000,
+          "Limit violation: Joint target has been clamped to limits");
+    }
+
+    time_to_target_seconds_ = joint_motion_update_.time_to_target_seconds;
+
+    // Apply linear interpolation to the target_state_ to obtain a new
+    // reference. Linear interpolation should support MODE_POSITION,
+    // MODE_VELOCITY and MODE_POSITION_AND_VELOCITY
+    if (!update_joint_reference_linear_interpolation(
+            last_joint_reference_, joint_target_state_.value(),
+            remaining_time_to_target_seconds_, params_.control_frequency,
+            joint_motion_update_.trajectory_generation_mode.mode,
+            new_joint_reference)) {
+      RCLCPP_ERROR(get_node()->get_logger(),
+                   "Linear interpolation of joint target failed");
       return controller_interface::return_type::ERROR;
     }
 
@@ -523,62 +771,86 @@ controller_interface::return_type Controller::update(
         remaining_time_to_target_seconds_ = 0;
     }
 
-    interpolate_impedance_parameters();
+  } else {
+    // todo(johntgz) remove after debug
+    RCLCPP_WARN_THROTTLE(get_node()->get_logger(), *get_node()->get_clock(),
+                         1000, "Invalid target mode!");
+
+    // todo(johntgz) No need to default to any mode?
   }
 
   // Compute controls
-  JointTrajectoryPoint new_joint_reference;
+  JointTrajectoryPoint new_joint_command;
 
   if (control_mode_ == ControlMode::Impedance) {
-    // Compute the tool pose and velocity error between the current and
-    // target tool state.
-    Eigen::Matrix<double, 7, 1> current_pose_vec =
-        current_tool_state_.get_pose_vector();
-    Eigen::Matrix<double, 7, 1> target_pose_vec =
-        new_tool_reference.get_pose_vector();
-    Eigen::Matrix<double, 6, 1> tool_pose_error;
-    if (!kinematics_->calculate_frame_difference(
-            current_pose_vec, target_pose_vec, 1.0, tool_pose_error)) {
-      RCLCPP_ERROR(get_node()->get_logger(),
-                   "Failed to calculate frame difference between current and "
-                   "target tool frame");
-      return controller_interface::return_type::ERROR;
-    }
-    last_tool_pose_error_ = tool_pose_error;
-    Eigen::Matrix<double, 6, 1> tool_vel_error =
-        new_tool_reference.velocity - current_tool_state_.velocity;
+    new_joint_command.effort.assign(num_joints_, 0.0);
 
-    // Calculate the current Jacobian.
-    Eigen::VectorXd current_joint_positions = Eigen::Map<const Eigen::VectorXd>(
-        current_state_.positions.data(),
-        static_cast<Eigen::Index>(current_state_.positions.size()));
-    Eigen::Matrix<double, 6, Eigen::Dynamic> jacobian;
-    jacobian.resize(6, num_joints_);
-    if (!kinematics_->calculate_jacobian(current_joint_positions,
-                                         params_.kinematics.tip, jacobian)) {
-      RCLCPP_ERROR(get_node()->get_logger(), "Failed to calculate jacobian");
-      return controller_interface::return_type::ERROR;
-    }
+    interpolate_impedance_parameters();
 
-    if (!cartesian_impedance_action_->compute(
-            tool_pose_error, tool_vel_error, current_state_, jacobian,
-            impedance_params_, new_joint_reference)) {
-      RCLCPP_ERROR(get_node()->get_logger(),
-                   "Cartesian Impedance Action failed to compute controls!");
-      return controller_interface::return_type::ERROR;
+    if (target_mode_ == TargetMode::Cartesian) {
+      // Compute the tool pose and velocity error between the current and
+      // target tool state.
+      Eigen::Matrix<double, 7, 1> current_pose_vec =
+          current_tool_state_.get_pose_vector();
+      Eigen::Matrix<double, 7, 1> target_pose_vec =
+          new_tool_reference.get_pose_vector();
+      Eigen::Matrix<double, 6, 1> tool_pose_error;
+      if (!kinematics_->calculate_frame_difference(
+              current_pose_vec, target_pose_vec, 1.0, tool_pose_error)) {
+        RCLCPP_ERROR(get_node()->get_logger(),
+                     "Failed to calculate frame difference between current and "
+                     "target tool frame");
+        return controller_interface::return_type::ERROR;
+      }
+      last_tool_pose_error_ = tool_pose_error;
+      Eigen::Matrix<double, 6, 1> tool_vel_error =
+          new_tool_reference.velocity - current_tool_state_.velocity;
+
+      // Calculate the current Jacobian.
+      Eigen::Matrix<double, 6, Eigen::Dynamic> jacobian(6, num_joints_);
+      if (!kinematics_->calculate_jacobian(current_joint_state.positions,
+                                           params_.kinematics.tip, jacobian)) {
+        RCLCPP_ERROR(get_node()->get_logger(), "Failed to calculate jacobian");
+        return controller_interface::return_type::ERROR;
+      }
+
+      // todo(johntgz) replace current_State_ with current_joint_state
+      if (!cartesian_impedance_action_->compute(
+              tool_pose_error, tool_vel_error, current_state_, jacobian,
+              impedance_params_, new_joint_command)) {
+        RCLCPP_ERROR(get_node()->get_logger(),
+                     "Cartesian Impedance Action failed to compute controls!");
+        return controller_interface::return_type::ERROR;
+      }
+
+    } else if (target_mode_ == TargetMode::Joint) {
+      // Compute joint position and velocity error between current and target
+      // state
+      Eigen::VectorXd joint_position_error =
+          new_joint_reference.positions - current_joint_state.positions;
+      Eigen::VectorXd joint_velocity_error =
+          new_joint_reference.velocities - current_joint_state.velocities;
+
+      if (!joint_impedance_action_->compute(
+              joint_position_error, joint_velocity_error,
+              joint_impedance_params_, new_joint_command)) {
+        RCLCPP_ERROR(get_node()->get_logger(),
+                     "Cartesian Impedance Action failed to compute controls!");
+        return controller_interface::return_type::ERROR;
+      }
     }
 
     if (params_.impedance.gravity_compensation) {
       Eigen::VectorXd gravity_compensation_torques;
       if (!gravity_compensation_action_->compute(
-              current_joint_positions, gravity_compensation_torques)) {
+              current_joint_state.positions, gravity_compensation_torques)) {
         RCLCPP_ERROR(get_node()->get_logger(),
                      "Failed to calculate torques for gravity compensation!");
 
         return controller_interface::return_type::ERROR;
       }
       for (std::size_t i = 0; i < num_joints_; ++i) {
-        new_joint_reference.effort[i] += gravity_compensation_torques[i];
+        new_joint_command.effort[i] += gravity_compensation_torques[i];
       }
     }
 
@@ -591,9 +863,10 @@ controller_interface::return_type Controller::update(
     return controller_interface::return_type::ERROR;
   }
 
-  write_state_to_hardware(new_joint_reference);
+  write_state_to_hardware(new_joint_command);
 
   last_tool_reference_ = new_tool_reference;
+  last_joint_reference_ = new_joint_reference;
 
   populate_controller_state(state_msg_);
   state_publisher_rt_->try_publish(state_msg_);
@@ -603,7 +876,7 @@ controller_interface::return_type Controller::update(
 
 //==============================================================================
 void Controller::read_state_from_hardware(
-    JointTrajectoryPoint& state_current,
+    JointTrajectoryPoint& state_current, CartesianState& tool_state_current,
     Eigen::Matrix<double, 6, 1>& sensed_wrench_at_tip) {
   // Set state_current to last commanded state if any of the hardware interface
   // values are NaN
@@ -645,6 +918,26 @@ void Controller::read_state_from_hardware(
       state_current.velocities = last_commanded_state_.value().velocities;
     }
   }
+
+  // Use forward kinematics to update the current cartesian state of tool frame
+  if (!kinematics_->calculate_link_transform(state_current.positions,
+                                             params_.kinematics.tip,
+                                             tool_state_current.pose)) {
+    RCLCPP_ERROR(get_node()->get_logger(),
+                 "Unable to compute current cartesian state of tool frame");
+  }
+
+  // Retrieve the cartesian velocity of the tool frame
+  std::vector<double> cartesian_velocity(6);
+  if (!kinematics_->convert_joint_deltas_to_cartesian_deltas(
+          state_current.positions, state_current.velocities,
+          params_.kinematics.tip, cartesian_velocity)) {
+    RCLCPP_ERROR(get_node()->get_logger(),
+                 "Unable to compute current cartesian velocity of tool frame");
+    std::fill(cartesian_velocity.begin(), cartesian_velocity.end(), 0.0);
+  }
+  tool_state_current.velocity =
+      Eigen::Map<const Eigen::Matrix<double, 6, 1>>(cartesian_velocity.data());
 
   if (control_mode_ == ControlMode::Impedance) {
     // Retrieve readings from force torque sensor and in the event of NaN
@@ -824,15 +1117,14 @@ bool Controller::clamp_reference_to_limits(const CartesianLimits& limits,
                    "valid. Defaulting twist to zero.");
 
       new_velocity.array() *= 0.0;
-      mutated = true;
 
     } else if (translational_scaling_factor < 1.0) {
-      RCLCPP_WARN_THROTTLE(get_node()->get_logger(), *get_node()->get_clock(),
-                           1000, "Scaling translational velocity by %f",
-                           translational_scaling_factor);
+      RCLCPP_WARN_THROTTLE(
+          get_node()->get_logger(), *get_node()->get_clock(), 1000,
+          "Limit Violation: Scaling translational velocity by %f",
+          translational_scaling_factor);
 
       new_velocity.head(3) *= translational_scaling_factor;
-      mutated = true;
     }
 
     // Find scaling factor for rotational velocity and apply it.
@@ -843,7 +1135,6 @@ bool Controller::clamp_reference_to_limits(const CartesianLimits& limits,
                            1000, "Scaling rotational velocity by %f",
                            rotational_scaling_factor);
       new_velocity.tail(3) *= rotational_scaling_factor;
-      mutated = true;
     }
   }
 
@@ -1000,6 +1291,124 @@ bool Controller::clamp_reference_to_limits(const CartesianLimits& limits,
   return mutated;
 }
 
+//==============================================================================
+bool Controller::clamp_joint_reference_to_limits(
+    const std::vector<JointLimits>& limits, const uint8_t& mode,
+    JointState& target_state, double soft_margin_radians) {
+  bool mutated = false;
+
+  bool clamp_pose =
+      mode == TrajectoryGenerationMode::MODE_POSITION ||
+      mode == TrajectoryGenerationMode::MODE_POSITION_AND_VELOCITY;
+
+  bool scale_velocity =
+      mode == TrajectoryGenerationMode::MODE_VELOCITY ||
+      mode == TrajectoryGenerationMode::MODE_POSITION_AND_VELOCITY;
+
+  Eigen::VectorXd new_positions = target_state.positions;
+  Eigen::VectorXd new_velocities = target_state.velocities;
+
+  // Scale linear and angular velocity
+  if (scale_velocity) {
+    // Compute scaling factor for joint velocity
+    double scaling_factor = 1.0;
+
+    for (std::size_t k = 0; k < std::size_t(new_velocities.size()); ++k) {
+      double scaling_factor_candidate = 1.0;
+      if (new_velocities(k) > limits[k].max_velocity) {
+        scaling_factor_candidate = limits[k].max_velocity / new_velocities(k);
+      } else if (new_velocities(k) < -limits[k].max_velocity) {
+        scaling_factor_candidate = -limits[k].max_velocity / new_velocities(k);
+      }
+      if (scaling_factor_candidate < scaling_factor) {
+        scaling_factor = scaling_factor_candidate;
+      }
+    }
+
+    // Apply scaling factor for joint velocity
+    if (scaling_factor < 0.0) {
+      RCLCPP_ERROR(this->get_node()->get_logger(),
+                   "Encountered negative scaling factor while scaling the "
+                   "joint velocities. Scaling velocities to zero.");
+
+      new_velocities *= 0.0;
+    } else if (scaling_factor < 1.0) {
+      RCLCPP_WARN_THROTTLE(
+          get_node()->get_logger(), *get_node()->get_clock(), 1000,
+          "Limit Violation: Scaling translational velocity by %f",
+          scaling_factor);
+
+      new_velocities *= scaling_factor;
+    }
+  }
+
+  if (clamp_pose) {
+    // Clamp joint positions to limits.
+
+    // If position soft margins are violated, smoothly scale linear
+    // velocity to zero based on the distance to the limits.
+    for (std::size_t i = 0; i < std::size_t(new_positions.size()); ++i) {
+      if (new_positions(i) >= (limits[i].max_position - soft_margin_radians) ||
+          new_positions(i) <= (limits[i].min_position + soft_margin_radians)) {
+        new_positions(i) = std::clamp(new_positions(i), limits[i].min_position,
+                                      limits[i].max_position);
+
+        if (scale_velocity) {
+          double scale_factor = 0.0;
+          if (soft_margin_radians > 0.0) {
+            // Compute the normalized distance relative to the start of the soft
+            // margin
+            double distance_from_soft_margin = 0.0;
+            if (new_velocities(i) > 0.0) {
+              distance_from_soft_margin =
+                  new_positions(i) -
+                  (limits[i].max_position - soft_margin_radians);
+
+            } else if (new_velocities(i) < 0.0) {
+              distance_from_soft_margin =
+                  (limits[i].min_position + soft_margin_radians) -
+                  new_positions(i);
+            }
+
+            double normalized_distance_from_soft_margin = std::clamp(
+                distance_from_soft_margin / soft_margin_radians, 0.0, 1.0);
+            // The bi-square function creates a smooth and differentiable
+            // transition between 0 and 1.
+            scale_factor = (1.0 - normalized_distance_from_soft_margin *
+                                      normalized_distance_from_soft_margin) *
+                           (1.0 - normalized_distance_from_soft_margin *
+                                      normalized_distance_from_soft_margin);
+          }
+
+          new_velocities(i) *= scale_factor;
+        }
+      }
+    }
+
+    if (!target_state.positions.isApprox(new_positions)) {
+      RCLCPP_WARN_STREAM_THROTTLE(get_node()->get_logger(),
+                                  *get_node()->get_clock(), 1000,
+                                  "Limit violation: Joint positions clamped to "
+                                      << new_positions.transpose());
+
+      target_state.positions = new_positions;
+      mutated = true;
+    }
+    if (!target_state.velocities.isApprox(new_velocities)) {
+      RCLCPP_WARN_STREAM_THROTTLE(
+          get_node()->get_logger(), *get_node()->get_clock(), 1000,
+          "Limit violation: Joint velocities clampted to "
+              << new_velocities.transpose());
+
+      target_state.velocities = new_velocities;
+      mutated = true;
+    }
+  }
+
+  return mutated;
+}
+
+//==============================================================================
 bool Controller::update_reference_linear_interpolation(
     const CartesianState& last_reference, const CartesianState& target_state,
     const double remaining_time_to_target_seconds,
@@ -1069,72 +1478,219 @@ bool Controller::update_reference_linear_interpolation(
   return true;
 }
 
-void Controller::interpolate_impedance_parameters() {
-  // We use exponential smoothing to interpolate the stiffness and damping
-  // matrices with the equation:
-  //
-  //   S_(n+1) = (1-c) * S_n + c * S_target
-  //
-  // where n+1 is the next control iteration
-  impedance_params_.stiffness_matrix *=
-      1. - params_.impedance.stiffness_smoothing_constant;
-  impedance_params_.stiffness_matrix +=
-      params_.impedance.stiffness_smoothing_constant *
-      Eigen::Map<const Eigen::Matrix<double, 6, 6, Eigen::RowMajor>>(
-          motion_update_.target_stiffness.data());
+//==============================================================================
+bool Controller::update_joint_reference_linear_interpolation(
+    const JointState& last_reference, const JointState& target_state,
+    const double remaining_time_to_target_seconds,
+    const double control_frequency, const uint8_t& mode,
+    JointState& new_reference) {
+  bool interpolate_position =
+      mode == TrajectoryGenerationMode::MODE_POSITION ||
+      mode == TrajectoryGenerationMode::MODE_POSITION_AND_VELOCITY;
+  bool interpolate_velocity =
+      mode == TrajectoryGenerationMode::MODE_VELOCITY ||
+      mode == TrajectoryGenerationMode::MODE_POSITION_AND_VELOCITY;
 
-  impedance_params_.damping_matrix *=
-      1. - params_.impedance.damping_smoothing_constant;
-  impedance_params_.damping_matrix +=
-      params_.impedance.damping_smoothing_constant *
-      Eigen::Map<const Eigen::Matrix<double, 6, 6, Eigen::RowMajor>>(
-          motion_update_.target_damping.data());
+  bool position_only = mode == TrajectoryGenerationMode::MODE_POSITION;
+  bool velocity_only = mode == TrajectoryGenerationMode::MODE_VELOCITY;
 
-  // Clamp feedforward target wrench to limits
-  Eigen::Matrix<double, 6, 1> target_wrench;
-  utils::wrenchMsgToEigen(motion_update_.feedforward_wrench_at_tip,
-                          target_wrench);
-  const Eigen::Matrix<double, 6, 1> clamped_target_wrench =
-      target_wrench
-          .cwiseMin(impedance_params_.feedforward_interpolation_wrench_max)
-          .cwiseMax(impedance_params_.feedforward_interpolation_wrench_min);
+  if (!interpolate_position && !interpolate_velocity) {
+    RCLCPP_ERROR(get_node()->get_logger(),
+                 "Unexpected trajectory generation mode. Please set to "
+                 "either MODE_POSITION, MODE_VELOCITY or "
+                 "MODE_POSITION_AND_VELOCITY");
+    return false;
+  }
 
-  // Interpolate from current wrench to clamped_target_wrench
-  Eigen::Matrix<double, 6, 1> next_wrench = feedforward_wrench_at_tip_;
-  for (int i = 0; i < 6; ++i) {
-    if (clamped_target_wrench(i) > feedforward_wrench_at_tip_(i)) {
-      next_wrench(i) =
-          feedforward_wrench_at_tip_(i) +
-          (impedance_params_.feedforward_interpolation_max_wrench_dot(i) *
-           (1.0 / params_.control_frequency));
-      next_wrench(i) = std::min(clamped_target_wrench(i), next_wrench(i));
-    } else if (clamped_target_wrench(i) < feedforward_wrench_at_tip_(i)) {
-      next_wrench(i) =
-          feedforward_wrench_at_tip_(i) -
-          (impedance_params_.feedforward_interpolation_max_wrench_dot(i) *
-           (1.0 / params_.control_frequency));
-      next_wrench(i) = std::max(clamped_target_wrench(i), next_wrench(i));
-    } else {
-      next_wrench(i) = feedforward_wrench_at_tip_(i);
+  if (remaining_time_to_target_seconds > 0.0) {
+    if (interpolate_position) {
+      // Linearly interpolate the joint positions
+      new_reference.positions +=
+          (target_state.positions - last_reference.positions) /
+          (control_frequency * remaining_time_to_target_seconds);
+    }
+    if (interpolate_velocity) {
+      // Linearly interpolate the velocity
+      new_reference.velocities +=
+          (target_state.velocities - last_reference.velocities) /
+          (control_frequency * remaining_time_to_target_seconds);
+      new_reference.positions += target_state.velocities / control_frequency;
+    }
+  } else {
+    if (interpolate_position) {
+      // Hold the target position upon reaching the trajectory endpoint
+      new_reference.positions = target_state.positions;
+    }
+    if (interpolate_velocity) {
+      // Hold the target velocity upon reaching the trajectory endpoint
+      new_reference.velocities = target_state.velocities;
     }
   }
-  feedforward_wrench_at_tip_ = next_wrench;
+  if (position_only) {
+    // Always set reference velocity to zero.
+    new_reference.velocities.setZero();
+  }
+  if (velocity_only) {
+    // Integrate reference pose by one timestep
+    new_reference.positions += target_state.velocities / control_frequency;
+  }
 
-  // Compute the total wrench at the tool tip
-  // Force control via feedforward_wrench and wrench_feedback_gains.
-  Eigen::Matrix<double, 6, 1> wrench_feedback_gains_at_tip;
-  utils::wrenchMsgToEigen(motion_update_.wrench_feedback_gains_at_tip,
-                          wrench_feedback_gains_at_tip);
-  Eigen::Matrix<double, 6, 1> total_wrench_at_tip =
-      feedforward_wrench_at_tip_ +
-      wrench_feedback_gains_at_tip.cwiseProduct(feedforward_wrench_at_tip_ -
-                                                sensed_wrench_at_tip_);
+  return true;
+}
 
-  // Rotate wrench at tool tip into base frame.
-  impedance_params_.feedforward_wrench.head<3>() =
-      current_tool_state_.pose.rotation() * total_wrench_at_tip.head<3>();
-  impedance_params_.feedforward_wrench.tail<3>() =
-      current_tool_state_.pose.rotation() * total_wrench_at_tip.tail<3>();
+//==============================================================================
+void Controller::interpolate_impedance_parameters() {
+  if (target_mode_ == TargetMode::Cartesian) {
+    if (!motion_update_received_) {
+      return;
+    }
+
+    // We use exponential smoothing to interpolate the stiffness and damping
+    // matrices with the equation:
+    //
+    //   S_(n+1) = (1-c) * S_n + c * S_target
+    //
+    // where n+1 is the next control iteration
+    impedance_params_.stiffness_matrix *=
+        1. - params_.impedance.stiffness_smoothing_constant;
+    impedance_params_.stiffness_matrix +=
+        params_.impedance.stiffness_smoothing_constant *
+        Eigen::Map<const Eigen::Matrix<double, 6, 6, Eigen::RowMajor>>(
+            motion_update_.target_stiffness.data());
+
+    impedance_params_.damping_matrix *=
+        1. - params_.impedance.damping_smoothing_constant;
+    impedance_params_.damping_matrix +=
+        params_.impedance.damping_smoothing_constant *
+        Eigen::Map<const Eigen::Matrix<double, 6, 6, Eigen::RowMajor>>(
+            motion_update_.target_damping.data());
+
+    // Clamp feedforward target wrench to limits
+    Eigen::Matrix<double, 6, 1> target_wrench;
+    utils::wrench_msg_to_eigen(motion_update_.feedforward_wrench_at_tip,
+                               target_wrench);
+    const Eigen::Matrix<double, 6, 1> clamped_target_wrench =
+        target_wrench
+            .cwiseMin(impedance_params_.feedforward_interpolation_wrench_max)
+            .cwiseMax(impedance_params_.feedforward_interpolation_wrench_min);
+
+    // Interpolate from current wrench to clamped_target_wrench
+    Eigen::Matrix<double, 6, 1> next_wrench = feedforward_wrench_at_tip_;
+    for (int i = 0; i < 6; ++i) {
+      if (clamped_target_wrench(i) > feedforward_wrench_at_tip_(i)) {
+        next_wrench(i) =
+            feedforward_wrench_at_tip_(i) +
+            (impedance_params_.feedforward_interpolation_max_wrench_dot(i) *
+             (1.0 / params_.control_frequency));
+        next_wrench(i) = std::min(clamped_target_wrench(i), next_wrench(i));
+      } else if (clamped_target_wrench(i) < feedforward_wrench_at_tip_(i)) {
+        next_wrench(i) =
+            feedforward_wrench_at_tip_(i) -
+            (impedance_params_.feedforward_interpolation_max_wrench_dot(i) *
+             (1.0 / params_.control_frequency));
+        next_wrench(i) = std::max(clamped_target_wrench(i), next_wrench(i));
+      } else {
+        next_wrench(i) = feedforward_wrench_at_tip_(i);
+      }
+    }
+    feedforward_wrench_at_tip_ = next_wrench;
+
+    // Compute the total wrench at the tool tip
+    // Force control via feedforward_wrench and wrench_feedback_gains.
+    Eigen::Matrix<double, 6, 1> wrench_feedback_gains_at_tip;
+    utils::wrench_msg_to_eigen(motion_update_.wrench_feedback_gains_at_tip,
+                               wrench_feedback_gains_at_tip);
+    Eigen::Matrix<double, 6, 1> total_wrench_at_tip =
+        feedforward_wrench_at_tip_ +
+        wrench_feedback_gains_at_tip.cwiseProduct(feedforward_wrench_at_tip_ -
+                                                  sensed_wrench_at_tip_);
+
+    // todo(johntgz) should the rotation be inverted?
+    //  Rotate wrench at tool tip into base frame.
+    impedance_params_.feedforward_wrench.head<3>() =
+        current_tool_state_.pose.rotation() * total_wrench_at_tip.head<3>();
+    impedance_params_.feedforward_wrench.tail<3>() =
+        current_tool_state_.pose.rotation() * total_wrench_at_tip.tail<3>();
+
+  } else if (target_mode_ == TargetMode::Joint) {
+    if (!joint_motion_update_received_) {
+      return;
+    }
+
+    // We use exponential smoothing to interpolate the stiffness and damping
+    // vectors with the equation:
+    //   S_(n+1) = (1-c) * S_n + c * S_target
+    //
+    // where n+1 is the next control iteration
+    joint_impedance_params_.stiffness_vector *=
+        (1. - params_.impedance.stiffness_smoothing_constant);
+    joint_impedance_params_.stiffness_vector +=
+        (params_.impedance.stiffness_smoothing_constant *
+         Eigen::Map<const Eigen::VectorXd>(
+             joint_motion_update_.target_stiffness.data(),
+             static_cast<Eigen::Index>(num_joints_)));
+
+    joint_impedance_params_.damping_vector *=
+        (1. - params_.impedance.damping_smoothing_constant);
+    joint_impedance_params_.damping_vector +=
+        (params_.impedance.damping_smoothing_constant *
+         Eigen::Map<const Eigen::VectorXd>(
+             joint_motion_update_.target_damping.data(),
+             static_cast<Eigen::Index>(num_joints_)));
+
+    // Update the feedforward torque if a feedforward target is provided. Else,
+    // default to zero feedforward torque.
+    Eigen::VectorXd target_feedforward_torque =
+        Eigen::VectorXd::Zero(num_joints_);
+    if (!joint_motion_update_.target_feedforward_torque.empty()) {
+      target_feedforward_torque = Eigen::Map<Eigen::VectorXd>(
+          joint_motion_update_.target_feedforward_torque.data(),
+          static_cast<Eigen::Index>(
+              joint_motion_update_.target_feedforward_torque.size()));
+    }
+
+    // Interpolate from current feedforward torques to target feedforward
+    // torque.
+    target_feedforward_torque =
+        target_feedforward_torque
+            .cwiseMin(joint_impedance_params_.interpolator_max_value)
+            .cwiseMax(joint_impedance_params_.interpolator_min_value);
+
+    Eigen::VectorXd delta_torque =
+        target_feedforward_torque - joint_impedance_params_.feedforward_torques;
+    delta_torque =
+        delta_torque
+            .cwiseMin(joint_impedance_params_.interpolator_max_step_size)
+            .cwiseMax(-joint_impedance_params_.interpolator_max_step_size);
+
+    joint_impedance_params_.feedforward_torques += delta_torque;
+  }
+
+  return;
+}
+
+//==============================================================================
+void Controller::reset_cartesian_target() {
+  motion_update_ = aic_controller::MotionUpdate();
+  motion_update_rt_.try_set(motion_update_);
+
+  motion_update_received_ = false;
+  time_to_target_seconds_ = 0.0;
+  remaining_time_to_target_seconds_ = 0.0;
+
+  target_state_ = std::nullopt;
+}
+
+//==============================================================================
+void Controller::reset_joint_target() {
+  joint_motion_update_ = aic_controller::JointMotionUpdate();
+  joint_motion_update_rt_.try_set(joint_motion_update_);
+
+  joint_motion_update_received_ = false;
+  time_to_target_seconds_ = 0.0;
+  remaining_time_to_target_seconds_ = 0.0;
+
+  joint_target_state_ = std::nullopt;
 }
 
 }  // namespace aic_controller
