@@ -23,9 +23,9 @@ import numpy as np
 from rclpy.executors import ExternalShutdownException
 
 from rclpy.node import Node
-from aic_control_interfaces.msg import MotionUpdate, TrajectoryGenerationMode
+from aic_control_interfaces.msg import MotionUpdate, JointMotionUpdate, TrajectoryGenerationMode
 from geometry_msgs.msg import Pose, Point, Quaternion, Wrench, Vector3
-
+from trajectory_msgs.msg import JointTrajectoryPoint
 
 class TestImpedanceNode(Node):
     def __init__(self):
@@ -36,19 +36,33 @@ class TestImpedanceNode(Node):
         self.controller_namespace = self.declare_parameter(
             "controller_namespace", "aic_controller"
         ).value
-        # Create publisher if needed.
-        self.publisher = self.create_publisher(
-            MotionUpdate, f"/{self.controller_namespace}/motion_update", 10
-        )
+        self.cartesian_mode = self.declare_parameter(
+            "cartesian_mode", True
+        ).value
 
-        while self.publisher.get_subscription_count() == 0:
-            self.get_logger().info(
-                f"Waiting for subscriber to '{self.controller_namespace}/motion_update'..."
+        if (self.cartesian_mode):
+            self.motion_update_publisher = self.create_publisher(
+                MotionUpdate, f"/{self.controller_namespace}/motion_update", 10
             )
-            time.sleep(1.0)
+
+            while self.motion_update_publisher.get_subscription_count() == 0:
+                self.get_logger().info(
+                    f"Waiting for subscriber to '{self.controller_namespace}/motion_update'..."
+                )
+                time.sleep(1.0)
+        else:
+            self.joint_motion_update_publisher = self.create_publisher(
+                JointMotionUpdate, f"/{self.controller_namespace}/joint_motion_update", 10
+            )
+
+            while self.joint_motion_update_publisher.get_subscription_count() == 0:
+                self.get_logger().info(
+                    f"Waiting for subscriber to '{self.controller_namespace}/joint_motion_update'..."
+                )
+                time.sleep(1.0)
 
         # A timer that will send the trajectory only once.
-        self.timer = self.create_timer(1.0, self.send_motion_update)
+        self.timer = self.create_timer(1.0, self.send_target)
 
     def generate_motion_update(self, pos, quat, time_to_target):
 
@@ -74,44 +88,62 @@ class TestImpedanceNode(Node):
 
         return msg
 
-    def send_motion_update(self):
-        pos_tool_up = [-0.501, -0.175, 0.2]
-        pos_tool_down = [-0.501, -0.175, 0.0]
+    def generate_joint_motion_update(self, joint_pos, time_to_target):
+        msg = JointMotionUpdate()
 
-        quat_upright = [
-            0.7071068,
-            0.7071068,
-            0.0,
-            0.0,
-        ]  # ZYX = (180, 0, 90), z axis normal to plane and (x,y) axes are aligned with base_link axes
+        msg.target_state.positions = joint_pos
+        msg.target_stiffness = [100.0, 100.0, 100.0, 50.0, 50.0, 50.0]
+        msg.target_damping = [40.0, 40.0, 40.0, 15.0, 15.0, 15.0]
+        msg.trajectory_generation_mode.mode = TrajectoryGenerationMode.MODE_POSITION
+        msg.time_to_target_seconds = time_to_target
 
-        self.publisher.publish(
-            self.generate_motion_update(pos_tool_up, quat_upright, time_to_target=2.0)
-        )
-        self.get_logger().info(
-            "Published MotionUpdate for tool up configuration to aic_controller"
-        )
+        return msg
 
-        time.sleep(5.0)
+    def send_target(self):
+        if (self.cartesian_mode):
+            pos_tool_up = [-0.501, -0.175, 0.2]
+            pos_tool_down = [-0.501, -0.175, 0.0]
 
-        self.publisher.publish(
-            self.generate_motion_update(pos_tool_down, quat_upright, time_to_target=2.0)
-        )
-        self.get_logger().info(
-            "Published MotionUpdate for tool down configuration to aic_controller"
-        )
+            quat_upright = [
+                0.7071068,
+                0.7071068,
+                0.0,
+                0.0,
+            ]  # ZYX = (180, 0, 90), z axis normal to plane and (x,y) axes are aligned with base_link axes
 
-        # Shutdown after a short delay to ensure message is sent.
-        time.sleep(1.0)
+            self.motion_update_publisher.publish(
+                self.generate_motion_update(pos_tool_up, quat_upright, time_to_target=2.0)
+            )
+            self.get_logger().info(
+                "Published MotionUpdate for tool up configuration to aic_controller"
+            )
 
-        self.timer.cancel()  # Send only once.
+            time.sleep(5.0)
 
+            self.motion_update_publisher.publish(
+                self.generate_motion_update(pos_tool_down, quat_upright, time_to_target=2.0)
+            )
+            self.get_logger().info(
+                "Published MotionUpdate for tool down configuration to aic_controller"
+            )
+
+            # Shutdown after a short delay to ensure message is sent.
+            time.sleep(1.0)
+
+            self.timer.cancel()  # Send only once.
+
+        else:
+            joint_pos = [-1.57, -1.57, -1.57, -1.57, -1.57, -1.57]
+
+            self.joint_motion_update_publisher.publish(
+                self.generate_joint_motion_update(joint_pos, time_to_target=2.0)
+            )
 
 def main(args=None):
     try:
         with rclpy.init(args=args):
             node = TestImpedanceNode()
-            node.send_motion_update()
+            node.send_target()
             rclpy.spin(node)
     except (KeyboardInterrupt, ExternalShutdownException):
         pass
