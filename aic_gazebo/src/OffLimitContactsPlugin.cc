@@ -76,15 +76,14 @@ void OffLimitContactsPlugin::PreUpdate(const UpdateInfo &_info,
           const components::ContactSensorData *_contacts) -> bool {
         // Only consider contacts with off-limit models (e.g. enclosure).
         for (const auto &contact : _contacts->Data().contact()) {
-          for (int i = 0; i < contact.position_size(); ++i) {
-            auto found1 = this->offLimitEntities.find(
-                              topLevelModel(contact.collision1().id(), _ecm)) !=
-                          this->offLimitEntities.end();
-            auto found2 = this->offLimitEntities.find(
-                              topLevelModel(contact.collision2().id(), _ecm)) !=
-                          this->offLimitEntities.end();
-            shouldPublish = shouldPublish || found1 || found2;
-          }
+          auto found1 = this->offLimitEntities.find(
+                            topLevelModel(contact.collision1().id(), _ecm)) !=
+                        this->offLimitEntities.end();
+          auto found2 = this->offLimitEntities.find(
+                            topLevelModel(contact.collision2().id(), _ecm)) !=
+                        this->offLimitEntities.end();
+          shouldPublish = shouldPublish || found1 || found2;
+          if (shouldPublish) break;
         }
         if (shouldPublish) this->publisher.Publish(_contacts->Data());
 
@@ -161,7 +160,7 @@ void OffLimitContactsPlugin::CreateCollisionData(EntityComponentManager &_ecm) {
 //////////////////////////////////////////////////
 bool OffLimitContactsPlugin::InitializeOffLimitEntities(
     EntityComponentManager &_ecm) {
-  for (auto modelName : this->offLimitModelNames) {
+  for (const auto& modelName : this->offLimitModelNames) {
     Entity entity = kNullEntity;
     auto entitiesMatchingName = entitiesFromScopedName(modelName, _ecm);
     // Filter for entities with only models
