@@ -49,12 +49,12 @@ bool JointImpedanceAction::compute(const Eigen::VectorXd& joint_position_error,
       params.damping_vector.cwiseProduct(joint_velocity_error) +
       params.feedforward_torques;
 
-  // todo(johntgz) clamp target torques?
-  // // Clamp to joint torque limits
-  // target_torque = target_torque.cwiseMin(params.joint_torque_limits)
-  //                     .cwiseMax(-params.joint_torque_limits);
-
-  // todo(johntgz) check if there is anything else to add
+  // Clamp to joint torque limits
+  for (std::size_t k = 0; k < num_joints_; ++k) {
+    target_torque(k) =
+        std::clamp(target_torque(k), -joint_limits_[k].max_effort,
+                   joint_limits_[k].max_effort);
+  }
 
   new_joint_reference.effort.resize(num_joints_);
   Eigen::VectorXd::Map(new_joint_reference.effort.data(),

@@ -138,8 +138,11 @@ bool CartesianImpedanceAction::compute(
   }
 
   // Clamp to joint torque limits
-  target_torque = target_torque.cwiseMin(params.joint_torque_limits)
-                      .cwiseMax(-params.joint_torque_limits);
+  for (std::size_t k = 0; k < num_joints_; ++k) {
+    target_torque(k) =
+        std::clamp(target_torque(k), -joint_limits_[k].max_effort,
+                   joint_limits_[k].max_effort);
+  }
 
   new_joint_reference.effort.resize(num_joints_);
   Eigen::VectorXd::Map(new_joint_reference.effort.data(),

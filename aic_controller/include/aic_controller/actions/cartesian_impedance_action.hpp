@@ -47,7 +47,6 @@ struct CartesianImpedanceParameters {
   Eigen::Matrix<double, 6, 6> damping_matrix;
   Eigen::Matrix<double, 6, 1> pose_error_integrator_gain;
   Eigen::Matrix<double, 6, 1> pose_error_integrator_bound;
-  Eigen::VectorXd joint_torque_limits;
   Eigen::Matrix<double, 6, 1> maximum_wrench;
   Eigen::Matrix<double, 6, 1> feedforward_wrench;
   Eigen::Matrix<double, 6, 1> feedforward_interpolation_wrench_min;
@@ -83,7 +82,6 @@ struct CartesianImpedanceParameters {
         damping_matrix(Eigen::Matrix<double, 6, 6>::Zero()),
         pose_error_integrator_gain(Eigen::Matrix<double, 6, 1>::Zero()),
         pose_error_integrator_bound(Eigen::Matrix<double, 6, 1>::Zero()),
-        joint_torque_limits(Eigen::VectorXd::Zero(num_joints)),
         maximum_wrench(Eigen::Matrix<double, 6, 1>::Constant(
             std::numeric_limits<double>::infinity())),
         feedforward_wrench(Eigen::Matrix<double, 6, 1>::Zero()),

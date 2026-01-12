@@ -39,8 +39,6 @@ struct JointImpedanceParameters {
   // Parameters for impedance control.
   Eigen::VectorXd stiffness_vector;
   Eigen::VectorXd damping_vector;
-  // todo(johntgz) remove if not necessary
-  //    Eigen::VectorXd joint_torque_limits;
   Eigen::VectorXd feedforward_torques;
   // Values used in interpolating the feedforward torque
   Eigen::VectorXd interpolator_min_value;
@@ -100,7 +98,6 @@ class JointImpedanceAction {
  private:
   // Number of robot joints
   const std::size_t num_joints_;
-  // todo(johntgz) remove joint_limits_ if not required
   std::vector<joint_limits::JointLimits> joint_limits_;
 
   rclcpp::node_interfaces::NodeLoggingInterface::SharedPtr logging_if_;
