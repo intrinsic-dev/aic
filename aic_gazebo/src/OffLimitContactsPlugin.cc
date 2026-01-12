@@ -160,7 +160,7 @@ void OffLimitContactsPlugin::CreateCollisionData(EntityComponentManager &_ecm) {
 //////////////////////////////////////////////////
 bool OffLimitContactsPlugin::InitializeOffLimitEntities(
     EntityComponentManager &_ecm) {
-  for (const auto& modelName : this->offLimitModelNames) {
+  for (const auto &modelName : this->offLimitModelNames) {
     Entity entity = kNullEntity;
     auto entitiesMatchingName = entitiesFromScopedName(modelName, _ecm);
     // Filter for entities with only models
