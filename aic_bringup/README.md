@@ -251,6 +251,25 @@ ros2 launch aic_bringup gripper_action.launch.py use_position:=true position:=0.
 
 ---
 
+## Launching with the Impedance Controller
+
+### Start the Simulation with the AIC Controller
+```bash
+reset && ros2 launch aic_bringup aic_gz_bringup.launch.py initial_joint_controller:=aic_controller spawn_admittance_controller:=false
+```
+
+### Send a Cartesian target (MotionUpdate message)
+```bash
+ros2 run aic_bringup test_impedance.py --ros-args -p cartesian_mode:="true"
+```
+
+### Send a Cartesian target (MotionUpdate message)
+```bash
+ros2 run aic_bringup test_impedance.py --ros-args -p cartesian_mode:="false"
+```
+
+---
+
 ## Notes
 
 - All position values are in meters
