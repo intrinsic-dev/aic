@@ -100,4 +100,4 @@ See ... for the full scene scene YAML.
 
 ### Task board YAML configuration
 
-See the AIC engine ![sample config](../aic_engine/config/sample_config.yaml)
+See the AIC engine [sample config](../aic_engine/config/sample_config.yaml)
