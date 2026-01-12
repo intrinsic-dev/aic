@@ -88,8 +88,8 @@ CartesianState integrate_pose(const CartesianState& pose,
  * @param wrench_msg The ROS Wrench mesage to convert
  * @param wrench_eigen The converted 6x1 Eigen Matrix.
  */
-void wrenchMsgToEigen(const geometry_msgs::msg::Wrench& wrench_msg,
-                      Eigen::Matrix<double, 6, 1>& wrench_eigen);
+void wrench_msg_to_eigen(const geometry_msgs::msg::Wrench& wrench_msg,
+                         Eigen::Matrix<double, 6, 1>& wrench_eigen);
 
 }  // namespace utils
 
