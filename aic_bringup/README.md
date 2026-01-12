@@ -59,6 +59,10 @@ ros2 launch aic_bringup aic_gz_bringup.launch.py
 - `launch_rviz` (default: `"false"`) - Launch RViz for visualization
 - `rviz_config_file` (default: `"view_robot.rviz"`) - RViz configuration file
 
+
+**Ground Truth:**
+- `publish_ground_truth` (default: `"false"`) - Publish ground truth pose data to ROS 2 topics
+
 ---
 
 ### 2. `spawn_task_board.launch.py`
