@@ -23,9 +23,14 @@ import numpy as np
 from rclpy.executors import ExternalShutdownException
 
 from rclpy.node import Node
-from aic_control_interfaces.msg import MotionUpdate, JointMotionUpdate, TrajectoryGenerationMode
+from aic_control_interfaces.msg import (
+    MotionUpdate,
+    JointMotionUpdate,
+    TrajectoryGenerationMode,
+)
 from geometry_msgs.msg import Pose, Point, Quaternion, Wrench, Vector3
 from trajectory_msgs.msg import JointTrajectoryPoint
+
 
 class TestImpedanceNode(Node):
     def __init__(self):
@@ -36,11 +41,9 @@ class TestImpedanceNode(Node):
         self.controller_namespace = self.declare_parameter(
             "controller_namespace", "aic_controller"
         ).value
-        self.cartesian_mode = self.declare_parameter(
-            "cartesian_mode", True
-        ).value
+        self.cartesian_mode = self.declare_parameter("cartesian_mode", True).value
 
-        if (self.cartesian_mode):
+        if self.cartesian_mode:
             self.motion_update_publisher = self.create_publisher(
                 MotionUpdate, f"/{self.controller_namespace}/motion_update", 10
             )
@@ -52,7 +55,9 @@ class TestImpedanceNode(Node):
                 time.sleep(1.0)
         else:
             self.joint_motion_update_publisher = self.create_publisher(
-                JointMotionUpdate, f"/{self.controller_namespace}/joint_motion_update", 10
+                JointMotionUpdate,
+                f"/{self.controller_namespace}/joint_motion_update",
+                10,
             )
 
             while self.joint_motion_update_publisher.get_subscription_count() == 0:
@@ -100,7 +105,7 @@ class TestImpedanceNode(Node):
         return msg
 
     def send_target(self):
-        if (self.cartesian_mode):
+        if self.cartesian_mode:
             pos_tool_up = [-0.501, -0.175, 0.2]
             pos_tool_down = [-0.501, -0.175, 0.0]
 
@@ -112,7 +117,9 @@ class TestImpedanceNode(Node):
             ]  # ZYX = (180, 0, 90), z axis normal to plane and (x,y) axes are aligned with base_link axes
 
             self.motion_update_publisher.publish(
-                self.generate_motion_update(pos_tool_up, quat_upright, time_to_target=2.0)
+                self.generate_motion_update(
+                    pos_tool_up, quat_upright, time_to_target=2.0
+                )
             )
             self.get_logger().info(
                 "Published MotionUpdate for tool up configuration to aic_controller"
@@ -121,7 +128,9 @@ class TestImpedanceNode(Node):
             time.sleep(5.0)
 
             self.motion_update_publisher.publish(
-                self.generate_motion_update(pos_tool_down, quat_upright, time_to_target=2.0)
+                self.generate_motion_update(
+                    pos_tool_down, quat_upright, time_to_target=2.0
+                )
             )
             self.get_logger().info(
                 "Published MotionUpdate for tool down configuration to aic_controller"
@@ -138,6 +147,7 @@ class TestImpedanceNode(Node):
             self.joint_motion_update_publisher.publish(
                 self.generate_joint_motion_update(joint_pos, time_to_target=2.0)
             )
+
 
 def main(args=None):
     try:
