@@ -183,7 +183,7 @@ class Engine {
   EngineState engine_state_;
 
   // Whether to publish ground truth data for scoring.
-  bool publish_ground_truth_;
+  bool ground_truth_;
 };
 
 }  // namespace aic
