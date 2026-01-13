@@ -2,7 +2,6 @@
 <sdf version="1.9" xmlns:xacro="http://www.ros.org/wiki/xacro">
 
   <xacro:arg name="attach_cable_to_gripper" default="false"/>
-  <xacro:arg name="publish_ground_truth" default="false"/>
 
   <model name="cable">
     <static>false</static>
@@ -20,7 +19,6 @@
       </plugin>
       </xacro:if>
 
-      <xacro:if value="$(arg publish_ground_truth)">
       <plugin filename="libgz-sim-pose-publisher-system.so"
         name="gz::sim::systems::PosePublisher">
         <publish_link_pose>true</publish_link_pose>
@@ -34,7 +32,6 @@
         <update_frequency>0</update_frequency>
         <static_update_frequency>0</static_update_frequency>
       </plugin>
-      </xacro:if>
     </include>
   </model>
 </sdf>

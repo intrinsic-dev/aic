@@ -78,7 +78,7 @@ def launch_setup(context, *args, **kwargs):
     cable_pitch = LaunchConfiguration("cable_pitch")
     cable_yaw = LaunchConfiguration("cable_yaw")
     attach_cable_to_gripper = LaunchConfiguration("attach_cable_to_gripper")
-    publish_ground_truth = LaunchConfiguration("publish_ground_truth")
+    ground_truth = LaunchConfiguration("ground_truth")
 
     robot_description_content = Command(
         [
@@ -235,7 +235,6 @@ def launch_setup(context, *args, **kwargs):
             "task_board_roll": task_board_roll,
             "task_board_pitch": task_board_pitch,
             "task_board_yaw": task_board_yaw,
-            "publish_ground_truth": publish_ground_truth,
         }.items(),
         condition=IfCondition(spawn_task_board),
     )
@@ -263,7 +262,6 @@ def launch_setup(context, *args, **kwargs):
             "cable_pitch": cable_pitch,
             "cable_yaw": cable_yaw,
             "attach_cable_to_gripper": attach_cable_to_gripper,
-            "publish_ground_truth": publish_ground_truth,
         }.items(),
         condition=IfCondition(spawn_cable),
     )
@@ -304,6 +302,32 @@ def launch_setup(context, *args, **kwargs):
         use_composition="True",
     )
 
+    ground_truth_tf_relay = Node(
+            package='topic_tools',
+            executable='relay',
+            name='tf_relay',
+            output='screen',
+            parameters=[
+                {'input_topic': '/scoring/tf'},
+                {'output_topic': '/tf'},
+                {'lazy': True}
+            ],
+            condition=IfCondition(ground_truth)
+        )
+
+    ground_truth_tf_static_relay = Node(
+            package='topic_tools',
+            executable='relay',
+            name='tf_static_relay',
+            output='screen',
+            parameters=[
+                {'input_topic': '/scoring/tf_static'},
+                {'output_topic': '/tf_static'},
+                {'lazy': True}
+            ],
+            condition=IfCondition(ground_truth)
+        )
+
     nodes_to_start = [
         robot_state_publisher_node,
         joint_state_broadcaster_spawner,
@@ -318,6 +342,8 @@ def launch_setup(context, *args, **kwargs):
         gz_spawn_entity,
         spawn_task_board_launch,
         spawn_cable_launch,
+        ground_truth_tf_relay,
+        ground_truth_tf_static_relay,
     ]
 
     return nodes_to_start
@@ -617,9 +643,9 @@ def generate_launch_description():
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            "publish_ground_truth",
+            "ground_truth",
             default_value="false",
-            description="Whether to publish ground truth poses",
+            description="Whether to include ground truth poses in TF topics",
         )
     )
 

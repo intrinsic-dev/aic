@@ -107,10 +107,6 @@
   <xacro:arg name="nic_card_mount_4_pitch" default="0.0"/>
   <xacro:arg name="nic_card_mount_4_yaw" default="0.0"/>
 
-
-  <!-- Whether to publish ground truth poses -->
-  <xacro:arg name="publish_ground_truth" default="false"/>
-
   <!-- Calculate absolute positions relative to task board base -->
   <!-- Task Board Base is at (0.25, 0, 1.14) relative to world in original SDF -->
 	<!-- NIC Card mounts are centered at the middle of the slot. Each mount can be translated [-0.048, 0.036] along X axis to adjust position within slot. -->
@@ -259,7 +255,6 @@
 
   <gazebo>
     <static>true</static>
-    <xacro:if value="$(arg publish_ground_truth)">
     <plugin filename="libgz-sim-pose-publisher-system.so"
       name="gz::sim::systems::PosePublisher">
       <publish_link_pose>true</publish_link_pose>
@@ -273,6 +268,5 @@
       <update_frequency>0</update_frequency>
       <static_update_frequency>1</static_update_frequency>
     </plugin>
-    </xacro:if>
   </gazebo>
 </robot>
