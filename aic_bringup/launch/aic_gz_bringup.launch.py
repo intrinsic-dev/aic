@@ -303,30 +303,30 @@ def launch_setup(context, *args, **kwargs):
     )
 
     ground_truth_tf_relay = Node(
-            package='topic_tools',
-            executable='relay',
-            name='tf_relay',
-            output='screen',
-            parameters=[
-                {'input_topic': '/scoring/tf'},
-                {'output_topic': '/tf'},
-                {'lazy': True}
-            ],
-            condition=IfCondition(ground_truth)
-        )
+        package="topic_tools",
+        executable="relay",
+        name="tf_relay",
+        output="screen",
+        parameters=[
+            {"input_topic": "/scoring/tf"},
+            {"output_topic": "/tf"},
+            {"lazy": True},
+        ],
+        condition=IfCondition(ground_truth),
+    )
 
     ground_truth_tf_static_relay = Node(
-            package='topic_tools',
-            executable='relay',
-            name='tf_static_relay',
-            output='screen',
-            parameters=[
-                {'input_topic': '/scoring/tf_static'},
-                {'output_topic': '/tf_static'},
-                {'lazy': True}
-            ],
-            condition=IfCondition(ground_truth)
-        )
+        package="topic_tools",
+        executable="relay",
+        name="tf_static_relay",
+        output="screen",
+        parameters=[
+            {"input_topic": "/scoring/tf_static"},
+            {"output_topic": "/tf_static"},
+            {"lazy": True},
+        ],
+        condition=IfCondition(ground_truth),
+    )
 
     nodes_to_start = [
         robot_state_publisher_node,
