@@ -17,6 +17,7 @@
 #
 
 import rclpy
+import time
 
 from lifecycle_msgs.msg import Transition
 from lifecycle_msgs.srv import ChangeState, GetState
@@ -57,12 +58,21 @@ def main(args=None):
         node = CycleLifecycleNode()
         state = node.get_model_state()
         print(f"current state: {state}")
+
+        print(f"configuring...")
         node.change_model_state(Transition.TRANSITION_CONFIGURE)
-        print(f"current state: {state}")
+        time.sleep(1.0)
+
+        print(f"activating...")
         node.change_model_state(Transition.TRANSITION_ACTIVATE)
-        print(f"current state: {state}")
+        time.sleep(1.0)
+
+        print(f"deactivating...")
         node.change_model_state(Transition.TRANSITION_DEACTIVATE)
-        print(f"current state: {state}")
+        time.sleep(1.0)
+
+        print(f"shutting down...")
+        node.change_model_state(Transition.TRANSITION_INACTIVE_SHUTDOWN)
 
 
 if __name__ == "__main__":

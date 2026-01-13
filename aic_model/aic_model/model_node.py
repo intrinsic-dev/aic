@@ -38,14 +38,15 @@ class AicModel(LifecycleNode):
     def __init__(self):
         super().__init__("aic_model")
         self.get_logger().info("Hello, world!")
-        self.subscription = self.create_subscription(
-            Observation, "observations", self.observation_callback, 10
-        )
         self.cancel_service = self.create_service(
             Empty, "cancel_task", self.cancel_task_callback
         )
         self.goal_handle = None
         self.goal_completed = False
+        self.is_active = False
+        self.observation_sub = self.create_subscription(
+            Observation, "observations", self.observation_callback, 10
+        )
         self.action_server = ActionServer(
             self,
             InsertCable,
@@ -56,24 +57,35 @@ class AicModel(LifecycleNode):
             cancel_callback=self.insert_cable_cancel_callback,
         )
 
+    def on_error(self, state: LifecycleState) -> TransitionCallbackReturn:
+        self.get_logger().error(f"on_error({state})")
+        return TransitionCallbackReturn.ERROR
+
     def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.get_logger().info(f"on_configure({state})")
         return TransitionCallbackReturn.SUCCESS
 
     def on_activate(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.get_logger().info(f"on_activate({state})")
+        self.is_active = True
         return super().on_activate(state)
 
     def on_deactivate(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.get_logger().info(f"on_deactivate({state})")
+        self.is_active = False
         return super().on_deactivate(state)
 
     def on_cleanup(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.get_logger().info(f"on_cleanup({state})")
+        self.is_active = False
         return TransitionCallbackReturn.SUCCESS
 
     def on_shutdown(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.get_logger().info(f"on_shutdown({state})")
+        self.is_active = False
+        self.destroy_subscription(self.observation_sub)
+        self.observation_sub = None
+        self.action_server = None
         return TransitionCallbackReturn.SUCCESS
 
     def cancel_task_callback(self, request, response):
@@ -86,6 +98,13 @@ class AicModel(LifecycleNode):
         return header.stamp.sec + header.stamp.nanosec / 1e9
 
     def observation_callback(self, msg):
+        if not self.is_active:
+            return
+        #
+        # YOUR CODE HERE.
+        #
+        # The following sample just prints the timestamps of the incoming data.
+        #
         t_cam_0 = self.get_seconds(msg.images[0].header)
         t_cam_1 = self.get_seconds(msg.images[1].header)
         t_cam_2 = self.get_seconds(msg.images[2].header)
@@ -99,6 +118,10 @@ class AicModel(LifecycleNode):
         )
 
     def insert_cable_goal_callback(self, goal_request):
+        if not self.is_active:
+            self.get_logger().error("aic_model lifecycle is not in the active state")
+            return GoalResponse.REJECT
+
         if self.goal_handle is not None and self.goal_handle.is_active:
             self.get_logger().error(
                 "A goal is active and must be canceled before a new insert_cable goal can begin"
@@ -125,7 +148,8 @@ class AicModel(LifecycleNode):
         while rclpy.ok():
             self.get_logger().info("insert_cable execute loop")
 
-            # First, wait a bit (async!)
+            # First, wait a bit so this loop doesn't consume much CPU time.
+            # This must be an async wait in order for other callbacks to run.
             wait_future = Future()
 
             def done_waiting():
@@ -136,20 +160,21 @@ class AicModel(LifecycleNode):
             wait_timer.cancel()
             self.destroy_timer(wait_timer)
 
-            # See if a cancellation request has arrived
+            # Check if a cancellation request has arrived.
             if goal_handle.is_cancel_requested:
                 goal_handle.canceled()
                 result = InsertCable.Result()
                 result.success = False
                 result.message = "Canceled via action client"
                 self.get_logger().info(
-                    "Exiting insert_cable execute loop due to cancelation request."
+                    "Exiting insert_cable execute loop due to cancellation request."
                 )
                 self.goal_handle = None
                 return result
 
-            # See if the goal was aborted via the cancel_task service
-            if not goal_handle.is_active:
+            # Check if the goal was aborted via the cancel_task service,
+            # or if this aic_model node is deactivating or shutting down.
+            if not goal_handle.is_active or not self.is_active:
                 result = InsertCable.Result()
                 result.success = False
                 result.message = "Canceled via cancel_task service"
@@ -159,7 +184,7 @@ class AicModel(LifecycleNode):
                 self.goal_handle = None
                 return result
 
-            # Check if the task has been completed
+            # Check if the task has been completed.
             if self.goal_completed:
                 self.get_logger().info(
                     "Exiting insert_cable execute loop after success."
@@ -170,7 +195,7 @@ class AicModel(LifecycleNode):
                 self.goal_handle = None
                 return result
 
-            # Send a feedback message
+            # Send a feedback message.
             feedback = InsertCable.Feedback()
             feedback.message = "Here is a feedback message"
             goal_handle.publish_feedback(feedback)

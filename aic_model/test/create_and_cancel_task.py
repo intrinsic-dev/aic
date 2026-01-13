@@ -20,6 +20,8 @@ import rclpy
 
 from action_msgs.msg import GoalStatus
 from aic_task_interfaces.action import InsertCable
+from lifecycle_msgs.msg import State, Transition
+from lifecycle_msgs.srv import ChangeState, GetState
 from rclpy.action import ActionClient
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
@@ -28,14 +30,50 @@ from rclpy.node import Node
 class CreateAndCancelTaskNode(Node):
     def __init__(self):
         super().__init__("test_create_and_cancel_task")
-        self.client = ActionClient(self, InsertCable, "insert_cable")
+        self.action_client = ActionClient(self, InsertCable, "insert_cable")
+        self.get_state_client = self.create_client(GetState, "aic_model/get_state")
+        self.change_state_client = self.create_client(ChangeState, "aic_model/change_state")
+
+    def get_model_state(self):
+        future = self.get_state_client.call_async(GetState.Request())
+        rclpy.spin_until_future_complete(self, future, timeout_sec=1.0)
+        return future.result()
+
+    def change_model_state(self, transition_id):
+        request = ChangeState.Request()
+        request.transition.id = transition_id
+        future = self.change_state_client.call_async(request)
+        rclpy.spin_until_future_complete(self, future, timeout_sec=5.0)
+        result = future.result()
+        if result and result.success:
+            self.get_logger().info(f"transitioned to {transition_id} successfully")
+            return True
+        else:
+            self.get_logger().error(f"unable to transition to {transition_id}")
+            return False
+
+    def activate_model_node(self):
+        model_state = self.get_model_state().current_state
+        print(f"model_state: {model_state}")
+
+        if model_state.id == State.PRIMARY_STATE_UNCONFIGURED:
+            self.get_logger().info("Requesting aic_model to configure...")
+            self.change_model_state(Transition.TRANSITION_CONFIGURE)
+            model_state = self.get_model_state().current_state
+
+        if model_state.id == State.PRIMARY_STATE_INACTIVE:
+            self.get_logger().info("Requesting aic_model to activate...")
+            self.change_model_state(Transition.TRANSITION_ACTIVATE)
+            model_state = self.get_model_state().current_state
+
+        return model_state.id == State.PRIMARY_STATE_ACTIVE
 
     def send_goal(self):
         self.get_logger().info("Waiting for insert_cable action server...")
-        self.client.wait_for_server()
+        self.action_client.wait_for_server()
         goal_msg = InsertCable.Goal()
         self.get_logger().info("Sending goal request...")
-        self.send_goal_future = self.client.send_goal_async(
+        self.send_goal_future = self.action_client.send_goal_async(
             goal_msg, feedback_callback=self.feedback_callback
         )
         self.send_goal_future.add_done_callback(self.goal_response_callback)
@@ -44,6 +82,7 @@ class CreateAndCancelTaskNode(Node):
         goal_handle = future.result()
         if not goal_handle.accepted:
             self.get_logger().info("Goal rejected")
+            rclpy.shutdown()
             return
         self.goal_handle = goal_handle
         self.get_logger().info("Waiting 5 seconds before canceling goal....")
@@ -66,6 +105,9 @@ class CreateAndCancelTaskNode(Node):
             self.get_logger().info("Goal successfully canceled")
         else:
             self.get_logger().info("Goal failed to cancel")
+
+        self.change_model_state(Transition.TRANSITION_DEACTIVATE)
+
         rclpy.shutdown()
 
     def get_result_callback(self, future):
@@ -83,6 +125,7 @@ def main(args=None):
     try:
         with rclpy.init(args=args):
             node = CreateAndCancelTaskNode()
+            node.activate_model_node()
             node.send_goal()
             rclpy.spin(node)
     except (KeyboardInterrupt, ExternalShutdownException):
