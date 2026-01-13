@@ -61,7 +61,7 @@ ros2 launch aic_bringup aic_gz_bringup.launch.py
 
 
 **Ground Truth:**
-- `publish_ground_truth` (default: `"false"`) - Publish ground truth pose data to ROS 2 topics
+- `ground_truth` (default: `"false"`) - Include ground truth pose data in TF topics
 
 ---
 
