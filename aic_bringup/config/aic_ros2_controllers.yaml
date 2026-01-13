@@ -309,6 +309,9 @@ aic_controller:
         min_value: [-40., -40., -40., -6., -6., -6.]
         max_value: [40., 40., 40., 5., 5., 5.]
         max_step_size: [1., 1., 1., 1., 1., 1.]
+      default_values:
+        control_stiffness: [100., 100., 100., 50., 50., 50.]
+        control_damping: [40.0, 40.0, 40.0, 15.0, 15.0, 15.0]
 
     kinematics:
       plugin_name: kinematics_interface_kdl/KinematicsInterfaceKDL

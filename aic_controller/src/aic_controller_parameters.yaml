@@ -223,6 +223,15 @@ aic_controller:
         }
       }
 
+    default_values:
+      control_stiffness: {
+        type: double_array,
+        description: "Default starting values for control stiffness vector",
+      }
+      control_damping: {
+        type: double_array,
+        description: "Default starting values for control damping vector",
+      }
 
   # general settings
   enable_parameter_update_without_reactivation: {
