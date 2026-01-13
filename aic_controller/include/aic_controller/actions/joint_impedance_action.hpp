@@ -83,12 +83,14 @@ class JointImpedanceAction {
    * @brief Generates a target joint torque given the joint state errors and
    * control parameters.
    *
-   * @param joint_position_error
-   * @param joint_velocity_error
-   * @param params
-   * @param new_joint_reference
-   * @return true
-   * @return false
+   * @param joint_position_error Position error between target and current joint
+   * states
+   * @param joint_velocity_error Velocity error between target and current joint
+   * states
+   * @param params Impedance control parameters
+   * @param new_joint_reference Joint target torque
+   * @return true Computation successful
+   * @return false Computation failed
    */
   bool compute(const Eigen::VectorXd& joint_position_error,
                const Eigen::VectorXd& joint_velocity_error,
