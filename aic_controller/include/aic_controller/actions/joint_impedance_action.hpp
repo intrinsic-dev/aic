@@ -61,16 +61,14 @@ class JointImpedanceAction {
  public:
   JointImpedanceAction(std::size_t num_joints);
 
-  // todo(johntgz) docstrings
-
   /**
    * @brief Configure the joint impedance action with joint limits and
    * relevant node interfaces
    *
    * @param joint_limits Joint limits on joint position, velocity, accelration
    * @param logging_if Node interface for logging
-   * @return true
-   * @return false
+   * @return true Configuration successful
+   * @return false Configuration failed
    */
   [[nodiscard]]
   bool configure(

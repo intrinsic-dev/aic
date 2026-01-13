@@ -32,8 +32,6 @@ struct JointState {
   Eigen::VectorXd positions;
   Eigen::VectorXd velocities;
 
-  // todo(johntgz) fix docstrings
-
   /**
    * @brief Default constructor.
    *

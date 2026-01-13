@@ -821,8 +821,6 @@ controller_interface::return_type Controller::update(
   // the target and interpolate it.
   // Else, maintain the current position of the robot.
 
-  // todo(johntgz) Can we let CartesianState and JointState inherit from the
-  // same base class?
   CartesianState new_tool_reference = last_tool_reference_;
   JointState new_joint_reference = last_joint_reference_;
 
