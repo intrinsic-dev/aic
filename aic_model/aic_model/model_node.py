@@ -57,10 +57,6 @@ class AicModel(LifecycleNode):
             cancel_callback=self.insert_cable_cancel_callback,
         )
 
-    def on_error(self, state: LifecycleState) -> TransitionCallbackReturn:
-        self.get_logger().error(f"on_error({state})")
-        return TransitionCallbackReturn.ERROR
-
     def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.get_logger().info(f"on_configure({state})")
         return TransitionCallbackReturn.SUCCESS
