@@ -291,6 +291,8 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/zenoh-rust-abi-1.5.1.1.85.0-h8619998_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-3.23.0-pyhcf101f3_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/zstd-1.5.7-hb78ec9c_6.conda
+      - conda: aic_interfaces/aic_control_interfaces
+      - conda: aic_utils/lerobot_robot_aic
       - pypi: https://files.pythonhosted.org/packages/9f/d2/c581486aa6c4fbd7394c23c47b83fa1a919d34194e16944241daf9e762dd/accelerate-1.12.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/0f/15/5bf3b99495fb160b63f95972b81750f18f7f4e02ad051373b669d17d44f2/aiohappyeyeballs-2.6.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/86/f6/a62cbbf13f0ac80a70f71b1672feba90fdb21fd7abd8dbf25c0105fb6fa3/aiohttp-3.13.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
@@ -3085,6 +3087,27 @@ packages:
   license: BSD-3-Clause
   size: 110446
   timestamp: 1759312573379
+- conda: aic_interfaces/aic_control_interfaces
+  name: ros-kilted-aic-control-interfaces
+  version: 0.0.0
+  build: hb0f4dca_0
+  subdir: linux-64
+  variants:
+    target_platform: linux-64
+  depends:
+  - ros-kilted-rosidl-default-runtime
+  - ros-kilted-builtin-interfaces
+  - ros-kilted-geometry-msgs
+  - ros-kilted-std-msgs
+  - ros-kilted-trajectory-msgs
+  - ros2-distro-mutex
+  - ros2-distro-mutex >=0.12.0,<0.13.0a0
+  - libgcc >=15
+  - libgcc >=15
+  - libstdcxx >=15
+  - python_abi 3.12.* *_cp312
+  - numpy >=1.23,<3
+  license: LicenseRef-Apache-2.0
 - conda: https://conda.anaconda.org/robostack-kilted/linux-64/ros-kilted-ament-cmake-2.7.3-np2py312h31f38b3_14.conda
   sha256: 655ae089e73b91f28d62ce86c40c9a527bc42be2aa00df54800a353d448f4ed0
   md5: 93fe4f1d8371e1fda1b340fd6c24d995
@@ -4402,6 +4425,26 @@ packages:
   license: BSD-3-Clause
   size: 26139
   timestamp: 1759310851520
+- conda: aic_utils/lerobot_robot_aic
+  name: ros-kilted-lerobot-robot-aic
+  version: 0.0.1
+  build: hb0f4dca_0
+  subdir: linux-64
+  variants:
+    target_platform: linux-64
+  depends:
+  - ros-kilted-aic-control-interfaces
+  - ros2-distro-mutex
+  - ros2-distro-mutex >=0.12.0,<0.13.0a0
+  - libgcc >=15
+  - libgcc >=15
+  - libstdcxx >=15
+  - python_abi 3.12.* *_cp312
+  - numpy >=1.23,<3
+  license: LicenseRef-Apache-2.0
+  sources:
+    ros-kilted-aic-control-interfaces:
+      path: ../../aic_interfaces/aic_control_interfaces
 - conda: https://conda.anaconda.org/robostack-kilted/linux-64/ros-kilted-libstatistics-collector-2.0.1-np2py312h31f38b3_14.conda
   sha256: 9ef1dc270c0691230100ccb859b7294562a9d43065455e9adb2d1247e8d1a8f7
   md5: bdae1170bc009c49ba70165b1db67096
