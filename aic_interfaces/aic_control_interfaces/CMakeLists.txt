@@ -31,8 +31,13 @@ set(msg_files
   "msg/TrajectoryGenerationMode.msg"
 )
 
+set(srv_files
+  "srv/ChangeTargetMode.srv"
+)
+
 rosidl_generate_interfaces(${PROJECT_NAME}
   ${msg_files}
+  ${srv_files}
   ${action_files}
   DEPENDENCIES
     builtin_interfaces
