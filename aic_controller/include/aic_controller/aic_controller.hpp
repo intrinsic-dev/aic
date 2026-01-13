@@ -46,6 +46,7 @@
 #include "aic_control_interfaces/msg/joint_motion_update.hpp"
 #include "aic_control_interfaces/msg/motion_update.hpp"
 #include "aic_control_interfaces/msg/trajectory_generation_mode.hpp"
+#include "aic_control_interfaces/srv/change_target_mode.hpp"
 #include "lifecycle_msgs/msg/state.hpp"
 #include "trajectory_msgs/msg/joint_trajectory_point.hpp"
 
@@ -58,6 +59,7 @@ namespace aic_controller {
 
 using MotionUpdate = aic_control_interfaces::msg::MotionUpdate;
 using JointMotionUpdate = aic_control_interfaces::msg::JointMotionUpdate;
+using ChangeTargetMode = aic_control_interfaces::srv::ChangeTargetMode;
 using TrajectoryGenerationMode =
     aic_control_interfaces::msg::TrajectoryGenerationMode;
 using JointTrajectoryPoint = trajectory_msgs::msg::JointTrajectoryPoint;
@@ -248,21 +250,6 @@ class Controller : public controller_interface::ControllerInterface {
    */
   void interpolate_impedance_parameters();
 
-  // todo(johntgz) improve docs for reset_cartesian_target and
-  // reset_joint_target
-
-  /**
-   * @brief Reset the MotionUpdate target and data associated with it
-   *
-   */
-  void reset_cartesian_target();
-
-  /**
-   * @brief Reset the JointMotionUpdate target and data associated with it
-   *
-   */
-  void reset_joint_target();
-
   // controller parameters
   std::shared_ptr<aic_controller::ParamListener> param_listener_;
   aic_controller::Params params_;
@@ -294,6 +281,9 @@ class Controller : public controller_interface::ControllerInterface {
   rclcpp::Subscription<MotionUpdate>::SharedPtr motion_update_sub_;
   rclcpp::Subscription<JointMotionUpdate>::SharedPtr joint_motion_update_sub_;
 
+  // ROS2 Service servers for updating controller states
+  rclcpp::Service<ChangeTargetMode>::SharedPtr change_target_mode_srv_;
+
   // Real-time publisher for controller state
   rclcpp::Publisher<ControllerState>::SharedPtr state_publisher_;
   std::unique_ptr<realtime_tools::RealtimePublisher<ControllerState>>
@@ -307,7 +297,7 @@ class Controller : public controller_interface::ControllerInterface {
       joint_motion_update_rt_;
   JointMotionUpdate joint_motion_update_;
 
-  std::atomic<bool> motion_update_received_, joint_motion_update_received_;
+  std::atomic<bool> motion_update_received_;
 
   // Last value written to controller interfaces
   std::optional<JointTrajectoryPoint> last_commanded_state_;

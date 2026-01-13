@@ -25,6 +25,7 @@ Controller::Controller()
     : param_listener_(nullptr),
       num_joints_(0),
       control_mode_(ControlMode::Invalid),
+      target_mode_(TargetMode::Joint),
       cartesian_impedance_action_(nullptr),
       feedforward_wrench_at_tip_(Eigen::Matrix<double, 6, 1>::Zero()),
       sensed_wrench_at_tip_(Eigen::Matrix<double, 6, 1>::Zero()),
@@ -34,9 +35,9 @@ Controller::Controller()
       joint_motion_update_sub_(nullptr),
       state_publisher_rt_(nullptr),
       motion_update_received_(false),
-      joint_motion_update_received_(false),
       last_commanded_state_(std::nullopt),
       target_state_(std::nullopt),
+      joint_target_state_(std::nullopt),
       last_tool_pose_error_(Eigen::Matrix<double, 6, 1>::Zero()),
       time_to_target_seconds_(0.0),
       remaining_time_to_target_seconds_(0.0),
@@ -171,6 +172,15 @@ controller_interface::CallbackReturn Controller::on_configure(
           return;
         }
 
+        if (target_mode_ != TargetMode::Cartesian) {
+          RCLCPP_WARN(get_node()->get_logger(),
+                      "Please switch to Cartesian target mode before sending "
+                      "MotionUpdate targets. Ignoring "
+                      "MotionUpdate message.");
+
+          return;
+        }
+
         if (msg->trajectory_generation_mode.mode ==
             TrajectoryGenerationMode::MODE_UNSPECIFIED) {
           RCLCPP_WARN(
@@ -182,7 +192,7 @@ controller_interface::CallbackReturn Controller::on_configure(
 
           return;
         }
-        if (msg->time_to_target_seconds <= 0.0) {
+        if (msg->time_to_target_seconds < 0.0) {
           RCLCPP_WARN(get_node()->get_logger(),
                       "time_to_target_seconds needs to be a positive "
                       "value. Ignoring MotionUpdate message.");
@@ -192,10 +202,6 @@ controller_interface::CallbackReturn Controller::on_configure(
 
         motion_update_rt_.set(*msg);
         motion_update_received_ = true;
-
-        // Reset any previously set JointMotionUpdate target
-        reset_joint_target();
-        target_mode_ = TargetMode::Cartesian;
       });
 
   joint_motion_update_sub_ =
@@ -208,6 +214,15 @@ controller_interface::CallbackReturn Controller::on_configure(
                   get_node()->get_logger(), *get_node()->get_clock(), 1000,
                   "Controller is not in ACTIVE lifecycle state. "
                   "Ignoring JointMotionUpdate message.");
+
+              return;
+            }
+
+            if (target_mode_ != TargetMode::Joint) {
+              RCLCPP_WARN(get_node()->get_logger(),
+                          "Please switch to Joint target mode before sending "
+                          "JointMotionUpdate targets. Ignoring "
+                          "JointMotionUpdate message.");
 
               return;
             }
@@ -247,7 +262,8 @@ controller_interface::CallbackReturn Controller::on_configure(
                 TrajectoryGenerationMode::MODE_UNSPECIFIED) {
               RCLCPP_WARN(
                   get_node()->get_logger(),
-                  "The trajectory_generation_mode is set to MODE_UNSPECIFIED. "
+                  "The trajectory_generation_mode is set to "
+                  "MODE_UNSPECIFIED. "
                   "Please set to either MODE_POSITION, MODE_VELOCITY or "
                   "MODE_POSITION_AND_VELOCITY. Ignoring JointMotionUpdate "
                   "message.");
@@ -282,7 +298,7 @@ controller_interface::CallbackReturn Controller::on_configure(
                 return;
               }
             }
-            if (msg->time_to_target_seconds <= 0.0) {
+            if (msg->time_to_target_seconds < 0.0) {
               RCLCPP_WARN(get_node()->get_logger(),
                           "time_to_target_seconds needs to be a positive "
                           "value. Ignoring JointMotionUpdate message.");
@@ -291,12 +307,72 @@ controller_interface::CallbackReturn Controller::on_configure(
             }
 
             joint_motion_update_rt_.set(*msg);
-            joint_motion_update_received_ = true;
-
-            // Reset any previously set MotionUpdate target
-            reset_cartesian_target();
-            target_mode_ = TargetMode::Joint;
+            motion_update_received_ = true;
           });
+
+  change_target_mode_srv_ = this->get_node()->create_service<ChangeTargetMode>(
+      "~/change_target_mode",
+      [this](const std::shared_ptr<ChangeTargetMode::Request> request,
+             std::shared_ptr<ChangeTargetMode::Response> response) {
+        // todo(johntgz) Add check and reject request if there is an on-going
+        // execution.
+
+        if (request->target_mode ==
+            ChangeTargetMode::Request::TARGET_MODE_CARTESIAN) {
+          if (target_mode_ == TargetMode::Cartesian) {
+            RCLCPP_INFO(get_node()->get_logger(),
+                        "Controller is already in Cartesian target mode.");
+            response->success = true;
+
+            return;
+          }
+
+          RCLCPP_INFO(get_node()->get_logger(),
+                      "Received request to switch target mode to "
+                      "CARTESIAN_TARGET_MODE.");
+
+          // Reset any previously set JointMotionUpdate target
+          joint_motion_update_ = aic_controller::JointMotionUpdate();
+          joint_motion_update_rt_.try_set(joint_motion_update_);
+          motion_update_received_ = false;
+          joint_target_state_ = std::nullopt;
+          last_tool_reference_ = current_tool_state_;
+
+          target_mode_ = TargetMode::Cartesian;
+
+          response->success = true;
+        } else if (request->target_mode ==
+                   ChangeTargetMode::Request::TARGET_MODE_JOINT) {
+          if (target_mode_ == TargetMode::Joint) {
+            RCLCPP_INFO(get_node()->get_logger(),
+                        "Controller is already in Joint target mode.");
+            response->success = true;
+
+            return;
+          }
+
+          RCLCPP_INFO(
+              get_node()->get_logger(),
+              "Received request to switch target mode to JOINT_TARGET_MODE.");
+
+          // Reset any previously set MotionUpdate target
+          motion_update_ = aic_controller::MotionUpdate();
+          motion_update_rt_.try_set(motion_update_);
+          motion_update_received_ = false;
+          target_state_ = std::nullopt;
+          last_joint_reference_ = JointState(current_state_, num_joints_);
+
+          target_mode_ = TargetMode::Joint;
+
+          response->success = true;
+        } else {
+          RCLCPP_WARN(get_node()->get_logger(),
+                      "Invalid target mode requested. Please choose either "
+                      "CARTESIAN_TARGET_MODE or JOINT_TARGET_MODE");
+
+          response->success = false;
+        }
+      });
 
   // Load the kinematics plugin
   if (!params_.kinematics.plugin_name.empty()) {
@@ -360,6 +436,18 @@ controller_interface::CallbackReturn Controller::on_configure(
     force_torque_sensor_ =
         std::make_unique<semantic_components::ForceTorqueSensor>(
             params_.force_torque_sensor.name);
+
+    // Initialize GravityCompensationAction if enabled
+    if (params_.impedance.gravity_compensation) {
+      if (!gravity_compensation_action_->configure(
+              urdf_model, params_.kinematics.base, params_.kinematics.tip,
+              get_node()->get_node_logging_interface())) {
+        RCLCPP_ERROR(get_node()->get_logger(),
+                     "Failed to configure GravityCompensationAction!");
+
+        return controller_interface::CallbackReturn::ERROR;
+      }
+    }
 
     // Validate impedance control parameters
     for (const double& gain : params_.impedance.pose_error_integrator.gain) {
@@ -431,6 +519,12 @@ controller_interface::CallbackReturn Controller::on_configure(
         Eigen::Map<const Eigen::Matrix<double, 6, 1>>(
             params_.impedance.pose_error_integrator.bound.data());
 
+    if (!populate_cartesian_limits(params_, cartesian_limits_)) {
+      RCLCPP_ERROR(get_node()->get_logger(),
+                   "Error populating cartesian limits from parameters.");
+      return controller_interface::CallbackReturn::ERROR;
+    }
+
     if (!cartesian_impedance_action_->configure(
             joint_limits_, get_node()->get_node_logging_interface(),
             get_node()->get_node_clock_interface())) {
@@ -441,6 +535,27 @@ controller_interface::CallbackReturn Controller::on_configure(
     }
 
     // Validate joint impedance control parameters
+    if (params_.joint_impedance.default_values.control_stiffness.size() !=
+        num_joints_) {
+      RCLCPP_ERROR(get_node()->get_logger(),
+                   "The size of the "
+                   "joint_impedance.control_stiffness.control_damping does "
+                   "not match the number of joints. Expected size %ld.",
+                   num_joints_);
+
+      return controller_interface::CallbackReturn::ERROR;
+    }
+    if (params_.joint_impedance.default_values.control_damping.size() !=
+        num_joints_) {
+      RCLCPP_ERROR(
+          get_node()->get_logger(),
+          "The size of the joint_impedance.default_values.control_damping does "
+          "not match the number of joints. Expected size %ld.",
+          num_joints_);
+
+      return controller_interface::CallbackReturn::ERROR;
+    }
+
     if (params_.joint_impedance.interpolator.min_value.size() != num_joints_) {
       RCLCPP_ERROR(
           get_node()->get_logger(),
@@ -474,6 +589,18 @@ controller_interface::CallbackReturn Controller::on_configure(
     JointImpedanceParameters resized_joint_impedance_params(num_joints_);
     joint_impedance_params_ = resized_joint_impedance_params;
 
+    // Set default parameters for stiffness and damping matrices
+    joint_impedance_params_.stiffness_vector =
+        Eigen::Map<const Eigen::VectorXd>(
+            params_.joint_impedance.default_values.control_stiffness.data(),
+            static_cast<Eigen::Index>(params_.joint_impedance.default_values
+                                          .control_stiffness.size()));
+
+    joint_impedance_params_.damping_vector = Eigen::Map<const Eigen::VectorXd>(
+        params_.joint_impedance.default_values.control_damping.data(),
+        static_cast<Eigen::Index>(
+            params_.joint_impedance.default_values.control_damping.size()));
+
     joint_impedance_params_.interpolator_min_value =
         Eigen::Map<const Eigen::VectorXd>(
             params_.joint_impedance.interpolator.min_value.data(),
@@ -500,24 +627,6 @@ controller_interface::CallbackReturn Controller::on_configure(
 
       return controller_interface::CallbackReturn::ERROR;
     }
-
-    // Initialize GravityCompensationAction if enabled
-    if (params_.impedance.gravity_compensation) {
-      if (!gravity_compensation_action_->configure(
-              urdf_model, params_.kinematics.base, params_.kinematics.tip,
-              get_node()->get_node_logging_interface())) {
-        RCLCPP_ERROR(get_node()->get_logger(),
-                     "Failed to configure GravityCompensationAction!");
-
-        return controller_interface::CallbackReturn::ERROR;
-      }
-    }
-  }
-
-  if (!populate_cartesian_limits(params_, cartesian_limits_)) {
-    RCLCPP_ERROR(get_node()->get_logger(),
-                 "Error populating cartesian limits from parameters.");
-    return controller_interface::CallbackReturn::ERROR;
   }
 
   state_publisher_ = get_node()->create_publisher<ControllerState>(
@@ -552,8 +661,13 @@ controller_interface::CallbackReturn Controller::on_activate(
   last_tool_reference_ = current_tool_state_;
   last_joint_reference_ = JointState(current_state_, num_joints_);
 
-  reset_cartesian_target();
-  reset_joint_target();
+  motion_update_ = aic_controller::MotionUpdate();
+  motion_update_rt_.try_set(motion_update_);
+
+  joint_motion_update_ = aic_controller::JointMotionUpdate();
+  joint_motion_update_rt_.try_set(joint_motion_update_);
+
+  motion_update_received_ = false;
 
   return controller_interface::CallbackReturn::SUCCESS;
 }
@@ -566,8 +680,16 @@ controller_interface::CallbackReturn Controller::on_deactivate(
   }
   release_interfaces();
 
-  reset_cartesian_target();
-  reset_joint_target();
+  motion_update_ = aic_controller::MotionUpdate();
+  motion_update_rt_.try_set(motion_update_);
+
+  joint_motion_update_ = aic_controller::JointMotionUpdate();
+  joint_motion_update_rt_.try_set(joint_motion_update_);
+
+  motion_update_received_ = false;
+
+  target_state_ = std::nullopt;
+  joint_target_state_ = std::nullopt;
 
   return controller_interface::CallbackReturn::SUCCESS;
 }
@@ -578,6 +700,7 @@ controller_interface::CallbackReturn Controller::on_cleanup(
   param_listener_.reset();
   motion_update_sub_.reset();
   joint_motion_update_sub_.reset();
+  change_target_mode_srv_.reset();
   state_publisher_rt_.reset();
   state_publisher_.reset();
 
@@ -607,87 +730,90 @@ controller_interface::return_type Controller::update(
 
   auto current_joint_state = JointState(current_state_, num_joints_);
 
-  // todo(johntgz) make reading user commands cleaner
-
   // read user commands
   if (motion_update_received_) {
-    auto command_op = motion_update_rt_.try_get();
-    if (command_op.has_value()) {
-      motion_update_ = command_op.value();
+    if (target_mode_ == TargetMode::Cartesian) {
+      auto command_op = motion_update_rt_.try_get();
+      if (command_op.has_value()) {
+        motion_update_ = command_op.value();
 
-      auto latest_target_state =
-          CartesianState(motion_update_.pose, motion_update_.velocity);
+        auto latest_target_state =
+            CartesianState(motion_update_.pose, motion_update_.velocity);
 
-      // If target values or time_to_target_seconds is unchanged, then we keep
-      // the current remaining_time_to_target_seconds_ such that the current
-      // spline continues to the target.This is only applicable in pure
-      // position trajectory generation mode with non-zero
-      // time_to_target_seconds.
-      bool did_target_or_time_to_target_change = true;
-      if (target_state_.has_value()) {
-        did_target_or_time_to_target_change =
-            motion_update_.time_to_target_seconds != time_to_target_seconds_ ||
-            !latest_target_state.pose.isApprox(target_state_.value().pose) ||
-            !latest_target_state.velocity.isApprox(
-                target_state_.value().velocity);
+        // If target values or time_to_target_seconds is unchanged, then we keep
+        // the current remaining_time_to_target_seconds_ such that the current
+        // spline continues to the target.This is only applicable in pure
+        // position trajectory generation mode with non-zero
+        // time_to_target_seconds.
+        bool did_target_or_time_to_target_change = true;
+        if (target_state_.has_value()) {
+          did_target_or_time_to_target_change =
+              motion_update_.time_to_target_seconds !=
+                  time_to_target_seconds_ ||
+              !latest_target_state.pose.isApprox(target_state_.value().pose) ||
+              !latest_target_state.velocity.isApprox(
+                  target_state_.value().velocity);
+        }
+
+        bool is_position_mode_with_zero_velocity_target =
+            latest_target_state.velocity.isApprox(Eigen::VectorXd::Zero(6)) &&
+            (motion_update_.trajectory_generation_mode.mode ==
+                 TrajectoryGenerationMode::MODE_POSITION ||
+             motion_update_.trajectory_generation_mode.mode ==
+                 TrajectoryGenerationMode::MODE_POSITION_AND_VELOCITY);
+
+        // Update time to target
+        if (did_target_or_time_to_target_change ||
+            !is_position_mode_with_zero_velocity_target) {
+          remaining_time_to_target_seconds_ =
+              motion_update_.time_to_target_seconds;
+        }
+
+        target_state_ = latest_target_state;
+        time_to_target_seconds_ = motion_update_.time_to_target_seconds;
       }
+    } else if (target_mode_ == TargetMode::Joint) {
+      auto command_op = joint_motion_update_rt_.try_get();
+      if (command_op.has_value()) {
+        joint_motion_update_ = command_op.value();
 
-      bool is_position_mode_with_zero_velocity_target =
-          latest_target_state.velocity.isApprox(Eigen::VectorXd::Zero(6)) &&
-          (motion_update_.trajectory_generation_mode.mode ==
-               TrajectoryGenerationMode::MODE_POSITION ||
-           motion_update_.trajectory_generation_mode.mode ==
-               TrajectoryGenerationMode::MODE_POSITION_AND_VELOCITY);
+        auto latest_target_state =
+            JointState(joint_motion_update_.target_state, num_joints_);
 
-      // Update time to target
-      if (did_target_or_time_to_target_change ||
-          !is_position_mode_with_zero_velocity_target) {
-        remaining_time_to_target_seconds_ =
-            motion_update_.time_to_target_seconds;
+        // If target values or time_to_target_seconds is unchanged, then we keep
+        // the current remaining_time_to_target_seconds_ such that the current
+        // spline continues to the target.This is only applicable in pure
+        // position trajectory generation mode with non-zero
+        // time_to_target_seconds.
+        bool did_target_or_time_to_target_change = true;
+        if (joint_target_state_.has_value()) {
+          did_target_or_time_to_target_change =
+              joint_motion_update_.time_to_target_seconds !=
+                  time_to_target_seconds_ ||
+              !latest_target_state.positions.isApprox(
+                  joint_target_state_.value().positions) ||
+              !latest_target_state.velocities.isApprox(
+                  joint_target_state_.value().velocities);
+        }
+
+        bool is_position_mode_with_zero_velocity_target =
+            latest_target_state.velocities.isApprox(
+                Eigen::VectorXd::Zero(num_joints_)) &&
+            (joint_motion_update_.trajectory_generation_mode.mode ==
+                 TrajectoryGenerationMode::MODE_POSITION ||
+             joint_motion_update_.trajectory_generation_mode.mode ==
+                 TrajectoryGenerationMode::MODE_POSITION_AND_VELOCITY);
+
+        // Update time to target
+        if (did_target_or_time_to_target_change ||
+            !is_position_mode_with_zero_velocity_target) {
+          remaining_time_to_target_seconds_ =
+              joint_motion_update_.time_to_target_seconds;
+        }
+
+        joint_target_state_ = latest_target_state;
+        time_to_target_seconds_ = joint_motion_update_.time_to_target_seconds;
       }
-
-      target_state_ = latest_target_state;
-    }
-  } else if (joint_motion_update_received_) {
-    auto command_op = joint_motion_update_rt_.try_get();
-    if (command_op.has_value()) {
-      joint_motion_update_ = command_op.value();
-
-      auto latest_target_state =
-          JointState(joint_motion_update_.target_state, num_joints_);
-
-      // If target values or time_to_target_seconds is unchanged, then we keep
-      // the current remaining_time_to_target_seconds_ such that the current
-      // spline continues to the target.This is only applicable in pure
-      // position trajectory generation mode with non-zero
-      // time_to_target_seconds.
-      bool did_target_or_time_to_target_change = true;
-      if (joint_target_state_.has_value()) {
-        did_target_or_time_to_target_change =
-            joint_motion_update_.time_to_target_seconds !=
-                time_to_target_seconds_ ||
-            !latest_target_state.positions.isApprox(
-                joint_target_state_.value().positions) ||
-            !latest_target_state.velocities.isApprox(
-                joint_target_state_.value().velocities);
-      }
-
-      bool is_position_mode_with_zero_velocity_target =
-          latest_target_state.velocities.isApprox(
-              Eigen::VectorXd::Zero(num_joints_)) &&
-          (joint_motion_update_.trajectory_generation_mode.mode ==
-               TrajectoryGenerationMode::MODE_POSITION ||
-           joint_motion_update_.trajectory_generation_mode.mode ==
-               TrajectoryGenerationMode::MODE_POSITION_AND_VELOCITY);
-
-      // Update time to target
-      if (did_target_or_time_to_target_change ||
-          !is_position_mode_with_zero_velocity_target) {
-        remaining_time_to_target_seconds_ =
-            joint_motion_update_.time_to_target_seconds;
-      }
-
-      joint_target_state_ = latest_target_state;
     }
   }
 
@@ -701,10 +827,6 @@ controller_interface::return_type Controller::update(
   JointState new_joint_reference = last_joint_reference_;
 
   if (target_mode_ == TargetMode::Cartesian && target_state_.has_value()) {
-    // todo(johntgz) remove after debug
-    RCLCPP_INFO_THROTTLE(get_node()->get_logger(), *get_node()->get_clock(),
-                         1000, "HAS CARTESIAN TARGET");
-
     // Clamp the target states to stay within limits
     if (clamp_reference_to_limits(
             cartesian_limits_, motion_update_.trajectory_generation_mode.mode,
@@ -713,8 +835,6 @@ controller_interface::return_type Controller::update(
           get_node()->get_logger(), *get_node()->get_clock(), 1000,
           "Limit violation: Cartesian target has been clamped to limits");
     }
-
-    time_to_target_seconds_ = motion_update_.time_to_target_seconds;
 
     // Apply linear interpolation to the target_state_ to obtain a new
     // reference. Linear interpolation should support MODE_POSITION,
@@ -729,23 +849,8 @@ controller_interface::return_type Controller::update(
       return controller_interface::return_type::ERROR;
     }
 
-    // todo(johntgz) merge this time decrement routine with the joint version
-    //  Decrement the remaining time to target
-    if (remaining_time_to_target_seconds_ > 0) {
-      remaining_time_to_target_seconds_ -= 1. / params_.control_frequency;
-      if (remaining_time_to_target_seconds_ < 0)
-        remaining_time_to_target_seconds_ = 0;
-    }
-
-    // todo(johntgz) remove after debugging
-    /////////////////////////////////////////////////////
-    /////////////////////////////////////////////////////
   } else if (target_mode_ == TargetMode::Joint &&
              joint_target_state_.has_value()) {
-    // todo(johntgz) remove after debug
-    RCLCPP_INFO_THROTTLE(get_node()->get_logger(), *get_node()->get_clock(),
-                         1000, "HAS JOINT TARGET");
-
     // Clamp the target states to stay within limits
     if (clamp_joint_reference_to_limits(
             joint_limits_, joint_motion_update_.trajectory_generation_mode.mode,
@@ -754,8 +859,6 @@ controller_interface::return_type Controller::update(
           get_node()->get_logger(), *get_node()->get_clock(), 1000,
           "Limit violation: Joint target has been clamped to limits");
     }
-
-    time_to_target_seconds_ = joint_motion_update_.time_to_target_seconds;
 
     // Apply linear interpolation to the target_state_ to obtain a new
     // reference. Linear interpolation should support MODE_POSITION,
@@ -769,20 +872,13 @@ controller_interface::return_type Controller::update(
                    "Linear interpolation of joint target failed");
       return controller_interface::return_type::ERROR;
     }
+  }
 
-    // Decrement the remaining time to target
-    if (remaining_time_to_target_seconds_ > 0) {
-      remaining_time_to_target_seconds_ -= 1. / params_.control_frequency;
-      if (remaining_time_to_target_seconds_ < 0)
-        remaining_time_to_target_seconds_ = 0;
-    }
-
-  } else {
-    // todo(johntgz) remove after debug
-    RCLCPP_WARN_THROTTLE(get_node()->get_logger(), *get_node()->get_clock(),
-                         1000, "Invalid target mode!");
-
-    // todo(johntgz) No need to default to any mode?
+  // Decrement the remaining time to target
+  if (remaining_time_to_target_seconds_ > 0) {
+    remaining_time_to_target_seconds_ -= 1. / params_.control_frequency;
+    if (remaining_time_to_target_seconds_ < 0)
+      remaining_time_to_target_seconds_ = 0;
   }
 
   // Compute controls
@@ -791,7 +887,9 @@ controller_interface::return_type Controller::update(
   if (control_mode_ == ControlMode::Impedance) {
     new_joint_command.effort.assign(num_joints_, 0.0);
 
-    interpolate_impedance_parameters();
+    if (motion_update_received_) {
+      interpolate_impedance_parameters();
+    }
 
     if (target_mode_ == TargetMode::Cartesian) {
       // Compute the tool pose and velocity error between the current and
@@ -1547,10 +1645,6 @@ bool Controller::update_joint_reference_linear_interpolation(
 //==============================================================================
 void Controller::interpolate_impedance_parameters() {
   if (target_mode_ == TargetMode::Cartesian) {
-    if (!motion_update_received_) {
-      return;
-    }
-
     // We use exponential smoothing to interpolate the stiffness and damping
     // matrices with the equation:
     //
@@ -1619,10 +1713,6 @@ void Controller::interpolate_impedance_parameters() {
         current_tool_state_.pose.rotation() * total_wrench_at_tip.tail<3>();
 
   } else if (target_mode_ == TargetMode::Joint) {
-    if (!joint_motion_update_received_) {
-      return;
-    }
-
     // We use exponential smoothing to interpolate the stiffness and damping
     // vectors with the equation:
     //   S_(n+1) = (1-c) * S_n + c * S_target
@@ -1673,30 +1763,6 @@ void Controller::interpolate_impedance_parameters() {
   }
 
   return;
-}
-
-//==============================================================================
-void Controller::reset_cartesian_target() {
-  motion_update_ = aic_controller::MotionUpdate();
-  motion_update_rt_.try_set(motion_update_);
-
-  motion_update_received_ = false;
-  time_to_target_seconds_ = 0.0;
-  remaining_time_to_target_seconds_ = 0.0;
-
-  target_state_ = std::nullopt;
-}
-
-//==============================================================================
-void Controller::reset_joint_target() {
-  joint_motion_update_ = aic_controller::JointMotionUpdate();
-  joint_motion_update_rt_.try_set(joint_motion_update_);
-
-  joint_motion_update_received_ = false;
-  time_to_target_seconds_ = 0.0;
-  remaining_time_to_target_seconds_ = 0.0;
-
-  joint_target_state_ = std::nullopt;
 }
 
 }  // namespace aic_controller
