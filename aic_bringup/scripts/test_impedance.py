@@ -28,8 +28,10 @@ from aic_control_interfaces.msg import (
     JointMotionUpdate,
     TrajectoryGenerationMode,
 )
-from geometry_msgs.msg import Pose, Point, Quaternion, Wrench, Vector3
-from trajectory_msgs.msg import JointTrajectoryPoint
+from aic_control_interfaces.srv import (
+    ChangeTargetMode,
+)
+from geometry_msgs.msg import Pose, Point, Quaternion, Wrench, Vector3, Twist
 
 
 class TestImpedanceNode(Node):
@@ -41,41 +43,60 @@ class TestImpedanceNode(Node):
         self.controller_namespace = self.declare_parameter(
             "controller_namespace", "aic_controller"
         ).value
-        self.cartesian_mode = self.declare_parameter("cartesian_mode", True).value
 
-        if self.cartesian_mode:
-            self.motion_update_publisher = self.create_publisher(
-                MotionUpdate, f"/{self.controller_namespace}/motion_update", 10
+        self.motion_update_publisher = self.create_publisher(
+            MotionUpdate, f"/{self.controller_namespace}/motion_update", 10
+        )
+
+        while self.motion_update_publisher.get_subscription_count() == 0:
+            self.get_logger().info(
+                f"Waiting for subscriber to '{self.controller_namespace}/motion_update'..."
             )
+            time.sleep(1.0)
 
-            while self.motion_update_publisher.get_subscription_count() == 0:
-                self.get_logger().info(
-                    f"Waiting for subscriber to '{self.controller_namespace}/motion_update'..."
-                )
-                time.sleep(1.0)
-        else:
-            self.joint_motion_update_publisher = self.create_publisher(
-                JointMotionUpdate,
-                f"/{self.controller_namespace}/joint_motion_update",
-                10,
+        self.joint_motion_update_publisher = self.create_publisher(
+            JointMotionUpdate,
+            f"/{self.controller_namespace}/joint_motion_update",
+            10,
+        )
+
+        while self.joint_motion_update_publisher.get_subscription_count() == 0:
+            self.get_logger().info(
+                f"Waiting for subscriber to '{self.controller_namespace}/joint_motion_update'..."
             )
+            time.sleep(1.0)
 
-            while self.joint_motion_update_publisher.get_subscription_count() == 0:
-                self.get_logger().info(
-                    f"Waiting for subscriber to '{self.controller_namespace}/joint_motion_update'..."
-                )
-                time.sleep(1.0)
+        self.client = self.create_client(
+            ChangeTargetMode, f"/{self.controller_namespace}/change_target_mode"
+        )
 
-        # A timer that will send the trajectory only once.
-        self.timer = self.create_timer(1.0, self.send_target)
+        # Wait for service
+        while not self.client.wait_for_service():
+            self.get_logger().info(
+                f"Waiting for service '{self.controller_namespace}/change_target_mode'..."
+            )
+            time.sleep(1.0)
 
-    def generate_motion_update(self, pos, quat, time_to_target):
+    def generate_motion_update(
+        self,
+        pos,
+        quat,
+        time_to_target,
+        mode=TrajectoryGenerationMode.MODE_POSITION,
+        twist=None,
+    ):
 
         msg = MotionUpdate()
-        msg.pose = Pose(
-            position=Point(x=pos[0], y=pos[1], z=pos[2]),
-            orientation=Quaternion(x=quat[0], y=quat[1], z=quat[2], w=quat[3]),
-        )
+        if mode == TrajectoryGenerationMode.MODE_POSITION:
+            msg.pose = Pose(
+                position=Point(x=pos[0], y=pos[1], z=pos[2]),
+                orientation=Quaternion(x=quat[0], y=quat[1], z=quat[2], w=quat[3]),
+            )
+        elif mode == TrajectoryGenerationMode.MODE_VELOCITY:
+            msg.velocity = Twist(
+                linear=Vector3(x=twist[0], y=twist[1], z=twist[2]),
+                angular=Vector3(x=twist[3], y=twist[4], z=twist[5]),
+            )
         msg.target_stiffness = np.diag(
             [100.0, 100.0, 100.0, 50.0, 50.0, 50.0]
         ).flatten()
@@ -88,7 +109,7 @@ class TestImpedanceNode(Node):
             force=Vector3(x=0.5, y=0.5, z=0.5),
             torque=Vector3(x=0.0, y=0.0, z=0.0),
         )
-        msg.trajectory_generation_mode.mode = TrajectoryGenerationMode.MODE_POSITION
+        msg.trajectory_generation_mode.mode = mode
         msg.time_to_target_seconds = time_to_target
 
         return msg
@@ -104,59 +125,93 @@ class TestImpedanceNode(Node):
 
         return msg
 
-    def send_target(self):
-        if self.cartesian_mode:
-            pos_tool_up = [-0.501, -0.175, 0.2]
-            pos_tool_down = [-0.501, -0.175, 0.0]
+    def send_cartesian_target(self, time_to_target):
+        pos_tool_up = [-0.501, -0.175, 0.2]
 
-            quat_upright = [
-                0.7071068,
-                0.7071068,
-                0.0,
-                0.0,
-            ]  # ZYX = (180, 0, 90), z axis normal to plane and (x,y) axes are aligned with base_link axes
+        quat_upright = [
+            0.7071068,
+            0.7071068,
+            0.0,
+            0.0,
+        ]  # ZYX = (180, 0, 90), z axis normal to plane and (x,y) axes are aligned with base_link axes
 
-            self.motion_update_publisher.publish(
-                self.generate_motion_update(
-                    pos_tool_up, quat_upright, time_to_target=2.0
-                )
-            )
-            self.get_logger().info(
-                "Published MotionUpdate for tool up configuration to aic_controller"
-            )
+        self.motion_update_publisher.publish(
+            self.generate_motion_update(pos_tool_up, quat_upright, time_to_target)
+        )
+        self.get_logger().info(
+            "Published MotionUpdate for tool up configuration to aic_controller"
+        )
 
-            time.sleep(5.0)
+    def send_joint_target(self, time_to_target):
+        joint_pos = [-1.57, -1.57, -1.57, -1.57, -1.57, -1.57]
 
-            self.motion_update_publisher.publish(
-                self.generate_motion_update(
-                    pos_tool_down, quat_upright, time_to_target=2.0
-                )
-            )
-            self.get_logger().info(
-                "Published MotionUpdate for tool down configuration to aic_controller"
-            )
+        self.joint_motion_update_publisher.publish(
+            self.generate_joint_motion_update(joint_pos, time_to_target)
+        )
 
-            # Shutdown after a short delay to ensure message is sent.
-            time.sleep(1.0)
+        self.get_logger().info("Published JointMotionUpdate to aic_controller")
 
-            self.timer.cancel()  # Send only once.
+    def send_change_control_mode_req(self, mode):
+        ChangeTargetMode
 
+        req = ChangeTargetMode.Request()
+        req.target_mode = mode
+
+        self.get_logger().info(f"Sending request to change control mode to {mode}")
+
+        future = self.client.call_async(req)
+
+        rclpy.spin_until_future_complete(self, future)
+
+        response = future.result()
+
+        if response.success:
+            self.get_logger().info(f"Successfully changed control mode to {mode}")
         else:
-            joint_pos = [-1.57, -1.57, -1.57, -1.57, -1.57, -1.57]
+            self.get_logger().info(f"Failed to change control mode to {mode}")
 
-            self.joint_motion_update_publisher.publish(
-                self.generate_joint_motion_update(joint_pos, time_to_target=2.0)
-            )
+        time.sleep(0.5)
 
 
 def main(args=None):
     try:
         with rclpy.init(args=args):
             node = TestImpedanceNode()
-            node.send_target()
+
+            node.send_change_control_mode_req(
+                ChangeTargetMode.Request().TARGET_MODE_JOINT
+            )
+
+            node.send_joint_target(2.0)
+            time.sleep(5)
+
+            node.send_change_control_mode_req(
+                ChangeTargetMode.Request().TARGET_MODE_CARTESIAN
+            )
+
+            node.send_cartesian_target(2.0)
+            time.sleep(5)
+
+            node.send_change_control_mode_req(
+                ChangeTargetMode.Request().TARGET_MODE_JOINT
+            )
+
+            node.send_joint_target(5.0)
+            time.sleep(6)
+
+            node.send_change_control_mode_req(
+                ChangeTargetMode.Request().TARGET_MODE_CARTESIAN
+            )
+
+            node.send_cartesian_target(5.0)
+
             rclpy.spin(node)
+
     except (KeyboardInterrupt, ExternalShutdownException):
         pass
+
+    node.destroy_node()
+    rclpy.shutdown()
 
 
 if __name__ == "__main__":
