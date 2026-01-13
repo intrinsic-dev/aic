@@ -9,15 +9,16 @@ preview = ["pixi-build"]
 
 [dependencies]
 evdev = ">=1.9.2,<2"
-ros-kilted-control-msgs = ">=6.5.0,<7"                        # lerobot_robot_ros
-ros-kilted-geometry-msgs = ">=5.5.0,<6"                       # lerobot_robot_ros
-ros-kilted-rmw-zenoh-cpp = ">=0.6.4,<0.7"
-ros-kilted-lerobot-robot-aic = { path = "lerobot_robot_aic" }
-ros-kilted-moveit-msgs = ">=2.7.1,<3"                         # lerobot_robot_ros
-ros-kilted-rclpy = ">=9.1.1,<10"
-ros-kilted-sensor-msgs = ">=5.5.0,<6"                         # lerobot_robot_ros
-ros-kilted-std-msgs = ">=5.5.0,<6"                            # lerobot_robot_ros
-ros-kilted-std-srvs = ">=5.5.0,<6"                            # lerobot_robot_ros
+ros-kilted-control-msgs = "*"                                           # lerobot_robot_ros
+ros-kilted-geometry-msgs = "*"                                          # lerobot_robot_ros
+ros-kilted-rmw-zenoh-cpp = "*"
+ros-kilted-lerobot-robot-aic = { path = "aic_utils/lerobot_robot_aic" }
+ros-kilted-moveit-msgs = "*"                                            # lerobot_robot_ros
+ros-kilted-rclpy = "*"
+ros-kilted-ros-core = "*"
+ros-kilted-sensor-msgs = "*"                                            # lerobot_robot_ros
+ros-kilted-std-msgs = "*"                                               # lerobot_robot_ros
+ros-kilted-std-srvs = "*"                                               # lerobot_robot_ros
 
 [pypi-dependencies]
 lerobot = ">=0.4.2, <0.5"
