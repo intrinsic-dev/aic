@@ -15,12 +15,14 @@
 #
 
 
+import numpy as np
 import rclpy
 import textwrap
 
-from aic_control_interfaces.msg import JointMotionUpdate
+from aic_control_interfaces.msg import MotionUpdate, TrajectoryGenerationMode
 from aic_model_interfaces.msg import Observation
 from aic_task_interfaces.action import InsertCable
+from geometry_msgs.msg import Wrench, Vector3
 from rclpy.action import ActionServer, CancelResponse, GoalResponse
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import ExternalShutdownException
@@ -58,6 +60,7 @@ class AicModel(LifecycleNode):
             handle_accepted_callback=self.insert_cable_accepted_goal_callback,
             cancel_callback=self.insert_cable_cancel_callback,
         )
+        self.motion_update_pub = self.create_lifecycle_publisher(MotionUpdate, '/aic_controller/motion_update', 2)
 
     def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.get_logger().info(f"on_configure({state})")
@@ -81,6 +84,8 @@ class AicModel(LifecycleNode):
     def on_shutdown(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.get_logger().info(f"on_shutdown({state})")
         self.is_active = False
+        self.destroy_publisher(self.motion_update_pub)
+        self.motion_update_pub = None
         self.destroy_subscription(self.observation_sub)
         self.observation_sub = None
         self.action_server = None
@@ -101,7 +106,8 @@ class AicModel(LifecycleNode):
         #
         # YOUR CODE HERE.
         #
-        # The following sample just prints the timestamps of the incoming data.
+        # The following sample just prints the timestamps of the incoming data
+        # and moves the arm to a specific pose.
         #
         t_cam_0 = self.get_seconds(msg.images[0].header)
         t_cam_1 = self.get_seconds(msg.images[1].header)
@@ -114,6 +120,35 @@ class AicModel(LifecycleNode):
         self.get_logger().info(
             f"times: images [{t_cam_0:.2f}, {t_cam_1:.2f}, {t_cam_2:.2f}] joints {t_joints:.2f} wrench {t_wrench:.2f} tcp: ({tcp_x:+0.4f} {tcp_y:+0.4f}, {tcp_z:+0.4f})"
         )
+
+        motion_update_msg = MotionUpdate()
+        motion_update_msg.pose.position.x = -0.501
+        motion_update_msg.pose.position.y = -0.175
+        motion_update_msg.pose.position.z =  0.1
+        motion_update_msg.pose.orientation.x = 0.7071068
+        motion_update_msg.pose.orientation.y = 0.7071068
+        motion_update_msg.pose.orientation.z = 0.0
+        motion_update_msg.pose.orientation.w = 0.0
+
+        motion_update_msg.target_stiffness = np.diag(
+            [100.0, 100.0, 100.0, 50.0, 50.0, 50.0]
+        ).flatten()
+        motion_update_msg.target_damping = np.diag(
+            [40.0, 40.0, 40.0, 15.0, 15.0, 15.0]
+        ).flatten()
+
+        motion_update_msg.feedforward_wrench_at_tip = Wrench(
+            force=Vector3(x=0.0, y=0.0, z=0.0),
+            torque=Vector3(x=0.0, y=0.0, z=0.0))
+
+        motion_update_msg.wrench_feedback_gains_at_tip = Wrench(
+            force=Vector3(x=0.5, y=0.5, z=0.5),
+            torque=Vector3(x=0.0, y=0.0, z=0.0))
+
+        motion_update_msg.trajectory_generation_mode.mode = TrajectoryGenerationMode.MODE_POSITION
+        motion_update_msg.time_to_target_seconds = 1.0
+
+        self.motion_update_pub.publish(motion_update_msg)
 
     def insert_cable_goal_callback(self, goal_request):
         if not self.is_active:
