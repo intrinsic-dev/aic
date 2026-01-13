@@ -434,6 +434,9 @@ controller_interface::CallbackReturn Controller::on_configure(
     if (!cartesian_impedance_action_->configure(
             joint_limits_, get_node()->get_node_logging_interface(),
             get_node()->get_node_clock_interface())) {
+      RCLCPP_ERROR(get_node()->get_logger(),
+                   "Failed to configure CartesianImpedanceAction.");
+
       return controller_interface::CallbackReturn::ERROR;
     }
 
@@ -492,6 +495,9 @@ controller_interface::CallbackReturn Controller::on_configure(
     if (!joint_impedance_action_->configure(
             joint_limits_, get_node()->get_node_logging_interface(),
             get_node()->get_node_clock_interface())) {
+      RCLCPP_ERROR(get_node()->get_logger(),
+                   "Failed to configure JointImpedanceAction.");
+
       return controller_interface::CallbackReturn::ERROR;
     }
 

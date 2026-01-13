@@ -38,9 +38,9 @@ generate_parameter_library(aic_controller_parameters
 
 add_library(aic_controller SHARED
   src/aic_controller.cpp
+  src/cartesian_limits.cpp
   src/cartesian_state.cpp
   src/joint_state.cpp
-  src/cartesian_limits.cpp
   src/utils.cpp
   src/actions/cartesian_impedance_action.cpp
   src/actions/joint_impedance_action.cpp
