@@ -253,19 +253,14 @@ ros2 launch aic_bringup gripper_action.launch.py use_position:=true position:=0.
 
 ## Launching with the Impedance Controller
 
-### Start the Simulation with the AIC Controller
+### Start the Simulation with the AIC Controller, but spawning the Admittance Controller (This is because the Admittance Controller claims the position interface and prevents the another controller from executing commands on the effort interface).
 ```bash
 reset && ros2 launch aic_bringup aic_gz_bringup.launch.py initial_joint_controller:=aic_controller spawn_admittance_controller:=false
 ```
 
-### Send a Cartesian target (MotionUpdate message)
+### Start a script to send both joint (`JointMotionUpdate`) and Cartesian targets (`MotionUpdate`). This script also calls the `ChangeTargetMode` service to change the target mode between Joint and Cartesian, in between sending the targets.
 ```bash
-ros2 run aic_bringup test_impedance.py --ros-args -p cartesian_mode:="true"
-```
-
-### Send a Cartesian target (MotionUpdate message)
-```bash
-ros2 run aic_bringup test_impedance.py --ros-args -p cartesian_mode:="false"
+ros2 run aic_bringup test_impedance.py
 ```
 
 ---
