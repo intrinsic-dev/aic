@@ -18,6 +18,7 @@
 import rclpy
 import textwrap
 
+from aic_control_interfaces.msg import JointMotionUpdate
 from aic_model_interfaces.msg import Observation
 from aic_task_interfaces.action import InsertCable
 from rclpy.action import ActionServer, CancelResponse, GoalResponse
@@ -32,6 +33,7 @@ from rclpy.lifecycle import (
 from rclpy.node import Node
 from rclpy.task import Future
 from std_srvs.srv import Empty
+from trajectory_msgs.msg import JointTrajectoryPoint
 
 
 class AicModel(LifecycleNode):
