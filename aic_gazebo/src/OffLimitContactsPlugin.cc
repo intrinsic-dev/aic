@@ -76,17 +76,16 @@ void OffLimitContactsPlugin::PreUpdate(const UpdateInfo &_info,
           const components::ContactSensorData *_contacts) -> bool {
         // Only consider contacts with off-limit models (e.g. enclosure).
         for (const auto &contact : _contacts->Data().contact()) {
-          shouldPublish = 
-            ((this->offLimitEntities.find(
-              topLevelModel(contact.collision1().id(), _ecm)) !=
-                this->offLimitEntities.end()) &&
-            (topLevelModel(contact.collision2().id(), _ecm) == 
-              this->modelEntity)) ||
-            ((this->offLimitEntities.find(
-              topLevelModel(contact.collision2().id(), _ecm)) !=
-                this->offLimitEntities.end()) &&
-              (topLevelModel(contact.collision1().id(), _ecm) == 
-                this->modelEntity));
+          shouldPublish = ((this->offLimitEntities.find(topLevelModel(
+                                contact.collision1().id(), _ecm)) !=
+                            this->offLimitEntities.end()) &&
+                           (topLevelModel(contact.collision2().id(), _ecm) ==
+                            this->modelEntity)) ||
+                          ((this->offLimitEntities.find(topLevelModel(
+                                contact.collision2().id(), _ecm)) !=
+                            this->offLimitEntities.end()) &&
+                           (topLevelModel(contact.collision1().id(), _ecm) ==
+                            this->modelEntity));
 
           if (shouldPublish) break;
         }
