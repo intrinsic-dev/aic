@@ -60,7 +60,9 @@ class AicModel(LifecycleNode):
             handle_accepted_callback=self.insert_cable_accepted_goal_callback,
             cancel_callback=self.insert_cable_cancel_callback,
         )
-        self.motion_update_pub = self.create_lifecycle_publisher(MotionUpdate, '/aic_controller/motion_update', 2)
+        self.motion_update_pub = self.create_lifecycle_publisher(
+            MotionUpdate, "/aic_controller/motion_update", 2
+        )
 
     def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.get_logger().info(f"on_configure({state})")
@@ -124,7 +126,7 @@ class AicModel(LifecycleNode):
         motion_update_msg = MotionUpdate()
         motion_update_msg.pose.position.x = -0.501
         motion_update_msg.pose.position.y = -0.175
-        motion_update_msg.pose.position.z =  0.1
+        motion_update_msg.pose.position.z = 0.1
         motion_update_msg.pose.orientation.x = 0.7071068
         motion_update_msg.pose.orientation.y = 0.7071068
         motion_update_msg.pose.orientation.z = 0.0
@@ -138,14 +140,17 @@ class AicModel(LifecycleNode):
         ).flatten()
 
         motion_update_msg.feedforward_wrench_at_tip = Wrench(
-            force=Vector3(x=0.0, y=0.0, z=0.0),
-            torque=Vector3(x=0.0, y=0.0, z=0.0))
+            force=Vector3(x=0.0, y=0.0, z=0.0), torque=Vector3(x=0.0, y=0.0, z=0.0)
+        )
 
         motion_update_msg.wrench_feedback_gains_at_tip = Wrench(
-            force=Vector3(x=0.5, y=0.5, z=0.5),
-            torque=Vector3(x=0.0, y=0.0, z=0.0))
+            force=Vector3(x=0.5, y=0.5, z=0.5), torque=Vector3(x=0.0, y=0.0, z=0.0)
+        )
 
-        motion_update_msg.trajectory_generation_mode.mode = TrajectoryGenerationMode.MODE_POSITION
+        motion_update_msg.trajectory_generation_mode.mode = (
+            TrajectoryGenerationMode.MODE_POSITION
+        )
+
         motion_update_msg.time_to_target_seconds = 1.0
 
         self.motion_update_pub.publish(motion_update_msg)
