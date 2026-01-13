@@ -328,6 +328,20 @@ def launch_setup(context, *args, **kwargs):
         condition=IfCondition(ground_truth),
     )
 
+    ground_truth_static_tf_publisher = Node(
+        package="tf2_ros",
+        executable="static_transform_publisher",
+        name="ground_truth_static_tf_publisher",
+        output="screen",
+        arguments=[
+            "--frame-id",
+            "world",
+            "--child-frame-id",
+            "aic_world",
+        ],
+        condition=IfCondition(ground_truth),
+    )
+
     nodes_to_start = [
         robot_state_publisher_node,
         joint_state_broadcaster_spawner,
@@ -344,6 +358,7 @@ def launch_setup(context, *args, **kwargs):
         spawn_cable_launch,
         ground_truth_tf_relay,
         ground_truth_tf_static_relay,
+        ground_truth_static_tf_publisher,
     ]
 
     return nodes_to_start
