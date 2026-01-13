@@ -122,6 +122,7 @@
       <off_limit_models>
         <model>enclosure</model>
         <model>task_board</model>
+        <model>cable</model>
       </off_limit_models>
     </plugin>
   </gazebo>
