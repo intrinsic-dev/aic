@@ -23,12 +23,18 @@ from aic_task_interfaces.action import InsertCable
 from rclpy.action import ActionServer, CancelResponse, GoalResponse
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import ExternalShutdownException
+from rclpy.lifecycle import (
+    LifecycleNode,
+    LifecycleState,
+    LifecyclePublisher,
+    TransitionCallbackReturn,
+)
 from rclpy.node import Node
 from rclpy.task import Future
 from std_srvs.srv import Empty
 
 
-class AicModel(Node):
+class AicModel(LifecycleNode):
     def __init__(self):
         super().__init__("aic_model")
         self.get_logger().info("Hello, world!")
@@ -49,6 +55,26 @@ class AicModel(Node):
             handle_accepted_callback=self.insert_cable_accepted_goal_callback,
             cancel_callback=self.insert_cable_cancel_callback,
         )
+
+    def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
+        self.get_logger().info(f"on_configure({state})")
+        return TransitionCallbackReturn.SUCCESS
+
+    def on_activate(self, state: LifecycleState) -> TransitionCallbackReturn:
+        self.get_logger().info(f"on_activate({state})")
+        return super().on_activate(state)
+
+    def on_deactivate(self, state: LifecycleState) -> TransitionCallbackReturn:
+        self.get_logger().info(f"on_deactivate({state})")
+        return super().on_deactivate(state)
+
+    def on_cleanup(self, state: LifecycleState) -> TransitionCallbackReturn:
+        self.get_logger().info(f"on_cleanup({state})")
+        return TransitionCallbackReturn.SUCCESS
+
+    def on_shutdown(self, state: LifecycleState) -> TransitionCallbackReturn:
+        self.get_logger().info(f"on_shutdown({state})")
+        return TransitionCallbackReturn.SUCCESS
 
     def cancel_task_callback(self, request, response):
         self.get_logger().info("cancel_task_callback()")
