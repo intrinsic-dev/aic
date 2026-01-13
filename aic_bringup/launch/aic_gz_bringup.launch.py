@@ -576,42 +576,42 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             "cable_x",
-            default_value="0.162",
+            default_value="0.16",
             description="Cable spawn X position",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
             "cable_y",
-            default_value="0.292",
+            default_value="0.2927",
             description="Cable spawn Y position",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
             "cable_z",
-            default_value="1.397",
+            default_value="1.4166",
             description="Cable spawn Z position",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
             "cable_roll",
-            default_value="0.187",
+            default_value="0.5",
             description="Cable spawn roll orientation (radians)",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
             "cable_pitch",
-            default_value="-0.936",
+            default_value="-0.6605",
             description="Cable spawn pitch orientation (radians)",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
             "cable_yaw",
-            default_value="2.995",
+            default_value="2.6928",
             description="Cable spawn yaw orientation (radians)",
         )
     )

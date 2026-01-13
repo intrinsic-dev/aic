@@ -69,6 +69,19 @@ install(
   DESTINATION lib/${PROJECT_NAME}
 )
 
+add_library(OffLimitContactsPlugin
+  SHARED
+  src/OffLimitContactsPlugin.cc
+)
+
+target_link_libraries(OffLimitContactsPlugin PRIVATE
+  gz-sim${GZ_SIM_VER}::gz-sim${GZ_SIM_VER})
+
+install(
+  TARGETS OffLimitContactsPlugin
+  DESTINATION lib/${PROJECT_NAME}
+)
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()

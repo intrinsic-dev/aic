@@ -217,7 +217,7 @@ void CablePlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
   if (this->cableState == CableState::HARNESS) {
     // Hold both connections of the cable in place
     this->detachableJointStatic0Entity = makeStatic(
-        this->cableConnection0LinkEntity, false, this->creator.get(), _ecm);
+        this->cableConnection0LinkEntity, true, this->creator.get(), _ecm);
     this->detachableJointStatic1Entity = makeStatic(
         this->cableConnection1LinkEntity, true, this->creator.get(), _ecm);
 
@@ -237,10 +237,13 @@ void CablePlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
   }
 
   if (cableState == CableState::CREATE_CONNECTIONS) {
-    // Detach joint that's holding cable connection 0 in place
-    if (this->detachableJointStatic0Entity != kNullEntity) {
+    // Detach joints that are holding cable connections in place
+    if (this->detachableJointStatic0Entity != kNullEntity ||
+        this->detachableJointStatic1Entity != kNullEntity) {
       _ecm.RequestRemoveEntity(this->detachableJointStatic0Entity);
+      _ecm.RequestRemoveEntity(this->detachableJointStatic1Entity);
       this->detachableJointStatic0Entity = kNullEntity;
+      this->detachableJointStatic1Entity = kNullEntity;
       return;
     }
 
@@ -293,8 +296,6 @@ void CablePlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
     if (this->detachableJoint0Entity != kNullEntity) {
       _ecm.RequestRemoveEntity(this->detachableJoint0Entity);
       this->detachableJoint0Entity = kNullEntity;
-      _ecm.RequestRemoveEntity(this->detachableJointStatic1Entity);
-      this->detachableJointStatic1Entity = kNullEntity;
       return;
     }
 

@@ -43,12 +43,12 @@ ros2 launch aic_bringup aic_gz_bringup.launch.py
 - `spawn_cable` (default: `"false"`) - Whether to spawn the cable
 - `cable_description_file` (default: `"cable.sdf.xacro"`) - Cable SDF/XACRO file
 - `attach_cable_to_gripper` (default: `"false"`) - Whether to attach cable to gripper
-- `cable_x` (default: `"0.162"`) - Cable spawn X position (meters)
-- `cable_y` (default: `"0.292"`) - Cable spawn Y position (meters)
-- `cable_z` (default: `"1.397"`) - Cable spawn Z position (meters)
-- `cable_roll` (default: `"0.187"`) - Cable spawn roll orientation (radians)
-- `cable_pitch` (default: `"-0.936"`) - Cable spawn pitch orientation (radians)
-- `cable_yaw` (default: `"2.995"`) - Cable spawn yaw orientation (radians)
+- `cable_x` (default: `"0.16"`) - Cable spawn X position (meters)
+- `cable_y` (default: `"0.2927"`) - Cable spawn Y position (meters)
+- `cable_z` (default: `"1.4166"`) - Cable spawn Z position (meters)
+- `cable_roll` (default: `"0.5"`) - Cable spawn roll orientation (radians)
+- `cable_pitch` (default: `"-0.6605"`) - Cable spawn pitch orientation (radians)
+- `cable_yaw` (default: `"2.6928"`) - Cable spawn yaw orientation (radians)
 
 **Gazebo Configuration:**
 - `world_file` (default: `"aic.sdf"`) - Gazebo world file
