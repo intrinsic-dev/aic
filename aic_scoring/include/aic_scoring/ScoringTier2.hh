@@ -63,6 +63,7 @@ namespace aic_scoring
 
     /// \brief Start recording all scoring topics.
     /// \return True if the bag was opened correctly and it's ready to record.
+    /// \param[in] _filename The path to the bag.
     public: bool StartRecording(const std::string &_filename);
 
     /// \brief Stop recording all scoring topics.
@@ -83,17 +84,21 @@ namespace aic_scoring
     /// \brief Pointer to a node.
     private: rclcpp::Node *node;
 
-    /// \brief Subscription.
-    private: rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr sub1;
+    /// \brief Joint state subscription.
+    private: rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr
+      jointStateSub;
 
-    /// \brief Subscription.
-    private: rclcpp::Subscription<tf2_msgs::msg::TFMessage>::SharedPtr sub2;
+    /// \brief tf subscription.
+    private: rclcpp::Subscription<tf2_msgs::msg::TFMessage>::SharedPtr
+      tfSub;
 
-    /// \brief Subscription.
-    private: rclcpp::Subscription<tf2_msgs::msg::TFMessage>::SharedPtr sub3;
+    /// \brief Static tf subscription.
+    private: rclcpp::Subscription<tf2_msgs::msg::TFMessage>::SharedPtr
+      tfStaticSub;
 
-    /// \brief Subscription.
-    private: rclcpp::Subscription<ros_gz_interfaces::msg::Contacts>::SharedPtr sub4;
+    /// \brief Contacts subscription.
+    private: rclcpp::Subscription<ros_gz_interfaces::msg::Contacts>::SharedPtr
+      contactsSub;
 
     /// \brief A YAML node.
     private: YAML::Node yamlNode;
