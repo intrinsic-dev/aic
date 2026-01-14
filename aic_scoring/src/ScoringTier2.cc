@@ -234,12 +234,6 @@ bool ScoringTier2::ParseStats() {
 }
 
 //////////////////////////////////////////////////
-// void ScoringTier2::JointStatesCallback(
-//         const sensor_msgs::msg::JointState::SharedPtr msg) const {
-
-// }
-
-//////////////////////////////////////////////////
 ScoringTier2Node::ScoringTier2Node(const std::string &_yamlFile)
     : Node("score_tier2_node") {
   try {
