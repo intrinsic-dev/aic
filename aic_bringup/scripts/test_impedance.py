@@ -102,11 +102,11 @@ class TestImpedanceNode(Node):
         ).flatten()
         msg.target_damping = np.diag([40.0, 40.0, 40.0, 15.0, 15.0, 15.0]).flatten()
         msg.feedforward_wrench_at_tip = Wrench(
-            force=Vector3(x=0.0, y=0.0, z=1.0),
+            force=Vector3(x=0.0, y=0.0, z=0.0),
             torque=Vector3(x=0.0, y=0.0, z=0.0),
         )
         msg.wrench_feedback_gains_at_tip = Wrench(
-            force=Vector3(x=0.5, y=0.5, z=0.5),
+            force=Vector3(x=0.5, y=0.5, z=0.0),
             torque=Vector3(x=0.0, y=0.0, z=0.0),
         )
         msg.trajectory_generation_mode.mode = mode
@@ -143,7 +143,7 @@ class TestImpedanceNode(Node):
         )
 
     def send_joint_target(self, time_to_target):
-        joint_pos = [-1.57, -1.57, -1.57, -1.57, -1.57, -1.57]
+        joint_pos = [-0.78, -1.57, -1.57, 1.9, -1.57, -1.57]
 
         self.joint_motion_update_publisher.publish(
             self.generate_joint_motion_update(joint_pos, time_to_target)
