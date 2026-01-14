@@ -40,6 +40,12 @@ aic_controller:
     description: "Sets the controller used, which can be either 'impedance' or 'admittance'"
   }
 
+  target_mode: {
+    type: string,
+    default_value: "joint",
+    description: "Sets the target mode, which controls the type of target accepted. Values are 'cartesian' or 'joint'"
+  }
+
   admittance_controller_namespace: {
     type: string,
     default_value: "admittance_controller",

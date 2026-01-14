@@ -25,7 +25,7 @@ Controller::Controller()
     : param_listener_(nullptr),
       num_joints_(0),
       control_mode_(ControlMode::Invalid),
-      target_mode_(TargetMode::Joint),
+      target_mode_(TargetMode::Invalid),
       cartesian_impedance_action_(nullptr),
       feedforward_wrench_at_tip_(Eigen::Matrix<double, 6, 1>::Zero()),
       sensed_wrench_at_tip_(Eigen::Matrix<double, 6, 1>::Zero()),
@@ -144,6 +144,23 @@ controller_interface::CallbackReturn Controller::on_configure(
     RCLCPP_ERROR(get_node()->get_logger(),
                  "Unsupported control mode. Please set control_mode to either "
                  "'admittance' or 'impedance'");
+    return controller_interface::CallbackReturn::FAILURE;
+  }
+
+  if (params_.target_mode == "cartesian") {
+    RCLCPP_INFO(
+        get_node()->get_logger(),
+        "Target mode set to Cartesian. Accepting MotionUpdate targets.");
+    target_mode_ = TargetMode::Cartesian;
+  } else if (params_.target_mode == "joint") {
+    RCLCPP_INFO(
+        get_node()->get_logger(),
+        "Target mode set to joint. Accepting JointMotionUpdate targets.");
+    target_mode_ = TargetMode::Joint;
+  } else {
+    RCLCPP_ERROR(get_node()->get_logger(),
+                 "Unsupported target mode. Please set control_mode to either "
+                 "'cartesian' or 'joint'");
     return controller_interface::CallbackReturn::FAILURE;
   }
 
@@ -742,9 +759,9 @@ controller_interface::return_type Controller::update(
 
         // If target values or time_to_target_seconds is unchanged, then we keep
         // the current remaining_time_to_target_seconds_ such that the current
-        // spline continues to the target.This is only applicable in pure
-        // position trajectory generation mode with non-zero
-        // time_to_target_seconds.
+        // trajectory continues to the target.
+        // This is only applicable in pure position trajectory generation mode
+        // with non-zero time_to_target_seconds.
         bool did_target_or_time_to_target_change = true;
         if (target_state_.has_value()) {
           did_target_or_time_to_target_change =
@@ -782,9 +799,9 @@ controller_interface::return_type Controller::update(
 
         // If target values or time_to_target_seconds is unchanged, then we keep
         // the current remaining_time_to_target_seconds_ such that the current
-        // spline continues to the target.This is only applicable in pure
-        // position trajectory generation mode with non-zero
-        // time_to_target_seconds.
+        // trajectory continues to the target.
+        // This is only applicable in pure position trajectory generation mode
+        // with non-zero time_to_target_seconds.
         bool did_target_or_time_to_target_change = true;
         if (joint_target_state_.has_value()) {
           did_target_or_time_to_target_change =
