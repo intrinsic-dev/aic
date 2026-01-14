@@ -27,8 +27,8 @@
 #include <ros_gz_interfaces/msg/contacts.hpp>
 #include <rosbag2_cpp/writer.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
-#include <tf2_msgs/msg/tf_message.hpp>
 #include <string>
+#include <tf2_msgs/msg/tf_message.hpp>
 #include <vector>
 
 namespace aic_scoring {
@@ -45,61 +45,54 @@ ScoringTier2::ScoringTier2(rclcpp::Node *_node, YAML::Node *_config)
 
   // Subscribe to all topics relevant for scoring.
   this->sub1 = this->node->create_subscription<sensor_msgs::msg::JointState>(
-    "/joint_states",
-    10,
-    [this](std::shared_ptr<const rclcpp::SerializedMessage> msg) {
-      // Bag the data.
-      std::lock_guard<std::mutex> lock(this->mutex);
-      if (this->bagOpen) {
-        rclcpp::Time time_stamp = this->node->now();
-        this->bagWriter.write(
-          msg, "/joint_states", "sensor_msgs/msg/JointState", time_stamp);
-      }
-    }
-  );
+      "/joint_states", 10,
+      [this](std::shared_ptr<const rclcpp::SerializedMessage> msg) {
+        // Bag the data.
+        std::lock_guard<std::mutex> lock(this->mutex);
+        if (this->bagOpen) {
+          rclcpp::Time time_stamp = this->node->now();
+          this->bagWriter.write(msg, "/joint_states",
+                                "sensor_msgs/msg/JointState", time_stamp);
+        }
+      });
 
   this->sub2 = this->node->create_subscription<tf2_msgs::msg::TFMessage>(
-    "/scoring/tf",
-    10,
-    [this](std::shared_ptr<const rclcpp::SerializedMessage> msg) {
-      // Bag the data.
-      std::lock_guard<std::mutex> lock(this->mutex);
-      if (this->bagOpen) {
-        rclcpp::Time time_stamp = this->node->now();
-        this->bagWriter.write(
-          msg, "/scoring/tf", "tf2_msgs::msg::TFMessage", time_stamp);
-      }
-    }
-  );
+      "/scoring/tf", 10,
+      [this](std::shared_ptr<const rclcpp::SerializedMessage> msg) {
+        // Bag the data.
+        std::lock_guard<std::mutex> lock(this->mutex);
+        if (this->bagOpen) {
+          rclcpp::Time time_stamp = this->node->now();
+          this->bagWriter.write(msg, "/scoring/tf", "tf2_msgs::msg::TFMessage",
+                                time_stamp);
+        }
+      });
 
   this->sub3 = this->node->create_subscription<tf2_msgs::msg::TFMessage>(
-    "/scoring/tf_static",
-    10,
-    [this](std::shared_ptr<const rclcpp::SerializedMessage> msg) {
-      // Bag the data.
-      std::lock_guard<std::mutex> lock(this->mutex);
-      if (this->bagOpen) {
-        rclcpp::Time time_stamp = this->node->now();
-        this->bagWriter.write(
-          msg, "/scoring/tf_static", "tf2_msgs::msg::TFMessage", time_stamp);
-      }
-    }
-  );
+      "/scoring/tf_static", 10,
+      [this](std::shared_ptr<const rclcpp::SerializedMessage> msg) {
+        // Bag the data.
+        std::lock_guard<std::mutex> lock(this->mutex);
+        if (this->bagOpen) {
+          rclcpp::Time time_stamp = this->node->now();
+          this->bagWriter.write(msg, "/scoring/tf_static",
+                                "tf2_msgs::msg::TFMessage", time_stamp);
+        }
+      });
 
-  this->sub4 = this->node->create_subscription<ros_gz_interfaces::msg::Contacts>(
-    "/aic/gazebo/contacts/off_limit",
-    10,
-    [this](std::shared_ptr<const rclcpp::SerializedMessage> msg) {
-      // Bag the data.
-      std::lock_guard<std::mutex> lock(this->mutex);
-      if (this->bagOpen) {
-        rclcpp::Time time_stamp = this->node->now();
-        this->bagWriter.write(
-          msg, "/aic/gazebo/contacts/off_limit",
-          "ros_gz_interfaces::msg::Contacts", time_stamp);
-      }  
-    }
-  );
+  this->sub4 =
+      this->node->create_subscription<ros_gz_interfaces::msg::Contacts>(
+          "/aic/gazebo/contacts/off_limit", 10,
+          [this](std::shared_ptr<const rclcpp::SerializedMessage> msg) {
+            // Bag the data.
+            std::lock_guard<std::mutex> lock(this->mutex);
+            if (this->bagOpen) {
+              rclcpp::Time time_stamp = this->node->now();
+              this->bagWriter.write(msg, "/aic/gazebo/contacts/off_limit",
+                                    "ros_gz_interfaces::msg::Contacts",
+                                    time_stamp);
+            }
+          });
 }
 
 //////////////////////////////////////////////////
