@@ -269,7 +269,7 @@ void CablePlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
           this->cableConnection1LinkEntity, true, this->creator.get(), _ecm);
       this->lockEndEffectorDelayStartTime =
           std::chrono::duration_cast<std::chrono::seconds>(_info.simTime)
-          .count();
+              .count();
     }
 
     double timeNow =
