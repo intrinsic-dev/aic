@@ -26,8 +26,9 @@ ros2 launch aic_bringup aic_gz_bringup.launch.py
 **Controller Configuration:**
 - `controllers_file` (default: `"ur_controllers.yaml"`) - YAML file with controller configuration
 - `activate_joint_controller` (default: `"true"`) - Activate joint controller on startup
-- `initial_joint_controller` (default: `"joint_trajectory_controller"`) - Initial controller to activate
+- `initial_joint_controller` (default: `"aic_controller"`) - Initial controller to activate
 - `description_file` (default: `"ur.urdf.xacro"`) - Robot description file
+- `spawn_admittance_controller` (default: `"false"`) - Spawns the Admittance Controller alongside the initial controller defined by the `initial_joint_controller` parameter. This value should be set to `false` if using the impedance control mode on the `aic_controller`.
 
 **Task Board Configuration:**
 - `spawn_task_board` (default: `"true"`) - Whether to spawn the task board
@@ -259,9 +260,8 @@ ros2 launch aic_bringup gripper_action.launch.py use_position:=true position:=0.
 
 ### Start the Simulation with the AIC Controller
 
-Setting the `spawn_admittance_controller` flag to false prevents spawning the Admittance Controller. This is necessary given that the Admittance Controller claims the position interface and prevents another controller from executing commands on the effort interface.
 ```bash
-reset && ros2 launch aic_bringup aic_gz_bringup.launch.py initial_joint_controller:=aic_controller spawn_admittance_controller:=false
+ros2 launch aic_bringup aic_gz_bringup.launch.py
 ```
 
 ### Start a script to send both joint (`JointMotionUpdate`) and Cartesian targets (`MotionUpdate`).

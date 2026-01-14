@@ -143,7 +143,7 @@ class TestImpedanceNode(Node):
         )
 
     def send_joint_target(self, time_to_target):
-        joint_pos = [-0.78, -1.57, -1.57, 1.9, -1.57, -1.57]
+        joint_pos = [0.0, -1.57, -1.57, -1.57, 1.57, 0.0]
 
         self.joint_motion_update_publisher.publish(
             self.generate_joint_motion_update(joint_pos, time_to_target)
