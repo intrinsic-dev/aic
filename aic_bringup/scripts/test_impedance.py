@@ -45,7 +45,7 @@ class TestImpedanceNode(Node):
         ).value
 
         self.motion_update_publisher = self.create_publisher(
-            MotionUpdate, f"/{self.controller_namespace}/motion_update", 10
+            MotionUpdate, f"/{self.controller_namespace}/pose_commands", 10
         )
 
         while self.motion_update_publisher.get_subscription_count() == 0:
@@ -56,7 +56,7 @@ class TestImpedanceNode(Node):
 
         self.joint_motion_update_publisher = self.create_publisher(
             JointMotionUpdate,
-            f"/{self.controller_namespace}/joint_motion_update",
+            f"/{self.controller_namespace}/joint_commands",
             10,
         )
 
