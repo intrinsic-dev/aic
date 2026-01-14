@@ -275,17 +275,18 @@ void CablePlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
           std::chrono::duration_cast<std::chrono::seconds>(_info.simTime).count();
     }
 
+    double timeNow =
+        std::chrono::duration_cast<std::chrono::seconds>(_info.simTime).count();
+    if (timeNow - this->lockEndEffectorDelayStartTime <
+        this->lockEndEffectorDelay)
+      return;
+
     // Lock end-effector in place to simulate gripping the cable that was
     // inserted into the port.
     // Note: creating detachable joints between the gripper and cable after the
     // the cable is made static (after insertion) causes jerky motion on the
     // robot arm as if the controller is fighting against the joints.
     // So workaround this by locking the end-effector in place (make it static).
-    double timeNow =
-        std::chrono::duration_cast<std::chrono::seconds>(_info.simTime).count();
-    if (timeNow - this->lockEndEffectorDelayStartTime  < this->lockEndEffectorDelay)
-      return;
-
     this->detachableJoint0Entity = this->MakeStatic(
         this->endEffectorLinkEntity, true, this->creator.get(), _ecm);
 
@@ -312,8 +313,7 @@ void CablePlugin::Reset(const gz::sim::UpdateInfo& /*_info*/,
 bool CablePlugin::IsModelValid(const gz::sim::EntityComponentManager& _ecm) {
   bool modelValid = true;
   _ecm.EachRemoved<components::Model>(
-      [&](const Entity &_entity, const components::Model *) -> bool
-      {
+      [&](const Entity& _entity, const components::Model*) -> bool {
         if (_entity == this->model.Entity()) {
           modelValid = false;
           return false;
@@ -326,7 +326,6 @@ bool CablePlugin::IsModelValid(const gz::sim::EntityComponentManager& _ecm) {
 
 //////////////////////////////////////////////////
 void CablePlugin::Cleanup(gz::sim::EntityComponentManager& _ecm) {
-
   // Clean up detachable joints
   if (this->detachableJointStatic0Entity != kNullEntity)
     _ecm.RequestRemoveEntity(this->detachableJointStatic0Entity);
@@ -337,8 +336,7 @@ void CablePlugin::Cleanup(gz::sim::EntityComponentManager& _ecm) {
   if (this->detachableJoint1Entity != kNullEntity)
     _ecm.RequestRemoveEntity(this->detachableJoint1Entity);
 
-  for (const auto& ent : this->staticEntities)
-    _ecm.RequestRemoveEntity(ent);
+  for (const auto& ent : this->staticEntities) _ecm.RequestRemoveEntity(ent);
 
   this->staticEntities.clear();
 }
