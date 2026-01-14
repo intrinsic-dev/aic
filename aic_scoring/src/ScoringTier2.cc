@@ -24,6 +24,10 @@
 #include <iostream>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
+#include <ros_gz_interfaces/msg/contacts.hpp>
+#include <rosbag2_cpp/writer.hpp>
+#include <sensor_msgs/msg/joint_state.hpp>
+#include <tf2_msgs/msg/tf_message.hpp>
 #include <string>
 #include <vector>
 
@@ -38,6 +42,89 @@ ScoringTier2::ScoringTier2(rclcpp::Node *_node, YAML::Node *_config)
   // Debug.
   for (const auto &[connection, distance] : this->pluggableMap)
     std::cout << connection << ": " << distance << " m." << std::endl;
+
+  // Subscribe to all topics relevant for scoring.
+  this->sub1 = this->node->create_subscription<sensor_msgs::msg::JointState>(
+    "/joint_states",
+    10,
+    [this](std::shared_ptr<const rclcpp::SerializedMessage> msg) {
+      // Bag the data.
+      std::lock_guard<std::mutex> lock(this->mutex);
+      if (this->bagOpen) {
+        rclcpp::Time time_stamp = this->node->now();
+        this->bagWriter.write(
+          msg, "/joint_states", "sensor_msgs/msg/JointState", time_stamp);
+      }
+    }
+  );
+
+  this->sub2 = this->node->create_subscription<tf2_msgs::msg::TFMessage>(
+    "/scoring/tf",
+    10,
+    [this](std::shared_ptr<const rclcpp::SerializedMessage> msg) {
+      // Bag the data.
+      std::lock_guard<std::mutex> lock(this->mutex);
+      if (this->bagOpen) {
+        rclcpp::Time time_stamp = this->node->now();
+        this->bagWriter.write(
+          msg, "/scoring/tf", "tf2_msgs::msg::TFMessage", time_stamp);
+      }
+    }
+  );
+
+  this->sub3 = this->node->create_subscription<tf2_msgs::msg::TFMessage>(
+    "/scoring/tf_static",
+    10,
+    [this](std::shared_ptr<const rclcpp::SerializedMessage> msg) {
+      // Bag the data.
+      std::lock_guard<std::mutex> lock(this->mutex);
+      if (this->bagOpen) {
+        rclcpp::Time time_stamp = this->node->now();
+        this->bagWriter.write(
+          msg, "/scoring/tf_static", "tf2_msgs::msg::TFMessage", time_stamp);
+      }
+    }
+  );
+
+  this->sub4 = this->node->create_subscription<ros_gz_interfaces::msg::Contacts>(
+    "/aic/gazebo/contacts/off_limit",
+    10,
+    [this](std::shared_ptr<const rclcpp::SerializedMessage> msg) {
+      // Bag the data.
+      std::lock_guard<std::mutex> lock(this->mutex);
+      if (this->bagOpen) {
+        rclcpp::Time time_stamp = this->node->now();
+        this->bagWriter.write(
+          msg, "/aic/gazebo/contacts/off_limit",
+          "ros_gz_interfaces::msg::Contacts", time_stamp);
+      }  
+    }
+  );
+}
+
+//////////////////////////////////////////////////
+bool ScoringTier2::StartRecording(const std::string &_filename) {
+  std::lock_guard<std::mutex> lock(this->mutex);
+  if (this->bagOpen) {
+    RCLCPP_ERROR(this->node->get_logger(), "Bag already opened.");
+    return false;
+  }
+
+  this->bagWriter.open(_filename);
+  this->bagOpen = true;
+  return true;
+}
+
+//////////////////////////////////////////////////
+bool ScoringTier2::StopRecording() {
+  std::lock_guard<std::mutex> lock(this->mutex);
+  if (!this->bagOpen) {
+    RCLCPP_ERROR(this->node->get_logger(), "Bag already closed.");
+    return false;
+  }
+  this->bagWriter.close();
+  this->bagOpen = false;
+  return true;
 }
 
 //////////////////////////////////////////////////
@@ -151,6 +238,12 @@ bool ScoringTier2::ParseStats() {
 
   return true;
 }
+
+//////////////////////////////////////////////////
+// void ScoringTier2::JointStatesCallback(
+//         const sensor_msgs::msg::JointState::SharedPtr msg) const {
+
+// }
 
 //////////////////////////////////////////////////
 ScoringTier2Node::ScoringTier2Node(const std::string &_yamlFile)

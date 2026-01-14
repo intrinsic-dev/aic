@@ -17,10 +17,16 @@
 
 #include <yaml-cpp/yaml.h>
 #include <chrono>
+#include <memory>
+#include <mutex>
 #include <string>
 
 #include <gz/math/Pose3.hh>
 #include <rclcpp/rclcpp.hpp>
+#include <ros_gz_interfaces/msg/contacts.hpp>
+#include <rosbag2_cpp/writer.hpp>
+#include <sensor_msgs/msg/joint_state.hpp>
+#include <tf2_msgs/msg/tf_message.hpp>
 
 #ifndef AIC_SCORING__SCORING_TIER2_HH_
 #define AIC_SCORING__SCORING_TIER2_HH_
@@ -55,6 +61,14 @@ namespace aic_scoring
     /// \brief Store the current distance cable-connector.
     public: void Update();
 
+    /// \brief Start recording all scoring topics.
+    /// \return True if the bag was opened correctly and it's ready to record.
+    public: bool StartRecording(const std::string &_filename);
+
+    /// \brief Stop recording all scoring topics.
+    /// \return True if the bag was closed correctly.
+    public: bool StopRecording();
+
     /// \brief All pluggable plugs.
     public: std::map<std::string, Pluggable> plugs;
 
@@ -69,8 +83,29 @@ namespace aic_scoring
     /// \brief Pointer to a node.
     private: rclcpp::Node *node;
 
+    /// \brief Subscription.
+    private: rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr sub1;
+
+    /// \brief Subscription.
+    private: rclcpp::Subscription<tf2_msgs::msg::TFMessage>::SharedPtr sub2;
+
+    /// \brief Subscription.
+    private: rclcpp::Subscription<tf2_msgs::msg::TFMessage>::SharedPtr sub3;
+
+    /// \brief Subscription.
+    private: rclcpp::Subscription<ros_gz_interfaces::msg::Contacts>::SharedPtr sub4;
+
     /// \brief A YAML node.
     private: YAML::Node yamlNode;
+
+    /// \brief A rosbag2 writer.
+    private: rosbag2_cpp::Writer bagWriter;
+
+    /// \brief Whether the bag is open or not.
+    private: bool bagOpen = false;
+
+    /// \brief Mutex to protect the access to the bag.
+    private: std::mutex mutex;
   };
 
   // The Tier2 class as a node.
