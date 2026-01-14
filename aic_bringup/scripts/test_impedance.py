@@ -50,7 +50,7 @@ class TestImpedanceNode(Node):
 
         while self.motion_update_publisher.get_subscription_count() == 0:
             self.get_logger().info(
-                f"Waiting for subscriber to '{self.controller_namespace}/motion_update'..."
+                f"Waiting for subscriber to '{self.controller_namespace}/pose_commands'..."
             )
             time.sleep(1.0)
 
@@ -62,7 +62,7 @@ class TestImpedanceNode(Node):
 
         while self.joint_motion_update_publisher.get_subscription_count() == 0:
             self.get_logger().info(
-                f"Waiting for subscriber to '{self.controller_namespace}/joint_motion_update'..."
+                f"Waiting for subscriber to '{self.controller_namespace}/joint_commands'..."
             )
             time.sleep(1.0)
 
