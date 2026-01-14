@@ -138,8 +138,7 @@ void CablePlugin::Configure(const gz::sim::Entity& _entity,
 //////////////////////////////////////////////////
 void CablePlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
                             gz::sim::EntityComponentManager& _ecm) {
-  if (this->cableState == CableState::CABLE_REMOVED)
-    return;
+  if (this->cableState == CableState::CABLE_REMOVED) return;
 
   if (!this->IsModelValid(_ecm)) {
     this->Cleanup(_ecm);
@@ -149,8 +148,7 @@ void CablePlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
     return;
   }
 
-  if (this->cableState == CableState::COMPLETED)
-    return;
+  if (this->cableState == CableState::COMPLETED return;
 
   if (this->cableConnection0LinkEntity == kNullEntity) {
     this->cableConnection0LinkEntity =
@@ -191,9 +189,8 @@ void CablePlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
     // cable to gripper
     double timeNow =
         std::chrono::duration_cast<std::chrono::seconds>(_info.simTime).count();
-    if (timeNow - this->createJointDelayStartTime  < this->createJointDelay) {
+    if (timeNow - this->createJointDelayStartTime < this->createJointDelay)
       return;
-    }
 
     gzmsg << "Cable transitioning to CREATE_CONNECTIONS state." << std::endl;
     this->cableState = CableState::CREATE_CONNECTIONS;
@@ -265,14 +262,14 @@ void CablePlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
     // Attach cable connection 0 to port
     // Simulate this by making all cable connections static
     if (this->detachableJointStatic0Entity == kNullEntity ||
-        this->detachableJointStatic1Entity == kNullEntity)
-    {
+        this->detachableJointStatic1Entity == kNullEntity) {
       this->detachableJointStatic0Entity = this->MakeStatic(
           this->cableConnection0LinkEntity, true, this->creator.get(), _ecm);
       this->detachableJointStatic1Entity = this->MakeStatic(
           this->cableConnection1LinkEntity, true, this->creator.get(), _ecm);
       this->lockEndEffectorDelayStartTime =
-          std::chrono::duration_cast<std::chrono::seconds>(_info.simTime).count();
+          std::chrono::duration_cast<std::chrono::seconds>(_info.simTime)
+          .count();
     }
 
     double timeNow =
