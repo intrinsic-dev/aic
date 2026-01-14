@@ -57,31 +57,29 @@ ScoringTier2::ScoringTier2(rclcpp::Node *_node, YAML::Node *_config)
             }
           });
 
-  this->tfSub =
-      this->node->create_subscription<tf2_msgs::msg::TFMessage>(
-          "/scoring/tf", 10,
-          [this](std::shared_ptr<const rclcpp::SerializedMessage> msg) {
-            // Bag the data.
-            std::lock_guard<std::mutex> lock(this->mutex);
-            if (this->bagOpen) {
-              rclcpp::Time time_stamp = this->node->now();
-              this->bagWriter.write(msg, "/scoring/tf",
-                                    "tf2_msgs::msg::TFMessage", time_stamp);
-            }
-          });
+  this->tfSub = this->node->create_subscription<tf2_msgs::msg::TFMessage>(
+      "/scoring/tf", 10,
+      [this](std::shared_ptr<const rclcpp::SerializedMessage> msg) {
+        // Bag the data.
+        std::lock_guard<std::mutex> lock(this->mutex);
+        if (this->bagOpen) {
+          rclcpp::Time time_stamp = this->node->now();
+          this->bagWriter.write(msg, "/scoring/tf", "tf2_msgs::msg::TFMessage",
+                                time_stamp);
+        }
+      });
 
-  this->tfStaticSub =
-      this->node->create_subscription<tf2_msgs::msg::TFMessage>(
-          "/scoring/tf_static", 10,
-          [this](std::shared_ptr<const rclcpp::SerializedMessage> msg) {
-            // Bag the data.
-            std::lock_guard<std::mutex> lock(this->mutex);
-            if (this->bagOpen) {
-              rclcpp::Time time_stamp = this->node->now();
-              this->bagWriter.write(msg, "/scoring/tf_static",
-                                    "tf2_msgs::msg::TFMessage", time_stamp);
-            }
-          });
+  this->tfStaticSub = this->node->create_subscription<tf2_msgs::msg::TFMessage>(
+      "/scoring/tf_static", 10,
+      [this](std::shared_ptr<const rclcpp::SerializedMessage> msg) {
+        // Bag the data.
+        std::lock_guard<std::mutex> lock(this->mutex);
+        if (this->bagOpen) {
+          rclcpp::Time time_stamp = this->node->now();
+          this->bagWriter.write(msg, "/scoring/tf_static",
+                                "tf2_msgs::msg::TFMessage", time_stamp);
+        }
+      });
 
   this->contactsSub =
       this->node->create_subscription<ros_gz_interfaces::msg::Contacts>(
