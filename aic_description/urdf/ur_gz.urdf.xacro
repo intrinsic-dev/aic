@@ -167,7 +167,7 @@
     grip_vel_max="0.05"
     grip_effort_min="20"
     grip_effort_max="130"
-    initial_pos="0.0106"
+    initial_pos="0.01"
     >
   </xacro:robotiq_hande>
 
