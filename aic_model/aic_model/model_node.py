@@ -20,9 +20,10 @@ import rclpy
 import textwrap
 
 from aic_control_interfaces.msg import MotionUpdate, TrajectoryGenerationMode
+from aic_control_interfaces.srv import ChangeTargetMode
 from aic_model_interfaces.msg import Observation
 from aic_task_interfaces.action import InsertCable
-from geometry_msgs.msg import Wrench, Vector3
+from geometry_msgs.msg import Point, Pose, Quaternion, Wrench, Vector3
 from rclpy.action import ActionServer, CancelResponse, GoalResponse
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import ExternalShutdownException
@@ -61,15 +62,20 @@ class AicModel(LifecycleNode):
             cancel_callback=self.insert_cable_cancel_callback,
         )
         self.motion_update_pub = self.create_lifecycle_publisher(
-            MotionUpdate, "/aic_controller/motion_update", 2
+            MotionUpdate, "/aic_controller/pose_commands", 2
         )
+        self.change_target_mode_client = self.create_client(
+            ChangeTargetMode, "/aic_controller/change_target_mode"
+        )
+        # while not self.change_target_mode_client.wait_for_service(timeout_sec=1.0):
+        #     self.get_logger().info("Waiting for aic_controller/change_target_mode service....")
 
     def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.get_logger().info(f"on_configure({state})")
         return TransitionCallbackReturn.SUCCESS
 
     def on_activate(self, state: LifecycleState) -> TransitionCallbackReturn:
-        self.get_logger().info(f"on_activate({state})")
+        self.get_logger().info(f"activating...")
         self.is_active = True
         return super().on_activate(state)
 
@@ -119,18 +125,39 @@ class AicModel(LifecycleNode):
         tcp_x = msg.tcp_transform.transform.translation.x
         tcp_y = msg.tcp_transform.transform.translation.y
         tcp_z = msg.tcp_transform.transform.translation.z
-        self.get_logger().info(
-            f"times: images [{t_cam_0:.2f}, {t_cam_1:.2f}, {t_cam_2:.2f}] joints {t_joints:.2f} wrench {t_wrench:.2f} tcp: ({tcp_x:+0.4f} {tcp_y:+0.4f}, {tcp_z:+0.4f})"
+        # move the camera back and forth parallel to the Y axis of base_link
+        t = self.get_seconds(msg.images[0].header)
+
+        loop_duration = 5.0  # seconds
+
+        # loop_fraction smoothly interpolates from 0..1 during the loop time
+        loop_fraction = (t % loop_duration) / loop_duration
+
+        # y_fraction smoothly interpolates from -1..1..-1 during the loop time
+        y_fraction = 2 * loop_fraction
+        if y_fraction > 1.0:
+            y_fraction = 2.0 - y_fraction
+        y_fraction -= 1.0
+
+        # create a smooth series of target points that flies over the task board
+        target_x = -0.4
+        target_y = 0.35 + 0.3 * y_fraction
+        target_z = 0.3
+
+        self.set_pose_target(
+            Pose(
+                position=Point(x=target_x, y=target_y, z=target_z),
+                orientation=Quaternion(x=0.7071, y=0.7071, z=0.0, w=0.0)
+            )
         )
 
+        self.get_logger().info(
+            f"tcp: ({tcp_x:+0.3f} {tcp_y:+0.3f}, {tcp_z:+0.3f}) target: ({target_x:+0.3f} {target_y:0.3f} {target_z:0.3f}"
+        )
+
+    def set_pose_target(self, pose):
         motion_update_msg = MotionUpdate()
-        motion_update_msg.pose.position.x = -0.501
-        motion_update_msg.pose.position.y = -0.175
-        motion_update_msg.pose.position.z = 0.1
-        motion_update_msg.pose.orientation.x = 0.7071068
-        motion_update_msg.pose.orientation.y = 0.7071068
-        motion_update_msg.pose.orientation.z = 0.0
-        motion_update_msg.pose.orientation.w = 0.0
+        motion_update_msg.pose = pose
 
         motion_update_msg.target_stiffness = np.diag(
             [100.0, 100.0, 100.0, 50.0, 50.0, 50.0]
@@ -151,7 +178,7 @@ class AicModel(LifecycleNode):
             TrajectoryGenerationMode.MODE_POSITION
         )
 
-        motion_update_msg.time_to_target_seconds = 1.0
+        motion_update_msg.time_to_target_seconds = 0.05
 
         self.motion_update_pub.publish(motion_update_msg)
 
@@ -183,6 +210,8 @@ class AicModel(LifecycleNode):
 
     async def insert_cable_execute_callback(self, goal_handle):
         self.get_logger().info("Entering insert_cable_execute_callback()")
+        await self.set_cartesian_mode()
+
         while rclpy.ok():
             self.get_logger().info("insert_cable execute loop")
 
@@ -239,6 +268,22 @@ class AicModel(LifecycleNode):
             goal_handle.publish_feedback(feedback)
 
         self.get_logger().info("Exiting insert_cable execute loop")
+
+    async def set_target_mode(self, target_mode):
+        target_mode_request = ChangeTargetMode.Request()
+        target_mode_request.target_mode = target_mode
+        future = self.change_target_mode_client.call_async(target_mode_request)
+        await future
+        # rclpy.spin_until_future_complete(self, future)
+        response = future.result()
+        if not response.success:
+            self.get_logger().error("Unable to set target mode")
+
+    async def set_joint_mode(self):
+        await self.set_target_mode(ChangeTargetMode.Request.TARGET_MODE_JOINT)
+
+    async def set_cartesian_mode(self):
+        await self.set_target_mode(ChangeTargetMode.Request.TARGET_MODE_CARTESIAN)
 
 
 def main(args=None):
