@@ -81,6 +81,7 @@ struct Trial {
 
   std::string id;
   std::optional<std::string> spawned_task_board_name;
+  std::optional<std::string> spawned_cable_name;
   YAML::Node config;
   std::unordered_map<std::string, Task> tasks;  // Map of task_id -> Task
   TrialState state;
@@ -144,6 +145,17 @@ class Engine {
   /// \return True if spawning succeeded, false otherwise
   bool spawn_task_board(double x, double y, double z, double roll, double pitch,
                         double yaw);
+
+  /// \brief Spawn the cable in Gazebo.
+  /// \param[in] x X position
+  /// \param[in] y Y position
+  /// \param[in] z Z position
+  /// \param[in] roll Roll orientation (radians)
+  /// \param[in] pitch Pitch orientation (radians)
+  /// \param[in] yaw Yaw orientation (radians)
+  /// \return True if spawning succeeded, false otherwise
+  bool spawn_cable(double x, double y, double z, double roll, double pitch,
+                   double yaw);
 
   // Internal ROS 2 node.
   rclcpp::Node::SharedPtr node_;

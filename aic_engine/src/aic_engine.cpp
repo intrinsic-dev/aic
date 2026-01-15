@@ -40,7 +40,9 @@ static const std::vector<std::string> REQUIRED_NODES = {
 
 //==============================================================================
 Trial::Trial(const std::string& _id, YAML::Node _config)
-    : id(std::move(_id)), spawned_task_board_name(std::nullopt) {
+    : id(std::move(_id)),
+      spawned_task_board_name(std::nullopt),
+      spawned_cable_name(std::nullopt) {
   // Validate config structure
   if (!_config["scene"]) {
     throw std::runtime_error("Config missing required key: 'scene'");
@@ -52,8 +54,9 @@ Trial::Trial(const std::string& _id, YAML::Node _config)
     throw std::runtime_error("Config missing required key: 'scoring'");
   }
 
-  // Validate scene.task_board
   const auto& scene = _config["scene"];
+
+  // Validate scene.task_board
   if (!scene["task_board"]) {
     throw std::runtime_error("Config missing required key: 'scene.task_board'");
   }
@@ -62,9 +65,9 @@ Trial::Trial(const std::string& _id, YAML::Node _config)
     throw std::runtime_error(
         "Config missing required key: 'scene.task_board.pose'");
   }
-  const auto& pose = task_board["pose"];
+  const auto& task_board_pose = task_board["pose"];
   for (const auto& key : {"x", "y", "z", "roll", "pitch", "yaw"}) {
-    if (!pose[key]) {
+    if (!task_board_pose[key]) {
       throw std::runtime_error(
           std::string("Config missing required key: 'scene.task_board.pose.") +
           key + "'");
@@ -178,6 +181,31 @@ Trial::Trial(const std::string& _id, YAML::Node _config)
         }
       }
     }
+  }
+
+  // Validate scene.cable
+  if (!scene["cable"]) {
+    throw std::runtime_error("Config missing required key: 'scene.cable'");
+  }
+  const auto& cable = scene["cable"];
+  if (!cable["pose"]) {
+    throw std::runtime_error("Config missing required key: 'scene.cable.pose'");
+  }
+  const auto& cable_pose = cable["pose"];
+  for (const auto& key : {"x", "y", "z", "roll", "pitch", "yaw"}) {
+    if (!cable_pose[key]) {
+      throw std::runtime_error(
+          std::string("Config missing required key: 'scene.cable.pose.") + key +
+          "'");
+    }
+  }
+  if (!cable["attach_cable_to_gripper"]) {
+    throw std::runtime_error(
+        "Config missing required key: 'scene.cable.attach_cable_to_gripper'");
+  }
+  if (!cable["cable_type"]) {
+    throw std::runtime_error(
+        "Config missing required key: 'scene.cable.cable_type'");
   }
 
   // Validate tasks array
@@ -523,6 +551,20 @@ bool Engine::ready_simulator() {
     RCLCPP_ERROR(node_->get_logger(), "Failed to spawn task board.");
   }
 
+  // Spawn the cable.
+  RCLCPP_INFO(node_->get_logger(), "Spawning cable.");
+  const auto& cable_config = active_trial_->config["scene"]["cable"];
+  if (this->spawn_cable(cable_config["pose"]["x"].as<double>(),
+                        cable_config["pose"]["y"].as<double>(),
+                        cable_config["pose"]["z"].as<double>(),
+                        cable_config["pose"]["roll"].as<double>(),
+                        cable_config["pose"]["pitch"].as<double>(),
+                        cable_config["pose"]["yaw"].as<double>())) {
+    RCLCPP_INFO(node_->get_logger(), "Cable spawned successfully.");
+  } else {
+    RCLCPP_ERROR(node_->get_logger(), "Failed to spawn cable.");
+  }
+
   // TODO(Yadunund): Implement other simulator readiness checks.
 
   return true;
@@ -555,7 +597,7 @@ bool Engine::task_completed_successfully() {
               "Checking if task was completed successfully...");
 
   // TODO(Yadunund): Implement actual task completion check.
-  std::this_thread::sleep_for(std::chrono::seconds(1));
+  std::this_thread::sleep_for(std::chrono::seconds(10));
 
   // For now, assume task was completed successfully.
   return true;
@@ -591,6 +633,35 @@ void Engine::reset_after_trial() {
       }
     }
   }
+
+  // Remove spawned cable from simulator
+  if (active_trial_.has_value() &&
+      active_trial_->spawned_cable_name.has_value()) {
+    // Delete spawned cable
+    auto request = std::make_shared<DeleteEntitySrv::Request>();
+    request->entity = active_trial_->spawned_cable_name.value();
+
+    auto future = delete_entity_client_->async_send_request(request);
+    if (future.wait_for(std::chrono::seconds(10)) !=
+        std::future_status::ready) {
+      RCLCPP_ERROR(node_->get_logger(),
+                   "Delete entity service call timed out for entity '%s'",
+                   request->entity.c_str());
+    } else {
+      auto response = future.get();
+      if (response->result.result !=
+          simulation_interfaces::msg::Result::RESULT_OK) {  // RESULT_OK = 1
+        RCLCPP_ERROR(node_->get_logger(), "Failed to delete entity '%s': %s",
+                     request->entity.c_str(),
+                     response->result.error_message.c_str());
+      } else {
+        RCLCPP_INFO(node_->get_logger(), "Successfully deleted entity '%s'",
+                    request->entity.c_str());
+      }
+    }
+  }
+
+  // TODO(@xiyuoh) Reset gripper pose or use gripper poes for cable
 
   RCLCPP_INFO(node_->get_logger(), "Reset after trial completed.");
 }
@@ -819,6 +890,114 @@ bool Engine::spawn_task_board(double x, double y, double z, double roll,
   }
 
   RCLCPP_INFO(node_->get_logger(), "Successfully spawned task board as '%s'",
+              response->entity_name.c_str());
+  return true;
+}
+
+//==============================================================================
+bool Engine::spawn_cable(double x, double y, double z, double roll,
+                         double pitch, double yaw) {
+  if (!active_trial_.has_value()) {
+    RCLCPP_ERROR(node_->get_logger(), "No active trial to get config from");
+    return false;
+  }
+
+  // Get the task board xacro file path
+  const std::string aic_description_share =
+      ament_index_cpp::get_package_share_directory("aic_description");
+  const std::string xacro_file =
+      aic_description_share + "/urdf/cable.sdf.xacro";
+
+  // Build xacro command with parameters from config
+  std::stringstream cmd;
+  cmd << "xacro " << xacro_file;
+
+  const auto& cable_config = active_trial_->config["scene"]["cable"];
+
+  // Add attach cable parameter
+  bool attach_cable_to_gripper =
+      cable_config["attach_cable_to_gripper"].as<bool>();
+  cmd << " attach_cable_to_gripper:="
+      << (attach_cable_to_gripper ? "true" : "false");
+
+  // Add cable type parameter
+  std::string cable_type = cable_config["cable_type"].as<std::string>();
+  cmd << " cable_type:=" << cable_type;
+
+  FILE* pipe = popen(cmd.str().c_str(), "r");
+  if (!pipe) {
+    RCLCPP_ERROR(node_->get_logger(), "Failed to execute xacro command");
+    return false;
+  }
+
+  std::stringstream urdf_stream;
+  char buffer[128];
+  while (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
+    urdf_stream << buffer;
+  }
+  int result = pclose(pipe);
+  if (result != 0) {
+    RCLCPP_ERROR(node_->get_logger(), "xacro command failed with code %d",
+                 result);
+    return false;
+  }
+
+  std::string urdf_string = urdf_stream.str();
+  if (urdf_string.empty()) {
+    RCLCPP_ERROR(node_->get_logger(), "Generated URDF is empty");
+    return false;
+  }
+
+  // Convert roll, pitch, yaw to quaternion
+  double cy = cos(yaw * 0.5);
+  double sy = sin(yaw * 0.5);
+  double cp = cos(pitch * 0.5);
+  double sp = sin(pitch * 0.5);
+  double cr = cos(roll * 0.5);
+  double sr = sin(roll * 0.5);
+
+  double qw = cr * cp * cy + sr * sp * sy;
+  double qx = sr * cp * cy - cr * sp * sy;
+  double qy = cr * sp * cy + sr * cp * sy;
+  double qz = cr * cp * sy - sr * sp * cy;
+
+  // Create spawn request
+  auto request = std::make_shared<SpawnEntitySrv::Request>();
+  request->name = "cable";
+  request->allow_renaming = true;
+  request->uri = "";
+  request->resource_string = urdf_string;
+  request->entity_namespace = "";
+  request->initial_pose.header.frame_id = "world";
+  request->initial_pose.pose.position.x = x;
+  request->initial_pose.pose.position.y = y;
+  request->initial_pose.pose.position.z = z;
+  request->initial_pose.pose.orientation.x = qx;
+  request->initial_pose.pose.orientation.y = qy;
+  request->initial_pose.pose.orientation.z = qz;
+  request->initial_pose.pose.orientation.w = qw;
+
+  // Call service synchronously with timeout
+  auto future = spawn_entity_client_->async_send_request(request);
+  if (future.wait_for(std::chrono::seconds(10)) != std::future_status::ready) {
+    RCLCPP_ERROR(node_->get_logger(), "Spawn entity service call timed out");
+    return false;
+  }
+
+  auto response = future.get();
+
+  if (response->result.result !=
+      simulation_interfaces::msg::Result::RESULT_OK) {
+    RCLCPP_ERROR(node_->get_logger(), "Failed to spawn cable: %s",
+                 response->result.error_message.c_str());
+    return false;
+  }
+
+  if (active_trial_.has_value()) {
+    active_trial_->spawned_cable_name = response->entity_name;
+  }
+
+  RCLCPP_INFO(node_->get_logger(), "Successfully spawned cable as '%s'",
               response->entity_name.c_str());
   return true;
 }
