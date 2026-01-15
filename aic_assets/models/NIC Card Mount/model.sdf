@@ -290,6 +290,30 @@
           </box>
         </geometry>
       </collision>
+
+      <collision name="contact_collision_01">
+        <pose>0.012963 -0.032 0.003845 3.128092 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.016224 0.00025 0.013698</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="contact_collision_02">
+        <pose>-0.010237 -0.032 0.003845 3.128092 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.016224 0.00025 0.013698</size>
+          </box>
+        </geometry>
+      </collision>
+
+      <sensor name="sfp_port_sensor" type="contact">
+        <contact>
+          <collision>contact_collision_01</collision>
+          <collision>contact_collision_02</collision>
+        </contact>
+      </sensor>
     </link>
 
     <joint name="card_joint" type="fixed">

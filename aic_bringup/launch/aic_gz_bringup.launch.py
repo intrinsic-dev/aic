@@ -52,6 +52,7 @@ def launch_setup(context, *args, **kwargs):
     ur_tf_prefix = LaunchConfiguration("ur_tf_prefix")
     activate_joint_controller = LaunchConfiguration("activate_joint_controller")
     initial_joint_controller = LaunchConfiguration("initial_joint_controller")
+    spawn_admittance_controller = LaunchConfiguration("spawn_admittance_controller")
     description_file = LaunchConfiguration("description_file")
     launch_rviz = LaunchConfiguration("launch_rviz")
     rviz_config_file = LaunchConfiguration("rviz_config_file")
@@ -77,6 +78,7 @@ def launch_setup(context, *args, **kwargs):
     cable_pitch = LaunchConfiguration("cable_pitch")
     cable_yaw = LaunchConfiguration("cable_yaw")
     attach_cable_to_gripper = LaunchConfiguration("attach_cable_to_gripper")
+    ground_truth = LaunchConfiguration("ground_truth")
 
     robot_description_content = Command(
         [
@@ -132,7 +134,10 @@ def launch_setup(context, *args, **kwargs):
         package="robot_state_publisher",
         executable="robot_state_publisher",
         output="both",
-        parameters=[{"use_sim_time": True}, robot_description],
+        parameters=[
+            {"use_sim_time": True, "ignore_timestamp": True},
+            robot_description,
+        ],
     )
 
     rviz_node = Node(
@@ -163,13 +168,16 @@ def launch_setup(context, *args, **kwargs):
         condition=IfCondition(launch_rviz),
     )
 
+    initial_joint_controllers = [initial_joint_controller]
+    if IfCondition(spawn_admittance_controller).evaluate(context):
+        initial_joint_controllers.append("admittance_controller")
+
     # There may be other controllers of the joints, but this is the initially-started one
     initial_joint_controller_spawner_started = Node(
         package="controller_manager",
         executable="spawner",
         arguments=[
-            initial_joint_controller,
-            "admittance_controller",
+            *initial_joint_controllers,
             "--activate-as-group",
             "-c",
             "/controller_manager",
@@ -181,8 +189,7 @@ def launch_setup(context, *args, **kwargs):
         package="controller_manager",
         executable="spawner",
         arguments=[
-            initial_joint_controller,
-            "admittance_controller",
+            *initial_joint_controllers,
             "-c",
             "/controller_manager",
             "--inactive",
@@ -295,6 +302,46 @@ def launch_setup(context, *args, **kwargs):
         use_composition="True",
     )
 
+    ground_truth_tf_relay = Node(
+        package="topic_tools",
+        executable="relay",
+        name="tf_relay",
+        output="screen",
+        parameters=[
+            {"input_topic": "/scoring/tf"},
+            {"output_topic": "/tf"},
+            {"lazy": True},
+        ],
+        condition=IfCondition(ground_truth),
+    )
+
+    ground_truth_tf_static_relay = Node(
+        package="topic_tools",
+        executable="relay",
+        name="tf_static_relay",
+        output="screen",
+        parameters=[
+            {"input_topic": "/scoring/tf_static"},
+            {"output_topic": "/tf_static"},
+            {"lazy": True},
+        ],
+        condition=IfCondition(ground_truth),
+    )
+
+    ground_truth_static_tf_publisher = Node(
+        package="tf2_ros",
+        executable="static_transform_publisher",
+        name="ground_truth_static_tf_publisher",
+        output="screen",
+        arguments=[
+            "--frame-id",
+            "world",
+            "--child-frame-id",
+            "aic_world",
+        ],
+        condition=IfCondition(ground_truth),
+    )
+
     nodes_to_start = [
         robot_state_publisher_node,
         joint_state_broadcaster_spawner,
@@ -309,6 +356,9 @@ def launch_setup(context, *args, **kwargs):
         gz_spawn_entity,
         spawn_task_board_launch,
         spawn_cable_launch,
+        ground_truth_tf_relay,
+        ground_truth_tf_static_relay,
+        ground_truth_static_tf_publisher,
     ]
 
     return nodes_to_start
@@ -342,7 +392,7 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             "safety_limits",
-            default_value="true",
+            default_value="false",
             description="Enables the safety limits controller if true.",
         )
     )
@@ -389,8 +439,15 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             "initial_joint_controller",
-            default_value="joint_trajectory_controller",
+            default_value="aic_controller",
             description="Robot controller to start.",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "spawn_admittance_controller",
+            default_value="false",
+            description="If true, then the admittance controller is spawned alongside the initial_joint_controller. Else, only the initial_joint_controller is spawned.",
         )
     )
     declared_arguments.append(
@@ -560,43 +617,50 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             "cable_x",
-            default_value="0.162",
+            default_value="0.16",
             description="Cable spawn X position",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
             "cable_y",
-            default_value="0.292",
+            default_value="0.2927",
             description="Cable spawn Y position",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
             "cable_z",
-            default_value="1.397",
+            default_value="1.4166",
             description="Cable spawn Z position",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
             "cable_roll",
-            default_value="0.187",
+            default_value="0.5",
             description="Cable spawn roll orientation (radians)",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
             "cable_pitch",
-            default_value="-0.936",
+            default_value="-0.6605",
             description="Cable spawn pitch orientation (radians)",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
             "cable_yaw",
-            default_value="2.995",
+            default_value="2.6928",
             description="Cable spawn yaw orientation (radians)",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "ground_truth",
+            default_value="false",
+            description="Whether to include ground truth poses in TF topics",
         )
     )
 

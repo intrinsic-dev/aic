@@ -26,8 +26,9 @@ ros2 launch aic_bringup aic_gz_bringup.launch.py
 **Controller Configuration:**
 - `controllers_file` (default: `"ur_controllers.yaml"`) - YAML file with controller configuration
 - `activate_joint_controller` (default: `"true"`) - Activate joint controller on startup
-- `initial_joint_controller` (default: `"joint_trajectory_controller"`) - Initial controller to activate
+- `initial_joint_controller` (default: `"aic_controller"`) - Initial controller to activate
 - `description_file` (default: `"ur.urdf.xacro"`) - Robot description file
+- `spawn_admittance_controller` (default: `"false"`) - Spawns the Admittance Controller alongside the initial controller defined by the `initial_joint_controller` parameter. This value should be set to `false` if using the impedance control mode on the `aic_controller`.
 
 **Task Board Configuration:**
 - `spawn_task_board` (default: `"true"`) - Whether to spawn the task board
@@ -43,12 +44,12 @@ ros2 launch aic_bringup aic_gz_bringup.launch.py
 - `spawn_cable` (default: `"false"`) - Whether to spawn the cable
 - `cable_description_file` (default: `"cable.sdf.xacro"`) - Cable SDF/XACRO file
 - `attach_cable_to_gripper` (default: `"false"`) - Whether to attach cable to gripper
-- `cable_x` (default: `"0.162"`) - Cable spawn X position (meters)
-- `cable_y` (default: `"0.292"`) - Cable spawn Y position (meters)
-- `cable_z` (default: `"1.397"`) - Cable spawn Z position (meters)
-- `cable_roll` (default: `"0.187"`) - Cable spawn roll orientation (radians)
-- `cable_pitch` (default: `"-0.936"`) - Cable spawn pitch orientation (radians)
-- `cable_yaw` (default: `"2.995"`) - Cable spawn yaw orientation (radians)
+- `cable_x` (default: `"0.16"`) - Cable spawn X position (meters)
+- `cable_y` (default: `"0.2927"`) - Cable spawn Y position (meters)
+- `cable_z` (default: `"1.4166"`) - Cable spawn Z position (meters)
+- `cable_roll` (default: `"0.5"`) - Cable spawn roll orientation (radians)
+- `cable_pitch` (default: `"-0.6605"`) - Cable spawn pitch orientation (radians)
+- `cable_yaw` (default: `"2.6928"`) - Cable spawn yaw orientation (radians)
 
 **Gazebo Configuration:**
 - `world_file` (default: `"aic.sdf"`) - Gazebo world file
@@ -58,6 +59,10 @@ ros2 launch aic_bringup aic_gz_bringup.launch.py
 **Visualization:**
 - `launch_rviz` (default: `"false"`) - Launch RViz for visualization
 - `rviz_config_file` (default: `"view_robot.rviz"`) - RViz configuration file
+
+
+**Ground Truth:**
+- `ground_truth` (default: `"false"`) - Include ground truth pose data in TF topics
 
 ---
 
@@ -247,6 +252,23 @@ ros2 launch aic_bringup spawn_task_board.launch.py \
 ### Open Gripper
 ```bash
 ros2 launch aic_bringup gripper_action.launch.py use_position:=true position:=0.8
+```
+
+---
+
+## Launching with the Impedance Controller
+
+### Start the Simulation with the AIC Controller
+
+```bash
+ros2 launch aic_bringup aic_gz_bringup.launch.py
+```
+
+### Start a script to send both joint (`JointMotionUpdate`) and Cartesian targets (`MotionUpdate`).
+
+This script also calls the `ChangeTargetMode` service to change the target mode between Joint and Cartesian, in between sending the targets.
+```bash
+ros2 run aic_bringup test_impedance.py
 ```
 
 ---

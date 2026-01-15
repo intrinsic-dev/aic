@@ -272,6 +272,11 @@ aic_controller:
     # Both modes require position state interfaces for specified joints.
     control_mode: "impedance"
 
+    # Default target mode. Available values are "joint" or "cartesian".
+    # Cartesian target mode accepts MotionUpdate targets, which are specified in tool/cartesian space.
+    # Joint target mode accepts JointMotionUpdate targets, which are specified in joint space.
+    target_mode: "cartesian"
+
     # Namespace of admittance controller for chaining controller interfaces
     admittance_controller_namespace: "admittance_controller"
 
@@ -283,12 +288,45 @@ aic_controller:
       - wrist_2_joint
       - wrist_3_joint
 
+    impedance:
+      gravity_compensation: true
+      stiffness_smoothing_constant: 0.1
+      damping_smoothing_constant: 0.1
+      activation_percentage: 0.0
+      pose_error_integrator:
+        gain: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        bound: [10., 10., 10., 2., 2., 2.]
+      maximum_wrench: [50.0, 50.0, 50.0, 10.0, 10.0, 10.0]
+      nullspace:
+        target_configuration: [0.6, -1.5708, -1.5708, -1.5708, 1.5708, 0.6]
+        stiffness: [50., 50., 50., 50., 50., 50.]
+        damping: [10., 10., 10., 10., 10., 10.]
+      feedforward_interpolation:
+        min_wrench: [-40., -40., -40., -5., -5., -5.]
+        max_wrench: [40., 40., 40., 5., 5., 5.]
+        max_wrench_dot: [500., 500., 500., 25., 25., 25.]
+      default_values:
+        control_stiffness: [100., 100., 100., 50., 50., 50.]
+        control_damping: [15.0, 15.0, 15.0, 15.0, 15.0, 15.0]
+
+    joint_impedance:
+      interpolator:
+        min_value: [-40., -40., -40., -6., -6., -6.]
+        max_value: [40., 40., 40., 6., 6., 6.]
+        max_step_size: [1., 1., 1., 1., 1., 1.]
+      default_values:
+        control_stiffness: [100., 100., 100., 50., 50., 50.]
+        control_damping: [40.0, 40.0, 40.0, 15.0, 15.0, 15.0]
+
     kinematics:
       plugin_name: kinematics_interface_kdl/KinematicsInterfaceKDL
       plugin_package: kinematics_interface
       base: base_link # Assumed to be stationary
       tip: gripper/tcp # Frame ID of tool center point
       alpha: 0.0005 # Specifies the damping coefficient for the Jacobian pseudo inverse.
+
+    force_torque_sensor:
+      name: AtiForceTorqueSensor
 
     clamp_to_limits:
       min_translational_position:

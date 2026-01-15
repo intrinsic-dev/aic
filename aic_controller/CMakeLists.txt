@@ -16,6 +16,7 @@ set(DEP_PKGS
   geometry_msgs
   hardware_interface
   joint_limits
+  kdl_parser
   kinematics_interface
   pluginlib
   rclcpp
@@ -37,10 +38,13 @@ generate_parameter_library(aic_controller_parameters
 
 add_library(aic_controller SHARED
   src/aic_controller.cpp
-  src/cartesian_state.cpp
   src/cartesian_limits.cpp
+  src/cartesian_state.cpp
+  src/joint_state.cpp
   src/utils.cpp
   src/actions/cartesian_impedance_action.cpp
+  src/actions/joint_impedance_action.cpp
+  src/actions/gravity_compensation_action.cpp
 )
 target_compile_features(aic_controller PUBLIC cxx_std_17)
 target_include_directories(aic_controller PUBLIC
@@ -54,6 +58,7 @@ target_link_libraries(aic_controller PUBLIC
   Eigen3::Eigen
   hardware_interface::hardware_interface
   joint_limits::joint_limits
+  kdl_parser::kdl_parser
   kinematics_interface::kinematics_interface
   pluginlib::pluginlib
   rclcpp::rclcpp

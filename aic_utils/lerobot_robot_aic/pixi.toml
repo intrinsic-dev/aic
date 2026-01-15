@@ -1,0 +1,11 @@
+[package.build.backend]
+name = "pixi-build-ros"
+version = "==0.3.2.20251218.7805076"
+channels = [
+  "https://prefix.dev/pixi-build-backends",
+  "robostack-kilted",
+  "conda-forge",
+]
+
+[package.run-dependencies]
+ros-kilted-aic-control-interfaces = { path = "../../aic_interfaces/aic_control_interfaces" }

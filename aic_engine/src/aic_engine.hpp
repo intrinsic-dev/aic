@@ -181,6 +181,9 @@ class Engine {
 
   // Engine state.
   EngineState engine_state_;
+
+  // Whether to publish ground truth data for scoring.
+  bool ground_truth_;
 };
 
 }  // namespace aic

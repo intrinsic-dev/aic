@@ -1,0 +1,10 @@
+repositories:
+  iblnkn/rosetta:
+    type: git
+    # TODO: use upstream when required changes are merged
+    url: https://github.com/koonpeng/rosetta.git
+    version: 5419f0d7e6d2f66f1f79c5a8bc98ceaf71fd2088
+  iblnkn/rosetta_interfaces:
+    type: git
+    url: https://github.com/iblnkn/rosetta_interfaces.git
+    version: main

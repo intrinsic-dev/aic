@@ -20,6 +20,7 @@
   <depend>geometry_msgs</depend>
   <depend>hardware_interface</depend>
   <depend>joint_limits</depend>
+  <depend>kdl_parser</depend>
   <depend>kinematics_interface</depend>
   <depend>pluginlib</depend>
   <depend>rclcpp</depend>

@@ -243,6 +243,7 @@ Engine::Engine(const rclcpp::NodeOptions& options)
                                               std::string("aic_model_node"));
   node_->declare_parameter("config_file_path", std::string(""));
   node_->declare_parameter("endpoint_discovery_timeout_seconds", 10);
+  ground_truth_ = node_->declare_parameter("ground_truth", false);
 
   spin_thread_ = std::thread([node = node_]() {
     rclcpp::executors::SingleThreadedExecutor executor;
@@ -740,6 +741,9 @@ bool Engine::spawn_task_board(double x, double y, double z, double roll,
       cmd << " " << rail_key << "_present:=false";
     }
   }
+
+  // Add ground_truth parameter
+  cmd << " ground_truth:=" << (ground_truth_ ? "true" : "false");
 
   FILE* pipe = popen(cmd.str().c_str(), "r");
   if (!pipe) {

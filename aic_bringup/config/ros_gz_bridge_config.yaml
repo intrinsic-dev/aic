@@ -53,3 +53,24 @@
   gz_type_name: "gz.msgs.CameraInfo"
   direction: GZ_TO_ROS
   lazy: true
+
+- ros_topic_name: "/aic/gazebo/contacts/off_limit"
+  gz_topic_name: "/aic/gazebo/contacts/off_limit"
+  ros_type_name: "ros_gz_interfaces/msg/Contacts"
+  gz_type_name: "gz.msgs.Contacts"
+  direction: GZ_TO_ROS
+  lazy: true
+
+- ros_topic_name: "/scoring/tf"
+  gz_topic_name: "/cable/pose"
+  ros_type_name: "tf2_msgs/msg/TFMessage"
+  gz_type_name: "gz.msgs.Pose_V"
+  direction: GZ_TO_ROS
+  lazy: true
+
+- ros_topic_name: "/scoring/tf_static"
+  gz_topic_name: "/task_board/pose_static"
+  ros_type_name: "tf2_msgs/msg/TFMessage"
+  gz_type_name: "gz.msgs.Pose_V"
+  direction: GZ_TO_ROS
+  lazy: true

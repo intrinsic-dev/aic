@@ -9,6 +9,13 @@
           </mesh>
         </geometry>
       </visual>
+      <visual name="walls_visual">
+        <geometry>
+          <mesh>
+            <uri>walls_visual.glb</uri>
+          </mesh>
+        </geometry>
+      </visual>
       <collision name="floor_cylinder">
         <geometry>
           <plane>

@@ -178,75 +178,95 @@
 
   <!-- SC Port 0 -->
   <xacro:if value="$(arg sc_port_0_present)">
-    <xacro:sc_port prefix="sc_port_0_"/>
-    <joint name="sc_port_0_joint" type="fixed">
-      <parent link="task_board_base_link"/>
-      <child link="sc_port_0_link"/>
-      <origin xyz="${-0.075 + $(arg sc_port_0_translation)} 0.0295 0.0145" rpy="${1.57 + $(arg sc_port_0_roll)} $(arg sc_port_0_pitch) ${1.57 + $(arg sc_port_0_yaw)}"/>
-    </joint>
+    <xacro:sc_port prefix="sc_port_0" pose="${-0.075 + $(arg sc_port_0_translation)} 0.0295 0.0145 ${1.57 + $(arg sc_port_0_roll)} $(arg sc_port_0_pitch) ${1.57 + $(arg sc_port_0_yaw)}"/>
+    <gazebo>
+      <joint name="sc_port_0_joint" type="fixed">
+        <parent>task_board_base_link</parent>
+        <child>sc_port_0::sc_port_link</child>
+      </joint>
+    </gazebo>
   </xacro:if>
 
   <!-- SC Port 1 -->
   <xacro:if value="$(arg sc_port_1_present)">
-    <xacro:sc_port prefix="sc_port_1_"/>
-    <joint name="sc_port_1_joint" type="fixed">
-      <parent link="task_board_base_link"/>
-      <child link="sc_port_1_link"/>
-      <origin xyz="${-0.075 + $(arg sc_port_1_translation)} 0.0705 0.0145" rpy="${1.57 + $(arg sc_port_1_roll)} $(arg sc_port_1_pitch) ${1.57 + $(arg sc_port_1_yaw)}"/>
-    </joint>
+    <xacro:sc_port prefix="sc_port_1" pose="${-0.075 + $(arg sc_port_1_translation)} 0.0705 0.0145 ${1.57 + $(arg sc_port_1_roll)} $(arg sc_port_1_pitch) ${1.57 + $(arg sc_port_1_yaw)}"/>
+    <gazebo>
+      <joint name="sc_port_1_joint" type="fixed">
+        <parent>task_board_base_link</parent>
+        <child>sc_port_1::sc_port_link</child>
+      </joint>
+    </gazebo>
   </xacro:if>
 
   <!-- NIC Card Mount 0 (left-most) -->
   <xacro:if value="$(arg nic_card_mount_0_present)">
-    <xacro:nic_card_mount prefix="nic_card_mount_0_"/>
-    <joint name="nic_card_mount_0_joint" type="fixed">
-      <parent link="task_board_base_link"/>
-      <child link="nic_card_mount_0_link"/>
-      <origin xyz="${-0.081418 + $(arg nic_card_mount_0_translation)} -0.1745 0.01" rpy="$(arg nic_card_mount_0_roll) $(arg nic_card_mount_0_pitch) $(arg nic_card_mount_0_yaw)"/>
-    </joint>
+    <xacro:nic_card_mount prefix="nic_card_mount_0" pose="${-0.081418 + $(arg nic_card_mount_0_translation)} -0.1745 0.01 $(arg nic_card_mount_0_roll) $(arg nic_card_mount_0_pitch) $(arg nic_card_mount_0_yaw)"/>
+    <gazebo>
+      <joint name="nic_card_mount_0_joint" type="fixed">
+        <parent>task_board_base_link</parent>
+        <child>nic_card_mount_0::nic_card_mount_link</child>
+      </joint>
+    </gazebo>
   </xacro:if>
 
   <!-- NIC Card Mount 1 -->
   <xacro:if value="$(arg nic_card_mount_1_present)">
-    <xacro:nic_card_mount prefix="nic_card_mount_1_"/>
-    <joint name="nic_card_mount_1_joint" type="fixed">
-      <parent link="task_board_base_link"/>
-      <child link="nic_card_mount_1_link"/>
-      <origin xyz="${-0.081418 + $(arg nic_card_mount_1_translation)} -0.1345 0.01" rpy="$(arg nic_card_mount_1_roll) $(arg nic_card_mount_1_pitch) $(arg nic_card_mount_1_yaw)"/>
-    </joint>
+    <xacro:nic_card_mount prefix="nic_card_mount_1" pose="${-0.081418 + $(arg nic_card_mount_1_translation)} -0.1345 0.01 $(arg nic_card_mount_1_roll) $(arg nic_card_mount_1_pitch) $(arg nic_card_mount_1_yaw)"/>
+    <gazebo>
+      <joint name="nic_card_mount_1_joint" type="fixed">
+        <parent>task_board_base_link</parent>
+        <child>nic_card_mount_1::nic_card_mount_link</child>
+      </joint>
+    </gazebo>
   </xacro:if>
 
   <!-- NIC Card Mount 2 (center) -->
   <xacro:if value="$(arg nic_card_mount_2_present)">
-    <xacro:nic_card_mount prefix="nic_card_mount_2_"/>
-    <joint name="nic_card_mount_2_joint" type="fixed">
-      <parent link="task_board_base_link"/>
-      <child link="nic_card_mount_2_link"/>
-      <origin xyz="${-0.081418 + $(arg nic_card_mount_2_translation)} -0.0945 0.01" rpy="$(arg nic_card_mount_2_roll) $(arg nic_card_mount_2_pitch) $(arg nic_card_mount_2_yaw)"/>
-    </joint>
+    <xacro:nic_card_mount prefix="nic_card_mount_2" pose="${-0.081418 + $(arg nic_card_mount_2_translation)} -0.0945 0.01" rpy="$(arg nic_card_mount_2_roll) $(arg nic_card_mount_2_pitch) $(arg nic_card_mount_2_yaw)"/>
+    <gazebo>
+      <joint name="nic_card_mount_2_joint" type="fixed">
+        <parent>task_board_base_link</parent>
+        <child>nic_card_mount_2::nic_card_mount_link</child>
+      </joint>
+    </gazebo>
   </xacro:if>
 
   <!-- NIC Card Mount 3 -->
   <xacro:if value="$(arg nic_card_mount_3_present)">
-    <xacro:nic_card_mount prefix="nic_card_mount_3_"/>
-    <joint name="nic_card_mount_3_joint" type="fixed">
-      <parent link="task_board_base_link"/>
-      <child link="nic_card_mount_3_link"/>
-      <origin xyz="${-0.081418 + $(arg nic_card_mount_3_translation)} -0.0545 0.01" rpy="$(arg nic_card_mount_3_roll) $(arg nic_card_mount_3_pitch) $(arg nic_card_mount_3_yaw)"/>
-    </joint>
+    <xacro:nic_card_mount prefix="nic_card_mount_3 ${-0.081418 + $(arg nic_card_mount_3_translation)} -0.0545 0.01" rpy="$(arg nic_card_mount_3_roll) $(arg nic_card_mount_3_pitch) $(arg nic_card_mount_3_yaw)"/>
+    <gazebo>
+      <joint name="nic_card_mount_3_joint" type="fixed">
+        <parent>task_board_base_link</parent>
+        <child>nic_card_mount_3::nic_card_mount_link</child>
+      </joint>
+    </gazebo>
   </xacro:if>
 
   <!-- NIC Card Mount 4 (right-most) -->
   <xacro:if value="$(arg nic_card_mount_4_present)">
-    <xacro:nic_card_mount prefix="nic_card_mount_4_"/>
-    <joint name="nic_card_mount_4_joint" type="fixed">
-      <parent link="task_board_base_link"/>
-      <child link="nic_card_mount_4_link"/>
-      <origin xyz="${-0.081418 + $(arg nic_card_mount_4_translation)} -0.0145 0.01" rpy="$(arg nic_card_mount_4_roll) $(arg nic_card_mount_4_pitch) $(arg nic_card_mount_4_yaw)"/>
-    </joint>
+    <xacro:nic_card_mount prefix="nic_card_mount_4" pose="${-0.081418 + $(arg nic_card_mount_4_translation)} -0.0145 0.01 $(arg nic_card_mount_4_roll) $(arg nic_card_mount_4_pitch) $(arg nic_card_mount_4_yaw)"/>
+    <gazebo>
+      <joint name="nic_card_mount_4_joint" type="fixed">
+        <parent>task_board_base_link</parent>
+        <child>nic_card_mount_4::nic_card_mount_link</child>
+      </joint>
+    </gazebo>
   </xacro:if>
 
   <gazebo>
     <static>true</static>
+    <plugin filename="libgz-sim-pose-publisher-system.so"
+      name="gz::sim::systems::PosePublisher">
+      <publish_link_pose>true</publish_link_pose>
+      <publish_sensor_pose>false</publish_sensor_pose>
+      <publish_collision_pose>false</publish_collision_pose>
+      <publish_visual_pose>false</publish_visual_pose>
+      <publish_nested_model_pose>true</publish_nested_model_pose>
+      <publish_model_pose>true</publish_model_pose>
+      <use_pose_vector_msg>true</use_pose_vector_msg>
+      <static_publisher>true</static_publisher>
+      <update_frequency>0</update_frequency>
+      <static_update_frequency>1</static_update_frequency>
+    </plugin>
   </gazebo>
 </robot>

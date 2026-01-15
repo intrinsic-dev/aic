@@ -115,6 +115,15 @@
     <plugin filename="gz-sim-forcetorque-system"
             name="gz::sim::systems::ForceTorque">
     </plugin>
+
+    <plugin filename="OffLimitContactsPlugin" name="aic_gazebo::OffLimitContactsPlugin">
+      <update_rate>5</update_rate>
+      <topic>/aic/gazebo/contacts/off_limit</topic>
+      <off_limit_models>
+        <model>enclosure</model>
+        <model>task_board</model>
+      </off_limit_models>
+    </plugin>
   </gazebo>
 
   <!-- ATI Force Torque sensor -->

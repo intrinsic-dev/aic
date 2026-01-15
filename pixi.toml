@@ -1,0 +1,29 @@
+[workspace]
+name = "aic"
+authors = ["Teo Koon Peng <koonpeng@intrinsic.ai>"]
+channels = ["robostack-kilted", "conda-forge"]
+platforms = ["linux-64"]
+version = "0.1.0"
+conda-pypi-map = { "robostack-kilted" = "robostack_mapping.json" }
+preview = ["pixi-build"]
+
+[dependencies]
+evdev = ">=1.9.2,<2"
+ros-kilted-control-msgs = "*"                                           # lerobot_robot_ros
+ros-kilted-geometry-msgs = "*"                                          # lerobot_robot_ros
+ros-kilted-rmw-zenoh-cpp = "*"
+ros-kilted-lerobot-robot-aic = { path = "aic_utils/lerobot_robot_aic" }
+ros-kilted-moveit-msgs = "*"                                            # lerobot_robot_ros
+ros-kilted-rclpy = "*"
+ros-kilted-ros-core = "*"
+ros-kilted-sensor-msgs = "*"                                            # lerobot_robot_ros
+ros-kilted-std-msgs = "*"                                               # lerobot_robot_ros
+ros-kilted-std-srvs = "*"                                               # lerobot_robot_ros
+
+[pypi-dependencies]
+lerobot = ">=0.4.2, <0.5"
+lerobot_robot_ros = { git = "https://github.com/koonpeng/lerobot-ros", rev = "13cd1798c82be9a47fa26033973d7bc3bdb6886c", subdirectory = "lerobot_robot_ros" }
+lerobot_teleoperator_devices = { git = "https://github.com/koonpeng/lerobot-ros", rev = "13cd1798c82be9a47fa26033973d7bc3bdb6886c", subdirectory = "lerobot_teleoperator_devices" }
+
+[activation.env]
+RMW_IMPLEMENTATION = "rmw_zenoh_cpp"

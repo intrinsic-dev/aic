@@ -1,0 +1,8 @@
+{
+  "ros-kilted-control-msgs": "control_msgs",
+  "ros-kilted-geometry-msgs": "geometry_msgs",
+  "ros-kilted-moveit-msgs": "moveit_msgs",
+  "ros-kilted-rclpy": "rclpy",
+  "ros-kilted-sensor-msgs": "sensor_msgs",
+  "ros-kilted-std-msgs": "std_msgs"
+}

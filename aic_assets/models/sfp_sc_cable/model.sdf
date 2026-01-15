@@ -9,17 +9,6 @@
       <pose relative_to="cable_connection_0">-0.048 0 0 0 0 1.57079</pose>
     </include>
     <include merge="true">
-      <!--
-         TODO: Workaround SC plug-port insertion by removing some collision elements in plug
-         This is temporary. The collisions need to be updated for proper insertion.
-      -->
-      <experimental:params>
-        <collision element_id="sc_plug_link::housing blue_predeterminado005_collider_box" action="remove"/>
-        <collision element_id="sc_plug_link::housing blue_predeterminado005_collider_box.001" action="remove"/>
-        <collision element_id="sc_plug_link::ferula_predeterminado005_collider_cylinder" action="remove"/>
-        <collision element_id="sc_plug_link::ferula_predeterminado003_collider_cylinder" action="remove"/>
-      </experimental:params>
-
       <uri>model://SC Plug</uri>
       <pose relative_to="cable_connection_1">0.055 0 0 0 0 0.0</pose>
     </include>

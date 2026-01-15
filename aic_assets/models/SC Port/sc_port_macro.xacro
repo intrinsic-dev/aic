@@ -1,92 +1,22 @@
 <?xml version="1.0" ?>
 <robot xmlns:xacro="http://wiki.ros.org/xacro">
 
-  <xacro:macro name="sc_port" params="prefix">
-    <link name="${prefix}link">
-      <inertial>
-        <origin xyz="0 0 0" rpy="0 0 0"/>
-        <mass value="0.04"/>
-        <inertia ixx="0.0001" ixy="0.0" ixz="0.0" iyy="0.0001" iyz="0.0" izz="0.0001"/>
-      </inertial>
-
-      <visual name="sc_port_visual">
-        <origin xyz="0 0 0" rpy="0 0 0"/>
-        <geometry>
-          <mesh filename="package://aic_assets/models/SC Port/sc_port_visual.glb"/>
-        </geometry>
-      </visual>
-
-      <collision name="cube_collider_box">
-        <origin xyz="0.011922 0.0 0.0" rpy="0.0 0.0 0.0"/>
-        <geometry>
-          <box size="0.001937 0.027432 0.0093"/>
-        </geometry>
-      </collision>
-
-      <collision name="cube_collider_box_001">
-        <origin xyz="0.0 0.0 0.004225" rpy="0.0 0.0 0.0"/>
-        <geometry>
-          <box size="0.025781 0.0108 0.00085"/>
-        </geometry>
-      </collision>
-
-      <collision name="cube_collider_box_mid">
-        <origin xyz="0.0 0.0 0.004225" rpy="0.0 0.0 0.0"/>
-        <geometry>
-          <box size="0.0103 0.027432 0.00085"/>
-        </geometry>
-      </collision>
-
-      <collision name="cube_collider_box_mid02">
-        <origin xyz="0.01 0.0 0.004225" rpy="0.0 0.0 0.0"/>
-        <geometry>
-          <box size="0.005 0.027432 0.00085"/>
-        </geometry>
-      </collision>
-
-      <collision name="cube_collider_box_mid03">
-        <origin xyz="-0.01 0.0 0.004225" rpy="0.0 0.0 0.0"/>
-        <geometry>
-          <box size="0.005 0.027432 0.00085"/>
-        </geometry>
-      </collision>
-
-      <collision name="cube_collider_box_002">
-        <origin xyz="0.0 0.0 -0.004225" rpy="0.0 0.0 0.0"/>
-        <geometry>
-          <box size="0.02565 0.027432 0.00085"/>
-        </geometry>
-      </collision>
-
-      <collision name="cube_collider_box_003">
-        <origin xyz="-0.011922 0.0 0.0" rpy="0.0 0.0 0.0"/>
-        <geometry>
-          <box size="0.001937 0.027432 0.0093"/>
-        </geometry>
-      </collision>
-
-      <collision name="cube_collider_box_004">
-        <origin xyz="-0.014683 0.0 0.0" rpy="0.0 0.0 0.0"/>
-        <geometry>
-          <box size="0.005484 0.003048 0.0093"/>
-        </geometry>
-      </collision>
-
-      <collision name="cube_collider_box_005">
-        <origin xyz="0.014683 0.0 0.0" rpy="0.0 0.0 0.0"/>
-        <geometry>
-          <box size="0.005484 0.003048 0.0093"/>
-        </geometry>
-      </collision>
-
-      <collision name="cube_collider_box_006">
-        <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
-        <geometry>
-          <box size="0.003492 0.027432 0.0093"/>
-        </geometry>
-      </collision>
-
-    </link>
+  <xacro:macro name="sc_port" params="prefix pose">
+    <gazebo>
+      <include>
+        <name>${prefix}</name>
+        <uri>package://aic_assets/models/SC Port</uri>
+        <pose>${pose}</pose>
+        <plugin
+          filename="gz-sim-touchplugin-system"
+          name="gz::sim::systems::TouchPlugin">
+          <target>sc_plug</target>
+          <time>1</time>
+          <namespace>${prefix}</namespace>
+          <enabled>true</enabled>
+        </plugin>
+      </include>
+    </gazebo>
   </xacro:macro>
 
 </robot>
