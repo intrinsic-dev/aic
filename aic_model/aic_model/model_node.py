@@ -147,7 +147,7 @@ class AicModel(LifecycleNode):
         self.set_pose_target(
             Pose(
                 position=Point(x=target_x, y=target_y, z=target_z),
-                orientation=Quaternion(x=0.7071, y=0.7071, z=0.0, w=0.0)
+                orientation=Quaternion(x=0.7071, y=0.7071, z=0.0, w=0.0),
             )
         )
 
