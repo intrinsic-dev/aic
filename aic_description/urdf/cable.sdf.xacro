@@ -2,20 +2,35 @@
 <sdf version="1.9" xmlns:xacro="http://www.ros.org/wiki/xacro">
 
   <xacro:arg name="attach_cable_to_gripper" default="false"/>
+  <xacro:arg name="cable_type" default="sfp_sc_cable"/>
+
+  <xacro:property name="cable_type" value="$(arg cable_type)" />
+  <xacro:property name="end_effector_model" value="ur5e" />
+  <xacro:property name="end_effector_link" value="ati/tool_link" />
+
+  <xacro:if value="${cable_type == 'sfp_sc_cable'}">
+    <xacro:property name="cable_connection_0_link" value="lc_plug_link" />
+    <xacro:property name="cable_connection_0_port" value="nic_card_mount" />
+    <xacro:property name="cable_connection_1_link" value="sc_plug_link" />
+  </xacro:if>
+  <xacro:if value="${cable_type == 'sfp_sc_cable_reversed'}">
+    <xacro:property name="cable_connection_0_link" value="sc_plug_link" />
+    <xacro:property name="cable_connection_0_port" value="sc_port" />
+    <xacro:property name="cable_connection_1_link" value="lc_plug_link" />
+  </xacro:if>
 
   <model name="cable">
     <static>false</static>
     <include merge="true">
-      <uri>model://sfp_sc_cable</uri>
+      <uri>model://${cable_type}</uri>
       <xacro:if value="$(arg attach_cable_to_gripper)">
       <plugin filename="CablePlugin" name="aic_gazebo::CablePlugin">
-        <cable_connection_0_link>lc_plug_link</cable_connection_0_link>
-        <!-- this should match the target port's <namespace> parameter in its xacro file -->
-        <cable_connection_0_port>nic_card_mount_0</cable_connection_0_port>
-        <cable_connection_1_link>sc_plug_link</cable_connection_1_link>
-        <end_effector_model>ur5e</end_effector_model>
-        <end_effector_link>ati/tool_link</end_effector_link>
-        <create_connection_delay_s>0.0</create_connection_delay_s>
+        <cable_connection_0_link>${cable_connection_0_link}</cable_connection_0_link>
+        <cable_connection_0_port>${cable_connection_0_port}</cable_connection_0_port>
+        <cable_connection_1_link>${cable_connection_1_link}</cable_connection_1_link>
+        <end_effector_model>${end_effector_model}</end_effector_model>
+        <end_effector_link>${end_effector_link}</end_effector_link>
+        <create_connection_delay_s>0</create_connection_delay_s>
       </plugin>
       </xacro:if>
 

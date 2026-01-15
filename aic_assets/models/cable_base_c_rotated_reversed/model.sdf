@@ -1,0 +1,2075 @@
+<?xml version="1.0" ?>
+<sdf version="1.9">
+  <model name="cable">
+    <link name='cable_end_0'>
+      <pose>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.0025000000000000001</mass>
+        <inertia>
+          <ixx>0.01</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.01</iyy>
+          <iyz>0</iyz>
+          <izz>0.01</izz>
+        </inertia>
+      </inertial>
+      <collision name='base_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+      </collision>
+      <visual name='base_vis'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <enable_wind>false</enable_wind>
+    </link>
+    <joint name='joint_end_0' type='ball'>
+      <pose>-6.4559200000000004e-17 5.0744400000000002e-18 -0.024 -2.7755599999999997e-17 3.4000600000000001e-16 -1.3877799999999999e-17</pose>
+      <child>link_1</child>
+      <parent>cable_end_0</parent>
+      <axis>
+        <xyz>3.0915432025361081e-16 1.2251484549086199e-17 1</xyz>
+        <limit>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+          <effort>inf</effort>
+          <velocity>inf</velocity>
+          <stiffness>100000000</stiffness>
+          <dissipation>1</dissipation>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+          <damping>1</damping>
+          <friction>0</friction>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='link_1'>
+      <pose>0.020495602598527229 -0.0079241559115622029 -0.0096511738884166309 -3.0699352998294769 1.1558366156120787 2.8509486446362029</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.0025000000000000001</mass>
+        <inertia>
+          <ixx>0.01</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.01</iyy>
+          <iyz>0</iyz>
+          <izz>0.01</izz>
+        </inertia>
+      </inertial>
+      <collision name='link_1_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name='link_1_vis'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <collision name='sphere_1_collision'>
+        <pose>0 0 0.024 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+      </collision>
+      <visual name='sphere_1_vis'>
+        <pose>0 0 0.024 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <enable_wind>false</enable_wind>
+    </link>
+    <link name='link_2'>
+      <pose>0.0566370524887021 -0.02744201685436648 -0.033330809177440024 -2.9288660489031204 0.92979187862149426 2.7671012247604292</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.0025000000000000001</mass>
+        <inertia>
+          <ixx>0.01</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.01</iyy>
+          <iyz>0</iyz>
+          <izz>0.01</izz>
+        </inertia>
+      </inertial>
+      <collision name='link_2_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name='link_2_vis'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <collision name='sphere_2_collision'>
+        <pose>0 0 0.024 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+      </collision>
+      <visual name='sphere_2_vis'>
+        <pose>0 0 0.024 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <enable_wind>false</enable_wind>
+    </link>
+    <link name='link_3'>
+      <pose>0.085388911796410838 -0.052243949644602938 -0.062518133191720615 -2.834409193460671 0.8465032259409131 2.752973412718708</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.0025000000000000001</mass>
+        <inertia>
+          <ixx>0.01</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.01</iyy>
+          <iyz>0</iyz>
+          <izz>0.01</izz>
+        </inertia>
+      </inertial>
+      <collision name='link_3_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name='link_3_vis'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <collision name='sphere_3_collision'>
+        <pose>0 0 0.024 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+      </collision>
+      <visual name='sphere_3_vis'>
+        <pose>0 0 0.024 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <enable_wind>false</enable_wind>
+    </link>
+    <link name='link_4'>
+      <pose>0.11155837062900842 -0.079525148080626828 -0.092074508597773663 -2.7514587929260781 0.86497072259029617 2.8143515790723206</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.0025000000000000001</mass>
+        <inertia>
+          <ixx>0.01</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.01</iyy>
+          <iyz>0</iyz>
+          <izz>0.01</izz>
+        </inertia>
+      </inertial>
+      <collision name='link_4_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name='link_4_vis'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <collision name='sphere_4_collision'>
+        <pose>0 0 0.024 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+      </collision>
+      <visual name='sphere_4_vis'>
+        <pose>0 0 0.024 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <enable_wind>false</enable_wind>
+    </link>
+    <link name='link_5'>
+      <pose>0.1392438561602809 -0.10792596996729961 -0.11899967046617665 -2.6391788138022991 0.93285564039793167 2.9662611096610711</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.0025000000000000001</mass>
+        <inertia>
+          <ixx>0.01</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.01</iyy>
+          <iyz>0</iyz>
+          <izz>0.01</izz>
+        </inertia>
+      </inertial>
+      <collision name='link_5_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name='link_5_vis'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <collision name='sphere_5_collision'>
+        <pose>0 0 0.024 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+      </collision>
+      <visual name='sphere_5_vis'>
+        <pose>0 0 0.024 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <enable_wind>false</enable_wind>
+    </link>
+    <link name='link_6'>
+      <pose>0.17071188122346515 -0.13592152643205996 -0.14179360344307046 -2.4688670078313919 0.99211801308693026 -3.0626034729702081</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.0025000000000000001</mass>
+        <inertia>
+          <ixx>0.01</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.01</iyy>
+          <iyz>0</iyz>
+          <izz>0.01</izz>
+        </inertia>
+      </inertial>
+      <collision name='link_6_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name='link_6_vis'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <collision name='sphere_6_collision'>
+        <pose>0 0 0.024 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+      </collision>
+      <visual name='sphere_6_vis'>
+        <pose>0 0 0.024 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <enable_wind>false</enable_wind>
+    </link>
+    <link name='link_7'>
+      <pose>0.20658428641154547 -0.16169947916023292 -0.16026771225457559 -2.2541168624024674 0.9983875658828002 -2.7377595875001348</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.0025000000000000001</mass>
+        <inertia>
+          <ixx>0.01</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.01</iyy>
+          <iyz>0</iyz>
+          <izz>0.01</izz>
+        </inertia>
+      </inertial>
+      <collision name='link_7_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name='link_7_vis'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <collision name='sphere_7_collision'>
+        <pose>0 0 0.024 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+      </collision>
+      <visual name='sphere_7_vis'>
+        <pose>0 0 0.024 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <enable_wind>false</enable_wind>
+    </link>
+    <link name='link_8'>
+      <pose>0.24631898557314424 -0.18374552840251793 -0.17543643310725532 -2.0838127234099568 0.93859075799667269 -2.4447191226358576</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.0025000000000000001</mass>
+        <inertia>
+          <ixx>0.01</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.01</iyy>
+          <iyz>0</iyz>
+          <izz>0.01</izz>
+        </inertia>
+      </inertial>
+      <collision name='link_8_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name='link_8_vis'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <collision name='sphere_8_collision'>
+        <pose>0 0 0.024 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+      </collision>
+      <visual name='sphere_8_vis'>
+        <pose>0 0 0.024 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <enable_wind>false</enable_wind>
+    </link>
+    <link name='link_9'>
+      <pose>0.28876908877179841 -0.20126232631327437 -0.18916960001580363 -2.008695562952107 0.84268450733287559 -2.2424956061161128</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.0025000000000000001</mass>
+        <inertia>
+          <ixx>0.01</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.01</iyy>
+          <iyz>0</iyz>
+          <izz>0.01</izz>
+        </inertia>
+      </inertial>
+      <collision name='link_9_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name='link_9_vis'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <collision name='sphere_9_collision'>
+        <pose>0 0 0.024 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+      </collision>
+      <visual name='sphere_9_vis'>
+        <pose>0 0 0.024 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <enable_wind>false</enable_wind>
+    </link>
+    <link name='link_10'>
+      <pose>0.33270740785371999 -0.21412886494083719 -0.20338242727441558 -2.0066365630473637 0.74624125877697645 -2.1108365500690507</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.0025000000000000001</mass>
+        <inertia>
+          <ixx>0.01</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.01</iyy>
+          <iyz>0</iyz>
+          <izz>0.01</izz>
+        </inertia>
+      </inertial>
+      <collision name='link_10_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name='link_10_vis'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <collision name='sphere_10_collision'>
+        <pose>0 0 0.024 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+      </collision>
+      <visual name='sphere_10_vis'>
+        <pose>0 0 0.024 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <enable_wind>false</enable_wind>
+    </link>
+    <link name='link_11'>
+      <pose>0.37661589277363539 -0.2229875969432496 -0.2204076312748896 -2.0877282025168387 0.62987099877864894 -2.0569532795134005</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.0025000000000000001</mass>
+        <inertia>
+          <ixx>0.01</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.01</iyy>
+          <iyz>0</iyz>
+          <izz>0.01</izz>
+        </inertia>
+      </inertial>
+      <collision name='link_11_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name='link_11_vis'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <collision name='sphere_11_collision'>
+        <pose>0 0 0.024 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+      </collision>
+      <visual name='sphere_11_vis'>
+        <pose>0 0 0.024 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <enable_wind>false</enable_wind>
+    </link>
+    <link name='link_12'>
+      <pose>0.41785410668285228 -0.22912364590667378 -0.24371129883202403 -2.2831723263800745 0.50648971510790153 -2.0981390207796577</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.0025000000000000001</mass>
+        <inertia>
+          <ixx>0.01</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.01</iyy>
+          <iyz>0</iyz>
+          <izz>0.01</izz>
+        </inertia>
+      </inertial>
+      <collision name='link_12_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name='link_12_vis'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <collision name='sphere_12_collision'>
+        <pose>0 0 0.024 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+      </collision>
+      <visual name='sphere_12_vis'>
+        <pose>0 0 0.024 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <enable_wind>false</enable_wind>
+    </link>
+    <link name='link_13'>
+      <pose>0.45201369274790126 -0.2335203328568905 -0.27636358487971169 -2.5717327466511803 0.35693888432194065 -2.1945484573211118</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.0025000000000000001</mass>
+        <inertia>
+          <ixx>0.01</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.01</iyy>
+          <iyz>0</iyz>
+          <izz>0.01</izz>
+        </inertia>
+      </inertial>
+      <collision name='link_13_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name='link_13_vis'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <collision name='sphere_13_collision'>
+        <pose>0 0 0.024 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+      </collision>
+      <visual name='sphere_13_vis'>
+        <pose>0 0 0.024 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <enable_wind>false</enable_wind>
+    </link>
+    <link name='link_14'>
+      <pose>0.47295014719516804 -0.23621077799064999 -0.3184398858330757 -2.9201971561187321 0.15267877790095355 -2.3003901633211683</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.0025000000000000001</mass>
+        <inertia>
+          <ixx>0.01</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.01</iyy>
+          <iyz>0</iyz>
+          <izz>0.01</izz>
+        </inertia>
+      </inertial>
+      <collision name='link_14_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name='link_14_vis'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <collision name='sphere_14_collision'>
+        <pose>0 0 0.024 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+      </collision>
+      <visual name='sphere_14_vis'>
+        <pose>0 0 0.024 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <enable_wind>false</enable_wind>
+    </link>
+    <link name='link_15'>
+      <pose>0.47479901484620424 -0.23658660410531684 -0.36516077640538103 2.9969111116037976 -0.12001986554557566 -2.3667757649159977</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.0025000000000000001</mass>
+        <inertia>
+          <ixx>0.01</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.01</iyy>
+          <iyz>0</iyz>
+          <izz>0.01</izz>
+        </inertia>
+      </inertial>
+      <collision name='link_15_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name='link_15_vis'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <collision name='sphere_15_collision'>
+        <pose>0 0 0.024 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+      </collision>
+      <visual name='sphere_15_vis'>
+        <pose>0 0 0.024 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <enable_wind>false</enable_wind>
+    </link>
+    <link name='link_16'>
+      <pose>0.45583698366756442 -0.23426013179534907 -0.40776907796713946 2.6354646617204174 -0.43588069539584029 -2.3481468823272205</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.0025000000000000001</mass>
+        <inertia>
+          <ixx>0.01</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.01</iyy>
+          <iyz>0</iyz>
+          <izz>0.01</izz>
+        </inertia>
+      </inertial>
+      <collision name='link_16_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name='link_16_vis'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <collision name='sphere_16_collision'>
+        <pose>0 0 0.024 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+      </collision>
+      <visual name='sphere_16_vis'>
+        <pose>0 0 0.024 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <enable_wind>false</enable_wind>
+    </link>
+    <link name='link_17'>
+      <pose>0.42022902585092825 -0.22989853959413364 -0.43795927128629053 2.2547716239786704 -0.74362805280268129 -2.1938795026005731</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.0025000000000000001</mass>
+        <inertia>
+          <ixx>0.01</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.01</iyy>
+          <iyz>0</iyz>
+          <izz>0.01</izz>
+        </inertia>
+      </inertial>
+      <collision name='link_17_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name='link_17_vis'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <collision name='sphere_17_collision'>
+        <pose>0 0 0.024 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+      </collision>
+      <visual name='sphere_17_vis'>
+        <pose>0 0 0.024 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <enable_wind>false</enable_wind>
+    </link>
+    <link name='link_18'>
+      <pose>0.37536550728251705 -0.22600926895833551 -0.45216518699853558 1.7990509292072814 -0.97572799328273352 -1.8184476440728883</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.0025000000000000001</mass>
+        <inertia>
+          <ixx>0.01</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.01</iyy>
+          <iyz>0</iyz>
+          <izz>0.01</izz>
+        </inertia>
+      </inertial>
+      <collision name='link_18_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name='link_18_vis'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <collision name='sphere_18_collision'>
+        <pose>0 0 0.024 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+      </collision>
+      <visual name='sphere_18_vis'>
+        <pose>0 0 0.024 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <enable_wind>false</enable_wind>
+    </link>
+    <link name='link_19'>
+      <pose>0.32799935040866557 -0.22567229817262441 -0.45096216655333188 1.2120758535835743 -1.0424248923316721 -1.2138931160054811</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.0025000000000000001</mass>
+        <inertia>
+          <ixx>0.01</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.01</iyy>
+          <iyz>0</iyz>
+          <izz>0.01</izz>
+        </inertia>
+      </inertial>
+      <collision name='link_19_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name='link_19_vis'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <collision name='sphere_19_collision'>
+        <pose>0 0 0.024 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+      </collision>
+      <visual name='sphere_19_vis'>
+        <pose>0 0 0.024 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <enable_wind>false</enable_wind>
+    </link>
+    <link name='link_20'>
+      <pose>0.28285558106966757 -0.23148043555058945 -0.43727448920022716 0.83300020209495074 -0.94631464805741738 -0.71722259459403503</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.0025000000000000001</mass>
+        <inertia>
+          <ixx>0.01</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.01</iyy>
+          <iyz>0</iyz>
+          <izz>0.01</izz>
+        </inertia>
+      </inertial>
+      <collision name='link_20_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name='link_20_vis'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <collision name='sphere_20_collision'>
+        <pose>0 0 0.024 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+      </collision>
+      <visual name='sphere_20_vis'>
+        <pose>0 0 0.024 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <enable_wind>false</enable_wind>
+    </link>
+    <joint name='joint_1' type='ball'>
+      <pose>-2.4286099999999999e-17 3.2959700000000002e-17 -0.024 5.5511199999999995e-17 1.38778e-16 3.8518600000000002e-33</pose>
+      <parent>link_1</parent>
+      <child>link_2</child>
+      <axis>
+        <xyz>-2.2792640171076517e-16 -6.9388939039072308e-17 1</xyz>
+        <limit>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+          <effort>inf</effort>
+          <velocity>inf</velocity>
+          <stiffness>100000000</stiffness>
+          <dissipation>1</dissipation>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+          <damping>1</damping>
+          <friction>0</friction>
+        </dynamics>
+      </axis>
+    </joint>
+    <joint name='joint_2' type='ball'>
+      <pose>-2.1510599999999999e-16 4.5102799999999997e-17 -0.024 5.5511199999999995e-17 1.3877799999999999e-17 8.3266699999999998e-17</pose>
+      <parent>link_2</parent>
+      <child>link_3</child>
+      <axis>
+        <xyz>-4.3368086899420986e-19 7.63278329429795e-17 1</xyz>
+        <limit>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+          <effort>inf</effort>
+          <velocity>inf</velocity>
+          <stiffness>100000000</stiffness>
+          <dissipation>1</dissipation>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+          <damping>1</damping>
+          <friction>0</friction>
+        </dynamics>
+      </axis>
+    </joint>
+    <joint name='joint_3' type='ball'>
+      <pose>-2.9837199999999999e-16 4.8572299999999998e-17 -0.024 4.0444499999999998e-33 9.7144500000000003e-17 8.3266699999999998e-17</pose>
+      <parent>link_3</parent>
+      <child>link_4</child>
+      <axis>
+        <xyz>-1.5265566588595902e-16 1.1102230246251565e-16 1</xyz>
+        <limit>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+          <effort>inf</effort>
+          <velocity>inf</velocity>
+          <stiffness>100000000</stiffness>
+          <dissipation>1</dissipation>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+          <damping>1</damping>
+          <friction>0</friction>
+        </dynamics>
+      </axis>
+    </joint>
+    <joint name='joint_4' type='ball'>
+      <pose>-3.0878099999999998e-16 -9.0205599999999994e-17 -0.024 -1.7333400000000002e-33 1.2489999999999999e-16 -2.7755599999999997e-17</pose>
+      <parent>link_4</parent>
+      <child>link_5</child>
+      <axis>
+        <xyz>1.5959455978986625e-16 -1.3096323621833204e-32 1</xyz>
+        <limit>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+          <effort>inf</effort>
+          <velocity>inf</velocity>
+          <stiffness>100000000</stiffness>
+          <dissipation>1</dissipation>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+          <damping>1</damping>
+          <friction>0</friction>
+        </dynamics>
+      </axis>
+    </joint>
+    <joint name='joint_5' type='ball'>
+      <pose>-7.0082799999999996e-16 -1.1796099999999999e-16 -0.024 4.6222299999999997e-33 -5.5511199999999995e-17 -1.6653299999999999e-16</pose>
+      <parent>link_5</parent>
+      <child>link_6</child>
+      <axis>
+        <xyz>-6.2450045135165006e-17 1.6653345369377348e-16 1</xyz>
+        <limit>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+          <effort>inf</effort>
+          <velocity>inf</velocity>
+          <stiffness>100000000</stiffness>
+          <dissipation>1</dissipation>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+          <damping>1</damping>
+          <friction>0</friction>
+        </dynamics>
+      </axis>
+    </joint>
+    <joint name='joint_6' type='ball'>
+      <pose>-4.7184499999999998e-16 -2.3592199999999998e-16 -0.024 1.11022e-16 -5.5511199999999995e-17 2.2204499999999999e-16</pose>
+      <parent>link_6</parent>
+      <child>link_7</child>
+      <axis>
+        <xyz>-3.4694469519535895e-18 1.3877787807814417e-17 1</xyz>
+        <limit>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+          <effort>inf</effort>
+          <velocity>inf</velocity>
+          <stiffness>100000000</stiffness>
+          <dissipation>1</dissipation>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+          <damping>1</damping>
+          <friction>0</friction>
+        </dynamics>
+      </axis>
+    </joint>
+    <joint name='joint_7' type='ball'>
+      <pose>-2.4979999999999999e-16 -1.9428900000000001e-16 -0.024 -2.2204499999999999e-16 2.4286099999999998e-16 5.55112e-16</pose>
+      <parent>link_7</parent>
+      <child>link_8</child>
+      <axis>
+        <xyz>2.7842311789427749e-16 2.5153490401663703e-16 1</xyz>
+        <limit>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+          <effort>inf</effort>
+          <velocity>inf</velocity>
+          <stiffness>100000000</stiffness>
+          <dissipation>1</dissipation>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+          <damping>1</damping>
+          <friction>0</friction>
+        </dynamics>
+      </axis>
+    </joint>
+    <joint name='joint_8' type='ball'>
+      <pose>-2.4979999999999999e-16 -6.8001200000000001e-16 -0.024 -5.5511199999999995e-17 -1.6653299999999999e-16 1.6653299999999999e-16</pose>
+      <parent>link_8</parent>
+      <child>link_9</child>
+      <axis>
+        <xyz>-8.8037216405822948e-17 4.163336342344337e-17 1</xyz>
+        <limit>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+          <effort>inf</effort>
+          <velocity>inf</velocity>
+          <stiffness>100000000</stiffness>
+          <dissipation>1</dissipation>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+          <damping>1</damping>
+          <friction>0</friction>
+        </dynamics>
+      </axis>
+    </joint>
+    <joint name='joint_9' type='ball'>
+      <pose>-2.7755599999999997e-17 -2.77556e-16 -0.024 3.8518599999999997e-34 -1.3877799999999999e-17 -5.5511199999999995e-17</pose>
+      <parent>link_9</parent>
+      <child>link_10</child>
+      <axis>
+        <xyz>-8.6736173798840355e-17 -1.0408340855860843e-16 1</xyz>
+        <limit>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+          <effort>inf</effort>
+          <velocity>inf</velocity>
+          <stiffness>100000000</stiffness>
+          <dissipation>1</dissipation>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+          <damping>1</damping>
+          <friction>0</friction>
+        </dynamics>
+      </axis>
+    </joint>
+    <joint name='joint_10' type='ball'>
+      <pose>-2.7755599999999997e-17 -3.4694500000000001e-16 -0.024 -5.5511199999999995e-17 -2.4979999999999999e-16 4.9959999999999997e-16</pose>
+      <parent>link_10</parent>
+      <child>link_11</child>
+      <axis>
+        <xyz>1.0408340855860799e-17 -8.3266726846886716e-17 1</xyz>
+        <limit>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+          <effort>inf</effort>
+          <velocity>inf</velocity>
+          <stiffness>100000000</stiffness>
+          <dissipation>1</dissipation>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+          <damping>1</damping>
+          <friction>0</friction>
+        </dynamics>
+      </axis>
+    </joint>
+    <joint name='joint_11' type='ball'>
+      <pose>-1.80411e-16 -5.55112e-16 -0.024 3.8518599999999997e-34 2.7755599999999997e-17 2.7755599999999997e-17</pose>
+      <parent>link_11</parent>
+      <child>link_12</child>
+      <axis>
+        <xyz>1.3877787807814457e-17 5.5511151231257827e-17 1</xyz>
+        <limit>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+          <effort>inf</effort>
+          <velocity>inf</velocity>
+          <stiffness>100000000</stiffness>
+          <dissipation>1</dissipation>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+          <damping>1</damping>
+          <friction>0</friction>
+        </dynamics>
+      </axis>
+    </joint>
+    <joint name='joint_12' type='ball'>
+      <pose>-7.8756399999999999e-16 -1.1102199999999999e-15 -0.024 -4.9959999999999997e-16 1.9428900000000001e-16 -2.91434e-16</pose>
+      <parent>link_12</parent>
+      <child>link_13</child>
+      <axis>
+        <xyz>5.4123372450476381e-16 3.8163916471489559e-17 1</xyz>
+        <limit>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+          <effort>inf</effort>
+          <velocity>inf</velocity>
+          <stiffness>100000000</stiffness>
+          <dissipation>1</dissipation>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+          <damping>1</damping>
+          <friction>0</friction>
+        </dynamics>
+      </axis>
+    </joint>
+    <joint name='joint_13' type='ball'>
+      <pose>-4.4408900000000002e-16 -4.4408900000000002e-16 -0.024 5.5511199999999995e-17 -5.5511199999999995e-17 -3.6429199999999997e-17</pose>
+      <parent>link_13</parent>
+      <child>link_14</child>
+      <axis>
+        <xyz>2.7755575615628886e-17 -5.5511151231257815e-17 1</xyz>
+        <limit>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+          <effort>inf</effort>
+          <velocity>inf</velocity>
+          <stiffness>100000000</stiffness>
+          <dissipation>1</dissipation>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+          <damping>1</damping>
+          <friction>0</friction>
+        </dynamics>
+      </axis>
+    </joint>
+    <joint name='joint_14' type='ball'>
+      <pose>-4.1633400000000002e-16 -2.2204499999999999e-16 -0.024 5.5511199999999995e-17 1.3877799999999999e-17 4.5970199999999999e-16</pose>
+      <parent>link_14</parent>
+      <child>link_15</child>
+      <axis>
+        <xyz>6.2450045135165031e-17 7.6327832942979524e-17 1</xyz>
+        <limit>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+          <effort>inf</effort>
+          <velocity>inf</velocity>
+          <stiffness>100000000</stiffness>
+          <dissipation>1</dissipation>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+          <damping>1</damping>
+          <friction>0</friction>
+        </dynamics>
+      </axis>
+    </joint>
+    <joint name='joint_15' type='ball'>
+      <pose>-2.77556e-16 -6.6613400000000001e-16 -0.024 1.34815e-33 9.7144500000000003e-17 2.7755599999999997e-17</pose>
+      <parent>link_15</parent>
+      <child>link_16</child>
+      <axis>
+        <xyz>2.4286128663675293e-17 -8.3266726846886728e-17 1</xyz>
+        <limit>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+          <effort>inf</effort>
+          <velocity>inf</velocity>
+          <stiffness>100000000</stiffness>
+          <dissipation>1</dissipation>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+          <damping>1</damping>
+          <friction>0</friction>
+        </dynamics>
+      </axis>
+    </joint>
+    <joint name='joint_16' type='ball'>
+      <pose>1.6653299999999999e-16 -6.6613400000000001e-16 -0.024 0 4.1633400000000002e-17 0</pose>
+      <parent>link_16</parent>
+      <child>link_17</child>
+      <axis>
+        <xyz>5.5511151231257815e-17 -2.7755575615628907e-17 1</xyz>
+        <limit>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+          <effort>inf</effort>
+          <velocity>inf</velocity>
+          <stiffness>100000000</stiffness>
+          <dissipation>1</dissipation>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+          <damping>1</damping>
+          <friction>0</friction>
+        </dynamics>
+      </axis>
+    </joint>
+    <joint name='joint_17' type='ball'>
+      <pose>-5.5511199999999995e-17 -8.3266700000000003e-16 -0.024 -2.3111200000000001e-33 4.1633400000000002e-17 -1.11022e-16</pose>
+      <parent>link_17</parent>
+      <child>link_18</child>
+      <axis>
+        <xyz>2.081668171172168e-16 -2.7755575615628944e-17 1</xyz>
+        <limit>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+          <effort>inf</effort>
+          <velocity>inf</velocity>
+          <stiffness>100000000</stiffness>
+          <dissipation>1</dissipation>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+          <damping>1</damping>
+          <friction>0</friction>
+        </dynamics>
+      </axis>
+    </joint>
+    <joint name='joint_18' type='ball'>
+      <pose>-5.8286699999999999e-16 -8.8817800000000003e-16 -0.024 -2.7755599999999997e-17 1.5407399999999999e-33 1.11022e-16</pose>
+      <parent>link_18</parent>
+      <child>link_19</child>
+      <axis>
+        <xyz>3.1918911957973251e-16 -1.474514954580286e-17 1</xyz>
+        <limit>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+          <effort>inf</effort>
+          <velocity>inf</velocity>
+          <stiffness>100000000</stiffness>
+          <dissipation>1</dissipation>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+          <damping>1</damping>
+          <friction>0</friction>
+        </dynamics>
+      </axis>
+    </joint>
+    <joint name='joint_19' type='ball'>
+      <pose>-3.60822e-16 -5.55112e-16 -0.024 -1.11022e-16 1.80411e-16 5.5511199999999995e-17</pose>
+      <parent>link_19</parent>
+      <child>link_20</child>
+      <axis>
+        <xyz>1.457167719820518e-16 2.7755575615628914e-16 1</xyz>
+        <limit>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+          <effort>inf</effort>
+          <velocity>inf</velocity>
+          <stiffness>100000000</stiffness>
+          <dissipation>1</dissipation>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+          <damping>1</damping>
+          <friction>0</friction>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='cable_connection_0'>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.01</mass>
+        <inertia>
+          <ixx>0.01</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.01</iyy>
+          <iyz>0</iyz>
+          <izz>0.01</izz>
+        </inertia>
+      </inertial>
+      <pose>-5.8977498440526688e-09 -5.1847130921878204e-08 -1.0202878031329021e-07 -0.15627470715129524 -0.41085197019752445 0.43963795576434139</pose>
+      <collision name='collision_0'>
+        <pose>-0.0053851648071345038 0.0040000000000000001 0 0.3805063771082916 1.5707900000980688 -8.7740884023348519e-12</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.001</radius>
+            <length>0.010770329614269008</length>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name='visual_0'>
+        <pose>-0.0053851648071345038 0.0040000000000000001 0 0.3805063771082916 1.5707900000980688 -8.7740884023348519e-12</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.001</radius>
+            <length>0.010770329614269008</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <collision name='collision_1'>
+        <pose>-0.0053851648071345038 -0.0040000000000000001 0 -0.3805063771082916 1.5707900000980688 8.7740884023348519e-12</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.001</radius>
+            <length>0.010770329614269008</length>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name='visual_1'>
+        <pose>-0.0053851648071345038 -0.0040000000000000001 0 -0.3805063771082916 1.5707900000980688 8.7740884023348519e-12</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.001</radius>
+            <length>0.010770329614269008</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <enable_wind>false</enable_wind>
+    </link>
+    <link name='cable_connection_1'>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.01</mass>
+        <inertia>
+          <ixx>0.01</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.01</iyy>
+          <iyz>0</iyz>
+          <izz>0.01</izz>
+        </inertia>
+      </inertial>
+      <pose>0.26131291126034184 -0.23625654236101132 -0.42783483617833307 2.5598384571002835 -0.53265074576935612 -2.6583135578462174</pose>
+      <collision name='collision_0'>
+        <pose>0.0050990195135927853 -0.002 0 0.19739555984676191 1.570790000115617 -4.387044201189078e-12</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.001</radius>
+            <length>0.010198039027185571</length>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name='visual_0'>
+        <pose>0.0050990195135927853 -0.002 0 0.19739555984676191 1.570790000115617 -4.387044201189078e-12</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.001</radius>
+            <length>0.010198039027185571</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <collision name='collision_1'>
+        <pose>0.0050990195135927853 0.002 0 -0.19739555984676191 1.570790000115617 4.387044201189078e-12</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.001</radius>
+            <length>0.010198039027185571</length>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name='visual_1'>
+        <pose>0.0050990195135927853 0.002 0 -0.19739555984676191 1.570790000115617 4.387044201189078e-12</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.001</radius>
+            <length>0.010198039027185571</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <enable_wind>false</enable_wind>
+    </link>
+    <joint name='joint_connection_end_0' type='ball'>
+      <pose>0 -2.31611e-23 -7.2791899999999998e-23 2.64815e-33 9.5409800000000005e-17 5.5511199999999995e-17</pose>
+      <parent>cable_end_0</parent>
+      <child>cable_connection_0</child>
+      <axis>
+        <xyz>1.172096583964582e-16 -2.0816681711721685e-17 1</xyz>
+        <limit>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+          <effort>inf</effort>
+          <velocity>inf</velocity>
+          <stiffness>100000000</stiffness>
+          <dissipation>1</dissipation>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+          <damping>1</damping>
+          <friction>0</friction>
+        </dynamics>
+      </axis>
+    </joint>
+    <joint name='joint_connection_end_1' type='ball'>
+      <pose>1.11022e-16 -3.33067e-16 4.4408900000000002e-16 1.11022e-16 1.31839e-16 5.5511199999999995e-17</pose>
+      <parent>link_20</parent>
+      <child>cable_connection_1</child>
+      <axis>
+        <xyz>4.1633363423443364e-17 -5.811323644522305e-17 1</xyz>
+        <limit>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+          <effort>inf</effort>
+          <velocity>inf</velocity>
+          <stiffness>100000000</stiffness>
+          <dissipation>1</dissipation>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+          <damping>1</damping>
+          <friction>0</friction>
+        </dynamics>
+      </axis>
+    </joint>
+  </model>
+</sdf>
