@@ -14,9 +14,7 @@
 #  limitations under the License.
 #
 
+from .aic_robot_aic_controller import AICRobotAICController, AICRobotAICControllerConfig
 from .aic_robot_ros2_control import AICRobotROS2Control, AICRobotROS2ControlConfig
-from .aic_robot_aic_controller import (
-    AICRobotAICControllerConfig,
-    AICRobotAICController,
-)
 from .aic_teleop import AICKeyboardTeleop, AICKeyboardTeleopConfig
+from .spacemouse_teleop import AICSpaceMouseTeleop, AICSpaceMouseTeleopConfig
