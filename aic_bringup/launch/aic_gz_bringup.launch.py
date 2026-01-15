@@ -439,14 +439,14 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             "initial_joint_controller",
-            default_value="joint_trajectory_controller",
+            default_value="aic_controller",
             description="Robot controller to start.",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
             "spawn_admittance_controller",
-            default_value="true",
+            default_value="false",
             description="If true, then the admittance controller is spawned alongside the initial_joint_controller. Else, only the initial_joint_controller is spawned.",
         )
     )

@@ -162,8 +162,8 @@ class AicAdapterNode : public rclcpp::Node {
     // Try to compute the transform between the TCP and base_link
     try {
       geometry_msgs::msg::TransformStamped t =
-          tf_buffer_->lookupTransform("gripper/tcp", "world", t_image_0);
-      observation_msg->tcp_to_world = t;
+          tf_buffer_->lookupTransform("base_link", "gripper/tcp", t_image_0);
+      observation_msg->tcp_transform = t;
     } catch (const tf2::TransformException& ex) {
       RCLCPP_WARN(get_logger(), "Gripper transform not available: %s",
                   ex.what());

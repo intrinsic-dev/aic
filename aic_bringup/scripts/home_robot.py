@@ -27,7 +27,8 @@ from rclpy.action import ActionClient
 from rclpy.node import Node
 from trajectory_msgs.msg import JointTrajectoryPoint
 from aic_control_interfaces.msg import MotionUpdate, TrajectoryGenerationMode
-from geometry_msgs.msg import Pose, Point, Quaternion
+from aic_control_interfaces.srv import ChangeTargetMode
+from geometry_msgs.msg import Pose, Point, Quaternion, Wrench, Vector3
 
 
 class HomeTrajectoryNode(Node):
@@ -36,26 +37,43 @@ class HomeTrajectoryNode(Node):
         self.get_logger().info("HomeTrajectoryNode started")
 
         # Declare parameters.
-        self.use_aic_control = self.declare_parameter("use_aic_controller", False).value
+        self.use_aic_control = self.declare_parameter("use_aic_controller", True).value
         self.controller_namespace = self.declare_parameter(
             "controller_namespace", "aic_controller"
         ).value
-        self.home_joint_positions = [0.0, -1.3, -1.9, -1.57, 1.57, 0.0]
+        self.home_joint_positions = [0.6, -1.3, -1.9, -1.57, 1.57, 0.6]
         # Create publisher if needed.
         if self.use_aic_control:
+            # Change to pose target mode, in case it was in joint target mode previously
+            change_target_mode_client = self.create_client(
+                ChangeTargetMode, f"/{self.controller_namespace}/change_target_mode"
+            )
+            while not change_target_mode_client.wait_for_service(timeout_sec=1.0):
+                self.get_logger().info("Waiting for change_target_mode service...")
+            target_mode_request = ChangeTargetMode.Request()
+            target_mode_request.target_mode = (
+                ChangeTargetMode.Request.TARGET_MODE_CARTESIAN
+            )
+            future = change_target_mode_client.call_async(target_mode_request)
+            rclpy.spin_until_future_complete(self, future)
+            response = future.result()
+            if not response.success:
+                self.get_logger().error("Unable to set target mode")
+                rclpy.shutdown()
+                return
+            self.get_logger().info("Set target mode to CARRTESIAN")
+
             self.publisher = self.create_publisher(
-                MotionUpdate, f"/{self.controller_namespace}/motion_update", 10
+                MotionUpdate, f"/{self.controller_namespace}/pose_commands", 10
             )
 
             while self.publisher.get_subscription_count() == 0:
                 self.get_logger().info(
-                    f"Waiting for subscriber to '{self.controller_namespace}/motion_update'..."
+                    f"Waiting for subscriber to '{self.controller_namespace}/pose_commands'..."
                 )
                 time.sleep(1.0)
 
         else:
-            # todo(Yadunund): We could also directly publish a JouintTrajectory message
-            # to /joint_trajectory_controller/joint_trajectory.
             self.action_client = ActionClient(
                 self,
                 FollowJointTrajectory,
@@ -81,11 +99,17 @@ class HomeTrajectoryNode(Node):
 
     def send_trajectory(self):
         if self.use_aic_control:
-            # Home joints configuration
             msg = MotionUpdate()
             msg.pose = Pose(
-                position=Point(x=0.182, y=0.300, z=1.576),
-                orientation=Quaternion(x=0.884, y=-0.466, z=-0.014, w=0.026),
+                position=Point(x=-0.4, y=0.2, z=0.3),
+                orientation=Quaternion(x=-0.707, y=-0.707, z=0.0, w=0.0),
+            )
+            msg.target_stiffness = np.diag(
+                [100.0, 100.0, 100.0, 50.0, 50.0, 50.0]
+            ).flatten()
+            msg.target_damping = np.diag([40.0, 40.0, 40.0, 15.0, 15.0, 15.0]).flatten()
+            msg.wrench_feedback_gains_at_tip = Wrench(
+                force=Vector3(x=0.5, y=0.5, z=0.5), torque=Vector3(x=0.0, y=0.0, z=0.0)
             )
             msg.trajectory_generation_mode.mode = TrajectoryGenerationMode.MODE_POSITION
             msg.time_to_target_seconds = 2.0
@@ -93,8 +117,6 @@ class HomeTrajectoryNode(Node):
             self.get_logger().info(
                 "Published home joint motion update to aic_controller"
             )
-            # Shutdown after a short delay to ensure message is sent.
-            time.sleep(1.0)
         else:
             goal = FollowJointTrajectory.Goal()
             goal.trajectory.joint_names = [

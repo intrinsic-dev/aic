@@ -45,24 +45,24 @@ class TestImpedanceNode(Node):
         ).value
 
         self.motion_update_publisher = self.create_publisher(
-            MotionUpdate, f"/{self.controller_namespace}/motion_update", 10
+            MotionUpdate, f"/{self.controller_namespace}/pose_commands", 10
         )
 
         while self.motion_update_publisher.get_subscription_count() == 0:
             self.get_logger().info(
-                f"Waiting for subscriber to '{self.controller_namespace}/motion_update'..."
+                f"Waiting for subscriber to '{self.controller_namespace}/pose_commands'..."
             )
             time.sleep(1.0)
 
         self.joint_motion_update_publisher = self.create_publisher(
             JointMotionUpdate,
-            f"/{self.controller_namespace}/joint_motion_update",
+            f"/{self.controller_namespace}/joint_commands",
             10,
         )
 
         while self.joint_motion_update_publisher.get_subscription_count() == 0:
             self.get_logger().info(
-                f"Waiting for subscriber to '{self.controller_namespace}/joint_motion_update'..."
+                f"Waiting for subscriber to '{self.controller_namespace}/joint_commands'..."
             )
             time.sleep(1.0)
 
@@ -143,7 +143,7 @@ class TestImpedanceNode(Node):
         )
 
     def send_joint_target(self, time_to_target):
-        joint_pos = [-0.78, -1.57, -1.57, 1.9, -1.57, -1.57]
+        joint_pos = [0.0, -1.57, -1.57, -1.57, 1.57, 0.0]
 
         self.joint_motion_update_publisher.publish(
             self.generate_joint_motion_update(joint_pos, time_to_target)

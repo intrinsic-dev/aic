@@ -177,7 +177,7 @@ controller_interface::CallbackReturn Controller::on_configure(
   rclcpp::QoS reliable_qos = rclcpp::QoS(rclcpp::KeepLast(10)).reliable();
 
   motion_update_sub_ = this->get_node()->create_subscription<MotionUpdate>(
-      "~/motion_update", reliable_qos,
+      "~/pose_commands", reliable_qos,
       [this](const MotionUpdate::SharedPtr msg) {
         if (get_node()->get_current_state().id() !=
             lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE) {
@@ -223,7 +223,7 @@ controller_interface::CallbackReturn Controller::on_configure(
 
   joint_motion_update_sub_ =
       this->get_node()->create_subscription<JointMotionUpdate>(
-          "~/joint_motion_update", reliable_qos,
+          "~/joint_commands", reliable_qos,
           [this](const JointMotionUpdate::SharedPtr msg) {
             if (get_node()->get_current_state().id() !=
                 lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE) {
