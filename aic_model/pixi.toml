@@ -7,10 +7,6 @@ channels = [
   "conda-forge",
 ]
 
-[package.run-dependencies]
-ros-kilted-aic-model-interfaces = { path = "../aic_interfaces/aic_model_interfaces" }
-ros-kilted-aic-task-interfaces = { path = "../aic_interfaces/aic_task_interfaces" }
-
 [package.host-dependencies]
 ros-kilted-aic-model-interfaces = { path = "../aic_interfaces/aic_model_interfaces" }
 ros-kilted-aic-task-interfaces = { path = "../aic_interfaces/aic_task_interfaces" }
