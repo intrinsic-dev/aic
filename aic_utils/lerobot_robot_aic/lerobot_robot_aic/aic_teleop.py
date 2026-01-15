@@ -16,7 +16,7 @@
 
 from dataclasses import dataclass, field
 
-from lerobot.teleoperators import TeleoperatorConfig
+from lerobot.teleoperators import TeleoperatorConfig, Teleoperator
 from lerobot_teleoperator_devices import KeyboardJointTeleop, KeyboardJointTeleopConfig
 
 from .aic_robot import arm_joint_names

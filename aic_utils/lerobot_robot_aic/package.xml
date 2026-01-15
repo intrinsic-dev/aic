@@ -8,6 +8,9 @@
   <license>Apache-2.0</license>
 
   <exec_depend>aic_control_interfaces</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
 
   <export>
     <build_type>ament_python</build_type>
