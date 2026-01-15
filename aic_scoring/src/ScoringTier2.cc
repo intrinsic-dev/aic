@@ -104,7 +104,12 @@ bool ScoringTier2::StartRecording(const std::string &_filename) {
     return false;
   }
 
-  this->bagWriter.open(_filename);
+  try {
+    this->bagWriter.open(_filename);
+  } catch (const std::exception &e) {
+    RCLCPP_ERROR(this->node->get_logger(), "Failed to open bag: %s", e.what());
+    return false;
+  }
   this->bagOpen = true;
   return true;
 }
