@@ -67,6 +67,8 @@ class AicModel(LifecycleNode):
         self.change_target_mode_client = self.create_client(
             ChangeTargetMode, "/aic_controller/change_target_mode"
         )
+        # while not self.change_target_mode_client.wait_for_service(timeout_sec=1.0):
+        #     self.get_logger().info("Waiting for aic_controller/change_target_mode service....")
 
     def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.get_logger().info(f"on_configure({state})")
