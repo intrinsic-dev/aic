@@ -3393,11 +3393,6 @@ packages:
   - python_abi 3.12.* *_cp312
   - numpy >=1.23,<3
   license: LicenseRef-Apache-2.0
-  sources:
-    ros-kilted-aic-model-interfaces:
-      path: ../aic_interfaces/aic_model_interfaces
-    ros-kilted-aic-task-interfaces:
-      path: ../aic_interfaces/aic_task_interfaces
 - conda: aic_interfaces/aic_model_interfaces
   name: ros-kilted-aic-model-interfaces
   version: 0.0.0
@@ -4771,9 +4766,6 @@ packages:
   - python_abi 3.12.* *_cp312
   - numpy >=1.23,<3
   license: LicenseRef-Apache-2.0
-  sources:
-    ros-kilted-aic-control-interfaces:
-      path: ../../aic_interfaces/aic_control_interfaces
 - conda: https://conda.anaconda.org/robostack-kilted/linux-64/ros-kilted-libstatistics-collector-2.0.1-np2py312h31f38b3_14.conda
   sha256: 9ef1dc270c0691230100ccb859b7294562a9d43065455e9adb2d1247e8d1a8f7
   md5: bdae1170bc009c49ba70165b1db67096
