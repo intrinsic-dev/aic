@@ -37,10 +37,7 @@ target_link_libraries(aic_engine
 
 install(
   TARGETS aic_engine
-  EXPORT aic_engine
-  ARCHIVE DESTINATION lib
-  LIBRARY DESTINATION lib
-  RUNTIME DESTINATION bin
+  DESTINATION lib/${PROJECT_NAME}
 )
 
 # Install directories.
