@@ -64,7 +64,7 @@ ScoringTier2::ScoringTier2(rclcpp::Node *_node, YAML::Node *_config)
         std::lock_guard<std::mutex> lock(this->mutex);
         if (this->bagOpen) {
           rclcpp::Time time_stamp = this->node->now();
-          this->bagWriter.write(msg, "/scoring/tf", "tf2_msgs::msg::TFMessage",
+          this->bagWriter.write(msg, "/scoring/tf", "tf2_msgs/msg/TFMessage",
                                 time_stamp);
         }
       });
@@ -77,7 +77,7 @@ ScoringTier2::ScoringTier2(rclcpp::Node *_node, YAML::Node *_config)
         if (this->bagOpen) {
           rclcpp::Time time_stamp = this->node->now();
           this->bagWriter.write(msg, "/scoring/tf_static",
-                                "tf2_msgs::msg::TFMessage", time_stamp);
+                                "tf2_msgs/msg/TFMessage", time_stamp);
         }
       });
 
@@ -90,7 +90,7 @@ ScoringTier2::ScoringTier2(rclcpp::Node *_node, YAML::Node *_config)
             if (this->bagOpen) {
               rclcpp::Time time_stamp = this->node->now();
               this->bagWriter.write(msg, "/aic/gazebo/contacts/off_limit",
-                                    "ros_gz_interfaces::msg::Contacts",
+                                    "ros_gz_interfaces/msg/Contacts",
                                     time_stamp);
             }
           });
