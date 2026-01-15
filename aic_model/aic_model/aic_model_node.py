@@ -15,9 +15,9 @@
 #
 
 
+import importlib
 import numpy as np
 import rclpy
-import textwrap
 
 from aic_control_interfaces.msg import MotionUpdate, TrajectoryGenerationMode
 from aic_control_interfaces.srv import ChangeTargetMode
@@ -37,12 +37,18 @@ from rclpy.node import Node
 from rclpy.task import Future
 from std_srvs.srv import Empty
 from trajectory_msgs.msg import JointTrajectoryPoint
+from .aic_mode_policy import AicModelPolicy
 
 
-class AicModel(LifecycleNode):
+class AicModelNode(LifecycleNode):
     def __init__(self):
-        super().__init__("aic_model")
-        self.get_logger().info("Hello, world!")
+        super().__init__("aic_model_node")
+        self.declare_parameter("policy", "WaveArm")
+        policy_name = self.get_parameter('policy').get_parameter_value().string_value
+        self.get_logger().info(f"Loading policy: {policy_name}")
+        policy_module = importlib.import_module(policy_name, 'policies')
+        self.get_logger().info(f"Loaded module OK")
+
         self.cancel_service = self.create_service(
             Empty, "cancel_task", self.cancel_task_callback
         )
@@ -74,11 +80,14 @@ class AicModel(LifecycleNode):
 
     def on_activate(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.get_logger().info(f"activating...")
+        self._policy = AicModelPolicy(self)
         self.is_active = True
         return super().on_activate(state)
 
     def on_deactivate(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.get_logger().info(f"on_deactivate({state})")
+        self._policy.stop_callback()
+        self._policy = None
         self.is_active = False
         return super().on_deactivate(state)
 
@@ -287,8 +296,8 @@ class AicModel(LifecycleNode):
 def main(args=None):
     try:
         with rclpy.init(args=args):
-            aic_model = AicModel()
-            rclpy.spin(aic_model)
+            aic_model_node = AicModelNode()
+            rclpy.spin(aic_model_node)
     except (KeyboardInterrupt, ExternalShutdownException):
         pass
 
