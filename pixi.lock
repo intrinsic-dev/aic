@@ -3459,13 +3459,16 @@ packages:
   variants:
     target_platform: linux-64
   depends:
+  - ros-kilted-aic-control-interfaces
   - ros-kilted-aic-model-interfaces
   - ros-kilted-aic-task-interfaces
+  - ros-kilted-geometry-msgs
   - ros-kilted-lifecycle
   - ros-kilted-lifecycle-msgs
   - ros-kilted-rclpy
   - ros-kilted-sensor-msgs
   - ros-kilted-std-srvs
+  - ros-kilted-trajectory-msgs
   - ros2-distro-mutex
   - ros2-distro-mutex >=0.12.0,<0.13.0a0
   - libgcc >=15

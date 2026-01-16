@@ -129,7 +129,7 @@ class AICRobotAICController(Robot):
         self.robot_node = Node("aic_robot_node")
 
         self.motion_update_pub = self.robot_node.create_publisher(
-            MotionUpdate, "/aic_controller/motion_update", 10
+            MotionUpdate, "/aic_controller/pose_commands", 10
         )
         self.gripper_pub = self.robot_node.create_publisher(
             Float32, "gripper_client/target_gripper_width_percent", 10
