@@ -50,7 +50,7 @@ ScoringTier2::ScoringTier2(rclcpp::Node *_node, YAML::Node *_config)
     auto sub = this->node->create_generic_subscription(
         topic.name, topic.type, rclcpp::QoS(10),
         [this, topic](std::shared_ptr<const rclcpp::SerializedMessage> msg,
-                         const rclcpp::MessageInfo& msg_info) {
+                      const rclcpp::MessageInfo& msg_info) {
           // Bag the data.
           const auto &rmw_info = msg_info.get_rmw_message_info();
           std::lock_guard<std::mutex> lock(this->mutex);
