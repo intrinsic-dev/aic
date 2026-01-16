@@ -384,6 +384,8 @@ EngineState Engine::initialize() {
       node_->create_client<SpawnEntitySrv>("/gz_server/spawn_entity");
   delete_entity_client_ =
       node_->create_client<DeleteEntitySrv>("/gz_server/delete_entity");
+  tf_buffer_ = std::make_unique<tf2_ros::Buffer>(node_->get_clock());
+  tf_listener_ = std::make_unique<tf2_ros::TransformListener>(*tf_buffer_);
 
   engine_state_ = EngineState::Initialized;
   RCLCPP_INFO(node_->get_logger(), "AIC Engine initialized successfully.");
@@ -554,10 +556,18 @@ bool Engine::ready_simulator() {
 
   // Spawn the cable.
   RCLCPP_INFO(node_->get_logger(), "Spawning cable.");
+  // Get the current gripper pose, and set the cable pose accordingly.
+  std::string warning_msg;
+  if (!tf_buffer_->canTransform("world", "gripper/tcp", tf2::TimePointZero,
+                                tf2::durationFromSec(1.0), &warning_msg)) {
+    RCLCPP_WARN(node_->get_logger(), "TF Wait Failed: %s", warning_msg.c_str());
+    return false;
+  }
+  geometry_msgs::msg::TransformStamped t =
+      tf_buffer_->lookupTransform("world", "gripper/tcp", tf2::TimePointZero);
   const auto& cable_config = active_trial_->config["scene"]["cable"];
-  if (this->spawn_cable(cable_config["pose"]["x"].as<double>(),
-                        cable_config["pose"]["y"].as<double>(),
-                        cable_config["pose"]["z"].as<double>(),
+  if (this->spawn_cable(t.transform.translation.x, t.transform.translation.y,
+                        t.transform.translation.z,
                         cable_config["pose"]["roll"].as<double>(),
                         cable_config["pose"]["pitch"].as<double>(),
                         cable_config["pose"]["yaw"].as<double>())) {

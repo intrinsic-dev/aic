@@ -32,6 +32,9 @@
 #include "sensor_msgs/msg/joint_state.hpp"
 #include "simulation_interfaces/srv/delete_entity.hpp"
 #include "simulation_interfaces/srv/spawn_entity.hpp"
+#include "tf2/exceptions.hpp"
+#include "tf2_ros/buffer.h"
+#include "tf2_ros/transform_listener.h"
 #include "yaml-cpp/yaml.h"
 
 //==============================================================================
@@ -173,6 +176,10 @@ class Engine {
   // Service clients.
   rclcpp::Client<SpawnEntitySrv>::SharedPtr spawn_entity_client_;
   rclcpp::Client<DeleteEntitySrv>::SharedPtr delete_entity_client_;
+
+  // TF
+  std::unique_ptr<tf2_ros::TransformListener> tf_listener_;
+  std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
 
   // Strings.
   // Name of the aic_adapter node for lifecycle transitions.
