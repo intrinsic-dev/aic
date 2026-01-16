@@ -757,6 +757,12 @@ controller_interface::return_type Controller::update(
         auto latest_target_state =
             CartesianState(motion_update_.pose, motion_update_.velocity);
 
+        // If using velocity mode, set the current pose as the target pose
+        if (motion_update_.trajectory_generation_mode.mode ==
+            TrajectoryGenerationMode::MODE_VELOCITY) {
+          latest_target_state.pose = current_tool_state_.pose;
+        }
+
         // If target values or time_to_target_seconds is unchanged, then we keep
         // the current remaining_time_to_target_seconds_ such that the current
         // trajectory continues to the target.
@@ -922,8 +928,18 @@ controller_interface::return_type Controller::update(
         return controller_interface::return_type::ERROR;
       }
       last_tool_pose_error_ = tool_pose_error;
+
+      // Transform target velocity from TCP frame into base frame
+      Eigen::Matrix<double, 6, 1> ref_tool_vel_base_frame;
+      ref_tool_vel_base_frame.head<3>() =
+          current_tool_state_.pose.rotation().inverse() *
+          new_tool_reference.velocity.head<3>();
+      ref_tool_vel_base_frame.tail<3>() =
+          current_tool_state_.pose.rotation().inverse() *
+          new_tool_reference.velocity.tail<3>();
+
       Eigen::Matrix<double, 6, 1> tool_vel_error =
-          new_tool_reference.velocity - current_tool_state_.velocity;
+          ref_tool_vel_base_frame - current_tool_state_.velocity;
 
       // Calculate the current Jacobian.
       Eigen::Matrix<double, 6, Eigen::Dynamic> jacobian(6, num_joints_);
@@ -1592,6 +1608,10 @@ bool Controller::update_reference_linear_interpolation(
   if (velocity_only) {
     // Integrate reference pose by one timestep
     new_reference = utils::integrate_pose(new_reference, control_frequency);
+    // Clamp new_reference to limits after integration
+    clamp_reference_to_limits(cartesian_limits_,
+                              TrajectoryGenerationMode::MODE_POSITION,
+                              new_reference);
   }
 
   return true;
@@ -1652,6 +1672,9 @@ bool Controller::update_joint_reference_linear_interpolation(
   if (velocity_only) {
     // Integrate reference pose by one timestep
     new_reference.positions += target_state.velocities / control_frequency;
+    // Clamp new_reference to limits after integration
+    clamp_joint_reference_to_limits(
+        joint_limits_, TrajectoryGenerationMode::MODE_POSITION, new_reference);
   }
 
   return true;

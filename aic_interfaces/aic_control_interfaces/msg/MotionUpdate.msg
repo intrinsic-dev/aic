@@ -4,11 +4,11 @@
 std_msgs/Header header
 
 # Note: These targets are used according to the trajectory_generation_mode specified below.
-# Pose target.
+# Pose target in the fixed frame of the robot base.
 geometry_msgs/Pose pose
-# Velocity target.
+# Velocity target in the non-fixed frame of the robot TCP.
 geometry_msgs/Twist velocity
-# Acceleration target.
+# Acceleration target in the non-fixed frame of the robot TCP.
 geometry_msgs/Accel acceleration
 
 # Impedance matrices for Cartesian impedance control.
