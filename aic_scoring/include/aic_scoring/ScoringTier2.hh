@@ -20,13 +20,11 @@
 #include <memory>
 #include <mutex>
 #include <string>
+#include <vector>
 
 #include <gz/math/Pose3.hh>
 #include <rclcpp/rclcpp.hpp>
-#include <ros_gz_interfaces/msg/contacts.hpp>
 #include <rosbag2_cpp/writer.hpp>
-#include <sensor_msgs/msg/joint_state.hpp>
-#include <tf2_msgs/msg/tf_message.hpp>
 
 #ifndef AIC_SCORING__SCORING_TIER2_HH_
 #define AIC_SCORING__SCORING_TIER2_HH_
@@ -44,6 +42,16 @@ namespace aic_scoring
 
     /// \brief Position.
     public: gz::math::Vector3d position;
+  };
+
+  /// \brief Topic info POD.
+  struct TopicInfo
+  {
+    /// \brief Topic name.
+    std::string name;
+
+    /// \brief Topic type (e.g., sensor_msgs/msg/JointState).
+    std::string type;
   };
 
   // The Tier2 scoring interface.
@@ -84,21 +92,12 @@ namespace aic_scoring
     /// \brief Pointer to a node.
     private: rclcpp::Node *node;
 
-    /// \brief Joint state subscription.
-    private: rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr
-      jointStateSub;
+    /// \brief Topics to subscribe to.
+    private: std::vector<TopicInfo> topics;
 
-    /// \brief tf subscription.
-    private: rclcpp::Subscription<tf2_msgs::msg::TFMessage>::SharedPtr
-      tfSub;
-
-    /// \brief Static tf subscription.
-    private: rclcpp::Subscription<tf2_msgs::msg::TFMessage>::SharedPtr
-      tfStaticSub;
-
-    /// \brief Contacts subscription.
-    private: rclcpp::Subscription<ros_gz_interfaces::msg::Contacts>::SharedPtr
-      contactsSub;
+    /// \brief Generic subscriptions for all topics.
+    private: std::vector<std::shared_ptr<rclcpp::GenericSubscription>>
+      subscriptions;
 
     /// \brief A YAML node.
     private: YAML::Node yamlNode;
