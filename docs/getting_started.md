@@ -131,3 +131,29 @@ ros2 launch aic_bringup spawn_task_board.launch.py \
   nic_card_mount_03_delta_x:=0.012 nic_card_mount_04_delta_x:=-0.015 \
   nic_card_mount_05_delta_x:=0.01
 ```
+
+Run a minimal `aic_model` demo. This demo `aic_model` implementation should wave the arm back and forth for 30 seconds, before the goal is canceled.
+```bash
+source ~/ws_aic/install/setup.bash
+export RMW_IMPLEMENTATION=rmw_zenoh_cpp
+export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
+
+ros2 run rmw_zenoh_cpp rmw_zenohd
+
+# Run this in a different shell, for convenience
+ros2 launch aic_bringup aic_gz_bringup.launch.py \
+  spawn_cable:=true attach_cable_to_gripper:=true \
+  nic_card_mount_0_present:=true \
+  sc_port_0_present:=true sc_port_1_present:=true \
+  ground_truth:=true
+
+# Run this in a different shell, for convenience
+ros2 run aic_adapter aic_adapter
+
+# Run this in a different shell, for convenience
+ros2 run aic_model model_node
+
+# Run this in a different shell, for convenience
+cd ~/ws_aic/src/aic/aic_model/test
+./create_and_cancel_task.py
+```
