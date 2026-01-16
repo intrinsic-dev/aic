@@ -48,9 +48,6 @@ Trial::Trial(const std::string& _id, YAML::Node _config)
   if (!_config["tasks"]) {
     throw std::runtime_error("Config missing required key: 'tasks'");
   }
-  if (!_config["scoring"]) {
-    throw std::runtime_error("Config missing required key: 'scoring'");
-  }
 
   // Validate scene.task_board
   const auto& scene = _config["scene"];
@@ -215,12 +212,6 @@ Trial::Trial(const std::string& _id, YAML::Node _config)
     this->tasks[task_id] = task;
   }
 
-  // Validate scoring array
-  const auto& scoring = _config["scoring"];
-  if (!scoring.IsSequence() || scoring.size() == 0) {
-    throw std::runtime_error("Config 'scoring' must be a non-empty array");
-  }
-
   config = _config;
   state = TrialState::Uninitialized;
 }
@@ -239,11 +230,13 @@ Engine::Engine(const rclcpp::NodeOptions& options)
   // Declare ROS parameters.
   adapter_node_name_ = node_->declare_parameter(
       "adapter_node_name", std::string("aic_adapter_node"));
-  model_node_name_ = node_->declare_parameter("model_node_name",
-                                              std::string("aic_model_node"));
+  model_node_name_ =
+      node_->declare_parameter("model_node_name", std::string("aic_model"));
   node_->declare_parameter("config_file_path", std::string(""));
-  node_->declare_parameter("endpoint_discovery_timeout_seconds", 10);
+  node_->declare_parameter("endpoint_ready_timeout_seconds", 10);
   ground_truth_ = node_->declare_parameter("ground_truth", false);
+  skip_model_ready_ = node_->declare_parameter("skip_model_ready", false);
+  node_->declare_parameter("model_ready_timeout_seconds", 30);
 
   spin_thread_ = std::thread([node = node_]() {
     rclcpp::executors::SingleThreadedExecutor executor;
@@ -382,6 +375,7 @@ EngineState Engine::run() {
       RCLCPP_ERROR(node_->get_logger(),
                    "Trial '%s' failed or was not completed.", trial_id.c_str());
       engine_state_ = EngineState::Error;
+      // TODO(Yadunund): Clean up and write scoring data.
       return engine_state_;
     }
   }
@@ -397,13 +391,19 @@ TrialState Engine::handle_trial(const Trial& trial) {
 
   TrialState current_state = TrialState::Uninitialized;
 
-  if (!this->check_required_endpoints()) {
-    RCLCPP_ERROR(node_->get_logger(), "Required endpoints are not available.");
-    current_state = TrialState::Uninitialized;
+  if (!this->check_model()) {
+    RCLCPP_ERROR(node_->get_logger(), "Participant model is not ready.");
     reset_after_trial();
     return current_state;
   }
-  current_state = TrialState::EndpointsAvailable;
+  current_state = TrialState::ModelReady;
+
+  if (!this->check_endpoints()) {
+    RCLCPP_ERROR(node_->get_logger(), "Required endpoints are not available.");
+    reset_after_trial();
+    return current_state;
+  }
+  current_state = TrialState::EndpointsReady;
 
   if (!this->ready_simulator()) {
     RCLCPP_ERROR(node_->get_logger(), "Simulator is not ready.");
@@ -438,15 +438,70 @@ TrialState Engine::handle_trial(const Trial& trial) {
 }
 
 //==============================================================================
-bool Engine::check_required_endpoints() {
+bool Engine::check_model() {
+  RCLCPP_INFO(node_->get_logger(), "Checking participant model readiness...");
+
+  if (skip_model_ready_) {
+    RCLCPP_WARN(node_->get_logger(),
+                "Skipping model readiness check as per parameter.");
+    return true;
+  }
+
+  RCLCPP_INFO(node_->get_logger(),
+              "Checking if lifecycle node '%s' is available...",
+              model_node_name_.c_str());
+  rclcpp::Time start_time = this->node_->now();
+  const rclcpp::Duration timeout = rclcpp::Duration::from_seconds(
+      this->node_->get_parameter("model_ready_timeout_seconds").as_int());
+
+  // Check for lifecycle node by looking for its get_state service
+  const std::string get_state_service = "/" + model_node_name_ + "/get_state";
+  bool model_discovered = false;
+
+  while (!model_discovered && !(this->node_->now() - start_time > timeout)) {
+    RCLCPP_INFO(node_->get_logger(),
+                "Checking if lifecycle node '%s' is available...",
+                model_node_name_.c_str());
+    const auto service_names_and_types = node_->get_service_names_and_types();
+    auto it = service_names_and_types.find(get_state_service);
+    if (it != service_names_and_types.end()) {
+      // Verify it's actually a lifecycle service by checking the type
+      const auto& service_types = it->second;
+      for (const auto& type : service_types) {
+        if (type == "lifecycle_msgs/srv/GetState") {
+          model_discovered = true;
+          break;
+        }
+      }
+    }
+    if (!model_discovered) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    }
+  }
+
+  if (!model_discovered) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "Lifecycle node '%s' not discovered after waiting (checked "
+                 "for service '%s' with type 'lifecycle_msgs/srv/GetState')",
+                 model_node_name_.c_str(), get_state_service.c_str());
+    return false;
+  }
+
+  RCLCPP_INFO(node_->get_logger(), "Lifecycle node '%s' is available",
+              model_node_name_.c_str());
+
+  return true;
+}
+
+//==============================================================================
+bool Engine::check_endpoints() {
   RCLCPP_INFO(node_->get_logger(), "Checking required endpoints...");
 
   // Check nodes
   bool all_available = false;
   rclcpp::Time start_time = this->node_->now();
   const rclcpp::Duration timeout = rclcpp::Duration::from_seconds(
-      this->node_->get_parameter("endpoint_discovery_timeout_seconds")
-          .as_int());
+      this->node_->get_parameter("endpoint_ready_timeout_seconds").as_int());
   const auto& node_graph = node_->get_node_graph_interface();
 
   while (!all_available && !(this->node_->now() - start_time > timeout)) {

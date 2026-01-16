@@ -57,17 +57,19 @@ enum class EngineState : uint8_t {
 
 //==============================================================================
 // For each trial, track its state.
-// States progress from Uninitialized -> EndpointsAvailable -> SimulatorReady
+// States progress from Uninitialized -> EndpointsReady -> SimulatorReady
 // ->ScoringReady -> TaskStarted -> TaskCompleted
 // Uninitialized: Trial has not started.
-// EndpointsAvailable: Required nodes are up and running.
+// ModelReady: Participant model node is available and conforms to challenge
+// requirements. EndpointsReady: Required nodes are up and running.
 // SimulatorReady: Simulator is ready with the task board and cables spawned.
 // ScoringReady: Scoring system is ready to track performance.
 // TaskStarted: Task goal has been sent to the participant model. Clock started.
 // TaskCompleted: Task has been completed successfully or time limit reached.
 enum class TrialState : uint8_t {
   Uninitialized = 0,
-  EndpointsAvailable,
+  ModelReady,
+  EndpointsReady,
   SimulatorReady,
   ScoringReady,
   TaskStarted,
@@ -115,9 +117,14 @@ class Engine {
   /// \brief Reset internal and simulator states after a trial is completed.
   void reset_after_trial();
 
+  /// \brief Check if the participant model is ready. As per challenge
+  /// requirements. See challenge_rules.md for details. \return True if the
+  /// model is ready, false otherwise.
+  bool check_model();
+
   /// \brief Check if required endpoints are available.
   /// \return True if all required endpoints are available, false otherwise.
-  bool check_required_endpoints();
+  bool check_endpoints();
 
   /// \brief Check if the simulator is ready.
   /// \return True if the simulator is ready, false otherwise.
@@ -185,6 +192,9 @@ class Engine {
 
   // Whether to publish ground truth data for scoring.
   bool ground_truth_;
+
+  // Parameters to skip states for testing purposes.
+  bool skip_model_ready_;
 };
 
 }  // namespace aic
