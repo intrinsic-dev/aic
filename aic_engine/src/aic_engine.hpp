@@ -27,6 +27,8 @@
 
 #include "aic_task_interfaces/action/insert_cable.hpp"
 #include "geometry_msgs/msg/wrench_stamped.hpp"
+#include "lifecycle_msgs/msg/state.hpp"
+#include "lifecycle_msgs/srv/get_state.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
@@ -153,6 +155,19 @@ class Engine {
   bool spawn_task_board(double x, double y, double z, double roll, double pitch,
                         double yaw);
 
+  /// @brief Check if the model is in the unconfigured state together with other
+  /// expectations in this state.
+  /// @return True if the model is unconfigured, false otherwise.
+  bool model_is_unconfigured();
+
+  // Strings.
+  // Name of the aic_adapter node for lifecycle transitions.
+  std::string adapter_node_name_;
+  // Name of the participant's model node for lifecycle transitions.
+  std::string model_node_name_;
+  // Name of the service to get the lifecycle state of the model node.
+  std::string model_get_state_service_name_;
+
   // Internal ROS 2 node.
   rclcpp::Node::SharedPtr node_;
   // Subscriptions.
@@ -168,12 +183,8 @@ class Engine {
   // Service clients.
   rclcpp::Client<SpawnEntitySrv>::SharedPtr spawn_entity_client_;
   rclcpp::Client<DeleteEntitySrv>::SharedPtr delete_entity_client_;
-
-  // Strings.
-  // Name of the aic_adapter node for lifecycle transitions.
-  std::string adapter_node_name_;
-  // Name of the participant's model node for lifecycle transitions.
-  std::string model_node_name_;
+  rclcpp::Client<lifecycle_msgs::srv::GetState>::SharedPtr
+      model_get_state_client_;
 
   // Task config.
   YAML::Node config_;

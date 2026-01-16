@@ -234,6 +234,7 @@ Engine::Engine(const rclcpp::NodeOptions& options)
       "adapter_node_name", std::string("aic_adapter_node"));
   model_node_name_ =
       node_->declare_parameter("model_node_name", std::string("aic_model"));
+  model_get_state_service_name_ = "/" + model_node_name_ + "/get_state";
   node_->declare_parameter("config_file_path", std::string(""));
   node_->declare_parameter("endpoint_ready_timeout_seconds", 10);
   ground_truth_ = node_->declare_parameter("ground_truth", false);
@@ -351,6 +352,8 @@ EngineState Engine::initialize() {
       node_->create_client<SpawnEntitySrv>("/gz_server/spawn_entity");
   delete_entity_client_ =
       node_->create_client<DeleteEntitySrv>("/gz_server/delete_entity");
+  model_get_state_client_ = node_->create_client<lifecycle_msgs::srv::GetState>(
+      model_get_state_service_name_);
 
   engine_state_ = EngineState::Initialized;
   RCLCPP_INFO(node_->get_logger(), "AIC Engine initialized successfully.");
@@ -440,74 +443,22 @@ TrialState Engine::handle_trial(const Trial& trial) {
 }
 
 //==============================================================================
-bool Engine::check_model() {
-  RCLCPP_INFO(node_->get_logger(), "Checking participant model readiness...");
-
-  if (skip_model_ready_) {
-    RCLCPP_WARN(node_->get_logger(),
-                "Skipping model readiness check as per parameter.");
-    return true;
-  }
-
-  RCLCPP_INFO(node_->get_logger(),
-              "Checking if lifecycle node '%s' is available...",
-              model_node_name_.c_str());
-  rclcpp::Time start_time = this->node_->now();
-  const rclcpp::Duration timeout = rclcpp::Duration::from_seconds(
-      this->node_->get_parameter("model_ready_timeout_seconds").as_int());
-
-  // Check for lifecycle node by looking for its get_state service
-  const std::string get_state_service = "/" + model_node_name_ + "/get_state";
-  bool model_discovered = false;
-
-  while (!model_discovered && !(this->node_->now() - start_time > timeout)) {
-    RCLCPP_INFO(node_->get_logger(),
-                "Checking if lifecycle node '%s' is available...",
-                model_node_name_.c_str());
-    const auto service_names_and_types = node_->get_service_names_and_types();
-    auto it = service_names_and_types.find(get_state_service);
-    if (it != service_names_and_types.end()) {
-      // Verify it's actually a lifecycle service by checking the type
-      const auto& service_types = it->second;
-      for (const auto& type : service_types) {
-        if (type == "lifecycle_msgs/srv/GetState") {
-          model_discovered = true;
-          break;
-        }
-      }
-    }
-    if (!model_discovered) {
-      std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-    }
-  }
-
-  if (!model_discovered) {
-    RCLCPP_ERROR(node_->get_logger(),
-                 "Lifecycle node '%s' not discovered after waiting (checked "
-                 "for service '%s' with type 'lifecycle_msgs/srv/GetState')",
-                 model_node_name_.c_str(), get_state_service.c_str());
-    return false;
-  }
-
+bool Engine::model_is_unconfigured() {
   RCLCPP_INFO(node_->get_logger(),
               "Lifecycle node '%s' is available. Checking if it is in "
               "'unconfigured' state...",
               model_node_name_.c_str());
 
-  // Create a client for the get_state service
-  auto get_state_client =
-      node_->create_client<lifecycle_msgs::srv::GetState>(get_state_service);
-
-  if (!get_state_client->wait_for_service(std::chrono::seconds(5))) {
+  if (!model_get_state_client_->wait_for_service(std::chrono::seconds(5))) {
     RCLCPP_ERROR(node_->get_logger(),
                  "GetState service '%s' not available after waiting",
-                 get_state_service.c_str());
+                 model_get_state_service_name_.c_str());
     return false;
   }
 
   // Call the service to get current state
   auto request = std::make_shared<lifecycle_msgs::srv::GetState::Request>();
-  auto future = get_state_client->async_send_request(request);
+  auto future = model_get_state_client_->async_send_request(request);
 
   if (future.wait_for(std::chrono::seconds(5)) != std::future_status::ready) {
     RCLCPP_ERROR(node_->get_logger(),
@@ -533,6 +484,65 @@ bool Engine::check_model() {
   RCLCPP_INFO(node_->get_logger(),
               "Lifecycle node '%s' is in 'unconfigured' state",
               model_node_name_.c_str());
+
+  // Check that the model is not publishing any robot command topics.
+
+  return true;
+}
+
+//==============================================================================
+bool Engine::check_model() {
+  RCLCPP_INFO(node_->get_logger(), "Checking participant model readiness...");
+
+  if (skip_model_ready_) {
+    RCLCPP_WARN(node_->get_logger(),
+                "Skipping model readiness check as per parameter.");
+    return true;
+  }
+
+  RCLCPP_INFO(node_->get_logger(),
+              "Checking if lifecycle node '%s' is available...",
+              model_node_name_.c_str());
+  rclcpp::Time start_time = this->node_->now();
+  const rclcpp::Duration timeout = rclcpp::Duration::from_seconds(
+      this->node_->get_parameter("model_ready_timeout_seconds").as_int());
+
+  // Check for lifecycle node by looking for its get_state service
+  bool model_discovered = false;
+
+  while (!model_discovered && !(this->node_->now() - start_time > timeout)) {
+    RCLCPP_INFO(node_->get_logger(),
+                "Checking if lifecycle node '%s' is available...",
+                model_node_name_.c_str());
+    const auto service_names_and_types = node_->get_service_names_and_types();
+    auto it = service_names_and_types.find(model_get_state_service_name_);
+    if (it != service_names_and_types.end()) {
+      // Verify it's actually a lifecycle service by checking the type
+      const auto& service_types = it->second;
+      for (const auto& type : service_types) {
+        if (type == "lifecycle_msgs/srv/GetState") {
+          model_discovered = true;
+          break;
+        }
+      }
+    }
+    if (!model_discovered) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    }
+  }
+
+  if (!model_discovered) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "Lifecycle node '%s' not discovered after waiting (checked "
+                 "for service '%s' with type 'lifecycle_msgs/srv/GetState')",
+                 model_node_name_.c_str(),
+                 model_get_state_service_name_.c_str());
+    return false;
+  }
+
+  if (!model_is_unconfigured()) {
+    return false;
+  }
 
   return true;
 }
