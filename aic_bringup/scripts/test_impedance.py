@@ -97,9 +97,7 @@ class TestImpedanceNode(Node):
                 linear=Vector3(x=twist[0], y=twist[1], z=twist[2]),
                 angular=Vector3(x=twist[3], y=twist[4], z=twist[5]),
             )
-        msg.target_stiffness = np.diag(
-            [75.0, 75.0, 75.0, 75.0, 75.0, 75.0]
-        ).flatten()
+        msg.target_stiffness = np.diag([75.0, 75.0, 75.0, 75.0, 75.0, 75.0]).flatten()
         msg.target_damping = np.diag([35.0, 35.0, 35.0, 35.0, 35.0, 35.0]).flatten()
         msg.feedforward_wrench_at_tip = Wrench(
             force=Vector3(x=0.0, y=0.0, z=0.0),
