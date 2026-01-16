@@ -28,16 +28,6 @@
 namespace aic {
 
 //==============================================================================
-namespace {
-// Static arrays for ROS graph entities to check for
-static const std::vector<std::string> REQUIRED_NODES = {
-    "/aic_adapter_node",
-    "/aic_model",
-};
-
-}  // anonymous namespace
-
-//==============================================================================
 Trial::Trial(const std::string& _id, YAML::Node _config)
     : id(std::move(_id)), spawned_task_board_name(std::nullopt) {
   // Validate config structure
@@ -238,8 +228,8 @@ Engine::Engine(const rclcpp::NodeOptions& options)
   // Declare ROS parameters.
   adapter_node_name_ = node_->declare_parameter(
       "adapter_node_name", std::string("aic_adapter_node"));
-  model_node_name_ = node_->declare_parameter("model_node_name",
-                                              std::string("aic_model_node"));
+  model_node_name_ =
+      node_->declare_parameter("model_node_name", std::string("aic_model"));
   node_->declare_parameter("config_file_path", std::string(""));
   node_->declare_parameter("endpoint_discovery_timeout_seconds", 10);
   ground_truth_ = node_->declare_parameter("ground_truth", false);
@@ -458,8 +448,8 @@ bool Engine::check_required_endpoints() {
   RCLCPP_INFO(node_->get_logger(), "Checking required endpoints...");
 
   // Check nodes
-  std::set<std::string> unavailable(REQUIRED_NODES.begin(),
-                                    REQUIRED_NODES.end());
+  std::set<std::string> unavailable = {this->adapter_node_name_,
+                                       this->model_node_name_};
   rclcpp::Time start_time = this->node_->now();
   const rclcpp::Duration timeout = rclcpp::Duration::from_seconds(
       this->node_->get_parameter("endpoint_discovery_timeout_seconds")
@@ -467,9 +457,10 @@ bool Engine::check_required_endpoints() {
   const auto& node_graph = node_->get_node_graph_interface();
 
   while (!unavailable.empty() && !(this->node_->now() - start_time > timeout)) {
-    const std::vector<std::string> graph_nodes = node_graph->get_node_names();
-    const std::unordered_set<std::string> node_set(graph_nodes.begin(),
-                                                   graph_nodes.end());
+    std::unordered_set<std::string> node_set;
+    for (const auto& [name, _] : node_graph->get_node_names_and_namespaces()) {
+      node_set.insert(name);
+    }
     for (auto it = unavailable.begin(); it != unavailable.end();) {
       if (node_set.count(*it)) {
         // Node found, remove it from unavailable list
