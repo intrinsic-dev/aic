@@ -44,6 +44,7 @@ ros2 launch aic_bringup aic_gz_bringup.launch.py
 - `spawn_cable` (default: `"false"`) - Whether to spawn the cable
 - `cable_description_file` (default: `"cable.sdf.xacro"`) - Cable SDF/XACRO file
 - `attach_cable_to_gripper` (default: `"false"`) - Whether to attach cable to gripper
+- `cable_type` (default: `"sfp_sc_cable"`) - Type of cable to spawn. Options: [`sfp_sc_cable`, `sfp_sc_cable_reversed`]
 - `cable_x` (default: `"0.16"`) - Cable spawn X position (meters)
 - `cable_y` (default: `"0.2927"`) - Cable spawn Y position (meters)
 - `cable_z` (default: `"1.4166"`) - Cable spawn Z position (meters)

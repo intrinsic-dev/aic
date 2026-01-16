@@ -78,6 +78,7 @@ def launch_setup(context, *args, **kwargs):
     cable_pitch = LaunchConfiguration("cable_pitch")
     cable_yaw = LaunchConfiguration("cable_yaw")
     attach_cable_to_gripper = LaunchConfiguration("attach_cable_to_gripper")
+    cable_type = LaunchConfiguration("cable_type")
     ground_truth = LaunchConfiguration("ground_truth")
 
     robot_description_content = Command(
@@ -262,6 +263,7 @@ def launch_setup(context, *args, **kwargs):
             "cable_pitch": cable_pitch,
             "cable_yaw": cable_yaw,
             "attach_cable_to_gripper": attach_cable_to_gripper,
+            "cable_type": cable_type,
         }.items(),
         condition=IfCondition(spawn_cable),
     )
@@ -596,6 +598,14 @@ def generate_launch_description():
             "attach_cable_to_gripper",
             default_value="false",
             description="Whether to attach cable to gripper (applicable only if spawn_cable is true)",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "cable_type",
+            default_value="sfp_sc_cable",
+            description="Type of cable model to spawn. Available options: 'sfp_sc_cable', and 'sfp_sc_cable_reversed'",
+            choices=["sfp_sc_cable", "sfp_sc_cable_reversed"],
         )
     )
     declared_arguments.append(
