@@ -655,21 +655,17 @@ bool Engine::start_tasks() {
                    "Task [%s] timed out after %ld seconds. Cancelling goal.",
                    task_id.c_str(), task.time_limit);
       insert_cable_action_client_->async_cancel_goal(goal_handle);
-      // TODO(@xiyuoh) Uncomment these two lines after aic_model is implemented
-      //               This is only for testing with trial transitions
-      // *task_failed = true;
-      // return;
+      *task_failed = true;
+      return;
     }
 
-    // TODO(@xiyuoh) Uncomment these two lines after aic_model is implemented
-    //               This is only for testing with trial transitions
-    // auto result = result_future.get();
-    // if (!result.result->success) {
-    //   RCLCPP_INFO(this->node_->get_logger(), "Task [%s] failed: %s",
-    //               task_id.c_str(), result.result->message.c_str());
-    //   *task_failed = true;
-    //   return;
-    // }
+    auto result = result_future.get();
+    if (!result.result->success) {
+      RCLCPP_INFO(this->node_->get_logger(), "Task [%s] failed: %s",
+                  task_id.c_str(), result.result->message.c_str());
+      *task_failed = true;
+      return;
+    }
 
     // Task succeeded, move off and send the next task goal
     RCLCPP_INFO(this->node_->get_logger(), "Task [%s] succeeded.",
@@ -768,8 +764,6 @@ void Engine::reset_after_trial() {
       }
     }
   }
-
-  // TODO(@xiyuoh) Reset gripper pose or use gripper poes for cable
 
   RCLCPP_INFO(node_->get_logger(), "Reset after trial completed.");
 }
