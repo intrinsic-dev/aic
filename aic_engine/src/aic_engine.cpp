@@ -400,10 +400,11 @@ EngineState Engine::run() {
   for (const auto& trial_entry : trials_) {
     const std::string& trial_id = trial_entry.first;
     const Trial& trial = trial_entry.second;
+    RCLCPP_INFO(node_->get_logger(), "======================================");
     RCLCPP_INFO(node_->get_logger(), "Handling trial '%s'...",
                 trial_id.c_str());
     TrialState trial_result = this->handle_trial(trial);
-    if (trial_result == TrialState::TaskCompleted) {
+    if (trial_result == TrialState::AllTasksCompleted) {
       RCLCPP_INFO(node_->get_logger(), "Trial '%s' completed successfully.",
                   trial_id.c_str());
     } else {
@@ -447,19 +448,19 @@ TrialState Engine::handle_trial(const Trial& trial) {
   }
   current_state = TrialState::ScoringReady;
 
-  if (!this->start_task()) {
-    RCLCPP_ERROR(node_->get_logger(), "Failed to start task.");
+  if (!this->start_tasks()) {
+    RCLCPP_ERROR(node_->get_logger(), "Tasks failed to start or complete.");
     reset_after_trial();
     return current_state;
   }
   current_state = TrialState::TaskStarted;
 
-  if (!this->task_completed_successfully()) {
-    RCLCPP_ERROR(node_->get_logger(), "Task was not completed successfully.");
+  if (!this->tasks_completed_successfully()) {
+    RCLCPP_ERROR(node_->get_logger(), "Tasks were not completed successfully.");
     reset_after_trial();
     return current_state;
   }
-  current_state = TrialState::TaskCompleted;
+  current_state = TrialState::AllTasksCompleted;
 
   reset_after_trial();
   return current_state;
@@ -581,25 +582,122 @@ bool Engine::ready_scoring() {
 }
 
 //==============================================================================
-bool Engine::start_task() {
-  RCLCPP_INFO(node_->get_logger(), "Starting task for active trial...");
+bool Engine::start_tasks() {
+  RCLCPP_INFO(node_->get_logger(), "Starting tasks for active trial...");
 
-  // TODO(Yadunund): Implement actual task start logic.
-  std::this_thread::sleep_for(std::chrono::seconds(1));
+  if (!this->active_trial_.has_value()) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "No active trial set in engine. Report this bug.");
+    return false;
+  }
+  if (this->active_trial_->tasks.empty()) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "No task provided for this trial. Please check the config");
+    return false;
+  }
 
-  // For now, assume task started successfully.
+  auto tasks_it =
+      std::make_shared<std::unordered_map<std::string, Task>::iterator>(
+          this->active_trial_->tasks.begin());
+
+  auto task_failed = std::make_shared<bool>(false);
+
+  // Send tasks recursively
+  auto send_next_goal = std::make_shared<std::function<void()>>();
+  *send_next_goal = [this, tasks_it, task_failed, send_next_goal]() {
+    // Check if there are more tasks to process
+    if (*tasks_it == this->active_trial_->tasks.end()) {
+      RCLCPP_INFO(node_->get_logger(), "All tasks have been processed.");
+      this->active_trial_->tasks.clear();
+      return;
+    }
+
+    const auto& task_id = (*tasks_it)->first;
+    const auto& task = (*tasks_it)->second;
+
+    auto insert_cable_goal = InsertCableAction::Goal();
+    insert_cable_goal.task = task;
+
+    RCLCPP_INFO(this->node_->get_logger(),
+                "Sending InsertCable goal for task [%s]", task_id.c_str());
+    auto send_goal_future =
+        insert_cable_action_client_->async_send_goal(insert_cable_goal);
+
+    // Handle goal response
+    auto goal_handle = send_goal_future.get();
+    if (!goal_handle) {
+      RCLCPP_ERROR(this->node_->get_logger(),
+                   "InsertCable goal for task [%s] was rejected.",
+                   task_id.c_str());
+      *task_failed = true;
+      return;
+    }
+
+    // Handle goal result
+    auto result_future =
+        insert_cable_action_client_->async_get_result(goal_handle);
+    RCLCPP_INFO(this->node_->get_logger(), "Waiting for result...");
+
+    // Cancel goal if time limit exceeded
+    if (result_future.wait_for(std::chrono::seconds(task.time_limit)) !=
+        std::future_status::ready) {
+      RCLCPP_ERROR(this->node_->get_logger(),
+                   "Task [%s] timed out after %ld seconds. Cancelling goal.",
+                   task_id.c_str(), task.time_limit);
+      insert_cable_action_client_->async_cancel_goal(goal_handle);
+      // TODO(@xiyuoh) Uncomment these two lines after aic_model is implemented
+      //               This is only for testing with trial transitions
+      // *task_failed = true;
+      // return;
+    }
+
+    // TODO(@xiyuoh) Uncomment these two lines after aic_model is implemented
+    //               This is only for testing with trial transitions
+    // auto result = result_future.get();
+    // if (!result.result->success) {
+    //   RCLCPP_INFO(this->node_->get_logger(), "Task [%s] failed: %s",
+    //               task_id.c_str(), result.result->message.c_str());
+    //   *task_failed = true;
+    //   return;
+    // }
+
+    // Task succeeded, move off and send the next task goal
+    RCLCPP_INFO(this->node_->get_logger(), "Task [%s] succeeded.",
+                task_id.c_str());
+    ++(*tasks_it);
+    (*send_next_goal)();
+  };
+
+  // Send the first goal
+  (*send_next_goal)();
+
+  if (*task_failed) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "One or more tasks was rejected or failed.");
+    return false;
+  }
+
   return true;
 }
 
 //==============================================================================
-bool Engine::task_completed_successfully() {
+bool Engine::tasks_completed_successfully() {
   RCLCPP_INFO(node_->get_logger(),
               "Checking if task was completed successfully...");
 
-  // TODO(Yadunund): Implement actual task completion check.
-  std::this_thread::sleep_for(std::chrono::seconds(10));
+  if (!this->active_trial_.has_value()) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "No active trial set in engine. Report this bug.");
+    return false;
+  }
 
-  // For now, assume task was completed successfully.
+  // Check that there are no tasks left in queue
+  if (!this->active_trial_->tasks.empty()) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "There are still pending tasks in the active trial.");
+    return false;
+  }
+
   return true;
 }
 
