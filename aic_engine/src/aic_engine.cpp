@@ -24,6 +24,8 @@
 
 #include "aic_task_interfaces/msg/task.hpp"
 #include "ament_index_cpp/get_package_share_directory.hpp"
+#include "lifecycle_msgs/msg/state.hpp"
+#include "lifecycle_msgs/srv/get_state.hpp"
 
 namespace aic {
 
@@ -487,7 +489,49 @@ bool Engine::check_model() {
     return false;
   }
 
-  RCLCPP_INFO(node_->get_logger(), "Lifecycle node '%s' is available",
+  RCLCPP_INFO(node_->get_logger(),
+              "Lifecycle node '%s' is available. Checking if it is in "
+              "'unconfigured' state...",
+              model_node_name_.c_str());
+
+  // Create a client for the get_state service
+  auto get_state_client =
+      node_->create_client<lifecycle_msgs::srv::GetState>(get_state_service);
+
+  if (!get_state_client->wait_for_service(std::chrono::seconds(5))) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "GetState service '%s' not available after waiting",
+                 get_state_service.c_str());
+    return false;
+  }
+
+  // Call the service to get current state
+  auto request = std::make_shared<lifecycle_msgs::srv::GetState::Request>();
+  auto future = get_state_client->async_send_request(request);
+
+  if (future.wait_for(std::chrono::seconds(5)) != std::future_status::ready) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "GetState service call timed out for node '%s'",
+                 model_node_name_.c_str());
+    return false;
+  }
+
+  auto response = future.get();
+
+  // Check if the state is unconfigured (PRIMARY_STATE_UNCONFIGURED = 1)
+  if (response->current_state.id !=
+      lifecycle_msgs::msg::State::PRIMARY_STATE_UNCONFIGURED) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "Lifecycle node '%s' is not in 'unconfigured' state. Current "
+                 "state: %s (id: %u)",
+                 model_node_name_.c_str(),
+                 response->current_state.label.c_str(),
+                 response->current_state.id);
+    return false;
+  }
+
+  RCLCPP_INFO(node_->get_logger(),
+              "Lifecycle node '%s' is in 'unconfigured' state",
               model_node_name_.c_str());
 
   return true;
