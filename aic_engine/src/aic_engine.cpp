@@ -486,13 +486,13 @@ bool Engine::check_required_endpoints() {
     return false;
   }
 
-  // Check actioins
-  // TODO(Yadunund): Re-enable action server check aic_model is implemented.
-  // if (!insert_cable_action_client_->wait_for_action_server(timeout)) {
-  // 	RCLCPP_ERROR(node_->get_logger(),
-  // 								"Insert cable
-  // action server not available after waiting"); 	return false;
-  // }
+  // Check actions
+  if (!insert_cable_action_client_->wait_for_action_server(
+          timeout.to_chrono<std::chrono::nanoseconds>())) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "Insert cable action server not available after waiting");
+    return false;
+  }
 
   RCLCPP_INFO(node_->get_logger(), "All required endpoints are available.");
   return true;
