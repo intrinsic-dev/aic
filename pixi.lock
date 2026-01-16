@@ -355,8 +355,8 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/62/a1/3d680cbfd5f4b8f15abc1d571870c5fc3e594bb582bc3b64ea099db13e56/jinja2-3.1.6-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/f8/62/d9ba6323b9202dd2fe166beab8a86d29465c41a0288cbe229fac60c1ab8d/jsonlines-4.0.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/d5/58/f5f9d6c0451df3e5cf9c484b1eb6a3abb93016677630a615b925c9da189a/lerobot-0.4.2-py3-none-any.whl
-      - pypi: git+https://github.com/koonpeng/lerobot-ros?subdirectory=lerobot_robot_ros&rev=13cd1798c82be9a47fa26033973d7bc3bdb6886c#13cd1798c82be9a47fa26033973d7bc3bdb6886c
-      - pypi: git+https://github.com/koonpeng/lerobot-ros?subdirectory=lerobot_teleoperator_devices&rev=13cd1798c82be9a47fa26033973d7bc3bdb6886c#13cd1798c82be9a47fa26033973d7bc3bdb6886c
+      - pypi: git+https://github.com/koonpeng/lerobot-ros?subdirectory=lerobot_robot_ros&rev=535ce545a8887c5f58596833827312ddebcbde75#535ce545a8887c5f58596833827312ddebcbde75
+      - pypi: git+https://github.com/koonpeng/lerobot-ros?subdirectory=lerobot_teleoperator_devices&rev=535ce545a8887c5f58596833827312ddebcbde75#535ce545a8887c5f58596833827312ddebcbde75
       - pypi: https://files.pythonhosted.org/packages/3c/2e/8d0c2ab90a8c1d9a24f0399058ab8519a3279d1bd4289511d74e909f060e/markupsafe-3.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/2c/19/04f9b178c2d8a15b076c8b5140708fa6ffc5601fb6f1e975537072df5b2a/mergedeep-1.3.4-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/43/e3/7d92a15f894aa0c9c4b49b8ee9ac9850d6e63b03c9c32c0367a13ae62209/mpmath-1.3.0-py3-none-any.whl
@@ -2024,7 +2024,7 @@ packages:
   - lerobot[libero] ; extra == 'all'
   - lerobot[metaworld] ; extra == 'all'
   requires_python: '>=3.10'
-- pypi: git+https://github.com/koonpeng/lerobot-ros?subdirectory=lerobot_robot_ros&rev=13cd1798c82be9a47fa26033973d7bc3bdb6886c#13cd1798c82be9a47fa26033973d7bc3bdb6886c
+- pypi: git+https://github.com/koonpeng/lerobot-ros?subdirectory=lerobot_robot_ros&rev=535ce545a8887c5f58596833827312ddebcbde75#535ce545a8887c5f58596833827312ddebcbde75
   name: lerobot-robot-ros
   version: 0.1.0
   requires_dist:
@@ -2036,7 +2036,7 @@ packages:
   - geometry-msgs
   - moveit-msgs
   requires_python: '>=3.10'
-- pypi: git+https://github.com/koonpeng/lerobot-ros?subdirectory=lerobot_teleoperator_devices&rev=13cd1798c82be9a47fa26033973d7bc3bdb6886c#13cd1798c82be9a47fa26033973d7bc3bdb6886c
+- pypi: git+https://github.com/koonpeng/lerobot-ros?subdirectory=lerobot_teleoperator_devices&rev=535ce545a8887c5f58596833827312ddebcbde75#535ce545a8887c5f58596833827312ddebcbde75
   name: lerobot-teleoperator-devices
   version: 0.1.0
   requires_dist:
@@ -4785,6 +4785,9 @@ packages:
     target_platform: linux-64
   depends:
   - ros-kilted-aic-control-interfaces
+  - ros-kilted-geometry-msgs
+  - ros-kilted-sensor-msgs
+  - ros-kilted-std-msgs
   - ros2-distro-mutex
   - ros2-distro-mutex >=0.12.0,<0.13.0a0
   - libgcc >=15

@@ -9,6 +9,8 @@ from lerobot.teleoperators import Teleoperator, TeleoperatorConfig
 from lerobot.utils.errors import DeviceAlreadyConnectedError, DeviceNotConnectedError
 from rclpy.executors import SingleThreadedExecutor
 
+from .types import motion_update_action_features
+
 
 @TeleoperatorConfig.register_subclass("aic_spacemouse")
 @dataclass(kw_only=True)
@@ -27,15 +29,7 @@ class AICSpaceMouseTeleop(Teleoperator):
 
     @property
     def action_features(self) -> dict:
-        return {
-            "linear.x": float,
-            "linear.y": float,
-            "linear.z": float,
-            "angular.x": float,
-            "angular.y": float,
-            "angular.z": float,
-            "gripper_width_percent": float,
-        }
+        return motion_update_action_features()
 
     @property
     def feedback_features(self) -> dict:
