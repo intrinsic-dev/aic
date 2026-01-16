@@ -427,15 +427,13 @@ TrialState Engine::handle_trial(const Trial& trial) {
 }
 
 /// Given a set [s1, s2, s3] returns a string "s1, s2, s3"
+//==============================================================================
 static std::string string_set_to_csv(const std::set<std::string>& strings) {
-  std::string result;
   if (strings.empty()) {
-    return result;
-  }
-  if (strings.size() == 1) {
-    return *strings.begin();
+    return "";
   }
   auto it = strings.begin();
+  std::string result;
   for (; it != std::prev(strings.end()); ++it) {
     result += *it + ", ";
   }
