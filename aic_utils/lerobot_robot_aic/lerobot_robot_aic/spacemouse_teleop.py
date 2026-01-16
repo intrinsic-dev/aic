@@ -42,7 +42,8 @@ class AICSpaceMouseTeleop(Teleoperator):
         # TODO
         return {}
 
-    def is_connect(self) -> bool:
+    @property
+    def is_connected(self) -> bool:
         return self._is_connected
 
     def _button_callback(self, state, buttons, pressed_buttons):
