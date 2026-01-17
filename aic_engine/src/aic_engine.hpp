@@ -174,6 +174,16 @@ class Engine {
   /// @return True if configuration succeeded, false otherwise.
   bool configure_model_node();
 
+  /// @brief Activate the model node to transition from configured to active
+  /// state.
+  /// @return True if activation succeeded, false otherwise.
+  bool activate_model_node();
+
+  /// @brief Deactivate the model node to transition from active to configured
+  /// state.
+  /// @return True if deactivation succeeded, false otherwise.
+  bool deactivate_model_node();
+
   // Strings.
   // Name of the aic_adapter node for lifecycle transitions.
   std::string adapter_node_name_;
@@ -215,6 +225,8 @@ class Engine {
   YAML::Node config_;
 
   // All trials parsed from config.
+  // Variable to track first trial as want to configure model only once.
+  bool is_first_trial_;
   std::vector<std::pair<std::string, Trial>> trials_;
 
   // The active trial.

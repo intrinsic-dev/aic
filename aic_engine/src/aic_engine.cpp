@@ -226,6 +226,7 @@ Engine::Engine(const rclcpp::NodeOptions& options)
       joint_state_sub_(nullptr),
       insert_cable_action_client_(nullptr),
       spawn_entity_client_(nullptr),
+      is_first_trial_(true),
       active_trial_(std::nullopt),
       engine_state_(EngineState::Uninitialized) {
   RCLCPP_INFO(node_->get_logger(), "Creating AIC Engine...");
@@ -676,21 +677,18 @@ bool Engine::check_model() {
     return false;
   }
 
-  if (!model_node_is_unconfigured()) {
+  if (is_first_trial_ && !model_node_is_unconfigured()) {
     return false;
   }
 
-  if (!configure_model_node()) {
+  if (is_first_trial_ && !configure_model_node()) {
     return false;
   }
 
-  // Check actioins
-  // TODO(Yadunund): Re-enable action server check aic_model is implemented.
-  // if (!insert_cable_action_client_->wait_for_action_server(timeout)) {
-  // 	RCLCPP_ERROR(node_->get_logger(),
-  // 								"Insert cable
-  // action server not available after waiting"); 	return false;
-  // }
+  // Activate the model node
+  if (!activate_model_node()) {
+    return false;
+  }
 
   return true;
 }
@@ -811,8 +809,91 @@ bool Engine::task_completed_successfully() {
 }
 
 //==============================================================================
+bool Engine::activate_model_node() {
+  if (skip_model_ready_) {
+    RCLCPP_INFO(node_->get_logger(),
+                "Skipping model activation as per parameter.");
+    return true;
+  }
+
+  RCLCPP_INFO(node_->get_logger(),
+              "Activating model node '%s' to transition to 'active' state...",
+              model_node_name_.c_str());
+
+  auto change_state_request =
+      std::make_shared<lifecycle_msgs::srv::ChangeState::Request>();
+  change_state_request->transition.id =
+      lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE;
+
+  auto future =
+      model_change_state_client_->async_send_request(change_state_request);
+  if (future.wait_for(std::chrono::seconds(10)) != std::future_status::ready) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "ChangeState service call timed out for activating node '%s'",
+                 model_node_name_.c_str());
+    return false;
+  }
+
+  auto response = future.get();
+  if (!response->success) {
+    RCLCPP_ERROR(node_->get_logger(), "Failed to activate model node '%s'",
+                 model_node_name_.c_str());
+    return false;
+  }
+
+  RCLCPP_INFO(node_->get_logger(), "Successfully activated model node '%s'",
+              model_node_name_.c_str());
+
+  // TODO(Yadunund): Verify active requirements.
+  return true;
+}
+
+//==============================================================================
+bool Engine::deactivate_model_node() {
+  if (skip_model_ready_) {
+    RCLCPP_INFO(node_->get_logger(),
+                "Skipping model deactivation as per parameter.");
+    return true;
+  }
+
+  RCLCPP_INFO(
+      node_->get_logger(),
+      "Deactivating model node '%s' to transition to 'configured' state...",
+      model_node_name_.c_str());
+
+  auto change_state_request =
+      std::make_shared<lifecycle_msgs::srv::ChangeState::Request>();
+  change_state_request->transition.id =
+      lifecycle_msgs::msg::Transition::TRANSITION_DEACTIVATE;
+
+  auto future =
+      model_change_state_client_->async_send_request(change_state_request);
+  if (future.wait_for(std::chrono::seconds(10)) != std::future_status::ready) {
+    RCLCPP_ERROR(
+        node_->get_logger(),
+        "ChangeState service call timed out for deactivating node '%s'",
+        model_node_name_.c_str());
+    return false;
+  }
+
+  auto response = future.get();
+  if (!response->success) {
+    RCLCPP_ERROR(node_->get_logger(), "Failed to deactivate model node '%s'",
+                 model_node_name_.c_str());
+    return false;
+  }
+
+  RCLCPP_INFO(node_->get_logger(), "Successfully deactivated model node '%s'",
+              model_node_name_.c_str());
+  return true;
+}
+
+//==============================================================================
 void Engine::reset_after_trial() {
   RCLCPP_INFO(node_->get_logger(), "Resetting after trial completion...");
+
+  // Deactivate the model node to transition back to configured state
+  deactivate_model_node();
 
   // Remove spawned task board from simulator
   if (active_trial_.has_value() &&
@@ -840,7 +921,8 @@ void Engine::reset_after_trial() {
       }
     }
   }
-
+  is_first_trial_ = false;
+  active_trial_ = std::nullopt;
   RCLCPP_INFO(node_->get_logger(), "Reset after trial completed.");
 }
 
