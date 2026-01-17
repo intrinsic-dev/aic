@@ -203,8 +203,8 @@ controller_interface::CallbackReturn Controller::on_configure(
           RCLCPP_WARN(
               get_node()->get_logger(),
               "The trajectory_generation_mode is set to MODE_UNSPECIFIED. "
-              "Please set to either MODE_POSITION, MODE_VELOCITY or "
-              "MODE_POSITION_AND_VELOCITY. Ignoring MotionUpdate "
+              "Please set to either MODE_POSITION or MODE_VELOCITY. Ignoring "
+              "MotionUpdate "
               "message.");
 
           return;
@@ -277,20 +277,17 @@ controller_interface::CallbackReturn Controller::on_configure(
             }
             if (msg->trajectory_generation_mode.mode ==
                 TrajectoryGenerationMode::MODE_UNSPECIFIED) {
-              RCLCPP_WARN(
-                  get_node()->get_logger(),
-                  "The trajectory_generation_mode is set to "
-                  "MODE_UNSPECIFIED. "
-                  "Please set to either MODE_POSITION, MODE_VELOCITY or "
-                  "MODE_POSITION_AND_VELOCITY. Ignoring JointMotionUpdate "
-                  "message.");
+              RCLCPP_WARN(get_node()->get_logger(),
+                          "The trajectory_generation_mode is set to "
+                          "MODE_UNSPECIFIED. "
+                          "Please set to either MODE_POSITION or "
+                          "MODE_VELOCITY. Ignoring JointMotionUpdate "
+                          "message.");
 
               return;
             }
             if (msg->trajectory_generation_mode.mode ==
-                    TrajectoryGenerationMode::MODE_POSITION ||
-                msg->trajectory_generation_mode.mode ==
-                    TrajectoryGenerationMode::MODE_POSITION_AND_VELOCITY) {
+                TrajectoryGenerationMode::MODE_POSITION) {
               if (msg->target_state.positions.size() != num_joints_) {
                 RCLCPP_WARN(get_node()->get_logger(),
                             "The size of the target_state does not match the "
@@ -302,9 +299,7 @@ controller_interface::CallbackReturn Controller::on_configure(
               }
             }
             if (msg->trajectory_generation_mode.mode ==
-                    TrajectoryGenerationMode::MODE_VELOCITY ||
-                msg->trajectory_generation_mode.mode ==
-                    TrajectoryGenerationMode::MODE_POSITION_AND_VELOCITY) {
+                TrajectoryGenerationMode::MODE_VELOCITY) {
               if (msg->target_state.velocities.size() != num_joints_) {
                 RCLCPP_WARN(get_node()->get_logger(),
                             "The size of the target_state does not match the "
@@ -781,9 +776,7 @@ controller_interface::return_type Controller::update(
         bool is_position_mode_with_zero_velocity_target =
             latest_target_state.velocity.isApprox(Eigen::VectorXd::Zero(6)) &&
             (motion_update_.trajectory_generation_mode.mode ==
-                 TrajectoryGenerationMode::MODE_POSITION ||
-             motion_update_.trajectory_generation_mode.mode ==
-                 TrajectoryGenerationMode::MODE_POSITION_AND_VELOCITY);
+             TrajectoryGenerationMode::MODE_POSITION);
 
         // Update time to target
         if (did_target_or_time_to_target_change ||
@@ -823,9 +816,7 @@ controller_interface::return_type Controller::update(
             latest_target_state.velocities.isApprox(
                 Eigen::VectorXd::Zero(num_joints_)) &&
             (joint_motion_update_.trajectory_generation_mode.mode ==
-                 TrajectoryGenerationMode::MODE_POSITION ||
-             joint_motion_update_.trajectory_generation_mode.mode ==
-                 TrajectoryGenerationMode::MODE_POSITION_AND_VELOCITY);
+             TrajectoryGenerationMode::MODE_POSITION);
 
         // Update time to target
         if (did_target_or_time_to_target_change ||
@@ -858,8 +849,8 @@ controller_interface::return_type Controller::update(
     }
 
     // Apply linear interpolation to the target_state_ to obtain a new
-    // reference. Linear interpolation should support MODE_POSITION,
-    // MODE_VELOCITY and MODE_POSITION_AND_VELOCITY
+    // reference. Linear interpolation should support MODE_POSITION and
+    // MODE_VELOCITY
     if (!update_reference_linear_interpolation(
             last_tool_reference_, target_state_.value(),
             remaining_time_to_target_seconds_, params_.control_frequency,
@@ -882,8 +873,8 @@ controller_interface::return_type Controller::update(
     }
 
     // Apply linear interpolation to the target_state_ to obtain a new
-    // reference. Linear interpolation should support MODE_POSITION,
-    // MODE_VELOCITY and MODE_POSITION_AND_VELOCITY
+    // reference. Linear interpolation should support MODE_POSITION and
+    // MODE_VELOCITY
     if (!update_joint_reference_linear_interpolation(
             last_joint_reference_, joint_target_state_.value(),
             remaining_time_to_target_seconds_, params_.control_frequency,
@@ -1214,13 +1205,9 @@ bool Controller::clamp_reference_to_limits(const CartesianLimits& limits,
                                            double soft_margin_radians) {
   bool mutated = false;
 
-  bool clamp_pose =
-      mode == TrajectoryGenerationMode::MODE_POSITION ||
-      mode == TrajectoryGenerationMode::MODE_POSITION_AND_VELOCITY;
+  bool clamp_pose = mode == TrajectoryGenerationMode::MODE_POSITION;
 
-  bool scale_velocity =
-      mode == TrajectoryGenerationMode::MODE_VELOCITY ||
-      mode == TrajectoryGenerationMode::MODE_POSITION_AND_VELOCITY;
+  bool scale_velocity = mode == TrajectoryGenerationMode::MODE_VELOCITY;
 
   Eigen::Vector3d new_translation = target_state.pose.translation();
   Eigen::Matrix<double, 6, 1> new_velocity = target_state.velocity;
@@ -1432,13 +1419,9 @@ bool Controller::clamp_joint_reference_to_limits(
     JointState& target_state, double soft_margin_radians) {
   bool mutated = false;
 
-  bool clamp_pose =
-      mode == TrajectoryGenerationMode::MODE_POSITION ||
-      mode == TrajectoryGenerationMode::MODE_POSITION_AND_VELOCITY;
+  bool clamp_pose = mode == TrajectoryGenerationMode::MODE_POSITION;
 
-  bool scale_velocity =
-      mode == TrajectoryGenerationMode::MODE_VELOCITY ||
-      mode == TrajectoryGenerationMode::MODE_POSITION_AND_VELOCITY;
+  bool scale_velocity = mode == TrajectoryGenerationMode::MODE_VELOCITY;
 
   Eigen::VectorXd new_positions = target_state.positions;
   Eigen::VectorXd new_velocities = target_state.velocities;
@@ -1549,21 +1532,13 @@ bool Controller::update_reference_linear_interpolation(
     const double remaining_time_to_target_seconds,
     const double control_frequency, const uint8_t& mode,
     CartesianState& new_reference) {
-  bool interpolate_pose =
-      mode == TrajectoryGenerationMode::MODE_POSITION ||
-      mode == TrajectoryGenerationMode::MODE_POSITION_AND_VELOCITY;
-  bool interpolate_velocity =
-      mode == TrajectoryGenerationMode::MODE_VELOCITY ||
-      mode == TrajectoryGenerationMode::MODE_POSITION_AND_VELOCITY;
-
-  bool pose_only = mode == TrajectoryGenerationMode::MODE_POSITION;
-  bool velocity_only = mode == TrajectoryGenerationMode::MODE_VELOCITY;
+  bool interpolate_pose = mode == TrajectoryGenerationMode::MODE_POSITION;
+  bool interpolate_velocity = mode == TrajectoryGenerationMode::MODE_VELOCITY;
 
   if (!interpolate_pose && !interpolate_velocity) {
     RCLCPP_ERROR(get_node()->get_logger(),
                  "Unexpected trajectory generation mode. Please set to "
-                 "either MODE_POSITION, MODE_VELOCITY or "
-                 "MODE_POSITION_AND_VELOCITY");
+                 "either MODE_POSITION or MODE_VELOCITY");
     return false;
   }
 
@@ -1601,11 +1576,11 @@ bool Controller::update_reference_linear_interpolation(
       new_reference.velocity = target_state.velocity;
     }
   }
-  if (pose_only) {
+  if (interpolate_pose) {
     // Always set reference velocity to zero.
     new_reference.velocity.setZero();
   }
-  if (velocity_only) {
+  if (interpolate_velocity) {
     // Integrate reference pose by one timestep
     new_reference = utils::integrate_pose(new_reference, control_frequency);
     // Clamp new_reference to limits after integration
@@ -1623,21 +1598,13 @@ bool Controller::update_joint_reference_linear_interpolation(
     const double remaining_time_to_target_seconds,
     const double control_frequency, const uint8_t& mode,
     JointState& new_reference) {
-  bool interpolate_position =
-      mode == TrajectoryGenerationMode::MODE_POSITION ||
-      mode == TrajectoryGenerationMode::MODE_POSITION_AND_VELOCITY;
-  bool interpolate_velocity =
-      mode == TrajectoryGenerationMode::MODE_VELOCITY ||
-      mode == TrajectoryGenerationMode::MODE_POSITION_AND_VELOCITY;
-
-  bool position_only = mode == TrajectoryGenerationMode::MODE_POSITION;
-  bool velocity_only = mode == TrajectoryGenerationMode::MODE_VELOCITY;
+  bool interpolate_position = mode == TrajectoryGenerationMode::MODE_POSITION;
+  bool interpolate_velocity = mode == TrajectoryGenerationMode::MODE_VELOCITY;
 
   if (!interpolate_position && !interpolate_velocity) {
     RCLCPP_ERROR(get_node()->get_logger(),
                  "Unexpected trajectory generation mode. Please set to "
-                 "either MODE_POSITION, MODE_VELOCITY or "
-                 "MODE_POSITION_AND_VELOCITY");
+                 "either MODE_POSITION or MODE_VELOCITY");
     return false;
   }
 
@@ -1665,11 +1632,11 @@ bool Controller::update_joint_reference_linear_interpolation(
       new_reference.velocities = target_state.velocities;
     }
   }
-  if (position_only) {
+  if (interpolate_position) {
     // Always set reference velocity to zero.
     new_reference.velocities.setZero();
   }
-  if (velocity_only) {
+  if (interpolate_velocity) {
     // Integrate reference pose by one timestep
     new_reference.positions += target_state.velocities / control_frequency;
     // Clamp new_reference to limits after integration
