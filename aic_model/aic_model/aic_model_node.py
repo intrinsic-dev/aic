@@ -16,6 +16,7 @@
 
 
 import importlib
+import inspect
 import numpy as np
 import rclpy
 
@@ -37,17 +38,30 @@ from rclpy.node import Node
 from rclpy.task import Future
 from std_srvs.srv import Empty
 from trajectory_msgs.msg import JointTrajectoryPoint
-from .aic_mode_policy import AicModelPolicy
-
+# from .aic_mode_policy import AicModelPolicy
 
 class AicModelNode(LifecycleNode):
     def __init__(self):
         super().__init__("aic_model_node")
         self.declare_parameter("policy", "WaveArm")
-        policy_name = self.get_parameter('policy').get_parameter_value().string_value
-        self.get_logger().info(f"Loading policy: {policy_name}")
-        policy_module = importlib.import_module(policy_name, 'policies')
-        self.get_logger().info(f"Loaded module OK")
+        policy_module_name = self.get_parameter('policy').get_parameter_value().string_value
+        self.get_logger().info(f"Loading policy module: {policy_module_name}")
+        try:
+            policy_module = importlib.import_module(policy_module_name)
+        except Exception as e:
+            self.get_logger().fatal(f"Unable to load policy {policy_module_name}: {e}")
+            raise
+        self.get_logger().info(f"Loaded policy module {policy_module_name}")
+        policy_module_classes = inspect.getmembers(policy_module, inspect.isclass)
+        self._policy_class = None
+        expected_policy_class_name = policy_module_name.split('.')[-1]
+        for policy_class_name, policy_class in policy_module_classes:
+            if policy_class_name == expected_policy_class_name:
+                self.get_logger().info(f"Using policy: {policy_class_name}")
+                self._policy_class = policy_class
+        if not self._policy_class:
+            self.get_logger().fatal(f"Could not find class {expected_policy_class_name} in module {policy_module_name}")
+            raise LookupError(expected_policy_class_name)
 
         self.cancel_service = self.create_service(
             Empty, "cancel_task", self.cancel_task_callback
@@ -80,8 +94,13 @@ class AicModelNode(LifecycleNode):
 
     def on_activate(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.get_logger().info(f"activating...")
-        self._policy = AicModelPolicy(self)
+        self.get_logger().info(f"Instantiating policy...")
+        try:
+            self._policy = self._policy_class(self)
+        except Exception as e:
+            self.get_logger().error(f"Error instantiating policy: {e}")
         self.is_active = True
+        self.get_logger().info(f"activate() calling superclass")
         return super().on_activate(state)
 
     def on_deactivate(self, state: LifecycleState) -> TransitionCallbackReturn:
