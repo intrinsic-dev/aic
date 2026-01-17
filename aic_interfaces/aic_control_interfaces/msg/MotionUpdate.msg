@@ -8,13 +8,10 @@ std_msgs/Header header
 geometry_msgs/Pose pose
 # Velocity target in the non-fixed frame of the robot TCP.
 geometry_msgs/Twist velocity
-# Acceleration target in the non-fixed frame of the robot TCP.
-geometry_msgs/Accel acceleration
 
 # Impedance matrices for Cartesian impedance control.
 float64[36] target_stiffness # 6x6 row-major matrix
 float64[36] target_damping # 6x6 row-major matrix
-float64[36] target_mass # 6x6 row-major matrix
 geometry_msgs/Wrench feedforward_wrench_at_tip
 
 # [OPTIONAL] Feedback gains of force feedback control. These gains must be in [0, 0.95]
