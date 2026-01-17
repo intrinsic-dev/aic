@@ -214,6 +214,11 @@ def launch_setup(context, *args, **kwargs):
         arguments=["fts_broadcaster", "--controller-manager", "/controller_manager"],
     )
 
+    aic_adapter = Node(
+        package="aic_adapter",
+        executable="aic_adapter",
+    )
+
     # Task board spawning (conditional)
     spawn_task_board = LaunchConfiguration("spawn_task_board")
     task_board_description_file = LaunchConfiguration("task_board_description_file")
@@ -351,6 +356,7 @@ def launch_setup(context, *args, **kwargs):
         initial_joint_controller_spawner_stopped,
         initial_joint_controller_spawner_started,
         fts_broadcaster_spawner,
+        aic_adapter,
         gripper_action_controller_spawner,
         gzserver,
         gzgui,
