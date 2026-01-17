@@ -148,7 +148,9 @@ void CablePlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
     return;
   }
 
-  if (this->cableState == CableState::COMPLETED return;
+  if (this->cableState == CableState::COMPLETED) {
+    return;
+  }
 
   if (this->cableConnection0LinkEntity == kNullEntity) {
     this->cableConnection0LinkEntity =
