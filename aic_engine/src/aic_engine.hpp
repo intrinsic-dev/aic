@@ -25,9 +25,12 @@
 #include <thread>
 #include <unordered_map>
 
+#include "aic_control_interfaces/msg/joint_motion_update.hpp"
+#include "aic_control_interfaces/msg/motion_update.hpp"
 #include "aic_task_interfaces/action/insert_cable.hpp"
 #include "geometry_msgs/msg/wrench_stamped.hpp"
 #include "lifecycle_msgs/msg/state.hpp"
+#include "lifecycle_msgs/srv/change_state.hpp"
 #include "lifecycle_msgs/srv/get_state.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
@@ -44,6 +47,8 @@ using InsertCableAction = aic_task_interfaces::action::InsertCable;
 using InsertCableGoalHandle =
     rclcpp_action::ServerGoalHandle<InsertCableAction>;
 using JointStateMsg = sensor_msgs::msg::JointState;
+using JointMotionUpdateMsg = aic_control_interfaces::msg::JointMotionUpdate;
+using MotionUpdateMsg = aic_control_interfaces::msg::MotionUpdate;
 using SpawnEntitySrv = simulation_interfaces::srv::SpawnEntity;
 using Task = aic_task_interfaces::msg::Task;
 using WrenchStampedMsg = geometry_msgs::msg::WrenchStamped;
@@ -155,10 +160,19 @@ class Engine {
   bool spawn_task_board(double x, double y, double z, double roll, double pitch,
                         double yaw);
 
+  /// @brief Check if the robot was commanded to move by the model node.
+  /// @return True if the robot was commanded to move, false otherwise.
+  bool model_node_moved_robot();
+
   /// @brief Check if the model is in the unconfigured state together with other
   /// expectations in this state.
   /// @return True if the model is unconfigured, false otherwise.
-  bool model_is_unconfigured();
+  bool model_node_is_unconfigured();
+
+  /// @brief Configure the model node and check expectations in the configured
+  /// state as per challenge requirements.
+  /// @return True if configuration succeeded, false otherwise.
+  bool configure_model_node();
 
   // Strings.
   // Name of the aic_adapter node for lifecycle transitions.
@@ -167,12 +181,21 @@ class Engine {
   std::string model_node_name_;
   // Name of the service to get the lifecycle state of the model node.
   std::string model_get_state_service_name_;
+  // Name of the service to change the lifecycle state of the model node.
+  std::string model_change_state_service_name_;
 
   // Internal ROS 2 node.
   rclcpp::Node::SharedPtr node_;
   // Subscriptions.
   rclcpp::Subscription<WrenchStampedMsg>::SharedPtr wrench_sub_;
   rclcpp::Subscription<JointStateMsg>::SharedPtr joint_state_sub_;
+  rclcpp::Subscription<JointMotionUpdateMsg>::SharedPtr
+      joint_motion_update_sub_;
+  rclcpp::Subscription<MotionUpdateMsg>::SharedPtr motion_update_sub_;
+
+  // Subscription messages.
+  JointMotionUpdateMsg::ConstSharedPtr last_joint_motion_update_msg_;
+  MotionUpdateMsg::ConstSharedPtr last_motion_update_msg_;
 
   // Publishers.
 
@@ -185,6 +208,8 @@ class Engine {
   rclcpp::Client<DeleteEntitySrv>::SharedPtr delete_entity_client_;
   rclcpp::Client<lifecycle_msgs::srv::GetState>::SharedPtr
       model_get_state_client_;
+  rclcpp::Client<lifecycle_msgs::srv::ChangeState>::SharedPtr
+      model_change_state_client_;
 
   // Task config.
   YAML::Node config_;

@@ -26,6 +26,7 @@
 #include "ament_index_cpp/get_package_share_directory.hpp"
 #include "lifecycle_msgs/msg/state.hpp"
 #include "lifecycle_msgs/srv/get_state.hpp"
+#include "rclcpp/subscription_options.hpp"
 
 namespace aic {
 
@@ -235,11 +236,13 @@ Engine::Engine(const rclcpp::NodeOptions& options)
   model_node_name_ =
       node_->declare_parameter("model_node_name", std::string("aic_model"));
   model_get_state_service_name_ = "/" + model_node_name_ + "/get_state";
+  model_change_state_service_name_ = "/" + model_node_name_ + "/change_state";
   node_->declare_parameter("config_file_path", std::string(""));
   node_->declare_parameter("endpoint_ready_timeout_seconds", 10);
   ground_truth_ = node_->declare_parameter("ground_truth", false);
   skip_model_ready_ = node_->declare_parameter("skip_model_ready", false);
-  node_->declare_parameter("model_ready_timeout_seconds", 30);
+  node_->declare_parameter("model_discovery_timeout_seconds", 30);
+  node_->declare_parameter("model_configuration_timeout_seconds", 60);
 
   spin_thread_ = std::thread([node = node_]() {
     rclcpp::executors::SingleThreadedExecutor executor;
@@ -346,6 +349,24 @@ EngineState Engine::initialize() {
         (void)msg;
         // TODO(Yadunund): Pass to scoring.
       });
+
+  // Create subscriptions that ignore local publications as aic_engine will
+  // also publish these messages to home the robot.
+  rclcpp::SubscriptionOptions sub_options_ignore_local;
+  sub_options_ignore_local.ignore_local_publications = true;
+  joint_motion_update_sub_ = node_->create_subscription<JointMotionUpdateMsg>(
+      "/aic_controller/joint_motion_update", reliable_qos,
+      [this](JointMotionUpdateMsg::ConstSharedPtr msg) {
+        last_joint_motion_update_msg_ = msg;
+      },
+      sub_options_ignore_local);
+  motion_update_sub_ = node_->create_subscription<MotionUpdateMsg>(
+      "/aic_controller/motion_update", reliable_qos,
+      [this](MotionUpdateMsg::ConstSharedPtr msg) {
+        last_motion_update_msg_ = msg;
+      },
+      sub_options_ignore_local);
+
   insert_cable_action_client_ =
       rclcpp_action::create_client<InsertCableAction>(node_, "/insert_cable");
   spawn_entity_client_ =
@@ -354,6 +375,9 @@ EngineState Engine::initialize() {
       node_->create_client<DeleteEntitySrv>("/gz_server/delete_entity");
   model_get_state_client_ = node_->create_client<lifecycle_msgs::srv::GetState>(
       model_get_state_service_name_);
+  model_change_state_client_ =
+      node_->create_client<lifecycle_msgs::srv::ChangeState>(
+          model_change_state_service_name_);
 
   engine_state_ = EngineState::Initialized;
   RCLCPP_INFO(node_->get_logger(), "AIC Engine initialized successfully.");
@@ -443,7 +467,18 @@ TrialState Engine::handle_trial(const Trial& trial) {
 }
 
 //==============================================================================
-bool Engine::model_is_unconfigured() {
+bool Engine::model_node_moved_robot() {
+  // TODO(Yadunund): We'll need to make this check more effective.
+  // The model could always publish this after we check here.
+  if (last_joint_motion_update_msg_ != nullptr ||
+      last_motion_update_msg_ != nullptr) {
+    return true;
+  }
+  return false;
+}
+
+//==============================================================================
+bool Engine::model_node_is_unconfigured() {
   RCLCPP_INFO(node_->get_logger(),
               "Lifecycle node '%s' is available. Checking if it is in "
               "'unconfigured' state...",
@@ -486,6 +521,107 @@ bool Engine::model_is_unconfigured() {
               model_node_name_.c_str());
 
   // Check that the model is not publishing any robot command topics.
+  if (model_node_moved_robot()) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "Participant model is publishing command topics "
+                 "while in 'unconfigured' state. This is a rule violation.");
+    return false;
+  }
+
+  return true;
+}
+
+//==============================================================================
+bool Engine::configure_model_node() {
+  RCLCPP_INFO(node_->get_logger(), "Configuring lifecycle node '%s'...",
+              model_node_name_.c_str());
+
+  if (!model_change_state_client_->wait_for_service(std::chrono::seconds(5))) {
+    RCLCPP_ERROR(
+        node_->get_logger(),
+        "ChangeState service not available for node '%s' after waiting",
+        model_node_name_.c_str());
+    return false;
+  }
+
+  // Create and send the request to transition to 'configured' state
+  auto request = std::make_shared<lifecycle_msgs::srv::ChangeState::Request>();
+  request->transition.id =
+      lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE;
+
+  auto future = model_change_state_client_->async_send_request(request);
+
+  const int model_configuration_timeout_seconds =
+      node_->get_parameter("model_configuration_timeout_seconds").as_int();
+  if (future.wait_for(std::chrono::seconds(
+          model_configuration_timeout_seconds)) != std::future_status::ready) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "ChangeState service call timed out for node '%s'",
+                 model_node_name_.c_str());
+    return false;
+  }
+
+  auto response = future.get();
+
+  if (!response->success) {
+    RCLCPP_ERROR(
+        node_->get_logger(),
+        "Failed to transition lifecycle node '%s' to 'configured' state",
+        model_node_name_.c_str());
+    return false;
+  }
+
+  RCLCPP_INFO(node_->get_logger(),
+              "Lifecycle node '%s' successfully transitioned to 'configured' "
+              "state. Checking expectations...",
+              model_node_name_.c_str());
+
+  if (model_node_moved_robot()) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "Participant model is publishing command topics "
+                 "while in 'configured' state. This is a rule violation.");
+    return false;
+  }
+
+  // Check that the model rejects action goals.
+  if (!insert_cable_action_client_->wait_for_action_server(
+          std::chrono::seconds(5))) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "Insert cable action server not available after waiting");
+    return false;
+  }
+  auto goal_was_rejected = std::make_shared<bool>(false);
+  auto goal_msg = InsertCableAction::Goal();
+  auto goal_options =
+      rclcpp_action::Client<InsertCableAction>::SendGoalOptions();
+  goal_options
+      .goal_response_callback = [this, goal_was_rejected](
+                                    const rclcpp_action::ClientGoalHandle<
+                                        InsertCableAction>::SharedPtr&
+                                        goal_handle) {
+    if (!goal_handle) {
+      RCLCPP_INFO(
+          this->node_->get_logger(),
+          "Insert cable action goal was rejected by the server as expected.");
+      *goal_was_rejected = true;
+    } else {
+      RCLCPP_ERROR(this->node_->get_logger(),
+                   "Insert cable action goal was accepted by the server while "
+                   "in 'configured' state. This is a rule violation.");
+    }
+  };
+
+  insert_cable_action_client_->async_send_goal(goal_msg, goal_options);
+  std::this_thread::sleep_for(std::chrono::seconds(1));
+
+  if (!*goal_was_rejected) {
+    return false;
+  }
+
+  RCLCPP_INFO(node_->get_logger(),
+              "Lifecycle node '%s' is in 'configured' state and meets all "
+              "expectations.",
+              model_node_name_.c_str());
 
   return true;
 }
@@ -505,7 +641,7 @@ bool Engine::check_model() {
               model_node_name_.c_str());
   rclcpp::Time start_time = this->node_->now();
   const rclcpp::Duration timeout = rclcpp::Duration::from_seconds(
-      this->node_->get_parameter("model_ready_timeout_seconds").as_int());
+      this->node_->get_parameter("model_discovery_timeout_seconds").as_int());
 
   // Check for lifecycle node by looking for its get_state service
   bool model_discovered = false;
@@ -540,9 +676,21 @@ bool Engine::check_model() {
     return false;
   }
 
-  if (!model_is_unconfigured()) {
+  if (!model_node_is_unconfigured()) {
     return false;
   }
+
+  if (!configure_model_node()) {
+    return false;
+  }
+
+  // Check actioins
+  // TODO(Yadunund): Re-enable action server check aic_model is implemented.
+  // if (!insert_cable_action_client_->wait_for_action_server(timeout)) {
+  // 	RCLCPP_ERROR(node_->get_logger(),
+  // 								"Insert cable
+  // action server not available after waiting"); 	return false;
+  // }
 
   return true;
 }
@@ -594,14 +742,6 @@ bool Engine::check_endpoints() {
                  "Spawn entity service not available after waiting");
     return false;
   }
-
-  // Check actioins
-  // TODO(Yadunund): Re-enable action server check aic_model is implemented.
-  // if (!insert_cable_action_client_->wait_for_action_server(timeout)) {
-  // 	RCLCPP_ERROR(node_->get_logger(),
-  // 								"Insert cable
-  // action server not available after waiting"); 	return false;
-  // }
 
   RCLCPP_INFO(node_->get_logger(), "All required endpoints are available.");
   return true;
