@@ -20,6 +20,7 @@
 
 #include <atomic>
 #include <chrono>
+#include <unordered_set>
 
 #include <gz/transport/Node.hh>
 #include <gz/sim/EventManager.hh>
@@ -51,8 +52,11 @@ namespace aic_gazebo
     /// \brief Attach cable connection 0 to port
     ATTACH_CABLE_TO_PORT,
 
-    /// \brief Task complete - cable 0 is connected to port
+    /// \brief Task complete - cable connection 0 is connected to port
     COMPLETED,
+
+    /// \brief Cable model is removed.
+    CABLE_REMOVED,
   };
 
   /// \brief Plugin for initializing the cable
@@ -87,6 +91,25 @@ namespace aic_gazebo
     // Documentation inherited
     public: void Reset(const gz::sim::UpdateInfo &_info,
                        gz::sim::EntityComponentManager &_ecm) override;
+
+    /// \brief Check if model entity is removed
+    /// \param[in] _ecm Immutable reference to the Entity Component Manager.
+    private: bool IsModelValid(const gz::sim::EntityComponentManager& _ecm);
+
+    /// \brief Clean up entities created by this plugin
+    /// \param[in] _ecm Mutable reference to the Entity Component Manager.
+    private: void Cleanup(gz::sim::EntityComponentManager& _ecm);
+
+    /// \brief Make an entity static by spawning a static model and attaching
+    /// the entity to a static model
+    /// \param[in] _attachEntityAsParentOfJoint True to attach entity as parent of
+    /// the detachable joint.
+    /// \param[in] _creator_ Sdf entity creator for creating a static model
+    /// \param[in] _ecm Entity component manager
+    private: gz::sim::Entity MakeStatic(gz::sim::Entity _entity,
+                             bool _attachEntityAsParentOfJoint,
+                             gz::sim::SdfEntityCreator* _creator,
+                             gz::sim::EntityComponentManager& _ecm);
 
     /// \brief Entity of attachment link in the end effector model
     private: gz::sim::Entity endEffectorLinkEntity{gz::sim::kNullEntity};
@@ -133,8 +156,17 @@ namespace aic_gazebo
     /// \brief Name of the target model for connection 1
     private: std::string connection1ModelName;
 
-    /// \brief Delay for creating the connection joints.
-    private: std::chrono::duration<double> createJointDelay{0};
+    /// \brief Delay in seconds for creating the connection joints.
+    private: double createJointDelay{0.0};
+
+    /// \brief Delay in seconds for locking end-effector after insertion.
+    private: double lockEndEffectorDelay{0.0};
+
+    /// \brief Start time for delay in creating connection joints.
+    private: double createJointDelayStartTime{0.0};
+
+    /// \brief Start time for delay in locking end effector after insertion.
+    private: double lockEndEffectorDelayStartTime{0.0};
 
     /// \brief Sdf entity creator for spawning static entities
     /// Used for holding cable connections in place
@@ -155,6 +187,9 @@ namespace aic_gazebo
 
     /// \brief Gazebo transport node
     private: gz::transport::Node node;
+
+    /// \brief Static entities created by this plugin
+    private: std::unordered_set<gz::sim::Entity> staticEntities;
 };
 }
 #endif
