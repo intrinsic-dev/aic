@@ -41,10 +41,6 @@ ScoringTier2::ScoringTier2(rclcpp::Node *_node, YAML::Node *_config)
 
   if (!this->ParseStats()) return;
 
-  // Debug.
-  // for (const auto &[connection, distance] : this->pluggableMap)
-  //   std::cout << connection << ": " << distance << " m." << std::endl;
-
   // Subscribe to all topics relevant for scoring.
   for (const auto &topic : this->topics) {
     auto sub = this->node->create_generic_subscription(
@@ -208,22 +204,20 @@ bool ScoringTier2::ParseStats() {
     return false;
   }
 
-  auto topics = this->yamlNode["topics"];
+  const auto& topics = this->yamlNode["topics"];
   if (!topics.IsSequence()) {
     std::cerr << "Unable to find sequence of topics within [topics]"
               << std::endl;
     return false;
   }
 
-  for (std::size_t i = 0u; i < topics.size(); i++) {
-    auto newTopic = topics[i];
-
+  for (const auto& newTopic : topics) {
     if (!newTopic["topic"]) {
       std::cerr << "Unrecognized element. It should be [topic]" << std::endl;
       return false;
     }
 
-    auto topicProperties = newTopic["topic"];
+    const auto& topicProperties = newTopic["topic"];
     if (!topicProperties.IsMap()) {
       std::cerr << "Unable to find properties within [topic]" << std::endl;
       return false;
