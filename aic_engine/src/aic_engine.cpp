@@ -200,19 +200,18 @@ Trial::Trial(const std::string& _id, YAML::Node _config)
     }
 
     // Parse and store task
-    auto task = aic_task_interfaces::build<aic_task_interfaces::msg::Task>()
-                    .id(task_id)
-                    .cable_type(task_config["cable_type"].as<std::string>())
-                    .cable_name(task_config["cable_name"].as<std::string>())
-                    .plug_type(task_config["plug_type"].as<std::string>())
-                    .plug_name(task_config["plug_name"].as<std::string>())
-                    .port_type(task_config["port_type"].as<std::string>())
-                    .port_name(task_config["port_name"].as<std::string>())
-                    .target_module_name(
-                        task_config["target_module_name"].as<std::string>())
-                    .time_limit(task_config["time_limit"].as<std::size_t>());
-
-    this->tasks[task_id] = task;
+    this->tasks.emplace_back(
+        aic_task_interfaces::build<aic_task_interfaces::msg::Task>()
+            .id(task_id)
+            .cable_type(task_config["cable_type"].as<std::string>())
+            .cable_name(task_config["cable_name"].as<std::string>())
+            .plug_type(task_config["plug_type"].as<std::string>())
+            .plug_name(task_config["plug_name"].as<std::string>())
+            .port_type(task_config["port_type"].as<std::string>())
+            .port_name(task_config["port_name"].as<std::string>())
+            .target_module_name(
+                task_config["target_module_name"].as<std::string>())
+            .time_limit(task_config["time_limit"].as<std::size_t>()));
   }
 
   // Validate scoring array

@@ -1898,20 +1898,20 @@
       </inertial>
       <pose>-7.020808212576668e-08 -4.7714419582067791e-08 -7.7455011959770559e-08 -0.16227085484195794 -0.41869951717853571 0.44771628449750672</pose>
       <collision name='collision_0'>
-        <pose>-0.0050990195135927853 0.002 0 0.19739555983103135 1.5707900007473865 -2.4131219713415637e-11</pose>
+        <pose>-0.0031622776601683794 0.002 0 0.3217505543966422 1.57079 0</pose>
         <geometry>
           <cylinder>
             <radius>0.001</radius>
-            <length>0.010198039027185571</length>
+            <length>0.006324555320336759</length>
           </cylinder>
         </geometry>
       </collision>
       <visual name='visual_0'>
-        <pose>-0.0050990195135927853 0.002 0 0.19739555983103135 1.5707900007473865 -2.4131219713415637e-11</pose>
+        <pose>-0.0031622776601683794 0.002 0 0.3217505543966422 1.57079 0</pose>
         <geometry>
           <cylinder>
             <radius>0.001</radius>
-            <length>0.010198039027185571</length>
+            <length>0.006324555320336759</length>
           </cylinder>
         </geometry>
         <material>
@@ -1926,20 +1926,20 @@
         </material>
       </visual>
       <collision name='collision_1'>
-        <pose>-0.0050990195135927853 -0.002 0 -0.19739555983103135 1.5707900007473865 2.4131219713415637e-11</pose>
+        <pose>-0.0031622776601683794 -0.002 0 -0.3217505543966422 1.57079 0</pose>
         <geometry>
           <cylinder>
             <radius>0.001</radius>
-            <length>0.010198039027185571</length>
+            <length>0.006324555320336759</length>
           </cylinder>
         </geometry>
       </collision>
       <visual name='visual_1'>
-        <pose>-0.0050990195135927853 -0.002 0 -0.19739555983103135 1.5707900007473865 2.4131219713415637e-11</pose>
+        <pose>-0.0031622776601683794 -0.002 0 -0.3217505543966422 1.57079 0</pose>
         <geometry>
           <cylinder>
             <radius>0.001</radius>
-            <length>0.010198039027185571</length>
+            <length>0.006324555320336759</length>
           </cylinder>
         </geometry>
         <material>

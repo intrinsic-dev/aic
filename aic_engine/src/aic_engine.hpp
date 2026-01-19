@@ -82,7 +82,7 @@ struct Trial {
   std::string id;
   std::optional<std::string> spawned_task_board_name;
   YAML::Node config;
-  std::unordered_map<std::string, Task> tasks;  // Map of task_id -> Task
+  std::vector<Task> tasks;
   TrialState state;
 };
 
