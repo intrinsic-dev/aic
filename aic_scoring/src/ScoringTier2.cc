@@ -204,20 +204,20 @@ bool ScoringTier2::ParseStats() {
     return false;
   }
 
-  const auto& topics = this->yamlNode["topics"];
+  const auto &topics = this->yamlNode["topics"];
   if (!topics.IsSequence()) {
     std::cerr << "Unable to find sequence of topics within [topics]"
               << std::endl;
     return false;
   }
 
-  for (const auto& newTopic : topics) {
+  for (const auto &newTopic : topics) {
     if (!newTopic["topic"]) {
       std::cerr << "Unrecognized element. It should be [topic]" << std::endl;
       return false;
     }
 
-    const auto& topicProperties = newTopic["topic"];
+    const auto &topicProperties = newTopic["topic"];
     if (!topicProperties.IsMap()) {
       std::cerr << "Unable to find properties within [topic]" << std::endl;
       return false;
