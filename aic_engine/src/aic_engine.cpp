@@ -270,6 +270,7 @@ Engine::Engine(const rclcpp::NodeOptions& options)
                                               std::string("aic_model_node"));
   node_->declare_parameter("config_file_path", std::string(""));
   node_->declare_parameter("endpoint_discovery_timeout_seconds", 10);
+  node_->declare_parameter("gripper_frame_name", std::string("gripper/tcp"));
   ground_truth_ = node_->declare_parameter("ground_truth", false);
 
   spin_thread_ = std::thread([node = node_]() {
@@ -557,13 +558,15 @@ bool Engine::ready_simulator() {
   RCLCPP_INFO(node_->get_logger(), "Spawning cable.");
   // Get the current gripper pose, and set the cable pose accordingly.
   std::string warning_msg;
-  if (!tf_buffer_->canTransform("world", "gripper/tcp", tf2::TimePointZero,
+  const std::string gripper_frame =
+      node_->get_parameter("gripper_frame_name").as_string();
+  if (!tf_buffer_->canTransform("world", gripper_frame, tf2::TimePointZero,
                                 tf2::durationFromSec(1.0), &warning_msg)) {
     RCLCPP_WARN(node_->get_logger(), "TF Wait Failed: %s", warning_msg.c_str());
     return false;
   }
   geometry_msgs::msg::TransformStamped t =
-      tf_buffer_->lookupTransform("world", "gripper/tcp", tf2::TimePointZero);
+      tf_buffer_->lookupTransform("world", gripper_frame, tf2::TimePointZero);
   const auto& cable_config = active_trial_->config["scene"]["cable"];
   if (this->spawn_cable(t.transform.translation.x, t.transform.translation.y,
                         t.transform.translation.z,
