@@ -58,19 +58,20 @@ enum class EngineState : uint8_t {
 //==============================================================================
 // For each trial, track its state.
 // States progress from Uninitialized -> EndpointsAvailable -> SimulatorReady
-// ->ScoringReady -> TaskStarted -> TaskCompleted
+// ->ScoringReady -> TaskStarted -> AllTasksCompleted
 // Uninitialized: Trial has not started.
 // EndpointsAvailable: Required nodes are up and running.
 // SimulatorReady: Simulator is ready with the task board and cables spawned.
 // TaskStarted: Task goal has been sent to the participant model. Clock started.
-// TaskCompleted: Task has been completed successfully or time limit reached.
+// TaskCompleted: All tasks have completed successfully or time limit
+// reached.
 enum class TrialState : uint8_t {
   Uninitialized = 0,
   EndpointsAvailable,
   SimulatorReady,
   ScoringReady,
   TaskStarted,
-  TaskCompleted
+  AllTasksCompleted
 };
 
 //==============================================================================
@@ -127,12 +128,12 @@ class Engine {
   bool ready_scoring();
 
   /// \brief Start the task.
-  /// \return True if the task started successfully, false otherwise.
-  bool start_task();
+  /// \return True if tasks started successfully, false otherwise.
+  bool start_tasks();
 
-  /// \brief Check if the task was completed successfully.
-  /// \return True if the task was completed successfully, false otherwise.
-  bool task_completed_successfully();
+  /// \brief Check if all tasks have been completed successfully.
+  /// \return True if tasks were completed successfully, false otherwise.
+  bool tasks_completed_successfully();
 
   /// \brief Spawn the task board in Gazebo.
   /// \param[in] x X position
