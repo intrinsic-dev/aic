@@ -44,9 +44,9 @@ logger = logging.getLogger(__name__)
 @RobotConfig.register_subclass("aic_controller")
 @dataclass(kw_only=True)
 class AICRobotAICControllerConfig(RobotConfig):
-    arm_joint_names: list[str] = field(default_factory=lambda: arm_joint_names.copy())
+    arm_joint_names: list[str] = field(default_factory=arm_joint_names.copy)
     gripper_joint_name: str = gripper_joint_name
-    cameras: dict[str, CameraConfig] = field(default_factory=lambda: aic_cameras.copy())
+    cameras: dict[str, CameraConfig] = field(default_factory=aic_cameras.copy)
 
 
 class AICRobotAICController(Robot):
