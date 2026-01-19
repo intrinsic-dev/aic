@@ -450,14 +450,14 @@ TrialState Engine::handle_trial(const Trial& trial) {
   current_state = TrialState::ScoringReady;
 
   if (!this->start_task()) {
-    RCLCPP_ERROR(node_->get_logger(), "Tasks failed to start or complete.");
+    RCLCPP_ERROR(node_->get_logger(), "Failed to start task.");
     reset_after_trial();
     return current_state;
   }
   current_state = TrialState::TaskStarted;
 
   if (!this->task_completed_successfully()) {
-    RCLCPP_ERROR(node_->get_logger(), "Tasks were not completed successfully.");
+    RCLCPP_ERROR(node_->get_logger(), "Task was not completed successfully.");
     reset_after_trial();
     return current_state;
   }

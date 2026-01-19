@@ -66,8 +66,7 @@ enum class EngineState : uint8_t {
 // EndpointsAvailable: Required nodes are up and running.
 // SimulatorReady: Simulator is ready with the task board and cables spawned.
 // TaskStarted: Task goal has been sent to the participant model. Clock started.
-// TaskCompleted: All tasks have completed successfully or time limit
-// reached.
+// TaskCompleted: Task has been completed successfully or time limit reached.
 enum class TrialState : uint8_t {
   Uninitialized = 0,
   EndpointsAvailable,
