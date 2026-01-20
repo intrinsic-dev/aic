@@ -28,17 +28,6 @@
 namespace aic {
 
 //==============================================================================
-namespace {
-// Static arrays for ROS graph entities to check for
-// TODO(Yadunund): Uncomment and fill in required nodes when available.
-static const std::vector<std::string> REQUIRED_NODES = {
-    // "/aic_adapter_node",
-    // "/aic_model_node",
-};
-
-}  // anonymous namespace
-
-//==============================================================================
 Trial::Trial(const std::string& _id, YAML::Node _config) : id(std::move(_id)) {
   // Validate config structure
   if (!_config["scene"]) {
@@ -272,8 +261,8 @@ Engine::Engine(const rclcpp::NodeOptions& options)
   // Declare ROS parameters.
   adapter_node_name_ = node_->declare_parameter(
       "adapter_node_name", std::string("aic_adapter_node"));
-  model_node_name_ = node_->declare_parameter("model_node_name",
-                                              std::string("aic_model_node"));
+  model_node_name_ =
+      node_->declare_parameter("model_node_name", std::string("aic_model"));
   node_->declare_parameter("config_file_path", std::string(""));
   node_->declare_parameter("endpoint_discovery_timeout_seconds", 10);
   node_->declare_parameter("gripper_frame_name", std::string("gripper/tcp"));
@@ -474,44 +463,72 @@ TrialState Engine::handle_trial(const Trial& trial) {
   return current_state;
 }
 
+/// Given a set [s1, s2, s3] returns a string "s1, s2, s3"
+//==============================================================================
+static std::string string_set_to_csv(const std::set<std::string>& strings) {
+  if (strings.empty()) {
+    return "";
+  }
+  auto it = strings.begin();
+  std::string result;
+  for (; it != std::prev(strings.end()); ++it) {
+    result += *it + ", ";
+  }
+  result += *it;
+  return result;
+}
+
 //==============================================================================
 bool Engine::check_required_endpoints() {
   RCLCPP_INFO(node_->get_logger(), "Checking required endpoints...");
 
   // Check nodes
-  bool all_available = false;
+  std::set<std::string> unavailable = {this->adapter_node_name_};
   rclcpp::Time start_time = this->node_->now();
   const rclcpp::Duration timeout = rclcpp::Duration::from_seconds(
       this->node_->get_parameter("endpoint_discovery_timeout_seconds")
           .as_int());
   const auto& node_graph = node_->get_node_graph_interface();
 
-  while (!all_available && !(this->node_->now() - start_time > timeout)) {
-    all_available = true;
-    const std::vector<std::string> graph_nodes = node_graph->get_node_names();
-    std::unordered_set<std::string> node_set(graph_nodes.begin(),
-                                             graph_nodes.end());
-    for (const auto& node_name : REQUIRED_NODES) {
-      all_available = all_available && (node_set.count(node_name) > 0);
+  while (!unavailable.empty() && !(this->node_->now() - start_time > timeout)) {
+    std::unordered_set<std::string> node_set;
+    for (const auto& [name, _] : node_graph->get_node_names_and_namespaces()) {
+      node_set.insert(name);
     }
+    for (auto it = unavailable.begin(); it != unavailable.end();) {
+      if (node_set.count(*it)) {
+        // Node found, remove it from unavailable list
+        it = unavailable.erase(it);
+      } else {
+        ++it;
+      }
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
   }
-  if (!all_available) {
-    RCLCPP_ERROR(node_->get_logger(), "Not all required nodes are available.");
+  if (!unavailable.empty()) {
+    RCLCPP_ERROR(node_->get_logger(), "Missing required nodes: %s",
+                 string_set_to_csv(unavailable).c_str());
     return false;
   }
 
   // Check topics
   // TODO(Yadunund): Consider checking for messages received on topics.
-  all_available = false;
+  // unavailable is guaranteed to be empty here
+  unavailable.insert({this->wrench_sub_->get_topic_name(),
+                      this->joint_state_sub_->get_topic_name()});
   start_time = this->node_->now();
-  while (!all_available && !(this->node_->now() - start_time > timeout)) {
-    all_available = true;
-    all_available = all_available &&
-                    (this->wrench_sub_->get_publisher_count() > 0) &&
-                    (this->joint_state_sub_->get_publisher_count() > 0);
+  while (!unavailable.empty() && !(this->node_->now() - start_time > timeout)) {
+    if (this->wrench_sub_->get_publisher_count() > 0) {
+      unavailable.erase(this->wrench_sub_->get_topic_name());
+    }
+    if (this->joint_state_sub_->get_publisher_count() > 0) {
+      unavailable.erase(this->joint_state_sub_->get_topic_name());
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
   }
-  if (!all_available) {
-    RCLCPP_ERROR(node_->get_logger(), "Not all required topics are available.");
+  if (!unavailable.empty()) {
+    RCLCPP_ERROR(node_->get_logger(), "Missing required topics: %s",
+                 string_set_to_csv(unavailable).c_str());
     return false;
   }
 
