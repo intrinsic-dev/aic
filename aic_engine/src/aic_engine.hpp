@@ -225,9 +225,10 @@ class Engine {
   YAML::Node config_;
 
   // All trials parsed from config.
+  std::vector<std::pair<std::string, Trial>> trials_;
+
   // Variable to track first trial as want to configure model only once.
   bool is_first_trial_;
-  std::vector<std::pair<std::string, Trial>> trials_;
 
   // The active trial.
   std::optional<Trial> active_trial_;
