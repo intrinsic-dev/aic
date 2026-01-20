@@ -98,9 +98,8 @@ class AICRobotAICController(Robot):
         self.motion_update_pub: Publisher[MotionUpdate] | None = None
         self.gripper_pub: Publisher[Float32] | None = None
         self.controller_state_sub: Subscription[ControllerState] | None = None
-        self._is_connected = False
-        self._last_joint_state: dict[str, dict[str, float]] | None = None
         self.last_controller_state: ControllerState | None = None
+        self._is_connected = False
 
     @cached_property
     def _cameras_ft(self) -> dict[str, tuple]:
@@ -128,30 +127,6 @@ class AICRobotAICController(Robot):
     @property
     def is_connected(self) -> bool:
         return self._is_connected
-
-    # def _joint_state_callback(self, msg: JointState) -> None:
-    #     self._last_joint_state = self._last_joint_state or {}
-    #     positions = {}
-    #     velocities = {}
-    #     name_to_index = {name: i for i, name in enumerate(msg.name)}
-    #     for joint_name in self.config.arm_joint_names:
-    #         idx = name_to_index.get(joint_name)
-    #         if idx is None:
-    #             raise ValueError(f"Joint '{joint_name}' not found in joint state.")
-    #         positions[joint_name] = msg.position[idx]
-    #         velocities[joint_name] = msg.velocity[idx]
-
-    #     if self.config.gripper_joint_name:
-    #         idx = name_to_index.get(self.config.gripper_joint_name)
-    #         if idx is None:
-    #             raise ValueError(
-    #                 f"Gripper joint '{self.config.gripper_joint_name}' not found in joint state."
-    #             )
-    #         positions[self.config.gripper_joint_name] = msg.position[idx]
-    #         velocities[self.config.gripper_joint_name] = msg.velocity[idx]
-
-    #     self._last_joint_state["position"] = positions
-    #     self._last_joint_state["velocity"] = velocities
 
     def connect(self, calibrate: bool = True) -> None:
         if self._is_connected:
