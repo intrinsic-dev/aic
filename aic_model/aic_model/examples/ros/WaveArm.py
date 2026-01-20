@@ -16,6 +16,7 @@
 
 
 from aic_model.policy_ros import PolicyRos
+from geometry_msgs.msg import Point, Pose, Quaternion
 
 
 class WaveArm(PolicyRos):
@@ -30,21 +31,19 @@ class WaveArm(PolicyRos):
         print("WaveArm.stop_callback()")
 
     def observation_callback(self, observation):
-        print("WaveArm.observation_callback()")
         #
-        # The following sample just prints the timestamps of the incoming data
-        # and continually moves the arm along a line, looking down at the board.
+        # Move the arm along a line, while looking down at the task board.
         #
-        t_cam_0 = self.get_seconds(msg.images[0].header)
-        t_cam_1 = self.get_seconds(msg.images[1].header)
-        t_cam_2 = self.get_seconds(msg.images[2].header)
-        t_joints = self.get_seconds(msg.joint_states.header)
-        t_wrench = self.get_seconds(msg.wrist_wrench.header)
-        tcp_x = msg.tcp_transform.transform.translation.x
-        tcp_y = msg.tcp_transform.transform.translation.y
-        tcp_z = msg.tcp_transform.transform.translation.z
-        # move the camera back and forth parallel to the Y axis of base_link
-        t = self.get_seconds(msg.images[0].header)
+        t_cam_0 = self.get_seconds(observation.images[0].header)
+        t_cam_1 = self.get_seconds(observation.images[1].header)
+        t_cam_2 = self.get_seconds(observation.images[2].header)
+        t_joints = self.get_seconds(observation.joint_states.header)
+        t_wrench = self.get_seconds(observation.wrist_wrench.header)
+        tcp_x = observation.tcp_transform.transform.translation.x
+        tcp_y = observation.tcp_transform.transform.translation.y
+        tcp_z = observation.tcp_transform.transform.translation.z
+
+        t = self.get_seconds(observation.images[0].header)
 
         loop_duration = 5.0  # seconds
 
@@ -70,7 +69,10 @@ class WaveArm(PolicyRos):
         )
 
         self.get_logger().info(
-            f"tcp: ({tcp_x:+0.3f} {tcp_y:+0.3f}, {tcp_z:+0.3f}) target: ({target_x:+0.3f} {target_y:0.3f} {target_z:0.3f}"
+            (
+                f"tcp: ({tcp_x:+0.3f} {tcp_y:+0.3f}, {tcp_z:+0.3f}) "
+                f"target: ({target_x:+0.3f} {target_y:0.3f} {target_z:0.3f})"
+            )
         )
 
     def get_seconds(self, header):

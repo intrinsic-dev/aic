@@ -15,6 +15,8 @@
 #
 
 
+from aic_control_interfaces.msg import MotionUpdate, TrajectoryGenerationMode
+from geometry_msgs.msg import Point, Pose, Quaternion, Wrench, Vector3
 import numpy as np
 
 
@@ -63,3 +65,6 @@ class PolicyRos:
         motion_update_msg.time_to_target_seconds = 0.05
 
         self._parent_node.motion_update_pub.publish(motion_update_msg)
+
+    def get_logger(self):
+        return self._parent_node.get_logger()
