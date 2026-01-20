@@ -637,9 +637,6 @@ bool Engine::check_model() {
     return true;
   }
 
-  RCLCPP_INFO(node_->get_logger(),
-              "Checking if lifecycle node '%s' is available...",
-              model_node_name_.c_str());
   rclcpp::Time start_time = this->node_->now();
   const rclcpp::Duration timeout = rclcpp::Duration::from_seconds(
       this->node_->get_parameter("model_discovery_timeout_seconds").as_int());
