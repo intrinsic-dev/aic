@@ -71,7 +71,8 @@ enum class EngineState : uint8_t {
 // ->ScoringReady -> TaskStarted -> TaskCompleted
 // Uninitialized: Trial has not started.
 // ModelReady: Participant model node is available and conforms to challenge
-// requirements. EndpointsReady: Required nodes are up and running.
+// requirements.
+// EndpointsReady: Required nodes are up and running.
 // SimulatorReady: Simulator is ready with the task board and cables spawned.
 // ScoringReady: Scoring system is ready to track performance.
 // TaskStarted: Task goal has been sent to the participant model. Clock started.
