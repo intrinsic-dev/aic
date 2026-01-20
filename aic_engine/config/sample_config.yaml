@@ -102,10 +102,6 @@ trials:
         port_name: "sfp_port_0"
         target_module_name: "nic_card_0"
         time_limit: 300
-    scoring:
-      - tier_1
-      - tier_2
-      - tier_3
   trial_2:
     scene:
         task_board:
@@ -193,7 +189,3 @@ trials:
         port_name: "sc_mount_1"
         target_module_name: "nic_card_1"
         time_limit: 300
-    scoring:
-      - tier_1
-      - tier_2
-      - tier_3

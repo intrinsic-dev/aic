@@ -24,6 +24,9 @@
 
 #include "aic_task_interfaces/msg/task.hpp"
 #include "ament_index_cpp/get_package_share_directory.hpp"
+#include "lifecycle_msgs/msg/state.hpp"
+#include "lifecycle_msgs/srv/get_state.hpp"
+#include "rclcpp/subscription_options.hpp"
 
 namespace aic {
 
@@ -35,9 +38,6 @@ Trial::Trial(const std::string& _id, YAML::Node _config) : id(std::move(_id)) {
   }
   if (!_config["tasks"]) {
     throw std::runtime_error("Config missing required key: 'tasks'");
-  }
-  if (!_config["scoring"]) {
-    throw std::runtime_error("Config missing required key: 'scoring'");
   }
 
   const auto& scene = _config["scene"];
@@ -237,12 +237,6 @@ Trial::Trial(const std::string& _id, YAML::Node _config) : id(std::move(_id)) {
             .time_limit(task_config["time_limit"].as<std::size_t>()));
   }
 
-  // Validate scoring array
-  const auto& scoring = _config["scoring"];
-  if (!scoring.IsSequence() || scoring.size() == 0) {
-    throw std::runtime_error("Config 'scoring' must be a non-empty array");
-  }
-
   config = _config;
   state = TrialState::Uninitialized;
 }
@@ -254,6 +248,7 @@ Engine::Engine(const rclcpp::NodeOptions& options)
       joint_state_sub_(nullptr),
       insert_cable_action_client_(nullptr),
       spawn_entity_client_(nullptr),
+      is_first_trial_(true),
       active_trial_(std::nullopt),
       engine_state_(EngineState::Uninitialized) {
   RCLCPP_INFO(node_->get_logger(), "Creating AIC Engine...");
@@ -263,10 +258,17 @@ Engine::Engine(const rclcpp::NodeOptions& options)
       "adapter_node_name", std::string("aic_adapter_node"));
   model_node_name_ =
       node_->declare_parameter("model_node_name", std::string("aic_model"));
+  model_get_state_service_name_ = "/" + model_node_name_ + "/get_state";
+  model_change_state_service_name_ = "/" + model_node_name_ + "/change_state";
   node_->declare_parameter("config_file_path", std::string(""));
-  node_->declare_parameter("endpoint_discovery_timeout_seconds", 10);
+  node_->declare_parameter("endpoint_ready_timeout_seconds", 10);
   node_->declare_parameter("gripper_frame_name", std::string("gripper/tcp"));
   ground_truth_ = node_->declare_parameter("ground_truth", false);
+  skip_model_ready_ = node_->declare_parameter("skip_model_ready", false);
+  node_->declare_parameter("model_discovery_timeout_seconds", 30);
+  node_->declare_parameter("model_configure_timeout_seconds", 60);
+  node_->declare_parameter("model_activate_timeout_seconds", 60);
+  node_->declare_parameter("model_deactivate_timeout_seconds", 60);
 
   spin_thread_ = std::thread([node = node_]() {
     rclcpp::executors::SingleThreadedExecutor executor;
@@ -373,12 +375,35 @@ EngineState Engine::initialize() {
         (void)msg;
         // TODO(Yadunund): Pass to scoring.
       });
+
+  // Create subscriptions that ignore local publications as aic_engine will
+  // also publish these messages to home the robot.
+  rclcpp::SubscriptionOptions sub_options_ignore_local;
+  sub_options_ignore_local.ignore_local_publications = true;
+  joint_motion_update_sub_ = node_->create_subscription<JointMotionUpdateMsg>(
+      "/aic_controller/joint_motion_update", reliable_qos,
+      [this](JointMotionUpdateMsg::ConstSharedPtr msg) {
+        last_joint_motion_update_msg_ = msg;
+      },
+      sub_options_ignore_local);
+  motion_update_sub_ = node_->create_subscription<MotionUpdateMsg>(
+      "/aic_controller/motion_update", reliable_qos,
+      [this](MotionUpdateMsg::ConstSharedPtr msg) {
+        last_motion_update_msg_ = msg;
+      },
+      sub_options_ignore_local);
+
   insert_cable_action_client_ =
       rclcpp_action::create_client<InsertCableAction>(node_, "/insert_cable");
   spawn_entity_client_ =
       node_->create_client<SpawnEntitySrv>("/gz_server/spawn_entity");
   delete_entity_client_ =
       node_->create_client<DeleteEntitySrv>("/gz_server/delete_entity");
+  model_get_state_client_ = node_->create_client<lifecycle_msgs::srv::GetState>(
+      model_get_state_service_name_);
+  model_change_state_client_ =
+      node_->create_client<lifecycle_msgs::srv::ChangeState>(
+          model_change_state_service_name_);
   tf_buffer_ = std::make_unique<tf2_ros::Buffer>(node_->get_clock());
   tf_listener_ = std::make_unique<tf2_ros::TransformListener>(*tf_buffer_);
 
@@ -408,6 +433,7 @@ EngineState Engine::run() {
       RCLCPP_ERROR(node_->get_logger(),
                    "Trial '%s' failed or was not completed.", trial_id.c_str());
       engine_state_ = EngineState::Error;
+      // TODO(Yadunund): Clean up and write scoring data.
       return engine_state_;
     }
   }
@@ -423,13 +449,19 @@ TrialState Engine::handle_trial(const Trial& trial) {
 
   TrialState current_state = TrialState::Uninitialized;
 
-  if (!this->check_required_endpoints()) {
-    RCLCPP_ERROR(node_->get_logger(), "Required endpoints are not available.");
-    current_state = TrialState::Uninitialized;
+  if (!this->check_model()) {
+    RCLCPP_ERROR(node_->get_logger(), "Participant model is not ready.");
     reset_after_trial();
     return current_state;
   }
-  current_state = TrialState::EndpointsAvailable;
+  current_state = TrialState::ModelReady;
+
+  if (!this->check_endpoints()) {
+    RCLCPP_ERROR(node_->get_logger(), "Required endpoints are not available.");
+    reset_after_trial();
+    return current_state;
+  }
+  current_state = TrialState::EndpointsReady;
 
   if (!this->ready_simulator()) {
     RCLCPP_ERROR(node_->get_logger(), "Simulator is not ready.");
@@ -472,15 +504,237 @@ static std::string string_set_to_csv(const std::set<std::string>& strings) {
 }
 
 //==============================================================================
-bool Engine::check_required_endpoints() {
+bool Engine::model_node_moved_robot() {
+  // TODO(Yadunund): We'll need to make this check more effective.
+  // The model could always publish this after we check here.
+  if (last_joint_motion_update_msg_ != nullptr ||
+      last_motion_update_msg_ != nullptr) {
+    return true;
+  }
+  return false;
+}
+
+//==============================================================================
+bool Engine::model_node_is_unconfigured() {
+  RCLCPP_INFO(node_->get_logger(),
+              "Lifecycle node '%s' is available. Checking if it is in "
+              "'unconfigured' state...",
+              model_node_name_.c_str());
+
+  if (!model_get_state_client_->wait_for_service(std::chrono::seconds(5))) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "GetState service '%s' not available after waiting",
+                 model_get_state_service_name_.c_str());
+    return false;
+  }
+
+  // Call the service to get current state
+  auto request = std::make_shared<lifecycle_msgs::srv::GetState::Request>();
+  auto future = model_get_state_client_->async_send_request(request);
+
+  if (future.wait_for(std::chrono::seconds(5)) != std::future_status::ready) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "GetState service call timed out for node '%s'",
+                 model_node_name_.c_str());
+    return false;
+  }
+
+  auto response = future.get();
+
+  // Check if the state is unconfigured (PRIMARY_STATE_UNCONFIGURED = 1)
+  if (response->current_state.id !=
+      lifecycle_msgs::msg::State::PRIMARY_STATE_UNCONFIGURED) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "Lifecycle node '%s' is not in 'unconfigured' state. Current "
+                 "state: %s (id: %u)",
+                 model_node_name_.c_str(),
+                 response->current_state.label.c_str(),
+                 response->current_state.id);
+    return false;
+  }
+
+  RCLCPP_INFO(node_->get_logger(),
+              "Lifecycle node '%s' is in 'unconfigured' state",
+              model_node_name_.c_str());
+
+  // Check that the model is not publishing any robot command topics.
+  if (model_node_moved_robot()) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "Participant model is publishing command topics "
+                 "while in 'unconfigured' state. This is a rule violation.");
+    return false;
+  }
+
+  return true;
+}
+
+//==============================================================================
+bool Engine::configure_model_node() {
+  RCLCPP_INFO(node_->get_logger(), "Configuring lifecycle node '%s'...",
+              model_node_name_.c_str());
+
+  if (!model_change_state_client_->wait_for_service(std::chrono::seconds(5))) {
+    RCLCPP_ERROR(
+        node_->get_logger(),
+        "ChangeState service not available for node '%s' after waiting",
+        model_node_name_.c_str());
+    return false;
+  }
+
+  // Create and send the request to transition to 'configured' state
+  auto request = std::make_shared<lifecycle_msgs::srv::ChangeState::Request>();
+  request->transition.id =
+      lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE;
+
+  auto future = model_change_state_client_->async_send_request(request);
+
+  const int model_configure_timeout_seconds =
+      node_->get_parameter("model_configure_timeout_seconds").as_int();
+  if (future.wait_for(std::chrono::seconds(model_configure_timeout_seconds)) !=
+      std::future_status::ready) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "ChangeState service call timed out for node '%s'",
+                 model_node_name_.c_str());
+    return false;
+  }
+
+  auto response = future.get();
+
+  if (!response->success) {
+    RCLCPP_ERROR(
+        node_->get_logger(),
+        "Failed to transition lifecycle node '%s' to 'configured' state",
+        model_node_name_.c_str());
+    return false;
+  }
+
+  RCLCPP_INFO(node_->get_logger(),
+              "Lifecycle node '%s' successfully transitioned to 'configured' "
+              "state. Checking expectations...",
+              model_node_name_.c_str());
+
+  if (model_node_moved_robot()) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "Participant model is publishing command topics "
+                 "while in 'configured' state. This is a rule violation.");
+    return false;
+  }
+
+  // Check that the model rejects action goals.
+  if (!insert_cable_action_client_->wait_for_action_server(
+          std::chrono::seconds(5))) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "Insert cable action server not available after waiting");
+    return false;
+  }
+  auto goal_was_rejected = std::make_shared<bool>(false);
+  auto goal_msg = InsertCableAction::Goal();
+  auto goal_options =
+      rclcpp_action::Client<InsertCableAction>::SendGoalOptions();
+  goal_options
+      .goal_response_callback = [this, goal_was_rejected](
+                                    const rclcpp_action::ClientGoalHandle<
+                                        InsertCableAction>::SharedPtr&
+                                        goal_handle) {
+    if (!goal_handle) {
+      RCLCPP_INFO(
+          this->node_->get_logger(),
+          "Insert cable action goal was rejected by the server as expected.");
+      *goal_was_rejected = true;
+    } else {
+      RCLCPP_ERROR(this->node_->get_logger(),
+                   "Insert cable action goal was accepted by the server while "
+                   "in 'configured' state. This is a rule violation.");
+    }
+  };
+
+  insert_cable_action_client_->async_send_goal(goal_msg, goal_options);
+  std::this_thread::sleep_for(std::chrono::seconds(1));
+
+  if (!*goal_was_rejected) {
+    return false;
+  }
+
+  RCLCPP_INFO(node_->get_logger(),
+              "Lifecycle node '%s' is in 'configured' state and meets all "
+              "expectations.",
+              model_node_name_.c_str());
+
+  return true;
+}
+
+//==============================================================================
+bool Engine::check_model() {
+  RCLCPP_INFO(node_->get_logger(), "Checking participant model readiness...");
+
+  if (skip_model_ready_) {
+    RCLCPP_WARN(node_->get_logger(),
+                "Skipping model readiness check as per parameter.");
+    return true;
+  }
+
+  rclcpp::Time start_time = this->node_->now();
+  const rclcpp::Duration timeout = rclcpp::Duration::from_seconds(
+      this->node_->get_parameter("model_discovery_timeout_seconds").as_int());
+
+  // Check for lifecycle node by looking for its get_state service
+  bool model_discovered = false;
+
+  while (!model_discovered && !(this->node_->now() - start_time > timeout)) {
+    RCLCPP_INFO(node_->get_logger(),
+                "Checking if lifecycle node '%s' is available...",
+                model_node_name_.c_str());
+    const auto service_names_and_types = node_->get_service_names_and_types();
+    auto it = service_names_and_types.find(model_get_state_service_name_);
+    if (it != service_names_and_types.end()) {
+      // Verify it's actually a lifecycle service by checking the type
+      const auto& service_types = it->second;
+      for (const auto& type : service_types) {
+        if (type == "lifecycle_msgs/srv/GetState") {
+          model_discovered = true;
+          break;
+        }
+      }
+    }
+    if (!model_discovered) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    }
+  }
+
+  if (!model_discovered) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "Lifecycle node '%s' not discovered after waiting (checked "
+                 "for service '%s' with type 'lifecycle_msgs/srv/GetState')",
+                 model_node_name_.c_str(),
+                 model_get_state_service_name_.c_str());
+    return false;
+  }
+
+  if (is_first_trial_ && !model_node_is_unconfigured()) {
+    return false;
+  }
+
+  if (is_first_trial_ && !configure_model_node()) {
+    return false;
+  }
+
+  // Activate the model node
+  if (!activate_model_node()) {
+    return false;
+  }
+
+  return true;
+}
+
+//==============================================================================
+bool Engine::check_endpoints() {
   RCLCPP_INFO(node_->get_logger(), "Checking required endpoints...");
 
   // Check nodes
   std::set<std::string> unavailable = {this->adapter_node_name_};
   rclcpp::Time start_time = this->node_->now();
   const rclcpp::Duration timeout = rclcpp::Duration::from_seconds(
-      this->node_->get_parameter("endpoint_discovery_timeout_seconds")
-          .as_int());
+      this->node_->get_parameter("endpoint_ready_timeout_seconds").as_int());
   const auto& node_graph = node_->get_node_graph_interface();
 
   while (!unavailable.empty() && !(this->node_->now() - start_time > timeout)) {
@@ -532,14 +786,6 @@ bool Engine::check_required_endpoints() {
                  "Spawn entity service not available after waiting");
     return false;
   }
-
-  // Check actioins
-  // TODO(Yadunund): Re-enable action server check aic_model is implemented.
-  // if (!insert_cable_action_client_->wait_for_action_server(timeout)) {
-  // 	RCLCPP_ERROR(node_->get_logger(),
-  // 								"Insert cable
-  // action server not available after waiting"); 	return false;
-  // }
 
   RCLCPP_INFO(node_->get_logger(), "All required endpoints are available.");
   return true;
@@ -682,8 +928,99 @@ bool Engine::tasks_completed_successfully() {
 }
 
 //==============================================================================
+bool Engine::activate_model_node() {
+  if (skip_model_ready_) {
+    RCLCPP_INFO(node_->get_logger(),
+                "Skipping model activation as per parameter.");
+    return true;
+  }
+
+  RCLCPP_INFO(node_->get_logger(),
+              "Activating model node '%s' to transition to 'active' state...",
+              model_node_name_.c_str());
+
+  auto change_state_request =
+      std::make_shared<lifecycle_msgs::srv::ChangeState::Request>();
+  change_state_request->transition.id =
+      lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE;
+
+  const int model_activate_timeout_seconds =
+      this->node_->get_parameter("model_activate_timeout_seconds").as_int();
+
+  auto future =
+      model_change_state_client_->async_send_request(change_state_request);
+  if (future.wait_for(std::chrono::seconds(model_activate_timeout_seconds)) !=
+      std::future_status::ready) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "ChangeState service call timed out for activating node '%s'",
+                 model_node_name_.c_str());
+    return false;
+  }
+
+  auto response = future.get();
+  if (!response->success) {
+    RCLCPP_ERROR(node_->get_logger(), "Failed to activate model node '%s'",
+                 model_node_name_.c_str());
+    return false;
+  }
+
+  RCLCPP_INFO(node_->get_logger(), "Successfully activated model node '%s'",
+              model_node_name_.c_str());
+
+  // TODO(Yadunund): Verify active requirements.
+  return true;
+}
+
+//==============================================================================
+bool Engine::deactivate_model_node() {
+  if (skip_model_ready_) {
+    RCLCPP_INFO(node_->get_logger(),
+                "Skipping model deactivation as per parameter.");
+    return true;
+  }
+
+  RCLCPP_INFO(
+      node_->get_logger(),
+      "Deactivating model node '%s' to transition to 'configured' state...",
+      model_node_name_.c_str());
+
+  auto change_state_request =
+      std::make_shared<lifecycle_msgs::srv::ChangeState::Request>();
+  change_state_request->transition.id =
+      lifecycle_msgs::msg::Transition::TRANSITION_DEACTIVATE;
+
+  const int model_deactivate_timeout_seconds =
+      this->node_->get_parameter("model_deactivate_timeout_seconds").as_int();
+
+  auto future =
+      model_change_state_client_->async_send_request(change_state_request);
+  if (future.wait_for(std::chrono::seconds(model_deactivate_timeout_seconds)) !=
+      std::future_status::ready) {
+    RCLCPP_ERROR(
+        node_->get_logger(),
+        "ChangeState service call timed out for deactivating node '%s'",
+        model_node_name_.c_str());
+    return false;
+  }
+
+  auto response = future.get();
+  if (!response->success) {
+    RCLCPP_ERROR(node_->get_logger(), "Failed to deactivate model node '%s'",
+                 model_node_name_.c_str());
+    return false;
+  }
+
+  RCLCPP_INFO(node_->get_logger(), "Successfully deactivated model node '%s'",
+              model_node_name_.c_str());
+  return true;
+}
+
+//==============================================================================
 void Engine::reset_after_trial() {
   RCLCPP_INFO(node_->get_logger(), "Resetting after trial completion...");
+
+  // Deactivate the model node to transition back to configured state
+  deactivate_model_node();
 
   // Remove spawned entities from simulator
   if (active_trial_.has_value()) {
@@ -712,7 +1049,8 @@ void Engine::reset_after_trial() {
       }
     }
   }
-
+  is_first_trial_ = false;
+  active_trial_ = std::nullopt;
   RCLCPP_INFO(node_->get_logger(), "Reset after trial completed.");
 }
 
