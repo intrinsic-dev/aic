@@ -31,9 +31,9 @@ class CreateAndCancelTaskNode(Node):
     def __init__(self):
         super().__init__("test_create_and_cancel_task")
         self.action_client = ActionClient(self, InsertCable, "insert_cable")
-        self.get_state_client = self.create_client(GetState, "aic_model/get_state")
+        self.get_state_client = self.create_client(GetState, "aic_model_node/get_state")
         self.change_state_client = self.create_client(
-            ChangeState, "aic_model/change_state"
+            ChangeState, "aic_model_node/change_state"
         )
 
     def get_model_state(self):
