@@ -82,6 +82,16 @@ trials:
           sc_mount_rail_1:
             entity_present: False
         cable:
+          pose:
+            gripper_offset:
+              x: 0.0
+              y: 0.0
+              z: 0.0
+            roll: 0.5
+            pitch: -0.6605
+            yaw: 2.6928
+          attach_cable_to_gripper: True
+          cable_type: "sfp_sc_cable" # [sfp_sc_cable, sfp_sc_cable_reversed]
     tasks:
       task_1:
         cable_type: "sfp_sc"
@@ -163,6 +173,16 @@ trials:
           sc_mount_rail_1:
             entity_present: False
         cable:
+          pose:
+            gripper_offset:
+              x: 0.0
+              y: 0.0
+              z: 0.0
+            roll: 0.5
+            pitch: -0.6605
+            yaw: 2.6928
+          attach_cable_to_gripper: True
+          cable_type: "sfp_sc_cable_reversed" # [sfp_sc_cable, sfp_sc_cable_reversed]
     tasks:
       task_1:
         cable_type: "sfp_sc"

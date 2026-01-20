@@ -32,6 +32,9 @@
 #include "sensor_msgs/msg/joint_state.hpp"
 #include "simulation_interfaces/srv/delete_entity.hpp"
 #include "simulation_interfaces/srv/spawn_entity.hpp"
+#include "tf2/exceptions.hpp"
+#include "tf2_ros/buffer.h"
+#include "tf2_ros/transform_listener.h"
 #include "yaml-cpp/yaml.h"
 
 //==============================================================================
@@ -81,7 +84,7 @@ struct Trial {
   Trial(const std::string& id, YAML::Node config);
 
   std::string id;
-  std::optional<std::string> spawned_task_board_name;
+  std::vector<std::string> spawned_entities;
   YAML::Node config;
   std::vector<Task> tasks;
   TrialState state;
@@ -135,7 +138,9 @@ class Engine {
   /// \return True if tasks were completed successfully, false otherwise.
   bool tasks_completed_successfully();
 
-  /// \brief Spawn the task board in Gazebo.
+  /// \brief Spawn an entity in Gazebo.
+  /// \param[in] entity_name Name of the entity to spawn
+  /// \param[in] filepath Path to the xacro file of the entity
   /// \param[in] x X position
   /// \param[in] y Y position
   /// \param[in] z Z position
@@ -143,8 +148,8 @@ class Engine {
   /// \param[in] pitch Pitch orientation (radians)
   /// \param[in] yaw Yaw orientation (radians)
   /// \return True if spawning succeeded, false otherwise
-  bool spawn_task_board(double x, double y, double z, double roll, double pitch,
-                        double yaw);
+  bool spawn_entity(std::string entity_name, std::string filepath, double x,
+                    double y, double z, double roll, double pitch, double yaw);
 
   // Internal ROS 2 node.
   rclcpp::Node::SharedPtr node_;
@@ -161,6 +166,10 @@ class Engine {
   // Service clients.
   rclcpp::Client<SpawnEntitySrv>::SharedPtr spawn_entity_client_;
   rclcpp::Client<DeleteEntitySrv>::SharedPtr delete_entity_client_;
+
+  // TF
+  std::unique_ptr<tf2_ros::TransformListener> tf_listener_;
+  std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
 
   // Strings.
   // Name of the aic_adapter node for lifecycle transitions.
