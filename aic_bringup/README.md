@@ -65,6 +65,11 @@ ros2 launch aic_bringup aic_gz_bringup.launch.py
 **Ground Truth:**
 - `ground_truth` (default: `"false"`) - Include ground truth pose data in TF topics
 
+
+**AIC Engine:**
+- `start_aic_engine` (default: `"false"`) - Start the `aic_engine` orchestrator node for evaluation.
+- `aic_engine_config_file` (default: `"aic_engine/config/sample_config.yaml"`) - Absolute path to YAML file with the AIC engine configuration.
+
 ---
 
 ### 2. `spawn_task_board.launch.py`

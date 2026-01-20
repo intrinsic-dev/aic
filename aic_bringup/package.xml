@@ -14,6 +14,7 @@
   <exec_depend>aic_assets</exec_depend>
   <exec_depend>aic_controller</exec_depend>
   <exec_depend>aic_description</exec_depend>
+  <exec_depend>aic_engine</exec_depend>
   <exec_depend>kinematics_interface_kdl</exec_depend>
   <exec_depend>launch</exec_depend>
   <exec_depend>launch_ros</exec_depend>
