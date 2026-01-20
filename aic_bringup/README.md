@@ -31,7 +31,7 @@ ros2 launch aic_bringup aic_gz_bringup.launch.py
 - `spawn_admittance_controller` (default: `"false"`) - Spawns the Admittance Controller alongside the initial controller defined by the `initial_joint_controller` parameter. This value should be set to `false` if using the impedance control mode on the `aic_controller`.
 
 **Task Board Configuration:**
-- `spawn_task_board` (default: `"true"`) - Whether to spawn the task board
+- `spawn_task_board` (default: `"false"`) - Whether to spawn the task board
 - `task_board_description_file` (default: `"task_board.urdf.xacro"`) - Task board URDF/XACRO file
 - `task_board_x` (default: `"0.25"`) - Task board spawn X position (meters)
 - `task_board_y` (default: `"0.0"`) - Task board spawn Y position (meters)
