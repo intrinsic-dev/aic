@@ -34,15 +34,6 @@ class WaveArm(PolicyRos):
         #
         # Move the arm along a line, while looking down at the task board.
         #
-        t_cam_0 = self.get_seconds(observation.images[0].header)
-        t_cam_1 = self.get_seconds(observation.images[1].header)
-        t_cam_2 = self.get_seconds(observation.images[2].header)
-        t_joints = self.get_seconds(observation.joint_states.header)
-        t_wrench = self.get_seconds(observation.wrist_wrench.header)
-        tcp_x = observation.tcp_transform.transform.translation.x
-        tcp_y = observation.tcp_transform.transform.translation.y
-        tcp_z = observation.tcp_transform.transform.translation.z
-
         t = self.get_seconds(observation.images[0].header)
 
         loop_duration = 5.0  # seconds
