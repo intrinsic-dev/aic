@@ -83,9 +83,10 @@ trials:
             entity_present: False
         cable:
           pose:
-            x: 0.16
-            y: 0.2927
-            z: 1.4166
+            offset:
+              x: 0.0
+              y: 0.0
+              z: 0.025
             roll: 0.5
             pitch: -0.6605
             yaw: 2.6928
@@ -173,9 +174,10 @@ trials:
             entity_present: False
         cable:
           pose:
-            x: 0.16
-            y: 0.2927
-            z: 1.421
+            offset:
+              x: 0.0
+              y: 0.0
+              z: 0.025
             roll: 0.5
             pitch: -0.6605
             yaw: 2.6928

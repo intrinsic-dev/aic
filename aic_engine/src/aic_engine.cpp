@@ -39,10 +39,7 @@ static const std::vector<std::string> REQUIRED_NODES = {
 }  // anonymous namespace
 
 //==============================================================================
-Trial::Trial(const std::string& _id, YAML::Node _config)
-    : id(std::move(_id)),
-      spawned_task_board_name(std::nullopt),
-      spawned_cable_name(std::nullopt) {
+Trial::Trial(const std::string& _id, YAML::Node _config) : id(std::move(_id)) {
   // Validate config structure
   if (!_config["scene"]) {
     throw std::runtime_error("Config missing required key: 'scene'");
@@ -552,12 +549,13 @@ bool Engine::ready_simulator() {
   // Spawn the task board.
   RCLCPP_INFO(node_->get_logger(), "Spawning task board.");
   const auto& task_board_config = active_trial_->config["scene"]["task_board"];
-  if (this->spawn_task_board(task_board_config["pose"]["x"].as<double>(),
-                             task_board_config["pose"]["y"].as<double>(),
-                             task_board_config["pose"]["z"].as<double>(),
-                             task_board_config["pose"]["roll"].as<double>(),
-                             task_board_config["pose"]["pitch"].as<double>(),
-                             task_board_config["pose"]["yaw"].as<double>())) {
+  if (this->spawn_entity("task_board", "/urdf/task_board.urdf.xacro",
+                         task_board_config["pose"]["x"].as<double>(),
+                         task_board_config["pose"]["y"].as<double>(),
+                         task_board_config["pose"]["z"].as<double>(),
+                         task_board_config["pose"]["roll"].as<double>(),
+                         task_board_config["pose"]["pitch"].as<double>(),
+                         task_board_config["pose"]["yaw"].as<double>())) {
     RCLCPP_INFO(node_->get_logger(), "Task board spawned successfully.");
   } else {
     RCLCPP_ERROR(node_->get_logger(), "Failed to spawn task board.");
@@ -577,15 +575,16 @@ bool Engine::ready_simulator() {
   geometry_msgs::msg::TransformStamped t =
       tf_buffer_->lookupTransform("world", gripper_frame, tf2::TimePointZero);
   const auto& cable_config = active_trial_->config["scene"]["cable"];
-  if (this->spawn_cable(t.transform.translation.x +
-                            cable_config["pose"]["offset"]["x"].as<double>(),
-                        t.transform.translation.y +
-                            cable_config["pose"]["offset"]["y"].as<double>(),
-                        t.transform.translation.z +
-                            cable_config["pose"]["offset"]["z"].as<double>(),
-                        cable_config["pose"]["roll"].as<double>(),
-                        cable_config["pose"]["pitch"].as<double>(),
-                        cable_config["pose"]["yaw"].as<double>())) {
+  if (this->spawn_entity("cable", "/urdf/cable.sdf.xacro",
+                         t.transform.translation.x +
+                             cable_config["pose"]["offset"]["x"].as<double>(),
+                         t.transform.translation.y +
+                             cable_config["pose"]["offset"]["y"].as<double>(),
+                         t.transform.translation.z +
+                             cable_config["pose"]["offset"]["z"].as<double>(),
+                         cable_config["pose"]["roll"].as<double>(),
+                         cable_config["pose"]["pitch"].as<double>(),
+                         cable_config["pose"]["yaw"].as<double>())) {
     RCLCPP_INFO(node_->get_logger(), "Cable spawned successfully.");
   } else {
     RCLCPP_ERROR(node_->get_logger(), "Failed to spawn cable.");
@@ -633,56 +632,30 @@ bool Engine::task_completed_successfully() {
 void Engine::reset_after_trial() {
   RCLCPP_INFO(node_->get_logger(), "Resetting after trial completion...");
 
-  // Remove spawned task board from simulator
-  if (active_trial_.has_value() &&
-      active_trial_->spawned_task_board_name.has_value()) {
-    // Delete spawned task board
-    auto request = std::make_shared<DeleteEntitySrv::Request>();
-    request->entity = active_trial_->spawned_task_board_name.value();
+  // Remove spawned entities from simulator
+  if (active_trial_.has_value()) {
+    for (const auto& entity_name : active_trial_->spawned_entities) {
+      // Delete spawned entity
+      auto request = std::make_shared<DeleteEntitySrv::Request>();
+      request->entity = entity_name;
 
-    auto future = delete_entity_client_->async_send_request(request);
-    if (future.wait_for(std::chrono::seconds(10)) !=
-        std::future_status::ready) {
-      RCLCPP_ERROR(node_->get_logger(),
-                   "Delete entity service call timed out for entity '%s'",
-                   request->entity.c_str());
-    } else {
-      auto response = future.get();
-      if (response->result.result !=
-          simulation_interfaces::msg::Result::RESULT_OK) {  // RESULT_OK = 1
-        RCLCPP_ERROR(node_->get_logger(), "Failed to delete entity '%s': %s",
-                     request->entity.c_str(),
-                     response->result.error_message.c_str());
+      auto future = delete_entity_client_->async_send_request(request);
+      if (future.wait_for(std::chrono::seconds(10)) !=
+          std::future_status::ready) {
+        RCLCPP_ERROR(node_->get_logger(),
+                     "Delete entity service call timed out for entity '%s'",
+                     request->entity.c_str());
       } else {
-        RCLCPP_INFO(node_->get_logger(), "Successfully deleted entity '%s'",
-                    request->entity.c_str());
-      }
-    }
-  }
-
-  // Remove spawned cable from simulator
-  if (active_trial_.has_value() &&
-      active_trial_->spawned_cable_name.has_value()) {
-    // Delete spawned cable
-    auto request = std::make_shared<DeleteEntitySrv::Request>();
-    request->entity = active_trial_->spawned_cable_name.value();
-
-    auto future = delete_entity_client_->async_send_request(request);
-    if (future.wait_for(std::chrono::seconds(10)) !=
-        std::future_status::ready) {
-      RCLCPP_ERROR(node_->get_logger(),
-                   "Delete entity service call timed out for entity '%s'",
-                   request->entity.c_str());
-    } else {
-      auto response = future.get();
-      if (response->result.result !=
-          simulation_interfaces::msg::Result::RESULT_OK) {  // RESULT_OK = 1
-        RCLCPP_ERROR(node_->get_logger(), "Failed to delete entity '%s': %s",
-                     request->entity.c_str(),
-                     response->result.error_message.c_str());
-      } else {
-        RCLCPP_INFO(node_->get_logger(), "Successfully deleted entity '%s'",
-                    request->entity.c_str());
+        auto response = future.get();
+        if (response->result.result !=
+            simulation_interfaces::msg::Result::RESULT_OK) {  // RESULT_OK = 1
+          RCLCPP_ERROR(node_->get_logger(), "Failed to delete entity '%s': %s",
+                       request->entity.c_str(),
+                       response->result.error_message.c_str());
+        } else {
+          RCLCPP_INFO(node_->get_logger(), "Successfully deleted entity '%s'",
+                      request->entity.c_str());
+        }
       }
     }
   }
@@ -698,147 +671,160 @@ Engine::~Engine() {
 }
 
 //==============================================================================
-bool Engine::spawn_task_board(double x, double y, double z, double roll,
-                              double pitch, double yaw) {
+bool Engine::spawn_entity(std::string entity_name, std::string filepath,
+                          double x, double y, double z, double roll,
+                          double pitch, double yaw) {
   if (!active_trial_.has_value()) {
     RCLCPP_ERROR(node_->get_logger(), "No active trial to get config from");
     return false;
   }
 
-  // Get the task board xacro file path
+  // Get the xacro file path
   const std::string aic_description_share =
       ament_index_cpp::get_package_share_directory("aic_description");
-  const std::string xacro_file =
-      aic_description_share + "/urdf/task_board.urdf.xacro";
-
-  // Read task board limits from config
-  const auto& config_root = active_trial_->config;
-  double nic_rail_min = -0.048;  // Default values
-  double nic_rail_max = 0.036;
-  double sc_rail_min = -0.055;
-  double sc_rail_max = 0.055;
-  double mount_rail_min = -0.09625;
-  double mount_rail_max = 0.09625;
-
-  if (config_root["task_board_limits"]) {
-    const auto& limits = config_root["task_board_limits"];
-    if (limits["nic_rail"]) {
-      nic_rail_min = limits["nic_rail"]["min_translation"].as<double>();
-      nic_rail_max = limits["nic_rail"]["max_translation"].as<double>();
-    }
-    if (limits["sc_rail"]) {
-      sc_rail_min = limits["sc_rail"]["min_translation"].as<double>();
-      sc_rail_max = limits["sc_rail"]["max_translation"].as<double>();
-    }
-    if (limits["mount_rail"]) {
-      mount_rail_min = limits["mount_rail"]["min_translation"].as<double>();
-      mount_rail_max = limits["mount_rail"]["max_translation"].as<double>();
-    }
-  }
+  const std::string xacro_file = aic_description_share + filepath;
 
   // Build xacro command with parameters from config
   std::stringstream cmd;
   cmd << "xacro " << xacro_file;
 
-  const auto& task_board_config = active_trial_->config["scene"]["task_board"];
+  const auto& config = active_trial_->config["scene"][entity_name];
 
-  // Add NIC rail parameters (nic_rail_0 through nic_rail_4)
-  for (int i = 0; i < 5; ++i) {
-    std::string rail_key = "nic_rail_" + std::to_string(i);
-    std::string mount_prefix = "nic_card_mount_" + std::to_string(i);
+  // Append entity-specific parameters
+  if (entity_name == "cable") {
+    // Add attach cable parameter
+    bool attach_cable_to_gripper = config["attach_cable_to_gripper"].as<bool>();
+    cmd << " attach_cable_to_gripper:="
+        << (attach_cable_to_gripper ? "true" : "false");
 
-    if (task_board_config[rail_key] &&
-        task_board_config[rail_key]["entity_present"] &&
-        task_board_config[rail_key]["entity_present"].as<bool>()) {
-      cmd << " " << mount_prefix << "_present:=true";
+    // Add cable type parameter
+    std::string cable_type = config["cable_type"].as<std::string>();
+    cmd << " cable_type:=" << cable_type;
+  } else if (entity_name == "task_board") {
+    // Read task board limits from config
+    const auto& config_root = active_trial_->config;
+    double nic_rail_min = -0.048;  // Default values
+    double nic_rail_max = 0.036;
+    double sc_rail_min = -0.055;
+    double sc_rail_max = 0.055;
+    double mount_rail_min = -0.09625;
+    double mount_rail_max = 0.09625;
 
-      if (task_board_config[rail_key]["entity_pose"]) {
-        const auto& pose = task_board_config[rail_key]["entity_pose"];
-
-        double translation = pose["translation"].as<double>();
-        // Clamp translation to NIC rail limits
-        translation = std::clamp(translation, nic_rail_min, nic_rail_max);
-        cmd << " " << mount_prefix << "_translation:=" << translation;
-
-        // Add orientation parameters
-        double roll = pose["roll"].as<double>();
-        double pitch = pose["pitch"].as<double>();
-        double yaw = pose["yaw"].as<double>();
-        cmd << " " << mount_prefix << "_roll:=" << roll;
-        cmd << " " << mount_prefix << "_pitch:=" << pitch;
-        cmd << " " << mount_prefix << "_yaw:=" << yaw;
+    if (config_root["task_board_limits"]) {
+      const auto& limits = config_root["task_board_limits"];
+      if (limits["nic_rail"]) {
+        nic_rail_min = limits["nic_rail"]["min_translation"].as<double>();
+        nic_rail_max = limits["nic_rail"]["max_translation"].as<double>();
       }
-    } else {
-      cmd << " " << mount_prefix << "_present:=false";
-    }
-  }
-
-  // Add SC rail parameters (sc_rail_0 and sc_rail_1)
-  for (int i = 0; i < 2; ++i) {
-    std::string rail_key = "sc_rail_" + std::to_string(i);
-    std::string port_prefix = "sc_port_" + std::to_string(i);
-
-    if (task_board_config[rail_key] &&
-        task_board_config[rail_key]["entity_present"] &&
-        task_board_config[rail_key]["entity_present"].as<bool>()) {
-      cmd << " " << port_prefix << "_present:=true";
-
-      if (task_board_config[rail_key]["entity_pose"]) {
-        const auto& pose = task_board_config[rail_key]["entity_pose"];
-
-        double translation = pose["translation"].as<double>();
-        // Clamp translation to SC rail limits
-        translation = std::clamp(translation, sc_rail_min, sc_rail_max);
-        cmd << " " << port_prefix << "_translation:=" << translation;
-
-        // Add orientation parameters
-        double roll = pose["roll"].as<double>();
-        double pitch = pose["pitch"].as<double>();
-        double yaw = pose["yaw"].as<double>();
-        cmd << " " << port_prefix << "_roll:=" << roll;
-        cmd << " " << port_prefix << "_pitch:=" << pitch;
-        cmd << " " << port_prefix << "_yaw:=" << yaw;
+      if (limits["sc_rail"]) {
+        sc_rail_min = limits["sc_rail"]["min_translation"].as<double>();
+        sc_rail_max = limits["sc_rail"]["max_translation"].as<double>();
       }
-    } else {
-      cmd << " " << port_prefix << "_present:=false";
-    }
-  }
-
-  // Add rail parameters (type-specific rails: lc_mount_rail_0/1,
-  // sfp_mount_rail_0/1, sc_mount_rail_0/1)
-  std::vector<std::string> rail_keys = {"lc_mount_rail_0",  "sfp_mount_rail_0",
-                                        "sc_mount_rail_0",  "lc_mount_rail_1",
-                                        "sfp_mount_rail_1", "sc_mount_rail_1"};
-
-  for (const auto& rail_key : rail_keys) {
-    if (task_board_config[rail_key] &&
-        task_board_config[rail_key]["entity_present"] &&
-        task_board_config[rail_key]["entity_present"].as<bool>()) {
-      cmd << " " << rail_key << "_present:=true";
-
-      if (task_board_config[rail_key]["entity_pose"]) {
-        const auto& pose = task_board_config[rail_key]["entity_pose"];
-
-        double translation = pose["translation"].as<double>();
-        // Clamp translation to mount rail limits
-        translation = std::clamp(translation, mount_rail_min, mount_rail_max);
-        cmd << " " << rail_key << "_translation:=" << translation;
-
-        // Add orientation parameters
-        double roll = pose["roll"].as<double>();
-        double pitch = pose["pitch"].as<double>();
-        double yaw = pose["yaw"].as<double>();
-        cmd << " " << rail_key << "_roll:=" << roll;
-        cmd << " " << rail_key << "_pitch:=" << pitch;
-        cmd << " " << rail_key << "_yaw:=" << yaw;
+      if (limits["mount_rail"]) {
+        mount_rail_min = limits["mount_rail"]["min_translation"].as<double>();
+        mount_rail_max = limits["mount_rail"]["max_translation"].as<double>();
       }
-    } else {
-      cmd << " " << rail_key << "_present:=false";
     }
-  }
 
-  // Add ground_truth parameter
-  cmd << " ground_truth:=" << (ground_truth_ ? "true" : "false");
+    // Add NIC rail parameters (nic_rail_0 through nic_rail_4)
+    for (int i = 0; i < 5; ++i) {
+      std::string rail_key = "nic_rail_" + std::to_string(i);
+      std::string mount_prefix = "nic_card_mount_" + std::to_string(i);
+
+      if (config[rail_key] && config[rail_key]["entity_present"] &&
+          config[rail_key]["entity_present"].as<bool>()) {
+        cmd << " " << mount_prefix << "_present:=true";
+
+        if (config[rail_key]["entity_pose"]) {
+          const auto& pose = config[rail_key]["entity_pose"];
+
+          double translation = pose["translation"].as<double>();
+          // Clamp translation to NIC rail limits
+          translation = std::clamp(translation, nic_rail_min, nic_rail_max);
+          cmd << " " << mount_prefix << "_translation:=" << translation;
+
+          // Add orientation parameters
+          double roll = pose["roll"].as<double>();
+          double pitch = pose["pitch"].as<double>();
+          double yaw = pose["yaw"].as<double>();
+          cmd << " " << mount_prefix << "_roll:=" << roll;
+          cmd << " " << mount_prefix << "_pitch:=" << pitch;
+          cmd << " " << mount_prefix << "_yaw:=" << yaw;
+        }
+      } else {
+        cmd << " " << mount_prefix << "_present:=false";
+      }
+    }
+
+    // Add SC rail parameters (sc_rail_0 and sc_rail_1)
+    for (int i = 0; i < 2; ++i) {
+      std::string rail_key = "sc_rail_" + std::to_string(i);
+      std::string port_prefix = "sc_port_" + std::to_string(i);
+
+      if (config[rail_key] && config[rail_key]["entity_present"] &&
+          config[rail_key]["entity_present"].as<bool>()) {
+        cmd << " " << port_prefix << "_present:=true";
+
+        if (config[rail_key]["entity_pose"]) {
+          const auto& pose = config[rail_key]["entity_pose"];
+
+          double translation = pose["translation"].as<double>();
+          // Clamp translation to SC rail limits
+          translation = std::clamp(translation, sc_rail_min, sc_rail_max);
+          cmd << " " << port_prefix << "_translation:=" << translation;
+
+          // Add orientation parameters
+          double roll = pose["roll"].as<double>();
+          double pitch = pose["pitch"].as<double>();
+          double yaw = pose["yaw"].as<double>();
+          cmd << " " << port_prefix << "_roll:=" << roll;
+          cmd << " " << port_prefix << "_pitch:=" << pitch;
+          cmd << " " << port_prefix << "_yaw:=" << yaw;
+        }
+      } else {
+        cmd << " " << port_prefix << "_present:=false";
+      }
+    }
+
+    // Add rail parameters (type-specific rails: lc_mount_rail_0/1,
+    // sfp_mount_rail_0/1, sc_mount_rail_0/1)
+    std::vector<std::string> rail_keys = {
+        "lc_mount_rail_0", "sfp_mount_rail_0", "sc_mount_rail_0",
+        "lc_mount_rail_1", "sfp_mount_rail_1", "sc_mount_rail_1"};
+
+    for (const auto& rail_key : rail_keys) {
+      if (config[rail_key] && config[rail_key]["entity_present"] &&
+          config[rail_key]["entity_present"].as<bool>()) {
+        cmd << " " << rail_key << "_present:=true";
+
+        if (config[rail_key]["entity_pose"]) {
+          const auto& pose = config[rail_key]["entity_pose"];
+
+          double translation = pose["translation"].as<double>();
+          // Clamp translation to mount rail limits
+          translation = std::clamp(translation, mount_rail_min, mount_rail_max);
+          cmd << " " << rail_key << "_translation:=" << translation;
+
+          // Add orientation parameters
+          double roll = pose["roll"].as<double>();
+          double pitch = pose["pitch"].as<double>();
+          double yaw = pose["yaw"].as<double>();
+          cmd << " " << rail_key << "_roll:=" << roll;
+          cmd << " " << rail_key << "_pitch:=" << pitch;
+          cmd << " " << rail_key << "_yaw:=" << yaw;
+        }
+      } else {
+        cmd << " " << rail_key << "_present:=false";
+      }
+    }
+
+    // Add ground_truth parameter
+    cmd << " ground_truth:=" << (ground_truth_ ? "true" : "false");
+  } else {
+    RCLCPP_ERROR(node_->get_logger(), "Unknown entity name: %s",
+                 entity_name.c_str());
+    return false;
+  }
 
   FILE* pipe = popen(cmd.str().c_str(), "r");
   if (!pipe) {
@@ -879,115 +865,7 @@ bool Engine::spawn_task_board(double x, double y, double z, double roll,
 
   // Create spawn request
   auto request = std::make_shared<SpawnEntitySrv::Request>();
-  request->name = "task_board";
-  request->allow_renaming = true;
-  request->uri = "";
-  request->resource_string = urdf_string;
-  request->entity_namespace = "";
-  request->initial_pose.header.frame_id = "world";
-  request->initial_pose.pose.position.x = x;
-  request->initial_pose.pose.position.y = y;
-  request->initial_pose.pose.position.z = z;
-  request->initial_pose.pose.orientation.x = qx;
-  request->initial_pose.pose.orientation.y = qy;
-  request->initial_pose.pose.orientation.z = qz;
-  request->initial_pose.pose.orientation.w = qw;
-
-  // Call service synchronously with timeout
-  auto future = spawn_entity_client_->async_send_request(request);
-  if (future.wait_for(std::chrono::seconds(10)) != std::future_status::ready) {
-    RCLCPP_ERROR(node_->get_logger(), "Spawn entity service call timed out");
-    return false;
-  }
-
-  auto response = future.get();
-
-  if (response->result.result !=
-      simulation_interfaces::msg::Result::RESULT_OK) {
-    RCLCPP_ERROR(node_->get_logger(), "Failed to spawn task board: %s",
-                 response->result.error_message.c_str());
-    return false;
-  }
-
-  if (active_trial_.has_value()) {
-    active_trial_->spawned_task_board_name = response->entity_name;
-  }
-
-  RCLCPP_INFO(node_->get_logger(), "Successfully spawned task board as '%s'",
-              response->entity_name.c_str());
-  return true;
-}
-
-//==============================================================================
-bool Engine::spawn_cable(double x, double y, double z, double roll,
-                         double pitch, double yaw) {
-  if (!active_trial_.has_value()) {
-    RCLCPP_ERROR(node_->get_logger(), "No active trial to get config from");
-    return false;
-  }
-
-  // Get the task board xacro file path
-  const std::string aic_description_share =
-      ament_index_cpp::get_package_share_directory("aic_description");
-  const std::string xacro_file =
-      aic_description_share + "/urdf/cable.sdf.xacro";
-
-  // Build xacro command with parameters from config
-  std::stringstream cmd;
-  cmd << "xacro " << xacro_file;
-
-  const auto& cable_config = active_trial_->config["scene"]["cable"];
-
-  // Add attach cable parameter
-  bool attach_cable_to_gripper =
-      cable_config["attach_cable_to_gripper"].as<bool>();
-  cmd << " attach_cable_to_gripper:="
-      << (attach_cable_to_gripper ? "true" : "false");
-
-  // Add cable type parameter
-  std::string cable_type = cable_config["cable_type"].as<std::string>();
-  cmd << " cable_type:=" << cable_type;
-
-  FILE* pipe = popen(cmd.str().c_str(), "r");
-  if (!pipe) {
-    RCLCPP_ERROR(node_->get_logger(), "Failed to execute xacro command");
-    return false;
-  }
-
-  std::stringstream urdf_stream;
-  char buffer[128];
-  while (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
-    urdf_stream << buffer;
-  }
-  int result = pclose(pipe);
-  if (result != 0) {
-    RCLCPP_ERROR(node_->get_logger(), "xacro command failed with code %d",
-                 result);
-    return false;
-  }
-
-  std::string urdf_string = urdf_stream.str();
-  if (urdf_string.empty()) {
-    RCLCPP_ERROR(node_->get_logger(), "Generated URDF is empty");
-    return false;
-  }
-
-  // Convert roll, pitch, yaw to quaternion
-  double cy = cos(yaw * 0.5);
-  double sy = sin(yaw * 0.5);
-  double cp = cos(pitch * 0.5);
-  double sp = sin(pitch * 0.5);
-  double cr = cos(roll * 0.5);
-  double sr = sin(roll * 0.5);
-
-  double qw = cr * cp * cy + sr * sp * sy;
-  double qx = sr * cp * cy - cr * sp * sy;
-  double qy = cr * sp * cy + sr * cp * sy;
-  double qz = cr * cp * sy - sr * sp * cy;
-
-  // Create spawn request
-  auto request = std::make_shared<SpawnEntitySrv::Request>();
-  request->name = "cable";
+  request->name = entity_name;
   request->allow_renaming = true;
   request->uri = "";
   request->resource_string = urdf_string;
@@ -1018,11 +896,11 @@ bool Engine::spawn_cable(double x, double y, double z, double roll,
   }
 
   if (active_trial_.has_value()) {
-    active_trial_->spawned_cable_name = response->entity_name;
+    active_trial_->spawned_entities.emplace_back(response->entity_name);
   }
 
-  RCLCPP_INFO(node_->get_logger(), "Successfully spawned cable as '%s'",
-              response->entity_name.c_str());
+  RCLCPP_INFO(node_->get_logger(), "Successfully spawned %s as '%s'",
+              entity_name.c_str(), response->entity_name.c_str());
   return true;
 }
 

@@ -83,8 +83,7 @@ struct Trial {
   Trial(const std::string& id, YAML::Node config);
 
   std::string id;
-  std::optional<std::string> spawned_task_board_name;
-  std::optional<std::string> spawned_cable_name;
+  std::vector<std::string> spawned_entities;
   YAML::Node config;
   std::vector<Task> tasks;
   TrialState state;
@@ -138,7 +137,9 @@ class Engine {
   /// \return True if the task was completed successfully, false otherwise.
   bool task_completed_successfully();
 
-  /// \brief Spawn the task board in Gazebo.
+  /// \brief Spawn an entity in Gazebo.
+  /// \param[in] entity_name Name of the entity to spawn
+  /// \param[in] filepath Path to the xacro file of the entity
   /// \param[in] x X position
   /// \param[in] y Y position
   /// \param[in] z Z position
@@ -146,19 +147,8 @@ class Engine {
   /// \param[in] pitch Pitch orientation (radians)
   /// \param[in] yaw Yaw orientation (radians)
   /// \return True if spawning succeeded, false otherwise
-  bool spawn_task_board(double x, double y, double z, double roll, double pitch,
-                        double yaw);
-
-  /// \brief Spawn the cable in Gazebo.
-  /// \param[in] x X position
-  /// \param[in] y Y position
-  /// \param[in] z Z position
-  /// \param[in] roll Roll orientation (radians)
-  /// \param[in] pitch Pitch orientation (radians)
-  /// \param[in] yaw Yaw orientation (radians)
-  /// \return True if spawning succeeded, false otherwise
-  bool spawn_cable(double x, double y, double z, double roll, double pitch,
-                   double yaw);
+  bool spawn_entity(std::string entity_name, std::string filepath, double x,
+                    double y, double z, double roll, double pitch, double yaw);
 
   // Internal ROS 2 node.
   rclcpp::Node::SharedPtr node_;
