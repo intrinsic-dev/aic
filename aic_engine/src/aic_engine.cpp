@@ -446,8 +446,7 @@ bool Engine::check_required_endpoints() {
   RCLCPP_INFO(node_->get_logger(), "Checking required endpoints...");
 
   // Check nodes
-  std::set<std::string> unavailable = {this->adapter_node_name_,
-                                       this->model_node_name_};
+  std::set<std::string> unavailable = {this->adapter_node_name_};
   rclcpp::Time start_time = this->node_->now();
   const rclcpp::Duration timeout = rclcpp::Duration::from_seconds(
       this->node_->get_parameter("endpoint_discovery_timeout_seconds")
@@ -467,7 +466,6 @@ bool Engine::check_required_endpoints() {
         ++it;
       }
     }
-    // TODO(luca) less time
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
   }
   if (!unavailable.empty()) {
