@@ -231,7 +231,6 @@ def launch_setup(context, *args, **kwargs):
         condition=IfCondition(start_aic_engine),
     )
 
-
     # Task board spawning (conditional)
     spawn_task_board = LaunchConfiguration("spawn_task_board")
     task_board_description_file = LaunchConfiguration("task_board_description_file")
