@@ -24,6 +24,7 @@
 #include <iostream>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
+#include <rosbag2_cpp/writer.hpp>
 #include <string>
 #include <vector>
 
@@ -31,13 +32,62 @@ namespace aic_scoring {
 //////////////////////////////////////////////////
 ScoringTier2::ScoringTier2(rclcpp::Node *_node, YAML::Node *_config)
     : node(_node) {
+  if (!_node) {
+    std::cerr << "[ScoringTier2]: null ROS node. Aborting." << std::endl;
+    return;
+  }
+
   this->yamlNode = YAML::Clone(*_config);
 
   if (!this->ParseStats()) return;
 
-  // Debug.
-  for (const auto &[connection, distance] : this->pluggableMap)
-    std::cout << connection << ": " << distance << " m." << std::endl;
+  // Subscribe to all topics relevant for scoring.
+  for (const auto &topic : this->topics) {
+    auto sub = this->node->create_generic_subscription(
+        topic.name, topic.type, rclcpp::QoS(10),
+        [this, topic](std::shared_ptr<const rclcpp::SerializedMessage> msg,
+                      const rclcpp::MessageInfo &msg_info) {
+          // Bag the data.
+          const auto &rmw_info = msg_info.get_rmw_message_info();
+          std::lock_guard<std::mutex> lock(this->mutex);
+          if (this->bagOpen) {
+            this->bagWriter.write(msg, topic.name, topic.type,
+                                  rmw_info.received_timestamp,
+                                  rmw_info.source_timestamp);
+          }
+        });
+    this->subscriptions.push_back(sub);
+  }
+}
+
+//////////////////////////////////////////////////
+bool ScoringTier2::StartRecording(const std::string &_filename) {
+  std::lock_guard<std::mutex> lock(this->mutex);
+  if (this->bagOpen) {
+    RCLCPP_ERROR(this->node->get_logger(), "Bag already opened.");
+    return false;
+  }
+
+  try {
+    this->bagWriter.open(_filename);
+  } catch (const std::exception &e) {
+    RCLCPP_ERROR(this->node->get_logger(), "Failed to open bag: %s", e.what());
+    return false;
+  }
+  this->bagOpen = true;
+  return true;
+}
+
+//////////////////////////////////////////////////
+bool ScoringTier2::StopRecording() {
+  std::lock_guard<std::mutex> lock(this->mutex);
+  if (!this->bagOpen) {
+    RCLCPP_ERROR(this->node->get_logger(), "Bag already closed.");
+    return false;
+  }
+  this->bagWriter.close();
+  this->bagOpen = false;
+  return true;
 }
 
 //////////////////////////////////////////////////
@@ -76,7 +126,6 @@ bool ScoringTier2::ParseStats() {
       return false;
     }
     plug.name = plugProperties["name"].as<std::string>();
-    std::cout << "Name: " << plug.name << std::endl;
 
     if (!plugProperties["type"]) {
       std::cerr << "Unable to find [type] within [plug]" << std::endl;
@@ -147,6 +196,48 @@ bool ScoringTier2::ParseStats() {
         this->pluggableMap.insert({connectionName, 0});
       }
     }
+  }
+
+  // Parse topics to subscribe to.
+  if (!this->yamlNode["topics"]) {
+    std::cerr << "Unable to find [topics] in yaml file" << std::endl;
+    return false;
+  }
+
+  const auto &topics = this->yamlNode["topics"];
+  if (!topics.IsSequence()) {
+    std::cerr << "Unable to find sequence of topics within [topics]"
+              << std::endl;
+    return false;
+  }
+
+  for (const auto &newTopic : topics) {
+    if (!newTopic["topic"]) {
+      std::cerr << "Unrecognized element. It should be [topic]" << std::endl;
+      return false;
+    }
+
+    const auto &topicProperties = newTopic["topic"];
+    if (!topicProperties.IsMap()) {
+      std::cerr << "Unable to find properties within [topic]" << std::endl;
+      return false;
+    }
+
+    TopicInfo topicInfo;
+
+    if (!topicProperties["name"]) {
+      std::cerr << "Unable to find [name] within [topic]" << std::endl;
+      return false;
+    }
+    topicInfo.name = topicProperties["name"].as<std::string>();
+
+    if (!topicProperties["type"]) {
+      std::cerr << "Unable to find [type] within [topic]" << std::endl;
+      return false;
+    }
+    topicInfo.type = topicProperties["type"].as<std::string>();
+
+    this->topics.push_back(topicInfo);
   }
 
   return true;

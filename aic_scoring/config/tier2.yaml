@@ -1,6 +1,21 @@
 ---
 # Tier2 scoring configuration.
 
+# List of topics to subscribe.
+topics:
+  - topic:
+      name: "/joint_states"
+      type: "sensor_msgs/msg/JointState"
+  - topic:
+      name: "/scoring/tf"
+      type: "tf2_msgs/msg/TFMessage"
+  - topic:
+      name: "/scoring/tf_static"
+      type: "tf2_msgs/msg/TFMessage"
+  - topic:
+      name: "/aic/gazebo/contacts/off_limit"
+      type: "ros_gz_interfaces/msg/Contacts"
+
 # List of entity pairs to monitor.
 plugs:
   - plug:

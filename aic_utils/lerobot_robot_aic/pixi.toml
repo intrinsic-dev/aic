@@ -6,3 +6,6 @@ channels = [
   "robostack-kilted",
   "conda-forge",
 ]
+
+[package.build.config]
+extra-package-mappings = [{ "python3-hidapi" = { conda = ["hidapi"] } }]

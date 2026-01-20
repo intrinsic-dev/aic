@@ -20,17 +20,23 @@ import logging
 import time
 from dataclasses import dataclass, field
 from threading import Thread
-from typing import Any
+from typing import Any, cast
 
+import numpy as np
 import rclpy
+from aic_control_interfaces.msg import MotionUpdate, TrajectoryGenerationMode
+from geometry_msgs.msg import Twist, Vector3, Wrench
 from lerobot.cameras import CameraConfig, make_cameras_from_configs
 from lerobot.robots import Robot, RobotConfig
 from lerobot.utils.errors import DeviceAlreadyConnectedError, DeviceNotConnectedError
-from rclpy.node import Node
 from rclpy.executors import SingleThreadedExecutor
+from rclpy.node import Node
+from rclpy.publisher import Publisher
 from sensor_msgs.msg import JointState
+from std_msgs.msg import Float32
 
 from .aic_robot import aic_cameras, arm_joint_names, gripper_joint_name
+from .types import MotionUpdateActionDict
 
 logger = logging.getLogger(__name__)
 
@@ -38,9 +44,9 @@ logger = logging.getLogger(__name__)
 @RobotConfig.register_subclass("aic_controller")
 @dataclass(kw_only=True)
 class AICRobotAICControllerConfig(RobotConfig):
-    arm_joint_names: list[str] = field(default_factory=lambda: arm_joint_names.copy())
+    arm_joint_names: list[str] = field(default_factory=arm_joint_names.copy)
     gripper_joint_name: str = gripper_joint_name
-    cameras: dict[str, CameraConfig] = field(default_factory=lambda: aic_cameras.copy())
+    cameras: dict[str, CameraConfig] = field(default_factory=aic_cameras.copy)
 
 
 class AICRobotAICController(Robot):
@@ -53,6 +59,8 @@ class AICRobotAICController(Robot):
         self.robot_node: Node | None = None
         self.executor: SingleThreadedExecutor | None = None
         self.executor_thread: Thread | None = None
+        self.motion_update_pub: Publisher[MotionUpdate]
+        self.gripper_pub: Publisher[Float32]
         self._is_connected = False
         self._last_joint_state: dict[str, dict[str, float]] | None = None
 
@@ -120,6 +128,12 @@ class AICRobotAICController(Robot):
 
         self.robot_node = Node("aic_robot_node")
 
+        self.motion_update_pub = self.robot_node.create_publisher(
+            MotionUpdate, "/aic_controller/pose_commands", 10
+        )
+        self.gripper_pub = self.robot_node.create_publisher(
+            Float32, "gripper_client/target_gripper_width_percent", 10
+        )
         self.robot_node.create_subscription(
             JointState, "joint_states", self._joint_state_callback, 10
         )
@@ -166,8 +180,39 @@ class AICRobotAICController(Robot):
         return obs_dict
 
     def send_action(self, action: dict[str, Any]) -> dict[str, Any]:
-        # TODO:
-        return {}
+        motion_update_action = cast(MotionUpdateActionDict, action)
+
+        twist_msg = Twist()
+        twist_msg.linear.x = float(motion_update_action["linear.x"])
+        twist_msg.linear.y = float(motion_update_action["linear.y"])
+        twist_msg.linear.z = float(motion_update_action["linear.z"])
+        twist_msg.angular.x = float(motion_update_action["angular.x"])
+        twist_msg.angular.y = float(motion_update_action["angular.y"])
+        twist_msg.angular.z = float(motion_update_action["angular.z"])
+
+        msg = MotionUpdate()
+        msg.velocity = twist_msg
+        msg.target_stiffness = np.diag(
+            [100.0, 100.0, 100.0, 50.0, 50.0, 50.0]
+        ).flatten()
+        msg.target_damping = np.diag([40.0, 40.0, 40.0, 15.0, 15.0, 15.0]).flatten()
+        msg.feedforward_wrench_at_tip = Wrench(
+            force=Vector3(x=0.0, y=0.0, z=1.0),
+            torque=Vector3(x=0.0, y=0.0, z=0.0),
+        )
+        msg.wrench_feedback_gains_at_tip = Wrench(
+            force=Vector3(x=0.5, y=0.5, z=0.5),
+            torque=Vector3(x=0.0, y=0.0, z=0.0),
+        )
+        msg.trajectory_generation_mode.mode = TrajectoryGenerationMode.MODE_VELOCITY
+        msg.time_to_target_seconds = 2.0
+        self.motion_update_pub.publish(msg)
+
+        gripper_width_msg = Float32()
+        gripper_width_msg.data = motion_update_action["gripper_width_percent"]
+        self.gripper_pub.publish(gripper_width_msg)
+
+        return action
 
     def disconnect(self) -> None:
         if not self.is_connected:

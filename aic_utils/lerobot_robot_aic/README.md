@@ -13,37 +13,39 @@ The LeRobot driver is installed in a [pixi](https://prefix.dev/tools/pixi) works
 ```bash
 cd ~/ws_aic/src/aic
 pixi run lerobot-teleoperate \
-  --robot.type=aic_ros2_control --robot.id=aic \
-  --teleop.type=aic_keyboard --teleop.id=aic \
+  --robot.type=aic_controller --robot.id=aic \
+  --teleop.type=aic_keyboard_ee --teleop.id=aic \
   --display_data=true
 ```
 
 Key mapping
 
-| Key | Joint          |
-| --- | -------------- |
-| q   | -shoulder_pan  |
-| a   | +shoulder_pan  |
-| w   | -shoulder_lift |
-| s   | +shoulder_lift |
-| e   | -elbow         |
-| d   | +elbow         |
-| r   | -wrist_1       |
-| f   | +wrist_1       |
-| t   | -wrist_2       |
-| g   | +wrist_2       |
-| y   | -wrist_3       |
-| h   | +wrist_3       |
-| o   | -gripper       |
-| l   | +gripper       |
+| Key     | Joint      |
+| ------- | ---------- |
+| w       | -linear y  |
+| s       | +linear y  |
+| a       | -linear x  |
+| d       | +linear x  |
+| r       | -linear z  |
+| f       | +linear z  |
+| q       | -angular z |
+| e       | +angular z |
+| shift+w | +angular x |
+| shift+s | -angular x |
+| shift+a | -angular y |
+| shift+d | +angular y |
+
+Configuration
+
+`--teleop.command_scaling`: Controls the sensitivity of the controls, default is `0.1`.
 
 ### Recording Training Data
 
 ```bash
 cd ~/ws_aic/src/aic
 pixi run lerobot-record \
-  --robot.type=aic_ros2_control --robot.id=aic \
-  --teleop.type=aic_keyboard --teleop.id=aic \
+  --robot.type=aic_controller --robot.id=aic \
+  --teleop.type=aic_keyboard_ee --teleop.id=aic \
   --dataset.repo_id=<hf-repo> \
   --dataset.single_task=<task-prompt> \
   --dataset.push_to_hub=false \
