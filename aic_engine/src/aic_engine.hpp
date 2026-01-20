@@ -128,10 +128,6 @@ class Engine {
   /// \return True if the scoring system is ready, false otherwise.
   bool ready_scoring();
 
-  /// \brief Start the task.
-  /// \return True if tasks started successfully, false otherwise.
-  bool start_tasks();
-
   /// \brief Check if all tasks have been completed successfully.
   /// \return True if tasks were completed successfully, false otherwise.
   bool tasks_completed_successfully();
