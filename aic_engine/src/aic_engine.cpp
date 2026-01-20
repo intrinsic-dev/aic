@@ -266,7 +266,9 @@ Engine::Engine(const rclcpp::NodeOptions& options)
   ground_truth_ = node_->declare_parameter("ground_truth", false);
   skip_model_ready_ = node_->declare_parameter("skip_model_ready", false);
   node_->declare_parameter("model_discovery_timeout_seconds", 30);
-  node_->declare_parameter("model_configuration_timeout_seconds", 60);
+  node_->declare_parameter("model_configure_timeout_seconds", 60);
+  node_->declare_parameter("model_activate_timeout_seconds", 60);
+  node_->declare_parameter("model_deactivate_timeout_seconds", 60);
 
   spin_thread_ = std::thread([node = node_]() {
     rclcpp::executors::SingleThreadedExecutor executor;
@@ -593,10 +595,10 @@ bool Engine::configure_model_node() {
 
   auto future = model_change_state_client_->async_send_request(request);
 
-  const int model_configuration_timeout_seconds =
-      node_->get_parameter("model_configuration_timeout_seconds").as_int();
-  if (future.wait_for(std::chrono::seconds(
-          model_configuration_timeout_seconds)) != std::future_status::ready) {
+  const int model_configure_timeout_seconds =
+      node_->get_parameter("model_configure_timeout_seconds").as_int();
+  if (future.wait_for(std::chrono::seconds(model_configure_timeout_seconds)) !=
+      std::future_status::ready) {
     RCLCPP_ERROR(node_->get_logger(),
                  "ChangeState service call timed out for node '%s'",
                  model_node_name_.c_str());
@@ -907,9 +909,13 @@ bool Engine::activate_model_node() {
   change_state_request->transition.id =
       lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE;
 
+  const int model_activate_timeout_seconds =
+      this->node_->get_parameter("model_activate_timeout_seconds").as_int();
+
   auto future =
       model_change_state_client_->async_send_request(change_state_request);
-  if (future.wait_for(std::chrono::seconds(10)) != std::future_status::ready) {
+  if (future.wait_for(std::chrono::seconds(model_activate_timeout_seconds)) !=
+      std::future_status::ready) {
     RCLCPP_ERROR(node_->get_logger(),
                  "ChangeState service call timed out for activating node '%s'",
                  model_node_name_.c_str());
@@ -948,9 +954,13 @@ bool Engine::deactivate_model_node() {
   change_state_request->transition.id =
       lifecycle_msgs::msg::Transition::TRANSITION_DEACTIVATE;
 
+  const int model_deactivate_timeout_seconds =
+      this->node_->get_parameter("model_deactivate_timeout_seconds").as_int();
+
   auto future =
       model_change_state_client_->async_send_request(change_state_request);
-  if (future.wait_for(std::chrono::seconds(10)) != std::future_status::ready) {
+  if (future.wait_for(std::chrono::seconds(model_deactivate_timeout_seconds)) !=
+      std::future_status::ready) {
     RCLCPP_ERROR(
         node_->get_logger(),
         "ChangeState service call timed out for deactivating node '%s'",
