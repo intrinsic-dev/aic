@@ -445,13 +445,6 @@ TrialState Engine::handle_trial(const Trial& trial) {
   }
   current_state = TrialState::ScoringReady;
 
-  if (!this->start_tasks()) {
-    RCLCPP_ERROR(node_->get_logger(), "Tasks failed to start or complete.");
-    reset_after_trial();
-    return current_state;
-  }
-  current_state = TrialState::TaskStarted;
-
   if (!this->tasks_completed_successfully()) {
     RCLCPP_ERROR(node_->get_logger(), "Tasks were not completed successfully.");
     reset_after_trial();
@@ -624,7 +617,7 @@ bool Engine::ready_scoring() {
 }
 
 //==============================================================================
-bool Engine::start_tasks() {
+bool Engine::tasks_completed_successfully() {
   RCLCPP_INFO(node_->get_logger(), "Starting tasks for active trial...");
 
   if (!this->active_trial_.has_value()) {
@@ -685,26 +678,6 @@ bool Engine::start_tasks() {
 
   RCLCPP_INFO(node_->get_logger(), "All tasks have been processed.");
   this->active_trial_->tasks.clear();
-  return true;
-}
-
-//==============================================================================
-bool Engine::tasks_completed_successfully() {
-  RCLCPP_INFO(node_->get_logger(),
-              "Checking if task was completed successfully...");
-
-  if (!this->active_trial_.has_value()) {
-    RCLCPP_ERROR(node_->get_logger(),
-                 "No active trial set in engine. Report this bug.");
-    return false;
-  }
-
-  // Check that there are no tasks left in queue
-  if (!this->active_trial_->tasks.empty()) {
-    RCLCPP_ERROR(node_->get_logger(),
-                 "There are still pending tasks in the active trial.");
-    return false;
-  }
   return true;
 }
 
