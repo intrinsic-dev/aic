@@ -109,7 +109,6 @@ class AICKeyboardEETeleop(KeyboardEndEffectorTeleop):
                 self._current_actions["angular.y"] = -self._get_action_value(is_pressed)
             elif key == "D":
                 self._current_actions["angular.y"] = self._get_action_value(is_pressed)
-                print(self._current_actions)
             elif key == "q":
                 self._current_actions["angular.z"] = -self._get_action_value(is_pressed)
             elif key == "e":
