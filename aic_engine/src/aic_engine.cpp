@@ -192,11 +192,20 @@ Trial::Trial(const std::string& _id, YAML::Node _config)
     throw std::runtime_error("Config missing required key: 'scene.cable.pose'");
   }
   const auto& cable_pose = cable["pose"];
-  for (const auto& key : {"x", "y", "z", "roll", "pitch", "yaw"}) {
+  for (const auto& key : {"offset", "roll", "pitch", "yaw"}) {
     if (!cable_pose[key]) {
       throw std::runtime_error(
           std::string("Config missing required key: 'scene.cable.pose.") + key +
           "'");
+    }
+  }
+  const auto& cable_pose_offset = cable["pose"]["offset"];
+  for (const auto& key : {"x", "y", "z"}) {
+    if (!cable_pose_offset[key]) {
+      throw std::runtime_error(
+          std::string(
+              "Config missing required key: 'scene.cable.pose.offset.") +
+          key + "'");
     }
   }
   if (!cable["attach_cable_to_gripper"]) {
@@ -568,8 +577,12 @@ bool Engine::ready_simulator() {
   geometry_msgs::msg::TransformStamped t =
       tf_buffer_->lookupTransform("world", gripper_frame, tf2::TimePointZero);
   const auto& cable_config = active_trial_->config["scene"]["cable"];
-  if (this->spawn_cable(t.transform.translation.x, t.transform.translation.y,
-                        t.transform.translation.z,
+  if (this->spawn_cable(t.transform.translation.x +
+                            cable_config["pose"]["offset"]["x"].as<double>(),
+                        t.transform.translation.y +
+                            cable_config["pose"]["offset"]["y"].as<double>(),
+                        t.transform.translation.z +
+                            cable_config["pose"]["offset"]["z"].as<double>(),
                         cable_config["pose"]["roll"].as<double>(),
                         cable_config["pose"]["pitch"].as<double>(),
                         cable_config["pose"]["yaw"].as<double>())) {
