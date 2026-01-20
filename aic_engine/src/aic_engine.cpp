@@ -169,38 +169,42 @@ Trial::Trial(const std::string& _id, YAML::Node _config) : id(std::move(_id)) {
     }
   }
 
-  // Validate scene.cable
-  if (!scene["cable"]) {
-    throw std::runtime_error("Config missing required key: 'scene.cable'");
+  // Validate scene.cables
+  if (!scene["cables"]) {
+    throw std::runtime_error("Config missing required key: 'scene.cables'");
   }
-  const auto& cable = scene["cable"];
-  if (!cable["pose"]) {
-    throw std::runtime_error("Config missing required key: 'scene.cable.pose'");
-  }
-  const auto& cable_pose = cable["pose"];
-  for (const auto& key : {"gripper_offset", "roll", "pitch", "yaw"}) {
-    if (!cable_pose[key]) {
-      throw std::runtime_error(
-          std::string("Config missing required key: 'scene.cable.pose.") + key +
-          "'");
+  const auto& cables = scene["cables"];
+  for (const auto& cable_it : cables) {
+    const std::string cable_id = cable_it.first.as<std::string>();
+    const YAML::Node cable = cable_it.second;
+    if (!cable["pose"]) {
+      throw std::runtime_error("Config missing required key: 'scene.cables[" +
+                               cable_id + "].pose'");
     }
-  }
-  const auto& cable_pose_offset = cable["pose"]["gripper_offset"];
-  for (const auto& key : {"x", "y", "z"}) {
-    if (!cable_pose_offset[key]) {
-      throw std::runtime_error(
-          std::string("Config missing required key: "
-                      "'scene.cable.pose.gripper_offset.") +
-          key + "'");
+    const auto& cable_pose = cable["pose"];
+    for (const auto& key : {"gripper_offset", "roll", "pitch", "yaw"}) {
+      if (!cable_pose[key]) {
+        throw std::runtime_error("Config missing required key: 'scene.cables[" +
+                                 cable_id + "].pose." + key + "'");
+      }
     }
-  }
-  if (!cable["attach_cable_to_gripper"]) {
-    throw std::runtime_error(
-        "Config missing required key: 'scene.cable.attach_cable_to_gripper'");
-  }
-  if (!cable["cable_type"]) {
-    throw std::runtime_error(
-        "Config missing required key: 'scene.cable.cable_type'");
+    const auto& cable_pose_offset = cable["pose"]["gripper_offset"];
+    for (const auto& key : {"x", "y", "z"}) {
+      if (!cable_pose_offset[key]) {
+        throw std::runtime_error(
+            std::string("Config missing required key: "
+                        "'scene.cable.pose.gripper_offset.") +
+            key + "'");
+      }
+    }
+    if (!cable["attach_cable_to_gripper"]) {
+      throw std::runtime_error("Config missing required key: 'scene.cables[" +
+                               cable_id + "].attach_cable_to_gripper'");
+    }
+    if (!cable["cable_type"]) {
+      throw std::runtime_error("Config missing required key: 'scene.cables[" +
+                               cable_id + "].cable_type'");
+    }
   }
 
   // Validate tasks array
@@ -591,21 +595,30 @@ bool Engine::ready_simulator() {
   }
   geometry_msgs::msg::TransformStamped t =
       tf_buffer_->lookupTransform("world", gripper_frame, tf2::TimePointZero);
-  const auto& cable_config = active_trial_->config["scene"]["cable"];
-  if (this->spawn_entity(
-          "cable", "/urdf/cable.sdf.xacro",
-          t.transform.translation.x +
-              cable_config["pose"]["gripper_offset"]["x"].as<double>(),
-          t.transform.translation.y +
-              cable_config["pose"]["gripper_offset"]["y"].as<double>(),
-          t.transform.translation.z +
-              cable_config["pose"]["gripper_offset"]["z"].as<double>(),
-          cable_config["pose"]["roll"].as<double>(),
-          cable_config["pose"]["pitch"].as<double>(),
-          cable_config["pose"]["yaw"].as<double>())) {
-    RCLCPP_INFO(node_->get_logger(), "Cable spawned successfully.");
-  } else {
-    RCLCPP_ERROR(node_->get_logger(), "Failed to spawn cable.");
+  const auto& cables_config = active_trial_->config["scene"]["cables"];
+  for (const auto& cable_it : cables_config) {
+    const std::string cable_id = cable_it.first.as<std::string>();
+    const YAML::Node cable_config = cable_it.second;
+    RCLCPP_INFO(node_->get_logger(), "Spawning cable '%s'...",
+                cable_id.c_str());
+    if (this->spawn_entity(
+            cable_id, "/urdf/cable.sdf.xacro",
+            t.transform.translation.x +
+                cable_config["pose"]["gripper_offset"]["x"].as<double>(),
+            t.transform.translation.y +
+                cable_config["pose"]["gripper_offset"]["y"].as<double>(),
+            t.transform.translation.z +
+                cable_config["pose"]["gripper_offset"]["z"].as<double>(),
+            cable_config["pose"]["roll"].as<double>(),
+            cable_config["pose"]["pitch"].as<double>(),
+            cable_config["pose"]["yaw"].as<double>())) {
+      RCLCPP_INFO(node_->get_logger(), "Cable %s spawned successfully.",
+                  cable_id.c_str());
+    } else {
+      RCLCPP_ERROR(node_->get_logger(), "Failed to spawn cable %s.",
+                   cable_id.c_str());
+      return false;
+    }
   }
 
   // TODO(Yadunund): Implement other simulator readiness checks.
@@ -709,7 +722,8 @@ bool Engine::spawn_entity(std::string entity_name, std::string filepath,
   const auto& config = active_trial_->config["scene"][entity_name];
 
   // Append entity-specific parameters
-  if (entity_name == "cable") {
+  if (entity_name.find("cable") != std::string::npos) {
+    const auto& config = active_trial_->config["scene"]["cables"][entity_name];
     // Add attach cable parameter
     bool attach_cable_to_gripper = config["attach_cable_to_gripper"].as<bool>();
     cmd << " attach_cable_to_gripper:="
@@ -719,6 +733,7 @@ bool Engine::spawn_entity(std::string entity_name, std::string filepath,
     std::string cable_type = config["cable_type"].as<std::string>();
     cmd << " cable_type:=" << cable_type;
   } else if (entity_name == "task_board") {
+    const auto& config = active_trial_->config["scene"][entity_name];
     // Read task board limits from config
     const auto& config_root = active_trial_->config;
     double nic_rail_min = -0.048;  // Default values
