@@ -189,19 +189,19 @@ Trial::Trial(const std::string& _id, YAML::Node _config) : id(std::move(_id)) {
     throw std::runtime_error("Config missing required key: 'scene.cable.pose'");
   }
   const auto& cable_pose = cable["pose"];
-  for (const auto& key : {"offset", "roll", "pitch", "yaw"}) {
+  for (const auto& key : {"gripper_offset", "roll", "pitch", "yaw"}) {
     if (!cable_pose[key]) {
       throw std::runtime_error(
           std::string("Config missing required key: 'scene.cable.pose.") + key +
           "'");
     }
   }
-  const auto& cable_pose_offset = cable["pose"]["offset"];
+  const auto& cable_pose_offset = cable["pose"]["gripper_offset"];
   for (const auto& key : {"x", "y", "z"}) {
     if (!cable_pose_offset[key]) {
       throw std::runtime_error(
-          std::string(
-              "Config missing required key: 'scene.cable.pose.offset.") +
+          std::string("Config missing required key: "
+                      "'scene.cable.pose.gripper_offset.") +
           key + "'");
     }
   }
@@ -575,16 +575,17 @@ bool Engine::ready_simulator() {
   geometry_msgs::msg::TransformStamped t =
       tf_buffer_->lookupTransform("world", gripper_frame, tf2::TimePointZero);
   const auto& cable_config = active_trial_->config["scene"]["cable"];
-  if (this->spawn_entity("cable", "/urdf/cable.sdf.xacro",
-                         t.transform.translation.x +
-                             cable_config["pose"]["offset"]["x"].as<double>(),
-                         t.transform.translation.y +
-                             cable_config["pose"]["offset"]["y"].as<double>(),
-                         t.transform.translation.z +
-                             cable_config["pose"]["offset"]["z"].as<double>(),
-                         cable_config["pose"]["roll"].as<double>(),
-                         cable_config["pose"]["pitch"].as<double>(),
-                         cable_config["pose"]["yaw"].as<double>())) {
+  if (this->spawn_entity(
+          "cable", "/urdf/cable.sdf.xacro",
+          t.transform.translation.x +
+              cable_config["pose"]["gripper_offset"]["x"].as<double>(),
+          t.transform.translation.y +
+              cable_config["pose"]["gripper_offset"]["y"].as<double>(),
+          t.transform.translation.z +
+              cable_config["pose"]["gripper_offset"]["z"].as<double>(),
+          cable_config["pose"]["roll"].as<double>(),
+          cable_config["pose"]["pitch"].as<double>(),
+          cable_config["pose"]["yaw"].as<double>())) {
     RCLCPP_INFO(node_->get_logger(), "Cable spawned successfully.");
   } else {
     RCLCPP_ERROR(node_->get_logger(), "Failed to spawn cable.");

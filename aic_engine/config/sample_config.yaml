@@ -83,10 +83,10 @@ trials:
             entity_present: False
         cable:
           pose:
-            offset:
+            gripper_offset:
               x: 0.0
               y: 0.0
-              z: 0.025
+              z: 0.0
             roll: 0.5
             pitch: -0.6605
             yaw: 2.6928
@@ -174,10 +174,10 @@ trials:
             entity_present: False
         cable:
           pose:
-            offset:
+            gripper_offset:
               x: 0.0
               y: 0.0
-              z: 0.025
+              z: 0.0
             roll: 0.5
             pitch: -0.6605
             yaw: 2.6928
