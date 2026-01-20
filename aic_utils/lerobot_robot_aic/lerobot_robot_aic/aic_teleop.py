@@ -15,11 +15,18 @@
 #
 
 from dataclasses import dataclass, field
+from typing import Any, cast
 
 from lerobot.teleoperators import TeleoperatorConfig
+from lerobot.teleoperators.keyboard import (
+    KeyboardEndEffectorTeleop,
+    KeyboardEndEffectorTeleopConfig,
+)
+from lerobot.utils.errors import DeviceNotConnectedError
 from lerobot_teleoperator_devices import KeyboardJointTeleop, KeyboardJointTeleopConfig
 
 from .aic_robot import arm_joint_names
+from .types import MotionUpdateActionDict, motion_update_action_features
 
 
 @TeleoperatorConfig.register_subclass("aic_keyboard")
@@ -46,3 +53,77 @@ class AICKeyboardTeleop(KeyboardJointTeleop):
             "wrist_3_joint.pos": 0.6,
             "gripper.pos": 1.0,  # open
         }
+
+
+@TeleoperatorConfig.register_subclass("aic_keyboard_ee")
+@dataclass(kw_only=True)
+class AICKeyboardEETeleopConfig(KeyboardEndEffectorTeleopConfig):
+    command_scaling: float = 0.1
+
+
+class AICKeyboardEETeleop(KeyboardEndEffectorTeleop):
+    def __init__(self, config: AICKeyboardEETeleopConfig):
+        super().__init__(config)
+        self.config = config
+        self._current_actions: MotionUpdateActionDict = {
+            "linear.x": 0.0,
+            "linear.y": 0.0,
+            "linear.z": 0.0,
+            "angular.x": 0.0,
+            "angular.y": 0.0,
+            "angular.z": 0.0,
+            "gripper_width_percent": 0.0,
+        }
+
+    @property
+    def action_features(self) -> dict:
+        return motion_update_action_features()
+
+    def _get_action_value(self, is_pressed: bool) -> float:
+        return self.config.command_scaling if is_pressed else 0.0
+
+    def get_action(self) -> dict[str, Any]:
+        if not self.is_connected:
+            raise DeviceNotConnectedError()
+
+        self._drain_pressed_keys()
+
+        for key, is_pressed in self.current_pressed.items():
+            if key == "w":
+                self._current_actions["linear.y"] = -self._get_action_value(is_pressed)
+            elif key == "s":
+                self._current_actions["linear.y"] = self._get_action_value(is_pressed)
+            elif key == "a":
+                self._current_actions["linear.x"] = -self._get_action_value(is_pressed)
+            elif key == "d":
+                self._current_actions["linear.x"] = self._get_action_value(is_pressed)
+            elif key == "r":
+                self._current_actions["linear.z"] = -self._get_action_value(is_pressed)
+            elif key == "f":
+                self._current_actions["linear.z"] = self._get_action_value(is_pressed)
+            elif key == "W":
+                self._current_actions["angular.x"] = self._get_action_value(is_pressed)
+            elif key == "S":
+                self._current_actions["angular.x"] = -self._get_action_value(is_pressed)
+            elif key == "A":
+                self._current_actions["angular.y"] = -self._get_action_value(is_pressed)
+            elif key == "D":
+                self._current_actions["angular.y"] = self._get_action_value(is_pressed)
+                print(self._current_actions)
+            elif key == "q":
+                self._current_actions["angular.z"] = -self._get_action_value(is_pressed)
+            elif key == "e":
+                self._current_actions["angular.z"] = self._get_action_value(is_pressed)
+            elif key == "j":
+                self._current_actions["gripper_width_percent"] = 0.0
+            elif key == "k":
+                self._current_actions["gripper_width_percent"] = 1.0
+            elif is_pressed:
+                # If the key is pressed, add it to the misc_keys_queue
+                # this will record key presses that are not part of the delta_x, delta_y, delta_z
+                # this is useful for retrieving other events like interventions for RL, episode success, etc.
+                self.misc_keys_queue.put(key)
+
+        self.current_pressed.clear()
+
+        return cast(dict, self._current_actions)
