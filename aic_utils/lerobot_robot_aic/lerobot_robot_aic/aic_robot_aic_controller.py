@@ -115,8 +115,7 @@ class AICRobotAICController(Robot):
             self.config.gripper_joint_name,
         ]
         motor_state_ft = {f"{motor}.pos": float for motor in all_joint_names}
-        # return {**motor_state_ft, **self._cameras_ft}
-        return ControllerStateDict.__annotations__
+        return {**motor_state_ft, **self._cameras_ft, **ControllerStateDict.__annotations__}
 
     @cached_property
     def action_features(self) -> dict[str, type]:
