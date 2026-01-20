@@ -130,12 +130,13 @@
         <constant>1.0</constant>
         <linear>0.01</linear>
         <quadratic>0.001</quadratic>
-        </attenuation>
+      </attenuation>
       <spot>
         <inner_angle>0.1</inner_angle>
         <outer_angle>2</outer_angle>
         <falloff>1.0</falloff>
       </spot>
+      <visualize>false</visualize>
     </light>
 
     <light type="point" name="ceiling_01">
@@ -150,6 +151,7 @@
         <linear>0.01</linear>
         <quadratic>0.001</quadratic>
       </attenuation>
+      <visualize>false</visualize>
     </light>
 
     <light type="point" name="ceiling_02">
@@ -164,6 +166,7 @@
         <linear>0.01</linear>
         <quadratic>0.001</quadratic>
       </attenuation>
+      <visualize>false</visualize>
     </light>
 
     <include>

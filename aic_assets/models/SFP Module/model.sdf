@@ -3,7 +3,7 @@
   <model name="SFP Module">
     <link name="sfp_module_link">
       <inertial auto="true">
-        <mass>0.03</mass>
+        <mass>0.02</mass>
       </inertial>
       <visual name="sfp_module_visual">
         <geometry>
@@ -221,15 +221,20 @@
         </geometry>
       </collision>
     </link>
-    
     <link name="sfp_tip_link">
+      <inertial>
+        <mass>1e-3</mass>
+        <inertia>
+          <ixx>1e-6</ixx>
+          <iyy>1e-6</iyy>
+          <izz>1e-6</izz>
+        </inertia>
+      </inertial>
       <pose>0 -0.02365 0 1.5708 0 0</pose>
     </link>
-    
     <joint name="sfp_tip_joint" type="fixed">
       <parent>sfp_module_link</parent>
       <child>sfp_tip_link</child>
     </joint>
-    
   </model>
 </sdf>
