@@ -552,29 +552,12 @@ bool Engine::start_tasks() {
     return false;
   }
 
-  auto tasks_it = std::make_shared<std::vector<Task>::iterator>(
-      this->active_trial_->tasks.begin());
-
-  auto task_failed = std::make_shared<bool>(false);
-
-  // Send tasks recursively
-  auto send_next_goal = std::make_shared<std::function<void()>>();
-  *send_next_goal = [this, tasks_it, task_failed, send_next_goal]() {
-    // Check if there are more tasks to process
-    if (*tasks_it == this->active_trial_->tasks.end()) {
-      RCLCPP_INFO(node_->get_logger(), "All tasks have been processed.");
-      this->active_trial_->tasks.clear();
-      return;
-    }
-
-    const auto& task = **tasks_it;
-    const auto& task_id = task.id;
-
+  for (const auto& task : this->active_trial_->tasks) {
     auto insert_cable_goal = InsertCableAction::Goal();
     insert_cable_goal.task = task;
 
     RCLCPP_INFO(this->node_->get_logger(),
-                "Sending InsertCable goal for task [%s]", task_id.c_str());
+                "Sending InsertCable goal for task [%s]", task.id.c_str());
     auto send_goal_future =
         insert_cable_action_client_->async_send_goal(insert_cable_goal);
 
@@ -583,9 +566,8 @@ bool Engine::start_tasks() {
     if (!goal_handle) {
       RCLCPP_ERROR(this->node_->get_logger(),
                    "InsertCable goal for task [%s] was rejected.",
-                   task_id.c_str());
-      *task_failed = true;
-      return;
+                   task.id.c_str());
+      return false;
     }
 
     // Handle goal result
@@ -598,35 +580,25 @@ bool Engine::start_tasks() {
         std::future_status::ready) {
       RCLCPP_ERROR(this->node_->get_logger(),
                    "Task [%s] timed out after %ld seconds. Cancelling goal.",
-                   task_id.c_str(), task.time_limit);
+                   task.id.c_str(), task.time_limit);
       insert_cable_action_client_->async_cancel_goal(goal_handle);
-      *task_failed = true;
-      return;
+      return false;
     }
 
     auto result = result_future.get();
     if (!result.result->success) {
       RCLCPP_INFO(this->node_->get_logger(), "Task [%s] failed: %s",
-                  task_id.c_str(), result.result->message.c_str());
-      *task_failed = true;
-      return;
+                  task.id.c_str(), result.result->message.c_str());
+      return false;
     }
 
     // Task succeeded, move off and send the next task goal
     RCLCPP_INFO(this->node_->get_logger(), "Task [%s] succeeded.",
-                task_id.c_str());
-    ++(*tasks_it);
-    (*send_next_goal)();
-  };
-
-  // Send the first goal
-  (*send_next_goal)();
-
-  if (*task_failed) {
-    RCLCPP_ERROR(node_->get_logger(),
-                 "One or more tasks was rejected or failed.");
-    return false;
+                task.id.c_str());
   }
+
+  RCLCPP_INFO(node_->get_logger(), "All tasks have been processed.");
+  this->active_trial_->tasks.clear();
   return true;
 }
 
