@@ -26,7 +26,7 @@ from lerobot.utils.errors import DeviceNotConnectedError
 from lerobot_teleoperator_devices import KeyboardJointTeleop, KeyboardJointTeleopConfig
 
 from .aic_robot import arm_joint_names
-from .types import MotionUpdateActionDict, motion_update_action_features
+from .types import MotionUpdateActionDict
 
 
 @TeleoperatorConfig.register_subclass("aic_keyboard")
@@ -77,7 +77,7 @@ class AICKeyboardEETeleop(KeyboardEndEffectorTeleop):
 
     @property
     def action_features(self) -> dict:
-        return motion_update_action_features()
+        return MotionUpdateActionDict.__annotations__
 
     def _get_action_value(self, is_pressed: bool) -> float:
         return self.config.command_scaling if is_pressed else 0.0

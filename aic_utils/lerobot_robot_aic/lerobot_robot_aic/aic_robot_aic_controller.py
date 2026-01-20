@@ -119,9 +119,7 @@ class AICRobotAICController(Robot):
 
     @cached_property
     def action_features(self) -> dict[str, type]:
-        return {f"{joint}.pos": float for joint in self.config.arm_joint_names} | {
-            "gripper.pos": float
-        }
+        return MotionUpdateActionDict.__annotations__
 
     @property
     def is_connected(self) -> bool:
