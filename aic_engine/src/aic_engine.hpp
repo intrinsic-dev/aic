@@ -256,6 +256,9 @@ class Engine {
   // Parameters to skip states for testing purposes.
   bool skip_model_ready_;
 
+  // Whether the participant model has been discovered and readied.
+  bool model_discovered_;
+
   // Scoring tier 2 instance.
   std::unique_ptr<aic_scoring::ScoringTier2> scoring_tier2_;
 

@@ -70,17 +70,70 @@ export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
 ros2 run rmw_zenoh_cpp rmw_zenohd
 ```
 
-Then bringup the simulator.
+#### Evaluator bringup
+
+> [!NOTE]
+> Update with launch commands to start Zenoh router with ACLs.
+
+To launch the evaluator,
 
 ```bash
 source ~/ws_aic/install/setup.bash
 export RMW_IMPLEMENTATION=rmw_zenoh_cpp
 export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
-ros2 launch aic_bringup aic_gz_bringup.launch.py
+ros2 launch aic_bringup aic_gz_bringup.launch.py ground_truth:=false start_aic_engine:=true
 ```
 
-> [!NOTE]
-> To spawn a cable and attach it to the gripper, pass `spawn_cable:=True` and `attach_cable_to_gripper:=True` to the launch command.
+This will launch Gazebo with the robot arm and end-of-arm tooling together with all required drivers.
+The `TaskBoard` and `Cable` will be spawned by `aic_engine`, the orchestrator for the challenge.
+Note that you will need to bring up your model for the `aic_engine` to work correctly, see [Submission Bringup](#submission-bringup).
+
+
+#### Training Bringup
+
+During training, one might want to bring up the scene with randomized poses of the `TaskBoard` and `Cables`.
+The scene may then be exported to other simulation environments.
+The layout of the `TaskBoard` can be configured at runtime.
+For the full list of configurable parameters, see the [aic_bringup README](../aic_bringup/README.md).
+Ground truth poses of ports and plugs can be made available in TF tree as well.
+
+
+```bash
+source ~/ws_aic/install/setup.bash
+export RMW_IMPLEMENTATION=rmw_zenoh_cpp
+export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
+ros2 launch aic_bringup aic_gz_bringup.launch.py \
+  task_board_x:=0.3 task_board_y:=-0.1 task_board_z:=1.2 task_board_yaw:=0.785 \
+  lc_mount_01_delta_y:=-0.05 sfp_mount_01_delta_y:=-0.08 sc_mount_01_delta_y:=-0.09 \
+  lc_mount_02_delta_y:=0.05 sfp_mount_02_delta_y:=0.08 sc_mount_02_delta_y:=0.09 \
+  sc_port_01_delta_x:=-0.04 sc_port_02_delta_x:=0.04 \
+  nic_card_mount_01_delta_x:=0.005 nic_card_mount_02_delta_x:=-0.008 \
+  nic_card_mount_03_delta_x:=0.012 nic_card_mount_04_delta_x:=-0.015 \
+  nic_card_mount_05_delta_x:=0.01 \
+  spawn_cable:=true  cable_type:=sfp_sc_cable attach_cable_to_gripper:=true \
+  ground_truth:=true start_aic_engine:=false
+```
+
+#### Submission bringup
+
+Run a minimal `aic_model` demo. This demo `aic_model` implementation should wave the arm back and forth for 30 seconds, before the goal
+
+```bash
+source ~/ws_aic/install/setup.bash
+export RMW_IMPLEMENTATION=rmw_zenoh_cpp
+export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
+ros2 run aic_model model_node
+```
+
+
+Run this in a different shell, for convenience
+```bash
+source ~/ws_aic/install/setup.bash
+export RMW_IMPLEMENTATION=rmw_zenoh_cpp
+export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
+cd ~/ws_aic/src/aic/aic_model/test
+./create_and_cancel_task.py
+```
 
 ### LeRobot Support
 
@@ -96,7 +149,7 @@ export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
 ros2 launch aic_bringup move_to_contact.launch.py contact_force_z:=10.0
 ```
 
-Control the gripper via a ROS2 Action. The joint range of the gripper is from 0.0 to 0.025m
+Control the gripper via a ROS 2 Action. The joint range of the gripper is from 0.0 to 0.025m
 ```bash
 source ~/ws_aic/install/setup.bash
 export RMW_IMPLEMENTATION=rmw_zenoh_cpp
@@ -114,46 +167,4 @@ ros2 service call /aic_controller/change_target_mode aic_control_interfaces/srv/
 # Send joint target
 ros2 topic pub /aic_controller/joint_commands aic_control_interfaces/msg/JointMotionUpdate '{target_state:
 {positions: [0.0, -1.57, -1.57, -1.57, 1.57, 0] }, target_stiffness: [100.0, 100.0, 100.0, 50.0, 50.0, 50.0], target_damping: [40.0, 40.0, 40.0, 15.0, 15.0, 15.0], trajectory_generation_mode: {mode: 2}, time_to_target_seconds: 1.0 }' --once
-```
-
-Spawn a task board
-# To bringup the simulation without a default task board launch with spawn_task_board:=False
-```bash
-source ~/ws_aic/install/setup.bash
-export RMW_IMPLEMENTATION=rmw_zenoh_cpp
-export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
-ros2 launch aic_bringup spawn_task_board.launch.py \
-  task_board_x:=0.3 task_board_y:=-0.1 task_board_z:=1.2 task_board_yaw:=0.785 \
-  lc_mount_01_delta_y:=-0.05 sfp_mount_01_delta_y:=-0.08 sc_mount_01_delta_y:=-0.09 \
-  lc_mount_02_delta_y:=0.05 sfp_mount_02_delta_y:=0.08 sc_mount_02_delta_y:=0.09 \
-  sc_port_01_delta_x:=-0.04 sc_port_02_delta_x:=0.04 \
-  nic_card_mount_01_delta_x:=0.005 nic_card_mount_02_delta_x:=-0.008 \
-  nic_card_mount_03_delta_x:=0.012 nic_card_mount_04_delta_x:=-0.015 \
-  nic_card_mount_05_delta_x:=0.01
-```
-
-Run a minimal `aic_model` demo. This demo `aic_model` implementation should wave the arm back and forth for 30 seconds, before the goal is canceled.
-```bash
-source ~/ws_aic/install/setup.bash
-export RMW_IMPLEMENTATION=rmw_zenoh_cpp
-export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
-
-ros2 run rmw_zenoh_cpp rmw_zenohd
-
-# Run this in a different shell, for convenience
-ros2 launch aic_bringup aic_gz_bringup.launch.py \
-  spawn_cable:=true attach_cable_to_gripper:=true \
-  nic_card_mount_0_present:=true \
-  sc_port_0_present:=true sc_port_1_present:=true \
-  ground_truth:=true
-
-# Run this in a different shell, for convenience
-ros2 run aic_adapter aic_adapter
-
-# Run this in a different shell, for convenience
-ros2 run aic_model model_node
-
-# Run this in a different shell, for convenience
-cd ~/ws_aic/src/aic/aic_model/test
-./create_and_cancel_task.py
 ```

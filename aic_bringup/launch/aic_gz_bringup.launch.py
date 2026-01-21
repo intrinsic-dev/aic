@@ -80,6 +80,8 @@ def launch_setup(context, *args, **kwargs):
     attach_cable_to_gripper = LaunchConfiguration("attach_cable_to_gripper")
     cable_type = LaunchConfiguration("cable_type")
     ground_truth = LaunchConfiguration("ground_truth")
+    start_aic_engine = LaunchConfiguration("start_aic_engine")
+    aic_engine_config_file = LaunchConfiguration("aic_engine_config_file")
 
     robot_description_content = Command(
         [
@@ -217,6 +219,16 @@ def launch_setup(context, *args, **kwargs):
     aic_adapter = Node(
         package="aic_adapter",
         executable="aic_adapter",
+    )
+
+    aic_engine = Node(
+        package="aic_engine",
+        executable="aic_engine",
+        output="screen",
+        parameters=[
+            {"config_file_path": aic_engine_config_file},
+        ],
+        condition=IfCondition(start_aic_engine),
     )
 
     # Task board spawning (conditional)
@@ -367,6 +379,7 @@ def launch_setup(context, *args, **kwargs):
         ground_truth_tf_relay,
         ground_truth_tf_static_relay,
         ground_truth_static_tf_publisher,
+        aic_engine,
     ]
 
     return nodes_to_start
@@ -475,7 +488,7 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             "spawn_task_board",
-            default_value="true",
+            default_value="false",
             description="Spawn task board in Gazebo?",
         )
     )
@@ -677,6 +690,22 @@ def generate_launch_description():
             "ground_truth",
             default_value="false",
             description="Whether to include ground truth poses in TF topics",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "start_aic_engine",
+            default_value="false",
+            description="Whether to start the AIC engine.",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "aic_engine_config_file",
+            default_value=PathJoinSubstitution(
+                [FindPackageShare("aic_engine"), "config", "sample_config.yaml"]
+            ),
+            description="Absolute path to YAML file with the AIC engine configuration.",
         )
     )
 
