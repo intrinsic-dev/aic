@@ -17,8 +17,8 @@
 
 #include "aic_scoring/ScoringTier2.hh"
 
-#include <tf2/LinearMath/Quaternion.h>
 #include <tf2/LinearMath/Matrix3x3.h>
+#include <tf2/LinearMath/Quaternion.h>
 #include <yaml-cpp/yaml.h>
 
 #include <algorithm>
