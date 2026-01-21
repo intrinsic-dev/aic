@@ -35,6 +35,7 @@ class WaveArm(PolicyRos):
         # Move the arm along a line, while looking down at the task board.
         #
         t = self.get_seconds(observation.images[0].header)
+        tcp = observation.tcp_transform.transform.translation
 
         loop_duration = 5.0  # seconds
 
@@ -50,18 +51,18 @@ class WaveArm(PolicyRos):
         # create a smooth series of target points that flies over the task board
         target_x = -0.4
         target_y = 0.35 + 0.3 * y_fraction
-        target_z = 0.3
+        target_z = 0.25
 
         self.set_pose_target(
             Pose(
                 position=Point(x=target_x, y=target_y, z=target_z),
-                orientation=Quaternion(x=0.7071, y=0.7071, z=0.0, w=0.0),
+                orientation=Quaternion(x=0.0, y=1.0, z=0.0, w=0.0),
             )
         )
 
         self.get_logger().info(
             (
-                f"tcp: ({tcp_x:+0.3f} {tcp_y:+0.3f}, {tcp_z:+0.3f}) "
+                f"tcp: ({tcp.x:+0.3f} {tcp.y:+0.3f}, {tcp.z:+0.3f}) "
                 f"target: ({target_x:+0.3f} {target_y:0.3f} {target_z:0.3f})"
             )
         )
