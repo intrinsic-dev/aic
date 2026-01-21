@@ -187,38 +187,6 @@
       <static>true</static>
     </include>
 
-    <model name="connection_1">
-      <pose>0.0 0.0 1.148 0 0 0</pose>
-      <link name="box_link">
-        <inertial>
-          <inertia>
-            <ixx>16.666</ixx>
-            <ixy>0</ixy>
-            <ixz>0</ixz>
-            <iyy>16.666</iyy>
-            <iyz>0</iyz>
-            <izz>16.666</izz>
-          </inertia>
-          <mass>1.0</mass>
-        </inertial>
-
-        <visual name="box_visual">
-          <geometry>
-            <box>
-              <size>0.005 0.005 0.005</size>
-            </box>
-          </geometry>
-          <material>
-            <ambient>1 0 0 0.5</ambient>
-            <diffuse>1 0 0 0.5</diffuse>
-            <specular>1 0 0 0.5</specular>
-          </material>
-        </visual>
-      </link>
-      <static>true</static>
-    </model>
-
-
     <!-- Cable is now spawned via cable.sdf.xacro in launch file -->
     <!-- Task board and components are now spawned via task_board.urdf.xacro in launch file -->
   </world>
