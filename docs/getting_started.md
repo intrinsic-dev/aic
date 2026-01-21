@@ -86,6 +86,7 @@ ros2 launch aic_bringup aic_gz_bringup.launch.py ground_truth:=false start_aic_e
 
 This will launch Gazebo with the robot arm and end-of-arm tooling together with all required drivers.
 The `TaskBoard` and `Cable` will be spawned by `aic_engine`, the orchestrator for the challenge.
+Note that you will need to bring up your model for the `aic_engine` to work correctly, see [Submission Bringup](#submission-bringup).
 
 
 #### Training Bringup
