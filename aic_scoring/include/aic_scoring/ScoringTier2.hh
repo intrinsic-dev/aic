@@ -22,6 +22,8 @@
 #include <string>
 #include <vector>
 
+#include <geometry_msgs/msg/pose_stamped.hpp>
+#include <geometry_msgs/msg/vector3.hpp>
 #include <gz/math/Pose3.hh>
 #include <rclcpp/rclcpp.hpp>
 #include <rosbag2_cpp/writer.hpp>
@@ -78,6 +80,22 @@ namespace aic_scoring
     /// \return True if the bag was closed correctly.
     public: bool StopRecording();
 
+    /// \brief Update jerk computation with a new pose sample.
+    /// \param[in] _pose The new timestamped pose.
+    /// \return True if successful, false if timestamp was not increasing.
+    public: bool UpdateJerk(const geometry_msgs::msg::PoseStamped &_pose);
+
+    /// \brief Get the current linear jerk.
+    /// \return The linear jerk vector (x, y, z) in m/s^3.
+    public: geometry_msgs::msg::Vector3 GetLinearJerk() const;
+
+    /// \brief Get the current angular jerk.
+    /// \return The angular jerk vector (roll, pitch, yaw) in rad/s^3.
+    public: geometry_msgs::msg::Vector3 GetAngularJerk() const;
+
+    /// \brief Reset the jerk computation state.
+    public: void ResetJerk();
+
     /// \brief All pluggable plugs.
     public: std::map<std::string, Pluggable> plugs;
 
@@ -110,6 +128,15 @@ namespace aic_scoring
 
     /// \brief Mutex to protect the access to the bag.
     private: std::mutex mutex;
+
+    /// \brief History of poses for jerk computation (stores last 4 samples).
+    private: std::vector<geometry_msgs::msg::PoseStamped> poseHistory;
+
+    /// \brief Computed linear jerk (x, y, z components in m/s^3).
+    private: geometry_msgs::msg::Vector3 linearJerk;
+
+    /// \brief Computed angular jerk (roll, pitch, yaw components in rad/s^3).
+    private: geometry_msgs::msg::Vector3 angularJerk;
   };
 
   // The Tier2 class as a node.
