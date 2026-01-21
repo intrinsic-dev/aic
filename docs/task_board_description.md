@@ -74,8 +74,8 @@ Zone 4 is identical in function and layout to Zone 3.
 To ensure precision during dexterous manipulation and seamless sim-to-real transfer, the toolkit uses a standardized coordinate system. All poses are defined relative to the board's primary datum.
 
 * **World frame (`world`):** The global origin, located at the base and center of the enclosure.
-* **Robot frame (`robot`):** The robot base frame, located at the base of the robot.
-* **`Tool_frame`:** The Tool Center Point located between the gripper fingers.
+* **Robot frame (`base_link`):** The robot base frame, located at the base of the robot.
+* **Tool_frame (`gripper/tcp`):** The Tool Center Point located between the gripper fingers.
 * **Task board frame (`task_board_base`):** The primary reference for the task board, located at the bottom-left corner of the board.
 * **Zone frames (`zone_1` to `zone_4`):** Local origins for each zone. Located at the bottom-left corner of each zone.
 * **Component frames:**
