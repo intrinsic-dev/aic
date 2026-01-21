@@ -27,6 +27,7 @@
 
 #include "aic_control_interfaces/msg/joint_motion_update.hpp"
 #include "aic_control_interfaces/msg/motion_update.hpp"
+#include "aic_scoring/ScoringTier2.hh"
 #include "aic_task_interfaces/action/insert_cable.hpp"
 #include "geometry_msgs/msg/wrench_stamped.hpp"
 #include "lifecycle_msgs/msg/state.hpp"
@@ -41,8 +42,6 @@
 #include "tf2_ros/buffer.h"
 #include "tf2_ros/transform_listener.h"
 #include "yaml-cpp/yaml.h"
-
-#include "aic_scoring/ScoringTier2.hh"
 
 //==============================================================================
 namespace aic {
