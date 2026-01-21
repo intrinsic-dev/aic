@@ -842,9 +842,19 @@ bool Engine::ready_simulator() {
   geometry_msgs::msg::TransformStamped t =
       tf_buffer_->lookupTransform("world", gripper_frame, tf2::TimePointZero);
   const auto& cables_config = active_trial_->config["scene"]["cables"];
+  bool cable_attached = false;
   for (const auto& cable_it : cables_config) {
     const std::string cable_id = cable_it.first.as<std::string>();
     const YAML::Node cable_config = cable_it.second;
+    bool attach_to_gripper = cable_config["attach_cable_to_gripper"].as<bool>();
+    if (cable_attached && attach_to_gripper) {
+      RCLCPP_ERROR(node_->get_logger(),
+                   "Attempting to attach multiple cables to the gripper. "
+                   "Please check the config.");
+      return false;
+    } else if (attach_to_gripper) {
+      cable_attached = true;
+    }
     RCLCPP_INFO(node_->get_logger(), "Spawning cable '%s'...",
                 cable_id.c_str());
     if (this->spawn_entity(
