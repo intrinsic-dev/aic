@@ -20,7 +20,8 @@ This zone represents the networking switch or server compute tray where data lin
 * **Components:** Supports up to five dual-port network cards, named `NIC_CARD_0` through `NIC_CARD_4`.
 * **Ports:** Each card features two SFP ports named `SFP_PORT_0` and `SFP_PORT_1`.
 * **Mobility:** Cards are designed to slide along their respective rails to allow for randomized positional and orientation offsets during the challenge.
-  * *TODO: Specify slide travel limits (e.g., +/- X mm).*
+  * Card translation limits: [0, 0.062] (meters)
+  * Card orientation limits: [-10, +10] (degrees)
 
 ![AIC Task Board](./aic_board_zone_1_legend.png)
 
@@ -33,7 +34,7 @@ This zone emulates the optical patch panel or backplane of a server rack.
 * **Rails:** Features two parallel rails named `SC_RAIL_0` and `SC_RAIL_1`.
 * **Ports:** Supports up to five SC ports in total, named `SC_PORT_0` through `SC_PORT_4`.
 * **Mobility:** Ports are designed to be positioned on either rails, and slide along them to allow for randomized positional offsets during the challenge.
-  * *TODO: Specify slide travel limits (e.g., +/- X mm).*
+  * SC port translation limits: [0, 0.115] (meters)
 
 ![AIC Task Board](./aic_board_zone_2_legend.png)
 
@@ -53,8 +54,8 @@ Zone 3 serves as one of the organized supply area for components before they are
   * **SFP Ports:** `SFP_MOUNT_0` through `SFP_MOUNT_k`, where k is the total count for the task.
   * **SFP Modules:** `SFP_MODULE_0` through `SFP_MODULE_k`, where k is the total count for the task.
 * **Customization:** Fixtures can be placed on any rail in any order, creating a high-mix environment.
-  * *TODO: Specify slide travel limits (e.g., +/- X mm).*
-  * *TODO: Specify minimum spacing between mounts to avoid finger collision (e.g., Y mm). *
+  * Fixture translation limits: [0, 0.188] (meters)
+  * Fixture orientation limits: [-60, +60] (degrees)
 
 ![AIC Task Board](./aic_board_zone_3_legend_1.png)
 ![AIC Task Board](./aic_board_zone_3_legend_2.png)
@@ -92,12 +93,20 @@ To ensure precision during dexterous manipulation and seamless sim-to-real trans
 ![AIC Task Board](./aic_board_axis_2.png)
 ![AIC Task Board](./aic_board_axis_3.png)
 
-## 4. YAML Configuration Structure
+## 4. Bill of Material (BOM)
+
+The task board was designed to be easy to 3D print and with readily available components. To build a complete task board, you will need:
+
+* Off the shelf components:
+  * NIC Card, Quatity: 5 - [Amazon link](https://a.co/d/5lkWCj4)
+  * SFP module, Quantity: 5 - [Amazon link](https://a.co/d/7RGkdZO)
+  * Sc-LC cable, Quantity: 5 - [Amazon link](https://a.co/d/edbwgg2)
+  * SC-SC connctor, Quantity: 1 (each includes six units) - [Amazon link](https://a.co/d/4PgnstS)
+* Task board BOM: *TODO*
+
+
+## 5. YAML Configuration Structure
 
 The toolkit uses a YAML-based "Scene Description File" to define the board's state for each trial. This file allows for the randomization of components within the rail limits specified in the task description.
-
-See ... for the full scene scene YAML.
-
-### Task board YAML configuration
 
 See the AIC engine [sample config](../aic_engine/config/sample_config.yaml)
