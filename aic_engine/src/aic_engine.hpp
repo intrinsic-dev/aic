@@ -42,6 +42,8 @@
 #include "tf2_ros/transform_listener.h"
 #include "yaml-cpp/yaml.h"
 
+#include "aic_scoring/ScoringTier2.hh"
+
 //==============================================================================
 namespace aic {
 
@@ -254,6 +256,15 @@ class Engine {
 
   // Parameters to skip states for testing purposes.
   bool skip_model_ready_;
+
+  // Scoring tier 2 instance.
+  std::unique_ptr<aic_scoring::ScoringTier2> scoring_tier2_;
+
+  // Whether recording is currently active.
+  bool is_recording_;
+
+  // Output directory for bag files.
+  std::string bag_output_dir_;
 };
 
 }  // namespace aic

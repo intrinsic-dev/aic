@@ -407,6 +407,23 @@ EngineState Engine::initialize() {
   tf_buffer_ = std::make_unique<tf2_ros::Buffer>(node_->get_clock());
   tf_listener_ = std::make_unique<tf2_ros::TransformListener>(*tf_buffer_);
 
+  scoring_tier2_ =
+      std::make_unique<aic_scoring::ScoringTier2>(node_.get(), &config_);
+  is_recording_ = false;
+
+  // Create output directory for bag files.
+  bag_output_dir_ = "/tmp/" + model_node_name_;
+  std::error_code ec;
+  std::filesystem::create_directories(bag_output_dir_, ec);
+  if (ec) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "Failed to create bag output directory '%s': %s",
+                 bag_output_dir_.c_str(), ec.message().c_str());
+    return EngineState::Error;
+  }
+  RCLCPP_INFO(node_->get_logger(), "Bag output directory: %s",
+              bag_output_dir_.c_str());
+
   engine_state_ = EngineState::Initialized;
   RCLCPP_INFO(node_->get_logger(), "AIC Engine initialized successfully.");
 
@@ -863,9 +880,19 @@ bool Engine::ready_simulator() {
 bool Engine::ready_scoring() {
   RCLCPP_INFO(node_->get_logger(), "Checking scoring system readiness...");
 
-  // TODO(Yadunund): Implement actual scoring system readiness checks.
-  std::this_thread::sleep_for(std::chrono::seconds(1));
-  // For now, assume scoring system is ready.
+  if (!is_recording_ && active_trial_.has_value()) {
+    const std::string bag_path = bag_output_dir_ + "/bag_" + active_trial_->id;
+    if (scoring_tier2_->StartRecording(bag_path)) {
+      is_recording_ = true;
+      RCLCPP_INFO(node_->get_logger(), "Started recording to '%s'.",
+                  bag_path.c_str());
+    } else {
+      RCLCPP_ERROR(node_->get_logger(), "Failed to start recording to '%s'.",
+                   bag_path.c_str());
+      return false;
+    }
+  }
+
   return true;
 }
 
@@ -884,6 +911,16 @@ bool Engine::start_task() {
 bool Engine::task_completed_successfully() {
   RCLCPP_INFO(node_->get_logger(),
               "Checking if task was completed successfully...");
+
+  if (is_recording_) {
+    if (scoring_tier2_->StopRecording()) {
+      is_recording_ = false;
+      RCLCPP_INFO(node_->get_logger(), "Stopped recording.");
+    } else {
+      RCLCPP_ERROR(node_->get_logger(), "Failed to stop recording.");
+      return false;
+    }
+  }
 
   // TODO(Yadunund): Implement actual task completion check.
   std::this_thread::sleep_for(std::chrono::seconds(1));

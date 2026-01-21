@@ -66,9 +66,6 @@ namespace aic_scoring
     /// \brief Populate the scoring input params from a YAML file.
     public: bool ParseStats();
 
-    /// \brief Store the current distance cable-connector.
-    public: void Update();
-
     /// \brief Start recording all scoring topics.
     /// \return True if the bag was opened correctly and it's ready to record.
     /// \param[in] _filename The path to the bag.
