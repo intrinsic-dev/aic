@@ -24,20 +24,15 @@ class PolicyRos:
     def __init__(self, parent_node):
         self._parent_node = parent_node
         print("PolicyRos.__init__()")
-        # YOUR CODE HERE
 
     def start_callback(self, task):
         print("PolicyRos.start_callback()")
-        # YOUR CODE HERE
 
     def stop_callback(self):
         print("PolicyRos.stop_callback()")
-        # YOUR CODE HERE
 
     def observation_callback(self, observation):
         print("PolicyRos.observation_callback()")
-        # YOUR CODE HERE
-        # self._parent_node.set_pose_target(something)
 
     def set_pose_target(self, pose):
         motion_update_msg = MotionUpdate()
