@@ -718,9 +718,6 @@ bool Engine::check_model() {
                 "Found %d node(s) with name '%s'. Checking if it is a "
                 "lifecycle node...",
                 model_node_count, model_node_name_.c_str());
-    this->model_get_state_client_ =
-        node_->create_client<lifecycle_msgs::srv::GetState>(
-            model_get_state_service_name_);
     if (!model_get_state_client_->wait_for_service(std::chrono::seconds(5))) {
       RCLCPP_INFO(node_->get_logger(),
                   "Service '%s' not available yet. Retrying...",
