@@ -905,8 +905,7 @@ bool Engine::tasks_started() {
     TaskAttempt task_attempt(task.id);
     this->active_trial_->attempts.emplace_back(task.id,
                                                std::move(task_attempt));
-    const auto attempt_id = this->active_trial_->attempts.size() - 1;
-    auto current_attempt = this->active_trial_->attempts[attempt_id].second;
+    auto& current_attempt = this->active_trial_->attempts.back();
 
     auto insert_cable_goal = InsertCableAction::Goal();
     insert_cable_goal.task = task;
@@ -915,7 +914,7 @@ bool Engine::tasks_started() {
                 "Sending InsertCable goal for task [%s]", task.id.c_str());
     auto send_goal_future =
         insert_cable_action_client_->async_send_goal(insert_cable_goal);
-    current_attempt.state = TaskState::TaskRequested;
+    current_attempt.second.state = TaskState::TaskRequested;
 
     // Handle goal response
     auto goal_handle = send_goal_future.get();
@@ -923,11 +922,11 @@ bool Engine::tasks_started() {
       RCLCPP_ERROR(this->node_->get_logger(),
                    "InsertCable goal for task [%s] was rejected.",
                    task.id.c_str());
-      current_attempt.state = TaskState::TaskRejected;
+      current_attempt.second.state = TaskState::TaskRejected;
       return false;
     }
-    current_attempt.time_started = this->node_->now();
-    current_attempt.state = TaskState::TaskStarted;
+    current_attempt.second.time_started = this->node_->now();
+    current_attempt.second.state = TaskState::TaskStarted;
 
     // Handle goal result
     auto result_future =
@@ -941,7 +940,7 @@ bool Engine::tasks_started() {
                    "Task [%s] timed out after %ld seconds. Cancelling goal.",
                    task.id.c_str(), task.time_limit);
       insert_cable_action_client_->async_cancel_goal(goal_handle);
-      current_attempt.state = TaskState::TimeLimitExceeded;
+      current_attempt.second.state = TaskState::TimeLimitExceeded;
       return false;
     }
 
@@ -949,15 +948,15 @@ bool Engine::tasks_started() {
     if (!result.result->success) {
       RCLCPP_INFO(this->node_->get_logger(), "Task [%s] failed: %s",
                   task.id.c_str(), result.result->message.c_str());
-      current_attempt.state = TaskState::TaskFailed;
+      current_attempt.second.state = TaskState::TaskFailed;
       return false;
     }
 
     // Task succeeded, move off and send the next task goal
     RCLCPP_INFO(this->node_->get_logger(), "Task [%s] succeeded.",
                 task.id.c_str());
-    current_attempt.time_completed = this->node_->now();
-    current_attempt.state = TaskState::TaskCompleted;
+    current_attempt.second.time_completed = this->node_->now();
+    current_attempt.second.state = TaskState::TaskCompleted;
   }
 
   RCLCPP_INFO(node_->get_logger(), "All tasks have been processed.");

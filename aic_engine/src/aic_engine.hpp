@@ -68,7 +68,7 @@ enum class EngineState : uint8_t {
 //==============================================================================
 // For each trial, track its state.
 // States progress from Uninitialized -> EndpointsReady -> SimulatorReady
-// ->ScoringReady -> AllTasksCompleted
+// -> ScoringReady -> TasksExecuting -> AllTasksCompleted
 // Uninitialized: Trial has not started.
 // ModelReady: Participant model node is available and conforms to challenge
 // requirements.
