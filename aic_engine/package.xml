@@ -10,9 +10,11 @@
   <buildtool_depend>ament_cmake</buildtool_depend>
 
   <depend>aic_scoring</depend>
+  <depend>aic_control_interfaces</depend>
   <depend>aic_task_interfaces</depend>
   <depend>ament_index_cpp</depend>
   <depend>geometry_msgs</depend>
+  <depend>lifecycle_msgs</depend>
   <depend>rclcpp</depend>
   <depend>rclcpp_action</depend>
   <depend>sensor_msgs</depend>
