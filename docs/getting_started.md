@@ -90,7 +90,7 @@ The `TaskBoard` and `Cable` will be spawned by `aic_engine`, the orchestrator fo
 
 #### Training Bringup
 
-During training, one might want to bringup the scene with randomized poses of the `TaskBoard` and `Cables`.
+During training, one might want to bring up the scene with randomized poses of the `TaskBoard` and `Cables`.
 The scene may then be exported to other simulation environments.
 The layout of the `TaskBoard` can be configured at runtime.
 For the full list of configurable parameters, see the [aic_bringup README](../aic_bringup/README.md).
