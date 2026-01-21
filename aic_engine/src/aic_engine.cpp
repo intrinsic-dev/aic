@@ -684,31 +684,58 @@ bool Engine::check_model() {
   const rclcpp::Duration timeout = rclcpp::Duration::from_seconds(
       this->node_->get_parameter("model_discovery_timeout_seconds").as_int());
 
-  // Check for lifecycle node by looking for its get_state service
-  bool model_discovered = false;
+  // Check if aic_model node exists in the graph and is a lifecycle node.
+  model_discovered_ = false;
 
-  while (!model_discovered && !(this->node_->now() - start_time > timeout)) {
-    RCLCPP_INFO(node_->get_logger(),
-                "Checking if lifecycle node '%s' is available...",
-                model_node_name_.c_str());
-    const auto service_names_and_types = node_->get_service_names_and_types();
-    auto it = service_names_and_types.find(model_get_state_service_name_);
-    if (it != service_names_and_types.end()) {
-      // Verify it's actually a lifecycle service by checking the type
-      const auto& service_types = it->second;
-      for (const auto& type : service_types) {
-        if (type == "lifecycle_msgs/srv/GetState") {
-          model_discovered = true;
-          break;
-        }
+  while (!model_discovered_ && !(this->node_->now() - start_time > timeout)) {
+    // First check that only one node with the expected name exists.
+    auto node_graph = node_->get_node_graph_interface();
+    auto node_names_and_namespaces =
+        node_graph->get_node_names_and_namespaces();
+    int model_node_count = 0;
+    for (const auto& [name, namespace_] : node_names_and_namespaces) {
+      if (name == model_node_name_) {
+        model_node_count++;
       }
     }
-    if (!model_discovered) {
+    if (model_node_count > 1) {
+      RCLCPP_ERROR(node_->get_logger(),
+                   "More than one node with name '%s' found",
+                   model_node_name_.c_str());
+      return false;
+    }
+    if (model_node_count == 0) {
+      RCLCPP_INFO(node_->get_logger(),
+                  "No node with name '%s' found. Retrying...",
+                  model_node_name_.c_str());
       std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+      continue;
+    }
+
+    // Now ensure that the get_state service exists and is of the correct type.
+    RCLCPP_INFO(node_->get_logger(),
+                "Found %d node(s) with name '%s'. Checking if it is a "
+                "lifecycle node...",
+                model_node_count, model_node_name_.c_str());
+    this->model_get_state_client_ =
+        node_->create_client<lifecycle_msgs::srv::GetState>(
+            model_get_state_service_name_);
+    if (!model_get_state_client_->wait_for_service(std::chrono::seconds(5))) {
+      RCLCPP_INFO(node_->get_logger(),
+                  "Service '%s' not available yet. Retrying...",
+                  model_get_state_service_name_.c_str());
+      std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+      continue;
+    } else {
+      RCLCPP_INFO(node_->get_logger(),
+                  "Service '%s' is available. Participant model discovered.",
+                  model_get_state_service_name_.c_str());
+      model_discovered_ = true;
+      break;
     }
   }
 
-  if (!model_discovered) {
+  if (!model_discovered_) {
     RCLCPP_ERROR(node_->get_logger(),
                  "Lifecycle node '%s' not discovered after waiting (checked "
                  "for service '%s' with type 'lifecycle_msgs/srv/GetState')",
@@ -985,7 +1012,9 @@ void Engine::reset_after_trial() {
   RCLCPP_INFO(node_->get_logger(), "Resetting after trial completion...");
 
   // Deactivate the model node to transition back to configured state
-  deactivate_model_node();
+  if (this->model_discovered_) {
+    this->deactivate_model_node();
+  }
 
   // Remove spawned entities from simulator
   if (active_trial_.has_value()) {
@@ -1016,6 +1045,7 @@ void Engine::reset_after_trial() {
   }
   is_first_trial_ = false;
   active_trial_ = std::nullopt;
+  model_discovered_ = false;
   RCLCPP_INFO(node_->get_logger(), "Reset after trial completed.");
 }
 
