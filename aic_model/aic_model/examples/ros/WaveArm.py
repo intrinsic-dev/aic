@@ -50,7 +50,7 @@ class WaveArm(PolicyRos):
 
         # create a smooth series of target points that flies over the task board
         target_x = -0.4
-        target_y = 0.35 + 0.3 * y_fraction
+        target_y = 0.45 + 0.3 * y_fraction
         target_z = 0.25
 
         self.set_pose_target(
