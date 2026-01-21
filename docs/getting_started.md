@@ -148,7 +148,7 @@ export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
 ros2 launch aic_bringup move_to_contact.launch.py contact_force_z:=10.0
 ```
 
-Control the gripper via a ROS2 Action. The joint range of the gripper is from 0.0 to 0.025m
+Control the gripper via a ROS 2 Action. The joint range of the gripper is from 0.0 to 0.025m
 ```bash
 source ~/ws_aic/install/setup.bash
 export RMW_IMPLEMENTATION=rmw_zenoh_cpp
