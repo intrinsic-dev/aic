@@ -22,13 +22,13 @@ from geometry_msgs.msg import Point, Pose, Quaternion
 class WaveArm(PolicyRos):
     def __init__(self, parent_node):
         super().__init__(parent_node)
-        print("WaveArm.__init__()")
+        self.get_logger().info("WaveArm.__init__()")
 
     def start_callback(self, task):
-        print("WaveArm.start_callback()")
+        self.get_logger().info("WaveArm.start_callback()")
 
     def stop_callback(self):
-        print("WaveArm.stop_callback()")
+        self.get_logger().info("WaveArm.stop_callback()")
 
     def observation_callback(self, observation):
         #

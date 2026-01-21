@@ -23,16 +23,7 @@ import numpy as np
 class PolicyRos:
     def __init__(self, parent_node):
         self._parent_node = parent_node
-        print("PolicyRos.__init__()")
-
-    def start_callback(self, task):
-        print("PolicyRos.start_callback()")
-
-    def stop_callback(self):
-        print("PolicyRos.stop_callback()")
-
-    def observation_callback(self, observation):
-        print("PolicyRos.observation_callback()")
+        self.get_logger().info("PolicyRos.__init__()")
 
     def set_pose_target(self, pose):
         motion_update_msg = MotionUpdate()
