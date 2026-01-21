@@ -6,7 +6,7 @@ The **AI for Industry Challenge (AIC)** task board is a modular, fungible platfo
 
 The task board provides a standardized physical interface for the manipulation of **SFP (Small Form-factor Pluggable)** and **SC (Subscriber Connector) optical fiber** cables. It is divided into four distinct zones to separate the assembly targets from the initial component pick locations.
 
-![AIC Task Board](./aic_task_board.png)
+![AIC Task Board](../../media/aic_task_board.png)
 
 ## 2. Zone Descriptions
 
@@ -14,7 +14,7 @@ The task board provides a standardized physical interface for the manipulation o
 
 This zone represents the networking switch or server compute tray where data links are established.
 
-![AIC Task Board](./aic_board_zone_1.png)
+![AIC Task Board](../../media/aic_board_zone_1.png)
 
 * **Rails:** Contains five mounting rails named `NIC_RAIL_0` through `NIC_RAIL_4`.
 * **Components:** Supports up to five dual-port network cards, named `NIC_CARD_0` through `NIC_CARD_4`.
@@ -23,26 +23,26 @@ This zone represents the networking switch or server compute tray where data lin
   * Card translation limits: [0, 0.062] (meters)
   * Card orientation limits: [-10, +10] (degrees)
 
-![AIC Task Board](./aic_board_zone_1_legend.png)
+![AIC Task Board](../../media/aic_board_zone_1_legend.png)
 
 ### Zone 2: SC Optical Ports
 
 This zone emulates the optical patch panel or backplane of a server rack.
 
-![AIC Task Board](./aic_board_zone_2.png)
+![AIC Task Board](../../media/aic_board_zone_2.png)
 
 * **Rails:** Features two parallel rails named `SC_RAIL_0` and `SC_RAIL_1`.
 * **Ports:** Supports up to five SC ports in total, named `SC_PORT_0` through `SC_PORT_4`.
 * **Mobility:** Ports are designed to be positioned on either rails, and slide along them to allow for randomized positional offsets during the challenge.
   * SC port translation limits: [0, 0.115] (meters)
 
-![AIC Task Board](./aic_board_zone_2_legend.png)
+![AIC Task Board](../../media/aic_board_zone_2_legend.png)
 
 ### Zone 3: First Pick Location
 
 Zone 3 serves as one of the organized supply area for components before they are routed and inserted.
 
-![AIC Task Board](./aic_board_zone_3.png)
+![AIC Task Board](../../media/aic_board_zone_3.png)
 
 * **Rails:** Three mounting rails named `LC_MOUNT_RAIL_0` `SFP_MOUNT_RAIL_0` and `SC_MOUNT_RAIL_0`.
 * **Mounts:** Holds "mounts" (or fixtures) for LC and SC plugs, or SFP modules.
@@ -57,14 +57,14 @@ Zone 3 serves as one of the organized supply area for components before they are
   * Fixture translation limits: [0, 0.188] (meters)
   * Fixture orientation limits: [-60, +60] (degrees)
 
-![AIC Task Board](./aic_board_zone_3_legend_1.png)
-![AIC Task Board](./aic_board_zone_3_legend_2.png)
+![AIC Task Board](../../media/aic_board_zone_3_legend_1.png)
+![AIC Task Board](../../media/aic_board_zone_3_legend_2.png)
 
 ### Zone 4: Second Pick Location
 
 Zone 4 is identical in function and layout to Zone 3.
 
-![AIC Task Board](./aic_board_zone_4.png)
+![AIC Task Board](../../media/aic_board_zone_4.png)
 
 * **Rails:** Three mounting rails named `LC_MOUNT_RAIL_1` `SFP_MOUNT_RAIL_1` and `SC_MOUNT_RAIL_1`.
 * **Configuration:** Mirroring Zone 3, this area holds the remaining LC plugs, SC plugs and SFP modules required for full assembly completion.
@@ -89,9 +89,10 @@ To ensure precision during dexterous manipulation and seamless sim-to-real trans
   * **sc_mount_N:** Center of the x/y plane for the SC mount port opening. The X-axis is parallel to the board x axis, the Z-axis is the extraction vector (pointing up, away from the mount).
   * **sfp_mount_N:** Center of the x/y plane for the SFP mount port opening. The X-axis is parallel to the board x axis, the Z-axis is the extraction vector (pointing up, away from the mount).
 
-![AIC Task Board](./aic_board_axis_1.png)
-![AIC Task Board](./aic_board_axis_2.png)
-![AIC Task Board](./aic_board_axis_3.png)
+![AIC Task Board](../../media/aic_board_axis_1.png)
+![AIC Task Board](../../media/aic_board_axis_2.png)
+![AIC Task Board](../../media//aic_board_axis_3.png)
+
 
 ## 4. Bill of Material (BOM)
 
