@@ -1,113 +1,68 @@
-# AIC Task Board Technical Specification
+# AIC Task Board Description
 
-The **AI for Industry Challenge (AIC)** task board is a modular, fungible platform designed to emulate real-world cable management challenges found in high-mix electronics manufacturing, specifically within server and data center infrastructure. This board serves as the primary environment for evaluating dexterous manipulation, perception, and motion planning throughout the challenge phases.
+The **AI for Industry Challenge (AIC)** task board is a modular, fungible platform designed to emulate real-world cable management challenges found in high-mix electronics manufacturing, specifically within server and data center infrastructure. This board serves as the primary environment for evaluating model for dexterous manipulation of cables together with Intrinsic's perception, and motion planning.
 
 ## 1. Board Overview
 
-The task board provides a standardized physical interface for the manipulation of **SFP (Small Form-factor Pluggable)** and **SC (Subscriber Connector) optical fiber** cables. It is divided into four distinct zones to separate the assembly targets from the initial component pick locations.
+The task board provides a standardized physical interface for the manipulation of **[SFP (Small Form-factor Pluggable)]()** modules, **[LC (Lucent Connector) fiber optic]()** and **[SC (Subscriber Connector) fiber optic]()** connectors. It is divided into four distinct zones to separate the assembly targets from the initial component pick locations.
 
 ![AIC Task Board](../../media/aic_task_board.png)
 
 ## 2. Zone Descriptions
 
 ### Zone 1: Network Interface Cards (NIC)
-
 This zone represents the networking switch or server compute tray where data links are established.
 
 ![AIC Task Board](../../media/aic_board_zone_1.png)
 
-* **Rails:** Contains five mounting rails named `NIC_RAIL_0` through `NIC_RAIL_4`.
-* **Components:** Supports up to five dual-port network cards, named `NIC_CARD_0` through `NIC_CARD_4`.
-* **Ports:** Each card features two SFP ports named `SFP_PORT_0` and `SFP_PORT_1`.
-* **Mobility:** Cards are designed to slide along their respective rails to allow for randomized positional and orientation offsets during the challenge.
-  * Card translation limits: [0, 0.062] (meters)
-  * Card orientation limits: [-10, +10] (degrees)
+* **Components:** Supports up to five dual-port network cards (NIC).
+* **Ports:** Each card features two SFP ports.
+* **Flexibility:** Cards are designed to slide along mounting rails to allow for randomized positional and orientation offsets.
+  * Card translation limits: [0, 0.062] meters
+  * Card orientation limits: [-10, +10] degrees)
 
 ![AIC Task Board](../../media/aic_board_zone_1_legend.png)
 
 ### Zone 2: SC Optical Ports
-
 This zone emulates the optical patch panel or backplane of a server rack.
 
 ![AIC Task Board](../../media/aic_board_zone_2.png)
 
-* **Rails:** Features two parallel rails named `SC_RAIL_0` and `SC_RAIL_1`.
-* **Ports:** Supports up to five SC ports in total, named `SC_PORT_0` through `SC_PORT_4`.
-* **Mobility:** Ports are designed to be positioned on either rails, and slide along them to allow for randomized positional offsets during the challenge.
-  * SC port translation limits: [0, 0.115] (meters)
+* **Ports:** Supports up to five SC ports, distribute accorss two rails.
+* **Flexibility:** Ports can slide along their raisl to allow for randomized positional offsets.
+  * SC port translation limits: [0, 0.115] meters
 
 ![AIC Task Board](../../media/aic_board_zone_2_legend.png)
 
-### Zone 3: First Pick Location
-
-Zone 3 serves as one of the organized supply area for components before they are routed and inserted.
+### Zone 3 & 4: Pick Locations
+Zones 3 and 4 serve as organized supply areas for components (LC plugs, SC plugs, and SFP modules) before they are routed and inserted.
 
 ![AIC Task Board](../../media/aic_board_zone_3.png)
+![AIC Task Board](../../media/aic_board_zone_4.png)
 
-* **Rails:** Three mounting rails named `LC_MOUNT_RAIL_0` `SFP_MOUNT_RAIL_0` and `SC_MOUNT_RAIL_0`.
-* **Mounts:** Holds "mounts" (or fixtures) for LC and SC plugs, or SFP modules.
-* **Naming Convention:**
-  * **LC Ports:** `LC_MOUNT_0` through `LC_mount_i`, where i is the total count for the task.
-  * **LC Plugs:** `LC_PLUG_0` through `LC_PLUG_i`, where i is the total count for the task.
-  * **SC Ports:** `SC_MOUNT_0` through `SC_mount_j`, where j is the total count for the task.
-  * **SC Plugs:** `SC_PLUG_0` through `SC_PLUG_j`, where j is the total count for the task.
-  * **SFP Ports:** `SFP_MOUNT_0` through `SFP_MOUNT_k`, where k is the total count for the task.
-  * **SFP Modules:** `SFP_MODULE_0` through `SFP_MODULE_k`, where k is the total count for the task.
+* **Mounts:** Holds fixtures for LC/SC plugs and SFP modules.
 * **Customization:** Fixtures can be placed on any rail in any order, creating a high-mix environment.
-  * Fixture translation limits: [0, 0.188] (meters)
-  * Fixture orientation limits: [-60, +60] (degrees)
+  * Fixture translation limits: [0, 0.188] meters
+  * Fixture orientation limits: [-60, +60] degrees
+  
 
 ![AIC Task Board](../../media/aic_board_zone_3_legend_1.png)
 ![AIC Task Board](../../media/aic_board_zone_3_legend_2.png)
 
-### Zone 4: Second Pick Location
+![AIC Task Board](../../media/aic_board_zone_4_lengend_1.png)
+![AIC Task Board](../../media/aic_board_zone_4_legend_2.png)
 
-Zone 4 is identical in function and layout to Zone 3.
+## 3. Bill of Material (BOM)
 
-![AIC Task Board](../../media/aic_board_zone_4.png)
+The task board is designed to be easy to 3D print with readily available components. To build a complete task board, you will need:
 
-* **Rails:** Three mounting rails named `LC_MOUNT_RAIL_1` `SFP_MOUNT_RAIL_1` and `SC_MOUNT_RAIL_1`.
-* **Configuration:** Mirroring Zone 3, this area holds the remaining LC plugs, SC plugs and SFP modules required for full assembly completion.
+* **Off-the-shelf components:**
+  * NIC Card (Quantity: 5) - [Amazon link](https://a.co/d/5lkWCj4)
+  * SFP module (Quantity: 5) - [Amazon link](https://a.co/d/7RGkdZO)
+  * LC to SC cable (Quantity: 5) - [Amazon link](https://a.co/d/edbwgg2)
+  * SC-SC connectors (Quantity: 1 pack) - [Amazon link](https://a.co/d/4PgnstS)
+* **Task board BOM:** *3D printed chassis, rails, and component mounts.* **TODO**
 
-## 3. Reference Frames
+## 4. Configuration Structure
 
-To ensure precision during dexterous manipulation and seamless sim-to-real transfer, the toolkit uses a standardized coordinate system. All poses are defined relative to the board's primary datum.
-
-* **World frame (`world`):** The global origin, located at the base and center of the enclosure.
-* **Robot frame (`base_link`):** The robot base frame, located at the base of the robot.
-* **Tool_frame (`gripper/tcp`):** The Tool Center Point located between the gripper fingers.
-* **Task board frame (`task_board_base`):** The primary reference for the task board, located at the bottom-left corner of the board.
-* **Zone frames (`zone_1` to `zone_4`):** Local origins for each zone. Located at the bottom-left corner of each zone.
-* **Component frames:**
-  * **nic_card_N:** Center of mass (volume) of the NIC card model.
-  * **sfp_port_N:** Center of the x/y plane for the SFP port opening on the NIC card. The X-axis is normal to the PCB surface (horizontal), the Z-axis is the extraction vector (pointing up, away from the port).
-  * **sc_port_N:** Center of the x/y plane for the SC port opening on the NIC card. The X-axis is parallel to the board x axis, the Z-axis is the extraction vector (pointing up, away from the port).
-  * **lc_plug_N:** Center of mass (volume) of the LC plug model.
-  * **sc_plug_N:** Center of mass (volume) of the SC plug model.
-  * **sfp_module_N:** Center of mass (volume) of the SFP module model.
-  * **lc_mount_N:** Center of the x/y plane for the LC mount port opening. The X-axis is parallel to the board x axis, the Z-axis is the extraction vector (pointing up, away from the mount).
-  * **sc_mount_N:** Center of the x/y plane for the SC mount port opening. The X-axis is parallel to the board x axis, the Z-axis is the extraction vector (pointing up, away from the mount).
-  * **sfp_mount_N:** Center of the x/y plane for the SFP mount port opening. The X-axis is parallel to the board x axis, the Z-axis is the extraction vector (pointing up, away from the mount).
-
-![AIC Task Board](../../media/aic_board_axis_1.png)
-![AIC Task Board](../../media/aic_board_axis_2.png)
-![AIC Task Board](../../media//aic_board_axis_3.png)
-
-
-## 4. Bill of Material (BOM)
-
-The task board was designed to be easy to 3D print and with readily available components. To build a complete task board, you will need:
-
-* Off the shelf components:
-  * NIC Card, Quatity: 5 - [Amazon link](https://a.co/d/5lkWCj4)
-  * SFP module, Quantity: 5 - [Amazon link](https://a.co/d/7RGkdZO)
-  * LC to SC cable, Quantity: 5 - [Amazon link](https://a.co/d/edbwgg2)
-  * SC-SC connectors, Quantity: 1 (each includes six units) - [Amazon link](https://a.co/d/4PgnstS)
-* Task board BOM: *TODO*
-
-
-## 5. YAML Configuration Structure
-
-The toolkit uses a YAML-based "Scene Description File" to define the board's state for each trial. This file allows for the randomization of components within the rail limits specified in the task description.
-
-See the AIC engine [sample config](../aic_engine/config/sample_config.yaml)
+The state of the board for each trial is defined via a YAML configuration. This allows the system to randomize the position and orientation of components within the rail limits specified above, ensuring the robot must rely on perception rather than hard-coded coordinates. See the AIC engine [sample config](../aic_engine/config/sample_config.yaml)
