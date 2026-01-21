@@ -22,11 +22,11 @@
         <collision element_id="sc_plug_link::cylinder005_collider_cylinder" action="remove"/>
       </experimental:params>
       <uri>model://SC Plug</uri>
-      <pose relative_to="cable_connection_0">-0.055 0 0 0 0 3.14159</pose>
+      <pose relative_to="cable_connection_0">-0.052 0 0 0 0 3.14159</pose>
     </include>
     <include merge="true">
       <uri>model://LC Plug</uri>
-      <pose relative_to="cable_connection_1">0.044 0 0 0 0 -1.57079</pose>
+      <pose relative_to="cable_connection_1">0.041 0 0 0 0 -1.57079</pose>
     </include>
     <include merge="true">
       <uri>model://SFP Module</uri>
