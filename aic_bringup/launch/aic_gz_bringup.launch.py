@@ -83,11 +83,10 @@ def launch_setup(context, *args, **kwargs):
     start_aic_engine = LaunchConfiguration("start_aic_engine")
     aic_engine_config_file = LaunchConfiguration("aic_engine_config_file")
 
-
-    gripper_initial_pos = '0.011'
-    cable_type_str = LaunchConfiguration('cable_type').perform(context)
-    if cable_type_str == 'sfp_sc_cable':
-        gripper_initial_pos = '0.0073'
+    gripper_initial_pos = "0.011"
+    cable_type_str = LaunchConfiguration("cable_type").perform(context)
+    if cable_type_str == "sfp_sc_cable":
+        gripper_initial_pos = "0.0073"
 
     robot_description_content = Command(
         [
