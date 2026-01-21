@@ -21,8 +21,4 @@ setup(
             "pytest",
         ],
     },
-    entry_points={
-        "console_scripts": [
-        ],
-    },
 )
