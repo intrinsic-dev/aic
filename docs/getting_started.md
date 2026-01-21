@@ -148,7 +148,7 @@ ros2 launch aic_bringup aic_gz_bringup.launch.py \
   ground_truth:=true
 
 # Run this in a different shell, for convenience
-ros2 run aic_model aic_model_node --ros-args -p policy:=aic_model.examples.ros.WaveArm
+ros2 run aic_model aic_model_node --ros-args -p policy:=aic_example_policies.ros.WaveArm
 
 # Run this in a different shell, for convenience
 cd ~/ws_aic/src/aic/aic_model/test
