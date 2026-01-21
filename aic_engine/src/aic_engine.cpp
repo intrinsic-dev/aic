@@ -250,7 +250,8 @@ Engine::Engine(const rclcpp::NodeOptions& options)
       spawn_entity_client_(nullptr),
       is_first_trial_(true),
       active_trial_(std::nullopt),
-      engine_state_(EngineState::Uninitialized) {
+      engine_state_(EngineState::Uninitialized),
+      model_discovered_(false) {
   RCLCPP_INFO(node_->get_logger(), "Creating AIC Engine...");
 
   // Declare ROS parameters.
