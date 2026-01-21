@@ -75,6 +75,7 @@ enum class EngineState : uint8_t {
 // EndpointsReady: Required nodes are up and running.
 // SimulatorReady: Simulator is ready with the task board and cables spawned.
 // ScoringReady: Scoring system is ready to track performance.
+// TasksExecuting: Tasks are being executed.
 // AllTasksCompleted: All tasks has been completed successfully or time limit
 // reached.
 enum class TrialState : uint8_t {
@@ -83,7 +84,41 @@ enum class TrialState : uint8_t {
   EndpointsReady,
   SimulatorReady,
   ScoringReady,
+  TasksExecuting,
   AllTasksCompleted
+};
+
+//==============================================================================
+// For each task, track its state.
+// States progress from Uninitialized -> TaskRequested -> TaskStarted ->
+// TaskCompleted for successful runs.
+// Uninitialized: Task has not started.
+// TaskRequest: Task goal has been sent.
+// TaskStarted: Task has been started executing.
+// TaskCompleted: Task has been completed successfully.
+// TaskRejected: Task was rejected.
+// TaskFailed: Task has failed.
+// TimeLimitExceeded: Task's configured time limit was exceeded.
+enum class TaskState : uint8_t {
+  Uninitialized = 0,
+  TaskRequested,
+  TaskStarted,
+  TaskCompleted,
+  TaskRejected,
+  TaskFailed,
+  TimeLimitExceeded,
+};
+
+//==============================================================================
+struct TaskAttempt {
+  // Constructors.
+  TaskAttempt(const std::string& id);
+
+  std::string id;
+  std::optional<rclcpp::Time> time_started;
+  std::optional<rclcpp::Time> time_completed;
+  bool success;
+  TaskState state;
 };
 
 //==============================================================================
@@ -96,6 +131,7 @@ struct Trial {
   std::vector<std::string> spawned_entities;
   YAML::Node config;
   std::vector<Task> tasks;
+  std::vector<std::pair<std::string, TaskAttempt>> attempts;
   TrialState state;
 };
 
@@ -143,6 +179,10 @@ class Engine {
   /// \brief Check if the scoring system is ready.
   /// \return True if the scoring system is ready, false otherwise.
   bool ready_scoring();
+
+  /// \brief Check if tasks were started successfully.
+  /// \return True if tasks were started successfully, false otherwise.
+  bool tasks_started();
 
   /// \brief Check if all tasks have been completed successfully.
   /// \return True if tasks were completed successfully, false otherwise.

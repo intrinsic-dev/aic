@@ -242,6 +242,16 @@ Trial::Trial(const std::string& _id, YAML::Node _config) : id(std::move(_id)) {
 }
 
 //==============================================================================
+TaskAttempt::TaskAttempt(const std::string& _id)
+    : id(std::move(_id)),
+      time_started(std::nullopt),
+      time_completed(std::nullopt),
+      success(false),
+      state(TaskState::Uninitialized) {
+  //
+}
+
+//==============================================================================
 Engine::Engine(const rclcpp::NodeOptions& options)
     : node_(std::make_shared<rclcpp::Node>("aic_engine", options)),
       wrench_sub_(nullptr),
@@ -476,6 +486,13 @@ TrialState Engine::handle_trial(const Trial& trial) {
     return current_state;
   }
   current_state = TrialState::ScoringReady;
+
+  if (!this->tasks_started()) {
+    RCLCPP_ERROR(node_->get_logger(), "Tasks cannot be started successfully.");
+    reset_after_trial();
+    return current_state;
+  }
+  current_state = TrialState::TasksExecuting;
 
   if (!this->tasks_completed_successfully()) {
     RCLCPP_ERROR(node_->get_logger(), "Tasks were not completed successfully.");
@@ -863,7 +880,7 @@ bool Engine::ready_scoring() {
 }
 
 //==============================================================================
-bool Engine::tasks_completed_successfully() {
+bool Engine::tasks_started() {
   RCLCPP_INFO(node_->get_logger(), "Starting tasks for active trial...");
 
   if (!this->active_trial_.has_value()) {
@@ -876,8 +893,21 @@ bool Engine::tasks_completed_successfully() {
                  "No task provided for this trial. Please check the config");
     return false;
   }
+  if (!this->active_trial_->attempts.empty()) {
+    RCLCPP_ERROR(
+        node_->get_logger(),
+        "List of attempts non-empty before starting tasks. Report this bug.");
+    return false;
+  }
 
   for (const auto& task : this->active_trial_->tasks) {
+    // Initialize TaskState
+    TaskAttempt task_attempt(task.id);
+    this->active_trial_->attempts.emplace_back(task.id,
+                                               std::move(task_attempt));
+    const auto attempt_id = this->active_trial_->attempts.size() - 1;
+    auto current_attempt = this->active_trial_->attempts[attempt_id].second;
+
     auto insert_cable_goal = InsertCableAction::Goal();
     insert_cable_goal.task = task;
 
@@ -885,6 +915,7 @@ bool Engine::tasks_completed_successfully() {
                 "Sending InsertCable goal for task [%s]", task.id.c_str());
     auto send_goal_future =
         insert_cable_action_client_->async_send_goal(insert_cable_goal);
+    current_attempt.state = TaskState::TaskRequested;
 
     // Handle goal response
     auto goal_handle = send_goal_future.get();
@@ -892,8 +923,11 @@ bool Engine::tasks_completed_successfully() {
       RCLCPP_ERROR(this->node_->get_logger(),
                    "InsertCable goal for task [%s] was rejected.",
                    task.id.c_str());
+      current_attempt.state = TaskState::TaskRejected;
       return false;
     }
+    current_attempt.time_started = this->node_->now();
+    current_attempt.state = TaskState::TaskStarted;
 
     // Handle goal result
     auto result_future =
@@ -907,6 +941,7 @@ bool Engine::tasks_completed_successfully() {
                    "Task [%s] timed out after %ld seconds. Cancelling goal.",
                    task.id.c_str(), task.time_limit);
       insert_cable_action_client_->async_cancel_goal(goal_handle);
+      current_attempt.state = TaskState::TimeLimitExceeded;
       return false;
     }
 
@@ -914,16 +949,63 @@ bool Engine::tasks_completed_successfully() {
     if (!result.result->success) {
       RCLCPP_INFO(this->node_->get_logger(), "Task [%s] failed: %s",
                   task.id.c_str(), result.result->message.c_str());
+      current_attempt.state = TaskState::TaskFailed;
       return false;
     }
 
     // Task succeeded, move off and send the next task goal
     RCLCPP_INFO(this->node_->get_logger(), "Task [%s] succeeded.",
                 task.id.c_str());
+    current_attempt.time_completed = this->node_->now();
+    current_attempt.state = TaskState::TaskCompleted;
   }
 
   RCLCPP_INFO(node_->get_logger(), "All tasks have been processed.");
   this->active_trial_->tasks.clear();
+  return true;
+}
+
+//==============================================================================
+bool Engine::tasks_completed_successfully() {
+  RCLCPP_INFO(node_->get_logger(),
+              "Checking if all tasks were completed successfully...");
+
+  if (!this->active_trial_.has_value()) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "No active trial set in engine. Report this bug.");
+    return false;
+  }
+
+  // Check that there are no tasks left in queue
+  if (!this->active_trial_->tasks.empty()) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "There are still pending tasks in the active trial.");
+    return false;
+  }
+  // Check that all tasks were completed successfully
+  for (const auto& [task_id, attempt] : this->active_trial_->attempts) {
+    if (attempt.state != TaskState::TaskCompleted) {
+      RCLCPP_ERROR(node_->get_logger(),
+                   "Task [%s] was not completed successfully. Last logged "
+                   "TaskState was [%d].",
+                   task_id.c_str(), static_cast<int>(attempt.state));
+      return false;
+    }
+    if (!attempt.time_started.has_value() ||
+        !attempt.time_completed.has_value()) {
+      RCLCPP_ERROR(node_->get_logger(),
+                   "Task [%s] is marked as completed but missing start or "
+                   "completion time.Report this bug.",
+                   task_id.c_str());
+      return false;
+    }
+    if (attempt.time_completed <= attempt.time_started) {
+      RCLCPP_ERROR(node_->get_logger(),
+                   "Task [%s] has invalid completion time. Report this bug.",
+                   task_id.c_str());
+      return false;
+    }
+  }
   return true;
 }
 
