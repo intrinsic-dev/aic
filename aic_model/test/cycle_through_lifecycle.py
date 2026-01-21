@@ -28,9 +28,9 @@ from rclpy.node import Node
 class CycleLifecycleNode(Node):
     def __init__(self):
         super().__init__("cycle_lifecycle")
-        self.get_client = self.create_client(GetState, "aic_model_node/get_state")
+        self.get_client = self.create_client(GetState, "aic_model/get_state")
         self.change_client = self.create_client(
-            ChangeState, "aic_model_node/change_state"
+            ChangeState, "aic_model/change_state"
         )
         while not self.get_client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info("waiting for get_state service...")

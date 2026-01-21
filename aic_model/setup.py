@@ -23,7 +23,7 @@ setup(
     },
     entry_points={
         "console_scripts": [
-            "aic_model_node = aic_model.aic_model_node:main",
+            "aic_model = aic_model.aic_model:main",
         ],
     },
 )

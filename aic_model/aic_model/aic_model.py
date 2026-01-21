@@ -40,9 +40,9 @@ from std_srvs.srv import Empty
 from trajectory_msgs.msg import JointTrajectoryPoint
 
 
-class AicModelNode(LifecycleNode):
+class AicModel(LifecycleNode):
     def __init__(self):
-        super().__init__("aic_model_node")
+        super().__init__("aic_model")
         self.declare_parameter("policy", "WaveArm")
         policy_module_name = (
             self.get_parameter("policy").get_parameter_value().string_value
@@ -249,7 +249,7 @@ class AicModelNode(LifecycleNode):
 def main(args=None):
     try:
         with rclpy.init(args=args):
-            aic_model_node = AicModelNode()
+            aic_model_node = AicModel()
             rclpy.spin(aic_model_node)
     except (KeyboardInterrupt, ExternalShutdownException):
         pass
