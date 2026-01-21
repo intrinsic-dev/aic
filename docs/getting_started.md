@@ -116,8 +116,15 @@ ros2 topic pub /aic_controller/joint_commands aic_control_interfaces/msg/JointMo
 {positions: [0.0, -1.57, -1.57, -1.57, 1.57, 0] }, target_stiffness: [100.0, 100.0, 100.0, 50.0, 50.0, 50.0], target_damping: [40.0, 40.0, 40.0, 15.0, 15.0, 15.0], trajectory_generation_mode: {mode: 2}, time_to_target_seconds: 1.0 }' --once
 ```
 
-Spawn a task board
-# To bringup the simulation without a default task board launch with spawn_task_board:=False
+Bringup the simulation without a default task board
+```bash
+source ~/ws_aic/install/setup.bash
+export RMW_IMPLEMENTATION=rmw_zenoh_cpp
+export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
+ros2 launch aic_bringup aic_gz_bringup.launch.py spawn_task_board:=False
+```
+
+Spawn a task board manually with custom configurations.
 ```bash
 source ~/ws_aic/install/setup.bash
 export RMW_IMPLEMENTATION=rmw_zenoh_cpp
