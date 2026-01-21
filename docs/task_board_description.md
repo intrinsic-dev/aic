@@ -101,8 +101,8 @@ The task board was designed to be easy to 3D print and with readily available co
 * Off the shelf components:
   * NIC Card, Quatity: 5 - [Amazon link](https://a.co/d/5lkWCj4)
   * SFP module, Quantity: 5 - [Amazon link](https://a.co/d/7RGkdZO)
-  * Sc-LC cable, Quantity: 5 - [Amazon link](https://a.co/d/edbwgg2)
-  * SC-SC connctor, Quantity: 1 (each includes six units) - [Amazon link](https://a.co/d/4PgnstS)
+  * LC to SC cable, Quantity: 5 - [Amazon link](https://a.co/d/edbwgg2)
+  * SC-SC connectors, Quantity: 1 (each includes six units) - [Amazon link](https://a.co/d/4PgnstS)
 * Task board BOM: *TODO*
 
 
