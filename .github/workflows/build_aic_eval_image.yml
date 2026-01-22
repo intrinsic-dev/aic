@@ -40,9 +40,9 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           # push: ${{ github.event.inputs.push }}
-          # tags: ghcr.io/intrinsic-dev/aic_eval:${{ github.event.inputs.tag }}
+          # tags: ghcr.io/intrinsic-dev/aic/aic_eval:${{ github.event.inputs.tag }}
           push: true
-          tags: ghcr.io/intrinsic-dev/aic_eval:latest
+          tags: ghcr.io/intrinsic-dev/aic/aic_eval:latest
           file: ./docker/aic_eval/Dockerfile
 
       - name: Cleanup workspace
