@@ -1,17 +1,18 @@
 # Writing a Policy
 
-Like many aspects of computing, AI terms are used in many contexts and can have
-differing meanings. The following diagram helps introduce the software blocks
-that are used in the AI for Industry Challenge:
+Like many aspects of computing, AI terms such as _model_ and _policy_ are used
+in many contexts and can have differing meanings. The following diagram shows
+how these terms are used in the software blocks of the AI for Industry
+Challenge:
 
 ![Block diagram](./images/aic_policy_diagram.png)
 
-A _policy_ is the software block which consumes sensor data and produces output
+A _policy_ is the software which consumes sensor data and produces output
 commands to the robot. Creating a _policy_ is at the heart of the AI for
 Industry Challenge, since it is the critical block that "closes the loop"
 between sensors and actuators.
 
-More specifically, the _policy_ block receives the following data:
+More specifically, the _policy_ receives the following data:
  * images from three cameras mounted on the robot wrist
  * joint angles of the robot arm and gripper
  * 3d force and 3d torque measurements at the robot wrist
@@ -33,5 +34,11 @@ To define a policy:
    * `stop_task_callback()`: called when `aic_engine` requests to stop the current task
    * `observation_callback()`: called when a new observation message arrives, at 20 Hz.
 
-To make this concrete, a minimal `WaveArm.py` example is provided that
-implements the necessary callbacks and issues motion commands to the arm.
+The _policy_ can invoke API functions which issue motion commands to the robot.
+As an implementation detail, those API functions use the `aic_model` ROS node
+to publish data to the `aic_controller`, which is implemented in the
+[`ros2_control`](https://control.ros.org/rolling/index.html) framework.
+
+To make this concrete, a [minimal `WaveArm.py` example](https://github.com/intrinsic-dev/aic/blob/main/aic_example_policies/aic_example_policies/ros/WaveArm.py)
+is provided that implements the necessary callbacks and issues motion commands
+to the arm.
