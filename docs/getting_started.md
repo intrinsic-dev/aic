@@ -1,5 +1,7 @@
 # Getting Started
 
+![Block diagram](./images/aic_policy_diagram.png)
+
 ## Container Setup
 
 The challenge workflow relies on two distinct Docker containers. We provide scripts to build both, ensuring your development environment matches the evaluation environment.
