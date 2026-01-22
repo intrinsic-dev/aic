@@ -204,15 +204,25 @@ controller_interface::CallbackReturn Controller::on_configure(
               get_node()->get_logger(),
               "The trajectory_generation_mode is set to MODE_UNSPECIFIED. "
               "Please set to either MODE_POSITION or MODE_VELOCITY. Ignoring "
-              "MotionUpdate "
-              "message.");
+              "MotionUpdate message.");
 
           return;
         }
-        if (msg->time_to_target_seconds < 0.0) {
+
+        // Currently, the trajectory generatoin modes MODE_POSITION only
+        // supports the "base_link" frame and MODE_VELOCITY only supports the
+        // "gripper/tcp" frame. We verify that here.
+        if (!(msg->trajectory_generation_mode.mode ==
+                  TrajectoryGenerationMode::MODE_POSITION &&
+              msg->header.frame_id == "base_link") &&
+            !(msg->trajectory_generation_mode.mode ==
+                  TrajectoryGenerationMode::MODE_VELOCITY &&
+              msg->header.frame_id == "gripper/tcp")) {
           RCLCPP_WARN(get_node()->get_logger(),
-                      "time_to_target_seconds needs to be a positive "
-                      "value. Ignoring MotionUpdate message.");
+                      "Only accepting frame_id 'base_link' for MODE_POSITION "
+                      "trajectory generation mode or frame_id 'gripper/tcp' "
+                      "for MODE_VELOCITY trajectory generation mode. Ignoring "
+                      "MotionUpdate message");
 
           return;
         }
@@ -309,13 +319,6 @@ controller_interface::CallbackReturn Controller::on_configure(
 
                 return;
               }
-            }
-            if (msg->time_to_target_seconds < 0.0) {
-              RCLCPP_WARN(get_node()->get_logger(),
-                          "time_to_target_seconds needs to be a positive "
-                          "value. Ignoring JointMotionUpdate message.");
-
-              return;
             }
 
             joint_motion_update_rt_.set(*msg);
@@ -758,75 +761,15 @@ controller_interface::return_type Controller::update(
           latest_target_state.pose = current_tool_state_.pose;
         }
 
-        // If target values or time_to_target_seconds is unchanged, then we keep
-        // the current remaining_time_to_target_seconds_ such that the current
-        // trajectory continues to the target.
-        // This is only applicable in pure position trajectory generation mode
-        // with non-zero time_to_target_seconds.
-        bool did_target_or_time_to_target_change = true;
-        if (target_state_.has_value()) {
-          did_target_or_time_to_target_change =
-              motion_update_.time_to_target_seconds !=
-                  time_to_target_seconds_ ||
-              !latest_target_state.pose.isApprox(target_state_.value().pose) ||
-              !latest_target_state.velocity.isApprox(
-                  target_state_.value().velocity);
-        }
-
-        bool is_position_mode_with_zero_velocity_target =
-            latest_target_state.velocity.isApprox(Eigen::VectorXd::Zero(6)) &&
-            (motion_update_.trajectory_generation_mode.mode ==
-             TrajectoryGenerationMode::MODE_POSITION);
-
-        // Update time to target
-        if (did_target_or_time_to_target_change ||
-            !is_position_mode_with_zero_velocity_target) {
-          remaining_time_to_target_seconds_ =
-              motion_update_.time_to_target_seconds;
-        }
-
         target_state_ = latest_target_state;
-        time_to_target_seconds_ = motion_update_.time_to_target_seconds;
       }
     } else if (target_mode_ == TargetMode::Joint) {
       auto command_op = joint_motion_update_rt_.try_get();
       if (command_op.has_value()) {
         joint_motion_update_ = command_op.value();
 
-        auto latest_target_state =
+        joint_target_state_ =
             JointState(joint_motion_update_.target_state, num_joints_);
-
-        // If target values or time_to_target_seconds is unchanged, then we keep
-        // the current remaining_time_to_target_seconds_ such that the current
-        // trajectory continues to the target.
-        // This is only applicable in pure position trajectory generation mode
-        // with non-zero time_to_target_seconds.
-        bool did_target_or_time_to_target_change = true;
-        if (joint_target_state_.has_value()) {
-          did_target_or_time_to_target_change =
-              joint_motion_update_.time_to_target_seconds !=
-                  time_to_target_seconds_ ||
-              !latest_target_state.positions.isApprox(
-                  joint_target_state_.value().positions) ||
-              !latest_target_state.velocities.isApprox(
-                  joint_target_state_.value().velocities);
-        }
-
-        bool is_position_mode_with_zero_velocity_target =
-            latest_target_state.velocities.isApprox(
-                Eigen::VectorXd::Zero(num_joints_)) &&
-            (joint_motion_update_.trajectory_generation_mode.mode ==
-             TrajectoryGenerationMode::MODE_POSITION);
-
-        // Update time to target
-        if (did_target_or_time_to_target_change ||
-            !is_position_mode_with_zero_velocity_target) {
-          remaining_time_to_target_seconds_ =
-              joint_motion_update_.time_to_target_seconds;
-        }
-
-        joint_target_state_ = latest_target_state;
-        time_to_target_seconds_ = joint_motion_update_.time_to_target_seconds;
       }
     }
   }

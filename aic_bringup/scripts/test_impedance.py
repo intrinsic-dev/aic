@@ -81,18 +81,19 @@ class TestImpedanceNode(Node):
         self,
         pos,
         quat,
-        time_to_target,
         mode=TrajectoryGenerationMode.MODE_POSITION,
         twist=None,
     ):
 
         msg = MotionUpdate()
         if mode == TrajectoryGenerationMode.MODE_POSITION:
+            msg.header.frame_id = "base_link"
             msg.pose = Pose(
                 position=Point(x=pos[0], y=pos[1], z=pos[2]),
                 orientation=Quaternion(x=quat[0], y=quat[1], z=quat[2], w=quat[3]),
             )
         elif mode == TrajectoryGenerationMode.MODE_VELOCITY:
+            msg.header.frame_id = "gripper/tcp"
             msg.velocity = Twist(
                 linear=Vector3(x=twist[0], y=twist[1], z=twist[2]),
                 angular=Vector3(x=twist[3], y=twist[4], z=twist[5]),
@@ -108,22 +109,20 @@ class TestImpedanceNode(Node):
             torque=Vector3(x=0.0, y=0.0, z=0.0),
         )
         msg.trajectory_generation_mode.mode = mode
-        msg.time_to_target_seconds = time_to_target
 
         return msg
 
-    def generate_joint_motion_update(self, joint_pos, time_to_target):
+    def generate_joint_motion_update(self, joint_pos):
         msg = JointMotionUpdate()
 
         msg.target_state.positions = joint_pos
         msg.target_stiffness = [100.0, 100.0, 100.0, 50.0, 50.0, 50.0]
         msg.target_damping = [40.0, 40.0, 40.0, 15.0, 15.0, 15.0]
         msg.trajectory_generation_mode.mode = TrajectoryGenerationMode.MODE_POSITION
-        msg.time_to_target_seconds = time_to_target
 
         return msg
 
-    def send_cartesian_target(self, time_to_target):
+    def send_cartesian_target(self):
         pos_tool_up = [-0.501, -0.175, 0.2]
 
         quat_upright = [
@@ -134,17 +133,17 @@ class TestImpedanceNode(Node):
         ]  # ZYX = (180, 0, 90), z axis normal to plane and (x,y) axes are aligned with base_link axes
 
         self.motion_update_publisher.publish(
-            self.generate_motion_update(pos_tool_up, quat_upright, time_to_target)
+            self.generate_motion_update(pos_tool_up, quat_upright)
         )
         self.get_logger().info(
             "Published MotionUpdate for tool up configuration to aic_controller"
         )
 
-    def send_joint_target(self, time_to_target):
+    def send_joint_target(self):
         joint_pos = [0.0, -1.57, -1.57, -1.57, 1.57, 0.0]
 
         self.joint_motion_update_publisher.publish(
-            self.generate_joint_motion_update(joint_pos, time_to_target)
+            self.generate_joint_motion_update(joint_pos)
         )
 
         self.get_logger().info("Published JointMotionUpdate to aic_controller")
@@ -180,28 +179,28 @@ def main(args=None):
                 ChangeTargetMode.Request().TARGET_MODE_JOINT
             )
 
-            node.send_joint_target(2.0)
+            node.send_joint_target()
             time.sleep(5)
 
             node.send_change_control_mode_req(
                 ChangeTargetMode.Request().TARGET_MODE_CARTESIAN
             )
 
-            node.send_cartesian_target(2.0)
+            node.send_cartesian_target()
             time.sleep(5)
 
             node.send_change_control_mode_req(
                 ChangeTargetMode.Request().TARGET_MODE_JOINT
             )
 
-            node.send_joint_target(5.0)
+            node.send_joint_target()
             time.sleep(6)
 
             node.send_change_control_mode_req(
                 ChangeTargetMode.Request().TARGET_MODE_CARTESIAN
             )
 
-            node.send_cartesian_target(5.0)
+            node.send_cartesian_target()
 
             rclpy.spin(node)
 
