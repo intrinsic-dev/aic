@@ -131,7 +131,7 @@ struct Trial {
   std::vector<std::string> spawned_entities;
   YAML::Node config;
   std::vector<Task> tasks;
-  std::vector<std::pair<std::string, TaskAttempt>> attempts;
+  std::vector<TaskAttempt> attempts;
   TrialState state;
 };
 
