@@ -1,4 +1,20 @@
-# Publish Cartesian targets to the AICController via messages of type MotionUpdate
+#!/usr/bin/env python3
+
+#
+#  Copyright (C) 2025 Intrinsic Innovation LLC
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+#
 
 import sys
 import termios
@@ -122,7 +138,9 @@ class AICTeleoperatorNode(Node):
         elif mode == TrajectoryGenerationMode.MODE_VELOCITY:
             msg.header.frame_id = "gripper/tcp"
             msg.velocity = twist
-        msg.target_stiffness = np.diag([175.0, 175.0, 175.0, 175.0, 175.0, 175.0]).flatten()
+        msg.target_stiffness = np.diag(
+            [175.0, 175.0, 175.0, 175.0, 175.0, 175.0]
+        ).flatten()
         msg.target_damping = np.diag([35.0, 35.0, 35.0, 35.0, 35.0, 35.0]).flatten()
         msg.feedforward_wrench_at_tip = Wrench(
             force=Vector3(x=0.0, y=0.0, z=0.0),
