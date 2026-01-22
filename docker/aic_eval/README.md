@@ -7,7 +7,7 @@ This contains Dockerfile for building the `aic_eval` image.
 ### Start `rmw_zenohd`
 
 ```bash
-. /opt/ros/kilted/setup.bash
+source /opt/ros/kilted/setup.bash
 ros2 run rmw_zenoh_cpp rmw_zenohd
 ```
 

@@ -15,9 +15,10 @@
 #
 
 
+import importlib
+import inspect
 import numpy as np
 import rclpy
-import textwrap
 
 from aic_control_interfaces.msg import MotionUpdate, TrajectoryGenerationMode
 from aic_control_interfaces.srv import ChangeTargetMode
@@ -42,7 +43,30 @@ from trajectory_msgs.msg import JointTrajectoryPoint
 class AicModel(LifecycleNode):
     def __init__(self):
         super().__init__("aic_model")
-        self.get_logger().info("Hello, world!")
+        self.declare_parameter("policy", "WaveArm")
+        policy_module_name = (
+            self.get_parameter("policy").get_parameter_value().string_value
+        )
+        self.get_logger().info(f"Loading policy module: {policy_module_name}")
+        try:
+            policy_module = importlib.import_module(policy_module_name)
+        except Exception as e:
+            self.get_logger().fatal(f"Unable to load policy {policy_module_name}: {e}")
+            raise
+        self.get_logger().info(f"Loaded policy module {policy_module_name}")
+        policy_module_classes = inspect.getmembers(policy_module, inspect.isclass)
+        self._policy_class = None
+        expected_policy_class_name = policy_module_name.split(".")[-1]
+        for policy_class_name, policy_class in policy_module_classes:
+            if policy_class_name == expected_policy_class_name:
+                self.get_logger().info(f"Using policy: {policy_class_name}")
+                self._policy_class = policy_class
+        if not self._policy_class:
+            self.get_logger().fatal(
+                f"Class {expected_policy_class_name} not in module {policy_module_name}"
+            )
+            raise LookupError(expected_policy_class_name)
+
         self.cancel_service = self.create_service(
             Empty, "cancel_task", self.cancel_task_callback
         )
@@ -74,11 +98,19 @@ class AicModel(LifecycleNode):
 
     def on_activate(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.get_logger().info(f"activating...")
+        self.get_logger().info(f"Instantiating policy...")
+        try:
+            self._policy = self._policy_class(self)
+        except Exception as e:
+            self.get_logger().error(f"Error instantiating policy: {e}")
         self.is_active = True
+        self.get_logger().info(f"activate() calling superclass")
         return super().on_activate(state)
 
     def on_deactivate(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.get_logger().info(f"on_deactivate({state})")
+        self._policy.stop_callback()
+        self._policy = None
         self.is_active = False
         return super().on_deactivate(state)
 
@@ -103,82 +135,11 @@ class AicModel(LifecycleNode):
             self.goal_handle.abort()
         return Empty.Response()
 
-    def get_seconds(self, header):
-        return header.stamp.sec + header.stamp.nanosec / 1e9
-
     def observation_callback(self, msg):
         if not self.is_active:
             return
-        #
-        # YOUR CODE HERE.
-        #
-        # The following sample just prints the timestamps of the incoming data
-        # and moves the arm to a specific pose.
-        #
-        t_cam_0 = self.get_seconds(msg.images[0].header)
-        t_cam_1 = self.get_seconds(msg.images[1].header)
-        t_cam_2 = self.get_seconds(msg.images[2].header)
-        t_joints = self.get_seconds(msg.joint_states.header)
-        t_wrench = self.get_seconds(msg.wrist_wrench.header)
-        tcp_x = msg.tcp_transform.transform.translation.x
-        tcp_y = msg.tcp_transform.transform.translation.y
-        tcp_z = msg.tcp_transform.transform.translation.z
-        # move the camera back and forth parallel to the Y axis of base_link
-        t = self.get_seconds(msg.images[0].header)
-
-        loop_duration = 5.0  # seconds
-
-        # loop_fraction smoothly interpolates from 0..1 during the loop time
-        loop_fraction = (t % loop_duration) / loop_duration
-
-        # y_fraction smoothly interpolates from -1..1..-1 during the loop time
-        y_fraction = 2 * loop_fraction
-        if y_fraction > 1.0:
-            y_fraction = 2.0 - y_fraction
-        y_fraction -= 1.0
-
-        # create a smooth series of target points that flies over the task board
-        target_x = -0.4
-        target_y = 0.35 + 0.3 * y_fraction
-        target_z = 0.3
-
-        self.set_pose_target(
-            Pose(
-                position=Point(x=target_x, y=target_y, z=target_z),
-                orientation=Quaternion(x=0.7071, y=0.7071, z=0.0, w=0.0),
-            )
-        )
-
-        self.get_logger().info(
-            f"tcp: ({tcp_x:+0.3f} {tcp_y:+0.3f}, {tcp_z:+0.3f}) target: ({target_x:+0.3f} {target_y:0.3f} {target_z:0.3f}"
-        )
-
-    def set_pose_target(self, pose):
-        motion_update_msg = MotionUpdate()
-        motion_update_msg.pose = pose
-
-        motion_update_msg.target_stiffness = np.diag(
-            [100.0, 100.0, 100.0, 50.0, 50.0, 50.0]
-        ).flatten()
-        motion_update_msg.target_damping = np.diag(
-            [40.0, 40.0, 40.0, 15.0, 15.0, 15.0]
-        ).flatten()
-
-        motion_update_msg.feedforward_wrench_at_tip = Wrench(
-            force=Vector3(x=0.0, y=0.0, z=0.0), torque=Vector3(x=0.0, y=0.0, z=0.0)
-        )
-
-        motion_update_msg.wrench_feedback_gains_at_tip = Wrench(
-            force=Vector3(x=0.5, y=0.5, z=0.5), torque=Vector3(x=0.0, y=0.0, z=0.0)
-        )
-
-        motion_update_msg.trajectory_generation_mode.mode = (
-            TrajectoryGenerationMode.MODE_POSITION
-        )
-
-        motion_update_msg.time_to_target_seconds = 0.05
-
-        self.motion_update_pub.publish(motion_update_msg)
+        if self._policy:
+            self._policy.observation_callback(msg)
 
     def insert_cable_goal_callback(self, goal_request):
         if not self.is_active:
@@ -262,7 +223,8 @@ class AicModel(LifecycleNode):
 
             # Send a feedback message.
             feedback = InsertCable.Feedback()
-            feedback.message = "Here is a feedback message"
+            if self._policy:
+                feedback.message = self._policy.get_feedback_string()
             goal_handle.publish_feedback(feedback)
 
         self.get_logger().info("Exiting insert_cable execute loop")
@@ -287,8 +249,8 @@ class AicModel(LifecycleNode):
 def main(args=None):
     try:
         with rclpy.init(args=args):
-            aic_model = AicModel()
-            rclpy.spin(aic_model)
+            aic_model_node = AicModel()
+            rclpy.spin(aic_model_node)
     except (KeyboardInterrupt, ExternalShutdownException):
         pass
 
