@@ -175,6 +175,12 @@ class Engine {
   /// @return True if the model is unconfigured, false otherwise.
   bool model_node_is_unconfigured();
 
+  /// @brief Trigger a state transition for the lifecycle node.
+  /// \param[in] transition The transition to trigger as per
+  /// lifecycle_msgs::msg::Transition enum definition.
+  /// @return True if transition succeeded, false otherwise.
+  bool transition_model_lifecycle_node(const uint8_t transition);
+
   /// @brief Configure the model node and check expectations in the configured
   /// state as per challenge requirements.
   /// @return True if configuration succeeded, false otherwise.
@@ -189,6 +195,16 @@ class Engine {
   /// state.
   /// @return True if deactivation succeeded, false otherwise.
   bool deactivate_model_node();
+
+  /// @brief Cleanup the model node to transition from inactive to
+  /// unconfigured state.
+  /// @return True if cleanup succeeded, false otherwise.
+  bool cleanup_model_node();
+
+  /// @brief Shutdown the model node to transition from unconfigured to
+  /// shutdown state.
+  /// @return True if shutdown succeeded, false otherwise.
+  bool shutdown_model_node();
 
   // Strings.
   // Name of the aic_adapter node for lifecycle transitions.
