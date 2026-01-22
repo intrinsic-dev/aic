@@ -827,6 +827,12 @@ bool Engine::check_endpoints() {
                  "Spawn entity service not available after waiting");
     return false;
   }
+  if (!change_target_mode_client_->wait_for_service(
+          timeout.to_chrono<std::chrono::nanoseconds>())) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "Change target mode service not available after waiting");
+    return false;
+  }
 
   RCLCPP_INFO(node_->get_logger(), "All required endpoints are available.");
   return true;
@@ -1110,7 +1116,6 @@ bool Engine::home_robot() {
 
   // Change target mode to Joint
   {
-    change_target_mode_client_->wait_for_service();
     auto change_mode_request = std::make_shared<ChangeTargetModeSrv::Request>();
     change_mode_request->target_mode =
         ChangeTargetModeSrv::Request::TARGET_MODE_JOINT;
@@ -1175,7 +1180,6 @@ bool Engine::home_robot() {
 
   // Change target mode back to Cartesian
   {
-    change_target_mode_client_->wait_for_service();
     auto change_mode_request = std::make_shared<ChangeTargetModeSrv::Request>();
     change_mode_request->target_mode =
         ChangeTargetModeSrv::Request::TARGET_MODE_CARTESIAN;

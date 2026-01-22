@@ -193,4 +193,4 @@ trials:
         time_limit: 300
 robot:
   home_joint_positions: [-0.546, -1.703, -1.291, -1.719, 1.571, -2.116]
-  time_from_start: 10
+  time_from_start: 5
