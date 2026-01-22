@@ -27,6 +27,8 @@
 
 #include "aic_control_interfaces/msg/joint_motion_update.hpp"
 #include "aic_control_interfaces/msg/motion_update.hpp"
+#include "aic_control_interfaces/msg/trajectory_generation_mode.hpp"
+#include "aic_control_interfaces/srv/change_target_mode.hpp"
 #include "aic_task_interfaces/action/insert_cable.hpp"
 #include "control_msgs/action/follow_joint_trajectory.hpp"
 #include "geometry_msgs/msg/wrench_stamped.hpp"
@@ -47,6 +49,7 @@
 //==============================================================================
 namespace aic {
 
+using ChangeTargetModeSrv = aic_control_interfaces::srv::ChangeTargetMode;
 using DeleteEntitySrv = simulation_interfaces::srv::DeleteEntity;
 using FollowJointTrajectory = control_msgs::action::FollowJointTrajectory;
 using InsertCableAction = aic_task_interfaces::action::InsertCable;
@@ -58,6 +61,8 @@ using JointTrajectoryPoint = trajectory_msgs::msg::JointTrajectoryPoint;
 using MotionUpdateMsg = aic_control_interfaces::msg::MotionUpdate;
 using SpawnEntitySrv = simulation_interfaces::srv::SpawnEntity;
 using Task = aic_task_interfaces::msg::Task;
+using TrajectoryGenerationMode =
+    aic_control_interfaces::msg::TrajectoryGenerationMode;
 using WrenchStampedMsg = geometry_msgs::msg::WrenchStamped;
 
 //==============================================================================
@@ -217,12 +222,12 @@ class Engine {
   rclcpp::Subscription<MotionUpdateMsg>::SharedPtr motion_update_sub_;
 
   // Subscription messages.
+  JointStateMsg::ConstSharedPtr last_joint_state_msg_;
   JointMotionUpdateMsg::ConstSharedPtr last_joint_motion_update_msg_;
   MotionUpdateMsg::ConstSharedPtr last_motion_update_msg_;
 
   // Publishers.
-  rclcpp::Publisher<JointMotionUpdateMsg>::SharedPtr
-    joint_motion_update_pub_;
+  rclcpp::Publisher<JointMotionUpdateMsg>::SharedPtr joint_motion_update_pub_;
 
   // Action clients.
   rclcpp_action::Client<InsertCableAction>::SharedPtr
@@ -231,6 +236,7 @@ class Engine {
   // Service clients.
   rclcpp::Client<SpawnEntitySrv>::SharedPtr spawn_entity_client_;
   rclcpp::Client<DeleteEntitySrv>::SharedPtr delete_entity_client_;
+  rclcpp::Client<ChangeTargetModeSrv>::SharedPtr change_target_mode_client_;
   rclcpp::Client<lifecycle_msgs::srv::GetState>::SharedPtr
       model_get_state_client_;
   rclcpp::Client<lifecycle_msgs::srv::ChangeState>::SharedPtr
@@ -268,12 +274,10 @@ class Engine {
   bool model_discovered_;
 
   // Robot home joint positions
-  // TODO(@xiyuoh) make sure initial values are consistent throughout repo
   std::vector<double> home_joint_positions_ = {-0.546, -1.703, -1.291,
                                                -1.719, 1.571,  -2.116};
 
-  std::vector<double> home_joint_velocities_ = {0.1, 0.1, 0.1, 0.1, 0.1, 0.1};
-
+  // Time for robot to reach home position
   int home_time_from_start_ = 20;
 };
 
