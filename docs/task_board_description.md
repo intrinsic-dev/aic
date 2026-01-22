@@ -1,6 +1,9 @@
 # AIC Task Board Description
 
-The **AI for Industry Challenge (AIC)** task board is a modular, fungible platform designed to emulate real-world cable management challenges found in high-mix electronics manufacturing, specifically within server and data center infrastructure. This board serves as the primary environment for evaluating model for dexterous manipulation of cables together with Intrinsic's perception, and motion planning.
+The **AI for Industry Challenge (AIC)** task board is a modular, reconfigurable platform designed to emulate real-world cable management challenges found in high-mix electronics manufacturing, specifically within server and data center infrastructure. This environment replicates the complex task of routing high-density fiber optics and seating transceivers into dense networking hardware.
+
+This task board will serve here as the primary environment for evaluating dexterous manipulation, perception, and motion planning throughout the challenge phases.
+
 
 ## 1. Board Overview
 
@@ -9,6 +12,13 @@ The task board provides a standardized physical interface for the manipulation o
 ![AIC Task Board](../../media/aic_task_board.png)
 
 ## 2. Zone Descriptions
+
+The AIC task board is organized into four functional zones that simulate a complete electronics assembly workflow. Zones 1 and 2 serve as the assembly targets:
+* Zone 1 houses the Network Interface Cards (NIC) with SFP ports, representing the server compute tray, 
+* Zone 2 mimics an optical patch panel with SC ports. 
+* Zones 3 and 4 act as the Pick Locations, providing a high-mix supply area where SFP modules and fiber optic plugs are staged on adjustable mounts.
+
+This modular layout requires the robot to transition from organized picking from zones 3 and 4 to precise, dexterous insertion in zones 1 and 2.
 
 ### Zone 1: Network Interface Cards (NIC)
 This zone represents the networking switch or server compute tray where data links are established.
