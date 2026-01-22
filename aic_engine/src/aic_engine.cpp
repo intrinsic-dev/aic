@@ -468,53 +468,71 @@ TrialState Engine::handle_trial(const Trial& trial) {
   RCLCPP_INFO(node_->get_logger(), "Starting trial '%s'...", trial.id.c_str());
 
   active_trial_ = trial;
+  active_trial_->state = TrialState::Uninitialized;
+  RCLCPP_INFO(this->node_->get_logger(), "TrialState: Uninitialized");
 
-  TrialState current_state = TrialState::Uninitialized;
-
-  if (!this->check_model()) {
-    RCLCPP_ERROR(node_->get_logger(), "Participant model is not ready.");
-    reset_after_trial();
-    return current_state;
+  if (active_trial_->state == TrialState::Uninitialized) {
+    if (!this->check_model()) {
+      RCLCPP_ERROR(node_->get_logger(), "Participant model is not ready.");
+      reset_after_trial();
+      return active_trial_->state;
+    }
+    active_trial_->state = TrialState::ModelReady;
+    RCLCPP_INFO(this->node_->get_logger(), "TrialState: ModelReady");
   }
-  current_state = TrialState::ModelReady;
 
-  if (!this->check_endpoints()) {
-    RCLCPP_ERROR(node_->get_logger(), "Required endpoints are not available.");
-    reset_after_trial();
-    return current_state;
+  if (active_trial_->state == TrialState::ModelReady) {
+    if (!this->check_endpoints()) {
+      RCLCPP_ERROR(node_->get_logger(),
+                   "Required endpoints are not available.");
+      reset_after_trial();
+      return active_trial_->state;
+    }
+    active_trial_->state = TrialState::EndpointsReady;
+    RCLCPP_INFO(this->node_->get_logger(), "TrialState: EndpointsReady");
   }
-  current_state = TrialState::EndpointsReady;
 
-  if (!this->ready_simulator()) {
-    RCLCPP_ERROR(node_->get_logger(), "Simulator is not ready.");
-    reset_after_trial();
-    return current_state;
+  if (active_trial_->state == TrialState::EndpointsReady) {
+    if (!this->ready_simulator()) {
+      RCLCPP_ERROR(node_->get_logger(), "Simulator is not ready.");
+      reset_after_trial();
+      return active_trial_->state;
+    }
+    active_trial_->state = TrialState::SimulatorReady;
+    RCLCPP_INFO(this->node_->get_logger(), "TrialState: SimulatorReady");
   }
-  current_state = TrialState::SimulatorReady;
 
-  if (!this->ready_scoring()) {
-    RCLCPP_ERROR(node_->get_logger(), "Scoring system is not ready.");
-    reset_after_trial();
-    return current_state;
+  if (active_trial_->state == TrialState::SimulatorReady) {
+    if (!this->ready_scoring()) {
+      RCLCPP_ERROR(node_->get_logger(), "Scoring system is not ready.");
+      reset_after_trial();
+      return active_trial_->state;
+    }
+    active_trial_->state = TrialState::ScoringReady;
+    RCLCPP_INFO(this->node_->get_logger(), "TrialState: ScoringReady");
   }
-  current_state = TrialState::ScoringReady;
 
-  if (!this->tasks_started()) {
+  if (active_trial_->state == TrialState::ScoringReady) {
+    this->tasks_started();
+  }
+
+  if (active_trial_->state == TrialState::TasksExecuting) {
+    if (!this->tasks_completed_successfully()) {
+      RCLCPP_ERROR(node_->get_logger(),
+                   "Tasks were not completed successfully.");
+      reset_after_trial();
+      return active_trial_->state;
+    }
+    active_trial_->state = TrialState::AllTasksCompleted;
+    RCLCPP_INFO(this->node_->get_logger(), "TrialState: AllTasksCompleted");
+  } else {
     RCLCPP_ERROR(node_->get_logger(), "Tasks cannot be started successfully.");
     reset_after_trial();
-    return current_state;
+    return active_trial_->state;
   }
-  current_state = TrialState::TasksExecuting;
-
-  if (!this->tasks_completed_successfully()) {
-    RCLCPP_ERROR(node_->get_logger(), "Tasks were not completed successfully.");
-    reset_after_trial();
-    return current_state;
-  }
-  current_state = TrialState::AllTasksCompleted;
 
   reset_after_trial();
-  return current_state;
+  return active_trial_->state;
 }
 
 /// Given a set [s1, s2, s3] returns a string "s1, s2, s3"
@@ -946,6 +964,9 @@ bool Engine::tasks_started() {
     }
     current_attempt.time_started = this->node_->now();
     current_attempt.state = TaskState::TaskStarted;
+    // Update trial state
+    this->active_trial_->state = TrialState::TasksExecuting;
+    RCLCPP_INFO(this->node_->get_logger(), "TrialState: TasksExecuting");
 
     // Handle goal result
     auto result_future =
@@ -1006,7 +1027,7 @@ bool Engine::tasks_completed_successfully() {
       RCLCPP_ERROR(node_->get_logger(),
                    "Task [%s] was not completed successfully. Last logged "
                    "TaskState was [%d].",
-                   task_id.c_str(), static_cast<int>(attempt.state));
+                   attempt.id.c_str(), static_cast<int>(attempt.state));
       return false;
     }
     if (!attempt.time_started.has_value() ||
@@ -1014,13 +1035,13 @@ bool Engine::tasks_completed_successfully() {
       RCLCPP_ERROR(node_->get_logger(),
                    "Task [%s] is marked as completed but missing start or "
                    "completion time.Report this bug.",
-                   task_id.c_str());
+                   attempt.id.c_str());
       return false;
     }
     if (attempt.time_completed <= attempt.time_started) {
       RCLCPP_ERROR(node_->get_logger(),
                    "Task [%s] has invalid completion time. Report this bug.",
-                   task_id.c_str());
+                   attempt.id.c_str());
       return false;
     }
   }
