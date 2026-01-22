@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-package_name = "aic_model"
+package_name = "aic_example_policies"
 
 setup(
     name=package_name,
@@ -14,16 +14,11 @@ setup(
     zip_safe=True,
     maintainer="Morgan Quigley",
     maintainer_email="morganquigley@intrinsic.ai",
-    description="Control model interface for the AI Challenge",
+    description="Example policies for the AI challenge",
     license="Apache-2.0",
     extras_require={
         "test": [
             "pytest",
-        ],
-    },
-    entry_points={
-        "console_scripts": [
-            "aic_model = aic_model.aic_model:main",
         ],
     },
 )
