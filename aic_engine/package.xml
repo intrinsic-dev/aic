@@ -13,6 +13,7 @@
   <depend>aic_control_interfaces</depend>
   <depend>aic_task_interfaces</depend>
   <depend>ament_index_cpp</depend>
+  <depend>control_msgs</depend>
   <depend>geometry_msgs</depend>
   <depend>lifecycle_msgs</depend>
   <depend>rclcpp</depend>
@@ -21,6 +22,7 @@
   <depend>simulation_interfaces</depend>
   <depend>tf2</depend>
   <depend>tf2_ros</depend>
+  <depend>trajectory_msgs</depend>
   <depend>yaml_cpp_vendor</depend>
 
   <export>

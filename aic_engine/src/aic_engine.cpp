@@ -367,6 +367,35 @@ EngineState Engine::initialize() {
   RCLCPP_INFO(node_->get_logger(), "Successfully parsed %zu trial(s)",
               trials_.size());
 
+  if (!config_["robot"]) {
+    RCLCPP_ERROR(node_->get_logger(), "Config missing required key: 'robot'");
+    engine_state_ = EngineState::Error;
+    return engine_state_;
+  }
+  if (!config_["robot"]["home_joint_positions"]) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "Config missing required key: 'robot.home_joint_positions'");
+    engine_state_ = EngineState::Error;
+    return engine_state_;
+  }
+  if (!config_["robot"]["home_joint_velocities"]) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "Config missing required key: 'robot.home_joint_velocities'");
+    engine_state_ = EngineState::Error;
+    return engine_state_;
+  }
+  if (!config_["robot"]["time_from_start"]) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "Config missing required key: 'robot.time_from_start'");
+    engine_state_ = EngineState::Error;
+    return engine_state_;
+  }
+  home_joint_positions_ =
+      config_["robot"]["home_joint_positions"].as<std::vector<double>>();
+  home_joint_velocities_ =
+      config_["robot"]["home_joint_velocities"].as<std::vector<double>>();
+  home_time_from_start_ = config_["robot"]["time_from_start"].as<int>();
+
   // Create ROS endpoints.
   const rclcpp::QoS reliable_qos = rclcpp::QoS(rclcpp::KeepLast(10)).reliable();
   wrench_sub_ = node_->create_subscription<WrenchStampedMsg>(
@@ -397,6 +426,10 @@ EngineState Engine::initialize() {
         last_motion_update_msg_ = msg;
       },
       sub_options_ignore_local);
+
+  joint_motion_update_pub_ =
+      node_->create_publisher<JointMotionUpdateMsg>(
+          "/aic_controller/joint_motion_update", reliable_qos);
 
   insert_cable_action_client_ =
       rclcpp_action::create_client<InsertCableAction>(node_, "/insert_cable");
@@ -430,6 +463,7 @@ EngineState Engine::run() {
     RCLCPP_INFO(node_->get_logger(), "======================================");
     RCLCPP_INFO(node_->get_logger(), "Handling trial '%s'...",
                 trial_id.c_str());
+    home_robot();
     TrialState trial_result = this->handle_trial(trial);
     if (trial_result == TrialState::TaskCompleted) {
       RCLCPP_INFO(node_->get_logger(), "Trial '%s' completed successfully.",
@@ -1064,10 +1098,36 @@ void Engine::reset_after_trial() {
       }
     }
   }
+
+  // Home robot
+  if (!home_robot()) {
+    RCLCPP_ERROR(node_->get_logger(), "Failed to home robot after trial.");
+  }
+
   is_first_trial_ = false;
   active_trial_ = std::nullopt;
   model_discovered_ = false;
   RCLCPP_INFO(node_->get_logger(), "Reset after trial completed.");
+}
+
+//==============================================================================
+bool Engine::home_robot() {
+  RCLCPP_INFO(node_->get_logger(), "Homing robot to initial positions...");
+
+  auto joint_msg = JointMotionUpdateMsg();
+  auto home_point = JointTrajectoryPoint();
+  home_point.positions = home_joint_positions_;
+  home_point.velocities = home_joint_velocities_;
+  home_point.time_from_start.sec = home_time_from_start_;
+
+  joint_msg.target_state = home_point;
+  joint_motion_update_pub_->publish(joint_msg);
+  RCLCPP_INFO(this->node_->get_logger(), "Published JointMotionUpdate...");
+
+  // TODO(@xiyuoh) check for completion
+  std::this_thread::sleep_for(std::chrono::seconds(10));
+
+  return true;
 }
 
 //==============================================================================

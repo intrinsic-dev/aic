@@ -28,6 +28,7 @@
 #include "aic_control_interfaces/msg/joint_motion_update.hpp"
 #include "aic_control_interfaces/msg/motion_update.hpp"
 #include "aic_task_interfaces/action/insert_cable.hpp"
+#include "control_msgs/action/follow_joint_trajectory.hpp"
 #include "geometry_msgs/msg/wrench_stamped.hpp"
 #include "lifecycle_msgs/msg/state.hpp"
 #include "lifecycle_msgs/srv/change_state.hpp"
@@ -40,17 +41,20 @@
 #include "tf2/exceptions.hpp"
 #include "tf2_ros/buffer.h"
 #include "tf2_ros/transform_listener.h"
+#include "trajectory_msgs/msg/joint_trajectory_point.hpp"
 #include "yaml-cpp/yaml.h"
 
 //==============================================================================
 namespace aic {
 
 using DeleteEntitySrv = simulation_interfaces::srv::DeleteEntity;
+using FollowJointTrajectory = control_msgs::action::FollowJointTrajectory;
 using InsertCableAction = aic_task_interfaces::action::InsertCable;
 using InsertCableGoalHandle =
     rclcpp_action::ServerGoalHandle<InsertCableAction>;
 using JointStateMsg = sensor_msgs::msg::JointState;
 using JointMotionUpdateMsg = aic_control_interfaces::msg::JointMotionUpdate;
+using JointTrajectoryPoint = trajectory_msgs::msg::JointTrajectoryPoint;
 using MotionUpdateMsg = aic_control_interfaces::msg::MotionUpdate;
 using SpawnEntitySrv = simulation_interfaces::srv::SpawnEntity;
 using Task = aic_task_interfaces::msg::Task;
@@ -127,6 +131,9 @@ class Engine {
 
   /// \brief Reset internal and simulator states after a trial is completed.
   void reset_after_trial();
+
+  /// \brief Reset robot back to home joint positions.
+  bool home_robot();
 
   /// \brief Check if the participant model is ready. As per challenge
   /// requirements. See challenge_rules.md for details. \return True if the
@@ -214,6 +221,8 @@ class Engine {
   MotionUpdateMsg::ConstSharedPtr last_motion_update_msg_;
 
   // Publishers.
+  rclcpp::Publisher<JointMotionUpdateMsg>::SharedPtr
+    joint_motion_update_pub_;
 
   // Action clients.
   rclcpp_action::Client<InsertCableAction>::SharedPtr
@@ -257,6 +266,15 @@ class Engine {
 
   // Whether the participant model has been discovered and readied.
   bool model_discovered_;
+
+  // Robot home joint positions
+  // TODO(@xiyuoh) make sure initial values are consistent throughout repo
+  std::vector<double> home_joint_positions_ = {-0.546, -1.703, -1.291,
+                                               -1.719, 1.571,  -2.116};
+
+  std::vector<double> home_joint_velocities_ = {0.1, 0.1, 0.1, 0.1, 0.1, 0.1};
+
+  int home_time_from_start_ = 20;
 };
 
 }  // namespace aic
