@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>aic_example_policies</name>
+  <version>0.0.0</version>
+  <description>Python module with some example policies for the AI Challenge</description>
+  <maintainer email="morganquigley@intrinsic.ai">Morgan Quigley</maintainer>
+  <license>Apache-2.0</license>
+
+  <depend>aic_control_interfaces</depend>
+  <depend>aic_model</depend>
+  <depend>aic_model_interfaces</depend>
+  <depend>aic_task_interfaces</depend>
+  <depend>geometry_msgs</depend>
+  <depend>rclpy</depend>
+  <depend>sensor_msgs</depend>
+  <depend>std_srvs</depend>
+  <depend>trajectory_msgs</depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

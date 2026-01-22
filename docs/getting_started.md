@@ -122,7 +122,7 @@ Run a minimal `aic_model` demo. This demo `aic_model` implementation should wave
 source ~/ws_aic/install/setup.bash
 export RMW_IMPLEMENTATION=rmw_zenoh_cpp
 export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
-ros2 run aic_model model_node
+ros2 run aic_model aic_model --ros-args -p policy:=aic_example_policies.ros.WaveArm
 ```
 
 
