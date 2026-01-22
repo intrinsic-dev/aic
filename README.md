@@ -23,4 +23,6 @@ Please refer to the following resources for detailed information on the challeng
 
 ## Getting Started
 
-Ready to begin? Please consult the [Getting Started Guide](./docs/getting_started.md) to set up your development environment.
+Ready to begin? Please refer to the following guides:
+* **[Getting Started](./docs/getting_started.md): Guide to set up your development environment.
+* **[Writing a policy](./docs/policy.md): The participant code framework of the competition. `YOUR CODE HERE`!
