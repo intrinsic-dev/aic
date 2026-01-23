@@ -5,7 +5,7 @@ in many contexts and can have differing meanings. The following diagram shows
 how these terms are used in the software blocks of the AI for Industry
 Challenge:
 
-![Block diagram](./images/aic_policy_diagram.png)
+![Block diagram](../../media/aic_policy_diagram.png)
 
 A _policy_ is the software which consumes sensor data and produces output
 commands to the robot. Creating a _policy_ is at the heart of the AI for
