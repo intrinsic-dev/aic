@@ -20,5 +20,6 @@ services:
     environment:
       RMW_IMPLEMENTATION: rmw_zenoh_cpp
       ZENOH_CONFIG_OVERRIDE: connect/endpoints=["tcp/eval:7447"];routing/router/peers_failover_brokering=true
+      ZENOH_ROUTER_CHECK_ATTEMPTS: 30
 networks:
   default:
