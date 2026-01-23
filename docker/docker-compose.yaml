@@ -18,7 +18,7 @@ services:
     networks:
       - default
     environment:
-      - RMW_IMPLEMENTATION=rmw_zenoh_cpp
-      - ZENOH_CONFIG_OVERRIDE=connect/endpoints=["tcp/eval:7447"];routing/router/peers_failover_brokering=true
+      RMW_IMPLEMENTATION: rmw_zenoh_cpp
+      ZENOH_CONFIG_OVERRIDE: connect/endpoints=["tcp/eval:7447"];routing/router/peers_failover_brokering=true
 networks:
   default:
