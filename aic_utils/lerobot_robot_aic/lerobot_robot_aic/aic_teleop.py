@@ -31,6 +31,7 @@ from .types import MotionUpdateActionDict
 GRIPPER_CLOSED_POS = 0.012
 GRIPPER_OPEN_POS = 0.025
 
+
 @TeleoperatorConfig.register_subclass("aic_keyboard")
 @dataclass
 class AICKeyboardTeleopConfig(KeyboardJointTeleopConfig):
