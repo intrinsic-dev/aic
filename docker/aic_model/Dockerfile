@@ -1,7 +1,7 @@
-FROM ubuntu:24.04 AS build
+FROM ros:kilted-ros-core AS build
 
 # Install pixi
-RUN apt update && apt install -y curl git && curl -fsSL https://pixi.sh/install.sh | bash
+RUN curl -fsSL https://pixi.sh/install.sh | bash
 ENV PATH="/root/.pixi/bin:$PATH"
 
 # Build the workspace
