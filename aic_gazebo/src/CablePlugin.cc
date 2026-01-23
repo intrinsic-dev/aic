@@ -132,9 +132,10 @@ void CablePlugin::Configure(const gz::sim::Entity& _entity,
     return;
   }
 
-  this->cableGuardOffsetFromEndEffector = _sdf->Get<math::Pose3d>(
-      "cable_guard_offset_from_end_effector",
-       kCableGuardOffsetForRobotiqHandE).first;
+  this->cableGuardOffsetFromEndEffector =
+      _sdf->Get<math::Pose3d>("cable_guard_offset_from_end_effector",
+                              kCableGuardOffsetForRobotiqHandE)
+          .first;
 
   double delay = _sdf->Get<double>("create_connection_delay_s", 0.0).first;
   this->createJointDelay = delay;
@@ -227,11 +228,12 @@ void CablePlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
                                 this->cableConnection0LinkEntity, "fixed"}));
     }
 
-    auto endEffectorWorldPose = gz::sim::worldPose(this->endEffectorLinkEntity, _ecm);
-    auto cableGuardPose = endEffectorWorldPose *
-        this->cableGuardOffsetFromEndEffector;
-    this->detachableJointCableGuardEntity = this->SpawnCableGuard(
-        cableGuardPose, this->creator.get(), _ecm);
+    auto endEffectorWorldPose =
+        gz::sim::worldPose(this->endEffectorLinkEntity, _ecm);
+    auto cableGuardPose =
+        endEffectorWorldPose * this->cableGuardOffsetFromEndEffector;
+    this->detachableJointCableGuardEntity =
+        this->SpawnCableGuard(cableGuardPose, this->creator.get(), _ecm);
 
     gzmsg << "Cable transitioning to CABLE_ATTACHED_TO_GRIPPER state."
           << std::endl;
@@ -412,15 +414,15 @@ Entity CablePlugin::MakeStatic(Entity _entity,
 }
 
 //////////////////////////////////////////////////
-Entity CablePlugin::SpawnCableGuard(const math::Pose3d &_pose,
-                                     SdfEntityCreator* _creator,
-                                     EntityComponentManager& _ecm) {
-
+Entity CablePlugin::SpawnCableGuard(const math::Pose3d& _pose,
+                                    SdfEntityCreator* _creator,
+                                    EntityComponentManager& _ecm) {
   std::stringstream modelStr;
   modelStr << R"(<?xml version="1.0"?>
   <sdf version="1.11">
     <model name="cable_guard">
-      <pose>)" << _pose << R"(</pose>
+      <pose>)"
+           << _pose << R"(</pose>
       <link name="box_link">
         <inertial>
           <inertia>
@@ -465,12 +467,12 @@ Entity CablePlugin::SpawnCableGuard(const math::Pose3d &_pose,
   _creator->SetParent(modelEntity,
                       _ecm.EntityByComponents(components::World()));
   this->staticEntities.insert(modelEntity);
-  Entity modelLinkEntity = _ecm.EntityByComponents(components::ParentEntity(modelEntity),
-                                                   components::Name("box_link"));
+  Entity modelLinkEntity = _ecm.EntityByComponents(
+      components::ParentEntity(modelEntity), components::Name("box_link"));
   Entity detachableJointEntity = _ecm.CreateEntity();
   _ecm.CreateComponent(detachableJointEntity,
-                       components::DetachableJoint(
-                            {this->endEffectorLinkEntity, modelLinkEntity, "fixed"}));
+                       components::DetachableJoint({this->endEffectorLinkEntity,
+                                                    modelLinkEntity, "fixed"}));
   return detachableJointEntity;
 }
 
