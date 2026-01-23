@@ -15,18 +15,26 @@
     <include merge="true">
       <!--
          Some collisions in SC plug intersect with gripper fingers on startup
-         Workaround this by removing those collisions.
+         Workaround this by removing / shrinking those collisions.
       -->
       <experimental:params>
         <collision element_id="sc_plug_link::cylinder011_collider_cylinder" action="remove"/>
         <collision element_id="sc_plug_link::cylinder005_collider_cylinder" action="remove"/>
+        <collision element_id="sc_plug_link::cube002_collider_box" name="cube002_collider_box" action="replace">
+          <pose>-0.00558475 0.0 0.0 0.0 0.0 0.0</pose>
+          <geometry>
+            <box>
+              <size>0.0031375 0.025 0.0101</size>
+            </box>
+          </geometry>
+        </collision>
       </experimental:params>
       <uri>model://SC Plug</uri>
-      <pose relative_to="cable_connection_0">-0.055 0 0 0 0 3.14159</pose>
+      <pose relative_to="cable_connection_0">-0.052 0 0 0 0 3.14159</pose>
     </include>
     <include merge="true">
       <uri>model://LC Plug</uri>
-      <pose relative_to="cable_connection_1">0.044 0 0 0 0 -1.57079</pose>
+      <pose relative_to="cable_connection_1">0.041 0 0 0 0 -1.57079</pose>
     </include>
     <include merge="true">
       <uri>model://SFP Module</uri>
