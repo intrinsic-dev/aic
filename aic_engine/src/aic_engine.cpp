@@ -1202,7 +1202,8 @@ bool Engine::home_robot() {
         if (std::abs(current_joint_pos - home_joint_pos) >
             joint_difference_threshold_) {
           RCLCPP_INFO(node_->get_logger(), "diff is: %f (curr [%f], targ [%f])",
-          std::abs(current_joint_pos - home_joint_pos), current_joint_pos, home_joint_pos);
+                      std::abs(current_joint_pos - home_joint_pos),
+                      current_joint_pos, home_joint_pos);
           homed = false;
           break;
         }
