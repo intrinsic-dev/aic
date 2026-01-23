@@ -440,6 +440,8 @@ Entity CablePlugin::SpawnCableGuard(const math::Pose3d &_pose,
             </box>
           </geometry>
         </collision>
+        <!-- Uncomment below to see the visual for debugging -->
+        <!--
         <visual name="box_visual">
           <geometry>
             <box>
@@ -447,11 +449,11 @@ Entity CablePlugin::SpawnCableGuard(const math::Pose3d &_pose,
             </box>
           </geometry>
           <material>
-            <ambient>0.3 0.3 0.3 1</ambient>
             <diffuse>0.7 0.7 0.7 1</diffuse>
             <specular>1 1 1 1</specular>
           </material>
        </visual>
+       -->
       </link>
     </model>
   </sdf>
@@ -459,27 +461,17 @@ Entity CablePlugin::SpawnCableGuard(const math::Pose3d &_pose,
 
   sdf::Root root;
   sdf::Errors errors = root.LoadSdfString(modelStr.str());
-  //auto model = *root.Model();
-  //model.SetName("cable_guard");
   Entity modelEntity = _creator->CreateEntities(root.Model());
   _creator->SetParent(modelEntity,
                       _ecm.EntityByComponents(components::World()));
-  //auto poseComp = _ecm.Component<components::Pose>(modelEntity);
-  //*poseComp = components::Pose(_pose);
   this->staticEntities.insert(modelEntity);
-
-
   Entity modelLinkEntity = _ecm.EntityByComponents(components::ParentEntity(modelEntity),
                                                    components::Name("box_link"));
-
   Entity detachableJointEntity = _ecm.CreateEntity();
   _ecm.CreateComponent(detachableJointEntity,
                        components::DetachableJoint(
                             {this->endEffectorLinkEntity, modelLinkEntity, "fixed"}));
-
   return detachableJointEntity;
 }
-
-
 
 }  // namespace aic_gazebo
