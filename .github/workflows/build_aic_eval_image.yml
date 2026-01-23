@@ -9,10 +9,11 @@ on:
         type: string
         default: "latest"
       push:
-        descripion: "Whether to push the docker image"
+        description: "Whether to push the docker image"
         required: true
         type: boolean
         default: true
+  pull_request:
 
 defaults:
   run:
