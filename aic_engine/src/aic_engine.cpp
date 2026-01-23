@@ -169,38 +169,42 @@ Trial::Trial(const std::string& _id, YAML::Node _config) : id(std::move(_id)) {
     }
   }
 
-  // Validate scene.cable
-  if (!scene["cable"]) {
-    throw std::runtime_error("Config missing required key: 'scene.cable'");
+  // Validate scene.cables
+  if (!scene["cables"]) {
+    throw std::runtime_error("Config missing required key: 'scene.cables'");
   }
-  const auto& cable = scene["cable"];
-  if (!cable["pose"]) {
-    throw std::runtime_error("Config missing required key: 'scene.cable.pose'");
-  }
-  const auto& cable_pose = cable["pose"];
-  for (const auto& key : {"gripper_offset", "roll", "pitch", "yaw"}) {
-    if (!cable_pose[key]) {
-      throw std::runtime_error(
-          std::string("Config missing required key: 'scene.cable.pose.") + key +
-          "'");
+  const auto& cables = scene["cables"];
+  for (const auto& cable_it : cables) {
+    const std::string cable_id = cable_it.first.as<std::string>();
+    const YAML::Node cable = cable_it.second;
+    if (!cable["pose"]) {
+      throw std::runtime_error("Config missing required key: 'scene.cables[" +
+                               cable_id + "].pose'");
     }
-  }
-  const auto& cable_pose_offset = cable["pose"]["gripper_offset"];
-  for (const auto& key : {"x", "y", "z"}) {
-    if (!cable_pose_offset[key]) {
-      throw std::runtime_error(
-          std::string("Config missing required key: "
-                      "'scene.cable.pose.gripper_offset.") +
-          key + "'");
+    const auto& cable_pose = cable["pose"];
+    for (const auto& key : {"gripper_offset", "roll", "pitch", "yaw"}) {
+      if (!cable_pose[key]) {
+        throw std::runtime_error("Config missing required key: 'scene.cables[" +
+                                 cable_id + "].pose." + key + "'");
+      }
     }
-  }
-  if (!cable["attach_cable_to_gripper"]) {
-    throw std::runtime_error(
-        "Config missing required key: 'scene.cable.attach_cable_to_gripper'");
-  }
-  if (!cable["cable_type"]) {
-    throw std::runtime_error(
-        "Config missing required key: 'scene.cable.cable_type'");
+    const auto& cable_pose_offset = cable["pose"]["gripper_offset"];
+    for (const auto& key : {"x", "y", "z"}) {
+      if (!cable_pose_offset[key]) {
+        throw std::runtime_error(
+            std::string("Config missing required key: "
+                        "'scene.cable.pose.gripper_offset.") +
+            key + "'");
+      }
+    }
+    if (!cable["attach_cable_to_gripper"]) {
+      throw std::runtime_error("Config missing required key: 'scene.cables[" +
+                               cable_id + "].attach_cable_to_gripper'");
+    }
+    if (!cable["cable_type"]) {
+      throw std::runtime_error("Config missing required key: 'scene.cables[" +
+                               cable_id + "].cable_type'");
+    }
   }
 
   // Validate tasks array
@@ -250,7 +254,8 @@ Engine::Engine(const rclcpp::NodeOptions& options)
       spawn_entity_client_(nullptr),
       is_first_trial_(true),
       active_trial_(std::nullopt),
-      engine_state_(EngineState::Uninitialized) {
+      engine_state_(EngineState::Uninitialized),
+      model_discovered_(false) {
   RCLCPP_INFO(node_->get_logger(), "Creating AIC Engine...");
 
   // Declare ROS parameters.
@@ -269,6 +274,8 @@ Engine::Engine(const rclcpp::NodeOptions& options)
   node_->declare_parameter("model_configure_timeout_seconds", 60);
   node_->declare_parameter("model_activate_timeout_seconds", 60);
   node_->declare_parameter("model_deactivate_timeout_seconds", 60);
+  node_->declare_parameter("model_cleanup_timeout_seconds", 60);
+  node_->declare_parameter("model_shutdown_timeout_seconds", 60);
 
   spin_thread_ = std::thread([node = node_]() {
     rclcpp::executors::SingleThreadedExecutor executor;
@@ -434,10 +441,15 @@ EngineState Engine::run() {
                    "Trial '%s' failed or was not completed.", trial_id.c_str());
       engine_state_ = EngineState::Error;
       // TODO(Yadunund): Clean up and write scoring data.
+      // TODO(luca) refactor cleanup into single function
+      this->cleanup_model_node();
+      this->shutdown_model_node();
       return engine_state_;
     }
   }
 
+  this->cleanup_model_node();
+  this->shutdown_model_node();
   return engine_state_;
 }
 
@@ -580,45 +592,10 @@ bool Engine::configure_model_node() {
   RCLCPP_INFO(node_->get_logger(), "Configuring lifecycle node '%s'...",
               model_node_name_.c_str());
 
-  if (!model_change_state_client_->wait_for_service(std::chrono::seconds(5))) {
-    RCLCPP_ERROR(
-        node_->get_logger(),
-        "ChangeState service not available for node '%s' after waiting",
-        model_node_name_.c_str());
+  if (!this->transition_model_lifecycle_node(
+          lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE)) {
     return false;
   }
-
-  // Create and send the request to transition to 'configured' state
-  auto request = std::make_shared<lifecycle_msgs::srv::ChangeState::Request>();
-  request->transition.id =
-      lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE;
-
-  auto future = model_change_state_client_->async_send_request(request);
-
-  const int model_configure_timeout_seconds =
-      node_->get_parameter("model_configure_timeout_seconds").as_int();
-  if (future.wait_for(std::chrono::seconds(model_configure_timeout_seconds)) !=
-      std::future_status::ready) {
-    RCLCPP_ERROR(node_->get_logger(),
-                 "ChangeState service call timed out for node '%s'",
-                 model_node_name_.c_str());
-    return false;
-  }
-
-  auto response = future.get();
-
-  if (!response->success) {
-    RCLCPP_ERROR(
-        node_->get_logger(),
-        "Failed to transition lifecycle node '%s' to 'configured' state",
-        model_node_name_.c_str());
-    return false;
-  }
-
-  RCLCPP_INFO(node_->get_logger(),
-              "Lifecycle node '%s' successfully transitioned to 'configured' "
-              "state. Checking expectations...",
-              model_node_name_.c_str());
 
   if (model_node_moved_robot()) {
     RCLCPP_ERROR(node_->get_logger(),
@@ -684,31 +661,55 @@ bool Engine::check_model() {
   const rclcpp::Duration timeout = rclcpp::Duration::from_seconds(
       this->node_->get_parameter("model_discovery_timeout_seconds").as_int());
 
-  // Check for lifecycle node by looking for its get_state service
-  bool model_discovered = false;
+  // Check if aic_model node exists in the graph and is a lifecycle node.
+  model_discovered_ = false;
 
-  while (!model_discovered && !(this->node_->now() - start_time > timeout)) {
-    RCLCPP_INFO(node_->get_logger(),
-                "Checking if lifecycle node '%s' is available...",
-                model_node_name_.c_str());
-    const auto service_names_and_types = node_->get_service_names_and_types();
-    auto it = service_names_and_types.find(model_get_state_service_name_);
-    if (it != service_names_and_types.end()) {
-      // Verify it's actually a lifecycle service by checking the type
-      const auto& service_types = it->second;
-      for (const auto& type : service_types) {
-        if (type == "lifecycle_msgs/srv/GetState") {
-          model_discovered = true;
-          break;
-        }
+  while (!model_discovered_ && !(this->node_->now() - start_time > timeout)) {
+    // First check that only one node with the expected name exists.
+    auto node_graph = node_->get_node_graph_interface();
+    auto node_names_and_namespaces =
+        node_graph->get_node_names_and_namespaces();
+    int model_node_count = 0;
+    for (const auto& [name, namespace_] : node_names_and_namespaces) {
+      if (name == model_node_name_) {
+        model_node_count++;
       }
     }
-    if (!model_discovered) {
+    if (model_node_count > 1) {
+      RCLCPP_ERROR(node_->get_logger(),
+                   "More than one node with name '%s' found",
+                   model_node_name_.c_str());
+      return false;
+    }
+    if (model_node_count == 0) {
+      RCLCPP_INFO(node_->get_logger(),
+                  "No node with name '%s' found. Retrying...",
+                  model_node_name_.c_str());
       std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+      continue;
+    }
+
+    // Now ensure that the get_state service exists and is of the correct type.
+    RCLCPP_INFO(node_->get_logger(),
+                "Found %d node(s) with name '%s'. Checking if it is a "
+                "lifecycle node...",
+                model_node_count, model_node_name_.c_str());
+    if (!model_get_state_client_->wait_for_service(std::chrono::seconds(5))) {
+      RCLCPP_INFO(node_->get_logger(),
+                  "Service '%s' not available yet. Retrying...",
+                  model_get_state_service_name_.c_str());
+      std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+      continue;
+    } else {
+      RCLCPP_INFO(node_->get_logger(),
+                  "Service '%s' is available. Participant model discovered.",
+                  model_get_state_service_name_.c_str());
+      model_discovered_ = true;
+      break;
     }
   }
 
-  if (!model_discovered) {
+  if (!model_discovered_) {
     RCLCPP_ERROR(node_->get_logger(),
                  "Lifecycle node '%s' not discovered after waiting (checked "
                  "for service '%s' with type 'lifecycle_msgs/srv/GetState')",
@@ -837,21 +838,40 @@ bool Engine::ready_simulator() {
   }
   geometry_msgs::msg::TransformStamped t =
       tf_buffer_->lookupTransform("world", gripper_frame, tf2::TimePointZero);
-  const auto& cable_config = active_trial_->config["scene"]["cable"];
-  if (this->spawn_entity(
-          "cable", "/urdf/cable.sdf.xacro",
-          t.transform.translation.x +
-              cable_config["pose"]["gripper_offset"]["x"].as<double>(),
-          t.transform.translation.y +
-              cable_config["pose"]["gripper_offset"]["y"].as<double>(),
-          t.transform.translation.z +
-              cable_config["pose"]["gripper_offset"]["z"].as<double>(),
-          cable_config["pose"]["roll"].as<double>(),
-          cable_config["pose"]["pitch"].as<double>(),
-          cable_config["pose"]["yaw"].as<double>())) {
-    RCLCPP_INFO(node_->get_logger(), "Cable spawned successfully.");
-  } else {
-    RCLCPP_ERROR(node_->get_logger(), "Failed to spawn cable.");
+  const auto& cables_config = active_trial_->config["scene"]["cables"];
+  bool cable_attached = false;
+  for (const auto& cable_it : cables_config) {
+    const std::string cable_id = cable_it.first.as<std::string>();
+    const YAML::Node cable_config = cable_it.second;
+    bool attach_to_gripper = cable_config["attach_cable_to_gripper"].as<bool>();
+    if (cable_attached && attach_to_gripper) {
+      RCLCPP_ERROR(node_->get_logger(),
+                   "Attempting to attach multiple cables to the gripper. "
+                   "Please check the config.");
+      return false;
+    } else if (attach_to_gripper) {
+      cable_attached = true;
+    }
+    RCLCPP_INFO(node_->get_logger(), "Spawning cable '%s'...",
+                cable_id.c_str());
+    if (this->spawn_entity(
+            cable_id, "/urdf/cable.sdf.xacro",
+            t.transform.translation.x +
+                cable_config["pose"]["gripper_offset"]["x"].as<double>(),
+            t.transform.translation.y +
+                cable_config["pose"]["gripper_offset"]["y"].as<double>(),
+            t.transform.translation.z +
+                cable_config["pose"]["gripper_offset"]["z"].as<double>(),
+            cable_config["pose"]["roll"].as<double>(),
+            cable_config["pose"]["pitch"].as<double>(),
+            cable_config["pose"]["yaw"].as<double>())) {
+      RCLCPP_INFO(node_->get_logger(), "Cable %s spawned successfully.",
+                  cable_id.c_str());
+    } else {
+      RCLCPP_ERROR(node_->get_logger(), "Failed to spawn cable %s.",
+                   cable_id.c_str());
+      return false;
+    }
   }
 
   // TODO(Yadunund): Implement other simulator readiness checks.
@@ -893,6 +913,74 @@ bool Engine::task_completed_successfully() {
 }
 
 //==============================================================================
+bool Engine::transition_model_lifecycle_node(const uint8_t transition) {
+  std::string transition_name;
+  switch (transition) {
+    case lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE:
+      transition_name = "configure";
+      break;
+    case lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE:
+      transition_name = "activate";
+      break;
+    case lifecycle_msgs::msg::Transition::TRANSITION_DEACTIVATE:
+      transition_name = "deactivate";
+      break;
+    case lifecycle_msgs::msg::Transition::TRANSITION_CLEANUP:
+      transition_name = "cleanup";
+      break;
+    case lifecycle_msgs::msg::Transition::TRANSITION_ACTIVE_SHUTDOWN:
+      [[fallthrough]];
+    case lifecycle_msgs::msg::Transition::TRANSITION_INACTIVE_SHUTDOWN:
+      [[fallthrough]];
+    case lifecycle_msgs::msg::Transition::TRANSITION_UNCONFIGURED_SHUTDOWN:
+      transition_name = "shutdown";
+      break;
+    default:
+      RCLCPP_ERROR(
+          node_->get_logger(),
+          "Failed to transition model node, transition %u not recognized",
+          (int)transition);
+      return false;
+  }
+  const std::string timeout_param_name =
+      "model_" + transition_name + "_timeout_seconds";
+  const int timeout = this->node_->get_parameter(timeout_param_name).as_int();
+
+  RCLCPP_INFO(node_->get_logger(),
+              "Transitioning model node '%s' to transition '%s'...",
+              model_node_name_.c_str(), transition_name.c_str());
+
+  auto change_state_request =
+      std::make_shared<lifecycle_msgs::srv::ChangeState::Request>();
+  change_state_request->transition.id = transition;
+
+  auto future =
+      model_change_state_client_->async_send_request(change_state_request);
+  if (future.wait_for(std::chrono::seconds(timeout)) !=
+      std::future_status::ready) {
+    RCLCPP_ERROR(
+        node_->get_logger(),
+        "ChangeState service call timed out for transition '%s' for node '%s'",
+        transition_name.c_str(), model_node_name_.c_str());
+    return false;
+  }
+
+  auto response = future.get();
+  if (!response->success) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "Failed to transition model node '%s' to state '%s'",
+                 model_node_name_.c_str(), transition_name.c_str());
+    return false;
+  }
+
+  RCLCPP_INFO(node_->get_logger(),
+              "Successfully transition model node '%s' to state '%s'",
+              model_node_name_.c_str(), transition_name.c_str());
+
+  return true;
+}
+
+//==============================================================================
 bool Engine::activate_model_node() {
   if (skip_model_ready_) {
     RCLCPP_INFO(node_->get_logger(),
@@ -900,40 +988,9 @@ bool Engine::activate_model_node() {
     return true;
   }
 
-  RCLCPP_INFO(node_->get_logger(),
-              "Activating model node '%s' to transition to 'active' state...",
-              model_node_name_.c_str());
-
-  auto change_state_request =
-      std::make_shared<lifecycle_msgs::srv::ChangeState::Request>();
-  change_state_request->transition.id =
-      lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE;
-
-  const int model_activate_timeout_seconds =
-      this->node_->get_parameter("model_activate_timeout_seconds").as_int();
-
-  auto future =
-      model_change_state_client_->async_send_request(change_state_request);
-  if (future.wait_for(std::chrono::seconds(model_activate_timeout_seconds)) !=
-      std::future_status::ready) {
-    RCLCPP_ERROR(node_->get_logger(),
-                 "ChangeState service call timed out for activating node '%s'",
-                 model_node_name_.c_str());
-    return false;
-  }
-
-  auto response = future.get();
-  if (!response->success) {
-    RCLCPP_ERROR(node_->get_logger(), "Failed to activate model node '%s'",
-                 model_node_name_.c_str());
-    return false;
-  }
-
-  RCLCPP_INFO(node_->get_logger(), "Successfully activated model node '%s'",
-              model_node_name_.c_str());
-
   // TODO(Yadunund): Verify active requirements.
-  return true;
+  return this->transition_model_lifecycle_node(
+      lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE);
 }
 
 //==============================================================================
@@ -943,41 +1000,32 @@ bool Engine::deactivate_model_node() {
                 "Skipping model deactivation as per parameter.");
     return true;
   }
+  return this->transition_model_lifecycle_node(
+      lifecycle_msgs::msg::Transition::TRANSITION_DEACTIVATE);
+}
 
-  RCLCPP_INFO(
-      node_->get_logger(),
-      "Deactivating model node '%s' to transition to 'configured' state...",
-      model_node_name_.c_str());
-
-  auto change_state_request =
-      std::make_shared<lifecycle_msgs::srv::ChangeState::Request>();
-  change_state_request->transition.id =
-      lifecycle_msgs::msg::Transition::TRANSITION_DEACTIVATE;
-
-  const int model_deactivate_timeout_seconds =
-      this->node_->get_parameter("model_deactivate_timeout_seconds").as_int();
-
-  auto future =
-      model_change_state_client_->async_send_request(change_state_request);
-  if (future.wait_for(std::chrono::seconds(model_deactivate_timeout_seconds)) !=
-      std::future_status::ready) {
-    RCLCPP_ERROR(
-        node_->get_logger(),
-        "ChangeState service call timed out for deactivating node '%s'",
-        model_node_name_.c_str());
-    return false;
+//==============================================================================
+bool Engine::cleanup_model_node() {
+  if (skip_model_ready_) {
+    RCLCPP_INFO(node_->get_logger(),
+                "Skipping model cleanup as per parameter.");
+    return true;
   }
 
-  auto response = future.get();
-  if (!response->success) {
-    RCLCPP_ERROR(node_->get_logger(), "Failed to deactivate model node '%s'",
-                 model_node_name_.c_str());
-    return false;
+  return this->transition_model_lifecycle_node(
+      lifecycle_msgs::msg::Transition::TRANSITION_CLEANUP);
+}
+
+//==============================================================================
+bool Engine::shutdown_model_node() {
+  if (skip_model_ready_) {
+    RCLCPP_INFO(node_->get_logger(),
+                "Skipping model shutdown as per parameter.");
+    return true;
   }
 
-  RCLCPP_INFO(node_->get_logger(), "Successfully deactivated model node '%s'",
-              model_node_name_.c_str());
-  return true;
+  return this->transition_model_lifecycle_node(
+      lifecycle_msgs::msg::Transition::TRANSITION_UNCONFIGURED_SHUTDOWN);
 }
 
 //==============================================================================
@@ -985,7 +1033,9 @@ void Engine::reset_after_trial() {
   RCLCPP_INFO(node_->get_logger(), "Resetting after trial completion...");
 
   // Deactivate the model node to transition back to configured state
-  deactivate_model_node();
+  if (this->model_discovered_) {
+    this->deactivate_model_node();
+  }
 
   // Remove spawned entities from simulator
   if (active_trial_.has_value()) {
@@ -1016,6 +1066,7 @@ void Engine::reset_after_trial() {
   }
   is_first_trial_ = false;
   active_trial_ = std::nullopt;
+  model_discovered_ = false;
   RCLCPP_INFO(node_->get_logger(), "Reset after trial completed.");
 }
 
@@ -1047,7 +1098,8 @@ bool Engine::spawn_entity(std::string entity_name, std::string filepath,
   const auto& config = active_trial_->config["scene"][entity_name];
 
   // Append entity-specific parameters
-  if (entity_name == "cable") {
+  if (entity_name.find("cable") != std::string::npos) {
+    const auto& config = active_trial_->config["scene"]["cables"][entity_name];
     // Add attach cable parameter
     bool attach_cable_to_gripper = config["attach_cable_to_gripper"].as<bool>();
     cmd << " attach_cable_to_gripper:="
@@ -1057,6 +1109,7 @@ bool Engine::spawn_entity(std::string entity_name, std::string filepath,
     std::string cable_type = config["cable_type"].as<std::string>();
     cmd << " cable_type:=" << cable_type;
   } else if (entity_name == "task_board") {
+    const auto& config = active_trial_->config["scene"][entity_name];
     // Read task board limits from config
     const auto& config_root = active_trial_->config;
     double nic_rail_min = -0.048;  // Default values

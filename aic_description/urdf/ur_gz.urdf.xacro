@@ -237,12 +237,12 @@
     <xacro:ur_joint_control_description
       tf_prefix="$(arg tf_prefix)"
       initial_positions="${dict(
-        shoulder_pan_joint=0.6,
-        shoulder_lift_joint=-1.3,
-        elbow_joint=-1.9,
-        wrist_1_joint=-1.5708,
-        wrist_2_joint=1.5708,
-        wrist_3_joint=0.6)}"
+        shoulder_pan_joint=-0.546,
+        shoulder_lift_joint=-1.703,
+        elbow_joint=-1.291,
+        wrist_1_joint=-1.719,
+        wrist_2_joint=1.571,
+        wrist_3_joint=-2.116)}"
     />
 
   </ros2_control>
