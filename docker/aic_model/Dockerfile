@@ -16,6 +16,5 @@ RUN cd /ws_aic/src/aic && pixi install --frozen && rm -rf /ws_aic/src/aic/.pixi/
 WORKDIR /ws_aic/src/aic
 ENTRYPOINT [ \
     "pixi", "run", "--as-is", \
-    "ros2", "run", "aic_model", "aic_model", \
-    "--ros-args", "-p", "policy:=aic_example_policies.ros.WaveArm" \
+    "ros2", "run", "aic_model", "aic_model" \
 ]
