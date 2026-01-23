@@ -468,65 +468,69 @@ TrialState Engine::handle_trial(const Trial& trial) {
   RCLCPP_INFO(node_->get_logger(), "Starting trial '%s'...", trial.id.c_str());
 
   active_trial_ = trial;
-  active_trial_->state = TrialState::Uninitialized;
-  RCLCPP_INFO(this->node_->get_logger(), "TrialState: Uninitialized");
 
   if (active_trial_->state == TrialState::Uninitialized) {
-    if (!this->check_model()) {
-      RCLCPP_ERROR(node_->get_logger(), "Participant model is not ready.");
-      reset_after_trial();
-      return active_trial_->state;
+    if (this->check_model()) {
+      active_trial_->state = TrialState::ModelReady;
     }
-    active_trial_->state = TrialState::ModelReady;
-    RCLCPP_INFO(this->node_->get_logger(), "TrialState: ModelReady");
+  } else {
+    RCLCPP_ERROR(
+        node_->get_logger(),
+        "Attempted to start trial while not Uninitialized. Report this bug.");
+    reset_after_trial();
+    return active_trial_->state;
   }
 
   if (active_trial_->state == TrialState::ModelReady) {
-    if (!this->check_endpoints()) {
-      RCLCPP_ERROR(node_->get_logger(),
-                   "Required endpoints are not available.");
-      reset_after_trial();
-      return active_trial_->state;
+    if (this->check_endpoints()) {
+      active_trial_->state = TrialState::EndpointsReady;
     }
-    active_trial_->state = TrialState::EndpointsReady;
-    RCLCPP_INFO(this->node_->get_logger(), "TrialState: EndpointsReady");
+  } else {
+    RCLCPP_ERROR(node_->get_logger(), "Participant model is not ready.");
+    reset_after_trial();
+    return active_trial_->state;
   }
 
   if (active_trial_->state == TrialState::EndpointsReady) {
-    if (!this->ready_simulator()) {
-      RCLCPP_ERROR(node_->get_logger(), "Simulator is not ready.");
-      reset_after_trial();
-      return active_trial_->state;
+    if (this->ready_simulator()) {
+      active_trial_->state = TrialState::SimulatorReady;
     }
-    active_trial_->state = TrialState::SimulatorReady;
-    RCLCPP_INFO(this->node_->get_logger(), "TrialState: SimulatorReady");
+  } else {
+    RCLCPP_ERROR(node_->get_logger(), "Required endpoints are not available.");
+    reset_after_trial();
+    return active_trial_->state;
   }
 
   if (active_trial_->state == TrialState::SimulatorReady) {
-    if (!this->ready_scoring()) {
-      RCLCPP_ERROR(node_->get_logger(), "Scoring system is not ready.");
-      reset_after_trial();
-      return active_trial_->state;
+    if (this->ready_scoring()) {
+      active_trial_->state = TrialState::ScoringReady;
     }
-    active_trial_->state = TrialState::ScoringReady;
-    RCLCPP_INFO(this->node_->get_logger(), "TrialState: ScoringReady");
+  } else {
+    RCLCPP_ERROR(node_->get_logger(), "Simulator is not ready.");
+    reset_after_trial();
+    return active_trial_->state;
   }
 
   if (active_trial_->state == TrialState::ScoringReady) {
     this->tasks_started();
+  } else {
+    RCLCPP_ERROR(node_->get_logger(), "Scoring system is not ready.");
+    reset_after_trial();
+    return active_trial_->state;
   }
 
   if (active_trial_->state == TrialState::TasksExecuting) {
-    if (!this->tasks_completed_successfully()) {
-      RCLCPP_ERROR(node_->get_logger(),
-                   "Tasks were not completed successfully.");
-      reset_after_trial();
-      return active_trial_->state;
+    if (this->tasks_completed_successfully()) {
+      active_trial_->state = TrialState::AllTasksCompleted;
     }
-    active_trial_->state = TrialState::AllTasksCompleted;
-    RCLCPP_INFO(this->node_->get_logger(), "TrialState: AllTasksCompleted");
   } else {
     RCLCPP_ERROR(node_->get_logger(), "Tasks cannot be started successfully.");
+    reset_after_trial();
+    return active_trial_->state;
+  }
+
+  if (active_trial_->state != TrialState::AllTasksCompleted) {
+    RCLCPP_ERROR(node_->get_logger(), "Tasks were not completed successfully.");
     reset_after_trial();
     return active_trial_->state;
   }
