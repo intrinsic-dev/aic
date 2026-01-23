@@ -158,10 +158,11 @@ class Engine {
   /// \brief Handle the logic for a given trial.
   /// \param[in] trial The trial to handle.
   /// \return The resulting state of the trial after handling.
-  TrialState handle_trial(const Trial& trial);
+  TrialState handle_trial(Trial& trial);
 
   /// \brief Reset internal and simulator states after a trial is completed.
-  void reset_after_trial();
+  /// \param[in] trial The trial currently being ran
+  void reset_after_trial(const Trial& trial);
 
   /// \brief Check if the participant model is ready. As per challenge
   /// requirements. See challenge_rules.md for details. \return True if the
@@ -173,22 +174,26 @@ class Engine {
   bool check_endpoints();
 
   /// \brief Check if the simulator is ready.
+  /// \param[in] trial The trial currently being ran
   /// \return True if the simulator is ready, false otherwise.
-  bool ready_simulator();
+  bool ready_simulator(Trial& trial);
 
   /// \brief Check if the scoring system is ready.
   /// \return True if the scoring system is ready, false otherwise.
   bool ready_scoring();
 
   /// \brief Check if tasks were started successfully.
+  /// \param[in] trial The trial currently being ran
   /// \return True if tasks were started successfully, false otherwise.
-  bool tasks_started();
+  bool tasks_started(Trial& trial);
 
   /// \brief Check if all tasks have been completed successfully.
+  /// \param[in] trial The trial currently being ran
   /// \return True if tasks were completed successfully, false otherwise.
-  bool tasks_completed_successfully();
+  bool tasks_completed_successfully(const Trial& trial);
 
   /// \brief Spawn an entity in Gazebo.
+  /// \param[in] trial The trial currently being ran
   /// \param[in] entity_name Name of the entity to spawn
   /// \param[in] filepath Path to the xacro file of the entity
   /// \param[in] x X position
@@ -198,8 +203,9 @@ class Engine {
   /// \param[in] pitch Pitch orientation (radians)
   /// \param[in] yaw Yaw orientation (radians)
   /// \return True if spawning succeeded, false otherwise
-  bool spawn_entity(std::string entity_name, std::string filepath, double x,
-                    double y, double z, double roll, double pitch, double yaw);
+  bool spawn_entity(Trial& trial, std::string entity_name, std::string filepath,
+                    double x, double y, double z, double roll, double pitch,
+                    double yaw);
 
   /// @brief Check if the robot was commanded to move by the model node.
   /// @return True if the robot was commanded to move, false otherwise.
@@ -290,9 +296,6 @@ class Engine {
 
   // Variable to track first trial as want to configure model only once.
   bool is_first_trial_;
-
-  // The active trial.
-  std::optional<Trial> active_trial_;
 
   // Thread to spin ROS 2 node.
   std::thread spin_thread_;
