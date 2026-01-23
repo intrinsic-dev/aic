@@ -27,10 +27,12 @@ The following topics provide sensory data and state information to the model.
 
 | Topic | Message Type | Description |
 | :--- | :--- | :--- |
-| `/wrist_camera_1/image_rect` | `sensor_msgs/msg/Image` | Rectified image data from wrist camera 1. |
-| `/wrist_camera_1/camera_info` | `sensor_msgs/msg/CameraInfo` | Calibration data for wrist camera 1. |
-| `/wrist_camera_2/image_rect` | `sensor_msgs/msg/Image` | Rectified image data from wrist camera 2. |
-| `/wrist_camera_2/camera_info` | `sensor_msgs/msg/CameraInfo` | Calibration data for wrist camera 2. |
+| `/left_camera/image` | `sensor_msgs/msg/Image` | Rectified image data from the left wrist camera. |
+| `/left_camera/camera_info` | `sensor_msgs/msg/CameraInfo` | Calibration data for the left wrist camera. |
+| `/center_camera/image` | `sensor_msgs/msg/Image` | Rectified image data from the center wrist camera. |
+| `/center_camera/camera_info` | `sensor_msgs/msg/CameraInfo` | Calibration data for the center wrist camera. |
+| `/right_camera/image` | `sensor_msgs/msg/Image` | Rectified image data from the right wrist camera. |
+| `/right_camera/camera_info` | `sensor_msgs/msg/CameraInfo` | Calibration data for the right wrist camera. |
 | `/axia80_m20/wrench` | `geometry_msgs/msg/WrenchStamped` | Force/Torque sensor data. |
 | `/joint_states` | `sensor_msgs/msg/JointState` | Current state of the robot joints. |
 | `/gripper_state` | `sensor_msgs/msg/JointState` | Current state of the end-effector/gripper. |
