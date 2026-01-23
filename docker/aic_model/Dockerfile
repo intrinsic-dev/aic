@@ -13,4 +13,4 @@ SHELL ["/bin/bash", "-c"]
 RUN cd /ws_aic/src/aic && pixi install --frozen
 
 WORKDIR /ws_aic/src/aic
-ENTRYPOINT ["pixi", "run", "--as-is", "ros2", "run", "aic_model", "model_node"]
+ENTRYPOINT ["pixi", "run", "--as-is", "ros2", "run", "aic_model", "aic_model"]
