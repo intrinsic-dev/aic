@@ -18,6 +18,7 @@
 #include "aic_engine.hpp"
 
 #include <cmath>
+#include <cstdlib>
 #include <filesystem>
 #include <sstream>
 #include <unordered_set>
@@ -277,6 +278,12 @@ Engine::Engine(const rclcpp::NodeOptions& options)
   node_->declare_parameter("model_cleanup_timeout_seconds", 60);
   node_->declare_parameter("model_shutdown_timeout_seconds", 60);
 
+  // TODO(luca) consider having a team_name parameter instead and autocompute
+  // submission folder
+  const std::string home = std::getenv("HOME");
+  scoring_output_dir_ = node_->declare_parameter(
+      "scoring_output_dir", std::string(home + "/submissions/sample_team"));
+
   spin_thread_ = std::thread([node = node_]() {
     rclcpp::executors::SingleThreadedExecutor executor;
     executor.add_node(node);
@@ -419,16 +426,15 @@ EngineState Engine::initialize() {
   is_recording_ = false;
 
   // Create output directory for bag files.
-  bag_output_dir_ = "/tmp/" + model_node_name_;
   std::error_code ec;
-  if (!std::filesystem::create_directories(bag_output_dir_, ec)) {
+  if (!std::filesystem::create_directories(scoring_output_dir_, ec)) {
     RCLCPP_ERROR(node_->get_logger(),
                  "Failed to create bag output directory '%s': %s",
-                 bag_output_dir_.c_str(), ec.message().c_str());
+                 scoring_output_dir_.c_str(), ec.message().c_str());
     return EngineState::Error;
   }
   RCLCPP_INFO(node_->get_logger(), "Bag output directory: %s",
-              bag_output_dir_.c_str());
+              scoring_output_dir_.c_str());
 
   engine_state_ = EngineState::Initialized;
   RCLCPP_INFO(node_->get_logger(), "AIC Engine initialized successfully.");
@@ -900,7 +906,8 @@ bool Engine::ready_scoring() {
   RCLCPP_INFO(node_->get_logger(), "Checking scoring system readiness...");
 
   if (!is_recording_ && active_trial_.has_value()) {
-    const std::string bag_path = bag_output_dir_ + "/bag_" + active_trial_->id;
+    const std::string bag_path =
+        scoring_output_dir_ + "/bag_" + active_trial_->id;
     if (scoring_tier2_->StartRecording(bag_path)) {
       is_recording_ = true;
       RCLCPP_INFO(node_->get_logger(), "Started recording to '%s'.",

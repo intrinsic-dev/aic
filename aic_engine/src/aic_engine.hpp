@@ -281,8 +281,8 @@ class Engine {
   // Whether recording is currently active.
   bool is_recording_;
 
-  // Output directory for bag files.
-  std::string bag_output_dir_;
+  // Output directory for scoring.
+  std::string scoring_output_dir_;
 };
 
 }  // namespace aic
