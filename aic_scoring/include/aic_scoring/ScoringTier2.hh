@@ -24,6 +24,7 @@
 #include <string>
 #include <vector>
 
+#include <geometry_msgs/msg/point_stamped.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <geometry_msgs/msg/vector3.hpp>
 #include <gz/math/Pose3.hh>
@@ -107,6 +108,25 @@ namespace aic_scoring
     /// \brief Reset the jerk computation state.
     public: void ResetJerk();
 
+    /// \brief Update plug-port connection distance computation.
+    /// \param[in] _plug The plug point (timestamped).
+    /// \param[in] _port The port point (timestamped).
+    /// \return True if successful, false if timestamp was not increasing.
+    public: bool UpdatePlugPortDistance(
+        const geometry_msgs::msg::PointStamped &_plug,
+        const geometry_msgs::msg::PointStamped &_port);
+
+    /// \brief Get the current plug-port connection distance.
+    /// \return The Euclidean distance in meters.
+    public: double GetPlugPortDistance() const;
+
+    /// \brief Get the time-weighted average plug-port connection distance.
+    /// \return The average distance in meters.
+    public: double GetAvgPlugPortDistance() const;
+
+    /// \brief Reset the plug-port distance computation state.
+    public: void ResetPlugPortDistance();
+
     /// \brief All pluggable plugs.
     public: std::map<std::string, Pluggable> plugs;
 
@@ -163,6 +183,21 @@ namespace aic_scoring
 
     /// \brief Accumulated weighted angular jerk (jerk * dt sum).
     private: geometry_msgs::msg::Vector3 accumAngularJerk;
+
+    /// \brief Current plug-port connection distance (meters).
+    private: double plugPortDistance = 0.0;
+
+    /// \brief Time-weighted average plug-port distance (meters).
+    private: double avgPlugPortDistance = 0.0;
+
+    /// \brief Accumulated weighted plug-port distance (distance * dt sum).
+    private: double accumPlugPortDistance = 0.0;
+
+    /// \brief Total elapsed time for plug-port distance computation (seconds).
+    private: double totalPlugPortTime = 0.0;
+
+    /// \brief Last timestamp for plug-port distance computation.
+    private: double lastPlugPortStamp = -1.0;
   };
 
   // The Tier2 class as a node.
