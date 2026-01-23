@@ -290,11 +290,13 @@ class Engine {
   bool model_discovered_;
 
   // Robot home joint positions
-  std::vector<double> home_joint_positions_ = {-0.546, -1.703, -1.291,
-                                               -1.719, 1.571,  -2.116};
+  std::vector<std::pair<std::string, double>> home_joint_positions_;
 
   // Time for robot to reach home position
   int home_time_from_start_ = 20;
+
+  // Threshold for joint position difference to consider robot at home
+  double joint_difference_threshold_ = 0.05;
 };
 
 }  // namespace aic

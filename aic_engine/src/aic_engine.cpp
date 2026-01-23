@@ -386,9 +386,25 @@ EngineState Engine::initialize() {
     engine_state_ = EngineState::Error;
     return engine_state_;
   }
-  home_joint_positions_ =
-      config_["robot"]["home_joint_positions"].as<std::vector<double>>();
+  if (!config_["robot"]["joint_difference_threshold"]) {
+    RCLCPP_ERROR(
+        node_->get_logger(),
+        "Config missing required key: 'robot.joint_difference_threshold'");
+    engine_state_ = EngineState::Error;
+    return engine_state_;
+  }
+
+  const auto home_joint_config = config_["robot"]["home_joint_positions"];
+  for (auto it = home_joint_config.begin(); it != home_joint_config.end();
+       ++it) {
+    const std::string joint_name = it->first.as<std::string>();
+    auto joint_position = it->second.as<double>();
+    home_joint_positions_.emplace_back(joint_name, joint_position);
+  }
+
   home_time_from_start_ = config_["robot"]["time_from_start"].as<int>();
+  joint_difference_threshold_ =
+      config_["robot"]["joint_difference_threshold"].as<double>();
 
   // Create ROS endpoints.
   const rclcpp::QoS reliable_qos = rclcpp::QoS(rclcpp::KeepLast(10)).reliable();
@@ -1138,9 +1154,24 @@ bool Engine::home_robot() {
                 "Successfully changed target mode to JOINT mode");
   }
 
+  while (!last_joint_state_msg_) {
+    RCLCPP_INFO(node_->get_logger(),
+                "Waiting for first joint state message...");
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+  }
+
   auto joint_msg = JointMotionUpdateMsg();
   auto home_point = JointTrajectoryPoint();
-  home_point.positions = home_joint_positions_;
+  home_point.positions = {};
+  for (const auto& [joint_name, joint_position] : home_joint_positions_) {
+    home_point.positions.emplace_back(joint_position);
+  }
+  if (home_point.positions.size() != 6) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "Home joint positions should account for exactly 6 joints.");
+    return false;
+  }
+
   home_point.time_from_start.sec = home_time_from_start_;
 
   joint_msg.target_state = home_point;
@@ -1151,31 +1182,35 @@ bool Engine::home_robot() {
   joint_motion_update_pub_->publish(joint_msg);
   RCLCPP_INFO(node_->get_logger(), "Waiting for robot to home...");
 
-  auto num_joints_ = home_joint_positions_.size();
+  auto num_joints_ = last_joint_state_msg_->name.size();
   rclcpp::Time start_time = this->node_->now();
   const rclcpp::Duration timeout =
       rclcpp::Duration::from_seconds(home_time_from_start_);
+
+  bool homed = true;
   while (!(this->node_->now() - start_time > timeout)) {
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
-    if (!last_joint_state_msg_) {
-      continue;
-    }
-    bool homed = true;
+    homed = true;
     for (std::size_t i = 0; i < num_joints_; ++i) {
-      if (std::abs(last_joint_state_msg_->position[i] -
-                   home_joint_positions_[i]) > 0.02) {
-        homed = false;
+      const auto joint_name = last_joint_state_msg_->name[i];
+      for (const auto& [home_joint, home_joint_pos] : home_joint_positions_) {
+        if (home_joint != joint_name) {
+          continue;
+        }
+        const auto current_joint_pos = last_joint_state_msg_->position[i];
+        if (std::abs(current_joint_pos - home_joint_pos) >
+            joint_difference_threshold_) {
+          RCLCPP_INFO(node_->get_logger(), "diff is: %f (curr [%f], targ [%f])",
+          std::abs(current_joint_pos - home_joint_pos), current_joint_pos, home_joint_pos);
+          homed = false;
+          break;
+        }
       }
     }
     if (homed) {
-      RCLCPP_INFO(node_->get_logger(), "Robot homed successfully.");
       break;
     }
-  }
-  if (this->node_->now() - start_time > (timeout * 2)) {
-    RCLCPP_ERROR(node_->get_logger(), "Robot failed to home within timeout.");
-    return false;
   }
 
   // Change target mode back to Cartesian
@@ -1202,6 +1237,12 @@ bool Engine::home_robot() {
                 "Successfully changed target mode to CARTESIAN mode");
   }
 
+  if (!homed) {
+    RCLCPP_ERROR(node_->get_logger(), "Robot failed to home within timeout.");
+    return false;
+  }
+
+  RCLCPP_INFO(node_->get_logger(), "Robot homed successfully.");
   return true;
 }
 
