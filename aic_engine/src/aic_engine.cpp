@@ -263,7 +263,6 @@ Engine::Engine(const rclcpp::NodeOptions& options)
       insert_cable_action_client_(nullptr),
       spawn_entity_client_(nullptr),
       is_first_trial_(true),
-      active_trial_(std::nullopt),
       engine_state_(EngineState::Uninitialized),
       model_discovered_(false) {
   RCLCPP_INFO(node_->get_logger(), "Creating AIC Engine...");
@@ -436,9 +435,9 @@ EngineState Engine::run() {
 
   engine_state_ = EngineState::Running;
 
-  for (const auto& trial_entry : trials_) {
+  for (auto& trial_entry : trials_) {
     const std::string& trial_id = trial_entry.first;
-    const Trial& trial = trial_entry.second;
+    Trial& trial = trial_entry.second;
     RCLCPP_INFO(node_->get_logger(), "======================================");
     RCLCPP_INFO(node_->get_logger(), "Handling trial '%s'...",
                 trial_id.c_str());
@@ -464,79 +463,77 @@ EngineState Engine::run() {
 }
 
 //==============================================================================
-TrialState Engine::handle_trial(const Trial& trial) {
+TrialState Engine::handle_trial(Trial& trial) {
   RCLCPP_INFO(node_->get_logger(), "Starting trial '%s'...", trial.id.c_str());
 
-  active_trial_ = trial;
-
-  if (active_trial_->state == TrialState::Uninitialized) {
+  if (trial.state == TrialState::Uninitialized) {
     if (this->check_model()) {
-      active_trial_->state = TrialState::ModelReady;
+      trial.state = TrialState::ModelReady;
     }
   } else {
     RCLCPP_ERROR(
         node_->get_logger(),
         "Attempted to start trial while not Uninitialized. Report this bug.");
-    reset_after_trial();
-    return active_trial_->state;
+    reset_after_trial(trial);
+    return trial.state;
   }
 
-  if (active_trial_->state == TrialState::ModelReady) {
+  if (trial.state == TrialState::ModelReady) {
     if (this->check_endpoints()) {
-      active_trial_->state = TrialState::EndpointsReady;
+      trial.state = TrialState::EndpointsReady;
     }
   } else {
     RCLCPP_ERROR(node_->get_logger(), "Participant model is not ready.");
-    reset_after_trial();
-    return active_trial_->state;
+    reset_after_trial(trial);
+    return trial.state;
   }
 
-  if (active_trial_->state == TrialState::EndpointsReady) {
-    if (this->ready_simulator()) {
-      active_trial_->state = TrialState::SimulatorReady;
+  if (trial.state == TrialState::EndpointsReady) {
+    if (this->ready_simulator(trial)) {
+      trial.state = TrialState::SimulatorReady;
     }
   } else {
     RCLCPP_ERROR(node_->get_logger(), "Required endpoints are not available.");
-    reset_after_trial();
-    return active_trial_->state;
+    reset_after_trial(trial);
+    return trial.state;
   }
 
-  if (active_trial_->state == TrialState::SimulatorReady) {
+  if (trial.state == TrialState::SimulatorReady) {
     if (this->ready_scoring()) {
-      active_trial_->state = TrialState::ScoringReady;
+      trial.state = TrialState::ScoringReady;
     }
   } else {
     RCLCPP_ERROR(node_->get_logger(), "Simulator is not ready.");
-    reset_after_trial();
-    return active_trial_->state;
+    reset_after_trial(trial);
+    return trial.state;
   }
 
-  if (active_trial_->state == TrialState::ScoringReady) {
-    this->tasks_started();
+  if (trial.state == TrialState::ScoringReady) {
+    this->tasks_started(trial);
   } else {
     RCLCPP_ERROR(node_->get_logger(), "Scoring system is not ready.");
-    reset_after_trial();
-    return active_trial_->state;
+    reset_after_trial(trial);
+    return trial.state;
   }
 
-  if (active_trial_->state == TrialState::TasksExecuting) {
-    if (this->tasks_completed_successfully()) {
-      active_trial_->state = TrialState::AllTasksCompleted;
+  if (trial.state == TrialState::TasksExecuting) {
+    if (this->tasks_completed_successfully(trial)) {
+      trial.state = TrialState::AllTasksCompleted;
     }
   } else {
     RCLCPP_ERROR(node_->get_logger(), "Tasks cannot be started successfully.");
-    reset_after_trial();
-    return active_trial_->state;
+    reset_after_trial(trial);
+    return trial.state;
   }
 
-  if (active_trial_->state != TrialState::AllTasksCompleted) {
+  if (trial.state != TrialState::AllTasksCompleted) {
     RCLCPP_ERROR(node_->get_logger(), "Tasks were not completed successfully.");
-    reset_after_trial();
-    return active_trial_->state;
+    reset_after_trial(trial);
+    return trial.state;
   }
 
-  reset_after_trial();
-  return active_trial_->state;
+  reset_after_trial(trial);
+  return trial.state;
 }
 
 /// Given a set [s1, s2, s3] returns a string "s1, s2, s3"
@@ -832,20 +829,14 @@ bool Engine::check_endpoints() {
 }
 
 //==============================================================================
-bool Engine::ready_simulator() {
-  if (!this->active_trial_.has_value()) {
-    RCLCPP_ERROR(node_->get_logger(),
-                 "No active trial set in engine. Report this bug.");
-    return false;
-  }
-
+bool Engine::ready_simulator(Trial& trial) {
   RCLCPP_INFO(node_->get_logger(), "Readying simulator for trial '%s'...",
-              this->active_trial_->id.c_str());
+              trial.id.c_str());
 
   // Spawn the task board.
   RCLCPP_INFO(node_->get_logger(), "Spawning task board.");
-  const auto& task_board_config = active_trial_->config["scene"]["task_board"];
-  if (this->spawn_entity("task_board", "/urdf/task_board.urdf.xacro",
+  const auto& task_board_config = trial.config["scene"]["task_board"];
+  if (this->spawn_entity(trial, "task_board", "/urdf/task_board.urdf.xacro",
                          task_board_config["pose"]["x"].as<double>(),
                          task_board_config["pose"]["y"].as<double>(),
                          task_board_config["pose"]["z"].as<double>(),
@@ -870,7 +861,7 @@ bool Engine::ready_simulator() {
   }
   geometry_msgs::msg::TransformStamped t =
       tf_buffer_->lookupTransform("world", gripper_frame, tf2::TimePointZero);
-  const auto& cables_config = active_trial_->config["scene"]["cables"];
+  const auto& cables_config = trial.config["scene"]["cables"];
   bool cable_attached = false;
   for (const auto& cable_it : cables_config) {
     const std::string cable_id = cable_it.first.as<std::string>();
@@ -887,7 +878,7 @@ bool Engine::ready_simulator() {
     RCLCPP_INFO(node_->get_logger(), "Spawning cable '%s'...",
                 cable_id.c_str());
     if (this->spawn_entity(
-            cable_id, "/urdf/cable.sdf.xacro",
+            trial, cable_id, "/urdf/cable.sdf.xacro",
             t.transform.translation.x +
                 cable_config["pose"]["gripper_offset"]["x"].as<double>(),
             t.transform.translation.y +
@@ -922,31 +913,26 @@ bool Engine::ready_scoring() {
 }
 
 //==============================================================================
-bool Engine::tasks_started() {
+bool Engine::tasks_started(Trial& trial) {
   RCLCPP_INFO(node_->get_logger(), "Starting tasks for active trial...");
 
-  if (!this->active_trial_.has_value()) {
-    RCLCPP_ERROR(node_->get_logger(),
-                 "No active trial set in engine. Report this bug.");
-    return false;
-  }
-  if (this->active_trial_->tasks.empty()) {
+  if (trial.tasks.empty()) {
     RCLCPP_ERROR(node_->get_logger(),
                  "No task provided for this trial. Please check the config");
     return false;
   }
-  if (!this->active_trial_->attempts.empty()) {
+  if (!trial.attempts.empty()) {
     RCLCPP_ERROR(
         node_->get_logger(),
         "List of attempts non-empty before starting tasks. Report this bug.");
     return false;
   }
 
-  for (const auto& task : this->active_trial_->tasks) {
+  for (auto& task : trial.tasks) {
     // Initialize TaskState
     TaskAttempt task_attempt(task.id);
-    this->active_trial_->attempts.emplace_back(std::move(task_attempt));
-    auto& current_attempt = this->active_trial_->attempts.back();
+    trial.attempts.emplace_back(std::move(task_attempt));
+    auto& current_attempt = trial.attempts.back();
 
     auto insert_cable_goal = InsertCableAction::Goal();
     insert_cable_goal.task = task;
@@ -969,7 +955,7 @@ bool Engine::tasks_started() {
     current_attempt.time_started = this->node_->now();
     current_attempt.state = TaskState::TaskStarted;
     // Update trial state
-    this->active_trial_->state = TrialState::TasksExecuting;
+    trial.state = TrialState::TasksExecuting;
     RCLCPP_INFO(this->node_->get_logger(), "TrialState: TasksExecuting");
 
     // Handle goal result
@@ -1004,29 +990,23 @@ bool Engine::tasks_started() {
   }
 
   RCLCPP_INFO(node_->get_logger(), "All tasks have been processed.");
-  this->active_trial_->tasks.clear();
+  trial.tasks.clear();
   return true;
 }
 
 //==============================================================================
-bool Engine::tasks_completed_successfully() {
+bool Engine::tasks_completed_successfully(const Trial& trial) {
   RCLCPP_INFO(node_->get_logger(),
               "Checking if all tasks were completed successfully...");
 
-  if (!this->active_trial_.has_value()) {
-    RCLCPP_ERROR(node_->get_logger(),
-                 "No active trial set in engine. Report this bug.");
-    return false;
-  }
-
   // Check that there are no tasks left in queue
-  if (!this->active_trial_->tasks.empty()) {
+  if (!trial.tasks.empty()) {
     RCLCPP_ERROR(node_->get_logger(),
                  "There are still pending tasks in the active trial.");
     return false;
   }
   // Check that all tasks were completed successfully
-  for (const auto& attempt : this->active_trial_->attempts) {
+  for (const auto& attempt : trial.attempts) {
     if (attempt.state != TaskState::TaskCompleted) {
       RCLCPP_ERROR(node_->get_logger(),
                    "Task [%s] was not completed successfully. Last logged "
@@ -1169,7 +1149,7 @@ bool Engine::shutdown_model_node() {
 }
 
 //==============================================================================
-void Engine::reset_after_trial() {
+void Engine::reset_after_trial(const Trial& trial) {
   RCLCPP_INFO(node_->get_logger(), "Resetting after trial completion...");
 
   // Deactivate the model node to transition back to configured state
@@ -1178,34 +1158,31 @@ void Engine::reset_after_trial() {
   }
 
   // Remove spawned entities from simulator
-  if (active_trial_.has_value()) {
-    for (const auto& entity_name : active_trial_->spawned_entities) {
-      // Delete spawned entity
-      auto request = std::make_shared<DeleteEntitySrv::Request>();
-      request->entity = entity_name;
+  for (const auto& entity_name : trial.spawned_entities) {
+    // Delete spawned entity
+    auto request = std::make_shared<DeleteEntitySrv::Request>();
+    request->entity = entity_name;
 
-      auto future = delete_entity_client_->async_send_request(request);
-      if (future.wait_for(std::chrono::seconds(10)) !=
-          std::future_status::ready) {
-        RCLCPP_ERROR(node_->get_logger(),
-                     "Delete entity service call timed out for entity '%s'",
-                     request->entity.c_str());
+    auto future = delete_entity_client_->async_send_request(request);
+    if (future.wait_for(std::chrono::seconds(10)) !=
+        std::future_status::ready) {
+      RCLCPP_ERROR(node_->get_logger(),
+                   "Delete entity service call timed out for entity '%s'",
+                   request->entity.c_str());
+    } else {
+      auto response = future.get();
+      if (response->result.result !=
+          simulation_interfaces::msg::Result::RESULT_OK) {  // RESULT_OK = 1
+        RCLCPP_ERROR(node_->get_logger(), "Failed to delete entity '%s': %s",
+                     request->entity.c_str(),
+                     response->result.error_message.c_str());
       } else {
-        auto response = future.get();
-        if (response->result.result !=
-            simulation_interfaces::msg::Result::RESULT_OK) {  // RESULT_OK = 1
-          RCLCPP_ERROR(node_->get_logger(), "Failed to delete entity '%s': %s",
-                       request->entity.c_str(),
-                       response->result.error_message.c_str());
-        } else {
-          RCLCPP_INFO(node_->get_logger(), "Successfully deleted entity '%s'",
-                      request->entity.c_str());
-        }
+        RCLCPP_INFO(node_->get_logger(), "Successfully deleted entity '%s'",
+                    request->entity.c_str());
       }
     }
   }
   is_first_trial_ = false;
-  active_trial_ = std::nullopt;
   model_discovered_ = false;
   RCLCPP_INFO(node_->get_logger(), "Reset after trial completed.");
 }
@@ -1218,14 +1195,9 @@ Engine::~Engine() {
 }
 
 //==============================================================================
-bool Engine::spawn_entity(std::string entity_name, std::string filepath,
-                          double x, double y, double z, double roll,
-                          double pitch, double yaw) {
-  if (!active_trial_.has_value()) {
-    RCLCPP_ERROR(node_->get_logger(), "No active trial to get config from");
-    return false;
-  }
-
+bool Engine::spawn_entity(Trial& trial, std::string entity_name,
+                          std::string filepath, double x, double y, double z,
+                          double roll, double pitch, double yaw) {
   // Get the xacro file path
   const std::string aic_description_share =
       ament_index_cpp::get_package_share_directory("aic_description");
@@ -1235,11 +1207,11 @@ bool Engine::spawn_entity(std::string entity_name, std::string filepath,
   std::stringstream cmd;
   cmd << "xacro " << xacro_file;
 
-  const auto& config = active_trial_->config["scene"][entity_name];
+  const auto& config = trial.config["scene"][entity_name];
 
   // Append entity-specific parameters
   if (entity_name.find("cable") != std::string::npos) {
-    const auto& config = active_trial_->config["scene"]["cables"][entity_name];
+    const auto& config = trial.config["scene"]["cables"][entity_name];
     // Add attach cable parameter
     bool attach_cable_to_gripper = config["attach_cable_to_gripper"].as<bool>();
     cmd << " attach_cable_to_gripper:="
@@ -1249,9 +1221,9 @@ bool Engine::spawn_entity(std::string entity_name, std::string filepath,
     std::string cable_type = config["cable_type"].as<std::string>();
     cmd << " cable_type:=" << cable_type;
   } else if (entity_name == "task_board") {
-    const auto& config = active_trial_->config["scene"][entity_name];
+    const auto& config = trial.config["scene"][entity_name];
     // Read task board limits from config
-    const auto& config_root = active_trial_->config;
+    const auto& config_root = trial.config;
     double nic_rail_min = -0.048;  // Default values
     double nic_rail_max = 0.036;
     double sc_rail_min = -0.055;
@@ -1444,9 +1416,7 @@ bool Engine::spawn_entity(std::string entity_name, std::string filepath,
     return false;
   }
 
-  if (active_trial_.has_value()) {
-    active_trial_->spawned_entities.emplace_back(response->entity_name);
-  }
+  trial.spawned_entities.emplace_back(response->entity_name);
 
   RCLCPP_INFO(node_->get_logger(), "Successfully spawned %s as '%s'",
               entity_name.c_str(), response->entity_name.c_str());
