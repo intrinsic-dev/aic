@@ -40,6 +40,7 @@ from rclpy.node import Node
 from rclpy.publisher import Publisher
 from rclpy.subscription import Subscription
 from std_msgs.msg import Float32
+from sensor_msgs.msg import JointState
 
 from .aic_robot import aic_cameras, arm_joint_names, gripper_joint_name
 from .types import MotionUpdateActionDict
@@ -99,6 +100,7 @@ class AICRobotAICController(Robot):
         self.gripper_pub: Publisher[Float32] | None = None
         self.controller_state_sub: Subscription[ControllerState] | None = None
         self.last_controller_state: ControllerState | None = None
+        self.last_joint_state: JointState | None = None
         self._is_connected = False
 
     @cached_property
@@ -156,18 +158,36 @@ class AICRobotAICController(Robot):
         self.node.create_subscription(
             ControllerState, "/aic_controller/controller_state", controller_state_cb, 10
         )
-        # self.robot_node.create_subscription(
-        #     JointState, "joint_states", self._joint_state_callback, 10
-        # )
+
+        def joint_state_cb(msg: JointState):
+            self.last_joint_state = msg
+        
+        self.node.create_subscription(
+            JointState, "/joint_states", joint_state_cb, 10
+        )
 
         self.executor = SingleThreadedExecutor()
         self.executor.add_node(self.node)
-        self.executor_thread = Thread(target=self.executor.spin, daemon=True)
-        self.executor_thread.start()
-        time.sleep(3)  # Give some time to connect to services and receive messages
 
+        # 1. Connect cameras first so they initialize their internal nodes/subs
         for cam in self.cameras.values():
             cam.connect()
+
+        # 2. Add each camera's internal node to the executor
+        for cam_key, cam in self.cameras.items():
+            # Most LeRobot-ROS wrappers store the node in .node or ._node
+            cam_node = getattr(cam, "node", getattr(cam, "_node", None))
+            if cam_node and isinstance(cam_node, Node):
+                self.executor.add_node(cam_node)
+                logger.info(f"Added internal node for {cam_key} to executor")
+            else:
+                logger.warning(f"Could not find internal node for {cam_key}. Image callbacks might not fire.")
+
+        # 3. Start spinning
+        self.executor_thread = Thread(target=self.executor.spin, daemon=True)
+        self.executor_thread.start()
+        
+        time.sleep(3)
 
         self._is_connected = True
 
@@ -187,11 +207,14 @@ class AICRobotAICController(Robot):
 
         if not self.last_controller_state:
             return {}
+        
+        if not self.last_joint_state:
+            return {}
 
         tcp_pose = self.last_controller_state.tcp_pose
         tcp_velocity = self.last_controller_state.tcp_velocity
         tcp_error = self.last_controller_state.tcp_error
-        joint_positions = self.last_controller_state.joint_state.positions
+        joint_positions = self.last_joint_state.position
         joint_velocities = self.last_controller_state.joint_state.velocities
         joint_accelerations = self.last_controller_state.joint_state.accelerations
         joint_efforts = self.last_controller_state.joint_state.effort
@@ -219,6 +242,13 @@ class AICRobotAICController(Robot):
             "joint_state.velocities": np.array(joint_velocities),
             "joint_state.accelerations": np.array(joint_accelerations),
             "joint_state.efforts": np.array(joint_efforts),
+            'shoulder_pan_joint.pos': joint_positions[3],
+            'shoulder_lift_joint.pos': joint_positions[2],
+            'elbow_joint.pos': joint_positions[0],
+            'wrist_1_joint.pos': joint_positions[4],
+            'wrist_2_joint.pos': joint_positions[5],
+            'wrist_3_joint.pos': joint_positions[6],
+            'gripper/left_finger_joint.pos': joint_positions[1],
         }
 
         # Capture images from cameras
@@ -226,14 +256,15 @@ class AICRobotAICController(Robot):
         for cam_key, cam in self.cameras.items():
             start = time.perf_counter()
             try:
-                cam_obs[cam_key] = cam.async_read(timeout_ms=300)
+                cam_obs[cam_key] = cam.async_read(timeout_ms=2000)
             except Exception as e:
                 logger.error(f"Failed to read camera {cam_key}: {e}")
                 cam_obs[cam_key] = None
             dt_ms = (time.perf_counter() - start) * 1e3
             logger.debug(f"{self} read {cam_key}: {dt_ms:.1f}ms")
 
-        return {**cam_obs, **controller_state_obs}
+        obs = {**cam_obs, **controller_state_obs}
+        return obs
 
     def send_action(self, action: dict[str, Any]) -> dict[str, Any]:
         motion_update_action = cast(MotionUpdateActionDict, action)
