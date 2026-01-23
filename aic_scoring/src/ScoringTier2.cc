@@ -449,7 +449,8 @@ bool ScoringTier2::UpdatePlugPortDistance(
   this->totalPlugPortTime += dt;
 
   // Compute average.
-  this->avgPlugPortDistance = this->accumPlugPortDistance / this->totalPlugPortTime;
+  this->avgPlugPortDistance =
+      this->accumPlugPortDistance / this->totalPlugPortTime;
 
   // Store new values.
   this->lastPlugPortStamp = newTime;
