@@ -295,8 +295,8 @@ bool ScoringTier2::UpdateJerk(const geometry_msgs::msg::PoseStamped &_pose) {
   double t3 = toSeconds(this->poseHistory[3].header.stamp);
 
   // Helper to convert quaternion to Euler angles (roll, pitch, yaw).
-  auto quatToEuler = [](const geometry_msgs::msg::Quaternion &q,
-                        double &roll, double &pitch, double &yaw) {
+  auto quatToEuler = [](const geometry_msgs::msg::Quaternion &q, double &roll,
+                        double &pitch, double &yaw) {
     tf2::Quaternion quat_tf;
     tf2::fromMsg(q, quat_tf);
     tf2::Matrix3x3(quat_tf).getRPY(roll, pitch, yaw);
@@ -313,8 +313,8 @@ bool ScoringTier2::UpdateJerk(const geometry_msgs::msg::PoseStamped &_pose) {
   // Extract Euler angles.
   double roll[4], pitch[4], yaw[4];
   for (int i = 0; i < 4; ++i) {
-    quatToEuler(this->poseHistory[i].pose.orientation,
-                roll[i], pitch[i], yaw[i]);
+    quatToEuler(this->poseHistory[i].pose.orientation, roll[i], pitch[i],
+                yaw[i]);
   }
 
   // Compute finite differences for jerk.
