@@ -15,6 +15,8 @@
  *
 */
 
+#include <tf2/LinearMath/Matrix3x3.h>
+#include <tf2/LinearMath/Quaternion.h>
 #include <yaml-cpp/yaml.h>
 #include <chrono>
 #include <memory>
@@ -27,6 +29,7 @@
 #include <gz/math/Pose3.hh>
 #include <rclcpp/rclcpp.hpp>
 #include <rosbag2_cpp/writer.hpp>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
 #ifndef AIC_SCORING__SCORING_TIER2_HH_
 #define AIC_SCORING__SCORING_TIER2_HH_
@@ -93,6 +96,14 @@ namespace aic_scoring
     /// \return The angular jerk vector (roll, pitch, yaw) in rad/s^3.
     public: geometry_msgs::msg::Vector3 GetAngularJerk() const;
 
+    /// \brief Get the time-weighted average linear jerk.
+    /// \return The average linear jerk vector (x, y, z) in m/s^3.
+    public: geometry_msgs::msg::Vector3 GetAvgLinearJerk() const;
+
+    /// \brief Get the time-weighted average angular jerk.
+    /// \return The average angular jerk vector (roll, pitch, yaw) in rad/s^3.
+    public: geometry_msgs::msg::Vector3 GetAvgAngularJerk() const;
+
     /// \brief Reset the jerk computation state.
     public: void ResetJerk();
 
@@ -137,6 +148,21 @@ namespace aic_scoring
 
     /// \brief Computed angular jerk (roll, pitch, yaw components in rad/s^3).
     private: geometry_msgs::msg::Vector3 angularJerk;
+
+    /// \brief Time-weighted average linear jerk (x, y, z components in m/s^3).
+    private: geometry_msgs::msg::Vector3 avgLinearJerk;
+
+    /// \brief Time-weighted average angular jerk (roll, pitch, yaw in rad/s^3).
+    private: geometry_msgs::msg::Vector3 avgAngularJerk;
+
+    /// \brief Total elapsed time since last reset (seconds).
+    private: double totalJerkTime = 0.0;
+
+    /// \brief Accumulated weighted linear jerk (jerk * dt sum).
+    private: geometry_msgs::msg::Vector3 accumLinearJerk;
+
+    /// \brief Accumulated weighted angular jerk (jerk * dt sum).
+    private: geometry_msgs::msg::Vector3 accumAngularJerk;
   };
 
   // The Tier2 class as a node.

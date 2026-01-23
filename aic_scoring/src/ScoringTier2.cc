@@ -17,6 +17,8 @@
 
 #include "aic_scoring/ScoringTier2.hh"
 
+#include <tf2/LinearMath/Matrix3x3.h>
+#include <tf2/LinearMath/Quaternion.h>
 #include <yaml-cpp/yaml.h>
 
 #include <algorithm>
@@ -27,8 +29,6 @@
 #include <rclcpp/rclcpp.hpp>
 #include <rosbag2_cpp/writer.hpp>
 #include <string>
-#include <tf2/LinearMath/Quaternion.h>
-#include <tf2/LinearMath/Matrix3x3.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <vector>
 
@@ -349,6 +349,31 @@ bool ScoringTier2::UpdateJerk(const geometry_msgs::msg::PoseStamped &_pose) {
   this->angularJerk.y = computeJerk(pitch);
   this->angularJerk.z = computeJerk(yaw);
 
+  // Update time-weighted average jerk.
+  // Use the time interval from t1 to t2 as the weight for this jerk sample.
+  double dt = t2 - t1;
+  this->totalJerkTime += dt;
+
+  // Accumulate weighted jerk.
+  this->accumLinearJerk.x += this->linearJerk.x * dt;
+  this->accumLinearJerk.y += this->linearJerk.y * dt;
+  this->accumLinearJerk.z += this->linearJerk.z * dt;
+
+  this->accumAngularJerk.x += this->angularJerk.x * dt;
+  this->accumAngularJerk.y += this->angularJerk.y * dt;
+  this->accumAngularJerk.z += this->angularJerk.z * dt;
+
+  // Compute averages.
+  if (this->totalJerkTime > 0.0) {
+    this->avgLinearJerk.x = this->accumLinearJerk.x / this->totalJerkTime;
+    this->avgLinearJerk.y = this->accumLinearJerk.y / this->totalJerkTime;
+    this->avgLinearJerk.z = this->accumLinearJerk.z / this->totalJerkTime;
+
+    this->avgAngularJerk.x = this->accumAngularJerk.x / this->totalJerkTime;
+    this->avgAngularJerk.y = this->accumAngularJerk.y / this->totalJerkTime;
+    this->avgAngularJerk.z = this->accumAngularJerk.z / this->totalJerkTime;
+  }
+
   return true;
 }
 
@@ -363,10 +388,25 @@ geometry_msgs::msg::Vector3 ScoringTier2::GetAngularJerk() const {
 }
 
 //////////////////////////////////////////////////
+geometry_msgs::msg::Vector3 ScoringTier2::GetAvgLinearJerk() const {
+  return this->avgLinearJerk;
+}
+
+//////////////////////////////////////////////////
+geometry_msgs::msg::Vector3 ScoringTier2::GetAvgAngularJerk() const {
+  return this->avgAngularJerk;
+}
+
+//////////////////////////////////////////////////
 void ScoringTier2::ResetJerk() {
   this->poseHistory.clear();
   this->linearJerk = geometry_msgs::msg::Vector3();
   this->angularJerk = geometry_msgs::msg::Vector3();
+  this->avgLinearJerk = geometry_msgs::msg::Vector3();
+  this->avgAngularJerk = geometry_msgs::msg::Vector3();
+  this->accumLinearJerk = geometry_msgs::msg::Vector3();
+  this->accumAngularJerk = geometry_msgs::msg::Vector3();
+  this->totalJerkTime = 0.0;
 }
 
 }  // namespace aic_scoring
