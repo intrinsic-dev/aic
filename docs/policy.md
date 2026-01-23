@@ -48,8 +48,8 @@ To integrate a policy using ROS data structures, such as `geometry_msgs.msg.Pose
 The `observation_callback()` function receives the Observation data structure
 as a ROS message,
 [`Observation.msg`](https://github.com/intrinsic-dev/aic/blob/main/aic_interfaces/aic_model_interfaces/msg/Observation.msg). This message is composed of several standard ROS data types:
- * [`sensor_msgs/Image left_image`](https://github.com/ros2/common_interfaces/blob/kilted/sensor_msgs/msg/Image.msg) (and `middle_image` and `right_image`)
- * [`sensor_msgs/CameraInfo left_camera_info`](https://github.com/ros2/common_interfaces/blob/kilted/sensor_msgs/msg/CameraInfo.msg) (and `middle_camera_info` and `right_camera_info`)
+ * [`sensor_msgs/Image left_image`](https://github.com/ros2/common_interfaces/blob/kilted/sensor_msgs/msg/Image.msg) (and `center_image` and `right_image`)
+ * [`sensor_msgs/CameraInfo left_camera_info`](https://github.com/ros2/common_interfaces/blob/kilted/sensor_msgs/msg/CameraInfo.msg) (and `center_camera_info` and `right_camera_info`)
  * [`sensor_msgs/JointState joint_states`](https://github.com/ros2/common_interfaces/blob/kilted/sensor_msgs/msg/JointState.msg)
  * [`geometry_msgs/WrenchStamped wrist_wrench`](https://github.com/ros2/common_interfaces/blob/kilted/geometry_msgs/msg/WrenchStamped.msg)
  * [`geometry_msgs/TransformStamped tcp_transform`](https://github.com/ros2/common_interfaces/blob/kilted/geometry_msgs/msg/TransformStamped.msg)
