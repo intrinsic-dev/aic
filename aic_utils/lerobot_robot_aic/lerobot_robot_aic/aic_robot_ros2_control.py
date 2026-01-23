@@ -28,7 +28,7 @@ from lerobot.utils.errors import DeviceNotConnectedError
 from lerobot_robot_ros import ROS2Config, ROS2Robot
 from lerobot_robot_ros.config import ActionType, ROS2InterfaceConfig
 from lerobot_robot_ros.robot import ActionType, ROS2Interface
-from rclpy.action import ActionClient
+from rclpy.action.client import ActionClient
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.node import Node
 

@@ -72,7 +72,7 @@ class AICKeyboardEETeleop(KeyboardEndEffectorTeleop):
             "angular.x": 0.0,
             "angular.y": 0.0,
             "angular.z": 0.0,
-            "gripper_width_percent": 0.0,
+            "gripper_target": 1.0,
         }
 
     @property
@@ -114,9 +114,9 @@ class AICKeyboardEETeleop(KeyboardEndEffectorTeleop):
             elif key == "e":
                 self._current_actions["angular.z"] = self._get_action_value(is_pressed)
             elif key == "j":
-                self._current_actions["gripper_width_percent"] = 0.0
+                self._current_actions["gripper_target"] = 0.0
             elif key == "k":
-                self._current_actions["gripper_width_percent"] = 1.0
+                self._current_actions["gripper_target"] = 1.0
             elif is_pressed:
                 # If the key is pressed, add it to the misc_keys_queue
                 # this will record key presses that are not part of the delta_x, delta_y, delta_z

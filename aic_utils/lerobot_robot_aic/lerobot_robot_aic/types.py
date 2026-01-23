@@ -9,6 +9,6 @@ MotionUpdateActionDict = TypedDict(
         "angular.x": float,
         "angular.y": float,
         "angular.z": float,
-        "gripper_width_percent": float,
+        "gripper_target": float,
     },
 )
