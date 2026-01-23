@@ -23,6 +23,8 @@ jobs:
   build-aic-eval-image:
     name: Build and Push AIC Eval Image
     runs-on: [self-hosted, linux, x64]
+    permissions:
+      packages: write
     steps:
       - uses: actions/checkout@v4
 
