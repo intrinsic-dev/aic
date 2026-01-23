@@ -1,4 +1,4 @@
-# Writing a Policy
+# Integrating a Policy
 
 Like many aspects of computing, AI terms such as _model_ and _policy_ are used
 in many contexts and can have differing meanings. The following diagram shows
@@ -20,11 +20,14 @@ More specifically, the _policy_ receives the following data at 20 Hz:
    (TCP) and the center of the robot base
 
 For convenience, the `aic_adapter` in the Challenge environment combines
-time-synchronized values of the sensor suite into a single composite message,
-[`Observation.msg`](https://github.com/intrinsic-dev/aic/blob/main/aic_interfaces/aic_model_interfaces/msg/Observation.msg),
-which is delivered to the `aic_model` block at 20 Hz. In turn, the `aic_model`
-block passes these messages to a user-defined `policy`, which is dynamically
-loaded at runtime.
+time-synchronized values of the sensor suite into a single composite
+`Observation` data structure, which is delivered to the `aic_model` block at 20
+Hz.  In turn, the `aic_model` block passes these messages to a user-defined
+`policy`, which is dynamically loaded at runtime.
+
+The policy is responsible for issuing position or velocity targets to the
+`aic_controller`, which provides low-level control of the arm to manage contact
+forces. The targets can be sent to `aic_controller` at any rate.
 
 Several API styles are possible when writing a policy.
 Because the Challenge is implemented in ROS, the simplest API uses the data
@@ -33,14 +36,23 @@ in the following section.
 
 ## ROS Policy API
 
-To define a policy using ROS data structures, such as `geometry_msgs.msg.Pose`,
+To integrate a policy using ROS data structures, such as `geometry_msgs.msg.Pose`,
 `sensor_msgs.msg.Image`, and so on:
- * define a Python class which derives from `PolicyRos`
+ * define a Python class which derives from [`PolicyRos`](https://github.com/intrinsic-dev/aic/blob/mq/policy_doc/aic_model/aic_model/policy_ros.py)
  * implement callbacks as needed to respond to the challenge environment:
-   * `start_task_callback()`: called when `aic_engine` requests a new task.
-   * `stop_task_callback()`: called when `aic_engine` requests to stop the current task.
-   * `observation_callback()`: called when a new observation message arrives, at 20 Hz.
+   * [`start_task_callback()`](https://github.com/intrinsic-dev/aic/blob/main/aic_example_policies/aic_example_policies/ros/WaveArm.py#L27): called when `aic_engine` requests a new task.
+   * [`stop_task_callback()`](https://github.com/intrinsic-dev/aic/blob/main/aic_example_policies/aic_example_policies/ros/WaveArm.py#L30): called when `aic_engine` requests to stop the current task.
+   * [`observation_callback()`](https://github.com/intrinsic-dev/aic/blob/main/aic_example_policies/aic_example_policies/ros/WaveArm.py#L33): called when a new observation message arrives, at 20 Hz.
  * supply this Python class name as a parameter to `aic_model`.
+
+The `observation_callback()` function receives the Observation data structure
+as a ROS message,
+[`Observation.msg`](https://github.com/intrinsic-dev/aic/blob/main/aic_interfaces/aic_model_interfaces/msg/Observation.msg). This message is composed of several standard ROS data types:
+ * [`sensor_msgs/Image[3] images`](https://github.com/ros2/common_interfaces/blob/kilted/sensor_msgs/msg/Image.msg)
+ * [`sensor_msgs/CameraInfo[3] camera_infos`](https://github.com/ros2/common_interfaces/blob/kilted/sensor_msgs/msg/CameraInfo.msg)
+ * [`sensor_msgs/JointState joint_states`](https://github.com/ros2/common_interfaces/blob/kilted/sensor_msgs/msg/JointState.msg)
+ * [`geometry_msgs/WrenchStamped wrist_wrench`](https://github.com/ros2/common_interfaces/blob/kilted/geometry_msgs/msg/WrenchStamped.msg)
+ * [`geometry_msgs/TransformStamped tcp_transform`](https://github.com/ros2/common_interfaces/blob/kilted/geometry_msgs/msg/TransformStamped.msg)
 
 The _policy_ can invoke API functions which issue motion commands to the robot.
 As an implementation detail, those API functions use the `aic_model` ROS node
