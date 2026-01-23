@@ -1,7 +1,7 @@
-FROM ros:kilted-ros-base AS build
+FROM ubuntu:24.04 AS build
 
 # Install pixi
-RUN curl -fsSL https://pixi.sh/install.sh | bash
+RUN apt update && apt install -y curl git && curl -fsSL https://pixi.sh/install.sh | bash
 ENV PATH="/root/.pixi/bin:$PATH"
 
 # Build the workspace
@@ -11,11 +11,11 @@ COPY aic_interfaces /ws_aic/src/aic/aic_interfaces
 COPY aic_utils /ws_aic/src/aic/aic_utils
 COPY pixi.toml pixi.lock /ws_aic/src/aic
 SHELL ["/bin/bash", "-c"]
-RUN cd /ws_aic/src/aic && pixi install --frozen
+RUN cd /ws_aic/src/aic && pixi install --frozen && rm -rf /ws_aic/src/aic/.pixi/build
 
 WORKDIR /ws_aic/src/aic
 ENTRYPOINT [ \
     "pixi", "run", "--as-is", \
     "ros2", "run", "aic_model", "aic_model", \
-    "--ros-args", "-p policy:=aic_example_policies.ros.WaveArm" \
+    "--ros-args", "-p", "policy:=aic_example_policies.ros.WaveArm" \
 ]
