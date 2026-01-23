@@ -35,10 +35,6 @@ repositories:
     type: git
     url: https://github.com/gazebo-release/gz_gui_vendor.git
     version: 0.2.2
-  gazebo/gz_launch_vendor:
-    type: git
-    url: https://github.com/gazebo-release/gz_launch_vendor.git
-    version: 0.2.2
   gazebo/gz_math_vendor:
     type: git
     url: https://github.com/gazebo-release/gz_math_vendor.git
