@@ -30,16 +30,16 @@
 
 namespace aic_scoring {
 //////////////////////////////////////////////////
-ScoringTier2::ScoringTier2(rclcpp::Node *_node, YAML::Node _config)
-    : node(_node) {
-  if (!_node) {
-    std::cerr << "[ScoringTier2]: null ROS node. Aborting." << std::endl;
-    return;
-  }
+ScoringTier2::ScoringTier2(rclcpp::Node *_node) : node(_node) {}
 
-  // TODO(luca) error out in this case, maybe a make function that returns a
-  // pointer
-  if (!this->ParseStats(_config)) return;
+// TODO(luca) consider having a make function that returns a pointer which is
+// nullptr if initialization failed instead.
+bool ScoringTier2::Initialize(YAML::Node _config) {
+  if (!this->node) {
+    std::cerr << "[ScoringTier2]: null ROS node. Aborting." << std::endl;
+    return false;
+  }
+  if (!this->ParseStats(_config)) return false;
 
   // Subscribe to all topics relevant for scoring.
   for (const auto &topic : this->topics) {
@@ -58,6 +58,7 @@ ScoringTier2::ScoringTier2(rclcpp::Node *_node, YAML::Node _config)
         });
     this->subscriptions.push_back(sub);
   }
+  return true;
 }
 
 //////////////////////////////////////////////////
@@ -248,7 +249,8 @@ ScoringTier2Node::ScoringTier2Node(const std::string &_yamlFile)
     : Node("score_tier2_node") {
   try {
     auto config = YAML::LoadFile(_yamlFile);
-    this->score = std::make_unique<aic_scoring::ScoringTier2>(this, config);
+    this->score = std::make_unique<aic_scoring::ScoringTier2>(this);
+    this->score->Initialize(config);
   } catch (const YAML::BadFile &_e) {
     std::cerr << "Unable to open YAML file [" << _yamlFile << "]" << std::endl;
     return;

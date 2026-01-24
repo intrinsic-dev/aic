@@ -256,7 +256,8 @@ Engine::Engine(const rclcpp::NodeOptions& options)
       is_first_trial_(true),
       active_trial_(std::nullopt),
       engine_state_(EngineState::Uninitialized),
-      model_discovered_(false) {
+      model_discovered_(false),
+      is_recording_(false) {
   RCLCPP_INFO(node_->get_logger(), "Creating AIC Engine...");
 
   // Declare ROS parameters.
@@ -428,9 +429,11 @@ EngineState Engine::initialize() {
   tf_buffer_ = std::make_unique<tf2_ros::Buffer>(node_->get_clock());
   tf_listener_ = std::make_unique<tf2_ros::TransformListener>(*tf_buffer_);
 
-  scoring_tier2_ = std::make_unique<aic_scoring::ScoringTier2>(
-      node_.get(), config_["scoring"]);
-  is_recording_ = false;
+  scoring_tier2_ = std::make_unique<aic_scoring::ScoringTier2>(node_.get());
+  if (!scoring_tier2_->Initialize(config_["scoring"])) {
+    RCLCPP_ERROR(node_->get_logger(), "Failed to initialize scoring system");
+    return EngineState::Error;
+  }
 
   // Create output directory for bag files.
   std::error_code ec;

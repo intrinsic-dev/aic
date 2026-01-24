@@ -59,12 +59,11 @@ namespace aic_scoring
   {
     /// \brief Class constructor.
     /// \param[in] _node Pointer to the ROS node.
-    /// \param[in] _config YAML config node.
-    public: ScoringTier2(rclcpp::Node *_node,
-                         YAML::Node _config);
+    public: ScoringTier2(rclcpp::Node *_node);
 
     /// \brief Populate the scoring input params from a YAML file.
-    public: bool ParseStats(YAML::Node _config);
+    /// \param[in] _config YAML configuration for the node
+    public: bool Initialize(YAML::Node _config);
 
     /// \brief Start recording all scoring topics.
     /// \return True if the bag was opened correctly and it's ready to record.
@@ -85,6 +84,10 @@ namespace aic_scoring
     /// The first key is always the plug, followed by "&", followed by port.
     /// The value is the distance (meters) between the plug and the port.
     public: std::map<std::string, double> pluggableMap;
+
+    /// \brief Populate the scoring input params from a YAML file.
+    /// \param[in] _config YAML configuration for the node
+    private: bool ParseStats(YAML::Node _config);
 
     /// \brief Pointer to a node.
     private: rclcpp::Node *node;
