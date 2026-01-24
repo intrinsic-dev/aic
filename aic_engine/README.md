@@ -69,6 +69,7 @@ ros2 run aic_engine aic_engine --ros-args \
 | `config_file_path` | string | "" | **Required**. Path to the trial configuration YAML file |
 | `model_node_name` | string | "aic_model" | Name of the participant's lifecycle node |
 | `adapter_node_name` | string | "aic_adapter_node" | Name of the adapter node (future use) |
+| `scoring_output_dir` | string | "$HOME/submissions/sample_team/" | Folder to output the result of scoring|
 | `ground_truth` | bool | false | Whether to publish ground truth poses from the task board |
 | `skip_model_ready` | bool | false | Skip model readiness checks (for testing only) |
 | `endpoint_ready_timeout_seconds` | int | 10 | Timeout for waiting for required endpoints |

@@ -376,6 +376,13 @@ EngineState Engine::initialize() {
   RCLCPP_INFO(node_->get_logger(), "Successfully parsed %zu trial(s)",
               trials_.size());
 
+  // Parse trials from config
+  if (!config_["scoring"]) {
+    RCLCPP_ERROR(node_->get_logger(), "Config missing required key: 'scoring'");
+    engine_state_ = EngineState::Error;
+    return engine_state_;
+  }
+
   // Create ROS endpoints.
   const rclcpp::QoS reliable_qos = rclcpp::QoS(rclcpp::KeepLast(10)).reliable();
   wrench_sub_ = node_->create_subscription<WrenchStampedMsg>(
@@ -421,8 +428,8 @@ EngineState Engine::initialize() {
   tf_buffer_ = std::make_unique<tf2_ros::Buffer>(node_->get_clock());
   tf_listener_ = std::make_unique<tf2_ros::TransformListener>(*tf_buffer_);
 
-  scoring_tier2_ =
-      std::make_unique<aic_scoring::ScoringTier2>(node_.get(), &config_);
+  scoring_tier2_ = std::make_unique<aic_scoring::ScoringTier2>(
+      node_.get(), &config_["scoring"]);
   is_recording_ = false;
 
   // Create output directory for bag files.

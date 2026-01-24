@@ -39,6 +39,7 @@ ScoringTier2::ScoringTier2(rclcpp::Node *_node, YAML::Node *_config)
 
   this->yamlNode = YAML::Clone(*_config);
 
+  // TODO(luca) error out in this case, maybe a make function that returns a pointer
   if (!this->ParseStats()) return;
 
   // Subscribe to all topics relevant for scoring.
