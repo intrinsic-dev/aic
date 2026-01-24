@@ -7,7 +7,7 @@ This task board will serve here as the primary environment for evaluating dexter
 
 ## 1. Board Overview
 
-The task board provides a standardized physical interface for the manipulation of **[SFP (Small Form-factor Pluggable)]()** modules, **[LC (Lucent Connector) fiber optic]()** and **[SC (Subscriber Connector) fiber optic]()** connectors. It is divided into four distinct zones to separate the assembly targets from the initial component pick locations.
+The task board provides a standardized physical interface for the manipulation of **[SFP (Small Form-factor Pluggable)modules, LC (Lucent Connector) fiber optic and SC (Subscriber Connector) fiber optic](https://www.versitron.com/pages/sfp-sc-and-lc-connectors-transceivers-defined-and-analyzed-in-detail)** connectors. It is divided into four distinct zones to separate the assembly targets from the initial component pick locations.
 
 ![AIC Task Board](../../media/aic_task_board.png)
 
