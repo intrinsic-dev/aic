@@ -429,7 +429,7 @@ EngineState Engine::initialize() {
   tf_listener_ = std::make_unique<tf2_ros::TransformListener>(*tf_buffer_);
 
   scoring_tier2_ = std::make_unique<aic_scoring::ScoringTier2>(
-      node_.get(), &config_["scoring"]);
+      node_.get(), config_["scoring"]);
   is_recording_ = false;
 
   // Create output directory for bag files.

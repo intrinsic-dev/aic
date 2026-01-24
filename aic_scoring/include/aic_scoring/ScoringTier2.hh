@@ -61,10 +61,10 @@ namespace aic_scoring
     /// \param[in] _node Pointer to the ROS node.
     /// \param[in] _config YAML config node.
     public: ScoringTier2(rclcpp::Node *_node,
-                         YAML::Node *_config);
+                         YAML::Node _config);
 
     /// \brief Populate the scoring input params from a YAML file.
-    public: bool ParseStats();
+    public: bool ParseStats(YAML::Node _config);
 
     /// \brief Start recording all scoring topics.
     /// \return True if the bag was opened correctly and it's ready to record.
@@ -95,9 +95,6 @@ namespace aic_scoring
     /// \brief Generic subscriptions for all topics.
     private: std::vector<std::shared_ptr<rclcpp::GenericSubscription>>
       subscriptions;
-
-    /// \brief A YAML node.
-    private: YAML::Node yamlNode;
 
     /// \brief A rosbag2 writer.
     private: rosbag2_cpp::Writer bagWriter;

@@ -30,17 +30,16 @@
 
 namespace aic_scoring {
 //////////////////////////////////////////////////
-ScoringTier2::ScoringTier2(rclcpp::Node *_node, YAML::Node *_config)
+ScoringTier2::ScoringTier2(rclcpp::Node *_node, YAML::Node _config)
     : node(_node) {
   if (!_node) {
     std::cerr << "[ScoringTier2]: null ROS node. Aborting." << std::endl;
     return;
   }
 
-  this->yamlNode = YAML::Clone(*_config);
-
-  // TODO(luca) error out in this case, maybe a make function that returns a pointer
-  if (!this->ParseStats()) return;
+  // TODO(luca) error out in this case, maybe a make function that returns a
+  // pointer
+  if (!this->ParseStats(_config)) return;
 
   // Subscribe to all topics relevant for scoring.
   for (const auto &topic : this->topics) {
@@ -92,15 +91,15 @@ bool ScoringTier2::StopRecording() {
 }
 
 //////////////////////////////////////////////////
-bool ScoringTier2::ParseStats() {
+bool ScoringTier2::ParseStats(YAML::Node _config) {
   // Sanity check: We should have a [plugs] map.
-  if (!this->yamlNode["plugs"]) {
+  if (!_config["plugs"]) {
     std::cerr << "Unable to find [plugs] in tier2.yaml" << std::endl;
     return false;
   }
 
   // Sanity check: We should have a sequence of [plug]
-  auto plugs = this->yamlNode["plugs"];
+  auto plugs = _config["plugs"];
   if (!plugs.IsSequence()) {
     std::cerr << "Unable to find sequence of plugs within [plugs]" << std::endl;
     return false;
@@ -142,13 +141,13 @@ bool ScoringTier2::ParseStats() {
   }
 
   // Sanity check: We should have a [ports] map.
-  if (!this->yamlNode["ports"]) {
+  if (!_config["ports"]) {
     std::cerr << "Unable to find [ports] in tier2.yaml" << std::endl;
     return false;
   }
 
   // Sanity check: We should have a sequence of [port]
-  auto ports = this->yamlNode["ports"];
+  auto ports = _config["ports"];
   if (!ports.IsSequence()) {
     std::cerr << "Unable to find sequence of ports within [ports]" << std::endl;
     return false;
@@ -200,12 +199,12 @@ bool ScoringTier2::ParseStats() {
   }
 
   // Parse topics to subscribe to.
-  if (!this->yamlNode["topics"]) {
+  if (!_config["topics"]) {
     std::cerr << "Unable to find [topics] in yaml file" << std::endl;
     return false;
   }
 
-  const auto &topics = this->yamlNode["topics"];
+  const auto &topics = _config["topics"];
   if (!topics.IsSequence()) {
     std::cerr << "Unable to find sequence of topics within [topics]"
               << std::endl;
@@ -249,7 +248,7 @@ ScoringTier2Node::ScoringTier2Node(const std::string &_yamlFile)
     : Node("score_tier2_node") {
   try {
     auto config = YAML::LoadFile(_yamlFile);
-    this->score = std::make_unique<aic_scoring::ScoringTier2>(this, &config);
+    this->score = std::make_unique<aic_scoring::ScoringTier2>(this, config);
   } catch (const YAML::BadFile &_e) {
     std::cerr << "Unable to open YAML file [" << _yamlFile << "]" << std::endl;
     return;
