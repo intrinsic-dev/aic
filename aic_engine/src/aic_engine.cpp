@@ -446,7 +446,8 @@ EngineState Engine::initialize() {
 
   // Create output directory for bag files.
   std::error_code ec;
-  if (!std::filesystem::create_directories(scoring_output_dir_, ec)) {
+  std::filesystem::create_directories(scoring_output_dir_, ec);
+  if (ec) {
     RCLCPP_ERROR(node_->get_logger(),
                  "Failed to create bag output directory '%s': %s",
                  scoring_output_dir_.c_str(), ec.message().c_str());
