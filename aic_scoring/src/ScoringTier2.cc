@@ -126,7 +126,7 @@ bool ScoringTier2::ParseStats(YAML::Node _config) {
   for (const auto &newTopic : topics) {
     if (!newTopic["topic"]) {
       RCLCPP_ERROR(this->node->get_logger(),
-                  "Unrecognized element. It should be [topic]");
+                   "Unrecognized element. It should be [topic]");
       return false;
     }
 
