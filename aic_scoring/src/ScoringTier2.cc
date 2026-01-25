@@ -32,6 +32,7 @@ namespace aic_scoring {
 //////////////////////////////////////////////////
 ScoringTier2::ScoringTier2(rclcpp::Node *_node) : node(_node) {}
 
+//////////////////////////////////////////////////
 // TODO(luca) consider having a make function that returns a pointer which is
 // nullptr if initialization failed instead.
 bool ScoringTier2::Initialize(YAML::Node _config) {
@@ -59,6 +60,20 @@ bool ScoringTier2::Initialize(YAML::Node _config) {
     this->subscriptions.push_back(sub);
   }
   return true;
+}
+
+//////////////////////////////////////////////////
+void ScoringTier2::ResetConnections(
+    const std::vector<Connection> &_connections) {
+    this->connections = _connections;
+
+    std::cout << "Connections" << std::endl;
+    for (const Connection &c : this->connections)
+    {
+      std::cout << "  plug: " << c.plugName << std::endl;
+      std::cout << "  port: " << c.portName << std::endl;
+      std::cout << "  Dist: " << c.distance << std::endl;
+    }
 }
 
 //////////////////////////////////////////////////
@@ -93,112 +108,6 @@ bool ScoringTier2::StopRecording() {
 
 //////////////////////////////////////////////////
 bool ScoringTier2::ParseStats(YAML::Node _config) {
-  // Sanity check: We should have a [plugs] map.
-  if (!_config["plugs"]) {
-    std::cerr << "Unable to find [plugs] in tier2.yaml" << std::endl;
-    return false;
-  }
-
-  // Sanity check: We should have a sequence of [plug]
-  auto plugs = _config["plugs"];
-  if (!plugs.IsSequence()) {
-    std::cerr << "Unable to find sequence of plugs within [plugs]" << std::endl;
-    return false;
-  }
-
-  for (std::size_t i = 0u; i < plugs.size(); i++) {
-    auto newPlug = plugs[i];
-
-    // Sanity check: The key should be "plug".
-    if (!newPlug["plug"]) {
-      std::cerr << "Unrecognized element. It should be [plug]" << std::endl;
-      return false;
-    }
-
-    Pluggable plug;
-    auto plugProperties = newPlug["plug"];
-    if (!plugProperties.IsMap()) {
-      std::cerr << "Unable to find properties within [plug]" << std::endl;
-      return false;
-    }
-
-    if (!plugProperties["name"]) {
-      std::cerr << "Unable to find [name] within [plug]" << std::endl;
-      return false;
-    }
-    plug.name = plugProperties["name"].as<std::string>();
-
-    if (!plugProperties["type"]) {
-      std::cerr << "Unable to find [type] within [plug]" << std::endl;
-      return false;
-    }
-
-    plug.type = plugProperties["type"].as<std::string>();
-
-    if (auto name = plug.name;
-        !this->plugs.insert({plug.name, std::move(plug)}).second) {
-      std::cerr << "Plug [" << name << "] repeated. Ignoring." << std::endl;
-    }
-  }
-
-  // Sanity check: We should have a [ports] map.
-  if (!_config["ports"]) {
-    std::cerr << "Unable to find [ports] in tier2.yaml" << std::endl;
-    return false;
-  }
-
-  // Sanity check: We should have a sequence of [port]
-  auto ports = _config["ports"];
-  if (!ports.IsSequence()) {
-    std::cerr << "Unable to find sequence of ports within [ports]" << std::endl;
-    return false;
-  }
-
-  for (std::size_t i = 0u; i < ports.size(); i++) {
-    auto newPort = ports[i];
-
-    // Sanity check: The key should be "port".
-    if (!newPort["port"]) {
-      std::cerr << "Unrecognized element. It should be [port]" << std::endl;
-      return false;
-    }
-
-    Pluggable port;
-    auto portProperties = newPort["port"];
-    if (!portProperties.IsMap()) {
-      std::cerr << "Unable to find properties within [port]" << std::endl;
-      return false;
-    }
-
-    if (!portProperties["name"]) {
-      std::cerr << "Unable to find [name] within [port]" << std::endl;
-      return false;
-    }
-    port.name = portProperties["name"].as<std::string>();
-
-    if (!portProperties["type"]) {
-      std::cerr << "Unable to find [type] within [port]" << std::endl;
-      return false;
-    }
-
-    port.type = portProperties["type"].as<std::string>();
-
-    if (auto name = port.name;
-        !this->ports.insert({port.name, std::move(port)}).second) {
-      std::cerr << "Port [" << name << "] repeated. Ignoring." << std::endl;
-    }
-  }
-
-  // Populate pluggableMap.
-  for (const auto &[plugName, plugInfo] : this->plugs) {
-    for (const auto &[portName, portInfo] : this->ports) {
-      if (plugInfo.type == portInfo.type) {
-        std::string connectionName = plugName + "&" + portName;
-        this->pluggableMap.insert({connectionName, 0});
-      }
-    }
-  }
-
   // Parse topics to subscribe to.
   if (!_config["topics"]) {
     std::cerr << "Unable to find [topics] in yaml file" << std::endl;

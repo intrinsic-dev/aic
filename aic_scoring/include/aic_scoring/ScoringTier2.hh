@@ -32,16 +32,19 @@
 namespace aic_scoring
 {
   /// \brief Tier2 POD.
-  class Pluggable
+  class Connection
   {
-    /// \brief Plug/port name.
-    public: std::string name;
+    /// \brief Plug name.
+    public: std::string plugName;
+
+    /// \brief Port name.
+    public: std::string portName;
 
     /// \brief Plug/port type.
     public: std::string type;
 
-    /// \brief Position.
-    public: gz::math::Vector3d position;
+    /// \brief Distance.
+    public: double distance = -1;
   };
 
   /// \brief Topic info POD.
@@ -65,6 +68,10 @@ namespace aic_scoring
     /// \param[in] _config YAML configuration for the node
     public: bool Initialize(YAML::Node _config);
 
+    /// \brief Reset connections.
+    /// \param[in] _connections New connections.
+    public: void ResetConnections(const std::vector<Connection> &_connections);
+
     /// \brief Start recording all scoring topics.
     /// \return True if the bag was opened correctly and it's ready to record.
     /// \param[in] _filename The path to the bag.
@@ -73,17 +80,6 @@ namespace aic_scoring
     /// \brief Stop recording all scoring topics.
     /// \return True if the bag was closed correctly.
     public: bool StopRecording();
-
-    /// \brief All pluggable plugs.
-    public: std::map<std::string, Pluggable> plugs;
-
-    /// \brief All pluggable ports.
-    public: std::map<std::string, Pluggable> ports;
-
-    /// \brief Plug<->port connections.
-    /// The first key is always the plug, followed by "&", followed by port.
-    /// The value is the distance (meters) between the plug and the port.
-    public: std::map<std::string, double> pluggableMap;
 
     /// \brief Populate the scoring input params from a YAML file.
     /// \param[in] _config YAML configuration for the node
@@ -94,6 +90,9 @@ namespace aic_scoring
 
     /// \brief Topics to subscribe to.
     private: std::vector<TopicInfo> topics;
+
+    /// \brief Connections.
+    private: std::vector<Connection> connections;
 
     /// \brief Generic subscriptions for all topics.
     private: std::vector<std::shared_ptr<rclcpp::GenericSubscription>>

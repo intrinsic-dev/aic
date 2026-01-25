@@ -952,6 +952,15 @@ bool Engine::task_completed_successfully() {
     if (scoring_tier2_->StopRecording()) {
       is_recording_ = false;
       RCLCPP_INFO(node_->get_logger(), "Stopped recording.");
+      // Register the new connections for this trial.
+      std::vector<aic_scoring::Connection> connections;
+      for (const auto &task : (*this->active_trial_).tasks) {
+        aic_scoring::Connection connection;
+        connection.plugName = task.cable_name + "::" + task.plug_name;
+        connection.portName = task.target_module_name + "::" + task.port_name;
+        connections.push_back(connection);
+      }
+      scoring_tier2_->ResetConnections(connections);
     } else {
       RCLCPP_ERROR(node_->get_logger(), "Failed to stop recording.");
       return false;
