@@ -111,39 +111,44 @@ bool ScoringTier2::StopRecording() {
 bool ScoringTier2::ParseStats(YAML::Node _config) {
   // Parse topics to subscribe to.
   if (!_config["topics"]) {
-    std::cerr << "Unable to find [topics] in yaml file" << std::endl;
+    RCLCPP_ERROR(this->node->get_logger(),
+                 "Unable to find [topics] in yaml file");
     return false;
   }
 
   const auto &topics = _config["topics"];
   if (!topics.IsSequence()) {
-    std::cerr << "Unable to find sequence of topics within [topics]"
-              << std::endl;
+    RCLCPP_ERROR(this->node->get_logger(),
+                 "Unable to find sequence of topics within [topics]");
     return false;
   }
 
   for (const auto &newTopic : topics) {
     if (!newTopic["topic"]) {
-      std::cerr << "Unrecognized element. It should be [topic]" << std::endl;
+      RCLCPP_ERROR(this->node->get_logger(),
+                  "Unrecognized element. It should be [topic]");
       return false;
     }
 
     const auto &topicProperties = newTopic["topic"];
     if (!topicProperties.IsMap()) {
-      std::cerr << "Unable to find properties within [topic]" << std::endl;
+      RCLCPP_ERROR(this->node->get_logger(),
+                   "Unable to find properties within [topic]");
       return false;
     }
 
     TopicInfo topicInfo;
 
     if (!topicProperties["name"]) {
-      std::cerr << "Unable to find [name] within [topic]" << std::endl;
+      RCLCPP_ERROR(this->node->get_logger(),
+                   "Unable to find [name] within [topic]");
       return false;
     }
     topicInfo.name = topicProperties["name"].as<std::string>();
 
     if (!topicProperties["type"]) {
-      std::cerr << "Unable to find [type] within [topic]" << std::endl;
+      RCLCPP_ERROR(this->node->get_logger(),
+                   "Unable to find [type] within [topic]");
       return false;
     }
     topicInfo.type = topicProperties["type"].as<std::string>();

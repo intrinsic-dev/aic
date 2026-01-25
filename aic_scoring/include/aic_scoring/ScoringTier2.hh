@@ -15,24 +15,22 @@
  *
 */
 
+#ifndef AIC_SCORING__SCORING_TIER2_HH_
+#define AIC_SCORING__SCORING_TIER2_HH_
+
 #include <yaml-cpp/yaml.h>
-#include <chrono>
 #include <memory>
 #include <mutex>
 #include <string>
 #include <vector>
 
-#include <gz/math/Pose3.hh>
 #include <rclcpp/rclcpp.hpp>
 #include <rosbag2_cpp/writer.hpp>
 
-#ifndef AIC_SCORING__SCORING_TIER2_HH_
-#define AIC_SCORING__SCORING_TIER2_HH_
-
 namespace aic_scoring
 {
-  /// \brief Tier2 POD.
-  class Connection
+  /// \brief Connection POD.
+  struct Connection
   {
     /// \brief Plug name.
     public: std::string plugName;

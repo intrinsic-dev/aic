@@ -1469,7 +1469,11 @@ bool Engine::spawn_entity(Trial& trial, std::string entity_name,
 
 //==============================================================================
 bool Engine::start_recording_scores(const Trial& trial) {
-  if (is_recording_) return false;
+  if (is_recording_) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "Start recording attempt but we're already recording.");
+    return false;
+  }
 
   const std::string bag_path = scoring_output_dir_ + "/bag_" + trial.id;
   if (!scoring_tier2_->StartRecording(bag_path)) {
@@ -1486,7 +1490,11 @@ bool Engine::start_recording_scores(const Trial& trial) {
 
 //==============================================================================
 bool Engine::stop_recording_scores() {
-  if (!is_recording_) return false;
+  if (!is_recording_) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "Stop recording attempt but we're not recording right now.");
+    return false;
+  }
 
   if (!scoring_tier2_->StopRecording()) {
     RCLCPP_ERROR(node_->get_logger(), "Failed to stop recording.");
