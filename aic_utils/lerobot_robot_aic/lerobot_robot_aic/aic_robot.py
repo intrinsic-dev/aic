@@ -30,19 +30,19 @@ gripper_joint_name = "gripper/left_finger_joint"
 
 aic_cameras: dict[str, CameraConfig] = {
     "wrist_camera_1": ROS2CameraConfig(
-        fps=30,
+        fps=20,
         width=1152,
         height=1024,
         topic="/wrist_camera_1/image",
     ),
     "wrist_camera_2": ROS2CameraConfig(
-        fps=30,
+        fps=20,
         width=1152,
         height=1024,
         topic="/wrist_camera_2/image",
     ),
     "wrist_camera_3": ROS2CameraConfig(
-        fps=30,
+        fps=20,
         width=1152,
         height=1024,
         topic="/wrist_camera_3/image",

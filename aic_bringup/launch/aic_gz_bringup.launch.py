@@ -83,6 +83,11 @@ def launch_setup(context, *args, **kwargs):
     start_aic_engine = LaunchConfiguration("start_aic_engine")
     aic_engine_config_file = LaunchConfiguration("aic_engine_config_file")
 
+    gripper_initial_pos = "0.012"
+    cable_type_str = LaunchConfiguration("cable_type").perform(context)
+    if cable_type_str == "sfp_sc_cable":
+        gripper_initial_pos = "0.0073"
+
     robot_description_content = Command(
         [
             PathJoinSubstitution([FindExecutable(name="xacro")]),
@@ -127,6 +132,9 @@ def launch_setup(context, *args, **kwargs):
             " ",
             "yaw:=",
             robot_yaw,
+            " ",
+            "gripper_initial_pos:=",
+            gripper_initial_pos,
         ]
     )
     robot_description = {
@@ -646,42 +654,42 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             "cable_x",
-            default_value="0.16",
+            default_value="0.1956",
             description="Cable spawn X position",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
             "cable_y",
-            default_value="0.2927",
+            default_value="-0.2112",
             description="Cable spawn Y position",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
             "cable_z",
-            default_value="1.427",
+            default_value="1.53",
             description="Cable spawn Z position",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
             "cable_roll",
-            default_value="0.5",
+            default_value="0.4432",
             description="Cable spawn roll orientation (radians)",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
             "cable_pitch",
-            default_value="-0.6605",
+            default_value="-0.4838",
             description="Cable spawn pitch orientation (radians)",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
             "cable_yaw",
-            default_value="2.6928",
+            default_value="-1.8112",
             description="Cable spawn yaw orientation (radians)",
         )
     )

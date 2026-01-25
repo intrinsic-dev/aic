@@ -103,14 +103,36 @@ source ~/ws_aic/install/setup.bash
 export RMW_IMPLEMENTATION=rmw_zenoh_cpp
 export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
 ros2 launch aic_bringup aic_gz_bringup.launch.py \
-  task_board_x:=0.3 task_board_y:=-0.1 task_board_z:=1.2 task_board_yaw:=0.785 \
-  lc_mount_01_delta_y:=-0.05 sfp_mount_01_delta_y:=-0.08 sc_mount_01_delta_y:=-0.09 \
-  lc_mount_02_delta_y:=0.05 sfp_mount_02_delta_y:=0.08 sc_mount_02_delta_y:=0.09 \
-  sc_port_01_delta_x:=-0.04 sc_port_02_delta_x:=0.04 \
-  nic_card_mount_01_delta_x:=0.005 nic_card_mount_02_delta_x:=-0.008 \
-  nic_card_mount_03_delta_x:=0.012 nic_card_mount_04_delta_x:=-0.015 \
-  nic_card_mount_05_delta_x:=0.01 \
-  spawn_cable:=true  cable_type:=sfp_sc_cable attach_cable_to_gripper:=true \
+	spawn_task_board:=true \
+  task_board_x:=0.3 task_board_y:=-0.1 task_board_z:=1.2 \
+  task_board_roll:=0.0 task_board_pitch:=0.0 task_board_yaw:=0.785 \
+  lc_mount_rail_0_present:=true lc_mount_rail_0_translation:=-0.05 \
+  lc_mount_rail_0_roll:=0.0 lc_mount_rail_0_pitch:=0.0 lc_mount_rail_0_yaw:=0.0 \
+  sfp_mount_rail_0_present:=true sfp_mount_rail_0_translation:=-0.08 \
+  sfp_mount_rail_0_roll:=0.0 sfp_mount_rail_0_pitch:=0.0 sfp_mount_rail_0_yaw:=0.0 \
+  sc_mount_rail_0_present:=true sc_mount_rail_0_translation:=-0.09 \
+  sc_mount_rail_0_roll:=0.0 sc_mount_rail_0_pitch:=0.0 sc_mount_rail_0_yaw:=0.0 \
+  lc_mount_rail_1_present:=true lc_mount_rail_1_translation:=0.05 \
+  lc_mount_rail_1_roll:=0.0 lc_mount_rail_1_pitch:=0.0 lc_mount_rail_1_yaw:=0.0 \
+  sfp_mount_rail_1_present:=true sfp_mount_rail_1_translation:=0.08 \
+  sfp_mount_rail_1_roll:=0.0 sfp_mount_rail_1_pitch:=0.0 sfp_mount_rail_1_yaw:=0.0 \
+  sc_mount_rail_1_present:=true sc_mount_rail_1_translation:=0.09 \
+  sc_mount_rail_1_roll:=0.0 sc_mount_rail_1_pitch:=0.0 sc_mount_rail_1_yaw:=0.0 \
+  sc_port_0_present:=true sc_port_0_translation:=-0.04 \
+  sc_port_0_roll:=0.0 sc_port_0_pitch:=0.0 sc_port_0_yaw:=0.0 \
+  sc_port_1_present:=true sc_port_1_translation:=0.04 \
+  sc_port_1_roll:=0.0 sc_port_1_pitch:=0.0 sc_port_1_yaw:=0.0 \
+  nic_card_mount_0_present:=true nic_card_mount_0_translation:=0.005 \
+  nic_card_mount_0_roll:=0.0 nic_card_mount_0_pitch:=0.0 nic_card_mount_0_yaw:=0.0 \
+  nic_card_mount_1_present:=true nic_card_mount_1_translation:=-0.008 \
+  nic_card_mount_1_roll:=0.0 nic_card_mount_1_pitch:=0.0 nic_card_mount_1_yaw:=0.0 \
+  nic_card_mount_2_present:=true nic_card_mount_2_translation:=0.012 \
+  nic_card_mount_2_roll:=0.0 nic_card_mount_2_pitch:=0.0 nic_card_mount_2_yaw:=0.0 \
+  nic_card_mount_3_present:=true nic_card_mount_3_translation:=-0.015 \
+  nic_card_mount_3_roll:=0.0 nic_card_mount_3_pitch:=0.0 nic_card_mount_3_yaw:=0.0 \
+  nic_card_mount_4_present:=true nic_card_mount_4_translation:=0.01 \
+  nic_card_mount_4_roll:=0.0 nic_card_mount_4_pitch:=0.0 nic_card_mount_4_yaw:=0.0 \
+  spawn_cable:=true cable_type:=sfp_sc_cable attach_cable_to_gripper:=true \
   ground_truth:=true start_aic_engine:=false
 ```
 
