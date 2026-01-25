@@ -65,16 +65,16 @@ bool ScoringTier2::Initialize(YAML::Node _config) {
 //////////////////////////////////////////////////
 void ScoringTier2::ResetConnections(
     const std::vector<Connection> &_connections) {
-    this->connections = _connections;
+  this->connections = _connections;
 
-    // Debug output.
-    // std::cout << "Connections" << std::endl;
-    // for (const Connection &c : this->connections)
-    // {
-    //   std::cout << "  plug: " << c.plugName << std::endl;
-    //   std::cout << "  port: " << c.portName << std::endl;
-    //   std::cout << "  Dist: " << c.distance << std::endl;
-    // }
+  // Debug output.
+  // std::cout << "Connections" << std::endl;
+  // for (const Connection &c : this->connections)
+  // {
+  //   std::cout << "  plug: " << c.plugName << std::endl;
+  //   std::cout << "  port: " << c.portName << std::endl;
+  //   std::cout << "  Dist: " << c.distance << std::endl;
+  // }
 }
 
 //////////////////////////////////////////////////

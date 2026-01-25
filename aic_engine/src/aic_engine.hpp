@@ -251,7 +251,7 @@ class Engine {
   /// @brief Start the bag recording.
   /// \param[in] trial The current trial.
   /// @return True if recording succeeded, false otherwise.
-  bool start_recording_scores(const Trial &trial);
+  bool start_recording_scores(const Trial& trial);
 
   /// @brief Stop the bag recording.
   /// @return True if stopping recording succeeded, false otherwise.
@@ -259,7 +259,7 @@ class Engine {
 
   /// @brief Update the connections (plugs/ports) for this trial.
   /// \param[in] trial The current trial.
-  void update_trial_scoring_connections(const Trial &trial);
+  void update_trial_scoring_connections(const Trial& trial);
 
   // Strings.
   // Name of the aic_adapter node for lifecycle transitions.

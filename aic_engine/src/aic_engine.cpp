@@ -1468,11 +1468,10 @@ bool Engine::spawn_entity(Trial& trial, std::string entity_name,
 }
 
 //==============================================================================
-bool Engine::start_recording_scores(const Trial &trial) {
+bool Engine::start_recording_scores(const Trial& trial) {
   if (is_recording_) return false;
 
-  const std::string bag_path =
-    scoring_output_dir_ + "/bag_" + trial.id;
+  const std::string bag_path = scoring_output_dir_ + "/bag_" + trial.id;
   if (!scoring_tier2_->StartRecording(bag_path)) {
     RCLCPP_ERROR(node_->get_logger(), "Failed to start recording to '%s'.",
                  bag_path.c_str());
@@ -1500,10 +1499,10 @@ bool Engine::stop_recording_scores() {
 }
 
 //==============================================================================
-void Engine::update_trial_scoring_connections(const Trial &trial) {
+void Engine::update_trial_scoring_connections(const Trial& trial) {
   // Register the new connections for this trial.
   std::vector<aic_scoring::Connection> connections;
-  for (const auto &task : trial.tasks) {
+  for (const auto& task : trial.tasks) {
     aic_scoring::Connection connection;
     connection.plugName = task.cable_name + "::" + task.plug_name;
     connection.portName = task.target_module_name + "::" + task.port_name;
