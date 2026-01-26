@@ -13,7 +13,6 @@ on:
         required: true
         type: boolean
         default: true
-  pull_request:
 
 defaults:
   run:
@@ -44,11 +43,10 @@ jobs:
       - name: Build and push aic_eval docker image
         uses: docker/build-push-action@v6
         with:
-          # push: ${{ github.event.inputs.push }}
-          # tags: ghcr.io/intrinsic-dev/aic/aic_eval:${{ github.event.inputs.tag }}
-          push: true
-          tags: ghcr.io/intrinsic-dev/aic/aic_eval:latest
+          push: ${{ github.event.inputs.push }}
+          tags: ghcr.io/intrinsic-dev/aic/aic_eval:${{ github.event.inputs.tag }}
           file: ./docker/aic_eval/Dockerfile
+          no-cache: true
 
       - name: Cleanup workspace
         run: |
