@@ -209,20 +209,14 @@ controller_interface::CallbackReturn Controller::on_configure(
           return;
         }
 
-        // Currently, the trajectory generatoin modes MODE_POSITION only
-        // supports the "base_link" frame and MODE_VELOCITY only supports the
-        // "gripper/tcp" frame. We verify that here.
-        if (!(msg->trajectory_generation_mode.mode ==
-                  TrajectoryGenerationMode::MODE_POSITION &&
-              msg->header.frame_id == "base_link") &&
-            !(msg->trajectory_generation_mode.mode ==
-                  TrajectoryGenerationMode::MODE_VELOCITY &&
-              msg->header.frame_id == "gripper/tcp")) {
+        // Currently, only targets with frame_id "base_link" and "gripper/tcp"
+        // are supported
+        if (msg->header.frame_id != "base_link" &&
+            msg->header.frame_id != "gripper/tcp") {
           RCLCPP_WARN(get_node()->get_logger(),
-                      "Only accepting frame_id 'base_link' for MODE_POSITION "
-                      "trajectory generation mode or frame_id 'gripper/tcp' "
-                      "for MODE_VELOCITY trajectory generation mode. Ignoring "
-                      "MotionUpdate message");
+                      "Only accepting targets with frame_id 'base_link' or "
+                      "'gripper/tcp'. "
+                      "Ignoring MotionUpdate message");
 
           return;
         }
@@ -753,15 +747,49 @@ controller_interface::return_type Controller::update(
         motion_update_ = command_op.value();
 
         auto latest_target_state =
-            CartesianState(motion_update_.pose, motion_update_.velocity);
+            CartesianState(motion_update_.pose, motion_update_.velocity,
+                           motion_update_.header);
 
-        // If using velocity mode, set the current pose as the target pose
         if (motion_update_.trajectory_generation_mode.mode ==
-            TrajectoryGenerationMode::MODE_VELOCITY) {
-          latest_target_state.pose = current_tool_state_.pose;
-        }
+            TrajectoryGenerationMode::MODE_POSITION) {
+          if (motion_update_.header.frame_id == "gripper/tcp") {
+            // Only update the target pose if there is a change in the message
+            // timestamp.
+            if (!target_state_.has_value() ||
+                target_state_.value().header.stamp !=
+                    latest_target_state.header.stamp) {
+              // transform target pose from "gripper/tcp" frame to "base_link"
+              // frame
+              latest_target_state.pose.linear() =
+                  current_tool_state_.pose.linear().inverse() *
+                  latest_target_state.pose.linear();
+              latest_target_state.pose.translation() =
+                  current_tool_state_.pose.linear().inverse() *
+                      latest_target_state.pose.translation() +
+                  current_tool_state_.pose.translation();
 
-        target_state_ = latest_target_state;
+              target_state_ = latest_target_state;
+            }
+          } else {
+            target_state_ = latest_target_state;
+          }
+        } else if (motion_update_.trajectory_generation_mode.mode ==
+                   TrajectoryGenerationMode::MODE_VELOCITY) {
+          // In velocity mode, we set the target pose as the current pose
+          // so that the velocity targets are applied relative to the
+          // TCP frame
+          latest_target_state.pose = current_tool_state_.pose;
+          if (motion_update_.header.frame_id == "base_link") {
+            // Transform target velocity from base frame into the TCP frame
+            latest_target_state.velocity.head<3>() =
+                current_tool_state_.pose.rotation() *
+                latest_target_state.velocity.head<3>();
+            latest_target_state.velocity.tail<3>() =
+                current_tool_state_.pose.rotation() *
+                latest_target_state.velocity.tail<3>();
+          }
+          target_state_ = latest_target_state;
+        }
       }
     } else if (target_mode_ == TargetMode::Joint) {
       auto command_op = joint_motion_update_rt_.try_get();
