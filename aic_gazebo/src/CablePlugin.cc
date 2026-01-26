@@ -45,6 +45,11 @@ GZ_ADD_PLUGIN(aic_gazebo::CablePlugin, gz::sim::System,
 
 namespace {
 
+/// \brief Local pose offset of the cable guard w.r.t. the end effector.
+/// This is tuned for the robotiq hand-e.
+const gz::math::Pose3d kCableGuardOffsetForRobotiqHandE =
+    math::Pose3d(0, 0.0118, 0.165, 0, 0, 0);
+
 /// \brief Find link in a model
 /// \param[in] _modelName Name of model
 /// \param[in] _linkName Name of link to find
@@ -126,6 +131,11 @@ void CablePlugin::Configure(const gz::sim::Entity& _entity,
     gzerr << "Missing <end_effector_link> parameter." << std::endl;
     return;
   }
+
+  this->cableGuardOffsetFromEndEffector =
+      _sdf->Get<math::Pose3d>("cable_guard_offset_from_end_effector",
+                              kCableGuardOffsetForRobotiqHandE)
+          .first;
 
   double delay = _sdf->Get<double>("create_connection_delay_s", 0.0).first;
   this->createJointDelay = delay;
@@ -217,6 +227,13 @@ void CablePlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
                                {this->endEffectorLinkEntity,
                                 this->cableConnection0LinkEntity, "fixed"}));
     }
+
+    auto endEffectorWorldPose =
+        gz::sim::worldPose(this->endEffectorLinkEntity, _ecm);
+    auto cableGuardPose =
+        endEffectorWorldPose * this->cableGuardOffsetFromEndEffector;
+    this->detachableJointCableGuardEntity =
+        this->SpawnCableGuard(cableGuardPose, this->creator.get(), _ecm);
 
     gzmsg << "Cable transitioning to CABLE_ATTACHED_TO_GRIPPER state."
           << std::endl;
@@ -334,18 +351,14 @@ void CablePlugin::Cleanup(gz::sim::EntityComponentManager& _ecm) {
     _ecm.RequestRemoveEntity(this->detachableJoint0Entity);
   if (this->detachableJoint1Entity != kNullEntity)
     _ecm.RequestRemoveEntity(this->detachableJoint1Entity);
+  if (this->detachableJointCableGuardEntity != kNullEntity)
+    _ecm.RequestRemoveEntity(this->detachableJointCableGuardEntity);
 
   for (const auto& ent : this->staticEntities) _ecm.RequestRemoveEntity(ent);
 
   this->staticEntities.clear();
 }
 
-/// \brief Make an entity static by spawning a static model and attaching
-/// the entity to a static model
-/// \param[in] _attachEntityAsParentOfJoint True to attach entity as parent of
-/// the detachable joint.
-/// \param[in] _creator_ Sdf entity creator for creating a static model
-/// \param[in] _ecm Entity component manager
 //////////////////////////////////////////////////
 Entity CablePlugin::MakeStatic(Entity _entity,
                                bool _attachEntityAsParentOfJoint,
@@ -397,6 +410,69 @@ Entity CablePlugin::MakeStatic(Entity _entity,
                        components::DetachableJoint(
                            {parentLinkEntity, childLinkEntity, "fixed"}));
 
+  return detachableJointEntity;
+}
+
+//////////////////////////////////////////////////
+Entity CablePlugin::SpawnCableGuard(const math::Pose3d& _pose,
+                                    SdfEntityCreator* _creator,
+                                    EntityComponentManager& _ecm) {
+  std::stringstream modelStr;
+  modelStr << R"(<?xml version="1.0"?>
+  <sdf version="1.11">
+    <model name="cable_guard">
+      <pose>)"
+           << _pose << R"(</pose>
+      <link name="box_link">
+        <inertial>
+          <inertia>
+            <ixx>1e-6</ixx>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyy>1e-6</iyy>
+            <iyz>0</iyz>
+            <izz>1e-6</izz>
+          </inertia>
+          <mass>0.001</mass>
+        </inertial>
+        <collision name="box_collision">
+          <geometry>
+            <box>
+              <size>0.024 0.001 0.005</size>
+            </box>
+          </geometry>
+        </collision>
+        <!-- Uncomment below to see the visual for debugging -->
+        <!--
+        <visual name="box_visual">
+          <geometry>
+            <box>
+              <size>0.024 0.001 0.005</size>
+            </box>
+          </geometry>
+          <material>
+            <diffuse>0.7 0.7 0.7 1</diffuse>
+            <specular>1 1 1 1</specular>
+          </material>
+       </visual>
+       -->
+      </link>
+    </model>
+  </sdf>
+  )";
+
+  sdf::Root root;
+  sdf::Errors errors = root.LoadSdfString(modelStr.str());
+  Entity modelEntity = _creator->CreateEntities(root.Model());
+  _creator->SetParent(modelEntity,
+                      _ecm.EntityByComponents(components::World()));
+  this->staticEntities.insert(modelEntity);
+  Entity modelLinkEntity = _ecm.EntityByComponents(
+      components::ParentEntity(modelEntity), components::Name("box_link"));
+  Entity detachableJointEntity = _ecm.CreateEntity();
+  _ecm.CreateComponent(detachableJointEntity,
+                       components::DetachableJoint({this->endEffectorLinkEntity,
+                                                    modelLinkEntity, "fixed"}));
   return detachableJointEntity;
 }
 

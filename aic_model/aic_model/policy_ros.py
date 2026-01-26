@@ -70,3 +70,6 @@ class PolicyRos:
 
     def get_logger(self):
         return self._parent_node.get_logger()
+
+    def get_clock(self):
+        return self._parent_node.get_clock()

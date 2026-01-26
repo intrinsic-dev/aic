@@ -71,7 +71,6 @@ class AicModel(LifecycleNode):
             Empty, "cancel_task", self.cancel_task_callback
         )
         self.goal_handle = None
-        self.goal_completed = False
         self.is_active = False
         self.observation_sub = self.create_subscription(
             Observation, "observations", self.observation_callback, 10
@@ -159,7 +158,6 @@ class AicModel(LifecycleNode):
         self.get_logger().info(
             f"Accepted insert_cable goal: {goal_handle.request.task}"
         )
-        self.goal_completed = False
         self.goal_handle = goal_handle
         self.goal_handle.execute()
 
@@ -170,6 +168,7 @@ class AicModel(LifecycleNode):
     async def insert_cable_execute_callback(self, goal_handle):
         self.get_logger().info("Entering insert_cable_execute_callback()")
         await self.set_cartesian_mode()
+        self._policy.start_callback(goal_handle.request.task)
 
         while rclpy.ok():
             self.get_logger().info("insert_cable execute loop")
@@ -211,7 +210,7 @@ class AicModel(LifecycleNode):
                 return result
 
             # Check if the task has been completed.
-            if self.goal_completed:
+            if self._policy.goal_completed():
                 self.get_logger().info(
                     "Exiting insert_cable execute loop after success."
                 )
