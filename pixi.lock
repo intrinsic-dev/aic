@@ -355,7 +355,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/ce/ff/3b59672c47c6284e8005b42e84ceba13864aa0f39f067c973d1af02f5d91/InquirerPy-0.3.4-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/62/a1/3d680cbfd5f4b8f15abc1d571870c5fc3e594bb582bc3b64ea099db13e56/jinja2-3.1.6-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/f8/62/d9ba6323b9202dd2fe166beab8a86d29465c41a0288cbe229fac60c1ab8d/jsonlines-4.0.0-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/d5/58/f5f9d6c0451df3e5cf9c484b1eb6a3abb93016677630a615b925c9da189a/lerobot-0.4.2-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/d9/c9/c38f0bfe33527d1b139f67850d6a4c113d42d630cbf4846d02e3d6372d97/lerobot-0.4.3-py3-none-any.whl
       - pypi: git+https://github.com/koonpeng/lerobot-ros?subdirectory=lerobot_robot_ros&rev=535ce545a8887c5f58596833827312ddebcbde75#535ce545a8887c5f58596833827312ddebcbde75
       - pypi: git+https://github.com/koonpeng/lerobot-ros?subdirectory=lerobot_teleoperator_devices&rev=535ce545a8887c5f58596833827312ddebcbde75#535ce545a8887c5f58596833827312ddebcbde75
       - pypi: https://files.pythonhosted.org/packages/3c/2e/8d0c2ab90a8c1d9a24f0399058ab8519a3279d1bd4289511d74e909f060e/markupsafe-3.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
@@ -416,7 +416,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/dc/9b/47798a6c91d8bdb567fe2698fe81e0c6b7cb7ef4d13da4114b41d239f65d/typing_inspection-0.4.2-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/c7/b0/003792df09decd6849a5e39c28b513c06e84436a54440380862b5aeff25d/tzdata-2025.3-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/39/08/aaaad47bc4e9dc8c725e68f9d04865dbcb2052843ff09c97b08904852d84/urllib3-2.6.3-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/f7/56/d9f845ecfd5e078cf637cb29d8abe3350b8a174924c54086168783454a8f/wandb-0.21.4-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+      - pypi: https://files.pythonhosted.org/packages/22/a1/8d68a914c030e897c306c876d47c73aa5d9ca72be608971290d3a5749570/wandb-0.24.0-py3-none-manylinux_2_28_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/af/b5/123f13c975e9f27ab9c0770f514345bd406d0e8d3b7a0723af9d43f710af/wcwidth-0.2.14-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/11/4f/426f91b96701ec2f37bb2b8cec664eff4f658a11f3fa9d94f0a887ea6d2b/xxhash-3.6.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/db/0f/0d52c98b8a885aeda831224b78f3be7ec2e1aa4a62091f9f9188c3c65b56/yarl-1.22.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
@@ -1923,10 +1923,10 @@ packages:
   purls: []
   size: 730831
   timestamp: 1766513089214
-- pypi: https://files.pythonhosted.org/packages/d5/58/f5f9d6c0451df3e5cf9c484b1eb6a3abb93016677630a615b925c9da189a/lerobot-0.4.2-py3-none-any.whl
+- pypi: https://files.pythonhosted.org/packages/d9/c9/c38f0bfe33527d1b139f67850d6a4c113d42d630cbf4846d02e3d6372d97/lerobot-0.4.3-py3-none-any.whl
   name: lerobot
-  version: 0.4.2
-  sha256: af4e5c709522c8022703e10431c14ae65b2e967e7ab608f51a07c03c38cefe04
+  version: 0.4.3
+  sha256: b08c1c15b2356bd4e658122deabfb9dacd2d7447de4a4327720991723d4edf2c
   requires_dist:
   - datasets>=4.0.0,<4.2.0
   - diffusers>=0.27.2,<0.36.0
@@ -1941,7 +1941,7 @@ packages:
   - packaging>=24.2,<26.0
   - pynput>=1.7.7,<1.9.0
   - pyserial>=3.5,<4.0
-  - wandb>=0.20.0,<0.22.0
+  - wandb>=0.24.0,<0.25.0
   - torch>=2.2.1,<2.8.0
   - torchcodec>=0.2.1,<0.6.0 ; (platform_machine != 'aarch64' and platform_machine != 'arm64' and platform_machine != 'armv7l' and platform_machine != 'x86_64' and sys_platform != 'win32') or (platform_machine == 'aarch64' and sys_platform != 'linux' and sys_platform != 'win32') or (platform_machine == 'arm64' and sys_platform != 'linux' and sys_platform != 'win32') or (platform_machine == 'armv7l' and sys_platform != 'linux' and sys_platform != 'win32') or (platform_machine == 'x86_64' and sys_platform != 'darwin' and sys_platform != 'win32')
   - torchvision>=0.21.0,<0.23.0
@@ -1953,9 +1953,9 @@ packages:
   - termcolor>=2.4.0,<4.0.0
   - pygame>=2.5.1,<2.7.0 ; extra == 'pygame-dep'
   - placo>=0.9.6,<0.10.0 ; extra == 'placo-dep'
-  - transformers>=4.53.0,<5.0.0 ; extra == 'transformers-dep'
+  - transformers>=4.57.1,<5.0.0 ; extra == 'transformers-dep'
   - grpcio==1.73.1 ; extra == 'grpcio-dep'
-  - protobuf==6.31.0 ; extra == 'grpcio-dep'
+  - protobuf>=6.31.1,<6.32.0 ; extra == 'grpcio-dep'
   - feetech-servo-sdk>=1.0.0,<2.0.0 ; extra == 'feetech'
   - dynamixel-sdk>=3.7.31,<3.9.0 ; extra == 'dynamixel'
   - lerobot[pygame-dep] ; extra == 'gamepad'
@@ -1964,13 +1964,20 @@ packages:
   - lerobot[pygame-dep] ; extra == 'hopejr'
   - lerobot[feetech] ; extra == 'lekiwi'
   - pyzmq>=26.2.1,<28.0.0 ; extra == 'lekiwi'
-  - reachy2-sdk>=1.0.14,<1.1.0 ; extra == 'reachy2'
+  - pyzmq>=26.2.1,<28.0.0 ; extra == 'unitree-g1'
+  - onnxruntime>=1.16.0,<2.0.0 ; extra == 'unitree-g1'
+  - reachy2-sdk>=1.0.15,<1.1.0 ; extra == 'reachy2'
   - lerobot[placo-dep] ; extra == 'kinematics'
   - pyrealsense2>=2.55.1.6486,<2.57.0 ; sys_platform != 'darwin' and extra == 'intelrealsense'
   - pyrealsense2-macosx>=2.54,<2.55.0 ; sys_platform == 'darwin' and extra == 'intelrealsense'
   - hebi-py>=2.8.0,<2.12.0 ; extra == 'phone'
   - teleop>=0.1.0,<0.2.0 ; extra == 'phone'
   - fastapi<1.0 ; extra == 'phone'
+  - transformers==4.49.0 ; extra == 'wallx'
+  - peft==0.17.1 ; extra == 'wallx'
+  - scipy==1.15.3 ; extra == 'wallx'
+  - torchdiffeq==0.2.5 ; extra == 'wallx'
+  - qwen-vl-utils==0.0.11 ; extra == 'wallx'
   - lerobot[transformers-dep] ; extra == 'smolvla'
   - num2words>=0.5.14,<0.6.0 ; extra == 'smolvla'
   - accelerate>=1.7.0,<2.0.0 ; extra == 'smolvla'
@@ -1984,16 +1991,24 @@ packages:
   - decord>=0.6.0,<1.0.0 ; (platform_machine == 'AMD64' and extra == 'groot') or (platform_machine == 'x86_64' and extra == 'groot')
   - ninja>=1.11.1,<2.0.0 ; extra == 'groot'
   - flash-attn>=2.5.9,<3.0.0 ; sys_platform != 'darwin' and extra == 'groot'
+  - lerobot[transformers-dep] ; extra == 'sarm'
+  - faker>=33.0.0,<35.0.0 ; extra == 'sarm'
+  - matplotlib>=3.10.3,<4.0.0 ; extra == 'sarm'
+  - qwen-vl-utils>=0.0.14,<0.1.0 ; extra == 'sarm'
+  - lerobot[transformers-dep] ; extra == 'xvla'
   - lerobot[transformers-dep] ; extra == 'hilserl'
   - gym-hil>=0.1.13,<0.2.0 ; extra == 'hilserl'
   - lerobot[grpcio-dep] ; extra == 'hilserl'
   - lerobot[placo-dep] ; extra == 'hilserl'
   - lerobot[grpcio-dep] ; extra == 'async'
   - matplotlib>=3.10.3,<4.0.0 ; extra == 'async'
+  - lerobot[transformers-dep] ; extra == 'peft'
+  - peft>=0.18.0,<1.0.0 ; extra == 'peft'
   - pre-commit>=3.7.0,<5.0.0 ; extra == 'dev'
   - debugpy>=1.8.1,<1.9.0 ; extra == 'dev'
   - lerobot[grpcio-dep] ; extra == 'dev'
   - grpcio-tools==1.73.1 ; extra == 'dev'
+  - mypy>=1.19.1 ; extra == 'dev'
   - pytest>=8.1.0,<9.0.0 ; extra == 'test'
   - pytest-timeout>=2.4.0,<3.0.0 ; extra == 'test'
   - pytest-cov>=5.0.0,<8.0.0 ; extra == 'test'
@@ -2014,6 +2029,7 @@ packages:
   - lerobot[kinematics] ; extra == 'all'
   - lerobot[intelrealsense] ; extra == 'all'
   - lerobot[smolvla] ; extra == 'all'
+  - lerobot[xvla] ; extra == 'all'
   - lerobot[hilserl] ; extra == 'all'
   - lerobot[async] ; extra == 'all'
   - lerobot[dev] ; extra == 'all'
@@ -2024,6 +2040,8 @@ packages:
   - lerobot[phone] ; extra == 'all'
   - lerobot[libero] ; extra == 'all'
   - lerobot[metaworld] ; extra == 'all'
+  - lerobot[sarm] ; extra == 'all'
+  - lerobot[peft] ; extra == 'all'
   requires_python: '>=3.10'
 - pypi: git+https://github.com/koonpeng/lerobot-ros?subdirectory=lerobot_robot_ros&rev=535ce545a8887c5f58596833827312ddebcbde75#535ce545a8887c5f58596833827312ddebcbde75
   name: lerobot-robot-ros
@@ -7533,10 +7551,10 @@ packages:
   - pysocks>=1.5.6,!=1.5.7,<2.0 ; extra == 'socks'
   - backports-zstd>=1.0.0 ; python_full_version < '3.14' and extra == 'zstd'
   requires_python: '>=3.9'
-- pypi: https://files.pythonhosted.org/packages/f7/56/d9f845ecfd5e078cf637cb29d8abe3350b8a174924c54086168783454a8f/wandb-0.21.4-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+- pypi: https://files.pythonhosted.org/packages/22/a1/8d68a914c030e897c306c876d47c73aa5d9ca72be608971290d3a5749570/wandb-0.24.0-py3-none-manylinux_2_28_x86_64.whl
   name: wandb
-  version: 0.21.4
-  sha256: 48d4f65f1be5f5a25b868695e09cdbfe481678220df349a8c2cbed3992fb497f
+  version: 0.24.0
+  sha256: 9485344b4667944b5b77294185bae8469cfa4074869bec0e74f54f8492234cc2
   requires_dist:
   - click>=8.0.1
   - eval-type-backport ; python_full_version < '3.10'

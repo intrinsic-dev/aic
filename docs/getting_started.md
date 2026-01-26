@@ -157,9 +157,13 @@ cd ~/ws_aic/src/aic/aic_model/test
 ./create_and_cancel_task.py
 ```
 
-### LeRobot Support
+#### LeRobot Support
 
 A LeRobot interface is available to train a policy using [LeRobot](https://huggingface.co/lerobot). See [lerobot_robot_aic](../aic_utils/lerobot_robot_aic/README.md).
+
+#### Developer Workflow
+
+See [Developer Workflow](./developer_workflow.md).
 
 #### Debugging
 
