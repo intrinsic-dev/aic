@@ -20,6 +20,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <filesystem>
+#include <fstream>
 #include <sstream>
 #include <unordered_set>
 
@@ -257,6 +258,34 @@ TaskAttempt::TaskAttempt(const std::string& _id)
 }
 
 //==============================================================================
+YAML::Node Score::serialize() const {
+  const int total_score = this->calculate_total_score();
+  YAML::Node score;
+  score["total"] = total_score;
+  for (const auto& [trial_name, trial_score] : this->breakdown) {
+    score[trial_name]["tier_1"]["score"] = trial_score.tier_1.score;
+    score[trial_name]["tier_1"]["message"] = trial_score.tier_1.message;
+    score[trial_name]["tier_2"]["score"] = trial_score.tier_2.score;
+    score[trial_name]["tier_2"]["message"] = trial_score.tier_2.message;
+    score[trial_name]["tier_3"]["score"] = trial_score.tier_3.score;
+    score[trial_name]["tier_3"]["message"] = trial_score.tier_3.message;
+  }
+  return score;
+}
+
+//==============================================================================
+int Score::calculate_total_score() const {
+  // TODO(luca) check calculation
+  int score = 0;
+  for (const auto& [trial_name, trial_score] : this->breakdown) {
+    score += trial_score.tier_1.score;
+    score += trial_score.tier_2.score;
+    score += trial_score.tier_3.score;
+  }
+  return score;
+}
+
+//==============================================================================
 Engine::Engine(const rclcpp::NodeOptions& options)
     : node_(std::make_shared<rclcpp::Node>("aic_engine", options)),
       wrench_sub_(nullptr),
@@ -466,6 +495,7 @@ EngineState Engine::run() {
   RCLCPP_INFO(node_->get_logger(), "Running AIC Engine...");
 
   engine_state_ = EngineState::Running;
+  Score score;
 
   for (auto& trial_entry : trials_) {
     const std::string& trial_id = trial_entry.first;
@@ -473,8 +503,9 @@ EngineState Engine::run() {
     RCLCPP_INFO(node_->get_logger(), "======================================");
     RCLCPP_INFO(node_->get_logger(), "Handling trial '%s'...",
                 trial_id.c_str());
-    TrialState trial_result = this->handle_trial(trial);
-    if (trial_result == TrialState::AllTasksCompleted) {
+    TrialScore trial_score  = this->handle_trial(trial);
+    score.breakdown[trial_id] = trial_score;
+    if (trial.state == TrialState::AllTasksCompleted) {
       RCLCPP_INFO(node_->get_logger(), "Trial '%s' completed successfully.",
                   trial_id.c_str());
     } else {
@@ -482,21 +513,21 @@ EngineState Engine::run() {
                    "Trial '%s' failed or was not completed.", trial_id.c_str());
       engine_state_ = EngineState::Error;
       // TODO(Yadunund): Clean up and write scoring data.
-      // TODO(luca) refactor cleanup into single function
-      this->cleanup_model_node();
-      this->shutdown_model_node();
-      return engine_state_;
+      break;
     }
   }
 
+  // TODO(luca) refactor cleanup into single function
   this->cleanup_model_node();
   this->shutdown_model_node();
+  this->score_run(score);
   return engine_state_;
 }
 
 //==============================================================================
-TrialState Engine::handle_trial(Trial& trial) {
+TrialScore Engine::handle_trial(Trial& trial) {
   RCLCPP_INFO(node_->get_logger(), "Starting trial '%s'...", trial.id.c_str());
+  TrialScore score;
 
   if (trial.state == TrialState::Uninitialized) {
     if (this->check_model()) {
@@ -507,8 +538,9 @@ TrialState Engine::handle_trial(Trial& trial) {
         node_->get_logger(),
         "Attempted to start trial while not Uninitialized. Report this bug.");
     reset_after_trial(trial);
-    return trial.state;
+    return score;
   }
+  score.tier_1_success();
 
   if (trial.state == TrialState::ModelReady) {
     if (this->check_endpoints()) {
@@ -517,7 +549,7 @@ TrialState Engine::handle_trial(Trial& trial) {
   } else {
     RCLCPP_ERROR(node_->get_logger(), "Participant model is not ready.");
     reset_after_trial(trial);
-    return trial.state;
+    return score;
   }
 
   if (trial.state == TrialState::EndpointsReady) {
@@ -527,7 +559,7 @@ TrialState Engine::handle_trial(Trial& trial) {
   } else {
     RCLCPP_ERROR(node_->get_logger(), "Required endpoints are not available.");
     reset_after_trial(trial);
-    return trial.state;
+    return score;
   }
 
   if (trial.state == TrialState::SimulatorReady) {
@@ -537,7 +569,7 @@ TrialState Engine::handle_trial(Trial& trial) {
   } else {
     RCLCPP_ERROR(node_->get_logger(), "Simulator is not ready.");
     reset_after_trial(trial);
-    return trial.state;
+    return score;
   }
 
   if (trial.state == TrialState::ScoringReady) {
@@ -545,7 +577,7 @@ TrialState Engine::handle_trial(Trial& trial) {
   } else {
     RCLCPP_ERROR(node_->get_logger(), "Scoring system is not ready.");
     reset_after_trial(trial);
-    return trial.state;
+    return score;
   }
 
   if (trial.state == TrialState::TasksExecuting) {
@@ -553,24 +585,24 @@ TrialState Engine::handle_trial(Trial& trial) {
       trial.state = TrialState::AllTasksCompleted;
       if (!stop_recording_scores()) {
         reset_after_trial(trial);
-        return trial.state;
+        return score;
       }
     }
   } else {
     RCLCPP_ERROR(node_->get_logger(), "Tasks cannot be started successfully.");
     reset_after_trial(trial);
-    return trial.state;
+    return score;
   }
 
   if (trial.state != TrialState::AllTasksCompleted) {
     RCLCPP_ERROR(node_->get_logger(), "Tasks were not completed successfully.");
     stop_recording_scores();
     reset_after_trial(trial);
-    return trial.state;
+    return score;
   }
 
   reset_after_trial(trial);
-  return trial.state;
+  return score;
 }
 
 /// Given a set [s1, s2, s3] returns a string "s1, s2, s3"
@@ -1484,6 +1516,15 @@ bool Engine::stop_recording_scores() {
 
   RCLCPP_INFO(node_->get_logger(), "Stopped recording.");
   return true;
+}
+
+//==============================================================================
+void Engine::score_run(const Score& score) {
+  YAML::Node node = score.serialize();
+
+  const std::string yaml_output_file = scoring_output_dir_ + "/scoring.yaml";
+  std::ofstream fout(yaml_output_file);
+  fout << node;
 }
 
 }  // namespace aic
