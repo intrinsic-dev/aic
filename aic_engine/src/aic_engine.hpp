@@ -142,7 +142,7 @@ struct TrialScore {
     int score;
     std::string message;
 
-    TierScore(int s, const std::string& msg) : score(s), message(msg) { }
+    TierScore(int s, const std::string& msg) : score(s), message(msg) {}
   };
 
   // Score for successful model validation (binary)
@@ -154,10 +154,10 @@ struct TrialScore {
   TierScore tier_2;
   TierScore tier_3;
 
-  TrialScore() :
-    tier_1(0, "Model validation failed"),
-    tier_2(0, "Task execution failed"),
-    tier_3(0, "Task not completed successfully") {}
+  TrialScore()
+      : tier_1(0, "Model validation failed"),
+        tier_2(0, "Task execution failed"),
+        tier_3(0, "Task not completed successfully") {}
 
   void tier_1_success() {
     this->tier_1.score = TrialScore::kTier1Success;
@@ -183,7 +183,7 @@ struct Score {
   /// \return The resulting YAML node with serialized data.
   YAML::Node serialize() const;
 
-private:
+ private:
   /// \brief Computes the total score from the score breakdown.
   int calculate_total_score() const;
 };

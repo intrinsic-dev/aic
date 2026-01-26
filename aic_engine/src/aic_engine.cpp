@@ -503,7 +503,7 @@ EngineState Engine::run() {
     RCLCPP_INFO(node_->get_logger(), "======================================");
     RCLCPP_INFO(node_->get_logger(), "Handling trial '%s'...",
                 trial_id.c_str());
-    TrialScore trial_score  = this->handle_trial(trial);
+    TrialScore trial_score = this->handle_trial(trial);
     score.breakdown[trial_id] = trial_score;
     if (trial.state == TrialState::AllTasksCompleted) {
       RCLCPP_INFO(node_->get_logger(), "Trial '%s' completed successfully.",
