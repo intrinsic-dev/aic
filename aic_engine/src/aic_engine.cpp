@@ -17,10 +17,12 @@
 
 #include "aic_engine.hpp"
 
+#include <chrono>
 #include <cmath>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
+#include <iomanip>
 #include <sstream>
 #include <unordered_set>
 
@@ -315,17 +317,16 @@ Engine::Engine(const rclcpp::NodeOptions& options)
   node_->declare_parameter("model_deactivate_timeout_seconds", 60);
   node_->declare_parameter("model_cleanup_timeout_seconds", 60);
   node_->declare_parameter("model_shutdown_timeout_seconds", 60);
-	node_->declare_parameter("submission_team_name", std::string("sample_team"));
-	node_->declare_parameter(
-		"submission_root_dir", std::string(std::getenv("HOME")) + std::string("/aic_submissions"));
+  node_->declare_parameter("submission_team_name", std::string("sample_team"));
+  node_->declare_parameter(
+      "submission_root_dir",
+      std::string(std::getenv("HOME")) + std::string("/aic_submissions"));
 
-  scoring_output_dir_ = node_->get_parameter("submission_root_dir").as_string() +
-												 "/" +
-												 node_->get_parameter("submission_team_name").as_string();
-	RCLCPP_INFO(
-		node_->get_logger(),
-		"Scoring output directory set to: %s",
-		scoring_output_dir_.c_str());
+  scoring_output_dir_ =
+      node_->get_parameter("submission_root_dir").as_string() + "/" +
+      node_->get_parameter("submission_team_name").as_string();
+  RCLCPP_INFO(node_->get_logger(), "Scoring output directory set to: %s",
+              scoring_output_dir_.c_str());
 
   spin_thread_ = std::thread([node = node_]() {
     rclcpp::executors::SingleThreadedExecutor executor;
@@ -989,7 +990,19 @@ bool Engine::ready_scoring(const Trial& trial) {
   }
   scoring_tier2_->ResetConnections(connections);
 
-  const std::string bag_path = scoring_output_dir_ + "/bag_" + trial.id;
+  // Create unique bag filename with timestamp
+  auto now = std::chrono::system_clock::now();
+  auto time_t = std::chrono::system_clock::to_time_t(now);
+  auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                now.time_since_epoch()) %
+            1000;
+
+  std::ostringstream oss;
+  oss << scoring_output_dir_ << "/bag_" << trial.id << "_"
+      << std::put_time(std::localtime(&time_t), "%Y%m%d_%H%M%S") << "_"
+      << std::setfill('0') << std::setw(3) << ms.count();
+  const std::string bag_path = oss.str();
+
   if (!scoring_tier2_->StartRecording(bag_path)) {
     RCLCPP_ERROR(node_->get_logger(), "Failed to start recording to '%s'.",
                  bag_path.c_str());
