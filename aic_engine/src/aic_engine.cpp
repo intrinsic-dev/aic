@@ -540,9 +540,9 @@ TrialScore Engine::handle_trial(Trial& trial) {
     reset_after_trial(trial);
     return score;
   }
-  score.tier_1_success();
 
   if (trial.state == TrialState::ModelReady) {
+    score.tier_1_success();
     if (this->check_endpoints()) {
       trial.state = TrialState::EndpointsReady;
     }
