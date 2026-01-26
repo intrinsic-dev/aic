@@ -265,8 +265,7 @@ Engine::Engine(const rclcpp::NodeOptions& options)
       spawn_entity_client_(nullptr),
       is_first_trial_(true),
       engine_state_(EngineState::Uninitialized),
-      model_discovered_(false),
-      is_recording_(false) {
+      model_discovered_(false) {
   RCLCPP_INFO(node_->get_logger(), "Creating AIC Engine...");
 
   // Declare ROS parameters.
@@ -943,12 +942,6 @@ bool Engine::ready_simulator(Trial& trial) {
 //==============================================================================
 bool Engine::ready_scoring(const Trial& trial) {
   RCLCPP_INFO(node_->get_logger(), "Checking scoring system readiness...");
-  if (is_recording_) {
-    RCLCPP_ERROR(node_->get_logger(),
-                 "Start recording attempt but we're already recording.");
-    return false;
-  }
-
   // Register the new connections for this trial.
   std::vector<aic_scoring::Connection> connections;
   for (const auto& task : trial.tasks) {
@@ -966,7 +959,6 @@ bool Engine::ready_scoring(const Trial& trial) {
     return false;
   }
 
-  is_recording_ = true;
   RCLCPP_INFO(node_->get_logger(), "Started recording to '%s'.",
               bag_path.c_str());
   return true;
@@ -1485,18 +1477,11 @@ bool Engine::spawn_entity(Trial& trial, std::string entity_name,
 
 //==============================================================================
 bool Engine::stop_recording_scores() {
-  if (!is_recording_) {
-    RCLCPP_ERROR(node_->get_logger(),
-                 "Stop recording attempt but we're not recording right now.");
-    return false;
-  }
-
   if (!scoring_tier2_->StopRecording()) {
     RCLCPP_ERROR(node_->get_logger(), "Failed to stop recording.");
     return false;
   }
 
-  is_recording_ = false;
   RCLCPP_INFO(node_->get_logger(), "Stopped recording.");
   return true;
 }

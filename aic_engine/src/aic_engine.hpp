@@ -321,9 +321,6 @@ class Engine {
   // Scoring tier 2 instance.
   std::unique_ptr<aic_scoring::ScoringTier2> scoring_tier2_;
 
-  // Whether recording is currently active.
-  bool is_recording_;
-
   // Output directory for scoring.
   std::string scoring_output_dir_;
 };
