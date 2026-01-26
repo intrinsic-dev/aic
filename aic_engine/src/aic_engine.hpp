@@ -27,6 +27,7 @@
 
 #include "aic_control_interfaces/msg/joint_motion_update.hpp"
 #include "aic_control_interfaces/msg/motion_update.hpp"
+#include "aic_scoring/ScoringTier2.hh"
 #include "aic_task_interfaces/action/insert_cable.hpp"
 #include "geometry_msgs/msg/wrench_stamped.hpp"
 #include "lifecycle_msgs/msg/state.hpp"
@@ -179,8 +180,9 @@ class Engine {
   bool ready_simulator(Trial& trial);
 
   /// \brief Check if the scoring system is ready.
+  /// \param[in] trial The trial currently being ran
   /// \return True if the scoring system is ready, false otherwise.
-  bool ready_scoring();
+  bool ready_scoring(const Trial& trial);
 
   /// \brief Check if tasks were started successfully.
   /// \param[in] trial The trial currently being ran
@@ -247,6 +249,10 @@ class Engine {
   /// @return True if shutdown succeeded, false otherwise.
   bool shutdown_model_node();
 
+  /// @brief Stop the bag recording.
+  /// @return True if stopping recording succeeded, false otherwise.
+  bool stop_recording_scores();
+
   // Strings.
   // Name of the aic_adapter node for lifecycle transitions.
   std::string adapter_node_name_;
@@ -311,6 +317,12 @@ class Engine {
 
   // Whether the participant model has been discovered and readied.
   bool model_discovered_;
+
+  // Scoring tier 2 instance.
+  std::unique_ptr<aic_scoring::ScoringTier2> scoring_tier2_;
+
+  // Output directory for scoring.
+  std::string scoring_output_dir_;
 };
 
 }  // namespace aic

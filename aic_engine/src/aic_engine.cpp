@@ -18,6 +18,7 @@
 #include "aic_engine.hpp"
 
 #include <cmath>
+#include <cstdlib>
 #include <filesystem>
 #include <sstream>
 #include <unordered_set>
@@ -286,6 +287,12 @@ Engine::Engine(const rclcpp::NodeOptions& options)
   node_->declare_parameter("model_cleanup_timeout_seconds", 60);
   node_->declare_parameter("model_shutdown_timeout_seconds", 60);
 
+  // TODO(luca) consider having a team_name parameter instead and autocompute
+  // submission folder
+  const std::string home = std::getenv("HOME");
+  scoring_output_dir_ = node_->declare_parameter(
+      "scoring_output_dir", std::string(home + "/submissions/sample_team"));
+
   spin_thread_ = std::thread([node = node_]() {
     rclcpp::executors::SingleThreadedExecutor executor;
     executor.add_node(node);
@@ -378,6 +385,13 @@ EngineState Engine::initialize() {
   RCLCPP_INFO(node_->get_logger(), "Successfully parsed %zu trial(s)",
               trials_.size());
 
+  // Parse trials from config
+  if (!config_["scoring"]) {
+    RCLCPP_ERROR(node_->get_logger(), "Config missing required key: 'scoring'");
+    engine_state_ = EngineState::Error;
+    return engine_state_;
+  }
+
   // Create ROS endpoints.
   const rclcpp::QoS reliable_qos = rclcpp::QoS(rclcpp::KeepLast(10)).reliable();
   wrench_sub_ = node_->create_subscription<WrenchStampedMsg>(
@@ -422,6 +436,24 @@ EngineState Engine::initialize() {
           model_change_state_service_name_);
   tf_buffer_ = std::make_unique<tf2_ros::Buffer>(node_->get_clock());
   tf_listener_ = std::make_unique<tf2_ros::TransformListener>(*tf_buffer_);
+
+  scoring_tier2_ = std::make_unique<aic_scoring::ScoringTier2>(node_.get());
+  if (!scoring_tier2_->Initialize(config_["scoring"])) {
+    RCLCPP_ERROR(node_->get_logger(), "Failed to initialize scoring system");
+    return EngineState::Error;
+  }
+
+  // Create output directory for bag files.
+  std::error_code ec;
+  std::filesystem::create_directories(scoring_output_dir_, ec);
+  if (ec) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "Failed to create bag output directory '%s': %s",
+                 scoring_output_dir_.c_str(), ec.message().c_str());
+    return EngineState::Error;
+  }
+  RCLCPP_INFO(node_->get_logger(), "Bag output directory: %s",
+              scoring_output_dir_.c_str());
 
   engine_state_ = EngineState::Initialized;
   RCLCPP_INFO(node_->get_logger(), "AIC Engine initialized successfully.");
@@ -499,7 +531,7 @@ TrialState Engine::handle_trial(Trial& trial) {
   }
 
   if (trial.state == TrialState::SimulatorReady) {
-    if (this->ready_scoring()) {
+    if (this->ready_scoring(trial)) {
       trial.state = TrialState::ScoringReady;
     }
   } else {
@@ -519,6 +551,10 @@ TrialState Engine::handle_trial(Trial& trial) {
   if (trial.state == TrialState::TasksExecuting) {
     if (this->tasks_completed_successfully(trial)) {
       trial.state = TrialState::AllTasksCompleted;
+      if (!stop_recording_scores()) {
+        reset_after_trial(trial);
+        return trial.state;
+      }
     }
   } else {
     RCLCPP_ERROR(node_->get_logger(), "Tasks cannot be started successfully.");
@@ -528,6 +564,7 @@ TrialState Engine::handle_trial(Trial& trial) {
 
   if (trial.state != TrialState::AllTasksCompleted) {
     RCLCPP_ERROR(node_->get_logger(), "Tasks were not completed successfully.");
+    stop_recording_scores();
     reset_after_trial(trial);
     return trial.state;
   }
@@ -903,12 +940,27 @@ bool Engine::ready_simulator(Trial& trial) {
 }
 
 //==============================================================================
-bool Engine::ready_scoring() {
+bool Engine::ready_scoring(const Trial& trial) {
   RCLCPP_INFO(node_->get_logger(), "Checking scoring system readiness...");
+  // Register the new connections for this trial.
+  std::vector<aic_scoring::Connection> connections;
+  for (const auto& task : trial.tasks) {
+    aic_scoring::Connection connection;
+    connection.plugName = task.cable_name + "::" + task.plug_name;
+    connection.portName = task.target_module_name + "::" + task.port_name;
+    connections.push_back(connection);
+  }
+  scoring_tier2_->ResetConnections(connections);
 
-  // TODO(Yadunund): Implement actual scoring system readiness checks.
-  std::this_thread::sleep_for(std::chrono::seconds(1));
-  // For now, assume scoring system is ready.
+  const std::string bag_path = scoring_output_dir_ + "/bag_" + trial.id;
+  if (!scoring_tier2_->StartRecording(bag_path)) {
+    RCLCPP_ERROR(node_->get_logger(), "Failed to start recording to '%s'.",
+                 bag_path.c_str());
+    return false;
+  }
+
+  RCLCPP_INFO(node_->get_logger(), "Started recording to '%s'.",
+              bag_path.c_str());
   return true;
 }
 
@@ -1420,6 +1472,17 @@ bool Engine::spawn_entity(Trial& trial, std::string entity_name,
 
   RCLCPP_INFO(node_->get_logger(), "Successfully spawned %s as '%s'",
               entity_name.c_str(), response->entity_name.c_str());
+  return true;
+}
+
+//==============================================================================
+bool Engine::stop_recording_scores() {
+  if (!scoring_tier2_->StopRecording()) {
+    RCLCPP_ERROR(node_->get_logger(), "Failed to stop recording.");
+    return false;
+  }
+
+  RCLCPP_INFO(node_->get_logger(), "Stopped recording.");
   return true;
 }
 

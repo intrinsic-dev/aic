@@ -30,16 +30,17 @@
 
 namespace aic_scoring {
 //////////////////////////////////////////////////
-ScoringTier2::ScoringTier2(rclcpp::Node *_node, YAML::Node *_config)
-    : node(_node) {
-  if (!_node) {
+ScoringTier2::ScoringTier2(rclcpp::Node *_node) : node(_node) {}
+
+//////////////////////////////////////////////////
+// TODO(luca) consider having a make function that returns a pointer which is
+// nullptr if initialization failed instead.
+bool ScoringTier2::Initialize(YAML::Node _config) {
+  if (!this->node) {
     std::cerr << "[ScoringTier2]: null ROS node. Aborting." << std::endl;
-    return;
+    return false;
   }
-
-  this->yamlNode = YAML::Clone(*_config);
-
-  if (!this->ParseStats()) return;
+  if (!this->ParseStats(_config)) return false;
 
   // Subscribe to all topics relevant for scoring.
   for (const auto &topic : this->topics) {
@@ -58,6 +59,22 @@ ScoringTier2::ScoringTier2(rclcpp::Node *_node, YAML::Node *_config)
         });
     this->subscriptions.push_back(sub);
   }
+  return true;
+}
+
+//////////////////////////////////////////////////
+void ScoringTier2::ResetConnections(
+    const std::vector<Connection> &_connections) {
+  this->connections = _connections;
+
+  // Debug output.
+  // std::cout << "Connections" << std::endl;
+  // for (const Connection &c : this->connections)
+  // {
+  //   std::cout << "  plug: " << c.plugName << std::endl;
+  //   std::cout << "  port: " << c.portName << std::endl;
+  //   std::cout << "  Dist: " << c.distance << std::endl;
+  // }
 }
 
 //////////////////////////////////////////////////
@@ -91,148 +108,47 @@ bool ScoringTier2::StopRecording() {
 }
 
 //////////////////////////////////////////////////
-bool ScoringTier2::ParseStats() {
-  // Sanity check: We should have a [plugs] map.
-  if (!this->yamlNode["plugs"]) {
-    std::cerr << "Unable to find [plugs] in tier2.yaml" << std::endl;
-    return false;
-  }
-
-  // Sanity check: We should have a sequence of [plug]
-  auto plugs = this->yamlNode["plugs"];
-  if (!plugs.IsSequence()) {
-    std::cerr << "Unable to find sequence of plugs within [plugs]" << std::endl;
-    return false;
-  }
-
-  for (std::size_t i = 0u; i < plugs.size(); i++) {
-    auto newPlug = plugs[i];
-
-    // Sanity check: The key should be "plug".
-    if (!newPlug["plug"]) {
-      std::cerr << "Unrecognized element. It should be [plug]" << std::endl;
-      return false;
-    }
-
-    Pluggable plug;
-    auto plugProperties = newPlug["plug"];
-    if (!plugProperties.IsMap()) {
-      std::cerr << "Unable to find properties within [plug]" << std::endl;
-      return false;
-    }
-
-    if (!plugProperties["name"]) {
-      std::cerr << "Unable to find [name] within [plug]" << std::endl;
-      return false;
-    }
-    plug.name = plugProperties["name"].as<std::string>();
-
-    if (!plugProperties["type"]) {
-      std::cerr << "Unable to find [type] within [plug]" << std::endl;
-      return false;
-    }
-
-    plug.type = plugProperties["type"].as<std::string>();
-
-    if (auto name = plug.name;
-        !this->plugs.insert({plug.name, std::move(plug)}).second) {
-      std::cerr << "Plug [" << name << "] repeated. Ignoring." << std::endl;
-    }
-  }
-
-  // Sanity check: We should have a [ports] map.
-  if (!this->yamlNode["ports"]) {
-    std::cerr << "Unable to find [ports] in tier2.yaml" << std::endl;
-    return false;
-  }
-
-  // Sanity check: We should have a sequence of [port]
-  auto ports = this->yamlNode["ports"];
-  if (!ports.IsSequence()) {
-    std::cerr << "Unable to find sequence of ports within [ports]" << std::endl;
-    return false;
-  }
-
-  for (std::size_t i = 0u; i < ports.size(); i++) {
-    auto newPort = ports[i];
-
-    // Sanity check: The key should be "port".
-    if (!newPort["port"]) {
-      std::cerr << "Unrecognized element. It should be [port]" << std::endl;
-      return false;
-    }
-
-    Pluggable port;
-    auto portProperties = newPort["port"];
-    if (!portProperties.IsMap()) {
-      std::cerr << "Unable to find properties within [port]" << std::endl;
-      return false;
-    }
-
-    if (!portProperties["name"]) {
-      std::cerr << "Unable to find [name] within [port]" << std::endl;
-      return false;
-    }
-    port.name = portProperties["name"].as<std::string>();
-
-    if (!portProperties["type"]) {
-      std::cerr << "Unable to find [type] within [port]" << std::endl;
-      return false;
-    }
-
-    port.type = portProperties["type"].as<std::string>();
-
-    if (auto name = port.name;
-        !this->ports.insert({port.name, std::move(port)}).second) {
-      std::cerr << "Port [" << name << "] repeated. Ignoring." << std::endl;
-    }
-  }
-
-  // Populate pluggableMap.
-  for (const auto &[plugName, plugInfo] : this->plugs) {
-    for (const auto &[portName, portInfo] : this->ports) {
-      if (plugInfo.type == portInfo.type) {
-        std::string connectionName = plugName + "&" + portName;
-        this->pluggableMap.insert({connectionName, 0});
-      }
-    }
-  }
-
+bool ScoringTier2::ParseStats(YAML::Node _config) {
   // Parse topics to subscribe to.
-  if (!this->yamlNode["topics"]) {
-    std::cerr << "Unable to find [topics] in yaml file" << std::endl;
+  if (!_config["topics"]) {
+    RCLCPP_ERROR(this->node->get_logger(),
+                 "Unable to find [topics] in yaml file");
     return false;
   }
 
-  const auto &topics = this->yamlNode["topics"];
+  const auto &topics = _config["topics"];
   if (!topics.IsSequence()) {
-    std::cerr << "Unable to find sequence of topics within [topics]"
-              << std::endl;
+    RCLCPP_ERROR(this->node->get_logger(),
+                 "Unable to find sequence of topics within [topics]");
     return false;
   }
 
   for (const auto &newTopic : topics) {
     if (!newTopic["topic"]) {
-      std::cerr << "Unrecognized element. It should be [topic]" << std::endl;
+      RCLCPP_ERROR(this->node->get_logger(),
+                   "Unrecognized element. It should be [topic]");
       return false;
     }
 
     const auto &topicProperties = newTopic["topic"];
     if (!topicProperties.IsMap()) {
-      std::cerr << "Unable to find properties within [topic]" << std::endl;
+      RCLCPP_ERROR(this->node->get_logger(),
+                   "Unable to find properties within [topic]");
       return false;
     }
 
     TopicInfo topicInfo;
 
     if (!topicProperties["name"]) {
-      std::cerr << "Unable to find [name] within [topic]" << std::endl;
+      RCLCPP_ERROR(this->node->get_logger(),
+                   "Unable to find [name] within [topic]");
       return false;
     }
     topicInfo.name = topicProperties["name"].as<std::string>();
 
     if (!topicProperties["type"]) {
-      std::cerr << "Unable to find [type] within [topic]" << std::endl;
+      RCLCPP_ERROR(this->node->get_logger(),
+                   "Unable to find [type] within [topic]");
       return false;
     }
     topicInfo.type = topicProperties["type"].as<std::string>();
@@ -248,11 +164,11 @@ ScoringTier2Node::ScoringTier2Node(const std::string &_yamlFile)
     : Node("score_tier2_node") {
   try {
     auto config = YAML::LoadFile(_yamlFile);
-    this->score = std::make_unique<aic_scoring::ScoringTier2>(this, &config);
+    this->score = std::make_unique<aic_scoring::ScoringTier2>(this);
+    this->score->Initialize(config);
   } catch (const YAML::BadFile &_e) {
     std::cerr << "Unable to open YAML file [" << _yamlFile << "]" << std::endl;
     return;
   }
 }
-
 }  // namespace aic_scoring
