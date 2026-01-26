@@ -33,12 +33,9 @@ from aic_control_interfaces.srv import (
 )
 from geometry_msgs.msg import Pose, Point, Quaternion, Wrench, Vector3, Twist
 
-
-# --- Configuration ---
 LINEAR_STEP = 0.1  # Step size for linear movement (meters)
 ANGULAR_STEP = 0.5  # Step size for angular movement (radians)
 
-# Key mappings based on your instructions
 KEY_MAPPINGS = {
     "w": (1, 0, 0, 0, 0, 0),  # +x
     "s": (-1, 0, 0, 0, 0, 0),  # -x
@@ -53,24 +50,6 @@ KEY_MAPPINGS = {
     "i": (0, 0, 0, 0, 0, 1),  # +yaw (around Z)
     "k": (0, 0, 0, 0, 0, -1),  # -yaw (around Z)
 }
-
-INSTRUCTION_MSG = """
-Control Your Robot End-Effector!
----------------------------
-Moving around:
-    W/S : +/- X axis
-    A/D : +/- Y axis
-    R/F : +/- Z axis
-
-Rotating:
-    Y/H : +/- Roll (about X axis)
-    U/J : +/- Pitch (about Y axis)
-    I/K : +/- Yaw (about Z axis)
-
-Press any other key to stop the robot.
-
-CTRL-C to quit
-"""
 
 
 class AICTeleoperatorNode(Node):
@@ -123,7 +102,6 @@ class AICTeleoperatorNode(Node):
         self,
         pos,
         quat,
-        time_to_target,
         mode=TrajectoryGenerationMode.MODE_POSITION,
         twist=None,
     ):
@@ -179,7 +157,6 @@ class AICTeleoperatorNode(Node):
             self.generate_motion_update(
                 None,
                 None,
-                0.0,
                 mode=TrajectoryGenerationMode.MODE_VELOCITY,
                 twist=twist,
             )
@@ -213,7 +190,25 @@ class AICTeleoperatorNode(Node):
 
 def main(args=None):
 
-    print(INSTRUCTION_MSG)
+    print(
+        """
+        Keyboard teleoperation for Cartesian control
+        ---------------------------
+        Moving around:
+            W/S : +/- X axis
+            A/D : +/- Y axis
+            R/F : +/- Z axis
+
+        Rotating:
+            Y/H : +/- Roll (about X axis)
+            U/J : +/- Pitch (about Y axis)
+            I/K : +/- Yaw (about Z axis)
+
+        Press any other key to stop the robot.
+
+        CTRL-C to quit
+    """
+    )
 
     try:
         with rclpy.init(args=args):
