@@ -315,12 +315,17 @@ Engine::Engine(const rclcpp::NodeOptions& options)
   node_->declare_parameter("model_deactivate_timeout_seconds", 60);
   node_->declare_parameter("model_cleanup_timeout_seconds", 60);
   node_->declare_parameter("model_shutdown_timeout_seconds", 60);
+	node_->declare_parameter("submission_team_name", std::string("sample_team"));
+	node_->declare_parameter(
+		"submission_root_dir", std::string(std::getenv("HOME")) + std::string("/aic_submissions"));
 
-  // TODO(luca) consider having a team_name parameter instead and autocompute
-  // submission folder
-  const std::string home = std::getenv("HOME");
-  scoring_output_dir_ = node_->declare_parameter(
-      "scoring_output_dir", std::string(home + "/submissions/sample_team"));
+  scoring_output_dir_ = node_->get_parameter("submission_root_dir").as_string() +
+												 "/" +
+												 node_->get_parameter("submission_team_name").as_string();
+	RCLCPP_INFO(
+		node_->get_logger(),
+		"Scoring output directory set to: %s",
+		scoring_output_dir_.c_str());
 
   spin_thread_ = std::thread([node = node_]() {
     rclcpp::executors::SingleThreadedExecutor executor;
