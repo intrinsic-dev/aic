@@ -20,3 +20,4 @@ geometry_msgs/Wrench wrench_feedback_gains_at_tip
 
 # The mode of trajectory generation.
 TrajectoryGenerationMode trajectory_generation_mode
+
