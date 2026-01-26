@@ -1,6 +1,7 @@
 # List of topics to subscribe.
 scoring:
   topics:
+    # TODO(luca) check topic mapping
     - topic:
         name: "/joint_states"
         type: "sensor_msgs/msg/JointState"
