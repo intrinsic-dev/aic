@@ -180,8 +180,9 @@ class Engine {
   bool ready_simulator(Trial& trial);
 
   /// \brief Check if the scoring system is ready.
+  /// \param[in] trial The trial currently being ran
   /// \return True if the scoring system is ready, false otherwise.
-  bool ready_scoring();
+  bool ready_scoring(const Trial& trial);
 
   /// \brief Check if tasks were started successfully.
   /// \param[in] trial The trial currently being ran
@@ -248,18 +249,9 @@ class Engine {
   /// @return True if shutdown succeeded, false otherwise.
   bool shutdown_model_node();
 
-  /// @brief Start the bag recording.
-  /// \param[in] trial The current trial.
-  /// @return True if recording succeeded, false otherwise.
-  bool start_recording_scores(const Trial& trial);
-
   /// @brief Stop the bag recording.
   /// @return True if stopping recording succeeded, false otherwise.
   bool stop_recording_scores();
-
-  /// @brief Update the connections (plugs/ports) for this trial.
-  /// \param[in] trial The current trial.
-  void update_trial_scoring_connections(const Trial& trial);
 
   // Strings.
   // Name of the aic_adapter node for lifecycle transitions.

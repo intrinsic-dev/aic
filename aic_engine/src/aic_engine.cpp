@@ -532,13 +532,7 @@ TrialState Engine::handle_trial(Trial& trial) {
   }
 
   if (trial.state == TrialState::SimulatorReady) {
-    if (this->ready_scoring()) {
-      update_trial_scoring_connections(trial);
-      if (!start_recording_scores(trial)) {
-        reset_after_trial(trial);
-        return trial.state;
-      }
-
+    if (this->ready_scoring(trial)) {
       trial.state = TrialState::ScoringReady;
     }
   } else {
@@ -947,12 +941,34 @@ bool Engine::ready_simulator(Trial& trial) {
 }
 
 //==============================================================================
-bool Engine::ready_scoring() {
+bool Engine::ready_scoring(const Trial& trial) {
   RCLCPP_INFO(node_->get_logger(), "Checking scoring system readiness...");
+  if (is_recording_) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "Start recording attempt but we're already recording.");
+    return false;
+  }
 
-  // TODO(Yadunund): Implement actual scoring system readiness checks.
-  std::this_thread::sleep_for(std::chrono::seconds(1));
-  // For now, assume scoring system is ready.
+  // Register the new connections for this trial.
+  std::vector<aic_scoring::Connection> connections;
+  for (const auto& task : trial.tasks) {
+    aic_scoring::Connection connection;
+    connection.plugName = task.cable_name + "::" + task.plug_name;
+    connection.portName = task.target_module_name + "::" + task.port_name;
+    connections.push_back(connection);
+  }
+  scoring_tier2_->ResetConnections(connections);
+
+  const std::string bag_path = scoring_output_dir_ + "/bag_" + trial.id;
+  if (!scoring_tier2_->StartRecording(bag_path)) {
+    RCLCPP_ERROR(node_->get_logger(), "Failed to start recording to '%s'.",
+                 bag_path.c_str());
+    return false;
+  }
+
+  is_recording_ = true;
+  RCLCPP_INFO(node_->get_logger(), "Started recording to '%s'.",
+              bag_path.c_str());
   return true;
 }
 
@@ -1468,27 +1484,6 @@ bool Engine::spawn_entity(Trial& trial, std::string entity_name,
 }
 
 //==============================================================================
-bool Engine::start_recording_scores(const Trial& trial) {
-  if (is_recording_) {
-    RCLCPP_ERROR(node_->get_logger(),
-                 "Start recording attempt but we're already recording.");
-    return false;
-  }
-
-  const std::string bag_path = scoring_output_dir_ + "/bag_" + trial.id;
-  if (!scoring_tier2_->StartRecording(bag_path)) {
-    RCLCPP_ERROR(node_->get_logger(), "Failed to start recording to '%s'.",
-                 bag_path.c_str());
-    return false;
-  }
-
-  is_recording_ = true;
-  RCLCPP_INFO(node_->get_logger(), "Started recording to '%s'.",
-              bag_path.c_str());
-  return true;
-}
-
-//==============================================================================
 bool Engine::stop_recording_scores() {
   if (!is_recording_) {
     RCLCPP_ERROR(node_->get_logger(),
@@ -1504,19 +1499,6 @@ bool Engine::stop_recording_scores() {
   is_recording_ = false;
   RCLCPP_INFO(node_->get_logger(), "Stopped recording.");
   return true;
-}
-
-//==============================================================================
-void Engine::update_trial_scoring_connections(const Trial& trial) {
-  // Register the new connections for this trial.
-  std::vector<aic_scoring::Connection> connections;
-  for (const auto& task : trial.tasks) {
-    aic_scoring::Connection connection;
-    connection.plugName = task.cable_name + "::" + task.plug_name;
-    connection.portName = task.target_module_name + "::" + task.port_name;
-    connections.push_back(connection);
-  }
-  scoring_tier2_->ResetConnections(connections);
 }
 
 }  // namespace aic
