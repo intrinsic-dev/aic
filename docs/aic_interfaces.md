@@ -17,6 +17,8 @@ The following interfaces are defined.
     * Describes a target joint configuration and the associated tolerances for joint-space control.
 * **[msg/Observation.msg](../aic_interfaces/aic_model_interfaces/msg/Observation.msg)**
     * A snapshot of the world that the `aic_model` node subscribes to.
+* **[msg/ResetJoints.msg](../aic_interfaces/aic_control_interfaces/msg/ResetJoints.msg)**
+    * Provides a list of joint names to be reset to their initial positions.
 ---
 
 ### Inputs

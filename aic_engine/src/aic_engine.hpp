@@ -28,6 +28,7 @@
 #include "aic_control_interfaces/msg/joint_motion_update.hpp"
 #include "aic_control_interfaces/msg/motion_update.hpp"
 #include "aic_scoring/ScoringTier2.hh"
+#include "aic_control_interfaces/msg/reset_joints.hpp"
 #include "aic_task_interfaces/action/insert_cable.hpp"
 #include "control_msgs/action/follow_joint_trajectory.hpp"
 #include "geometry_msgs/msg/wrench_stamped.hpp"
@@ -58,10 +59,9 @@ using JointStateMsg = sensor_msgs::msg::JointState;
 using JointMotionUpdateMsg = aic_control_interfaces::msg::JointMotionUpdate;
 using JointTrajectoryPoint = trajectory_msgs::msg::JointTrajectoryPoint;
 using MotionUpdateMsg = aic_control_interfaces::msg::MotionUpdate;
+using ResetJointsMsg = aic_control_interfaces::msg::ResetJoints;
 using SpawnEntitySrv = simulation_interfaces::srv::SpawnEntity;
 using Task = aic_task_interfaces::msg::Task;
-using TrajectoryGenerationMode =
-    aic_control_interfaces::msg::TrajectoryGenerationMode;
 using WrenchStampedMsg = geometry_msgs::msg::WrenchStamped;
 
 //==============================================================================
@@ -344,7 +344,8 @@ class Engine {
   MotionUpdateMsg::ConstSharedPtr last_motion_update_msg_;
 
   // Publishers.
-  rclcpp::Publisher<JointMotionUpdateMsg>::SharedPtr joint_motion_update_pub_;
+  // rclcpp::Publisher<JointMotionUpdateMsg>::SharedPtr joint_motion_update_pub_;
+  rclcpp::Publisher<ResetJointsMsg>::SharedPtr reset_joints_pub_;
 
   // Action clients.
   rclcpp_action::Client<InsertCableAction>::SharedPtr

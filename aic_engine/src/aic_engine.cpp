@@ -459,8 +459,10 @@ EngineState Engine::initialize() {
       },
       sub_options_ignore_local);
 
-  joint_motion_update_pub_ = node_->create_publisher<JointMotionUpdateMsg>(
-      "/aic_controller/joint_commands", reliable_qos);
+  // joint_motion_update_pub_ = node_->create_publisher<JointMotionUpdateMsg>(
+  //     "/aic_controller/joint_commands", reliable_qos);
+  reset_joints_pub_ = node_->create_publisher<ResetJointsMsg>(
+      "/reset_joints", reliable_qos);
 
   insert_cable_action_client_ =
       rclcpp_action::create_client<InsertCableAction>(node_, "/insert_cable");
@@ -1322,118 +1324,67 @@ void Engine::reset_after_trial(const Trial& trial) {
 bool Engine::home_robot() {
   RCLCPP_INFO(node_->get_logger(), "Homing robot to initial positions...");
 
-  // Change target mode to Joint
+  // Deactivate aic_controller
+  // Publish ResetJoints msg containing all 6 joints
   {
-    auto change_mode_request = std::make_shared<ChangeTargetModeSrv::Request>();
-    change_mode_request->target_mode =
-        ChangeTargetModeSrv::Request::TARGET_MODE_JOINT;
-    auto change_mode_future =
-        change_target_mode_client_->async_send_request(change_mode_request);
-    if (change_mode_future.wait_for(std::chrono::seconds(5)) !=
-        std::future_status::ready) {
-      RCLCPP_ERROR(node_->get_logger(),
-                   "ChangeTargetMode service call timed out when changing to "
-                   "JOINT mode");
-      return false;
+    auto reset_msg = ResetJointsMsg();
+    reset_msg.joint_names = {};
+    for (const auto& [joint_name, _] : home_joint_positions_) {
+      reset_msg.joint_names.emplace_back(joint_name);
     }
-    auto change_mode_response = change_mode_future.get();
-    if (!change_mode_response->success) {
-      RCLCPP_ERROR(node_->get_logger(),
-                   "Failed to change target mode to JOINT mode");
-      return false;
-    }
-    RCLCPP_INFO(node_->get_logger(),
-                "Successfully changed target mode to JOINT mode");
+    reset_joints_pub_->publish(reset_msg);
+    RCLCPP_INFO(node_->get_logger(), "Published ResetJoints message.");
   }
+  // Validate joint reset
 
-  while (!last_joint_state_msg_) {
-    RCLCPP_INFO(node_->get_logger(),
-                "Waiting for first joint state message...");
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-  }
+  std::this_thread::sleep_for(std::chrono::milliseconds(10000));
 
-  auto joint_msg = JointMotionUpdateMsg();
-  auto home_point = JointTrajectoryPoint();
-  home_point.positions = {};
-  for (const auto& [joint_name, joint_position] : home_joint_positions_) {
-    home_point.positions.emplace_back(joint_position);
-  }
-  if (home_point.positions.size() != 6) {
-    RCLCPP_ERROR(node_->get_logger(),
-                 "Home joint positions should account for exactly 6 joints.");
-    return false;
-  }
+  // Activate aic_controller
 
-  home_point.time_from_start.sec = home_time_from_start_;
 
-  joint_msg.target_state = home_point;
-  joint_msg.target_stiffness = {100.0, 100.0, 100.0, 50.0, 50.0, 50.0};
-  joint_msg.target_damping = {40.0, 40.0, 40.0, 15.0, 15.0, 15.0};
-  joint_msg.trajectory_generation_mode.mode =
-      TrajectoryGenerationMode::MODE_POSITION;
-  joint_motion_update_pub_->publish(joint_msg);
-  RCLCPP_INFO(node_->get_logger(), "Waiting for robot to home...");
+  // while (!last_joint_state_msg_) {
+  //   RCLCPP_INFO(node_->get_logger(),
+  //               "Waiting for first joint state message...");
+  //   std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+  // }
 
-  auto num_joints_ = last_joint_state_msg_->name.size();
-  rclcpp::Time start_time = this->node_->now();
-  const rclcpp::Duration timeout =
-      rclcpp::Duration::from_seconds(home_time_from_start_);
 
-  bool homed = true;
-  while (!(this->node_->now() - start_time > timeout)) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+  // auto num_joints_ = last_joint_state_msg_->name.size();
+  // rclcpp::Time start_time = this->node_->now();
+  // const rclcpp::Duration timeout =
+  //     rclcpp::Duration::from_seconds(home_time_from_start_);
 
-    homed = true;
-    for (std::size_t i = 0; i < num_joints_; ++i) {
-      const auto joint_name = last_joint_state_msg_->name[i];
-      for (const auto& [home_joint, home_joint_pos] : home_joint_positions_) {
-        if (home_joint != joint_name) {
-          continue;
-        }
-        const auto current_joint_pos = last_joint_state_msg_->position[i];
-        if (std::abs(current_joint_pos - home_joint_pos) >
-            joint_difference_threshold_) {
-          RCLCPP_INFO(node_->get_logger(), "diff is: %f (curr [%f], targ [%f])",
-                      std::abs(current_joint_pos - home_joint_pos),
-                      current_joint_pos, home_joint_pos);
-          homed = false;
-          break;
-        }
-      }
-    }
-    if (homed) {
-      break;
-    }
-  }
+  // bool homed = true;
+  // while (!(this->node_->now() - start_time > timeout)) {
+  //   std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
-  // Change target mode back to Cartesian
-  {
-    auto change_mode_request = std::make_shared<ChangeTargetModeSrv::Request>();
-    change_mode_request->target_mode =
-        ChangeTargetModeSrv::Request::TARGET_MODE_CARTESIAN;
-    auto change_mode_future =
-        change_target_mode_client_->async_send_request(change_mode_request);
-    if (change_mode_future.wait_for(std::chrono::seconds(5)) !=
-        std::future_status::ready) {
-      RCLCPP_ERROR(node_->get_logger(),
-                   "ChangeTargetMode service call timed out when changing to "
-                   "CARTESIAN mode");
-      return false;
-    }
-    auto change_mode_response = change_mode_future.get();
-    if (!change_mode_response->success) {
-      RCLCPP_ERROR(node_->get_logger(),
-                   "Failed to change target mode to CARTESIAN mode");
-      return false;
-    }
-    RCLCPP_INFO(node_->get_logger(),
-                "Successfully changed target mode to CARTESIAN mode");
-  }
+  //   homed = true;
+  //   for (std::size_t i = 0; i < num_joints_; ++i) {
+  //     const auto joint_name = last_joint_state_msg_->name[i];
+  //     for (const auto& [home_joint, home_joint_pos] : home_joint_positions_) {
+  //       if (home_joint != joint_name) {
+  //         continue;
+  //       }
+  //       const auto current_joint_pos = last_joint_state_msg_->position[i];
+  //       if (std::abs(current_joint_pos - home_joint_pos) >
+  //           joint_difference_threshold_) {
+  //         RCLCPP_INFO(node_->get_logger(), "diff is: %f (curr [%f], targ [%f])",
+  //                     std::abs(current_joint_pos - home_joint_pos),
+  //                     current_joint_pos, home_joint_pos);
+  //         homed = false;
+  //         break;
+  //       }
+  //     }
+  //   }
+  //   if (homed) {
+  //     break;
+  //   }
+  // }
 
-  if (!homed) {
-    RCLCPP_ERROR(node_->get_logger(), "Robot failed to home within timeout.");
-    return false;
-  }
+  // if (!homed) {
+  //   RCLCPP_ERROR(node_->get_logger(), "Robot failed to home within timeout.");
+  //   return false;
+  // }
 
   RCLCPP_INFO(node_->get_logger(), "Robot homed successfully.");
   return true;

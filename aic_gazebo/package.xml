@@ -16,6 +16,10 @@
 
   <test_depend>ament_lint_auto</test_depend>
 
+  <depend>aic_control_interfaces</depend>
+  <depend>ros_gz_sim</depend>
+  <depend>rclcpp</depend>
+
   <export>
     <build_type>ament_cmake</build_type>
   </export>
