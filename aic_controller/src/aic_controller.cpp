@@ -892,16 +892,16 @@ controller_interface::return_type Controller::update(
       last_tool_pose_error_ = tool_pose_error;
 
       // Transform target velocity from TCP frame into base frame
-      Eigen::Matrix<double, 6, 1> ref_tool_vel_base_frame;
-      ref_tool_vel_base_frame.head<3>() =
+      Eigen::Matrix<double, 6, 1> new_tool_reference_base_frame;
+      new_tool_reference_base_frame.head<3>() =
           current_tool_state_.pose.rotation().inverse() *
           new_tool_reference.velocity.head<3>();
-      ref_tool_vel_base_frame.tail<3>() =
+      new_tool_reference_base_frame.tail<3>() =
           current_tool_state_.pose.rotation().inverse() *
           new_tool_reference.velocity.tail<3>();
 
       Eigen::Matrix<double, 6, 1> tool_vel_error =
-          ref_tool_vel_base_frame - current_tool_state_.velocity;
+          new_tool_reference_base_frame - current_tool_state_.velocity;
 
       // Calculate the current Jacobian.
       Eigen::Matrix<double, 6, Eigen::Dynamic> jacobian(6, num_joints_);
