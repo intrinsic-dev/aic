@@ -30,6 +30,7 @@ from aic_control_interfaces.msg import (
     MotionUpdate,
     TrajectoryGenerationMode,
 )
+from lerobot.teleoperators import TeleopEvents
 from control_msgs.action import ParallelGripperCommand
 from geometry_msgs.msg import Twist, Vector3, Wrench
 from lerobot.cameras import CameraConfig, make_cameras_from_configs
@@ -72,10 +73,30 @@ ControllerStateDict = TypedDict(
         "tcp_error.rx": float,
         "tcp_error.ry": float,
         "tcp_error.rz": float,
-        "joint_state.positions": NDArray[np.float64],
-        "joint_state.velocities": NDArray[np.float64],
-        "joint_state.accelerations": NDArray[np.float64],
-        "joint_state.efforts": NDArray[np.float64],
+        "joint_state.positions.0": float,
+        "joint_state.positions.1": float,
+        "joint_state.positions.2": float,
+        "joint_state.positions.3": float,
+        "joint_state.positions.4": float,
+        "joint_state.positions.5": float,
+        "joint_state.velocities.0": float,
+        "joint_state.velocities.1": float,
+        "joint_state.velocities.2": float,
+        "joint_state.velocities.3": float,
+        "joint_state.velocities.4": float,
+        "joint_state.velocities.5": float,
+        "joint_state.accelerations.0": float,
+        "joint_state.accelerations.1": float,
+        "joint_state.accelerations.2": float,
+        "joint_state.accelerations.3": float,
+        "joint_state.accelerations.4": float,
+        "joint_state.accelerations.5": float,
+        "joint_state.efforts.0": float,
+        "joint_state.efforts.1": float,
+        "joint_state.efforts.2": float,
+        "joint_state.efforts.3": float,
+        "joint_state.efforts.4": float,
+        "joint_state.efforts.5": float,
     },
 )
 
@@ -132,14 +153,7 @@ class AICRobotAICController(Robot):
 
     @cached_property
     def observation_features(self) -> dict:
-        all_joint_names = [
-            *self.config.arm_joint_names,
-            self.config.gripper_joint_name,
-        ]
-        motor_state_ft = {f"{motor}.pos": float for motor in all_joint_names}
         return {
-            **motor_state_ft,
-            **self._cameras_ft,
             **ControllerStateDict.__annotations__,
         }
 
@@ -239,10 +253,31 @@ class AICRobotAICController(Robot):
             "tcp_error.rx": tcp_error[3],
             "tcp_error.ry": tcp_error[4],
             "tcp_error.rz": tcp_error[5],
-            "joint_state.positions": np.array(joint_positions),
-            "joint_state.velocities": np.array(joint_velocities),
-            "joint_state.accelerations": np.array(joint_accelerations),
-            "joint_state.efforts": np.array(joint_efforts),
+            # FIXME: aic_controller is not populating these values
+            "joint_state.positions.0": 0.0, # joint_positions[0],
+            "joint_state.positions.1": 0.0, # joint_positions[1],
+            "joint_state.positions.2": 0.0, # joint_positions[2],
+            "joint_state.positions.3": 0.0, # joint_positions[3],
+            "joint_state.positions.4": 0.0, # joint_positions[4],
+            "joint_state.positions.5": 0.0, # joint_positions[5],
+            "joint_state.velocities.0": 0.0, # joint_velocities[0],
+            "joint_state.velocities.1": 0.0, # joint_velocities[1],
+            "joint_state.velocities.2": 0.0, # joint_velocities[2],
+            "joint_state.velocities.3": 0.0, # joint_velocities[3],
+            "joint_state.velocities.4": 0.0, # joint_velocities[4],
+            "joint_state.velocities.5": 0.0, # joint_velocities[5],
+            "joint_state.accelerations.0": 0.0, # joint_accelerations[0],
+            "joint_state.accelerations.1": 0.0, # joint_accelerations[1],
+            "joint_state.accelerations.2": 0.0, # joint_accelerations[2],
+            "joint_state.accelerations.3": 0.0, # joint_accelerations[3],
+            "joint_state.accelerations.4": 0.0, # joint_accelerations[4],
+            "joint_state.accelerations.5": 0.0, # joint_accelerations[5],
+            "joint_state.efforts.0": joint_efforts[0],
+            "joint_state.efforts.1": joint_efforts[1],
+            "joint_state.efforts.2": joint_efforts[2],
+            "joint_state.efforts.3": joint_efforts[3],
+            "joint_state.efforts.4": joint_efforts[4],
+            "joint_state.efforts.5": joint_efforts[5],
         }
 
         # Capture images from cameras
@@ -325,6 +360,8 @@ class AICRobotAICController(Robot):
             self.node.destroy_node()
 
         if self.executor_thread is not None:
+            if self.executor is not None:
+                self.executor.shutdown()
             self.executor_thread.join()
 
         self._is_connected = False
