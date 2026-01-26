@@ -69,12 +69,18 @@ ros2 run aic_engine aic_engine --ros-args \
 | `config_file_path` | string | "" | **Required**. Path to the trial configuration YAML file |
 | `model_node_name` | string | "aic_model" | Name of the participant's lifecycle node |
 | `adapter_node_name` | string | "aic_adapter_node" | Name of the adapter node (future use) |
-| `scoring_output_dir` | string | "$HOME/submissions/sample_team/" | Folder to output the result of scoring|
+| `submission_team_name` | string | "sample_team" | Team name used to create the scoring output directory |
+| `submission_root_dir` | string | "$HOME/aic_submissions" | Root directory for submissions |
+| `gripper_frame_name` | string | "gripper/tcp" | Name of the gripper frame |
 | `ground_truth` | bool | false | Whether to publish ground truth poses from the task board |
 | `skip_model_ready` | bool | false | Skip model readiness checks (for testing only) |
 | `endpoint_ready_timeout_seconds` | int | 10 | Timeout for waiting for required endpoints |
 | `model_discovery_timeout_seconds` | int | 30 | Timeout for discovering the participant model |
-| `model_configuration_timeout_seconds` | int | 60 | Timeout for model configuration checks |
+| `model_configure_timeout_seconds` | int | 60 | Timeout for model configuration checks |
+| `model_activate_timeout_seconds` | int | 60 | Timeout for model activation |
+| `model_deactivate_timeout_seconds` | int | 60 | Timeout for model deactivation |
+| `model_cleanup_timeout_seconds` | int | 60 | Timeout for model cleanup |
+| `model_shutdown_timeout_seconds` | int | 60 | Timeout for model shutdown |
 
 
 ### Testing
