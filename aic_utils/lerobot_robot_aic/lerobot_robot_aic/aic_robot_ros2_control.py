@@ -28,7 +28,7 @@ from lerobot.utils.errors import DeviceNotConnectedError
 from lerobot_robot_ros import ROS2Config, ROS2Robot
 from lerobot_robot_ros.config import ActionType, ROS2InterfaceConfig
 from lerobot_robot_ros.robot import ActionType, ROS2Interface
-from rclpy.action import ActionClient
+from rclpy.action.client import ActionClient
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.node import Node
 
@@ -115,8 +115,8 @@ class AICRobotROS2ControlConfig(ROS2Config):
             base_link="base_link",
             arm_joint_names=arm_joint_names.copy(),
             gripper_joint_name=gripper_joint_name,
-            gripper_open_position=0.0,
-            gripper_close_position=0.024,
+            gripper_open_position=0.025,
+            gripper_close_position=0.012,
             gripper_action_name="/gripper_action_controller/gripper_cmd",
             min_joint_positions=[-2 * pi for _ in arm_joint_names],
             max_joint_positions=[2 * pi for _ in arm_joint_names],

@@ -14,11 +14,13 @@ services:
     build:
       dockerfile: docker/aic_model/Dockerfile
       context: ..
+    command: --ros-args -p policy:=aic_example_policies.ros.WaveArm
     gpus: all
     networks:
       - default
     environment:
-      - RMW_IMPLEMENTATION='rmw_zenoh_cpp'
-      - ZENOH_CONFIG_OVERRIDE='connect/endpoints=["tcp/eval:7447"];routing/router/peers_failover_brokering=true'
+      RMW_IMPLEMENTATION: rmw_zenoh_cpp
+      ZENOH_CONFIG_OVERRIDE: connect/endpoints=["tcp/eval:7447"];routing/router/peers_failover_brokering=true
+      ZENOH_ROUTER_CHECK_ATTEMPTS: -1
 networks:
   default:

@@ -39,6 +39,7 @@
   <xacro:arg name="wrist_camera_2_tf_prefix" default="wrist_camera_2/"/>
   <xacro:arg name="wrist_camera_3_tf_prefix" default="wrist_camera_3/"/>
   <xacro:arg name="gripper_tf_prefix" default="gripper/"/>
+  <xacro:arg name="gripper_initial_pos" default="0.012"/>
   <xacro:arg name="cam_mount_radial_offset" default="0.1" />
   <xacro:arg name="cam_mount_axial_offset" default="0.08" />
   <!-- If true, enable Gazebo camera in sim -->
@@ -167,7 +168,7 @@
     grip_vel_max="0.05"
     grip_effort_min="20"
     grip_effort_max="130"
-    initial_pos="0.01"
+    initial_pos="$(arg gripper_initial_pos)"
     >
   </xacro:robotiq_hande>
 
