@@ -1216,6 +1216,10 @@ bool Engine::cleanup_model_node() {
     return true;
   }
 
+  if (!this->model_discovered_) {
+    return true;
+  }
+
   return this->transition_model_lifecycle_node(
       lifecycle_msgs::msg::Transition::TRANSITION_CLEANUP);
 }
@@ -1225,6 +1229,10 @@ bool Engine::shutdown_model_node() {
   if (skip_model_ready_) {
     RCLCPP_INFO(node_->get_logger(),
                 "Skipping model shutdown as per parameter.");
+    return true;
+  }
+
+  if (!this->model_discovered_) {
     return true;
   }
 
