@@ -294,10 +294,7 @@ def launch_setup(context, *args, **kwargs):
         condition=IfCondition(spawn_cable),
     )
 
-    gz_ip_env = SetEnvironmentVariable(
-        name='GZ_IP',
-        value='127.0.0.1'
-    )
+    gz_ip_env = SetEnvironmentVariable(name="GZ_IP", value="127.0.0.1")
 
     # GZ nodes
     gz_spawn_entity = Node(
