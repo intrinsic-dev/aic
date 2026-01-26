@@ -100,6 +100,7 @@ class HomeTrajectoryNode(Node):
     def send_trajectory(self):
         if self.use_aic_control:
             msg = MotionUpdate()
+            msg.header.stamp = self.get_clock().now().to_msg()
             msg.header.frame_id = "base_link"
             msg.pose = Pose(
                 position=Point(x=-0.4, y=0.2, z=0.3),

@@ -81,19 +81,20 @@ class TestImpedanceNode(Node):
         self,
         pos,
         quat,
+        frame_id,
         mode=TrajectoryGenerationMode.MODE_POSITION,
         twist=None,
     ):
 
         msg = MotionUpdate()
+        msg.header.stamp = self.get_clock().now().to_msg()
+        msg.header.frame_id = frame_id
         if mode == TrajectoryGenerationMode.MODE_POSITION:
-            msg.header.frame_id = "base_link"
             msg.pose = Pose(
                 position=Point(x=pos[0], y=pos[1], z=pos[2]),
                 orientation=Quaternion(x=quat[0], y=quat[1], z=quat[2], w=quat[3]),
             )
         elif mode == TrajectoryGenerationMode.MODE_VELOCITY:
-            msg.header.frame_id = "gripper/tcp"
             msg.velocity = Twist(
                 linear=Vector3(x=twist[0], y=twist[1], z=twist[2]),
                 angular=Vector3(x=twist[3], y=twist[4], z=twist[5]),
@@ -122,25 +123,29 @@ class TestImpedanceNode(Node):
 
         return msg
 
-    def send_cartesian_target(self):
-        pos_tool_up = [-0.501, -0.175, 0.2]
-
-        quat_upright = [
-            0.7071068,
-            0.7071068,
-            0.0,
-            0.0,
-        ]  # ZYX = (180, 0, 90), z axis normal to plane and (x,y) axes are aligned with base_link axes
+    def send_cartesian_pose_target(self, pos, quat, frame_id):
 
         self.motion_update_publisher.publish(
-            self.generate_motion_update(pos_tool_up, quat_upright)
+            self.generate_motion_update(
+                pos, quat, frame_id, TrajectoryGenerationMode.MODE_POSITION
+            )
         )
         self.get_logger().info(
-            "Published MotionUpdate for tool up configuration to aic_controller"
+            f"Published MotionUpdate with POSITION trajectory mode to aic_controller"
         )
 
-    def send_joint_target(self):
-        joint_pos = [0.0, -1.57, -1.57, -1.57, 1.57, 0.0]
+    def send_cartesian_twist_target(self, twist, frame_id):
+
+        self.motion_update_publisher.publish(
+            self.generate_motion_update(
+                None, None, frame_id, TrajectoryGenerationMode.MODE_VELOCITY, twist
+            )
+        )
+        self.get_logger().info(
+            f"Published MotionUpdate with VELOCITY trajectory mode to aic_controller"
+        )
+
+    def send_joint_target(self, joint_pos):
 
         self.joint_motion_update_publisher.publish(
             self.generate_joint_motion_update(joint_pos)
@@ -148,7 +153,7 @@ class TestImpedanceNode(Node):
 
         self.get_logger().info("Published JointMotionUpdate to aic_controller")
 
-    def send_change_control_mode_req(self, mode):
+    def send_change_target_mode_req(self, mode):
         ChangeTargetMode
 
         req = ChangeTargetMode.Request()
@@ -175,32 +180,59 @@ def main(args=None):
         with rclpy.init(args=args):
             node = TestImpedanceNode()
 
-            node.send_change_control_mode_req(
-                ChangeTargetMode.Request().TARGET_MODE_JOINT
-            )
-
-            node.send_joint_target()
-            time.sleep(5)
-
-            node.send_change_control_mode_req(
+            # Send service request to switch to Cartesian target mode
+            node.send_change_target_mode_req(
                 ChangeTargetMode.Request().TARGET_MODE_CARTESIAN
             )
 
-            node.send_cartesian_target()
-            time.sleep(5)
+            quat_tool_down = [
+                0.7071068,
+                0.7071068,
+                0.0,
+                0.0,
+            ]  # ZYX = (180, 0, 90), z axis normal to plane and (x,y) axes are aligned with base_link axes
 
-            node.send_change_control_mode_req(
+            # Send Cartesian pose targets in both "base_link" and "gripper/tcp" frames
+            node.send_cartesian_pose_target(
+                [-0.501, -0.175, 0.2],
+                quat_tool_down,
+                "base_link",
+            )
+            time.sleep(3)
+
+            node.send_cartesian_pose_target(
+                [0.2, 0.0, 0.0],
+                [-0.2126311, 0.2126311, 0.6743797, 0.6743797],
+                "gripper/tcp",
+            )
+            time.sleep(3)
+
+            node.send_cartesian_pose_target(
+                [0.0, 0.2, 0.0],
+                [0.2126311, -0.2126311, -0.6743797, 0.6743797],
+                "gripper/tcp",
+            )
+            time.sleep(3)
+
+            # Send Cartesian twist targets in both "base_link" and "gripper/tcp" frames
+            node.send_cartesian_twist_target(
+                [0.05, 0.0, 0.0, 0.0, 0.0, 0.0],
+                "base_link",
+            )
+            time.sleep(3)
+            node.send_cartesian_twist_target(
+                [0.0, -0.05, 0.0, 0.0, 0.0, 0.0],
+                "gripper/tcp",
+            )
+            time.sleep(3)
+
+            # Send service request to switch to joint target mode
+            node.send_change_target_mode_req(
                 ChangeTargetMode.Request().TARGET_MODE_JOINT
             )
 
-            node.send_joint_target()
-            time.sleep(6)
-
-            node.send_change_control_mode_req(
-                ChangeTargetMode.Request().TARGET_MODE_CARTESIAN
-            )
-
-            node.send_cartesian_target()
+            node.send_joint_target([0.0, -1.57, -1.57, -1.57, 1.57, 0.0])
+            time.sleep(3)
 
             rclpy.spin(node)
 

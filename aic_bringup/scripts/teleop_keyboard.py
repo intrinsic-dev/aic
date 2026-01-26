@@ -63,9 +63,9 @@ Moving around:
     R/F : +/- Z axis
 
 Rotating:
-    Y/H : +/- Roll (around X)
-    U/J : +/- Pitch (around Y)
-    I/K : +/- Yaw (around Z)
+    Y/H : +/- Roll (about X axis)
+    U/J : +/- Pitch (about Y axis)
+    I/K : +/- Yaw (about Z axis)
 
 Press any other key to stop the robot.
 
@@ -129,6 +129,7 @@ class AICTeleoperatorNode(Node):
     ):
 
         msg = MotionUpdate()
+        msg.header.stamp = self.get_clock().now().to_msg()
         if mode == TrajectoryGenerationMode.MODE_POSITION:
             msg.header.frame_id = "base_link"
             msg.pose = Pose(
@@ -138,9 +139,7 @@ class AICTeleoperatorNode(Node):
         elif mode == TrajectoryGenerationMode.MODE_VELOCITY:
             msg.header.frame_id = "gripper/tcp"
             msg.velocity = twist
-        msg.target_stiffness = np.diag(
-            [175.0, 175.0, 175.0, 175.0, 175.0, 175.0]
-        ).flatten()
+        msg.target_stiffness = np.diag([75.0, 75.0, 75.0, 75.0, 75.0, 75.0]).flatten()
         msg.target_damping = np.diag([35.0, 35.0, 35.0, 35.0, 35.0, 35.0]).flatten()
         msg.feedforward_wrench_at_tip = Wrench(
             force=Vector3(x=0.0, y=0.0, z=0.0),
