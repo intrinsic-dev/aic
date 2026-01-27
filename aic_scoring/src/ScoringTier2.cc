@@ -44,22 +44,62 @@ bool ScoringTier2::Initialize(YAML::Node _config) {
   if (!this->ParseStats(_config)) return false;
 
   // Subscribe to all topics relevant for scoring.
-  for (const auto &topic : this->topics) {
-    auto sub = this->node->create_generic_subscription(
-        topic.name, topic.type, rclcpp::QoS(10),
-        [this, topic](std::shared_ptr<const rclcpp::SerializedMessage> msg,
-                      const rclcpp::MessageInfo &msg_info) {
-          // Bag the data.
-          const auto &rmw_info = msg_info.get_rmw_message_info();
-          std::lock_guard<std::mutex> lock(this->mutex);
-          if (this->bagOpen) {
-            this->bagWriter.write(msg, topic.name, topic.type,
-                                  rmw_info.received_timestamp,
-                                  rmw_info.source_timestamp);
-          }
-        });
-    this->subscriptions.push_back(sub);
-  }
+  this->jointStateSub = this->node->create_subscription<sensor_msgs::msg::JointState>(
+    kJointStateTopic,
+    10,
+    [this](std::shared_ptr<const rclcpp::SerializedMessage> msg, const rclcpp::MessageInfo &msg_info) {
+      std::lock_guard<std::mutex> lock(this->mutex);
+      if (this->bagOpen) {
+        const auto &rmw_info = msg_info.get_rmw_message_info();
+        this->bagWriter.write(msg, kJointStateTopic, rosidl_generator_traits::name<sensor_msgs::msg::JointState>(),
+                              rmw_info.received_timestamp,
+                              rmw_info.source_timestamp);
+      }
+    }
+  );
+
+  this->tfSub = this->node->create_subscription<tf2_msgs::msg::TFMessage>(
+    kTfTopic,
+    10,
+    [this](std::shared_ptr<const rclcpp::SerializedMessage> msg, const rclcpp::MessageInfo &msg_info) {
+      std::lock_guard<std::mutex> lock(this->mutex);
+      if (this->bagOpen) {
+        const auto &rmw_info = msg_info.get_rmw_message_info();
+        this->bagWriter.write(msg, kTfTopic, rosidl_generator_traits::name<tf2_msgs::msg::TFMessage>(),
+                              rmw_info.received_timestamp,
+                              rmw_info.source_timestamp);
+      }
+    }
+  );
+
+  this->tfStaticSub = this->node->create_subscription<tf2_msgs::msg::TFMessage>(
+    kTfStaticTopic,
+    10,
+    [this](std::shared_ptr<const rclcpp::SerializedMessage> msg, const rclcpp::MessageInfo &msg_info) {
+      std::lock_guard<std::mutex> lock(this->mutex);
+      if (this->bagOpen) {
+        const auto &rmw_info = msg_info.get_rmw_message_info();
+        this->bagWriter.write(msg, kTfStaticTopic, rosidl_generator_traits::name<tf2_msgs::msg::TFMessage>(),
+                              rmw_info.received_timestamp,
+                              rmw_info.source_timestamp);
+      }
+    }
+  );
+
+  // TODO(luca) reliable qos
+  this->contactsSub = this->node->create_subscription<ros_gz_interfaces::msg::Contacts>(
+    kContactsTopic,
+    10,
+    [this](std::shared_ptr<const rclcpp::SerializedMessage> msg, const rclcpp::MessageInfo &msg_info) {
+      std::lock_guard<std::mutex> lock(this->mutex);
+      if (this->bagOpen) {
+        const auto &rmw_info = msg_info.get_rmw_message_info();
+        this->bagWriter.write(msg, kContactsTopic, rosidl_generator_traits::name<ros_gz_interfaces::msg::Contacts>(),
+                              rmw_info.received_timestamp,
+                              rmw_info.source_timestamp);
+      }
+    }
+  );
   return true;
 }
 
