@@ -1156,15 +1156,17 @@ bool Controller::populate_cartesian_limits(const aic_controller::Params& params,
 void Controller::populate_controller_state(ControllerState& controller_state) {
   controller_state.header.stamp = get_node()->now();
 
-  controller_state.tcp_pose = tf2::toMsg(last_tool_reference_.pose);
-  controller_state.tcp_velocity = tf2::toMsg(last_tool_reference_.velocity);
+  controller_state.tcp_pose = tf2::toMsg(current_tool_state_.pose);
+  controller_state.tcp_velocity = tf2::toMsg(current_tool_state_.velocity);
+
+  controller_state.reference_tcp_pose = tf2::toMsg(last_tool_reference_.pose);
 
   std::copy(last_tool_pose_error_.data(),
             last_tool_pose_error_.data() + last_tool_pose_error_.size(),
             controller_state.tcp_error.begin());
 
   if (last_commanded_state_.has_value()) {
-    controller_state.joint_state = last_commanded_state_.value();
+    controller_state.reference_joint_state = last_commanded_state_.value();
   }
 }
 
