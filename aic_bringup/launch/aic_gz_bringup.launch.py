@@ -22,6 +22,7 @@ from launch.actions import (
     IncludeLaunchDescription,
     OpaqueFunction,
     RegisterEventHandler,
+    SetEnvironmentVariable,
 )
 from launch.conditions import IfCondition, UnlessCondition
 from launch.event_handlers import OnProcessExit
@@ -293,6 +294,8 @@ def launch_setup(context, *args, **kwargs):
         condition=IfCondition(spawn_cable),
     )
 
+    gz_ip_env = SetEnvironmentVariable(name="GZ_IP", value="127.0.0.1")
+
     # GZ nodes
     gz_spawn_entity = Node(
         package="ros_gz_sim",
@@ -378,6 +381,7 @@ def launch_setup(context, *args, **kwargs):
         fts_broadcaster_spawner,
         aic_adapter,
         gripper_action_controller_spawner,
+        gz_ip_env,
         gzserver,
         gzgui,
         ros_gz_bridge,

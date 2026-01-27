@@ -1,5 +1,8 @@
 # AI for Industry Challenge Toolkit
 
+[![build](https://github.com/intrinsic-dev/aic/actions/workflows/build.yml/badge.svg)](https://github.com/intrinsic-dev/aic/actions/workflows/build.yml)
+[![style](https://github.com/intrinsic-dev/aic/actions/workflows/style.yml/badge.svg)](https://github.com/intrinsic-dev/aic/actions/workflows/style.yml)
+
 > [!NOTE]
 > This repository is under active development.
 
