@@ -116,6 +116,7 @@
       filename="WorldSdfGeneratorPlugin"
       name="aic_gazebo::WorldSdfGeneratorPlugin">
         <save_world_path>/tmp/aic.sdf</save_world_path>
+				<save_world_delay_s>0.0</save_world_delay_s>
     </plugin>
     <plugin
       filename="gz-sim-contact-system"
