@@ -77,9 +77,8 @@ namespace aic_scoring
     /// \param[in] _node Pointer to the ROS node.
     public: ScoringTier2(rclcpp::Node *_node);
 
-    /// \brief Populate the scoring input params from a YAML file.
-    /// \param[in] _config YAML configuration for the node
-    public: bool Initialize(YAML::Node _config);
+    /// \brief Initialize the node's subscriptions.
+    public: bool Initialize();
 
     /// \brief Reset connections.
     /// \param[in] _connections New connections.
@@ -93,10 +92,6 @@ namespace aic_scoring
     /// \brief Stop recording all scoring topics.
     /// \return True if the bag was closed correctly.
     public: bool StopRecording();
-
-    /// \brief Populate the scoring input params from a YAML file.
-    /// \param[in] _config YAML configuration for the node
-    private: bool ParseStats(YAML::Node _config);
 
     /// \brief Pointer to a node.
     private: rclcpp::Node *node;

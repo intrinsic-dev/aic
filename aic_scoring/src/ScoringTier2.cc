@@ -36,12 +36,11 @@ ScoringTier2::ScoringTier2(rclcpp::Node *_node) : node(_node) {}
 //////////////////////////////////////////////////
 // TODO(luca) consider having a make function that returns a pointer which is
 // nullptr if initialization failed instead.
-bool ScoringTier2::Initialize(YAML::Node _config) {
+bool ScoringTier2::Initialize() {
   if (!this->node) {
     std::cerr << "[ScoringTier2]: null ROS node. Aborting." << std::endl;
     return false;
   }
-  if (!this->ParseStats(_config)) return false;
 
   // Subscribe to all topics relevant for scoring.
   this->jointStateSub = this->node->create_subscription<sensor_msgs::msg::JointState>(
@@ -151,64 +150,12 @@ bool ScoringTier2::StopRecording() {
 }
 
 //////////////////////////////////////////////////
-bool ScoringTier2::ParseStats(YAML::Node _config) {
-  // Parse topics to subscribe to.
-  if (!_config["topics"]) {
-    RCLCPP_ERROR(this->node->get_logger(),
-                 "Unable to find [topics] in yaml file");
-    return false;
-  }
-
-  const auto &topics = _config["topics"];
-  if (!topics.IsSequence()) {
-    RCLCPP_ERROR(this->node->get_logger(),
-                 "Unable to find sequence of topics within [topics]");
-    return false;
-  }
-
-  for (const auto &newTopic : topics) {
-    if (!newTopic["topic"]) {
-      RCLCPP_ERROR(this->node->get_logger(),
-                   "Unrecognized element. It should be [topic]");
-      return false;
-    }
-
-    const auto &topicProperties = newTopic["topic"];
-    if (!topicProperties.IsMap()) {
-      RCLCPP_ERROR(this->node->get_logger(),
-                   "Unable to find properties within [topic]");
-      return false;
-    }
-
-    TopicInfo topicInfo;
-
-    if (!topicProperties["name"]) {
-      RCLCPP_ERROR(this->node->get_logger(),
-                   "Unable to find [name] within [topic]");
-      return false;
-    }
-    topicInfo.name = topicProperties["name"].as<std::string>();
-
-    if (!topicProperties["type"]) {
-      RCLCPP_ERROR(this->node->get_logger(),
-                   "Unable to find [type] within [topic]");
-      return false;
-    }
-    topicInfo.type = topicProperties["type"].as<std::string>();
-
-    this->topics.push_back(topicInfo);
-  }
-
-  return true;
-}
-
-//////////////////////////////////////////////////
 ScoringTier2Node::ScoringTier2Node(const std::string &_yamlFile)
     : Node("score_tier2_node") {
   try {
     auto config = YAML::LoadFile(_yamlFile);
     this->score = std::make_unique<aic_scoring::ScoringTier2>(this);
-    this->score->Initialize(config);
+    this->score->Initialize();
   } catch (const YAML::BadFile &_e) {
     std::cerr << "Unable to open YAML file [" << _yamlFile << "]" << std::endl;
     return;

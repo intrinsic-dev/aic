@@ -473,7 +473,7 @@ EngineState Engine::initialize() {
   tf_listener_ = std::make_unique<tf2_ros::TransformListener>(*tf_buffer_);
 
   scoring_tier2_ = std::make_unique<aic_scoring::ScoringTier2>(node_.get());
-  if (!scoring_tier2_->Initialize(config_["scoring"])) {
+  if (!scoring_tier2_->Initialize()) {
     RCLCPP_ERROR(node_->get_logger(), "Failed to initialize scoring system");
     return EngineState::Error;
   }
