@@ -64,11 +64,13 @@ void ResetJointsPlugin::Configure(
   this->reset_sub_ =
       this->ros_node_
           ->create_subscription<aic_control_interfaces::msg::ResetJoints>(
-              this->topic, 10, [this](const aic_control_interfaces::msg::ResetJoints& msg) {
+              this->topic, 10,
+              [this](const aic_control_interfaces::msg::ResetJoints& msg) {
                 // std::lock_guard<std::mutex> lock(this->mutex_);
                 gzmsg << "---------- hello" << std::endl;
                 for (const auto& joint_name : msg.joint_names) {
-                  gzmsg << "Received reset request for joint: " << joint_name << std::endl;
+                  gzmsg << "Received reset request for joint: " << joint_name
+                        << std::endl;
                   this->requestedJoints.push_back(joint_name);
                 }
               });
