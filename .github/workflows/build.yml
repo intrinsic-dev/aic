@@ -1,0 +1,58 @@
+name: build
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**.md'
+  pull_request:
+    paths-ignore:
+      - '**.md'
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build_and_test:
+    name: build_and_test
+    runs-on: ubuntu-latest
+    container:
+      image: ros:kilted-ros-simulation
+    steps:
+      - name: Install build dependencies
+        run: |
+          apt-get update && apt-get upgrade -y
+          apt-get install -y python3-colcon-common-extensions
+
+      - name: Build and run tests
+        uses: ros-tooling/action-ros-ci@v0.4
+        with:
+          target-ros2-distro: kilted
+          skip-tests: false
+          colcon-defaults: |
+            {
+              "build": {
+                "cmake-args": [
+                  "-DCMAKE_BUILD_TYPE=Release"
+                ],
+                "merge-install": true,
+                "symlink-install": true
+              }
+            }
+          rosdep-skip-keys: "gz-cmake3 DART libogre-dev libogre-next-2.3-dev rosetta"
+          package-name: |
+            aic_adapter
+            aic_assets
+            aic_bringup
+            aic_controller
+            aic_description
+            aic_engine
+            aic_example_policies
+            aic_gazebo
+            aic_interfaces
+            aic_model
+            aic_scoring
+            aic_utils
