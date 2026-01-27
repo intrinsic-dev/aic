@@ -7,7 +7,6 @@
   <maintainer email="koonpeng@intrinsic.ai">Teo Koon Peng</maintainer>
   <license>Apache-2.0</license>
 
-  <exec_depend>python3-hidapi</exec_depend>
   <exec_depend>aic_control_interfaces</exec_depend>
   <exec_depend>geometry_msgs</exec_depend>
   <exec_depend>sensor_msgs</exec_depend>

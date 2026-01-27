@@ -25,7 +25,7 @@ class AICSpaceMouseTeleop(Teleoperator):
         super().__init__(config)
         self.config = config
         self._is_connected = False
-        self._target_gripper_width_percent: float = 1.0
+        self._target_gripper_target: float = 1.0
 
     @property
     def action_features(self) -> dict:
@@ -43,11 +43,11 @@ class AICSpaceMouseTeleop(Teleoperator):
     def _button_callback(self, state, buttons, pressed_buttons):
         if 0 in pressed_buttons:
             print("Button 1 pressed")
-            self._target_gripper_width_percent = 0.0
+            self._target_gripper_target = 0.0
 
         elif 1 in pressed_buttons:
             print("Button 2 pressed")
-            self._target_gripper_width_percent = 1.0
+            self._target_gripper_target = 1.0
 
     def connect(self, calibrate: bool = True) -> None:
         if not self.is_connected:
@@ -116,7 +116,7 @@ class AICSpaceMouseTeleop(Teleoperator):
             "angular.x": twist_msg.angular.x,
             "angular.y": twist_msg.angular.y,
             "angular.z": twist_msg.angular.z,
-            "gripper_width_percent": self._target_gripper_width_percent,
+            "gripper_target": self._target_gripper_target,
         }
 
     def send_feedback(self, feedback: dict[str, Any]) -> None:

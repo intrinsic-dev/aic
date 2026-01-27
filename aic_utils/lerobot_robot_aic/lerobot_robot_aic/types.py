@@ -1,4 +1,4 @@
-from typing import Any, TypedDict
+from typing import TypedDict
 
 MotionUpdateActionDict = TypedDict(
     "MotionUpdateActionDict",
@@ -9,18 +9,6 @@ MotionUpdateActionDict = TypedDict(
         "angular.x": float,
         "angular.y": float,
         "angular.z": float,
-        "gripper_width_percent": float,
+        "gripper_target": float,
     },
 )
-
-
-def motion_update_action_features() -> dict[str, Any]:
-    return {
-        "linear.x": float,
-        "linear.y": float,
-        "linear.z": float,
-        "angular.x": float,
-        "angular.y": float,
-        "angular.z": float,
-        "gripper_width_percent": float,
-    }

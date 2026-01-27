@@ -104,12 +104,21 @@ namespace aic_gazebo
     /// the entity to a static model
     /// \param[in] _attachEntityAsParentOfJoint True to attach entity as parent of
     /// the detachable joint.
-    /// \param[in] _creator_ Sdf entity creator for creating a static model
+    /// \param[in] _creator Sdf entity creator for creating a static model
     /// \param[in] _ecm Entity component manager
     private: gz::sim::Entity MakeStatic(gz::sim::Entity _entity,
                              bool _attachEntityAsParentOfJoint,
                              gz::sim::SdfEntityCreator* _creator,
                              gz::sim::EntityComponentManager& _ecm);
+
+    /// \brief Spawn an invisible collision to block the gap of the gripper fingers
+    /// in order to preent the cable body from swinging between that gap.
+    /// \param[in] _pose Pose to spawn the cable guard in world frame
+    /// \param[in] _creator Sdf entity creator for creating a static model
+    /// \param[in] _ecm Entity component manager
+    private: gz::sim::Entity SpawnCableGuard(const gz::math::Pose3d& _pose,
+                                             gz::sim::SdfEntityCreator* _creator,
+                                             gz::sim::EntityComponentManager& _ecm);
 
     /// \brief Entity of attachment link in the end effector model
     private: gz::sim::Entity endEffectorLinkEntity{gz::sim::kNullEntity};
@@ -131,6 +140,10 @@ namespace aic_gazebo
 
     /// \brief Detachable joint entity for making cable connection 1 static
     private: gz::sim::Entity detachableJointStatic1Entity{gz::sim::kNullEntity};
+
+    /// \brief Detachable joint entity for cable guard entity.
+    private: gz::sim::Entity detachableJointCableGuardEntity{
+        gz::sim::kNullEntity};
 
     /// \brief The model associated with this system.
     private: gz::sim::Model model;
@@ -190,6 +203,9 @@ namespace aic_gazebo
 
     /// \brief Static entities created by this plugin
     private: std::unordered_set<gz::sim::Entity> staticEntities;
+
+    /// \brief Pose offset of cable guard w.r.t. end-effector.
+    private: gz::math::Pose3d cableGuardOffsetFromEndEffector;
 };
 }
 #endif
