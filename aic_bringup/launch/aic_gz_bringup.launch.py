@@ -22,6 +22,7 @@ from launch.actions import (
     IncludeLaunchDescription,
     OpaqueFunction,
     RegisterEventHandler,
+    SetEnvironmentVariable,
 )
 from launch.conditions import IfCondition, UnlessCondition
 from launch.event_handlers import OnProcessExit
@@ -80,6 +81,13 @@ def launch_setup(context, *args, **kwargs):
     attach_cable_to_gripper = LaunchConfiguration("attach_cable_to_gripper")
     cable_type = LaunchConfiguration("cable_type")
     ground_truth = LaunchConfiguration("ground_truth")
+    start_aic_engine = LaunchConfiguration("start_aic_engine")
+    aic_engine_config_file = LaunchConfiguration("aic_engine_config_file")
+
+    gripper_initial_pos = "0.00655"
+    cable_type_str = LaunchConfiguration("cable_type").perform(context)
+    if cable_type_str == "sfp_sc_cable":
+        gripper_initial_pos = "0.0073"
 
     robot_description_content = Command(
         [
@@ -125,6 +133,9 @@ def launch_setup(context, *args, **kwargs):
             " ",
             "yaw:=",
             robot_yaw,
+            " ",
+            "gripper_initial_pos:=",
+            gripper_initial_pos,
         ]
     )
     robot_description = {
@@ -219,6 +230,16 @@ def launch_setup(context, *args, **kwargs):
         executable="aic_adapter",
     )
 
+    aic_engine = Node(
+        package="aic_engine",
+        executable="aic_engine",
+        output="screen",
+        parameters=[
+            {"config_file_path": aic_engine_config_file},
+        ],
+        condition=IfCondition(start_aic_engine),
+    )
+
     # Task board spawning (conditional)
     spawn_task_board = LaunchConfiguration("spawn_task_board")
     task_board_description_file = LaunchConfiguration("task_board_description_file")
@@ -272,6 +293,8 @@ def launch_setup(context, *args, **kwargs):
         }.items(),
         condition=IfCondition(spawn_cable),
     )
+
+    gz_ip_env = SetEnvironmentVariable(name="GZ_IP", value="127.0.0.1")
 
     # GZ nodes
     gz_spawn_entity = Node(
@@ -358,6 +381,7 @@ def launch_setup(context, *args, **kwargs):
         fts_broadcaster_spawner,
         aic_adapter,
         gripper_action_controller_spawner,
+        gz_ip_env,
         gzserver,
         gzgui,
         ros_gz_bridge,
@@ -367,6 +391,7 @@ def launch_setup(context, *args, **kwargs):
         ground_truth_tf_relay,
         ground_truth_tf_static_relay,
         ground_truth_static_tf_publisher,
+        aic_engine,
     ]
 
     return nodes_to_start
@@ -475,7 +500,7 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             "spawn_task_board",
-            default_value="true",
+            default_value="false",
             description="Spawn task board in Gazebo?",
         )
     )
@@ -633,42 +658,42 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             "cable_x",
-            default_value="0.16",
+            default_value="0.1956",
             description="Cable spawn X position",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
             "cable_y",
-            default_value="0.2927",
+            default_value="-0.2112",
             description="Cable spawn Y position",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
             "cable_z",
-            default_value="1.427",
+            default_value="1.53",
             description="Cable spawn Z position",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
             "cable_roll",
-            default_value="0.5",
+            default_value="0.4432",
             description="Cable spawn roll orientation (radians)",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
             "cable_pitch",
-            default_value="-0.6605",
+            default_value="-0.4838",
             description="Cable spawn pitch orientation (radians)",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
             "cable_yaw",
-            default_value="2.6928",
+            default_value="-1.8112",
             description="Cable spawn yaw orientation (radians)",
         )
     )
@@ -677,6 +702,22 @@ def generate_launch_description():
             "ground_truth",
             default_value="false",
             description="Whether to include ground truth poses in TF topics",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "start_aic_engine",
+            default_value="false",
+            description="Whether to start the AIC engine.",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "aic_engine_config_file",
+            default_value=PathJoinSubstitution(
+                [FindPackageShare("aic_engine"), "config", "sample_config.yaml"]
+            ),
+            description="Absolute path to YAML file with the AIC engine configuration.",
         )
     )
 

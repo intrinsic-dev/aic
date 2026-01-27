@@ -35,10 +35,11 @@
 
   <xacro:arg name="ati_tf_prefix" default="ati/" />
   <xacro:arg name="cam_mount_tf_prefix" default="cam_mount/" />
-  <xacro:arg name="wrist_camera_1_tf_prefix" default="wrist_camera_1/"/>
-  <xacro:arg name="wrist_camera_2_tf_prefix" default="wrist_camera_2/"/>
-  <xacro:arg name="wrist_camera_3_tf_prefix" default="wrist_camera_3/"/>
+  <xacro:arg name="left_camera_tf_prefix" default="left_camera/"/>
+  <xacro:arg name="center_camera_tf_prefix" default="center_camera/"/>
+  <xacro:arg name="right_camera_tf_prefix" default="right_camera/"/>
   <xacro:arg name="gripper_tf_prefix" default="gripper/"/>
+  <xacro:arg name="gripper_initial_pos" default="0.00655"/>
   <xacro:arg name="cam_mount_radial_offset" default="0.1" />
   <xacro:arg name="cam_mount_axial_offset" default="0.08" />
   <!-- If true, enable Gazebo camera in sim -->
@@ -139,22 +140,22 @@
   </xacro:camera_mount>
 
   <xacro:basler_camera
-    name="wrist_camera_1"
-    tf_prefix="$(arg wrist_camera_1_tf_prefix)"
+    name="left_camera"
+    tf_prefix="$(arg left_camera_tf_prefix)"
     use_sim_cam="$(arg use_sim_cam)"
     >
   </xacro:basler_camera>
 
   <xacro:basler_camera
-    name="wrist_camera_2"
-    tf_prefix="$(arg wrist_camera_2_tf_prefix)"
+    name="center_camera"
+    tf_prefix="$(arg center_camera_tf_prefix)"
     use_sim_cam="$(arg use_sim_cam)"
     >
   </xacro:basler_camera>
 
   <xacro:basler_camera
-    name="wrist_camera_3"
-    tf_prefix="$(arg wrist_camera_3_tf_prefix)"
+    name="right_camera"
+    tf_prefix="$(arg right_camera_tf_prefix)"
     use_sim_cam="$(arg use_sim_cam)"
     >
   </xacro:basler_camera>
@@ -167,13 +168,9 @@
     grip_vel_max="0.05"
     grip_effort_min="20"
     grip_effort_max="130"
-    initial_pos="0.01"
+    initial_pos="$(arg gripper_initial_pos)"
     >
   </xacro:robotiq_hande>
-
- <!-- ********************
-      ** wrist_camera_1 **
-      ******************** -->
 
   <joint name="attach_cam_mount" type="fixed">
     <origin xyz="0 0 -.0265" rpy="0 0 0"/>
@@ -187,30 +184,34 @@
     <child link="$(arg ati_tf_prefix)base_link"/>
   </joint>
 
-  <joint name="attach_wrist_camera_1" type="fixed">
+  <!-- *******************
+       ** center_camera **
+       ******************* -->
+
+  <joint name="attach_center_camera" type="fixed">
     <origin xyz="0 -0.1077 -.00719" rpy="0 -1.30899630 1.57079623"/>
     <parent link="$(arg cam_mount_tf_prefix)cam_mount_link"/>
-    <child link="$(arg wrist_camera_1_tf_prefix)camera_link"/>
+    <child link="$(arg center_camera_tf_prefix)camera_link"/>
   </joint>
 
-  <!-- ********************
-       ** wrist_camera_2 **
-       ******************** -->
+  <!-- *****************
+       ** left_camera **
+       ***************** -->
 
-  <joint name="attach_wrist_camera_2" type="fixed">
+  <joint name="attach_left_camera" type="fixed">
     <origin xyz="-0.09326 -0.053843 -0.007188" rpy="0 -1.30899630 0.523599027"/>
     <parent link="$(arg cam_mount_tf_prefix)cam_mount_link"/>
-    <child link="$(arg wrist_camera_2_tf_prefix)camera_link"/>
+    <child link="$(arg left_camera_tf_prefix)camera_link"/>
   </joint>
 
-  <!-- ********************
-       ** wrist_camera_3 **
-       ******************** -->
+  <!-- ******************
+       ** right_camera **
+       ****************** -->
 
-  <joint name="attach_wrist_camera_3" type="fixed">
+  <joint name="attach_right_camera" type="fixed">
     <origin xyz="0.09326 -0.053843 -0.007188" rpy="0 -1.30899630 2.61799343"/>
     <parent link="$(arg cam_mount_tf_prefix)cam_mount_link"/>
-    <child link="$(arg wrist_camera_3_tf_prefix)camera_link"/>
+    <child link="$(arg right_camera_tf_prefix)camera_link"/>
   </joint>
 
   <joint name="attach_gripper" type="fixed">
@@ -237,12 +238,12 @@
     <xacro:ur_joint_control_description
       tf_prefix="$(arg tf_prefix)"
       initial_positions="${dict(
-        shoulder_pan_joint=0.6,
-        shoulder_lift_joint=-1.3,
-        elbow_joint=-1.9,
-        wrist_1_joint=-1.5708,
-        wrist_2_joint=1.5708,
-        wrist_3_joint=0.6)}"
+        shoulder_pan_joint=-0.546,
+        shoulder_lift_joint=-1.703,
+        elbow_joint=-1.291,
+        wrist_1_joint=-1.719,
+        wrist_2_joint=1.571,
+        wrist_3_joint=-2.116)}"
     />
 
   </ros2_control>

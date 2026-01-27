@@ -355,19 +355,19 @@
 
     <include>
       <uri>model://Basler Camera</uri>
-      <name>wrist_camera_01</name>
+      <name>center_camera</name>
       <pose>0 -0.1077 -.00719 -0.261799 0 0</pose>
     </include>
 
     <include>
       <uri>model://Basler Camera</uri>
-      <name>wrist_camera_02</name>
+      <name>left_camera</name>
       <pose>-0.09326 -0.053843 -0.007188 -0.261799 0.0 -1.047198</pose>
     </include>
 
     <include>
       <uri>model://Basler Camera</uri>
-      <name>wrist_camera_03</name>
+      <name>right_camera</name>
       <pose>0.09326 -0.053843 -0.007188 -0.261799 0.0 1.047198</pose>
     </include>
 

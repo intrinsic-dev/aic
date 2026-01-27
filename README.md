@@ -17,10 +17,13 @@ Please refer to the following resources for detailed information on the challeng
 
 * **[Challenge Overview](./docs/overview.md):** High-level summary of the competition goals.
 * **[Competition Phases](./docs/phases.md):** Details on Qualification, Phase 1, and Phase 2.
+* **[Task Board Description](./docs/task_board_description.md):** Detailed description of the AIC task board, including links to the BOM and CADs.
 * **[Scene Description](./docs/scene_description.md):** Technical details regarding the simulation environment.
 * **[Scoring](./docs/scoring.md):** Metrics and methods used to evaluate performance.
 * **[Submission](./docs/submission.md):** Guidelines for submitting your final model.
 
 ## Getting Started
 
-Ready to begin? Please consult the [Getting Started Guide](./docs/getting_started.md) to set up your development environment.
+Ready to begin? Please refer to the following guides:
+* **[Installation](./docs/getting_started.md):** How to set up your local development environment.
+* **[Writing a policy](./docs/policy.md):** The participant code framework of the competition. `YOUR CODE HERE`!

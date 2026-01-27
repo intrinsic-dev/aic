@@ -22,7 +22,10 @@ from dataclasses import dataclass, field
 from functools import cached_property
 from threading import Thread
 from typing import Any, TypedDict, cast
+<<<<<<< HEAD
 import cv2
+=======
+>>>>>>> main
 
 import numpy as np
 from numpy.typing import NDArray
@@ -32,16 +35,21 @@ from aic_control_interfaces.msg import (
     MotionUpdate,
     TrajectoryGenerationMode,
 )
+from control_msgs.action import ParallelGripperCommand
 from geometry_msgs.msg import Twist, Vector3, Wrench
 from lerobot.cameras import CameraConfig, make_cameras_from_configs
 from lerobot.robots import Robot, RobotConfig
 from lerobot.utils.errors import DeviceAlreadyConnectedError, DeviceNotConnectedError
+from numpy.typing import NDArray
+from rclpy.action.client import ActionClient, ClientGoalHandle
+from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import SingleThreadedExecutor
 from rclpy.node import Node
 from rclpy.publisher import Publisher
 from rclpy.subscription import Subscription
 from std_msgs.msg import Float32
 from sensor_msgs.msg import JointState
+from rclpy.task import Future as RclFuture
 
 from .aic_robot import aic_cameras, arm_joint_names, gripper_joint_name
 from .types import MotionUpdateActionDict
@@ -84,6 +92,7 @@ ControllerStateDict = TypedDict(
 class AICRobotAICControllerConfig(RobotConfig):
     arm_joint_names: list[str] = field(default_factory=arm_joint_names.copy)
     gripper_joint_name: str = gripper_joint_name
+    gripper_action_name: str = "/gripper_action_controller/gripper_cmd"
     cameras: dict[str, CameraConfig] = field(default_factory=aic_cameras.copy)
 
 
@@ -102,6 +111,26 @@ class AICRobotAICController(Robot):
         self.controller_state_sub: Subscription[ControllerState] | None = None
         self.last_controller_state: ControllerState | None = None
         self.last_joint_state: JointState | None = None
+
+        self.parallel_gripper_action_client: (
+            ActionClient[
+                ParallelGripperCommand.Goal,
+                ParallelGripperCommand.Result,
+                ParallelGripperCommand.Feedback,
+            ]
+            | None
+        ) = None
+        self.last_gripper_target: float | None = None
+        self.gripper_result: (
+            RclFuture[
+                ClientGoalHandle[
+                    ParallelGripperCommand.Goal,
+                    ParallelGripperCommand.Result,
+                    ParallelGripperCommand.Feedback,
+                ]
+            ]
+            | None
+        ) = None
         self._is_connected = False
 
     @cached_property
@@ -145,6 +174,7 @@ class AICRobotAICController(Robot):
             )
 
         self.node = Node("aic_robot_node")
+        self.node.get_logger().set_level(logging.DEBUG)
 
         self.motion_update_pub = self.node.create_publisher(
             MotionUpdate, "/aic_controller/pose_commands", 10
@@ -164,7 +194,13 @@ class AICRobotAICController(Robot):
             self.last_joint_state = msg
         
         self.node.create_subscription(
-            JointState, "/joint_states", joint_state_cb, 10
+            JointState, "/joint_states", joint_state_cb, 10)
+
+        self.parallel_gripper_action_client = ActionClient(
+            self.node,
+            ParallelGripperCommand,
+            self.config.gripper_action_name,
+            callback_group=ReentrantCallbackGroup(),
         )
 
         self.executor = SingleThreadedExecutor()
@@ -298,10 +334,28 @@ class AICRobotAICController(Robot):
         if self.motion_update_pub is not None:
             self.motion_update_pub.publish(msg)
 
-        gripper_width_msg = Float32()
-        gripper_width_msg.data = motion_update_action["gripper_width_percent"]
-        if self.gripper_pub is not None:
-            self.gripper_pub.publish(gripper_width_msg)
+        if not self.node or not self.parallel_gripper_action_client:
+            raise RuntimeError("unexpected error")
+        logger = self.node.get_logger()
+
+        if self.last_gripper_target != motion_update_action["gripper_target"]:
+            if self.gripper_result:
+                logger.debug("cancelling existing gripper goal")
+                self.gripper_result.cancel()
+                logger.debug("waiting for gripper goal to finish")
+                self.gripper_result.result()
+                logger.debug("gripper goal has finished")
+                self.gripper_result = None
+
+            goal = ParallelGripperCommand.Goal()
+            goal.command.name = [self.config.gripper_joint_name]
+            goal.command.position = [motion_update_action["gripper_target"]]
+            goal.command.header.stamp = self.node.get_clock().now().to_msg()
+            logger.debug(f"sending new gripper goal {goal.command.position}")
+            self.gripper_result = self.parallel_gripper_action_client.send_goal_async(
+                goal
+            )
+            self.last_gripper_target = motion_update_action["gripper_target"]
 
         return action
 

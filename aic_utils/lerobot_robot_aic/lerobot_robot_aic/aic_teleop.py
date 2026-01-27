@@ -28,6 +28,9 @@ from lerobot_teleoperator_devices import KeyboardJointTeleop, KeyboardJointTeleo
 from .aic_robot import arm_joint_names
 from .types import MotionUpdateActionDict
 
+GRIPPER_CLOSED_POS = 0.012
+GRIPPER_OPEN_POS = 0.025
+
 
 @TeleoperatorConfig.register_subclass("aic_keyboard")
 @dataclass
@@ -45,13 +48,13 @@ class AICKeyboardTeleop(KeyboardJointTeleop):
         # Not sure if it is a bug or intended, lerobot-ros does not normalize arm joints,
         # it clamps them instead. But it does normalize for gripper.
         self.curr_joint_actions = {
-            "shoulder_pan_joint.pos": 0.6,
-            "shoulder_lift_joint.pos": -1.30,
-            "elbow_joint.pos": -1.91,
-            "wrist_1_joint.pos": -1.57,
-            "wrist_2_joint.pos": 1.57,
-            "wrist_3_joint.pos": 0.6,
-            "gripper.pos": 1.0,  # open
+            "shoulder_pan_joint.pos": -0.546,
+            "shoulder_lift_joint.pos": -1.703,
+            "elbow_joint.pos": -1.291,
+            "wrist_1_joint.pos": -1.719,
+            "wrist_2_joint.pos": 1.571,
+            "wrist_3_joint.pos": -2.116,
+            "gripper.pos": GRIPPER_CLOSED_POS,  # closed
         }
 
 
@@ -72,7 +75,7 @@ class AICKeyboardEETeleop(KeyboardEndEffectorTeleop):
             "angular.x": 0.0,
             "angular.y": 0.0,
             "angular.z": 0.0,
-            "gripper_width_percent": 0.0,
+            "gripper_target": GRIPPER_CLOSED_POS,
         }
 
     @property
@@ -114,9 +117,9 @@ class AICKeyboardEETeleop(KeyboardEndEffectorTeleop):
             elif key == "e":
                 self._current_actions["angular.z"] = self._get_action_value(is_pressed)
             elif key == "j":
-                self._current_actions["gripper_width_percent"] = 0.0
+                self._current_actions["gripper_target"] = GRIPPER_CLOSED_POS
             elif key == "k":
-                self._current_actions["gripper_width_percent"] = 1.0
+                self._current_actions["gripper_target"] = GRIPPER_OPEN_POS
             elif is_pressed:
                 # If the key is pressed, add it to the misc_keys_queue
                 # this will record key presses that are not part of the delta_x, delta_y, delta_z
