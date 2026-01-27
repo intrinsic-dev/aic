@@ -149,24 +149,24 @@ int ScoringTier2::ComputeScore() {
     for (const auto &topic : this->topics) {
       if (msg_ptr->topic_name == topic.name) {
         topic_found = true;
-        if (topic.name == "/joint_states") {
+        if (topic.name == kJointStatesTopic) {
           const auto msg =
               deserialize_from_rosbag<sensor_msgs::msg::JointState>(msg_ptr);
           this->JointStateCallback(msg);
-        } else if (topic.name == "/scoring/tf") {
+        } else if (topic.name == kTfTopic) {
           const auto msg =
               deserialize_from_rosbag<tf2_msgs::msg::TFMessage>(msg_ptr);
           this->TfCallback(msg);
-        } else if (topic.name == "/scoring/tf_static") {
+        } else if (topic.name == kTfStaticTopic) {
           const auto msg =
               deserialize_from_rosbag<tf2_msgs::msg::TFMessage>(msg_ptr);
           this->TfStaticCallback(msg);
-        } else if (topic.name == "/aic/gazebo/contacts/off_limit") {
+        } else if (topic.name == kContactsTopic) {
           const auto msg =
               deserialize_from_rosbag<ros_gz_interfaces::msg::Contacts>(
                   msg_ptr);
           this->ContactsCallback(msg);
-        } else if (topic.name == "/axia80_m20/wrench") {
+        } else if (topic.name == kWrenchTopic) {
           const auto msg =
               deserialize_from_rosbag<geometry_msgs::msg::WrenchStamped>(
                   msg_ptr);
