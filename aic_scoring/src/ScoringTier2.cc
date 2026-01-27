@@ -114,8 +114,9 @@ bool ScoringTier2::StopRecording() {
   return true;
 }
 
-template<typename Msg>
-Msg deserialize_from_rosbag(std::shared_ptr<rosbag2_storage::SerializedBagMessage> msg_in) {
+template <typename Msg>
+Msg deserialize_from_rosbag(
+    std::shared_ptr<rosbag2_storage::SerializedBagMessage> msg_in) {
   Msg msg;
   rclcpp::SerializedMessage extracted_serialized_msg(*msg_in->serialized_data);
   rclcpp::Serialization<Msg> serialization;
@@ -145,29 +146,38 @@ int ScoringTier2::ComputeScore() {
   while (bagReader.has_next()) {
     auto msg_ptr = bagReader.read_next();
     bool topic_found = false;
-    for (const auto& topic : this->topics) {
+    for (const auto &topic : this->topics) {
       if (msg_ptr->topic_name == topic.name) {
         topic_found = true;
         if (topic.name == "/joint_states") {
-          const auto msg = deserialize_from_rosbag<sensor_msgs::msg::JointState>(msg_ptr);
+          const auto msg =
+              deserialize_from_rosbag<sensor_msgs::msg::JointState>(msg_ptr);
           this->JointStateCallback(msg);
         } else if (topic.name == "/scoring/tf") {
-          const auto msg = deserialize_from_rosbag<tf2_msgs::msg::TFMessage>(msg_ptr);
+          const auto msg =
+              deserialize_from_rosbag<tf2_msgs::msg::TFMessage>(msg_ptr);
           this->TfCallback(msg);
         } else if (topic.name == "/scoring/tf_static") {
-          const auto msg = deserialize_from_rosbag<tf2_msgs::msg::TFMessage>(msg_ptr);
+          const auto msg =
+              deserialize_from_rosbag<tf2_msgs::msg::TFMessage>(msg_ptr);
           this->TfStaticCallback(msg);
         } else if (topic.name == "/aic/gazebo/contacts/off_limit") {
-          const auto msg = deserialize_from_rosbag<ros_gz_interfaces::msg::Contacts>(msg_ptr);
+          const auto msg =
+              deserialize_from_rosbag<ros_gz_interfaces::msg::Contacts>(
+                  msg_ptr);
           this->ContactsCallback(msg);
         } else if (topic.name == "/axia80_m20/wrench") {
-          const auto msg = deserialize_from_rosbag<geometry_msgs::msg::WrenchStamped>(msg_ptr);
+          const auto msg =
+              deserialize_from_rosbag<geometry_msgs::msg::WrenchStamped>(
+                  msg_ptr);
           this->WrenchCallback(msg);
         }
       }
     }
     if (topic_found == false) {
-      RCLCPP_WARN(this->node->get_logger(), "Unexpected topic name while scoring: %s", msg_ptr->topic_name.c_str());
+      RCLCPP_WARN(this->node->get_logger(),
+                  "Unexpected topic name while scoring: %s",
+                  msg_ptr->topic_name.c_str());
     }
   }
   return score;
@@ -228,7 +238,7 @@ bool ScoringTier2::ParseStats(YAML::Node _config) {
 //////////////////////////////////////////////////
 std::set<std::string> ScoringTier2::GetMissingRequiredTopics() const {
   std::set<std::string> unavailable;
-  for (const auto &subscription: this->subscriptions) {
+  for (const auto &subscription : this->subscriptions) {
     if (subscription->get_publisher_count() == 0) {
       unavailable.insert(subscription->get_topic_name());
     }
@@ -237,27 +247,30 @@ std::set<std::string> ScoringTier2::GetMissingRequiredTopics() const {
 }
 
 //////////////////////////////////////////////////
-void ScoringTier2::JointStateCallback(const sensor_msgs::msg::JointState& _msg) {
+void ScoringTier2::JointStateCallback(
+    const sensor_msgs::msg::JointState &_msg) {
   (void)_msg;
 }
 
 //////////////////////////////////////////////////
-void ScoringTier2::TfCallback(const tf2_msgs::msg::TFMessage& _msg) {
+void ScoringTier2::TfCallback(const tf2_msgs::msg::TFMessage &_msg) {
   (void)_msg;
 }
 
 //////////////////////////////////////////////////
-void ScoringTier2::TfStaticCallback(const tf2_msgs::msg::TFMessage& _msg) {
+void ScoringTier2::TfStaticCallback(const tf2_msgs::msg::TFMessage &_msg) {
   (void)_msg;
 }
 
 //////////////////////////////////////////////////
-void ScoringTier2::ContactsCallback(const ros_gz_interfaces::msg::Contacts& _msg) {
+void ScoringTier2::ContactsCallback(
+    const ros_gz_interfaces::msg::Contacts &_msg) {
   (void)_msg;
 }
 
 //////////////////////////////////////////////////
-void ScoringTier2::WrenchCallback(const geometry_msgs::msg::WrenchStamped& _msg) {
+void ScoringTier2::WrenchCallback(
+    const geometry_msgs::msg::WrenchStamped &_msg) {
   (void)_msg;
 }
 
