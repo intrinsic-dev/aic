@@ -36,86 +36,32 @@ ScoringTier2::ScoringTier2(rclcpp::Node *_node) : node(_node) {}
 //////////////////////////////////////////////////
 // TODO(luca) consider having a make function that returns a pointer which is
 // nullptr if initialization failed instead.
-bool ScoringTier2::Initialize() {
+bool ScoringTier2::Initialize(YAML::Node _config) {
   if (!this->node) {
     std::cerr << "[ScoringTier2]: null ROS node. Aborting." << std::endl;
     return false;
   }
+  if (!this->ParseStats(_config)) return false;
 
   const rclcpp::QoS reliable_qos = rclcpp::QoS(rclcpp::KeepLast(10)).reliable();
+
   // Subscribe to all topics relevant for scoring.
-  this->jointStateSub = this->node->create_subscription<sensor_msgs::msg::JointState>(
-    kJointStateTopic,
-    reliable_qos,
-    [this](std::shared_ptr<const rclcpp::SerializedMessage> msg, const rclcpp::MessageInfo &msg_info) {
-      std::lock_guard<std::mutex> lock(this->mutex);
-      if (this->state == State::Recording) {
-        const auto &rmw_info = msg_info.get_rmw_message_info();
-        this->bagWriter.write(msg, kJointStateTopic, rosidl_generator_traits::name<sensor_msgs::msg::JointState>(),
-                              rmw_info.received_timestamp,
-                              rmw_info.source_timestamp);
-      } else if (this->state == State::Scoring) {
-
-      }
-    }
-  );
-
-  this->tfSub = this->node->create_subscription<tf2_msgs::msg::TFMessage>(
-    kTfTopic,
-    reliable_qos,
-    [this](std::shared_ptr<const rclcpp::SerializedMessage> msg, const rclcpp::MessageInfo &msg_info) {
-      std::lock_guard<std::mutex> lock(this->mutex);
-      if (this->state == State::Recording) {
-        const auto &rmw_info = msg_info.get_rmw_message_info();
-        this->bagWriter.write(msg, kTfTopic, rosidl_generator_traits::name<tf2_msgs::msg::TFMessage>(),
-                              rmw_info.received_timestamp,
-                              rmw_info.source_timestamp);
-      }
-    }
-  );
-
-  this->tfStaticSub = this->node->create_subscription<tf2_msgs::msg::TFMessage>(
-    kTfStaticTopic,
-    reliable_qos,
-    [this](std::shared_ptr<const rclcpp::SerializedMessage> msg, const rclcpp::MessageInfo &msg_info) {
-      std::lock_guard<std::mutex> lock(this->mutex);
-      if (this->state == State::Recording) {
-        const auto &rmw_info = msg_info.get_rmw_message_info();
-        this->bagWriter.write(msg, kTfStaticTopic, rosidl_generator_traits::name<tf2_msgs::msg::TFMessage>(),
-                              rmw_info.received_timestamp,
-                              rmw_info.source_timestamp);
-      }
-    }
-  );
-
-  this->contactsSub = this->node->create_subscription<ros_gz_interfaces::msg::Contacts>(
-    kContactsTopic,
-    reliable_qos,
-    [this](std::shared_ptr<const rclcpp::SerializedMessage> msg, const rclcpp::MessageInfo &msg_info) {
-      std::lock_guard<std::mutex> lock(this->mutex);
-      if (this->state == State::Recording) {
-        const auto &rmw_info = msg_info.get_rmw_message_info();
-        this->bagWriter.write(msg, kContactsTopic, rosidl_generator_traits::name<ros_gz_interfaces::msg::Contacts>(),
-                              rmw_info.received_timestamp,
-                              rmw_info.source_timestamp);
-      }
-    }
-  );
-
-  this->wrenchSub = this->node->create_subscription<geometry_msgs::msg::WrenchStamped>(
-    kWrenchTopic,
-    reliable_qos,
-    [this](std::shared_ptr<const rclcpp::SerializedMessage> msg, const rclcpp::MessageInfo &msg_info) {
-      std::lock_guard<std::mutex> lock(this->mutex);
-      if (this->state == State::Recording) {
-        const auto &rmw_info = msg_info.get_rmw_message_info();
-        this->bagWriter.write(msg, kWrenchTopic, rosidl_generator_traits::name<geometry_msgs::msg::WrenchStamped>(),
-                              rmw_info.received_timestamp,
-                              rmw_info.source_timestamp);
-      }
-    }
-  );
-
+  for (const auto &topic : this->topics) {
+    auto sub = this->node->create_generic_subscription(
+        topic.name, topic.type, reliable_qos,
+        [this, topic](std::shared_ptr<const rclcpp::SerializedMessage> msg,
+                      const rclcpp::MessageInfo &msg_info) {
+          // Bag the data.
+          const auto &rmw_info = msg_info.get_rmw_message_info();
+          std::lock_guard<std::mutex> lock(this->mutex);
+          if (this->state == State::Recording) {
+            this->bagWriter.write(msg, topic.name, topic.type,
+                                  rmw_info.received_timestamp,
+                                  rmw_info.source_timestamp);
+          }
+        });
+    this->subscriptions.push_back(sub);
+  }
   return true;
 }
 
@@ -167,24 +113,91 @@ bool ScoringTier2::StopRecording() {
 }
 
 //////////////////////////////////////////////////
+bool ScoringTier2::ParseStats(YAML::Node _config) {
+  // Parse topics to subscribe to.
+  if (!_config["topics"]) {
+    RCLCPP_ERROR(this->node->get_logger(),
+                 "Unable to find [topics] in yaml file");
+    return false;
+  }
+
+  const auto &topics = _config["topics"];
+  if (!topics.IsSequence()) {
+    RCLCPP_ERROR(this->node->get_logger(),
+                 "Unable to find sequence of topics within [topics]");
+    return false;
+  }
+
+  for (const auto &newTopic : topics) {
+    if (!newTopic["topic"]) {
+      RCLCPP_ERROR(this->node->get_logger(),
+                   "Unrecognized element. It should be [topic]");
+      return false;
+    }
+
+    const auto &topicProperties = newTopic["topic"];
+    if (!topicProperties.IsMap()) {
+      RCLCPP_ERROR(this->node->get_logger(),
+                   "Unable to find properties within [topic]");
+      return false;
+    }
+
+    TopicInfo topicInfo;
+
+    if (!topicProperties["name"]) {
+      RCLCPP_ERROR(this->node->get_logger(),
+                   "Unable to find [name] within [topic]");
+      return false;
+    }
+    topicInfo.name = topicProperties["name"].as<std::string>();
+
+    if (!topicProperties["type"]) {
+      RCLCPP_ERROR(this->node->get_logger(),
+                   "Unable to find [type] within [topic]");
+      return false;
+    }
+    topicInfo.type = topicProperties["type"].as<std::string>();
+
+    this->topics.push_back(topicInfo);
+  }
+
+  return true;
+}
+
+//////////////////////////////////////////////////
 std::set<std::string> ScoringTier2::GetMissingRequiredTopics() const {
   std::set<std::string> unavailable;
-  if (this->wrenchSub->get_publisher_count() == 0) {
-    unavailable.insert(this->wrenchSub->get_topic_name());
-  }
-  if (this->jointStateSub->get_publisher_count() == 0) {
-    unavailable.insert(this->jointStateSub->get_topic_name());
-  }
-  if (this->contactsSub->get_publisher_count() == 0) {
-    unavailable.insert(this->contactsSub->get_topic_name());
-  }
-  if (this->tfSub->get_publisher_count() == 0) {
-    unavailable.insert(this->tfSub->get_topic_name());
-  }
-  if (this->tfStaticSub->get_publisher_count() == 0) {
-    unavailable.insert(this->tfStaticSub->get_topic_name());
+  for (const auto &subscription: this->subscriptions) {
+    if (subscription->get_publisher_count() == 0) {
+      unavailable.insert(subscription->get_topic_name());
+    }
   }
   return unavailable;
+}
+
+//////////////////////////////////////////////////
+void ScoringTier2::JointStateCallback(const sensor_msgs::msg::JointState& _msg) {
+  (void)_msg;
+}
+
+//////////////////////////////////////////////////
+void ScoringTier2::TfCallback(const tf2_msgs::msg::TFMessage& _msg) {
+  (void)_msg;
+}
+
+//////////////////////////////////////////////////
+void ScoringTier2::TfStaticCallback(const tf2_msgs::msg::TFMessage& _msg) {
+  (void)_msg;
+}
+
+//////////////////////////////////////////////////
+void ScoringTier2::ContactsCallback(const ros_gz_interfaces::msg::Contacts& _msg) {
+  (void)_msg;
+}
+
+//////////////////////////////////////////////////
+void ScoringTier2::WrenchCallback(const geometry_msgs::msg::WrenchStamped& _msg) {
+  (void)_msg;
 }
 
 //////////////////////////////////////////////////
@@ -193,7 +206,7 @@ ScoringTier2Node::ScoringTier2Node(const std::string &_yamlFile)
   try {
     auto config = YAML::LoadFile(_yamlFile);
     this->score = std::make_unique<aic_scoring::ScoringTier2>(this);
-    this->score->Initialize();
+    this->score->Initialize(config);
   } catch (const YAML::BadFile &_e) {
     std::cerr << "Unable to open YAML file [" << _yamlFile << "]" << std::endl;
     return;

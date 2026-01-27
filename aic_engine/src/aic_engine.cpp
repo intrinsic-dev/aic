@@ -418,6 +418,12 @@ EngineState Engine::initialize() {
   RCLCPP_INFO(node_->get_logger(), "Successfully parsed %zu trial(s)",
               trials_.size());
 
+  if (!config_["scoring"]) {
+    RCLCPP_ERROR(node_->get_logger(), "Config missing required key: 'scoring'");
+    engine_state_ = EngineState::Error;
+    return engine_state_;
+  }
+
   // Create ROS endpoints.
   const rclcpp::QoS reliable_qos = rclcpp::QoS(rclcpp::KeepLast(10)).reliable();
 
@@ -453,7 +459,7 @@ EngineState Engine::initialize() {
   tf_listener_ = std::make_unique<tf2_ros::TransformListener>(*tf_buffer_);
 
   scoring_tier2_ = std::make_unique<aic_scoring::ScoringTier2>(node_.get());
-  if (!scoring_tier2_->Initialize()) {
+  if (!scoring_tier2_->Initialize(config_["scoring"])) {
     RCLCPP_ERROR(node_->get_logger(), "Failed to initialize scoring system");
     return EngineState::Error;
   }

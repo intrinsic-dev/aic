@@ -87,8 +87,9 @@ namespace aic_scoring
     /// \param[in] _node Pointer to the ROS node.
     public: ScoringTier2(rclcpp::Node *_node);
 
-    /// \brief Initialize the node's subscriptions.
-    public: bool Initialize();
+    /// \brief Populate the scoring input params from a YAML file.
+    /// \param[in] _config YAML configuration for the node
+    public: bool Initialize(YAML::Node _config);
 
     /// \brief Reset connections.
     /// \param[in] _connections New connections.
@@ -103,36 +104,52 @@ namespace aic_scoring
     /// \return True if the bag was closed correctly.
     public: bool StopRecording();
 
+    /// \brief Populate the scoring input params from a YAML file.
+    /// \param[in] _config YAML configuration for the node
+    private: bool ParseStats(YAML::Node _config);
+
     /// \brief Get the topics required that are currently not being published.
     /// \return An unordered_set with the missing required topic names.
     public: std::set<std::string> GetMissingRequiredTopics() const;
 
+    /// \brief Callback for joint state messages received while scoring.
+    /// \param[in] _msg The received message.
+    private: void JointStateCallback(const sensor_msgs::msg::JointState& _msg);
+
+    /// \brief Callback for tf messages received while scoring.
+    /// \param[in] _msg The received message.
+    private: void TfCallback(const tf2_msgs::msg::TFMessage& _msg);
+
+    /// \brief Callback for static tf messages received while scoring.
+    /// \param[in] _msg The received message.
+    private: void TfStaticCallback(const tf2_msgs::msg::TFMessage& _msg);
+
+    /// \brief Callback for contact messages received while scoring.
+    /// \param[in] _msg The received message.
+    private: void ContactsCallback(const ros_gz_interfaces::msg::Contacts& _msg);
+
+    /// \brief Callback for force torque sensor wrenches received while scoring.
+    /// \param[in] _msg The received message.
+    private: void WrenchCallback(const geometry_msgs::msg::WrenchStamped& _msg);
+
     /// \brief Pointer to a node.
     private: rclcpp::Node *node;
 
+    /// \brief Topics to subscribe to.
+    private: std::vector<TopicInfo> topics;
+
     /// \brief Connections.
     private: std::vector<Connection> connections;
+
+    /// \brief Generic subscriptions for all topics.
+    private: std::vector<std::shared_ptr<rclcpp::GenericSubscription>>
+      subscriptions;
 
     /// \brief A rosbag2 writer.
     private: rosbag2_cpp::Writer bagWriter;
 
     /// \brief State the scoring system is in.
     private: State state = State::Idle;
-
-    /// \brief Subscription for the joint state.
-    private: rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr jointStateSub;
-
-    /// \brief Subscription for the tf.
-    private: rclcpp::Subscription<tf2_msgs::msg::TFMessage>::SharedPtr tfSub;
-
-    /// \brief Subscription for the static tf.
-    private: rclcpp::Subscription<tf2_msgs::msg::TFMessage>::SharedPtr tfStaticSub;
-
-    /// \brief Subscription for the gazebo off limit contacts.
-    private: rclcpp::Subscription<ros_gz_interfaces::msg::Contacts>::SharedPtr contactsSub;
-
-    /// \brief Subscription for the force torque sensor wrench.
-    private: rclcpp::Subscription<geometry_msgs::msg::WrenchStamped>::SharedPtr wrenchSub;
 
     /// \brief Mutex to protect the access to the bag.
     private: std::mutex mutex;
