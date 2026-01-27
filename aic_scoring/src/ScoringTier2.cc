@@ -145,36 +145,29 @@ int ScoringTier2::ComputeScore() {
 
   while (bagReader.has_next()) {
     auto msg_ptr = bagReader.read_next();
-    bool topic_found = false;
-    for (const auto &topic : this->topics) {
-      if (msg_ptr->topic_name == topic.name) {
-        topic_found = true;
-        if (topic.name == kJointStatesTopic) {
-          const auto msg =
-              deserialize_from_rosbag<sensor_msgs::msg::JointState>(msg_ptr);
-          this->JointStateCallback(msg);
-        } else if (topic.name == kTfTopic) {
-          const auto msg =
-              deserialize_from_rosbag<tf2_msgs::msg::TFMessage>(msg_ptr);
-          this->TfCallback(msg);
-        } else if (topic.name == kTfStaticTopic) {
-          const auto msg =
-              deserialize_from_rosbag<tf2_msgs::msg::TFMessage>(msg_ptr);
-          this->TfStaticCallback(msg);
-        } else if (topic.name == kContactsTopic) {
-          const auto msg =
-              deserialize_from_rosbag<ros_gz_interfaces::msg::Contacts>(
-                  msg_ptr);
-          this->ContactsCallback(msg);
-        } else if (topic.name == kWrenchTopic) {
-          const auto msg =
-              deserialize_from_rosbag<geometry_msgs::msg::WrenchStamped>(
-                  msg_ptr);
-          this->WrenchCallback(msg);
-        }
-      }
-    }
-    if (topic_found == false) {
+    if (msg_ptr->topic_name == kJointStatesTopic) {
+      const auto msg =
+          deserialize_from_rosbag<sensor_msgs::msg::JointState>(msg_ptr);
+      this->JointStateCallback(msg);
+    } else if (msg_ptr->topic_name == kTfTopic) {
+      const auto msg =
+          deserialize_from_rosbag<tf2_msgs::msg::TFMessage>(msg_ptr);
+      this->TfCallback(msg);
+    } else if (msg_ptr->topic_name == kTfStaticTopic) {
+      const auto msg =
+          deserialize_from_rosbag<tf2_msgs::msg::TFMessage>(msg_ptr);
+      this->TfStaticCallback(msg);
+    } else if (msg_ptr->topic_name == kContactsTopic) {
+      const auto msg =
+          deserialize_from_rosbag<ros_gz_interfaces::msg::Contacts>(
+              msg_ptr);
+      this->ContactsCallback(msg);
+    } else if (msg_ptr->topic_name == kWrenchTopic) {
+      const auto msg =
+          deserialize_from_rosbag<geometry_msgs::msg::WrenchStamped>(
+              msg_ptr);
+      this->WrenchCallback(msg);
+    } else {
       RCLCPP_WARN(this->node->get_logger(),
                   "Unexpected topic name while scoring: %s",
                   msg_ptr->topic_name.c_str());
