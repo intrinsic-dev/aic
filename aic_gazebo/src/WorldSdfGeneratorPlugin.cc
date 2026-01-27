@@ -17,13 +17,12 @@
 
 #include "WorldSdfGeneratorPlugin.hh"
 
-#include <fstream>
-
 #include <gz/msgs/sdf_generator_config.pb.h>
 #include <gz/msgs/stringmsg.pb.h>
-#include <gz/msgs/Utility.hh>
 
+#include <fstream>
 #include <gz/common/Console.hh>
+#include <gz/msgs/Utility.hh>
 #include <gz/plugin/Register.hh>
 #include <gz/sim/components/Name.hh>
 #include <gz/sim/components/World.hh>
@@ -36,16 +35,15 @@ GZ_ADD_PLUGIN(aic_gazebo::WorldSdfGeneratorPlugin, gz::sim::System,
               aic_gazebo::WorldSdfGeneratorPlugin::ISystemPostUpdate)
 
 namespace {
-  inline constexpr char kLocalSaveWorldPath [] = "/tmp/aic.sdf";
+inline constexpr char kLocalSaveWorldPath[] = "/tmp/aic.sdf";
 }
 
 namespace aic_gazebo {
 
 //////////////////////////////////////////////////
-void WorldSdfGeneratorPlugin::Configure(const gz::sim::Entity&,
-    const std::shared_ptr<const sdf::Element>& _sdf,
-    gz::sim::EntityComponentManager&,
-    gz::sim::EventManager&) {
+void WorldSdfGeneratorPlugin::Configure(
+    const gz::sim::Entity&, const std::shared_ptr<const sdf::Element>& _sdf,
+    gz::sim::EntityComponentManager&, gz::sim::EventManager&) {
   gzdbg << "aic_gazebo::WorldSdfGeneratorPlugin::Configure" << std::endl;
 
   double delay = _sdf->Get<double>("save_world_delay_s", 0.0).first;
@@ -55,15 +53,13 @@ void WorldSdfGeneratorPlugin::Configure(const gz::sim::Entity&,
 }
 
 //////////////////////////////////////////////////
-void WorldSdfGeneratorPlugin::PostUpdate(const gz::sim::UpdateInfo& _info,
+void WorldSdfGeneratorPlugin::PostUpdate(
+    const gz::sim::UpdateInfo& _info,
     const gz::sim::EntityComponentManager& _ecm) {
-
-  if (this->sdfGenerated)
-    return;
+  if (this->sdfGenerated) return;
 
   // Wait for specified delay duration before requesting to save world
-  if (_info.simTime < this->saveWorldDelay)
-    return;
+  if (_info.simTime < this->saveWorldDelay) return;
 
   Entity world = _ecm.EntityByComponents(components::World());
   auto nameComp = _ecm.Component<components::Name>(world);
@@ -72,7 +68,7 @@ void WorldSdfGeneratorPlugin::PostUpdate(const gz::sim::UpdateInfo& _info,
                                   "/generate_world_sdf"};
   msgs::StringMsg genWorldSdf;
   msgs::SdfGeneratorConfig req;
-  auto *globalConfig = req.mutable_global_entity_gen_config();
+  auto* globalConfig = req.mutable_global_entity_gen_config();
   msgs::Set(globalConfig->mutable_expand_include_tags(), true);
 
   const unsigned int timeout{5000};
@@ -86,19 +82,14 @@ void WorldSdfGeneratorPlugin::PostUpdate(const gz::sim::UpdateInfo& _info,
     if (fs.is_open()) {
       fs << genWorldSdf.data();
       gzmsg << "World saved to " << this->saveWorldPath << std::endl;
-    }
-    else {
+    } else {
       gzmsg << "File: " << this->saveWorldPath << " could not be opened for "
             << "saving. Please check that the directory containg the "
-            << "file exists and the correct permissions are set."
-            << std::endl;
+            << "file exists and the correct permissions are set." << std::endl;
     }
-  }
-  else
-  {
+  } else {
     if (!serviceCall) {
-      gzmsg << "Service call for generating world SDF timed out"
-            << std::endl;
+      gzmsg << "Service call for generating world SDF timed out" << std::endl;
     }
     gzmsg << "Unknown error occured when saving the world." << std::endl;
   }
