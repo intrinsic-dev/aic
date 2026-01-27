@@ -104,6 +104,12 @@ namespace aic_scoring
     /// \return True if the bag was closed correctly.
     public: bool StopRecording();
 
+    /// \brief Compute the score the bag that we just recorded.
+    /// \return TODO(luca) have a struct that includes fields and scores.
+    /// wrapped in std::optional / std::expected for fallible operations such
+    /// as failing to open the bag
+    public: int ComputeScore();
+
     /// \brief Populate the scoring input params from a YAML file.
     /// \param[in] _config YAML configuration for the node
     private: bool ParseStats(YAML::Node _config);
@@ -147,6 +153,9 @@ namespace aic_scoring
 
     /// \brief A rosbag2 writer.
     private: rosbag2_cpp::Writer bagWriter;
+
+    /// \brief The URI of the bag currently being processed.
+    private: std::string bagUri;
 
     /// \brief State the scoring system is in.
     private: State state = State::Idle;

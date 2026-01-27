@@ -14,6 +14,9 @@ scoring:
     - topic:
         name: "/aic/gazebo/contacts/off_limit"
         type: "ros_gz_interfaces/msg/Contacts"
+    - topic:
+        name: "/axia80_m20/wrench"
+        type: "geometry_msgs/msg/WrenchStamped"
 task_board_limits:
   nic_rail:
     min_translation: -0.048  # Minimum translation from center along the rail (in meters)

@@ -24,6 +24,7 @@
 #include <iostream>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
+#include <rosbag2_cpp/reader.hpp>
 #include <rosbag2_cpp/writer.hpp>
 #include <rosbag2_storage/storage_options.hpp>
 #include <string>
@@ -97,6 +98,7 @@ bool ScoringTier2::StartRecording(const std::string &_filename) {
     return false;
   }
   this->state = State::Recording;
+  this->bagUri = _filename;
   return true;
 }
 
@@ -110,6 +112,65 @@ bool ScoringTier2::StopRecording() {
   this->bagWriter.close();
   this->state = State::Idle;
   return true;
+}
+
+template<typename Msg>
+Msg deserialize_from_rosbag(std::shared_ptr<rosbag2_storage::SerializedBagMessage> msg_in) {
+  Msg msg;
+  rclcpp::SerializedMessage extracted_serialized_msg(*msg_in->serialized_data);
+  rclcpp::Serialization<Msg> serialization;
+  serialization.deserialize_message(&extracted_serialized_msg, &msg);
+  return msg;
+}
+
+//////////////////////////////////////////////////
+int ScoringTier2::ComputeScore() {
+  int score = -1;
+  if (this->state != State::Idle) {
+    RCLCPP_ERROR(this->node->get_logger(), "Scoring system is busy.");
+    return score;
+  }
+  rosbag2_cpp::Reader bagReader;
+
+  try {
+    rosbag2_storage::StorageOptions storage_options;
+    storage_options.uri = this->bagUri;
+    bagReader.open(storage_options);
+  } catch (const std::exception &e) {
+    RCLCPP_ERROR(this->node->get_logger(), "Failed to open bag: %s", e.what());
+    return score;
+  }
+  this->state = State::Scoring;
+
+  while (bagReader.has_next()) {
+    auto msg_ptr = bagReader.read_next();
+    bool topic_found = false;
+    for (const auto& topic : this->topics) {
+      if (msg_ptr->topic_name == topic.name) {
+        topic_found = true;
+        if (topic.name == "/joint_states") {
+          const auto msg = deserialize_from_rosbag<sensor_msgs::msg::JointState>(msg_ptr);
+          this->JointStateCallback(msg);
+        } else if (topic.name == "/scoring/tf") {
+          const auto msg = deserialize_from_rosbag<tf2_msgs::msg::TFMessage>(msg_ptr);
+          this->TfCallback(msg);
+        } else if (topic.name == "/scoring/tf_static") {
+          const auto msg = deserialize_from_rosbag<tf2_msgs::msg::TFMessage>(msg_ptr);
+          this->TfStaticCallback(msg);
+        } else if (topic.name == "/aic/gazebo/contacts/off_limit") {
+          const auto msg = deserialize_from_rosbag<ros_gz_interfaces::msg::Contacts>(msg_ptr);
+          this->ContactsCallback(msg);
+        } else if (topic.name == "/axia80_m20/wrench") {
+          const auto msg = deserialize_from_rosbag<geometry_msgs::msg::WrenchStamped>(msg_ptr);
+          this->WrenchCallback(msg);
+        }
+      }
+    }
+    if (topic_found == false) {
+      RCLCPP_WARN(this->node->get_logger(), "Unexpected topic name while scoring: %s", msg_ptr->topic_name.c_str());
+    }
+  }
+  return score;
 }
 
 //////////////////////////////////////////////////
