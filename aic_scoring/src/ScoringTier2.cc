@@ -49,11 +49,13 @@ bool ScoringTier2::Initialize() {
     reliable_qos,
     [this](std::shared_ptr<const rclcpp::SerializedMessage> msg, const rclcpp::MessageInfo &msg_info) {
       std::lock_guard<std::mutex> lock(this->mutex);
-      if (this->bagOpen) {
+      if (this->state == State::Recording) {
         const auto &rmw_info = msg_info.get_rmw_message_info();
         this->bagWriter.write(msg, kJointStateTopic, rosidl_generator_traits::name<sensor_msgs::msg::JointState>(),
                               rmw_info.received_timestamp,
                               rmw_info.source_timestamp);
+      } else if (this->state == State::Scoring) {
+
       }
     }
   );
@@ -63,7 +65,7 @@ bool ScoringTier2::Initialize() {
     reliable_qos,
     [this](std::shared_ptr<const rclcpp::SerializedMessage> msg, const rclcpp::MessageInfo &msg_info) {
       std::lock_guard<std::mutex> lock(this->mutex);
-      if (this->bagOpen) {
+      if (this->state == State::Recording) {
         const auto &rmw_info = msg_info.get_rmw_message_info();
         this->bagWriter.write(msg, kTfTopic, rosidl_generator_traits::name<tf2_msgs::msg::TFMessage>(),
                               rmw_info.received_timestamp,
@@ -77,7 +79,7 @@ bool ScoringTier2::Initialize() {
     reliable_qos,
     [this](std::shared_ptr<const rclcpp::SerializedMessage> msg, const rclcpp::MessageInfo &msg_info) {
       std::lock_guard<std::mutex> lock(this->mutex);
-      if (this->bagOpen) {
+      if (this->state == State::Recording) {
         const auto &rmw_info = msg_info.get_rmw_message_info();
         this->bagWriter.write(msg, kTfStaticTopic, rosidl_generator_traits::name<tf2_msgs::msg::TFMessage>(),
                               rmw_info.received_timestamp,
@@ -91,7 +93,7 @@ bool ScoringTier2::Initialize() {
     reliable_qos,
     [this](std::shared_ptr<const rclcpp::SerializedMessage> msg, const rclcpp::MessageInfo &msg_info) {
       std::lock_guard<std::mutex> lock(this->mutex);
-      if (this->bagOpen) {
+      if (this->state == State::Recording) {
         const auto &rmw_info = msg_info.get_rmw_message_info();
         this->bagWriter.write(msg, kContactsTopic, rosidl_generator_traits::name<ros_gz_interfaces::msg::Contacts>(),
                               rmw_info.received_timestamp,
@@ -105,7 +107,7 @@ bool ScoringTier2::Initialize() {
     reliable_qos,
     [this](std::shared_ptr<const rclcpp::SerializedMessage> msg, const rclcpp::MessageInfo &msg_info) {
       std::lock_guard<std::mutex> lock(this->mutex);
-      if (this->bagOpen) {
+      if (this->state == State::Recording) {
         const auto &rmw_info = msg_info.get_rmw_message_info();
         this->bagWriter.write(msg, kWrenchTopic, rosidl_generator_traits::name<geometry_msgs::msg::WrenchStamped>(),
                               rmw_info.received_timestamp,
@@ -135,8 +137,8 @@ void ScoringTier2::ResetConnections(
 //////////////////////////////////////////////////
 bool ScoringTier2::StartRecording(const std::string &_filename) {
   std::lock_guard<std::mutex> lock(this->mutex);
-  if (this->bagOpen) {
-    RCLCPP_ERROR(this->node->get_logger(), "Bag already opened.");
+  if (this->state != State::Idle) {
+    RCLCPP_ERROR(this->node->get_logger(), "Scoring system is busy.");
     return false;
   }
 
@@ -148,19 +150,19 @@ bool ScoringTier2::StartRecording(const std::string &_filename) {
     RCLCPP_ERROR(this->node->get_logger(), "Failed to open bag: %s", e.what());
     return false;
   }
-  this->bagOpen = true;
+  this->state = State::Recording;
   return true;
 }
 
 //////////////////////////////////////////////////
 bool ScoringTier2::StopRecording() {
   std::lock_guard<std::mutex> lock(this->mutex);
-  if (!this->bagOpen) {
-    RCLCPP_ERROR(this->node->get_logger(), "Bag already closed.");
+  if (this->state != State::Recording) {
+    RCLCPP_ERROR(this->node->get_logger(), "Scoring system is not recording");
     return false;
   }
   this->bagWriter.close();
-  this->bagOpen = false;
+  this->state = State::Idle;
   return true;
 }
 

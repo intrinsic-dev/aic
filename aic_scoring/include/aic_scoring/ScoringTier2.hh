@@ -63,6 +63,11 @@ namespace aic_scoring
   // The Tier2 scoring interface.
   class ScoringTier2
   {
+    enum class State {
+      Idle,
+      Recording,
+      Scoring
+    };
     /// \brief Topic to subscribe for joint states.
     public: static constexpr const char* kJointStateTopic = "/joint_states";
 
@@ -111,8 +116,8 @@ namespace aic_scoring
     /// \brief A rosbag2 writer.
     private: rosbag2_cpp::Writer bagWriter;
 
-    /// \brief Whether the bag is open or not.
-    private: bool bagOpen = false;
+    /// \brief State the scoring system is in.
+    private: State state = State::Idle;
 
     /// \brief Subscription for the joint state.
     private: rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr jointStateSub;
