@@ -22,6 +22,7 @@ from dataclasses import dataclass, field
 from functools import cached_property
 from threading import Thread
 from typing import Any, TypedDict, cast
+import cv2
 
 import numpy as np
 from numpy.typing import NDArray
@@ -257,6 +258,7 @@ class AICRobotAICController(Robot):
             start = time.perf_counter()
             try:
                 cam_obs[cam_key] = cam.async_read(timeout_ms=2000)
+                cam_obs[cam_key] = cv2.resize(cam_obs[cam_key], None, fx=0.25, fy=0.25, interpolation=cv2.INTER_AREA)
             except Exception as e:
                 logger.error(f"Failed to read camera {cam_key}: {e}")
                 cam_obs[cam_key] = None
@@ -280,15 +282,15 @@ class AICRobotAICController(Robot):
         msg = MotionUpdate()
         msg.velocity = twist_msg
         msg.target_stiffness = np.diag(
-            [100.0, 100.0, 100.0, 50.0, 50.0, 50.0]
+            [85.0, 85.0, 85.0, 85.0, 85.0, 85.0]
         ).flatten()
-        msg.target_damping = np.diag([40.0, 40.0, 40.0, 15.0, 15.0, 15.0]).flatten()
+        msg.target_damping = np.diag([75.0, 75.0, 75.0, 75.0, 75.0, 75.0]).flatten()
         msg.feedforward_wrench_at_tip = Wrench(
-            force=Vector3(x=0.0, y=0.0, z=1.0),
+            force=Vector3(x=0.0, y=0.0, z=0.0),
             torque=Vector3(x=0.0, y=0.0, z=0.0),
         )
         msg.wrench_feedback_gains_at_tip = Wrench(
-            force=Vector3(x=0.5, y=0.5, z=0.5),
+            force=Vector3(x=0.0, y=0.0, z=0.0),
             torque=Vector3(x=0.0, y=0.0, z=0.0),
         )
         msg.trajectory_generation_mode.mode = TrajectoryGenerationMode.MODE_VELOCITY
