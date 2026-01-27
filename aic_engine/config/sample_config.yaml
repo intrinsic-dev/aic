@@ -98,7 +98,7 @@ trials:
           sc_mount_rail_1:
             entity_present: False
         cables:
-          cable_1:
+          cable_0:
             pose:
               gripper_offset:
                 x: 0.0
@@ -192,7 +192,7 @@ trials:
           sc_mount_rail_1:
             entity_present: False
         cables:
-          cable_1:
+          cable_0:
             pose:
               gripper_offset:
                 x: 0.0
@@ -211,7 +211,7 @@ trials:
         plug_name:  "sfp_plug"
         port_type: "sfp"
         port_name: "sfp_port_0"
-        target_module_name: "nic_card_0"
+        target_module_name: "nic_card_1"
         time_limit: 300
   trial_3:
     scene:
@@ -299,5 +299,5 @@ trials:
         plug_name:  "sc_plug"
         port_type: "sc"
         port_name: "sc_mount_1"
-        target_module_name: "nic_card_1"
+        target_module_name: "sc_port_0"
         time_limit: 300
