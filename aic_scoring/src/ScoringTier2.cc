@@ -86,7 +86,6 @@ bool ScoringTier2::Initialize() {
     }
   );
 
-  // TODO(luca) reliable qos
   this->contactsSub = this->node->create_subscription<ros_gz_interfaces::msg::Contacts>(
     kContactsTopic,
     reliable_qos,
@@ -173,6 +172,15 @@ std::set<std::string> ScoringTier2::GetMissingRequiredTopics() const {
   }
   if (this->jointStateSub->get_publisher_count() == 0) {
     unavailable.insert(this->jointStateSub->get_topic_name());
+  }
+  if (this->contactsSub->get_publisher_count() == 0) {
+    unavailable.insert(this->contactsSub->get_topic_name());
+  }
+  if (this->tfSub->get_publisher_count() == 0) {
+    unavailable.insert(this->tfSub->get_topic_name());
+  }
+  if (this->tfStaticSub->get_publisher_count() == 0) {
+    unavailable.insert(this->tfStaticSub->get_topic_name());
   }
   return unavailable;
 }
