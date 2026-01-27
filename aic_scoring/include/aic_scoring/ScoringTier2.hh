@@ -96,15 +96,8 @@ namespace aic_scoring
     /// \brief Pointer to a node.
     private: rclcpp::Node *node;
 
-    /// \brief Topics to subscribe to.
-    private: std::vector<TopicInfo> topics;
-
     /// \brief Connections.
     private: std::vector<Connection> connections;
-
-    /// \brief Generic subscriptions for all topics.
-    private: std::vector<std::shared_ptr<rclcpp::GenericSubscription>>
-      subscriptions;
 
     /// \brief A rosbag2 writer.
     private: rosbag2_cpp::Writer bagWriter;
