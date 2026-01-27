@@ -33,8 +33,8 @@ from aic_control_interfaces.srv import (
 )
 from geometry_msgs.msg import Pose, Point, Quaternion, Wrench, Vector3, Twist
 
-LINEAR_STEP = 0.1  # Step size for linear movement (meters)
-ANGULAR_STEP = 0.5  # Step size for angular movement (radians)
+LINEAR_STEP = 0.075  # Step size for linear movement (meters)
+ANGULAR_STEP = 0.25  # Step size for angular movement (radians)
 
 KEY_MAPPINGS = {
     "w": (1, 0, 0, 0, 0, 0),  # +x
@@ -117,8 +117,8 @@ class AICTeleoperatorNode(Node):
         elif mode == TrajectoryGenerationMode.MODE_VELOCITY:
             msg.header.frame_id = "gripper/tcp"
             msg.velocity = twist
-        msg.target_stiffness = np.diag([75.0, 75.0, 75.0, 75.0, 75.0, 75.0]).flatten()
-        msg.target_damping = np.diag([35.0, 35.0, 35.0, 35.0, 35.0, 35.0]).flatten()
+        msg.target_stiffness = np.diag([85.0, 85.0, 85.0, 85.0, 85.0, 85.0]).flatten()
+        msg.target_damping = np.diag([75.0, 75.0, 75.0, 75.0, 75.0, 75.0]).flatten()
         msg.feedforward_wrench_at_tip = Wrench(
             force=Vector3(x=0.0, y=0.0, z=0.0),
             torque=Vector3(x=0.0, y=0.0, z=0.0),
