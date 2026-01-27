@@ -33,11 +33,17 @@ jobs:
           apt-get update && apt-get upgrade -y
           apt-get install -y python3-colcon-common-extensions
 
+      - name: Set up git authentication
+        run: |
+          git config --global url."https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/".insteadOf "https://github.com/"
+          git config --global credential.helper store
+
       - name: Build and run tests
         uses: ros-tooling/action-ros-ci@v0.4
         with:
           target-ros2-distro: kilted
           skip-tests: false
+          token: ${{ secrets.GITHUB_TOKEN }}
           colcon-defaults: |
             {
               "build": {
