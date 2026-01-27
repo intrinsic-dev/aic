@@ -42,10 +42,11 @@ bool ScoringTier2::Initialize() {
     return false;
   }
 
+  const rclcpp::QoS reliable_qos = rclcpp::QoS(rclcpp::KeepLast(10)).reliable();
   // Subscribe to all topics relevant for scoring.
   this->jointStateSub = this->node->create_subscription<sensor_msgs::msg::JointState>(
     kJointStateTopic,
-    10,
+    reliable_qos,
     [this](std::shared_ptr<const rclcpp::SerializedMessage> msg, const rclcpp::MessageInfo &msg_info) {
       std::lock_guard<std::mutex> lock(this->mutex);
       if (this->bagOpen) {
@@ -59,7 +60,7 @@ bool ScoringTier2::Initialize() {
 
   this->tfSub = this->node->create_subscription<tf2_msgs::msg::TFMessage>(
     kTfTopic,
-    10,
+    reliable_qos,
     [this](std::shared_ptr<const rclcpp::SerializedMessage> msg, const rclcpp::MessageInfo &msg_info) {
       std::lock_guard<std::mutex> lock(this->mutex);
       if (this->bagOpen) {
@@ -73,7 +74,7 @@ bool ScoringTier2::Initialize() {
 
   this->tfStaticSub = this->node->create_subscription<tf2_msgs::msg::TFMessage>(
     kTfStaticTopic,
-    10,
+    reliable_qos,
     [this](std::shared_ptr<const rclcpp::SerializedMessage> msg, const rclcpp::MessageInfo &msg_info) {
       std::lock_guard<std::mutex> lock(this->mutex);
       if (this->bagOpen) {
@@ -88,7 +89,7 @@ bool ScoringTier2::Initialize() {
   // TODO(luca) reliable qos
   this->contactsSub = this->node->create_subscription<ros_gz_interfaces::msg::Contacts>(
     kContactsTopic,
-    10,
+    reliable_qos,
     [this](std::shared_ptr<const rclcpp::SerializedMessage> msg, const rclcpp::MessageInfo &msg_info) {
       std::lock_guard<std::mutex> lock(this->mutex);
       if (this->bagOpen) {
@@ -99,6 +100,21 @@ bool ScoringTier2::Initialize() {
       }
     }
   );
+
+  this->wrenchSub = this->node->create_subscription<geometry_msgs::msg::WrenchStamped>(
+    kWrenchTopic,
+    reliable_qos,
+    [this](std::shared_ptr<const rclcpp::SerializedMessage> msg, const rclcpp::MessageInfo &msg_info) {
+      std::lock_guard<std::mutex> lock(this->mutex);
+      if (this->bagOpen) {
+        const auto &rmw_info = msg_info.get_rmw_message_info();
+        this->bagWriter.write(msg, kWrenchTopic, rosidl_generator_traits::name<geometry_msgs::msg::WrenchStamped>(),
+                              rmw_info.received_timestamp,
+                              rmw_info.source_timestamp);
+      }
+    }
+  );
+
   return true;
 }
 
@@ -147,6 +163,18 @@ bool ScoringTier2::StopRecording() {
   this->bagWriter.close();
   this->bagOpen = false;
   return true;
+}
+
+//////////////////////////////////////////////////
+std::set<std::string> ScoringTier2::GetMissingRequiredTopics() const {
+  std::set<std::string> unavailable;
+  if (this->wrenchSub->get_publisher_count() == 0) {
+    unavailable.insert(this->wrenchSub->get_topic_name());
+  }
+  if (this->jointStateSub->get_publisher_count() == 0) {
+    unavailable.insert(this->jointStateSub->get_topic_name());
+  }
+  return unavailable;
 }
 
 //////////////////////////////////////////////////

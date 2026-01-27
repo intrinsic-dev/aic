@@ -290,8 +290,6 @@ int Score::calculate_total_score() const {
 //==============================================================================
 Engine::Engine(const rclcpp::NodeOptions& options)
     : node_(std::make_shared<rclcpp::Node>("aic_engine", options)),
-      wrench_sub_(nullptr),
-      joint_state_sub_(nullptr),
       insert_cable_action_client_(nullptr),
       spawn_entity_client_(nullptr),
       is_first_trial_(true),
@@ -420,26 +418,8 @@ EngineState Engine::initialize() {
   RCLCPP_INFO(node_->get_logger(), "Successfully parsed %zu trial(s)",
               trials_.size());
 
-  // Parse trials from config
-  if (!config_["scoring"]) {
-    RCLCPP_ERROR(node_->get_logger(), "Config missing required key: 'scoring'");
-    engine_state_ = EngineState::Error;
-    return engine_state_;
-  }
-
   // Create ROS endpoints.
   const rclcpp::QoS reliable_qos = rclcpp::QoS(rclcpp::KeepLast(10)).reliable();
-  wrench_sub_ = node_->create_subscription<WrenchStampedMsg>(
-      "/axia80_m20/wrench", reliable_qos,
-      [](WrenchStampedMsg::ConstSharedPtr msg) {
-        (void)msg;
-        // TODO(Yadunund): Pass to scoring.
-      });
-  joint_state_sub_ = node_->create_subscription<JointStateMsg>(
-      "/joint_states", reliable_qos, [](JointStateMsg::ConstSharedPtr msg) {
-        (void)msg;
-        // TODO(Yadunund): Pass to scoring.
-      });
 
   // Create subscriptions that ignore local publications as aic_engine will
   // also publish these messages to home the robot.
@@ -873,17 +853,11 @@ bool Engine::check_endpoints() {
   // Check topics
   // TODO(Yadunund): Consider checking for messages received on topics.
   // unavailable is guaranteed to be empty here
-  unavailable.insert({this->wrench_sub_->get_topic_name(),
-                      this->joint_state_sub_->get_topic_name()});
+  unavailable = this->scoring_tier2_->GetMissingRequiredTopics();
   start_time = this->node_->now();
   while (!unavailable.empty() && !(this->node_->now() - start_time > timeout)) {
-    if (this->wrench_sub_->get_publisher_count() > 0) {
-      unavailable.erase(this->wrench_sub_->get_topic_name());
-    }
-    if (this->joint_state_sub_->get_publisher_count() > 0) {
-      unavailable.erase(this->joint_state_sub_->get_topic_name());
-    }
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    unavailable = this->scoring_tier2_->GetMissingRequiredTopics();
   }
   if (!unavailable.empty()) {
     RCLCPP_ERROR(node_->get_logger(), "Missing required topics: %s",

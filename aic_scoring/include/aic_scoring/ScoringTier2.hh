@@ -25,6 +25,8 @@
 #include <vector>
 
 #include <rclcpp/rclcpp.hpp>
+
+#include <geometry_msgs/msg/wrench_stamped.hpp>
 #include <ros_gz_interfaces/msg/contacts.hpp>
 #include <rosbag2_cpp/writer.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
@@ -62,16 +64,19 @@ namespace aic_scoring
   class ScoringTier2
   {
     /// \brief Topic to subscribe for joint states.
-    private: static constexpr const char* kJointStateTopic = "/joint_states";
+    public: static constexpr const char* kJointStateTopic = "/joint_states";
 
     /// \brief Topic to subscribe for static tf.
-    private: static constexpr const char* kTfStaticTopic = "/scoring/tf_static";
+    public: static constexpr const char* kTfStaticTopic = "/scoring/tf_static";
 
     /// \brief Topic to subscribe for tf.
-    private: static constexpr const char* kTfTopic = "/scoring/tf";
+    public: static constexpr const char* kTfTopic = "/scoring/tf";
 
     /// \brief Topic to subscribe for contacts.
-    private: static constexpr const char* kContactsTopic = "/aic/gazebo/contacts/off_limit";
+    public: static constexpr const char* kContactsTopic = "/aic/gazebo/contacts/off_limit";
+
+    /// \brief Topic to subscribe for force torque sensor wrench.
+    public: static constexpr const char* kWrenchTopic = "/axia80_m20/wrench";
 
     /// \brief Class constructor.
     /// \param[in] _node Pointer to the ROS node.
@@ -92,6 +97,10 @@ namespace aic_scoring
     /// \brief Stop recording all scoring topics.
     /// \return True if the bag was closed correctly.
     public: bool StopRecording();
+
+    /// \brief Get the topics required that are currently not being published.
+    /// \return An unordered_set with the missing required topic names.
+    public: std::set<std::string> GetMissingRequiredTopics() const;
 
     /// \brief Pointer to a node.
     private: rclcpp::Node *node;
@@ -116,6 +125,9 @@ namespace aic_scoring
 
     /// \brief Subscription for the gazebo off limit contacts.
     private: rclcpp::Subscription<ros_gz_interfaces::msg::Contacts>::SharedPtr contactsSub;
+
+    /// \brief Subscription for the force torque sensor wrench.
+    private: rclcpp::Subscription<geometry_msgs::msg::WrenchStamped>::SharedPtr wrenchSub;
 
     /// \brief Mutex to protect the access to the bag.
     private: std::mutex mutex;
