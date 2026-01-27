@@ -22,10 +22,7 @@ from dataclasses import dataclass, field
 from functools import cached_property
 from threading import Thread
 from typing import Any, TypedDict, cast
-<<<<<<< HEAD
 import cv2
-=======
->>>>>>> main
 
 import numpy as np
 from numpy.typing import NDArray
