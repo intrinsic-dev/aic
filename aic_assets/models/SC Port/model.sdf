@@ -93,6 +93,48 @@
         </geometry>
       </collision>
 
+      <visual name="sc_port_mount_visual">
+        <geometry>
+          <mesh>
+            <uri>sc_port_mount_visual.glb</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <collision name="v1015120013_collider_box">
+        <pose>0.0 -0.0183 0.0015 0.0 0.0 -0.0</pose>
+        <geometry>
+          <box>
+            <size>0.012 0.01 0.003</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="v1015120012_collider_box">
+        <pose>0.0 0.0183 0.0015 -0.0 -0.0 -3.141593</pose>
+        <geometry>
+          <box>
+            <size>0.012 0.01 0.003</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="iso 4762 - m2 x 6013_collider_cylinder">
+        <pose>0.0 -0.0153 0.004 -3.141593 -0.0 -1.17745</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.0019</radius>
+            <length>0.008</length>
+          </cylinder>
+        </geometry>
+      </collision>
+      <collision name="iso 4762 - m2 x 6012_collider_cylinder">
+        <pose>0.0 0.0153 0.004 -3.141593 -0.0 -1.17745</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.0019</radius>
+            <length>0.008</length>
+          </cylinder>
+        </geometry>
+      </collision>
+
       <collision name="contact_collision">
         <pose>0.0 -0.0034 -0.0 3.141593 -0.0 0.0</pose>
         <geometry>
