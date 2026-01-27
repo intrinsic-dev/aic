@@ -145,7 +145,7 @@ int ScoringTier2::ComputeScore() {
 
   while (bagReader.has_next()) {
     auto msg_ptr = bagReader.read_next();
-    if (msg_ptr->topic_name == kJointStatesTopic) {
+    if (msg_ptr->topic_name == kJointStateTopic) {
       const auto msg =
           deserialize_from_rosbag<sensor_msgs::msg::JointState>(msg_ptr);
       this->JointStateCallback(msg);
@@ -159,13 +159,11 @@ int ScoringTier2::ComputeScore() {
       this->TfStaticCallback(msg);
     } else if (msg_ptr->topic_name == kContactsTopic) {
       const auto msg =
-          deserialize_from_rosbag<ros_gz_interfaces::msg::Contacts>(
-              msg_ptr);
+          deserialize_from_rosbag<ros_gz_interfaces::msg::Contacts>(msg_ptr);
       this->ContactsCallback(msg);
     } else if (msg_ptr->topic_name == kWrenchTopic) {
       const auto msg =
-          deserialize_from_rosbag<geometry_msgs::msg::WrenchStamped>(
-              msg_ptr);
+          deserialize_from_rosbag<geometry_msgs::msg::WrenchStamped>(msg_ptr);
       this->WrenchCallback(msg);
     } else {
       RCLCPP_WARN(this->node->get_logger(),
