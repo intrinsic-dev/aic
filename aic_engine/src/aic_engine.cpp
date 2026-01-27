@@ -459,7 +459,7 @@ EngineState Engine::initialize() {
       },
       sub_options_ignore_local);
 
-      reset_joints_pub_ =
+  reset_joints_pub_ =
       node_->create_publisher<ResetJointsMsg>("/reset_joints", reliable_qos);
 
   insert_cable_action_client_ =
