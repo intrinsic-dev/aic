@@ -29,4 +29,4 @@ Please refer to the following resources for detailed information on the challeng
 
 Ready to begin? Please refer to the following guides:
 * **[Installation](./docs/getting_started.md):** How to set up your local development environment.
-* **[Writing a policy](./docs/policy.md):** The participant code framework of the competition. `YOUR CODE HERE`!
+* **[Integrating a policy](./docs/policy.md):** The participant code framework of the competition. `YOUR CODE HERE`!
