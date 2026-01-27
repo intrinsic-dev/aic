@@ -47,6 +47,7 @@ class PolicyRos:
         motion_update_msg = MotionUpdate()
         motion_update_msg.pose = pose
         motion_update_msg.header.frame_id = frame_id
+        motion_update_msg.header.stamp = self.get_clock().now().to_msg()
 
         motion_update_msg.target_stiffness = np.diag(
             [100.0, 100.0, 100.0, 50.0, 50.0, 50.0]
