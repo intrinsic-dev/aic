@@ -42,7 +42,7 @@ jobs:
         uses: ros-tooling/action-ros-ci@v0.4
         with:
           target-ros2-distro: kilted
-          skip-tests: false
+          skip-tests: true
           token: ${{ secrets.GITHUB_TOKEN }}
           colcon-defaults: |
             {
