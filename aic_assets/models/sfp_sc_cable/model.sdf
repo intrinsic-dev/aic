@@ -12,15 +12,41 @@
       <experimental:params>
         <collision element_id="lc_plug_link::1af02-003-ma2_collider_cylinder" action="remove"/>
         <collision element_id="lc_plug_link::1af02-003-ma2001_collider_cylinder" action="remove"/>
+        <collision element_id="lc_plug_link::cube_collider_box.002" action="remove"/>
+        <collision element_id="lc_plug_link::cube_collider_box.003" action="remove"/>
+        <collision element_id="lc_plug_link::cube001_collider_box.002" action="remove"/>
+        <collision element_id="lc_plug_link::cube001_collider_box.003" action="remove"/>
       </experimental:params>
       <uri>model://LC Plug</uri>
-      <pose relative_to="cable_connection_0">-0.044 0 0 0 0 1.57079</pose>
+      <pose relative_to="cable_connection_0">-0.041 0 0 0 0 1.57079</pose>
     </include>
     <include merge="true">
       <uri>model://SC Plug</uri>
-      <pose relative_to="cable_connection_1">0.055 0 0 0 0 0.0</pose>
+      <pose relative_to="cable_connection_1">0.052 0 0 0 0 0.0</pose>
     </include>
     <include merge="true">
+      <!--
+         Some collisions in SFP Module intersect with gripper fingers on startup
+         Workaround this by removing those collisions.
+      -->
+      <experimental:params>
+        <collision element_id="sfp_module_link::port_collider_box" action="remove"/>
+        <collision element_id="sfp_module_link::port_collider_box.001" action="remove"/>
+        <collision element_id="sfp_module_link::port_collider_box.002" action="remove"/>
+        <collision element_id="sfp_module_link::port_collider_box.003" action="remove"/>
+        <collision element_id="sfp_module_link::port_collider_box.004" action="remove"/>
+        <collision element_id="sfp_module_link::port_collider_box.005" action="remove"/>
+        <collision element_id="sfp_module_link::port_collider_box.006" action="remove"/>
+        <collision element_id="sfp_module_link::port_collider_box.007" action="remove"/>
+        <collision element_id="sfp_module_link::latch_collider_box" action="remove"/>
+        <collision element_id="sfp_module_link::latch_collider_box.001" action="remove"/>
+        <collision element_id="sfp_module_link::latch_collider_box.002" action="remove"/>
+        <collision element_id="sfp_module_link::latch_collider_box.003" action="remove"/>
+        <collision element_id="sfp_module_link::head_collider_box" action="remove"/>
+        <collision element_id="sfp_module_link::head_collider_box.001" action="remove"/>
+        <collision element_id="sfp_module_link::head_collider_box.002" action="remove"/>
+        <collision element_id="sfp_module_link::head_collider_box.003" action="remove"/>
+      </experimental:params>
       <uri>model://SFP Module</uri>
       <pose relative_to="lc_plug_link">0 0.0341 0 0 3.14159 3.14159</pose>
     </include>

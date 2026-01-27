@@ -17,8 +17,12 @@
 
 #include "aic_engine.hpp"
 
+#include <chrono>
 #include <cmath>
+#include <cstdlib>
 #include <filesystem>
+#include <fstream>
+#include <iomanip>
 #include <sstream>
 #include <unordered_set>
 
@@ -169,38 +173,42 @@ Trial::Trial(const std::string& _id, YAML::Node _config) : id(std::move(_id)) {
     }
   }
 
-  // Validate scene.cable
-  if (!scene["cable"]) {
-    throw std::runtime_error("Config missing required key: 'scene.cable'");
+  // Validate scene.cables
+  if (!scene["cables"]) {
+    throw std::runtime_error("Config missing required key: 'scene.cables'");
   }
-  const auto& cable = scene["cable"];
-  if (!cable["pose"]) {
-    throw std::runtime_error("Config missing required key: 'scene.cable.pose'");
-  }
-  const auto& cable_pose = cable["pose"];
-  for (const auto& key : {"gripper_offset", "roll", "pitch", "yaw"}) {
-    if (!cable_pose[key]) {
-      throw std::runtime_error(
-          std::string("Config missing required key: 'scene.cable.pose.") + key +
-          "'");
+  const auto& cables = scene["cables"];
+  for (const auto& cable_it : cables) {
+    const std::string cable_id = cable_it.first.as<std::string>();
+    const YAML::Node cable = cable_it.second;
+    if (!cable["pose"]) {
+      throw std::runtime_error("Config missing required key: 'scene.cables[" +
+                               cable_id + "].pose'");
     }
-  }
-  const auto& cable_pose_offset = cable["pose"]["gripper_offset"];
-  for (const auto& key : {"x", "y", "z"}) {
-    if (!cable_pose_offset[key]) {
-      throw std::runtime_error(
-          std::string("Config missing required key: "
-                      "'scene.cable.pose.gripper_offset.") +
-          key + "'");
+    const auto& cable_pose = cable["pose"];
+    for (const auto& key : {"gripper_offset", "roll", "pitch", "yaw"}) {
+      if (!cable_pose[key]) {
+        throw std::runtime_error("Config missing required key: 'scene.cables[" +
+                                 cable_id + "].pose." + key + "'");
+      }
     }
-  }
-  if (!cable["attach_cable_to_gripper"]) {
-    throw std::runtime_error(
-        "Config missing required key: 'scene.cable.attach_cable_to_gripper'");
-  }
-  if (!cable["cable_type"]) {
-    throw std::runtime_error(
-        "Config missing required key: 'scene.cable.cable_type'");
+    const auto& cable_pose_offset = cable["pose"]["gripper_offset"];
+    for (const auto& key : {"x", "y", "z"}) {
+      if (!cable_pose_offset[key]) {
+        throw std::runtime_error(
+            std::string("Config missing required key: "
+                        "'scene.cable.pose.gripper_offset.") +
+            key + "'");
+      }
+    }
+    if (!cable["attach_cable_to_gripper"]) {
+      throw std::runtime_error("Config missing required key: 'scene.cables[" +
+                               cable_id + "].attach_cable_to_gripper'");
+    }
+    if (!cable["cable_type"]) {
+      throw std::runtime_error("Config missing required key: 'scene.cables[" +
+                               cable_id + "].cable_type'");
+    }
   }
 
   // Validate tasks array
@@ -242,6 +250,44 @@ Trial::Trial(const std::string& _id, YAML::Node _config) : id(std::move(_id)) {
 }
 
 //==============================================================================
+TaskAttempt::TaskAttempt(const std::string& _id)
+    : id(std::move(_id)),
+      time_started(std::nullopt),
+      time_completed(std::nullopt),
+      success(false),
+      state(TaskState::Uninitialized) {
+  //
+}
+
+//==============================================================================
+YAML::Node Score::serialize() const {
+  const int total_score = this->calculate_total_score();
+  YAML::Node score;
+  score["total"] = total_score;
+  for (const auto& [trial_name, trial_score] : this->breakdown) {
+    score[trial_name]["tier_1"]["score"] = trial_score.tier_1.score;
+    score[trial_name]["tier_1"]["message"] = trial_score.tier_1.message;
+    score[trial_name]["tier_2"]["score"] = trial_score.tier_2.score;
+    score[trial_name]["tier_2"]["message"] = trial_score.tier_2.message;
+    score[trial_name]["tier_3"]["score"] = trial_score.tier_3.score;
+    score[trial_name]["tier_3"]["message"] = trial_score.tier_3.message;
+  }
+  return score;
+}
+
+//==============================================================================
+int Score::calculate_total_score() const {
+  // TODO(luca) check calculation
+  int score = 0;
+  for (const auto& [trial_name, trial_score] : this->breakdown) {
+    score += trial_score.tier_1.score;
+    score += trial_score.tier_2.score;
+    score += trial_score.tier_3.score;
+  }
+  return score;
+}
+
+//==============================================================================
 Engine::Engine(const rclcpp::NodeOptions& options)
     : node_(std::make_shared<rclcpp::Node>("aic_engine", options)),
       wrench_sub_(nullptr),
@@ -249,7 +295,6 @@ Engine::Engine(const rclcpp::NodeOptions& options)
       insert_cable_action_client_(nullptr),
       spawn_entity_client_(nullptr),
       is_first_trial_(true),
-      active_trial_(std::nullopt),
       engine_state_(EngineState::Uninitialized),
       model_discovered_(false) {
   RCLCPP_INFO(node_->get_logger(), "Creating AIC Engine...");
@@ -270,6 +315,18 @@ Engine::Engine(const rclcpp::NodeOptions& options)
   node_->declare_parameter("model_configure_timeout_seconds", 60);
   node_->declare_parameter("model_activate_timeout_seconds", 60);
   node_->declare_parameter("model_deactivate_timeout_seconds", 60);
+  node_->declare_parameter("model_cleanup_timeout_seconds", 60);
+  node_->declare_parameter("model_shutdown_timeout_seconds", 60);
+  node_->declare_parameter("submission_team_name", std::string("sample_team"));
+  node_->declare_parameter(
+      "submission_root_dir",
+      std::string(std::getenv("HOME")) + std::string("/aic_submissions"));
+
+  scoring_output_dir_ =
+      node_->get_parameter("submission_root_dir").as_string() + "/" +
+      node_->get_parameter("submission_team_name").as_string();
+  RCLCPP_INFO(node_->get_logger(), "Scoring output directory set to: %s",
+              scoring_output_dir_.c_str());
 
   spin_thread_ = std::thread([node = node_]() {
     rclcpp::executors::SingleThreadedExecutor executor;
@@ -363,6 +420,13 @@ EngineState Engine::initialize() {
   RCLCPP_INFO(node_->get_logger(), "Successfully parsed %zu trial(s)",
               trials_.size());
 
+  // Parse trials from config
+  if (!config_["scoring"]) {
+    RCLCPP_ERROR(node_->get_logger(), "Config missing required key: 'scoring'");
+    engine_state_ = EngineState::Error;
+    return engine_state_;
+  }
+
   // Create ROS endpoints.
   const rclcpp::QoS reliable_qos = rclcpp::QoS(rclcpp::KeepLast(10)).reliable();
   wrench_sub_ = node_->create_subscription<WrenchStampedMsg>(
@@ -408,6 +472,24 @@ EngineState Engine::initialize() {
   tf_buffer_ = std::make_unique<tf2_ros::Buffer>(node_->get_clock());
   tf_listener_ = std::make_unique<tf2_ros::TransformListener>(*tf_buffer_);
 
+  scoring_tier2_ = std::make_unique<aic_scoring::ScoringTier2>(node_.get());
+  if (!scoring_tier2_->Initialize(config_["scoring"])) {
+    RCLCPP_ERROR(node_->get_logger(), "Failed to initialize scoring system");
+    return EngineState::Error;
+  }
+
+  // Create output directory for bag files.
+  std::error_code ec;
+  std::filesystem::create_directories(scoring_output_dir_, ec);
+  if (ec) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "Failed to create bag output directory '%s': %s",
+                 scoring_output_dir_.c_str(), ec.message().c_str());
+    return EngineState::Error;
+  }
+  RCLCPP_INFO(node_->get_logger(), "Bag output directory: %s",
+              scoring_output_dir_.c_str());
+
   engine_state_ = EngineState::Initialized;
   RCLCPP_INFO(node_->get_logger(), "AIC Engine initialized successfully.");
 
@@ -419,15 +501,17 @@ EngineState Engine::run() {
   RCLCPP_INFO(node_->get_logger(), "Running AIC Engine...");
 
   engine_state_ = EngineState::Running;
+  Score score;
 
-  for (const auto& trial_entry : trials_) {
+  for (auto& trial_entry : trials_) {
     const std::string& trial_id = trial_entry.first;
-    const Trial& trial = trial_entry.second;
+    Trial& trial = trial_entry.second;
     RCLCPP_INFO(node_->get_logger(), "======================================");
     RCLCPP_INFO(node_->get_logger(), "Handling trial '%s'...",
                 trial_id.c_str());
-    TrialState trial_result = this->handle_trial(trial);
-    if (trial_result == TrialState::TaskCompleted) {
+    TrialScore trial_score = this->handle_trial(trial);
+    score.breakdown[trial_id] = trial_score;
+    if (trial.state == TrialState::AllTasksCompleted) {
       RCLCPP_INFO(node_->get_logger(), "Trial '%s' completed successfully.",
                   trial_id.c_str());
     } else {
@@ -435,65 +519,96 @@ EngineState Engine::run() {
                    "Trial '%s' failed or was not completed.", trial_id.c_str());
       engine_state_ = EngineState::Error;
       // TODO(Yadunund): Clean up and write scoring data.
-      return engine_state_;
+      break;
     }
   }
 
+  // TODO(luca) refactor cleanup into single function
+  this->cleanup_model_node();
+  this->shutdown_model_node();
+  this->score_run(score);
   return engine_state_;
 }
 
 //==============================================================================
-TrialState Engine::handle_trial(const Trial& trial) {
+TrialScore Engine::handle_trial(Trial& trial) {
   RCLCPP_INFO(node_->get_logger(), "Starting trial '%s'...", trial.id.c_str());
+  TrialScore score;
 
-  active_trial_ = trial;
+  if (trial.state == TrialState::Uninitialized) {
+    if (this->check_model()) {
+      trial.state = TrialState::ModelReady;
+    }
+  } else {
+    RCLCPP_ERROR(
+        node_->get_logger(),
+        "Attempted to start trial while not Uninitialized. Report this bug.");
+    reset_after_trial(trial);
+    return score;
+  }
 
-  TrialState current_state = TrialState::Uninitialized;
-
-  if (!this->check_model()) {
+  if (trial.state == TrialState::ModelReady) {
+    score.tier_1_success();
+    if (this->check_endpoints()) {
+      trial.state = TrialState::EndpointsReady;
+    }
+  } else {
     RCLCPP_ERROR(node_->get_logger(), "Participant model is not ready.");
-    reset_after_trial();
-    return current_state;
+    reset_after_trial(trial);
+    return score;
   }
-  current_state = TrialState::ModelReady;
 
-  if (!this->check_endpoints()) {
+  if (trial.state == TrialState::EndpointsReady) {
+    if (this->ready_simulator(trial)) {
+      trial.state = TrialState::SimulatorReady;
+    }
+  } else {
     RCLCPP_ERROR(node_->get_logger(), "Required endpoints are not available.");
-    reset_after_trial();
-    return current_state;
+    reset_after_trial(trial);
+    return score;
   }
-  current_state = TrialState::EndpointsReady;
 
-  if (!this->ready_simulator()) {
+  if (trial.state == TrialState::SimulatorReady) {
+    if (this->ready_scoring(trial)) {
+      trial.state = TrialState::ScoringReady;
+    }
+  } else {
     RCLCPP_ERROR(node_->get_logger(), "Simulator is not ready.");
-    reset_after_trial();
-    return current_state;
+    reset_after_trial(trial);
+    return score;
   }
-  current_state = TrialState::SimulatorReady;
 
-  if (!this->ready_scoring()) {
+  if (trial.state == TrialState::ScoringReady) {
+    this->tasks_started(trial);
+  } else {
     RCLCPP_ERROR(node_->get_logger(), "Scoring system is not ready.");
-    reset_after_trial();
-    return current_state;
+    reset_after_trial(trial);
+    return score;
   }
-  current_state = TrialState::ScoringReady;
 
-  if (!this->start_task()) {
-    RCLCPP_ERROR(node_->get_logger(), "Failed to start task.");
-    reset_after_trial();
-    return current_state;
+  if (trial.state == TrialState::TasksExecuting) {
+    if (this->tasks_completed_successfully(trial)) {
+      trial.state = TrialState::AllTasksCompleted;
+      if (!stop_recording_scores()) {
+        reset_after_trial(trial);
+        return score;
+      }
+    }
+  } else {
+    RCLCPP_ERROR(node_->get_logger(), "Tasks cannot be started successfully.");
+    reset_after_trial(trial);
+    return score;
   }
-  current_state = TrialState::TaskStarted;
 
-  if (!this->task_completed_successfully()) {
-    RCLCPP_ERROR(node_->get_logger(), "Task was not completed successfully.");
-    reset_after_trial();
-    return current_state;
+  if (trial.state != TrialState::AllTasksCompleted) {
+    RCLCPP_ERROR(node_->get_logger(), "Tasks were not completed successfully.");
+    stop_recording_scores();
+    reset_after_trial(trial);
+    return score;
   }
-  current_state = TrialState::TaskCompleted;
 
-  reset_after_trial();
-  return current_state;
+  reset_after_trial(trial);
+  return score;
 }
 
 /// Given a set [s1, s2, s3] returns a string "s1, s2, s3"
@@ -581,45 +696,10 @@ bool Engine::configure_model_node() {
   RCLCPP_INFO(node_->get_logger(), "Configuring lifecycle node '%s'...",
               model_node_name_.c_str());
 
-  if (!model_change_state_client_->wait_for_service(std::chrono::seconds(5))) {
-    RCLCPP_ERROR(
-        node_->get_logger(),
-        "ChangeState service not available for node '%s' after waiting",
-        model_node_name_.c_str());
+  if (!this->transition_model_lifecycle_node(
+          lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE)) {
     return false;
   }
-
-  // Create and send the request to transition to 'configured' state
-  auto request = std::make_shared<lifecycle_msgs::srv::ChangeState::Request>();
-  request->transition.id =
-      lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE;
-
-  auto future = model_change_state_client_->async_send_request(request);
-
-  const int model_configure_timeout_seconds =
-      node_->get_parameter("model_configure_timeout_seconds").as_int();
-  if (future.wait_for(std::chrono::seconds(model_configure_timeout_seconds)) !=
-      std::future_status::ready) {
-    RCLCPP_ERROR(node_->get_logger(),
-                 "ChangeState service call timed out for node '%s'",
-                 model_node_name_.c_str());
-    return false;
-  }
-
-  auto response = future.get();
-
-  if (!response->success) {
-    RCLCPP_ERROR(
-        node_->get_logger(),
-        "Failed to transition lifecycle node '%s' to 'configured' state",
-        model_node_name_.c_str());
-    return false;
-  }
-
-  RCLCPP_INFO(node_->get_logger(),
-              "Lifecycle node '%s' successfully transitioned to 'configured' "
-              "state. Checking expectations...",
-              model_node_name_.c_str());
 
   if (model_node_moved_robot()) {
     RCLCPP_ERROR(node_->get_logger(),
@@ -824,20 +904,14 @@ bool Engine::check_endpoints() {
 }
 
 //==============================================================================
-bool Engine::ready_simulator() {
-  if (!this->active_trial_.has_value()) {
-    RCLCPP_ERROR(node_->get_logger(),
-                 "No active trial set in engine. Report this bug.");
-    return false;
-  }
-
+bool Engine::ready_simulator(Trial& trial) {
   RCLCPP_INFO(node_->get_logger(), "Readying simulator for trial '%s'...",
-              this->active_trial_->id.c_str());
+              trial.id.c_str());
 
   // Spawn the task board.
   RCLCPP_INFO(node_->get_logger(), "Spawning task board.");
-  const auto& task_board_config = active_trial_->config["scene"]["task_board"];
-  if (this->spawn_entity("task_board", "/urdf/task_board.urdf.xacro",
+  const auto& task_board_config = trial.config["scene"]["task_board"];
+  if (this->spawn_entity(trial, "task_board", "/urdf/task_board.urdf.xacro",
                          task_board_config["pose"]["x"].as<double>(),
                          task_board_config["pose"]["y"].as<double>(),
                          task_board_config["pose"]["z"].as<double>(),
@@ -862,21 +936,40 @@ bool Engine::ready_simulator() {
   }
   geometry_msgs::msg::TransformStamped t =
       tf_buffer_->lookupTransform("world", gripper_frame, tf2::TimePointZero);
-  const auto& cable_config = active_trial_->config["scene"]["cable"];
-  if (this->spawn_entity(
-          "cable", "/urdf/cable.sdf.xacro",
-          t.transform.translation.x +
-              cable_config["pose"]["gripper_offset"]["x"].as<double>(),
-          t.transform.translation.y +
-              cable_config["pose"]["gripper_offset"]["y"].as<double>(),
-          t.transform.translation.z +
-              cable_config["pose"]["gripper_offset"]["z"].as<double>(),
-          cable_config["pose"]["roll"].as<double>(),
-          cable_config["pose"]["pitch"].as<double>(),
-          cable_config["pose"]["yaw"].as<double>())) {
-    RCLCPP_INFO(node_->get_logger(), "Cable spawned successfully.");
-  } else {
-    RCLCPP_ERROR(node_->get_logger(), "Failed to spawn cable.");
+  const auto& cables_config = trial.config["scene"]["cables"];
+  bool cable_attached = false;
+  for (const auto& cable_it : cables_config) {
+    const std::string cable_id = cable_it.first.as<std::string>();
+    const YAML::Node cable_config = cable_it.second;
+    bool attach_to_gripper = cable_config["attach_cable_to_gripper"].as<bool>();
+    if (cable_attached && attach_to_gripper) {
+      RCLCPP_ERROR(node_->get_logger(),
+                   "Attempting to attach multiple cables to the gripper. "
+                   "Please check the config.");
+      return false;
+    } else if (attach_to_gripper) {
+      cable_attached = true;
+    }
+    RCLCPP_INFO(node_->get_logger(), "Spawning cable '%s'...",
+                cable_id.c_str());
+    if (this->spawn_entity(
+            trial, cable_id, "/urdf/cable.sdf.xacro",
+            t.transform.translation.x +
+                cable_config["pose"]["gripper_offset"]["x"].as<double>(),
+            t.transform.translation.y +
+                cable_config["pose"]["gripper_offset"]["y"].as<double>(),
+            t.transform.translation.z +
+                cable_config["pose"]["gripper_offset"]["z"].as<double>(),
+            cable_config["pose"]["roll"].as<double>(),
+            cable_config["pose"]["pitch"].as<double>(),
+            cable_config["pose"]["yaw"].as<double>())) {
+      RCLCPP_INFO(node_->get_logger(), "Cable %s spawned successfully.",
+                  cable_id.c_str());
+    } else {
+      RCLCPP_ERROR(node_->get_logger(), "Failed to spawn cable %s.",
+                   cable_id.c_str());
+      return false;
+    }
   }
 
   // TODO(Yadunund): Implement other simulator readiness checks.
@@ -885,35 +978,227 @@ bool Engine::ready_simulator() {
 }
 
 //==============================================================================
-bool Engine::ready_scoring() {
+bool Engine::ready_scoring(const Trial& trial) {
   RCLCPP_INFO(node_->get_logger(), "Checking scoring system readiness...");
+  // Register the new connections for this trial.
+  std::vector<aic_scoring::Connection> connections;
+  for (const auto& task : trial.tasks) {
+    aic_scoring::Connection connection;
+    connection.plugName = task.cable_name + "::" + task.plug_name;
+    connection.portName = task.target_module_name + "::" + task.port_name;
+    connections.push_back(connection);
+  }
+  scoring_tier2_->ResetConnections(connections);
 
-  // TODO(Yadunund): Implement actual scoring system readiness checks.
-  std::this_thread::sleep_for(std::chrono::seconds(1));
-  // For now, assume scoring system is ready.
+  // Create unique bag filename with timestamp
+  auto now = std::chrono::system_clock::now();
+  auto time_t = std::chrono::system_clock::to_time_t(now);
+  auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                now.time_since_epoch()) %
+            1000;
+
+  std::ostringstream oss;
+  oss << scoring_output_dir_ << "/bag_" << trial.id << "_"
+      << std::put_time(std::localtime(&time_t), "%Y%m%d_%H%M%S") << "_"
+      << std::setfill('0') << std::setw(3) << ms.count();
+  const std::string bag_path = oss.str();
+
+  if (!scoring_tier2_->StartRecording(bag_path)) {
+    RCLCPP_ERROR(node_->get_logger(), "Failed to start recording to '%s'.",
+                 bag_path.c_str());
+    return false;
+  }
+
+  RCLCPP_INFO(node_->get_logger(), "Started recording to '%s'.",
+              bag_path.c_str());
   return true;
 }
 
 //==============================================================================
-bool Engine::start_task() {
-  RCLCPP_INFO(node_->get_logger(), "Starting task for active trial...");
+bool Engine::tasks_started(Trial& trial) {
+  RCLCPP_INFO(node_->get_logger(), "Starting tasks for active trial...");
 
-  // TODO(Yadunund): Implement actual task start logic.
-  std::this_thread::sleep_for(std::chrono::seconds(1));
+  if (trial.tasks.empty()) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "No task provided for this trial. Please check the config");
+    return false;
+  }
+  if (!trial.attempts.empty()) {
+    RCLCPP_ERROR(
+        node_->get_logger(),
+        "List of attempts non-empty before starting tasks. Report this bug.");
+    return false;
+  }
 
-  // For now, assume task started successfully.
+  for (auto& task : trial.tasks) {
+    // Initialize TaskState
+    TaskAttempt task_attempt(task.id);
+    trial.attempts.emplace_back(std::move(task_attempt));
+    auto& current_attempt = trial.attempts.back();
+
+    auto insert_cable_goal = InsertCableAction::Goal();
+    insert_cable_goal.task = task;
+
+    RCLCPP_INFO(this->node_->get_logger(),
+                "Sending InsertCable goal for task [%s]", task.id.c_str());
+    auto send_goal_future =
+        insert_cable_action_client_->async_send_goal(insert_cable_goal);
+    current_attempt.state = TaskState::TaskRequested;
+
+    // Handle goal response
+    auto goal_handle = send_goal_future.get();
+    if (!goal_handle) {
+      RCLCPP_ERROR(this->node_->get_logger(),
+                   "InsertCable goal for task [%s] was rejected.",
+                   task.id.c_str());
+      current_attempt.state = TaskState::TaskRejected;
+      return false;
+    }
+    current_attempt.time_started = this->node_->now();
+    current_attempt.state = TaskState::TaskStarted;
+    // Update trial state
+    trial.state = TrialState::TasksExecuting;
+    RCLCPP_INFO(this->node_->get_logger(), "TrialState: TasksExecuting");
+
+    // Handle goal result
+    auto result_future =
+        insert_cable_action_client_->async_get_result(goal_handle);
+    RCLCPP_INFO(this->node_->get_logger(), "Waiting for result...");
+
+    // Cancel goal if time limit exceeded
+    if (result_future.wait_for(std::chrono::seconds(task.time_limit)) !=
+        std::future_status::ready) {
+      RCLCPP_ERROR(this->node_->get_logger(),
+                   "Task [%s] timed out after %ld seconds. Cancelling goal.",
+                   task.id.c_str(), task.time_limit);
+      insert_cable_action_client_->async_cancel_goal(goal_handle);
+      current_attempt.state = TaskState::TimeLimitExceeded;
+      return false;
+    }
+
+    auto result = result_future.get();
+    if (!result.result->success) {
+      RCLCPP_INFO(this->node_->get_logger(), "Task [%s] failed: %s",
+                  task.id.c_str(), result.result->message.c_str());
+      current_attempt.state = TaskState::TaskFailed;
+      return false;
+    }
+
+    // Task succeeded, move off and send the next task goal
+    RCLCPP_INFO(this->node_->get_logger(), "Task [%s] succeeded.",
+                task.id.c_str());
+    current_attempt.time_completed = this->node_->now();
+    current_attempt.state = TaskState::TaskCompleted;
+  }
+
+  RCLCPP_INFO(node_->get_logger(), "All tasks have been processed.");
+  trial.tasks.clear();
   return true;
 }
 
 //==============================================================================
-bool Engine::task_completed_successfully() {
+bool Engine::tasks_completed_successfully(const Trial& trial) {
   RCLCPP_INFO(node_->get_logger(),
-              "Checking if task was completed successfully...");
+              "Checking if all tasks were completed successfully...");
 
-  // TODO(Yadunund): Implement actual task completion check.
-  std::this_thread::sleep_for(std::chrono::seconds(1));
+  // Check that there are no tasks left in queue
+  if (!trial.tasks.empty()) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "There are still pending tasks in the active trial.");
+    return false;
+  }
+  // Check that all tasks were completed successfully
+  for (const auto& attempt : trial.attempts) {
+    if (attempt.state != TaskState::TaskCompleted) {
+      RCLCPP_ERROR(node_->get_logger(),
+                   "Task [%s] was not completed successfully. Last logged "
+                   "TaskState was [%d].",
+                   attempt.id.c_str(), static_cast<int>(attempt.state));
+      return false;
+    }
+    if (!attempt.time_started.has_value() ||
+        !attempt.time_completed.has_value()) {
+      RCLCPP_ERROR(node_->get_logger(),
+                   "Task [%s] is marked as completed but missing start or "
+                   "completion time.Report this bug.",
+                   attempt.id.c_str());
+      return false;
+    }
+    if (attempt.time_completed <= attempt.time_started) {
+      RCLCPP_ERROR(node_->get_logger(),
+                   "Task [%s] has invalid completion time. Report this bug.",
+                   attempt.id.c_str());
+      return false;
+    }
+  }
+  return true;
+}
 
-  // For now, assume task was completed successfully.
+//==============================================================================
+bool Engine::transition_model_lifecycle_node(const uint8_t transition) {
+  std::string transition_name;
+  switch (transition) {
+    case lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE:
+      transition_name = "configure";
+      break;
+    case lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE:
+      transition_name = "activate";
+      break;
+    case lifecycle_msgs::msg::Transition::TRANSITION_DEACTIVATE:
+      transition_name = "deactivate";
+      break;
+    case lifecycle_msgs::msg::Transition::TRANSITION_CLEANUP:
+      transition_name = "cleanup";
+      break;
+    case lifecycle_msgs::msg::Transition::TRANSITION_ACTIVE_SHUTDOWN:
+      [[fallthrough]];
+    case lifecycle_msgs::msg::Transition::TRANSITION_INACTIVE_SHUTDOWN:
+      [[fallthrough]];
+    case lifecycle_msgs::msg::Transition::TRANSITION_UNCONFIGURED_SHUTDOWN:
+      transition_name = "shutdown";
+      break;
+    default:
+      RCLCPP_ERROR(
+          node_->get_logger(),
+          "Failed to transition model node, transition %u not recognized",
+          (int)transition);
+      return false;
+  }
+  const std::string timeout_param_name =
+      "model_" + transition_name + "_timeout_seconds";
+  const int timeout = this->node_->get_parameter(timeout_param_name).as_int();
+
+  RCLCPP_INFO(node_->get_logger(),
+              "Transitioning model node '%s' to transition '%s'...",
+              model_node_name_.c_str(), transition_name.c_str());
+
+  auto change_state_request =
+      std::make_shared<lifecycle_msgs::srv::ChangeState::Request>();
+  change_state_request->transition.id = transition;
+
+  auto future =
+      model_change_state_client_->async_send_request(change_state_request);
+  if (future.wait_for(std::chrono::seconds(timeout)) !=
+      std::future_status::ready) {
+    RCLCPP_ERROR(
+        node_->get_logger(),
+        "ChangeState service call timed out for transition '%s' for node '%s'",
+        transition_name.c_str(), model_node_name_.c_str());
+    return false;
+  }
+
+  auto response = future.get();
+  if (!response->success) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "Failed to transition model node '%s' to state '%s'",
+                 model_node_name_.c_str(), transition_name.c_str());
+    return false;
+  }
+
+  RCLCPP_INFO(node_->get_logger(),
+              "Successfully transition model node '%s' to state '%s'",
+              model_node_name_.c_str(), transition_name.c_str());
+
   return true;
 }
 
@@ -925,40 +1210,9 @@ bool Engine::activate_model_node() {
     return true;
   }
 
-  RCLCPP_INFO(node_->get_logger(),
-              "Activating model node '%s' to transition to 'active' state...",
-              model_node_name_.c_str());
-
-  auto change_state_request =
-      std::make_shared<lifecycle_msgs::srv::ChangeState::Request>();
-  change_state_request->transition.id =
-      lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE;
-
-  const int model_activate_timeout_seconds =
-      this->node_->get_parameter("model_activate_timeout_seconds").as_int();
-
-  auto future =
-      model_change_state_client_->async_send_request(change_state_request);
-  if (future.wait_for(std::chrono::seconds(model_activate_timeout_seconds)) !=
-      std::future_status::ready) {
-    RCLCPP_ERROR(node_->get_logger(),
-                 "ChangeState service call timed out for activating node '%s'",
-                 model_node_name_.c_str());
-    return false;
-  }
-
-  auto response = future.get();
-  if (!response->success) {
-    RCLCPP_ERROR(node_->get_logger(), "Failed to activate model node '%s'",
-                 model_node_name_.c_str());
-    return false;
-  }
-
-  RCLCPP_INFO(node_->get_logger(), "Successfully activated model node '%s'",
-              model_node_name_.c_str());
-
   // TODO(Yadunund): Verify active requirements.
-  return true;
+  return this->transition_model_lifecycle_node(
+      lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE);
 }
 
 //==============================================================================
@@ -968,45 +1222,44 @@ bool Engine::deactivate_model_node() {
                 "Skipping model deactivation as per parameter.");
     return true;
   }
-
-  RCLCPP_INFO(
-      node_->get_logger(),
-      "Deactivating model node '%s' to transition to 'configured' state...",
-      model_node_name_.c_str());
-
-  auto change_state_request =
-      std::make_shared<lifecycle_msgs::srv::ChangeState::Request>();
-  change_state_request->transition.id =
-      lifecycle_msgs::msg::Transition::TRANSITION_DEACTIVATE;
-
-  const int model_deactivate_timeout_seconds =
-      this->node_->get_parameter("model_deactivate_timeout_seconds").as_int();
-
-  auto future =
-      model_change_state_client_->async_send_request(change_state_request);
-  if (future.wait_for(std::chrono::seconds(model_deactivate_timeout_seconds)) !=
-      std::future_status::ready) {
-    RCLCPP_ERROR(
-        node_->get_logger(),
-        "ChangeState service call timed out for deactivating node '%s'",
-        model_node_name_.c_str());
-    return false;
-  }
-
-  auto response = future.get();
-  if (!response->success) {
-    RCLCPP_ERROR(node_->get_logger(), "Failed to deactivate model node '%s'",
-                 model_node_name_.c_str());
-    return false;
-  }
-
-  RCLCPP_INFO(node_->get_logger(), "Successfully deactivated model node '%s'",
-              model_node_name_.c_str());
-  return true;
+  return this->transition_model_lifecycle_node(
+      lifecycle_msgs::msg::Transition::TRANSITION_DEACTIVATE);
 }
 
 //==============================================================================
-void Engine::reset_after_trial() {
+bool Engine::cleanup_model_node() {
+  if (skip_model_ready_) {
+    RCLCPP_INFO(node_->get_logger(),
+                "Skipping model cleanup as per parameter.");
+    return true;
+  }
+
+  if (!this->model_discovered_) {
+    return true;
+  }
+
+  return this->transition_model_lifecycle_node(
+      lifecycle_msgs::msg::Transition::TRANSITION_CLEANUP);
+}
+
+//==============================================================================
+bool Engine::shutdown_model_node() {
+  if (skip_model_ready_) {
+    RCLCPP_INFO(node_->get_logger(),
+                "Skipping model shutdown as per parameter.");
+    return true;
+  }
+
+  if (!this->model_discovered_) {
+    return true;
+  }
+
+  return this->transition_model_lifecycle_node(
+      lifecycle_msgs::msg::Transition::TRANSITION_UNCONFIGURED_SHUTDOWN);
+}
+
+//==============================================================================
+void Engine::reset_after_trial(const Trial& trial) {
   RCLCPP_INFO(node_->get_logger(), "Resetting after trial completion...");
 
   // Deactivate the model node to transition back to configured state
@@ -1015,34 +1268,31 @@ void Engine::reset_after_trial() {
   }
 
   // Remove spawned entities from simulator
-  if (active_trial_.has_value()) {
-    for (const auto& entity_name : active_trial_->spawned_entities) {
-      // Delete spawned entity
-      auto request = std::make_shared<DeleteEntitySrv::Request>();
-      request->entity = entity_name;
+  for (const auto& entity_name : trial.spawned_entities) {
+    // Delete spawned entity
+    auto request = std::make_shared<DeleteEntitySrv::Request>();
+    request->entity = entity_name;
 
-      auto future = delete_entity_client_->async_send_request(request);
-      if (future.wait_for(std::chrono::seconds(10)) !=
-          std::future_status::ready) {
-        RCLCPP_ERROR(node_->get_logger(),
-                     "Delete entity service call timed out for entity '%s'",
-                     request->entity.c_str());
+    auto future = delete_entity_client_->async_send_request(request);
+    if (future.wait_for(std::chrono::seconds(10)) !=
+        std::future_status::ready) {
+      RCLCPP_ERROR(node_->get_logger(),
+                   "Delete entity service call timed out for entity '%s'",
+                   request->entity.c_str());
+    } else {
+      auto response = future.get();
+      if (response->result.result !=
+          simulation_interfaces::msg::Result::RESULT_OK) {  // RESULT_OK = 1
+        RCLCPP_ERROR(node_->get_logger(), "Failed to delete entity '%s': %s",
+                     request->entity.c_str(),
+                     response->result.error_message.c_str());
       } else {
-        auto response = future.get();
-        if (response->result.result !=
-            simulation_interfaces::msg::Result::RESULT_OK) {  // RESULT_OK = 1
-          RCLCPP_ERROR(node_->get_logger(), "Failed to delete entity '%s': %s",
-                       request->entity.c_str(),
-                       response->result.error_message.c_str());
-        } else {
-          RCLCPP_INFO(node_->get_logger(), "Successfully deleted entity '%s'",
-                      request->entity.c_str());
-        }
+        RCLCPP_INFO(node_->get_logger(), "Successfully deleted entity '%s'",
+                    request->entity.c_str());
       }
     }
   }
   is_first_trial_ = false;
-  active_trial_ = std::nullopt;
   model_discovered_ = false;
   RCLCPP_INFO(node_->get_logger(), "Reset after trial completed.");
 }
@@ -1055,14 +1305,9 @@ Engine::~Engine() {
 }
 
 //==============================================================================
-bool Engine::spawn_entity(std::string entity_name, std::string filepath,
-                          double x, double y, double z, double roll,
-                          double pitch, double yaw) {
-  if (!active_trial_.has_value()) {
-    RCLCPP_ERROR(node_->get_logger(), "No active trial to get config from");
-    return false;
-  }
-
+bool Engine::spawn_entity(Trial& trial, std::string entity_name,
+                          std::string filepath, double x, double y, double z,
+                          double roll, double pitch, double yaw) {
   // Get the xacro file path
   const std::string aic_description_share =
       ament_index_cpp::get_package_share_directory("aic_description");
@@ -1072,10 +1317,11 @@ bool Engine::spawn_entity(std::string entity_name, std::string filepath,
   std::stringstream cmd;
   cmd << "xacro " << xacro_file;
 
-  const auto& config = active_trial_->config["scene"][entity_name];
+  const auto& config = trial.config["scene"][entity_name];
 
   // Append entity-specific parameters
-  if (entity_name == "cable") {
+  if (entity_name.find("cable") != std::string::npos) {
+    const auto& config = trial.config["scene"]["cables"][entity_name];
     // Add attach cable parameter
     bool attach_cable_to_gripper = config["attach_cable_to_gripper"].as<bool>();
     cmd << " attach_cable_to_gripper:="
@@ -1085,8 +1331,9 @@ bool Engine::spawn_entity(std::string entity_name, std::string filepath,
     std::string cable_type = config["cable_type"].as<std::string>();
     cmd << " cable_type:=" << cable_type;
   } else if (entity_name == "task_board") {
+    const auto& config = trial.config["scene"][entity_name];
     // Read task board limits from config
-    const auto& config_root = active_trial_->config;
+    const auto& config_root = trial.config;
     double nic_rail_min = -0.048;  // Default values
     double nic_rail_max = 0.036;
     double sc_rail_min = -0.055;
@@ -1279,13 +1526,31 @@ bool Engine::spawn_entity(std::string entity_name, std::string filepath,
     return false;
   }
 
-  if (active_trial_.has_value()) {
-    active_trial_->spawned_entities.emplace_back(response->entity_name);
-  }
+  trial.spawned_entities.emplace_back(response->entity_name);
 
   RCLCPP_INFO(node_->get_logger(), "Successfully spawned %s as '%s'",
               entity_name.c_str(), response->entity_name.c_str());
   return true;
+}
+
+//==============================================================================
+bool Engine::stop_recording_scores() {
+  if (!scoring_tier2_->StopRecording()) {
+    RCLCPP_ERROR(node_->get_logger(), "Failed to stop recording.");
+    return false;
+  }
+
+  RCLCPP_INFO(node_->get_logger(), "Stopped recording.");
+  return true;
+}
+
+//==============================================================================
+void Engine::score_run(const Score& score) {
+  YAML::Node node = score.serialize();
+
+  const std::string yaml_output_file = scoring_output_dir_ + "/scoring.yaml";
+  std::ofstream fout(yaml_output_file);
+  fout << node;
 }
 
 }  // namespace aic

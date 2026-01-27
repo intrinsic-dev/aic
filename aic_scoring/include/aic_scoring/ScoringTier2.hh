@@ -15,33 +15,34 @@
  *
 */
 
+#ifndef AIC_SCORING__SCORING_TIER2_HH_
+#define AIC_SCORING__SCORING_TIER2_HH_
+
 #include <yaml-cpp/yaml.h>
-#include <chrono>
 #include <memory>
 #include <mutex>
 #include <string>
 #include <vector>
 
-#include <gz/math/Pose3.hh>
 #include <rclcpp/rclcpp.hpp>
 #include <rosbag2_cpp/writer.hpp>
 
-#ifndef AIC_SCORING__SCORING_TIER2_HH_
-#define AIC_SCORING__SCORING_TIER2_HH_
-
 namespace aic_scoring
 {
-  /// \brief Tier2 POD.
-  class Pluggable
+  /// \brief Connection POD.
+  struct Connection
   {
-    /// \brief Plug/port name.
-    public: std::string name;
+    /// \brief Plug name.
+    public: std::string plugName;
+
+    /// \brief Port name.
+    public: std::string portName;
 
     /// \brief Plug/port type.
     public: std::string type;
 
-    /// \brief Position.
-    public: gz::math::Vector3d position;
+    /// \brief Distance.
+    public: double distance = -1;
   };
 
   /// \brief Topic info POD.
@@ -59,15 +60,15 @@ namespace aic_scoring
   {
     /// \brief Class constructor.
     /// \param[in] _node Pointer to the ROS node.
-    /// \param[in] _config YAML config node.
-    public: ScoringTier2(rclcpp::Node *_node,
-                         YAML::Node *_config);
+    public: ScoringTier2(rclcpp::Node *_node);
 
     /// \brief Populate the scoring input params from a YAML file.
-    public: bool ParseStats();
+    /// \param[in] _config YAML configuration for the node
+    public: bool Initialize(YAML::Node _config);
 
-    /// \brief Store the current distance cable-connector.
-    public: void Update();
+    /// \brief Reset connections.
+    /// \param[in] _connections New connections.
+    public: void ResetConnections(const std::vector<Connection> &_connections);
 
     /// \brief Start recording all scoring topics.
     /// \return True if the bag was opened correctly and it's ready to record.
@@ -78,16 +79,9 @@ namespace aic_scoring
     /// \return True if the bag was closed correctly.
     public: bool StopRecording();
 
-    /// \brief All pluggable plugs.
-    public: std::map<std::string, Pluggable> plugs;
-
-    /// \brief All pluggable ports.
-    public: std::map<std::string, Pluggable> ports;
-
-    /// \brief Plug<->port connections.
-    /// The first key is always the plug, followed by "&", followed by port.
-    /// The value is the distance (meters) between the plug and the port.
-    public: std::map<std::string, double> pluggableMap;
+    /// \brief Populate the scoring input params from a YAML file.
+    /// \param[in] _config YAML configuration for the node
+    private: bool ParseStats(YAML::Node _config);
 
     /// \brief Pointer to a node.
     private: rclcpp::Node *node;
@@ -95,12 +89,12 @@ namespace aic_scoring
     /// \brief Topics to subscribe to.
     private: std::vector<TopicInfo> topics;
 
+    /// \brief Connections.
+    private: std::vector<Connection> connections;
+
     /// \brief Generic subscriptions for all topics.
     private: std::vector<std::shared_ptr<rclcpp::GenericSubscription>>
       subscriptions;
-
-    /// \brief A YAML node.
-    private: YAML::Node yamlNode;
 
     /// \brief A rosbag2 writer.
     private: rosbag2_cpp::Writer bagWriter;

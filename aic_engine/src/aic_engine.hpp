@@ -27,6 +27,7 @@
 
 #include "aic_control_interfaces/msg/joint_motion_update.hpp"
 #include "aic_control_interfaces/msg/motion_update.hpp"
+#include "aic_scoring/ScoringTier2.hh"
 #include "aic_task_interfaces/action/insert_cable.hpp"
 #include "geometry_msgs/msg/wrench_stamped.hpp"
 #include "lifecycle_msgs/msg/state.hpp"
@@ -68,23 +69,57 @@ enum class EngineState : uint8_t {
 //==============================================================================
 // For each trial, track its state.
 // States progress from Uninitialized -> EndpointsReady -> SimulatorReady
-// ->ScoringReady -> TaskStarted -> TaskCompleted
+// -> ScoringReady -> TasksExecuting -> AllTasksCompleted
 // Uninitialized: Trial has not started.
 // ModelReady: Participant model node is available and conforms to challenge
 // requirements.
 // EndpointsReady: Required nodes are up and running.
 // SimulatorReady: Simulator is ready with the task board and cables spawned.
 // ScoringReady: Scoring system is ready to track performance.
-// TaskStarted: Task goal has been sent to the participant model. Clock started.
-// TaskCompleted: Task has been completed successfully or time limit reached.
+// TasksExecuting: Tasks are being executed.
+// AllTasksCompleted: All tasks has been completed successfully or time limit
+// reached.
 enum class TrialState : uint8_t {
   Uninitialized = 0,
   ModelReady,
   EndpointsReady,
   SimulatorReady,
   ScoringReady,
+  TasksExecuting,
+  AllTasksCompleted
+};
+
+//==============================================================================
+// For each task, track its state.
+// States progress from Uninitialized -> TaskRequested -> TaskStarted ->
+// TaskCompleted for successful runs.
+// Uninitialized: Task has not started.
+// TaskRequest: Task goal has been sent.
+// TaskStarted: Task has been started executing.
+// TaskCompleted: Task has been completed successfully.
+// TaskRejected: Task was rejected.
+// TaskFailed: Task has failed.
+// TimeLimitExceeded: Task's configured time limit was exceeded.
+enum class TaskState : uint8_t {
+  Uninitialized = 0,
+  TaskRequested,
   TaskStarted,
-  TaskCompleted
+  TaskCompleted,
+  TaskRejected,
+  TaskFailed,
+  TimeLimitExceeded,
+};
+
+//==============================================================================
+struct TaskAttempt {
+  // Constructors.
+  TaskAttempt(const std::string& id);
+
+  std::string id;
+  std::optional<rclcpp::Time> time_started;
+  std::optional<rclcpp::Time> time_completed;
+  bool success;
+  TaskState state;
 };
 
 //==============================================================================
@@ -97,7 +132,60 @@ struct Trial {
   std::vector<std::string> spawned_entities;
   YAML::Node config;
   std::vector<Task> tasks;
+  std::vector<TaskAttempt> attempts;
   TrialState state;
+};
+
+//==============================================================================
+struct TrialScore {
+  struct TierScore {
+    int score;
+    std::string message;
+
+    TierScore(int s, const std::string& msg) : score(s), message(msg) {}
+  };
+
+  // Score for successful model validation (binary)
+  static const int kTier1Success = 1;
+  // Score for successful insertion  (binary)
+  static const int kTier3Success = 20;
+
+  TierScore tier_1;
+  TierScore tier_2;
+  TierScore tier_3;
+
+  TrialScore()
+      : tier_1(0, "Model validation failed"),
+        tier_2(0, "Task execution failed"),
+        tier_3(0, "Task not completed successfully") {}
+
+  void tier_1_success() {
+    this->tier_1.score = TrialScore::kTier1Success;
+    this->tier_1.message = "Model validation succeeded";
+  }
+
+  void tier_2_result(int score, const std::string& message) {
+    this->tier_2.score = score;
+    this->tier_2.message = message;
+  }
+
+  void tier_3_success() {
+    this->tier_3.score = TrialScore::kTier3Success;
+    this->tier_3.message = "Task completed successfully";
+  }
+};
+
+struct Score {
+  // Intentionally alphabetically sorted, trial_id -> trial_score
+  std::map<std::string, TrialScore> breakdown;
+
+  /// \brief Serializes the score into a YAML node for logging.
+  /// \return The resulting YAML node with serialized data.
+  YAML::Node serialize() const;
+
+ private:
+  /// \brief Computes the total score from the score breakdown.
+  int calculate_total_score() const;
 };
 
 //==============================================================================
@@ -122,11 +210,12 @@ class Engine {
 
   /// \brief Handle the logic for a given trial.
   /// \param[in] trial The trial to handle.
-  /// \return The resulting state of the trial after handling.
-  TrialState handle_trial(const Trial& trial);
+  /// \return The resulting score of the trial after handling.
+  TrialScore handle_trial(Trial& trial);
 
   /// \brief Reset internal and simulator states after a trial is completed.
-  void reset_after_trial();
+  /// \param[in] trial The trial currently being ran
+  void reset_after_trial(const Trial& trial);
 
   /// \brief Check if the participant model is ready. As per challenge
   /// requirements. See challenge_rules.md for details. \return True if the
@@ -138,22 +227,27 @@ class Engine {
   bool check_endpoints();
 
   /// \brief Check if the simulator is ready.
+  /// \param[in] trial The trial currently being ran
   /// \return True if the simulator is ready, false otherwise.
-  bool ready_simulator();
+  bool ready_simulator(Trial& trial);
 
   /// \brief Check if the scoring system is ready.
+  /// \param[in] trial The trial currently being ran
   /// \return True if the scoring system is ready, false otherwise.
-  bool ready_scoring();
+  bool ready_scoring(const Trial& trial);
 
-  /// \brief Start the task.
-  /// \return True if the task started successfully, false otherwise.
-  bool start_task();
+  /// \brief Check if tasks were started successfully.
+  /// \param[in] trial The trial currently being ran
+  /// \return True if tasks were started successfully, false otherwise.
+  bool tasks_started(Trial& trial);
 
-  /// \brief Check if the task was completed successfully.
-  /// \return True if the task was completed successfully, false otherwise.
-  bool task_completed_successfully();
+  /// \brief Check if all tasks have been completed successfully.
+  /// \param[in] trial The trial currently being ran
+  /// \return True if tasks were completed successfully, false otherwise.
+  bool tasks_completed_successfully(const Trial& trial);
 
   /// \brief Spawn an entity in Gazebo.
+  /// \param[in] trial The trial currently being ran
   /// \param[in] entity_name Name of the entity to spawn
   /// \param[in] filepath Path to the xacro file of the entity
   /// \param[in] x X position
@@ -163,8 +257,9 @@ class Engine {
   /// \param[in] pitch Pitch orientation (radians)
   /// \param[in] yaw Yaw orientation (radians)
   /// \return True if spawning succeeded, false otherwise
-  bool spawn_entity(std::string entity_name, std::string filepath, double x,
-                    double y, double z, double roll, double pitch, double yaw);
+  bool spawn_entity(Trial& trial, std::string entity_name, std::string filepath,
+                    double x, double y, double z, double roll, double pitch,
+                    double yaw);
 
   /// @brief Check if the robot was commanded to move by the model node.
   /// @return True if the robot was commanded to move, false otherwise.
@@ -174,6 +269,12 @@ class Engine {
   /// expectations in this state.
   /// @return True if the model is unconfigured, false otherwise.
   bool model_node_is_unconfigured();
+
+  /// @brief Trigger a state transition for the lifecycle node.
+  /// \param[in] transition The transition to trigger as per
+  /// lifecycle_msgs::msg::Transition enum definition.
+  /// @return True if transition succeeded, false otherwise.
+  bool transition_model_lifecycle_node(const uint8_t transition);
 
   /// @brief Configure the model node and check expectations in the configured
   /// state as per challenge requirements.
@@ -189,6 +290,24 @@ class Engine {
   /// state.
   /// @return True if deactivation succeeded, false otherwise.
   bool deactivate_model_node();
+
+  /// @brief Cleanup the model node to transition from inactive to
+  /// unconfigured state.
+  /// @return True if cleanup succeeded, false otherwise.
+  bool cleanup_model_node();
+
+  /// @brief Shutdown the model node to transition from unconfigured to
+  /// shutdown state.
+  /// @return True if shutdown succeeded, false otherwise.
+  bool shutdown_model_node();
+
+  /// @brief Stop the bag recording.
+  /// @return True if stopping recording succeeded, false otherwise.
+  bool stop_recording_scores();
+
+  /// @brief Scores the current run, writing its result to a YAML file.
+  /// \param[in] The score to serialize and write.
+  void score_run(const Score& score);
 
   // Strings.
   // Name of the aic_adapter node for lifecycle transitions.
@@ -240,9 +359,6 @@ class Engine {
   // Variable to track first trial as want to configure model only once.
   bool is_first_trial_;
 
-  // The active trial.
-  std::optional<Trial> active_trial_;
-
   // Thread to spin ROS 2 node.
   std::thread spin_thread_;
 
@@ -257,6 +373,12 @@ class Engine {
 
   // Whether the participant model has been discovered and readied.
   bool model_discovered_;
+
+  // Scoring tier 2 instance.
+  std::unique_ptr<aic_scoring::ScoringTier2> scoring_tier2_;
+
+  // Output directory for scoring.
+  std::string scoring_output_dir_;
 };
 
 }  // namespace aic
