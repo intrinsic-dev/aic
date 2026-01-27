@@ -20,8 +20,14 @@ jobs:
     name: build_and_test
     runs-on: ubuntu-latest
     container:
-      image: ros:kilted-ros-simulation
+      image: ros:kilted-ros-base
     steps:
+      - name: Add OSRF Gazebo repository
+        run: |
+          curl https://packages.osrfoundation.org/gazebo.gpg --output /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/gazebo-stable.list > /dev/null
+          apt-get update
+
       - name: Install build dependencies
         run: |
           apt-get update && apt-get upgrade -y
