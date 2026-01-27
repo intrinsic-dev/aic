@@ -55,16 +55,3 @@ jobs:
               }
             }
           rosdep-skip-keys: "gz-cmake3 DART libogre-dev libogre-next-2.3-dev rosetta"
-          package-name: |
-            aic_adapter
-            aic_assets
-            aic_bringup
-            aic_controller
-            aic_description
-            aic_engine
-            aic_example_policies
-            aic_gazebo
-            aic_interfaces
-            aic_model
-            aic_scoring
-            aic_utils
