@@ -44,6 +44,7 @@
 #include "simulation_interfaces/srv/delete_entity.hpp"
 #include "simulation_interfaces/srv/set_simulation_state.hpp"
 #include "simulation_interfaces/srv/spawn_entity.hpp"
+#include "std_msgs/msg/bool.hpp"
 #include "std_msgs/msg/string.hpp"
 #include "tf2/exceptions.hpp"
 #include "tf2_ros/buffer.h"
@@ -349,6 +350,7 @@ class Engine {
       reset_joint_result_sub_;
   // Publishers.
   rclcpp::Publisher<ResetJointsMsg>::SharedPtr reset_joints_pub_;
+  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr toggle_controller_pub_;
 
   // Subscription messages.
   JointStateMsg::ConstSharedPtr last_joint_state_msg_;
@@ -399,8 +401,8 @@ class Engine {
   // Whether the participant model has been discovered and readied.
   bool model_discovered_;
 
-  // Robot home joint positions
-  std::vector<std::pair<std::string, double>> home_joint_positions_;
+  // Robot joint name
+  std::vector<std::string> joint_names_;
 
   // Request ID
   std::optional<std::pair<std::string, bool>> reset_request_;

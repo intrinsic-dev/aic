@@ -67,8 +67,7 @@ class ResetJointsPlugin : public gz::sim::System,
 
   /// \brief A subscriber to receive joint state messages for initial positions.
  private:
-  rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr
-      jointStateSub;
+  rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr jointStateSub;
 
  private:
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr resetJointsResPub;

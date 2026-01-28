@@ -494,19 +494,19 @@ EngineState Engine::initialize() {
           "/controller_manager/switch_controller");
   reset_joints_pub_ =
       node_->create_publisher<ResetJointsMsg>("/reset_joints", reliable_qos);
+  toggle_controller_pub_ = node_->create_publisher<std_msgs::msg::Bool>(
+      "/aic_controller/toggle_controller", reliable_qos);
   tf_buffer_ = std::make_unique<tf2_ros::Buffer>(node_->get_clock());
   tf_listener_ = std::make_unique<tf2_ros::TransformListener>(*tf_buffer_);
 
-  // Fetch home joint positions from first joint state message.
+  // Fetch joint names from initial joint states
   while (!last_joint_state_msg_) {
     RCLCPP_INFO(node_->get_logger(),
                 "Waiting for first joint state message...");
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
   }
-  auto num_joints_ = last_joint_state_msg_->name.size();
-  for (std::size_t i = 0; i < num_joints_; ++i) {
-    home_joint_positions_.emplace_back(last_joint_state_msg_->name[i],
-                                       last_joint_state_msg_->position[i]);
+  for (const auto& joint_name : last_joint_state_msg_->name) {
+    joint_names_.emplace_back(joint_name);
   }
 
   scoring_tier2_ = std::make_unique<aic_scoring::ScoringTier2>(node_.get());
@@ -565,9 +565,6 @@ EngineState Engine::run() {
       break;
     }
   }
-
-  // Home robot after trials
-  home_robot();
 
   // TODO(luca) refactor cleanup into single function
   this->cleanup_model_node();
@@ -1076,6 +1073,13 @@ bool Engine::tasks_started(Trial& trial) {
     return false;
   }
 
+  // Enable aic controller
+  std_msgs::msg::Bool enable;
+  enable.data = true;
+  toggle_controller_pub_->publish(enable);
+  RCLCPP_INFO(node_->get_logger(), "Enabling aic_controller for trial [%s]",
+              trial.id.c_str());
+
   for (auto& task : trial.tasks) {
     // Initialize TaskState
     TaskAttempt task_attempt(task.id);
@@ -1348,58 +1352,19 @@ void Engine::reset_after_trial(const Trial& trial) {
 bool Engine::home_robot() {
   RCLCPP_INFO(node_->get_logger(), "Homing robot to initial positions...");
 
-  // Deactivate aic_controller
-  {
-    auto request = std::make_shared<SwitchControllerSrv::Request>();
-    request->deactivate_controllers = {"aic_controller"};
-    request->activate_controllers = {};
-    request->strictness = SwitchControllerSrv::Request::BEST_EFFORT;
-    auto future = switch_controller_client_->async_send_request(request);
-    if (future.wait_for(std::chrono::seconds(10)) !=
-        std::future_status::ready) {
-      RCLCPP_ERROR(node_->get_logger(),
-                   "SwitchController service call timed out when deactivating "
-                   "aic_controller");
-      return false;
-    }
-    auto response = future.get();
-    if (!response->ok) {
-      RCLCPP_ERROR(node_->get_logger(), "Failed to deactivate aic_controller.");
-      return false;
-    }
-    RCLCPP_INFO(node_->get_logger(),
-                "aic_controller deactivated successfully.");
-  }
-
-  // Pause Gazebo world
-  // Ensures that robot doesn't collapse when controller is deactivated
-  {
-    auto request = std::make_shared<SetSimulationStateSrv::Request>();
-    request->state.state = SimulationStateMsg::STATE_PAUSED;
-    auto future = simulation_state_client_->async_send_request(request);
-    if (future.wait_for(std::chrono::seconds(10)) !=
-        std::future_status::ready) {
-      RCLCPP_ERROR(node_->get_logger(),
-                   "SetSimulationState service call timed out when pausing "
-                   "the simulation");
-      return false;
-    }
-    auto response = future.get();
-    if (response->result.result != ResultMsg::RESULT_OK) {
-      RCLCPP_ERROR(node_->get_logger(), "Failed to pause simulation: %s",
-                   response->result.error_message.c_str());
-      return false;
-    }
-    RCLCPP_INFO(node_->get_logger(), "Simulation paused successfully.");
-  }
+  // Disable aic controller
+  std_msgs::msg::Bool enable;
+  enable.data = false;
+  toggle_controller_pub_->publish(enable);
+  RCLCPP_INFO(node_->get_logger(), "Disabling aic_controller to home robot");
 
   // Publish ResetJoints msg containing all 6 joints
   ResetJointsMsg msg;
   const auto request_id =
       "reset_joint_" + std::to_string(this->node_->now().nanoseconds());
   msg.request_id = request_id;
-  for (const auto& joint : home_joint_positions_) {
-    msg.joint_names.emplace_back(joint.first);
+  for (const auto& name : joint_names_) {
+    msg.joint_names.emplace_back(name);
   }
   reset_joints_pub_->publish(msg);
   RCLCPP_INFO(node_->get_logger(), "Published reset joints message.");
@@ -1420,50 +1385,6 @@ bool Engine::home_robot() {
     break;
   }
   reset_request_ = std::nullopt;
-
-  // Activate aic_controller & resume simulation
-  {
-    auto activate_req = std::make_shared<SwitchControllerSrv::Request>();
-    activate_req->deactivate_controllers = {};
-    activate_req->activate_controllers = {"aic_controller"};
-    activate_req->strictness = SwitchControllerSrv::Request::BEST_EFFORT;
-    auto activate_future =
-        switch_controller_client_->async_send_request(activate_req);
-
-    // // Do not wait for response, resume simulation
-    // auto resume_req = std::make_shared<SetSimulationStateSrv::Request>();
-    // resume_req->state.state = SimulationStateMsg::STATE_PLAYING;
-    // auto future = simulation_state_client_->async_send_request(resume_req);
-    // if (future.wait_for(std::chrono::seconds(10)) !=
-    //     std::future_status::ready) {
-    //   RCLCPP_ERROR(node_->get_logger(),
-    //                "SetSimulationState service call timed out when resuming "
-    //                "the simulation");
-    //   return false;
-    // }
-    // auto resume_resp = future.get();
-    // if (resume_resp->result.result != ResultMsg::RESULT_OK) {
-    //   RCLCPP_ERROR(node_->get_logger(), "Failed to resume simulation: %s",
-    //                resume_resp->result.error_message.c_str());
-    //   return false;
-    // }
-    // RCLCPP_INFO(node_->get_logger(), "Simulation resumed successfully.");
-
-    // Check that controller has been successfully activated
-    if (activate_future.wait_for(std::chrono::seconds(10)) !=
-        std::future_status::ready) {
-      RCLCPP_ERROR(node_->get_logger(),
-                   "SwitchController service call timed out when activating "
-                   "aic_controller");
-      return false;
-    }
-    auto activate_resp = activate_future.get();
-    if (!activate_resp->ok) {
-      RCLCPP_ERROR(node_->get_logger(), "Failed to activate aic_controller.");
-      return false;
-    }
-    RCLCPP_INFO(node_->get_logger(), "aic_controller activated successfully.");
-  }
 
   if (!homed) {
     RCLCPP_ERROR(node_->get_logger(), "Robot failed to home within timeout.");

@@ -72,18 +72,18 @@ void ResetJointsPlugin::Configure(
             }
           });
   // Subscribe to reset joint requests
-  this->resetJointsReqSub =
-      this->rosNode->create_subscription<aic_control_interfaces::msg::ResetJoints>(
-          "/reset_joints", reliable_qos,
-          [this](const aic_control_interfaces::msg::ResetJoints::SharedPtr msg) {
-            std::lock_guard<std::mutex> lock(this->mutex);
-            for (const auto& joint_name : msg->joint_names) {
-              gzmsg << "Received reset request for joint: " << joint_name
-                    << std::endl;
-              this->requestedJoints.push_back(joint_name);
-            }
-            this->requestId = msg->request_id;
-          });
+  this->resetJointsReqSub = this->rosNode->create_subscription<
+      aic_control_interfaces::msg::ResetJoints>(
+      "/reset_joints", reliable_qos,
+      [this](const aic_control_interfaces::msg::ResetJoints::SharedPtr msg) {
+        std::lock_guard<std::mutex> lock(this->mutex);
+        for (const auto& joint_name : msg->joint_names) {
+          gzmsg << "Received reset request for joint: " << joint_name
+                << std::endl;
+          this->requestedJoints.push_back(joint_name);
+        }
+        this->requestId = msg->request_id;
+      });
   // Publish results for reset joint requests
   this->resetJointsResPub =
       this->rosNode->create_publisher<std_msgs::msg::String>(
