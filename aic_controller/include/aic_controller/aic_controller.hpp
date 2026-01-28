@@ -261,7 +261,7 @@ class Controller : public controller_interface::ControllerInterface {
   TargetMode target_mode_;
 
   // Toggle to enable/disable the controller without deactivating it
-  bool enabled_;
+  bool enabled_ = false;
 
   CartesianLimits cartesian_limits_;
   std::vector<JointLimits> joint_limits_;

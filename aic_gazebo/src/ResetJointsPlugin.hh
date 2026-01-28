@@ -69,11 +69,11 @@ class ResetJointsPlugin : public gz::sim::System,
  private:
   rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr jointStateSub;
 
- /// \brief A publisher to publish joint state reset result.
+  /// \brief A publisher to publish joint state reset result.
  private:
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr resetJointsResPub;
 
- /// Current reset request ID.
+  /// \brief Current reset request ID.
  private:
   std::optional<std::string> requestId;
 

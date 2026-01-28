@@ -497,7 +497,7 @@ EngineState Engine::initialize() {
   while (!last_joint_state_msg_) {
     RCLCPP_INFO(node_->get_logger(),
                 "Waiting for first joint state message...");
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
   for (const auto& joint_name : last_joint_state_msg_->name) {
     joint_names_.emplace_back(joint_name);

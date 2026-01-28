@@ -63,6 +63,7 @@ void ResetJointsPlugin::Configure(
       this->rosNode->create_subscription<sensor_msgs::msg::JointState>(
           "/joint_states", reliable_qos,
           [this](const sensor_msgs::msg::JointState::SharedPtr msg) {
+            std::lock_guard<std::mutex> lock(this->mutex);
             if (this->initialJointPositions.empty()) {
               for (size_t i = 0; i < msg->name.size(); ++i) {
                 this->initialJointPositions[msg->name[i]] = msg->position[i];
@@ -115,6 +116,11 @@ void ResetJointsPlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
   std::lock_guard<std::mutex> lock(this->mutex);
   for (const auto& jointName : this->requestedJoints) {
     auto jointEntity = this->model.JointByName(_ecm, jointName);
+    if (!jointEntity) {
+      gzwarn << "Joint " << jointName << " cannot be found! Skipping reset."
+             << std::endl;
+      continue;
+    }
 
     // Get initial position for this joint, default to 0.0 if not found
     double initialPosition = 0.0;

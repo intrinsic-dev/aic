@@ -388,7 +388,7 @@ class Engine {
   // Robot joint name
   std::vector<std::string> joint_names_;
 
-  // Request ID
+  // Request ID for resetting robot joints to inital positions.
   std::optional<std::pair<std::string, bool>> reset_request_;
 
   // Scoring tier 2 instance.
