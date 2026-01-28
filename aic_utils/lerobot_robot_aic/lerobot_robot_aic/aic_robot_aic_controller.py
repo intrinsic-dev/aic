@@ -30,20 +30,20 @@ from aic_control_interfaces.msg import (
     MotionUpdate,
     TrajectoryGenerationMode,
 )
-from lerobot.teleoperators import TeleopEvents
 from control_msgs.action import ParallelGripperCommand
 from geometry_msgs.msg import Twist, Vector3, Wrench
 from lerobot.cameras import CameraConfig, make_cameras_from_configs
 from lerobot.robots import Robot, RobotConfig
 from lerobot.utils.errors import DeviceAlreadyConnectedError, DeviceNotConnectedError
-from numpy.typing import NDArray
 from rclpy.action.client import ActionClient, ClientGoalHandle
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import SingleThreadedExecutor
 from rclpy.node import Node
 from rclpy.publisher import Publisher
+from rclpy.qos import qos_profile_sensor_data
 from rclpy.subscription import Subscription
 from rclpy.task import Future as RclFuture
+from sensor_msgs.msg import JointState
 
 from .aic_robot import aic_cameras, arm_joint_names, gripper_joint_name
 from .types import MotionUpdateActionDict
@@ -51,8 +51,8 @@ from .types import MotionUpdateActionDict
 logger = logging.getLogger(__name__)
 
 
-ControllerStateDict = TypedDict(
-    "ControllerStateDict",
+ObservationState = TypedDict(
+    "ObservationState",
     {
         "tcp_pose.position.x": float,
         "tcp_pose.position.y": float,
@@ -73,30 +73,13 @@ ControllerStateDict = TypedDict(
         "tcp_error.rx": float,
         "tcp_error.ry": float,
         "tcp_error.rz": float,
-        "joint_state.positions.0": float,
-        "joint_state.positions.1": float,
-        "joint_state.positions.2": float,
-        "joint_state.positions.3": float,
-        "joint_state.positions.4": float,
-        "joint_state.positions.5": float,
-        "joint_state.velocities.0": float,
-        "joint_state.velocities.1": float,
-        "joint_state.velocities.2": float,
-        "joint_state.velocities.3": float,
-        "joint_state.velocities.4": float,
-        "joint_state.velocities.5": float,
-        "joint_state.accelerations.0": float,
-        "joint_state.accelerations.1": float,
-        "joint_state.accelerations.2": float,
-        "joint_state.accelerations.3": float,
-        "joint_state.accelerations.4": float,
-        "joint_state.accelerations.5": float,
-        "joint_state.efforts.0": float,
-        "joint_state.efforts.1": float,
-        "joint_state.efforts.2": float,
-        "joint_state.efforts.3": float,
-        "joint_state.efforts.4": float,
-        "joint_state.efforts.5": float,
+        "joint_positions.0": float,
+        "joint_positions.1": float,
+        "joint_positions.2": float,
+        "joint_positions.3": float,
+        "joint_positions.4": float,
+        "joint_positions.5": float,
+        "joint_positions.6": float,
     },
 )
 
@@ -123,6 +106,8 @@ class AICRobotAICController(Robot):
         self.motion_update_pub: Publisher[MotionUpdate] | None = None
         self.controller_state_sub: Subscription[ControllerState] | None = None
         self.last_controller_state: ControllerState | None = None
+        self.joint_states_sub: Subscription[JointState] | None = None
+        self.last_joint_states: JointState | None = None
         self.parallel_gripper_action_client: (
             ActionClient[
                 ParallelGripperCommand.Goal,
@@ -154,7 +139,7 @@ class AICRobotAICController(Robot):
     @cached_property
     def observation_features(self) -> dict:
         return {
-            **ControllerStateDict.__annotations__,
+            **ObservationState.__annotations__,
         }
 
     @cached_property
@@ -191,6 +176,13 @@ class AICRobotAICController(Robot):
             ControllerState, "/aic_controller/controller_state", controller_state_cb, 10
         )
 
+        def joint_states_cb(msg: JointState):
+            self.last_joint_states = msg
+
+        self.node.create_subscription(
+            JointState, "/joint_states", joint_states_cb, qos_profile_sensor_data
+        )
+
         self.parallel_gripper_action_client = ActionClient(
             self.node,
             ParallelGripperCommand,
@@ -198,14 +190,14 @@ class AICRobotAICController(Robot):
             callback_group=ReentrantCallbackGroup(),
         )
 
+        for cam in self.cameras.values():
+            cam.connect()
+
         self.executor = SingleThreadedExecutor()
         self.executor.add_node(self.node)
         self.executor_thread = Thread(target=self.executor.spin, daemon=True)
         self.executor_thread.start()
         time.sleep(3)  # Give some time to connect to services and receive messages
-
-        for cam in self.cameras.values():
-            cam.connect()
 
         self._is_connected = True
 
@@ -223,17 +215,14 @@ class AICRobotAICController(Robot):
         if not self.is_connected:
             raise DeviceNotConnectedError(f"{self} is not connected.")
 
-        if not self.last_controller_state:
+        if not self.last_controller_state or not self.last_joint_states:
             return {}
 
         tcp_pose = self.last_controller_state.tcp_pose
         tcp_velocity = self.last_controller_state.tcp_velocity
         tcp_error = self.last_controller_state.tcp_error
-        joint_positions = self.last_controller_state.joint_state.positions
-        joint_velocities = self.last_controller_state.joint_state.velocities
-        joint_accelerations = self.last_controller_state.joint_state.accelerations
-        joint_efforts = self.last_controller_state.joint_state.effort
-        controller_state_obs: ControllerStateDict = {
+        joint_positions = self.last_joint_states.position
+        controller_state_obs: ObservationState = {
             "tcp_pose.position.x": tcp_pose.position.x,
             "tcp_pose.position.y": tcp_pose.position.y,
             "tcp_pose.position.z": tcp_pose.position.z,
@@ -253,31 +242,13 @@ class AICRobotAICController(Robot):
             "tcp_error.rx": tcp_error[3],
             "tcp_error.ry": tcp_error[4],
             "tcp_error.rz": tcp_error[5],
-            # FIXME: aic_controller is not populating these values
-            "joint_state.positions.0": 0.0,  # joint_positions[0],
-            "joint_state.positions.1": 0.0,  # joint_positions[1],
-            "joint_state.positions.2": 0.0,  # joint_positions[2],
-            "joint_state.positions.3": 0.0,  # joint_positions[3],
-            "joint_state.positions.4": 0.0,  # joint_positions[4],
-            "joint_state.positions.5": 0.0,  # joint_positions[5],
-            "joint_state.velocities.0": 0.0,  # joint_velocities[0],
-            "joint_state.velocities.1": 0.0,  # joint_velocities[1],
-            "joint_state.velocities.2": 0.0,  # joint_velocities[2],
-            "joint_state.velocities.3": 0.0,  # joint_velocities[3],
-            "joint_state.velocities.4": 0.0,  # joint_velocities[4],
-            "joint_state.velocities.5": 0.0,  # joint_velocities[5],
-            "joint_state.accelerations.0": 0.0,  # joint_accelerations[0],
-            "joint_state.accelerations.1": 0.0,  # joint_accelerations[1],
-            "joint_state.accelerations.2": 0.0,  # joint_accelerations[2],
-            "joint_state.accelerations.3": 0.0,  # joint_accelerations[3],
-            "joint_state.accelerations.4": 0.0,  # joint_accelerations[4],
-            "joint_state.accelerations.5": 0.0,  # joint_accelerations[5],
-            "joint_state.efforts.0": joint_efforts[0],
-            "joint_state.efforts.1": joint_efforts[1],
-            "joint_state.efforts.2": joint_efforts[2],
-            "joint_state.efforts.3": joint_efforts[3],
-            "joint_state.efforts.4": joint_efforts[4],
-            "joint_state.efforts.5": joint_efforts[5],
+            "joint_positions.0": joint_positions[0],
+            "joint_positions.1": joint_positions[1],
+            "joint_positions.2": joint_positions[2],
+            "joint_positions.3": joint_positions[3],
+            "joint_positions.4": joint_positions[4],
+            "joint_positions.5": joint_positions[5],
+            "joint_positions.6": joint_positions[6],
         }
 
         # Capture images from cameras
@@ -295,6 +266,9 @@ class AICRobotAICController(Robot):
         return {**cam_obs, **controller_state_obs}
 
     def send_action(self, action: dict[str, Any]) -> dict[str, Any]:
+        if not self._is_connected or not self.node:
+            raise DeviceNotConnectedError()
+
         motion_update_action = cast(MotionUpdateActionDict, action)
 
         twist_msg = Twist()
@@ -306,7 +280,7 @@ class AICRobotAICController(Robot):
         twist_msg.angular.z = float(motion_update_action["angular.z"])
 
         msg = MotionUpdate()
-        msg.header.stamp = self.get_clock().now().to_msg()
+        msg.header.stamp = self.node.get_clock().now().to_msg()
         msg.header.frame_id = "gripper/tcp"
         msg.velocity = twist_msg
         msg.target_stiffness = np.diag(
