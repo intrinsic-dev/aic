@@ -13,7 +13,7 @@ max_duration_s: 90.0
 # Policy inference parameters # Generate 5 actions per inference (reasonable for 0.5Hz)
 observations:
   - key: observation.images.wrist1
-    topic: /wrist_camera_1/image
+    topic: /left_camera/image
     type: sensor_msgs/msg/Image
     image:
       # bag_to_lerobot decodes to RGB and resizes here
@@ -22,7 +22,7 @@ observations:
     qos: { reliability: reliable, history: keep_last, depth: 10 }
 
   - key: observation.images.wrist2
-    topic: /wrist_camera_2/image
+    topic: /center_camera/image
     type: sensor_msgs/msg/Image
     image:
       # bag_to_lerobot decodes to RGB and resizes here
@@ -31,7 +31,7 @@ observations:
     qos: { reliability: reliable, history: keep_last, depth: 10 }
 
   - key: observation.images.wrist3
-    topic: /wrist_camera_3/image
+    topic: /right_camera/image
     type: sensor_msgs/msg/Image
     image:
       # bag_to_lerobot decodes to RGB and resizes here

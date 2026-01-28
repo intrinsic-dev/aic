@@ -22,6 +22,7 @@ from launch.actions import (
     IncludeLaunchDescription,
     OpaqueFunction,
     RegisterEventHandler,
+    SetEnvironmentVariable,
 )
 from launch.conditions import IfCondition, UnlessCondition
 from launch.event_handlers import OnProcessExit
@@ -83,7 +84,7 @@ def launch_setup(context, *args, **kwargs):
     start_aic_engine = LaunchConfiguration("start_aic_engine")
     aic_engine_config_file = LaunchConfiguration("aic_engine_config_file")
 
-    gripper_initial_pos = "0.012"
+    gripper_initial_pos = "0.00655"
     cable_type_str = LaunchConfiguration("cable_type").perform(context)
     if cable_type_str == "sfp_sc_cable":
         gripper_initial_pos = "0.0073"
@@ -293,6 +294,8 @@ def launch_setup(context, *args, **kwargs):
         condition=IfCondition(spawn_cable),
     )
 
+    gz_ip_env = SetEnvironmentVariable(name="GZ_IP", value="127.0.0.1")
+
     # GZ nodes
     gz_spawn_entity = Node(
         package="ros_gz_sim",
@@ -378,6 +381,7 @@ def launch_setup(context, *args, **kwargs):
         fts_broadcaster_spawner,
         aic_adapter,
         gripper_action_controller_spawner,
+        gz_ip_env,
         gzserver,
         gzgui,
         ros_gz_bridge,

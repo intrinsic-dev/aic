@@ -1,0 +1,55 @@
+name: build
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**.md'
+  pull_request:
+    paths-ignore:
+      - '**.md'
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build_and_test:
+    name: build_and_test
+    runs-on: ubuntu-latest
+    container:
+      image: ros:kilted-ros-base
+    steps:
+      - name: Add OSRF Gazebo repository
+        run: |
+          curl https://packages.osrfoundation.org/gazebo.gpg --output /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/gazebo-stable.list > /dev/null
+          apt-get update
+
+      - name: Install build dependencies
+        run: |
+          apt-get update && apt-get upgrade -y
+          apt-get install -y python3-colcon-common-extensions
+
+      - name: Set up git authentication
+        run: |
+          git config --global url."https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/".insteadOf "https://github.com/"
+          git config --global credential.helper store
+
+      - name: Build and run tests
+        uses: ros-tooling/action-ros-ci@v0.4
+        with:
+          target-ros2-distro: kilted
+          skip-tests: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+          colcon-defaults: |
+            {
+              "build": {
+                "cmake-args": [
+                  "-DCMAKE_BUILD_TYPE=Release"
+                ]
+              }
+            }
+          rosdep-skip-keys: "gz-cmake3 DART libogre-dev libogre-next-2.3-dev rosetta"

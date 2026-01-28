@@ -59,13 +59,14 @@ class AicAdapterNode : public rclcpp::Node {
     for (size_t camera_idx = 0; camera_idx < kNumCameras; camera_idx++) {
       camera_info_subs_.push_back(
           this->create_subscription<sensor_msgs::msg::CameraInfo>(
-              std::format("/wrist_camera_{}/camera_info", camera_idx + 1), 5,
+              std::format("/{}_camera/camera_info", kCameraNames[camera_idx]),
+              5,
               [this, camera_idx](
                   sensor_msgs::msg::CameraInfo::UniquePtr msg) -> void {
                 this->camera_infos_[camera_idx] = std::move(msg);
               }));
       image_subs_.push_back(this->create_subscription<sensor_msgs::msg::Image>(
-          std::format("/wrist_camera_{}/image", camera_idx + 1), 5,
+          std::format("/{}_camera/image", kCameraNames[camera_idx]), 5,
           [this, camera_idx](sensor_msgs::msg::Image::UniquePtr msg) -> void {
             this->image_callback(camera_idx, std::move(msg));
           }));
@@ -87,7 +88,7 @@ class AicAdapterNode : public rclcpp::Node {
     // See if we have a recent image collection. If so, re-publish them and
     // remove them from our buffer.
     for (size_t i = 0; i < kNumCameras; i++) {
-      if (!images_[i]) {
+      if (!images_[i] || !camera_infos_[i]) {
         return;
       }
     }
@@ -105,25 +106,26 @@ class AicAdapterNode : public rclcpp::Node {
     aic_model_interfaces::msg::Observation::UniquePtr observation_msg =
         std::make_unique<aic_model_interfaces::msg::Observation>();
 
-    for (size_t i = 0; i < kNumCameras; i++) {
-      if (i >= observation_msg->images.size()) {
-        RCLCPP_ERROR(this->get_logger(),
-                     "Tried to publish an unknown wrist camera: %zu", i);
-        continue;
-      }
-      observation_msg->images[i] = std::move(*images_[i]);
-      if (camera_infos_[i]) {
-        // Make a copy of this CameraInfo, in case we need the original again
-        // during the next image cycle.
-        observation_msg->camera_infos[i] = *camera_infos_[i];
-        // Because we know the CameraInfo structs are not changing (these are
-        // fixed-focus cameras), update the timestamp to match the images.
-        // (This is to handle any randomness in the arrival order of the image
-        // and its associated CameraInfo.)
-        observation_msg->camera_infos[i].header.stamp =
-            observation_msg->images[i].header.stamp;
-      }
-    }
+    observation_msg->left_image = std::move(*images_[kLeftCameraIndex]);
+    observation_msg->center_image = std::move(*images_[kCenterCameraIndex]);
+    observation_msg->right_image = std::move(*images_[kRightCameraIndex]);
+
+    // Make a copy of the CameraInfos, in case we need the original again
+    // during the next image cycle.
+    observation_msg->left_camera_info = *camera_infos_[kLeftCameraIndex];
+    observation_msg->center_camera_info = *camera_infos_[kCenterCameraIndex];
+    observation_msg->right_camera_info = *camera_infos_[kRightCameraIndex];
+
+    // Because we know the CameraInfo structs are not changing (these are
+    // fixed-focus cameras), update the timestamp to match the images.
+    // (This is to handle any randomness in the arrival order of the image
+    // and its associated CameraInfo.)
+    observation_msg->left_camera_info.header.stamp =
+        observation_msg->left_image.header.stamp;
+    observation_msg->center_camera_info.header.stamp =
+        observation_msg->center_image.header.stamp;
+    observation_msg->right_camera_info.header.stamp =
+        observation_msg->right_image.header.stamp;
 
     // Look for the joint state message that is closest to the timestamp
     // of the images.
@@ -229,9 +231,14 @@ class AicAdapterNode : public rclcpp::Node {
     sorted.velocity[n_joints - 1] *= 2.0;
   }
 
-  static const int kNumCameras = 3;
-  static const int kJointStateDequeMaxLength = 128;
-  static const int kWrenchDequeMaxLength = 128;
+  static constexpr const int kNumCameras = 3;
+  static constexpr const char* kCameraNames[kNumCameras] = {"left", "center",
+                                                            "right"};
+  static constexpr const int kLeftCameraIndex = 0;
+  static constexpr const int kCenterCameraIndex = 1;
+  static constexpr const int kRightCameraIndex = 2;
+  static constexpr const int kJointStateDequeMaxLength = 128;
+  static constexpr const int kWrenchDequeMaxLength = 128;
   rclcpp::TimerBase::SharedPtr timer_;
 
   std::unique_ptr<tf2_ros::TransformListener> tf_listener_;

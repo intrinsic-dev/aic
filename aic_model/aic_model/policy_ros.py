@@ -25,7 +25,7 @@ class PolicyRos:
         self._parent_node = parent_node
         self.get_logger().info("PolicyRos.__init__()")
 
-    def set_pose_target(self, pose):
+    def set_pose_target(self, pose: Pose, frame_id: str = "base_link"):
         """Set a pose target for the robot arm.
 
         The robot can be controlled in several different ways. This function
@@ -46,6 +46,8 @@ class PolicyRos:
 
         motion_update_msg = MotionUpdate()
         motion_update_msg.pose = pose
+        motion_update_msg.header.frame_id = frame_id
+        motion_update_msg.header.stamp = self.get_clock().now().to_msg()
 
         motion_update_msg.target_stiffness = np.diag(
             [100.0, 100.0, 100.0, 50.0, 50.0, 50.0]
@@ -70,3 +72,6 @@ class PolicyRos:
 
     def get_logger(self):
         return self._parent_node.get_logger()
+
+    def get_clock(self):
+        return self._parent_node.get_clock()

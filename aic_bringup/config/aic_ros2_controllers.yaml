@@ -296,18 +296,18 @@ aic_controller:
       pose_error_integrator:
         gain: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         bound: [10., 10., 10., 2., 2., 2.]
-      maximum_wrench: [50.0, 50.0, 50.0, 10.0, 10.0, 10.0]
+      maximum_wrench: [100.0, 100.0, 100.0, 100.0, 100.0, 100.0]
       nullspace:
         target_configuration: [0.6, -1.5708, -1.5708, -1.5708, 1.5708, 0.6]
-        stiffness: [50., 50., 50., 50., 50., 50.]
+        stiffness: [0., 0., 0., 0., 0., 0.]
         damping: [10., 10., 10., 10., 10., 10.]
       feedforward_interpolation:
         min_wrench: [-40., -40., -40., -5., -5., -5.]
         max_wrench: [40., 40., 40., 5., 5., 5.]
         max_wrench_dot: [500., 500., 500., 25., 25., 25.]
       default_values:
-        control_stiffness: [100., 100., 100., 50., 50., 50.]
-        control_damping: [15.0, 15.0, 15.0, 15.0, 15.0, 15.0]
+        control_stiffness: [75.0, 75.0, 75.0, 75.0, 75.0, 75.0]
+        control_damping: [35.0, 35.0, 35.0, 35.0, 35.0, 35.0]
 
     joint_impedance:
       interpolator:
@@ -330,13 +330,13 @@ aic_controller:
 
     clamp_to_limits:
       min_translational_position:
-        - -1.0 # x
-        - -1.0 # y
-        - -1.0 # z
+        - -0.65 # x
+        - -0.35 # y
+        - 0.0 # z
       max_translational_position:
-        - 1.0 # x
-        - 1.0 # y
-        - 1.0 # z
+        - 0.45 # x
+        - 0.65 # y
+        - 0.65 # z
       min_translational_velocity:
         - -0.25 # x
         - -0.25 # y
