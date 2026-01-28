@@ -6,6 +6,10 @@ During qualification, participants use their preferred tools—including open so
 
 ![](../../media/qualification_overview.png)
 
+### Technical Overview
+
+See [Qualification Phase: Technical Overview](./qualification_phase.md).
+
 ### Key Steps for Participation
 
 To successfully qualify, participants must complete the implementation of the `aic_model` node. The primary task is to modify the provided template to integrate your custom policy.
