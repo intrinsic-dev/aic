@@ -106,6 +106,12 @@ void ResetJointsPlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
   }
   this->lastUpdateTime = _info.simTime;
 
+  std::lock_guard<std::mutex> lock(this->mutex);
+  // Reset joint state subscriber if initial positions have been retrieved
+  if (this->jointStateSub && !this->initialJointPositions.empty()) {
+    this->jointStateSub.reset();
+  }
+
   if (this->requestedJoints.empty()) {
     return;
   }
@@ -113,7 +119,6 @@ void ResetJointsPlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
     return;
   }
 
-  std::lock_guard<std::mutex> lock(this->mutex);
   for (const auto& jointName : this->requestedJoints) {
     auto jointEntity = this->model.JointByName(_ecm, jointName);
     if (!jointEntity) {
