@@ -312,14 +312,23 @@ Engine::Engine(const rclcpp::NodeOptions& options)
   node_->declare_parameter("model_deactivate_timeout_seconds", 60);
   node_->declare_parameter("model_cleanup_timeout_seconds", 60);
   node_->declare_parameter("model_shutdown_timeout_seconds", 60);
-  node_->declare_parameter("submission_team_name", std::string("sample_team"));
-  node_->declare_parameter(
-      "submission_root_dir",
-      std::string(std::getenv("HOME")) + std::string("/aic_submissions"));
 
-  scoring_output_dir_ =
-      node_->get_parameter("submission_root_dir").as_string() + "/" +
-      node_->get_parameter("submission_team_name").as_string();
+  // Set scoring output directory from AIC_RESULTS_DIR environment variable
+  // If not set or empty, default to $HOME/aic_results
+  const char* aic_results_dir = std::getenv("AIC_RESULTS_DIR");
+  if (aic_results_dir != nullptr && aic_results_dir[0] != '\0') {
+    scoring_output_dir_ = std::string(aic_results_dir);
+  } else {
+    const char* home_dir = std::getenv("HOME");
+    if (home_dir != nullptr) {
+      scoring_output_dir_ = std::string(home_dir) + "/aic_results";
+    } else {
+      RCLCPP_ERROR(node_->get_logger(),
+                   "HOME environment variable not set. Cannot determine "
+                   "scoring output directory.");
+      throw std::runtime_error("HOME environment variable not set");
+    }
+  }
   RCLCPP_INFO(node_->get_logger(), "Scoring output directory set to: %s",
               scoring_output_dir_.c_str());
 
