@@ -74,7 +74,7 @@ class PolicyRos(ABC):
     @abstractmethod
     def get_feedback_string(self) -> str:
         """Returns a string with the insert cable action's feedback"""
-        return "Feedback"
+        pass
 
     @abstractmethod
     def start_callback(self, task: Task):
@@ -89,12 +89,7 @@ class PolicyRos(ABC):
     @abstractmethod
     def goal_completed(self) -> bool:
         """Returns whether the goal is considered completed by the policy"""
-        return True
-
-    @abstractmethod
-    def goal_completed(self) -> bool:
-        """Returns whether the goal is considered completed by the policy"""
-        return True
+        pass
 
     @abstractmethod
     def observation_callback(self, observation: Observation):
