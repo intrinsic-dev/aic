@@ -53,7 +53,7 @@ This component provides the complete evaluation infrastructure:
 - **`aic_controller`** - Low-level robot control with force management
 - **`aic_adapter`** - Sensor fusion and data synchronization
 
-**What you receive:** Standard ROS sensor topics providing camera images, joint states, force/torque measurements, and TF transforms
+**What you receive:** Standard ROS sensor topics providing camera images, joint states, force/torque measurements, and TF frames
 
 ### 2. Participant Model Component (Your Implementation - What You Submit)
 
