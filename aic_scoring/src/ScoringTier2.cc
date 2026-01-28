@@ -126,6 +126,7 @@ Msg deserialize_from_rosbag(
 
 //////////////////////////////////////////////////
 int ScoringTier2::ComputeScore() {
+  // TODO(luca) actually compute score
   int score = -1;
   if (this->state != State::Idle) {
     RCLCPP_ERROR(this->node->get_logger(), "Scoring system is busy.");
@@ -144,26 +145,21 @@ int ScoringTier2::ComputeScore() {
   this->state = State::Scoring;
 
   while (bagReader.has_next()) {
-    auto msg_ptr = bagReader.read_next();
+    const auto msg_ptr = bagReader.read_next();
     if (msg_ptr->topic_name == kJointStateTopic) {
-      const auto msg =
-          deserialize_from_rosbag<sensor_msgs::msg::JointState>(msg_ptr);
+      const auto msg = deserialize_from_rosbag<JointStateMsg>(msg_ptr);
       this->JointStateCallback(msg);
     } else if (msg_ptr->topic_name == kTfTopic) {
-      const auto msg =
-          deserialize_from_rosbag<tf2_msgs::msg::TFMessage>(msg_ptr);
+      const auto msg = deserialize_from_rosbag<TFMsg>(msg_ptr);
       this->TfCallback(msg);
     } else if (msg_ptr->topic_name == kTfStaticTopic) {
-      const auto msg =
-          deserialize_from_rosbag<tf2_msgs::msg::TFMessage>(msg_ptr);
+      const auto msg = deserialize_from_rosbag<TFMsg>(msg_ptr);
       this->TfStaticCallback(msg);
     } else if (msg_ptr->topic_name == kContactsTopic) {
-      const auto msg =
-          deserialize_from_rosbag<ros_gz_interfaces::msg::Contacts>(msg_ptr);
+      const auto msg = deserialize_from_rosbag<ContactsMsg>(msg_ptr);
       this->ContactsCallback(msg);
     } else if (msg_ptr->topic_name == kWrenchTopic) {
-      const auto msg =
-          deserialize_from_rosbag<geometry_msgs::msg::WrenchStamped>(msg_ptr);
+      const auto msg = deserialize_from_rosbag<WrenchMsg>(msg_ptr);
       this->WrenchCallback(msg);
     } else {
       RCLCPP_WARN(this->node->get_logger(),
@@ -171,6 +167,7 @@ int ScoringTier2::ComputeScore() {
                   msg_ptr->topic_name.c_str());
     }
   }
+  this->state = State::Idle;
   return score;
 }
 
@@ -238,32 +235,19 @@ std::set<std::string> ScoringTier2::GetMissingRequiredTopics() const {
 }
 
 //////////////////////////////////////////////////
-void ScoringTier2::JointStateCallback(
-    const sensor_msgs::msg::JointState &_msg) {
-  (void)_msg;
-}
+void ScoringTier2::JointStateCallback(const JointStateMsg &_msg) { (void)_msg; }
 
 //////////////////////////////////////////////////
-void ScoringTier2::TfCallback(const tf2_msgs::msg::TFMessage &_msg) {
-  (void)_msg;
-}
+void ScoringTier2::TfCallback(const TFMsg &_msg) { (void)_msg; }
 
 //////////////////////////////////////////////////
-void ScoringTier2::TfStaticCallback(const tf2_msgs::msg::TFMessage &_msg) {
-  (void)_msg;
-}
+void ScoringTier2::TfStaticCallback(const TFMsg &_msg) { (void)_msg; }
 
 //////////////////////////////////////////////////
-void ScoringTier2::ContactsCallback(
-    const ros_gz_interfaces::msg::Contacts &_msg) {
-  (void)_msg;
-}
+void ScoringTier2::ContactsCallback(const ContactsMsg &_msg) { (void)_msg; }
 
 //////////////////////////////////////////////////
-void ScoringTier2::WrenchCallback(
-    const geometry_msgs::msg::WrenchStamped &_msg) {
-  (void)_msg;
-}
+void ScoringTier2::WrenchCallback(const WrenchMsg &_msg) { (void)_msg; }
 
 //////////////////////////////////////////////////
 ScoringTier2Node::ScoringTier2Node(const std::string &_yamlFile)

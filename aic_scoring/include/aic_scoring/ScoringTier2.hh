@@ -63,11 +63,17 @@ namespace aic_scoring
   // The Tier2 scoring interface.
   class ScoringTier2
   {
+    using JointStateMsg = sensor_msgs::msg::JointState;
+    using TFMsg = tf2_msgs::msg::TFMessage;
+    using ContactsMsg = ros_gz_interfaces::msg::Contacts;
+    using WrenchMsg = geometry_msgs::msg::WrenchStamped;
+
     enum class State {
       Idle,
       Recording,
       Scoring
     };
+
     /// \brief Topic to subscribe for joint states.
     public: static constexpr const char* kJointStateTopic = "/joint_states";
 
@@ -120,23 +126,23 @@ namespace aic_scoring
 
     /// \brief Callback for joint state messages received while scoring.
     /// \param[in] _msg The received message.
-    private: void JointStateCallback(const sensor_msgs::msg::JointState& _msg);
+    private: void JointStateCallback(const JointStateMsg& _msg);
 
     /// \brief Callback for tf messages received while scoring.
     /// \param[in] _msg The received message.
-    private: void TfCallback(const tf2_msgs::msg::TFMessage& _msg);
+    private: void TfCallback(const TFMsg& _msg);
 
     /// \brief Callback for static tf messages received while scoring.
     /// \param[in] _msg The received message.
-    private: void TfStaticCallback(const tf2_msgs::msg::TFMessage& _msg);
+    private: void TfStaticCallback(const TFMsg& _msg);
 
     /// \brief Callback for contact messages received while scoring.
     /// \param[in] _msg The received message.
-    private: void ContactsCallback(const ros_gz_interfaces::msg::Contacts& _msg);
+    private: void ContactsCallback(const ContactsMsg& _msg);
 
     /// \brief Callback for force torque sensor wrenches received while scoring.
     /// \param[in] _msg The received message.
-    private: void WrenchCallback(const geometry_msgs::msg::WrenchStamped& _msg);
+    private: void WrenchCallback(const WrenchMsg& _msg);
 
     /// \brief Pointer to a node.
     private: rclcpp::Node *node;
