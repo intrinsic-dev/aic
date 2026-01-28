@@ -330,13 +330,13 @@ aic_controller:
 
     clamp_to_limits:
       min_translational_position:
-        - -0.65 # x
-        - -0.35 # y
-        - 0.0 # z
+        - -5.0 # -0.65 # x
+        - -5.0 # -0.35 # y
+        - -5.0 # 0.0 # z
       max_translational_position:
-        - 0.45 # x
-        - 0.65 # y
-        - 0.65 # z
+        - 5.0 # 0.45 # x
+        - 5.0 # 0.65 # y
+        - 5.0 # 0.65 # z
       min_translational_velocity:
         - -0.25 # x
         - -0.25 # y
