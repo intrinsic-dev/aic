@@ -52,30 +52,44 @@ void ResetJointsPlugin::Configure(
       std::chrono::duration_cast<std::chrono::steady_clock::duration>(period);
 
   this->model = gz::sim::Model(_entity);
-  // this->topic = _sdf->Get<std::string>("topic", "/aic/reset_joints").first;
-  this->topic = "/reset_joints";
-  // 1. Initialize ROS 2
   if (!rclcpp::ok()) {
     rclcpp::init(0, nullptr);
   }
 
-  this->ros_node_ = rclcpp::Node::make_shared("reset_joints_node");
-  // this->ros_node_ = ros_gz_sim::Node::Get(_sdf);
-  this->reset_sub_ =
-      this->ros_node_
-          ->create_subscription<aic_control_interfaces::msg::ResetJoints>(
-              this->topic, 10,
-              [this](const aic_control_interfaces::msg::ResetJoints& msg) {
-                // std::lock_guard<std::mutex> lock(this->mutex_);
-                gzmsg << "---------- hello" << std::endl;
-                for (const auto& joint_name : msg.joint_names) {
-                  gzmsg << "Received reset request for joint: " << joint_name
-                        << std::endl;
-                  this->requestedJoints.push_back(joint_name);
-                }
-              });
-  // std::bind(&ResetJointsPlugin::OnResetReq, this,
-  //           std::placeholders::_1));
+  this->rosNode = rclcpp::Node::make_shared("reset_joints_node");
+  const rclcpp::QoS reliable_qos = rclcpp::QoS(rclcpp::KeepLast(10)).reliable();
+  // Subscribe to joint_states to get initial positions
+  this->jointStateSub =
+      this->rosNode->create_subscription<sensor_msgs::msg::JointState>(
+          "/joint_states", reliable_qos,
+          [this](const sensor_msgs::msg::JointState::SharedPtr msg) {
+            if (this->initialJointPositions.empty()) {
+              for (size_t i = 0; i < msg->name.size(); ++i) {
+                this->initialJointPositions[msg->name[i]] = msg->position[i];
+                gzmsg << "Stored initial position for joint " << msg->name[i]
+                      << ": " << msg->position[i] << std::endl;
+              }
+            }
+          });
+  // Subscribe to reset joint requests
+  this->resetJointsReqSub =
+      this->rosNode->create_subscription<aic_control_interfaces::msg::ResetJoints>(
+          "/reset_joints", reliable_qos,
+          [this](const aic_control_interfaces::msg::ResetJoints::SharedPtr msg) {
+            std::lock_guard<std::mutex> lock(this->mutex);
+            for (const auto& joint_name : msg->joint_names) {
+              gzmsg << "Received reset request for joint: " << joint_name
+                    << std::endl;
+              this->requestedJoints.push_back(joint_name);
+            }
+            this->requestId = msg->request_id;
+          });
+  // Publish results for reset joint requests
+  this->resetJointsResPub =
+      this->rosNode->create_publisher<std_msgs::msg::String>(
+          "/reset_joints_result", reliable_qos);
+
+  this->spinThread = std::thread([this]() { rclcpp::spin(this->rosNode); });
 
   gzmsg << "Initialized ResetJointsPlugin!" << std::endl;
 }
@@ -91,18 +105,39 @@ void ResetJointsPlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
   }
   this->lastUpdateTime = _info.simTime;
 
-  /////
-  std::lock_guard<std::mutex> lock(this->mutex_);
+  if (this->requestedJoints.empty()) {
+    return;
+  }
+  if (!this->requestId.has_value()) {
+    return;
+  }
+
+  std::lock_guard<std::mutex> lock(this->mutex);
   for (const auto& jointName : this->requestedJoints) {
     auto jointEntity = this->model.JointByName(_ecm, jointName);
-    // Apply the reset components
-    // We set position to 0.0 and velocity to 0.0 as an example
-    _ecm.SetComponentData<gz::sim::components::JointPositionReset>(jointEntity,
-                                                                   {0.0});
+
+    // Get initial position for this joint, default to 0.0 if not found
+    double initialPosition = 0.0;
+    auto it = this->initialJointPositions.find(jointName);
+    if (it != this->initialJointPositions.end()) {
+      initialPosition = it->second;
+    } else {
+      gzmsg << "Warning: No initial position found for joint " << jointName
+            << ", using 0.0" << std::endl;
+    }
+
+    // Apply the reset components using initial position
+    _ecm.SetComponentData<gz::sim::components::JointPositionReset>(
+        jointEntity, {initialPosition});
     _ecm.SetComponentData<gz::sim::components::JointVelocityReset>(jointEntity,
                                                                    {0.0});
-    gzmsg << "Joint " << jointName << " reset triggered!" << std::endl;
+    gzmsg << "Joint " << jointName
+          << " reset to initial position: " << initialPosition << std::endl;
   }
+  std_msgs::msg::String result;
+  result.data = this->requestId.value();
+  this->resetJointsResPub->publish(result);
+  this->requestId = std::nullopt;
   this->requestedJoints.clear();
 }
 
@@ -113,12 +148,11 @@ void ResetJointsPlugin::Reset(const gz::sim::UpdateInfo& /*_info*/,
 }
 
 //////////////////////////////////////////////////
-void OnResetReq(const aic_control_interfaces::msg::ResetJoints& _msg) {
-  // std::lock_guard<std::mutex> lock(this->mutex_);
-
-  // for (const auto& joint_name : _msg.joint_names) {
-  //   gzmsg << "Received reset request for joint: " << joint_name << std::endl;
-  //   this->requestedJoints.push_back(joint_name);
-  // }
+ResetJointsPlugin::~ResetJointsPlugin() {
+  if (this->spinThread.joinable()) {
+    rclcpp::shutdown();
+    this->spinThread.join();
+  }
 }
+
 }  // namespace aic_gazebo

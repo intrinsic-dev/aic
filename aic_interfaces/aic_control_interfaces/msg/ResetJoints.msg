@@ -1,4 +1,4 @@
-# Reset the robot joint states.
+# Service to reset joints to their initial positions.
 
-# The target joint names to be reset to initial positions.
+string request_id
 string[] joint_names

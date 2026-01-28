@@ -467,9 +467,13 @@ EngineState Engine::initialize() {
         last_motion_update_msg_ = msg;
       },
       sub_options_ignore_local);
-
-  reset_joints_pub_ =
-      node_->create_publisher<ResetJointsMsg>("/reset_joints", reliable_qos);
+  reset_joint_result_sub_ = node_->create_subscription<std_msgs::msg::String>(
+      "/reset_joints_result", reliable_qos,
+      [this](std_msgs::msg::String::ConstSharedPtr msg) {
+        if (msg->data == reset_request_->first) {
+          reset_request_->second = true;
+        }
+      });
 
   insert_cable_action_client_ =
       rclcpp_action::create_client<InsertCableAction>(node_, "/insert_cable");
@@ -488,6 +492,8 @@ EngineState Engine::initialize() {
   switch_controller_client_ =
       node_->create_client<controller_manager_msgs::srv::SwitchController>(
           "/controller_manager/switch_controller");
+  reset_joints_pub_ =
+      node_->create_publisher<ResetJointsMsg>("/reset_joints", reliable_qos);
   tf_buffer_ = std::make_unique<tf2_ros::Buffer>(node_->get_clock());
   tf_listener_ = std::make_unique<tf2_ros::TransformListener>(*tf_buffer_);
 
@@ -559,6 +565,9 @@ EngineState Engine::run() {
       break;
     }
   }
+
+  // Home robot after trials
+  home_robot();
 
   // TODO(luca) refactor cleanup into single function
   this->cleanup_model_node();
@@ -1385,83 +1394,71 @@ bool Engine::home_robot() {
   }
 
   // Publish ResetJoints msg containing all 6 joints
-  {
-    auto reset_msg = ResetJointsMsg();
-    reset_msg.joint_names = {};
-    for (const auto& joint : home_joint_positions_) {
-      reset_msg.joint_names.emplace_back(joint.first);
-    }
-    reset_joints_pub_->publish(reset_msg);
-    RCLCPP_INFO(node_->get_logger(), "Published ResetJoints message.");
+  ResetJointsMsg msg;
+  const auto request_id =
+      "reset_joint_" + std::to_string(this->node_->now().nanoseconds());
+  msg.request_id = request_id;
+  for (const auto& joint : home_joint_positions_) {
+    msg.joint_names.emplace_back(joint.first);
   }
+  reset_joints_pub_->publish(msg);
+  RCLCPP_INFO(node_->get_logger(), "Published reset joints message.");
+  reset_request_ = std::pair<std::string, bool>(request_id, false);
 
   // Validate joint reset
-  auto num_joints_ = last_joint_state_msg_->name.size();
   rclcpp::Time start_time = this->node_->now();
   const rclcpp::Duration timeout = rclcpp::Duration::from_seconds(10);
-  bool homed = true;
+  bool homed = false;
   while (!(this->node_->now() - start_time > timeout)) {
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-
+    if (!reset_request_->second) {
+      RCLCPP_INFO(node_->get_logger(),
+                  "Waiting for reset request result to be true...");
+      continue;
+    }
     homed = true;
-    for (std::size_t i = 0; i < num_joints_; ++i) {
-      const auto joint_name = last_joint_state_msg_->name[i];
-      for (const auto& [home_joint, home_joint_pos] : home_joint_positions_) {
-        if (home_joint != joint_name) {
-          continue;
-        }
-        const auto current_joint_pos = last_joint_state_msg_->position[i];
-        if (std::abs(current_joint_pos - home_joint_pos) > 0.05) {
-          RCLCPP_INFO(node_->get_logger(), "diff is: %f (curr [%f], targ [%f])",
-                      std::abs(current_joint_pos - home_joint_pos),
-                      current_joint_pos, home_joint_pos);
-          homed = false;
-          break;
-        }
-      }
-    }
-    if (homed) {
-      break;
-    }
+    break;
   }
+  reset_request_ = std::nullopt;
 
-  // Resume simulation
+  // Activate aic_controller & resume simulation
   {
-    auto request = std::make_shared<SetSimulationStateSrv::Request>();
-    request->state.state = SimulationStateMsg::STATE_PLAYING;
-    auto future = simulation_state_client_->async_send_request(request);
-    if (future.wait_for(std::chrono::seconds(10)) !=
-        std::future_status::ready) {
-      RCLCPP_ERROR(node_->get_logger(),
-                   "SetSimulationState service call timed out when resuming "
-                   "the simulation");
-      return false;
-    }
-    auto response = future.get();
-    if (response->result.result != ResultMsg::RESULT_OK) {
-      RCLCPP_ERROR(node_->get_logger(), "Failed to resume simulation: %s",
-                   response->result.error_message.c_str());
-      return false;
-    }
-    RCLCPP_INFO(node_->get_logger(), "Simulation resumed successfully.");
-  }
+    auto activate_req = std::make_shared<SwitchControllerSrv::Request>();
+    activate_req->deactivate_controllers = {};
+    activate_req->activate_controllers = {"aic_controller"};
+    activate_req->strictness = SwitchControllerSrv::Request::BEST_EFFORT;
+    auto activate_future =
+        switch_controller_client_->async_send_request(activate_req);
 
-  // Activate aic_controller
-  {
-    auto request = std::make_shared<SwitchControllerSrv::Request>();
-    request->deactivate_controllers = {};
-    request->activate_controllers = {"aic_controller"};
-    request->strictness = SwitchControllerSrv::Request::BEST_EFFORT;
-    auto future = switch_controller_client_->async_send_request(request);
-    if (future.wait_for(std::chrono::seconds(10)) !=
+    // // Do not wait for response, resume simulation
+    // auto resume_req = std::make_shared<SetSimulationStateSrv::Request>();
+    // resume_req->state.state = SimulationStateMsg::STATE_PLAYING;
+    // auto future = simulation_state_client_->async_send_request(resume_req);
+    // if (future.wait_for(std::chrono::seconds(10)) !=
+    //     std::future_status::ready) {
+    //   RCLCPP_ERROR(node_->get_logger(),
+    //                "SetSimulationState service call timed out when resuming "
+    //                "the simulation");
+    //   return false;
+    // }
+    // auto resume_resp = future.get();
+    // if (resume_resp->result.result != ResultMsg::RESULT_OK) {
+    //   RCLCPP_ERROR(node_->get_logger(), "Failed to resume simulation: %s",
+    //                resume_resp->result.error_message.c_str());
+    //   return false;
+    // }
+    // RCLCPP_INFO(node_->get_logger(), "Simulation resumed successfully.");
+
+    // Check that controller has been successfully activated
+    if (activate_future.wait_for(std::chrono::seconds(10)) !=
         std::future_status::ready) {
       RCLCPP_ERROR(node_->get_logger(),
                    "SwitchController service call timed out when activating "
                    "aic_controller");
       return false;
     }
-    auto response = future.get();
-    if (!response->ok) {
+    auto activate_resp = activate_future.get();
+    if (!activate_resp->ok) {
       RCLCPP_ERROR(node_->get_logger(), "Failed to activate aic_controller.");
       return false;
     }

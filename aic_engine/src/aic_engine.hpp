@@ -44,6 +44,7 @@
 #include "simulation_interfaces/srv/delete_entity.hpp"
 #include "simulation_interfaces/srv/set_simulation_state.hpp"
 #include "simulation_interfaces/srv/spawn_entity.hpp"
+#include "std_msgs/msg/string.hpp"
 #include "tf2/exceptions.hpp"
 #include "tf2_ros/buffer.h"
 #include "tf2_ros/transform_listener.h"
@@ -344,16 +345,15 @@ class Engine {
   rclcpp::Subscription<JointMotionUpdateMsg>::SharedPtr
       joint_motion_update_sub_;
   rclcpp::Subscription<MotionUpdateMsg>::SharedPtr motion_update_sub_;
+  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr
+      reset_joint_result_sub_;
+  // Publishers.
+  rclcpp::Publisher<ResetJointsMsg>::SharedPtr reset_joints_pub_;
 
   // Subscription messages.
   JointStateMsg::ConstSharedPtr last_joint_state_msg_;
   JointMotionUpdateMsg::ConstSharedPtr last_joint_motion_update_msg_;
   MotionUpdateMsg::ConstSharedPtr last_motion_update_msg_;
-
-  // Publishers.
-  // rclcpp::Publisher<JointMotionUpdateMsg>::SharedPtr
-  // joint_motion_update_pub_;
-  rclcpp::Publisher<ResetJointsMsg>::SharedPtr reset_joints_pub_;
 
   // Action clients.
   rclcpp_action::Client<InsertCableAction>::SharedPtr
@@ -401,6 +401,9 @@ class Engine {
 
   // Robot home joint positions
   std::vector<std::pair<std::string, double>> home_joint_positions_;
+
+  // Request ID
+  std::optional<std::pair<std::string, bool>> reset_request_;
 
   // Scoring tier 2 instance.
   std::unique_ptr<aic_scoring::ScoringTier2> scoring_tier2_;

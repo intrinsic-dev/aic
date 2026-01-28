@@ -25,6 +25,9 @@
 #include <gz/sim/System.hh>
 #include <gz/transport/Node.hh>
 #include <rclcpp/rclcpp.hpp>
+#include <sensor_msgs/msg/joint_state.hpp>
+#include <std_msgs/msg/string.hpp>
+#include <unordered_map>
 
 namespace aic_gazebo {
 class ResetJointsPlugin : public gz::sim::System,
@@ -48,29 +51,46 @@ class ResetJointsPlugin : public gz::sim::System,
   void Reset(const gz::sim::UpdateInfo& _info,
              gz::sim::EntityComponentManager& _ecm) override;
 
- private:
-  void OnResetReq(const aic_control_interfaces::msg::ResetJoints& _msg);
+ public:
+  ~ResetJointsPlugin();
 
   /// \brief The model associated with this system.
  private:
   gz::sim::Model model;
 
-  std::shared_ptr<rclcpp::Node> ros_node_;
+  std::shared_ptr<rclcpp::Node> rosNode;
 
   /// \brief A subscriber to receive joint reset commands.
  private:
   rclcpp::Subscription<aic_control_interfaces::msg::ResetJoints>::SharedPtr
-      reset_sub_;
+      resetJointsReqSub;
 
-  /// \brief The topic to receive joint reset commands.
+  /// \brief A subscriber to receive joint state messages for initial positions.
  private:
-  std::string topic;
+  rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr
+      jointStateSub;
+
+ private:
+  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr resetJointsResPub;
+
+ private:
+  std::optional<std::string> requestId;
 
   /// \brief List of joints requested to be reset.
  private:
   std::vector<std::string> requestedJoints;
 
-  std::mutex mutex_;
+  /// \brief Map of joint names to their initial positions.
+ private:
+  std::unordered_map<std::string, double> initialJointPositions;
+
+  /// \brief Mutex to prevent overwriting joint requests.
+ private:
+  std::mutex mutex;
+
+  /// \brief Thread to spin ROS 2 node.
+ private:
+  std::thread spinThread;
 
   /// \brief System update period calculated from <update_rate>.
  private:
