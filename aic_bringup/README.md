@@ -1,16 +1,77 @@
-# AIC Bringup Package
+# aic_bringup
 
-This package contains launch files for bringing up the AI for Industry Challenge (AIC) simulation environment.
+## Overview
+
+`aic_bringup` provides launch files and configuration for setting up the AI for Industry Challenge simulation environment. This package is your entry point for starting the evaluation environment, spawning robots and task boards, and running trials.
+
+**What This Package Does:**
+- Launches Gazebo simulation with the UR5e robot
+- Spawns configurable task boards with various connector mounts
+- Starts the AIC controller for robot control
+- Optionally starts `aic_engine` for automated trial orchestration
+- Configures ROS-Gazebo bridge for sensor/actuator communication
+
+---
+
+## Quick Start
+
+### Basic Simulation (No Task Board)
+
+```bash
+source ~/ws_aic/install/setup.bash
+export RMW_IMPLEMENTATION=rmw_zenoh_cpp
+export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
+
+ros2 launch aic_bringup aic_gz_bringup.launch.py
+```
+
+This launches:
+- Gazebo simulation
+- UR5e robot with 3 wrist cameras
+- AIC controller (impedance control mode)
+- ROS-Gazebo bridge
+
+### Complete Qualification Environment
+
+For running actual qualification trials:
+
+```bash
+ros2 launch aic_bringup aic_gz_bringup.launch.py \
+  ground_truth:=false \
+  start_aic_engine:=true
+```
+
+This adds:
+- AIC engine for trial orchestration
+- Evaluation scoring system
+- Hides ground truth data (as in real evaluation)
+
+### Development Mode with Ground Truth
+
+When developing your policy, enable ground truth for easier debugging:
+
+```bash
+ros2 launch aic_bringup aic_gz_bringup.launch.py \
+  ground_truth:=true \
+  spawn_task_board:=true
+```
+
+This provides:
+- Ground truth TF frames for task board elements
+- Visual debugging in Gazebo
+- Easier policy development
+
+---
 
 ## Launch Files
 
 ### 1. `aic_gz_bringup.launch.py`
 
-Main launch file that brings up the complete AIC simulation environment including Gazebo, UR robot, task board, and cable.
+**Primary launch file** for the complete AIC simulation environment.
 
 #### Usage
 ```bash
-ros2 launch aic_bringup aic_gz_bringup.launch.py
+ros2 launch aic_bringup aic_gz_bringup.launch.py [parameters]
 ```
 
 #### Configurable Parameters
