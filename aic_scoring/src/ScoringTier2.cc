@@ -114,6 +114,7 @@ bool ScoringTier2::StopRecording() {
   return true;
 }
 
+//////////////////////////////////////////////////
 template <typename Msg>
 Msg deserialize_from_rosbag(
     std::shared_ptr<rosbag2_storage::SerializedBagMessage> msg_in) {
@@ -146,6 +147,9 @@ int ScoringTier2::ComputeScore() {
 
   while (bagReader.has_next()) {
     const auto msg_ptr = bagReader.read_next();
+    // Debugging to make sure messages are in the bag
+    // RCLCPP_INFO(this->node->get_logger(), "Received message on topic '%s'",
+    //     msg_ptr->topic_name.c_str());
     if (msg_ptr->topic_name == kJointStateTopic) {
       const auto msg = deserialize_from_rosbag<JointStateMsg>(msg_ptr);
       this->JointStateCallback(msg);
@@ -168,6 +172,7 @@ int ScoringTier2::ComputeScore() {
     }
   }
   this->state = State::Idle;
+  score = 10;
   return score;
 }
 

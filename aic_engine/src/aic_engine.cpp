@@ -575,10 +575,7 @@ TrialScore Engine::handle_trial(Trial& trial) {
   if (trial.state == TrialState::TasksExecuting) {
     if (this->tasks_completed_successfully(trial)) {
       trial.state = TrialState::AllTasksCompleted;
-      if (!stop_recording_scores()) {
-        reset_after_trial(trial);
-        return score;
-      }
+      score_trial();
     }
   } else {
     RCLCPP_ERROR(node_->get_logger(), "Tasks cannot be started successfully.");
@@ -588,7 +585,7 @@ TrialScore Engine::handle_trial(Trial& trial) {
 
   if (trial.state != TrialState::AllTasksCompleted) {
     RCLCPP_ERROR(node_->get_logger(), "Tasks were not completed successfully.");
-    stop_recording_scores();
+    score_trial();
     reset_after_trial(trial);
     return score;
   }
@@ -1513,14 +1510,16 @@ bool Engine::spawn_entity(Trial& trial, std::string entity_name,
 }
 
 //==============================================================================
-bool Engine::stop_recording_scores() {
+std::optional<int> Engine::score_trial() {
   if (!scoring_tier2_->StopRecording()) {
     RCLCPP_ERROR(node_->get_logger(), "Failed to stop recording.");
-    return false;
+    return std::nullopt;
   }
+  auto score = scoring_tier2_->ComputeScore();
 
-  RCLCPP_INFO(node_->get_logger(), "Stopped recording.");
-  return true;
+  RCLCPP_INFO(node_->get_logger(), "Finished scoring trial, total score is: %u",
+              score);
+  return score;
 }
 
 //==============================================================================
