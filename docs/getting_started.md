@@ -4,13 +4,30 @@ Welcome to the AI for Industry Challenge! This guide will help you set up your d
 
 ## Choose Your Setup Method
 
-You have two options for setting up your development environment:
+When building and developing your policy, you have flexible setup options:
 
-1. **🐳 Container Setup:** Use pre-built Docker containers that match the evaluation environment
-2. **💻 Local Setup:** Build and run everything directly on your Ubuntu 24.04 system
+### Environment Options
+
+1. **🐍 Pixi Environment** (Recommended for Python-focused development)
+   - Managed Python/ROS environment using [pixi](https://pixi.prefix.dev/latest/installation/)
+   - Simplified dependency management
+   - Works locally or inside containers
+   - Ideal for developing policies with Python packages
+
+2. **💻 Native Ubuntu 24.04**
+   - Direct installation on Ubuntu 24.04
+   - Full control over system dependencies
+   - Works locally or inside containers
+   - Required for complete system-level development
+
+### Deployment Options
+
+Both environment options can be used in either:
+- **🐳 Container:** Pre-built Docker containers matching the evaluation environment (recommended)
+- **🖥️ Local:** Direct installation on your Ubuntu 24.04 system
 
 > [!TIP]
-> We recommend the container setup for most participants as it ensures your development environment matches the evaluation environment exactly.
+> **Recommended Setup:** Use pixi inside the participant container for development, then submit your containerized solution. This ensures dependency consistency and matches the evaluation environment.
 
 ---
 
@@ -35,6 +52,7 @@ This is your development workspace where you implement your policy.
 
 **What you'll do:**
 - Implement your policy in the `aic_model` package
+- Choose between pixi environment or native Ubuntu 24.04
 - Test locally against the evaluation container
 - Build and submit your container image for official evaluation
 
@@ -73,15 +91,54 @@ This is your development workspace where you implement your policy.
 
 ## Local Setup
 
-If you prefer to build and run everything locally, follow these instructions.
+If you prefer to build and run everything locally on Ubuntu 24.04, you can choose between a pixi-managed environment or native installation.
 
 ### Prerequisites
 
 - **Operating System:** [Ubuntu 24.04 (Noble Numbat)](https://releases.ubuntu.com/noble/)
 - **ROS 2:** [ROS 2 Kilted Kaiju](https://docs.ros.org/en/kilted/Installation/Ubuntu-Install-Debs.html)
-- **Build Tools:** [pixi](https://pixi.prefix.dev/latest/installation/) (optional, for Python dependencies)
 
-### Installation Steps
+### Option A: Pixi Environment (Python-Focused Development)
+
+Pixi provides a managed environment for Python dependencies and ROS packages.
+
+#### 1. Install Pixi
+
+```bash
+curl -fsSL https://pixi.sh/install.sh | bash
+source ~/.bashrc
+```
+
+#### 2. Clone Repository
+
+```bash
+mkdir -p ~/ws_aic/src
+cd ~/ws_aic/src
+git clone https://github.com/intrinsic-dev/aic
+```
+
+#### 3. Initialize Pixi Environment
+
+```bash
+cd ~/ws_aic/src/aic
+pixi install
+```
+
+#### 4. Use Pixi Environment
+
+```bash
+# Enter the pixi shell
+pixi shell
+
+# Or run commands directly with pixi run
+pixi run ros2 run aic_model aic_model --ros-args -p policy:=aic_example_policies.ros.WaveArm
+```
+
+**Note:** The pixi environment includes ROS packages and Python dependencies configured in `pixi.toml`. See [LeRobot Integration](../aic_utils/lerobot_robot_aic/README.md) for an example of pixi usage.
+
+### Option B: Native Ubuntu 24.04 Installation
+
+For full system-level development, install all dependencies natively.
 
 #### 1. Add Gazebo Repository
 
