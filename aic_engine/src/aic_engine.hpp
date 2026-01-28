@@ -28,6 +28,7 @@
 #include "aic_control_interfaces/msg/joint_motion_update.hpp"
 #include "aic_control_interfaces/msg/motion_update.hpp"
 #include "aic_scoring/ScoringTier2.hh"
+#include "aic_scoring/TierScore.hh"
 #include "aic_task_interfaces/action/insert_cable.hpp"
 #include "geometry_msgs/msg/wrench_stamped.hpp"
 #include "lifecycle_msgs/msg/state.hpp"
@@ -138,40 +139,18 @@ struct Trial {
 
 //==============================================================================
 struct TrialScore {
-  struct TierScore {
-    int score;
-    std::string message;
+  aic_scoring::Tier1Score tier_1;
+  aic_scoring::Tier2Score tier_2;
+  aic_scoring::Tier3Score tier_3;
 
-    TierScore(int s, const std::string& msg) : score(s), message(msg) {}
-  };
+  TrialScore() : tier_1(0), tier_2("Task execution failed"), tier_3(0) {}
 
-  // Score for successful model validation (binary)
-  static const int kTier1Success = 1;
-  // Score for successful insertion  (binary)
-  static const int kTier3Success = 20;
+  void tier_1_success() { tier_1 = aic_scoring::Tier1Score(1); }
 
-  TierScore tier_1;
-  TierScore tier_2;
-  TierScore tier_3;
+  void tier_3_success() { tier_3 = aic_scoring::Tier3Score(1); }
 
-  TrialScore()
-      : tier_1(0, "Model validation failed"),
-        tier_2(0, "Task execution failed"),
-        tier_3(0, "Task not completed successfully") {}
-
-  void tier_1_success() {
-    this->tier_1.score = TrialScore::kTier1Success;
-    this->tier_1.message = "Model validation succeeded";
-  }
-
-  void tier_2_result(int score, const std::string& message) {
-    this->tier_2.score = score;
-    this->tier_2.message = message;
-  }
-
-  void tier_3_success() {
-    this->tier_3.score = TrialScore::kTier3Success;
-    this->tier_3.message = "Task completed successfully";
+  int total_score() const {
+    return tier_1.total_score() + tier_2.total_score() + tier_3.total_score();
   }
 };
 
@@ -301,9 +280,9 @@ class Engine {
   /// @return True if shutdown succeeded, false otherwise.
   bool shutdown_model_node();
 
-  /// @brief Stop the bag recording.
-  /// @return True if stopping recording succeeded, false otherwise.
-  bool stop_recording_scores();
+  /// @brief Stop the bag recording and score the current trial
+  /// @param[in] A reference to the current trial score to update.
+  void score_trial(TrialScore& trial);
 
   /// @brief Scores the current run, writing its result to a YAML file.
   /// \param[in] The score to serialize and write.
@@ -322,8 +301,6 @@ class Engine {
   // Internal ROS 2 node.
   rclcpp::Node::SharedPtr node_;
   // Subscriptions.
-  rclcpp::Subscription<WrenchStampedMsg>::SharedPtr wrench_sub_;
-  rclcpp::Subscription<JointStateMsg>::SharedPtr joint_state_sub_;
   rclcpp::Subscription<JointMotionUpdateMsg>::SharedPtr
       joint_motion_update_sub_;
   rclcpp::Subscription<MotionUpdateMsg>::SharedPtr motion_update_sub_;
