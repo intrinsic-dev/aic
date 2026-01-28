@@ -18,6 +18,10 @@
 #ifndef AIC_SCORING__TIER_SCORE_HH_
 #define AIC_SCORING__TIER_SCORE_HH_
 
+#include <map>
+#include <optional>
+#include <string>
+
 #include "yaml-cpp/yaml.h"
 
 namespace aic_scoring {
@@ -28,6 +32,8 @@ protected:
   TierScore(const std::string& msg = "") : message(msg) {}
 
 public:
+  virtual ~TierScore() = default;
+
   std::string message;
 
   virtual int total_score() const = 0;
@@ -91,7 +97,7 @@ public:
 
   YAML::Node to_yaml() const override {
     YAML::Node score;
-    score["total"] = this->total_score();
+    score["score"] = this->total_score();
     score["message"] = this->message;
     for (const auto& [name, category_score] : this->category_scores) {
       score["categories"][name]["score"] = category_score.score;
@@ -102,8 +108,9 @@ public:
     return score;
   }
 
-  void add_category_score(const std::string& category, const CategoryScore& score) {
-    this->category_scores.insert({category, score});
+  void add_category_score(const std::string& category, int score,
+                          const std::optional<std::string>& msg = std::nullopt) {
+    this->category_scores.insert({category, CategoryScore(score, msg)});
   }
 };
 

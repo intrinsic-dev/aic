@@ -174,7 +174,7 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
     }
   }
   this->state = State::Idle;
-  tier2_score.add_category_score("dummy_category", {3, "It works!"});
+  tier2_score.add_category_score("dummy_category", 3, "It works!");
   tier3_score = Tier3Score(1);
   return {tier2_score, tier3_score};
 }
