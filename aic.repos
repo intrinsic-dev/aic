@@ -94,7 +94,7 @@ repositories:
   gazebo/gz-common:
     type: git
     url: https://github.com/gazebosim/gz-common
-    version: 72978e6b7c0e653b400363fc9547e6418cee331a
+    version: baff83c84a2ee889638ed581f4aa7c4677aa00e9
   gazebo/gz-fuel-tools:
     type: git
     url: https://github.com/gazebosim/gz-fuel-tools
@@ -102,7 +102,7 @@ repositories:
   gazebo/gz-sim:
     type: git
     url: https://github.com/gazebosim/gz-sim
-    version: 04580a28e285271e65185065f5507f8cb491ed27
+    version: f65641d9f8f6c28a8626a479001ac327747638ad
   gazebo/gz-gui:
     type: git
     url: https://github.com/gazebosim/gz-gui

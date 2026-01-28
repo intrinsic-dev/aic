@@ -115,6 +115,7 @@
     <plugin
       filename="WorldSdfGeneratorPlugin"
       name="aic_gazebo::WorldSdfGeneratorPlugin">
+        <save_world_delay_s>0.1</save_world_delay_s>
         <save_world_path>/tmp/aic.sdf</save_world_path>
     </plugin>
     <plugin
