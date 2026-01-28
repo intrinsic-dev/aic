@@ -28,6 +28,7 @@
 #include "aic_control_interfaces/msg/joint_motion_update.hpp"
 #include "aic_control_interfaces/msg/motion_update.hpp"
 #include "aic_scoring/ScoringTier2.hh"
+#include "aic_scoring/TierScore.hh"
 #include "aic_task_interfaces/action/insert_cable.hpp"
 #include "geometry_msgs/msg/wrench_stamped.hpp"
 #include "lifecycle_msgs/msg/state.hpp"
@@ -137,6 +138,36 @@ struct Trial {
 };
 
 //==============================================================================
+struct TrialScore {
+  aic_scoring::Tier1Score tier_1;
+  aic_scoring::Tier2Score tier_2;
+  aic_scoring::Tier3Score tier_3;
+
+  TrialScore() : tier_1(0), tier_2("Task execution failed"), tier_3(0) {}
+
+  void tier_1_success() { tier_1 = aic_scoring::Tier1Score(1); }
+
+  void tier_3_success() { tier_3 = aic_scoring::Tier3Score(1); }
+
+  int total_score() const {
+    return tier_1.total_score() + tier_2.total_score() + tier_3.total_score();
+  }
+};
+
+struct Score {
+  // Intentionally alphabetically sorted, trial_id -> trial_score
+  std::map<std::string, TrialScore> breakdown;
+
+  /// \brief Serializes the score into a YAML node for logging.
+  /// \return The resulting YAML node with serialized data.
+  YAML::Node serialize() const;
+
+ private:
+  /// \brief Computes the total score from the score breakdown.
+  int calculate_total_score() const;
+};
+
+//==============================================================================
 // Ensure rclcpp::init has been called before creating an instance.
 class Engine {
  public:
@@ -158,8 +189,8 @@ class Engine {
 
   /// \brief Handle the logic for a given trial.
   /// \param[in] trial The trial to handle.
-  /// \return The resulting state of the trial after handling.
-  TrialState handle_trial(Trial& trial);
+  /// \return The resulting score of the trial after handling.
+  TrialScore handle_trial(Trial& trial);
 
   /// \brief Reset internal and simulator states after a trial is completed.
   /// \param[in] trial The trial currently being ran
@@ -249,9 +280,13 @@ class Engine {
   /// @return True if shutdown succeeded, false otherwise.
   bool shutdown_model_node();
 
-  /// @brief Stop the bag recording.
-  /// @return True if stopping recording succeeded, false otherwise.
-  bool stop_recording_scores();
+  /// @brief Stop the bag recording and score the current trial
+  /// @param[in] A reference to the current trial score to update.
+  void score_trial(TrialScore& trial);
+
+  /// @brief Scores the current run, writing its result to a YAML file.
+  /// \param[in] The score to serialize and write.
+  void score_run(const Score& score);
 
   // Strings.
   // Name of the aic_adapter node for lifecycle transitions.
@@ -266,8 +301,6 @@ class Engine {
   // Internal ROS 2 node.
   rclcpp::Node::SharedPtr node_;
   // Subscriptions.
-  rclcpp::Subscription<WrenchStampedMsg>::SharedPtr wrench_sub_;
-  rclcpp::Subscription<JointStateMsg>::SharedPtr joint_state_sub_;
   rclcpp::Subscription<JointMotionUpdateMsg>::SharedPtr
       joint_motion_update_sub_;
   rclcpp::Subscription<MotionUpdateMsg>::SharedPtr motion_update_sub_;

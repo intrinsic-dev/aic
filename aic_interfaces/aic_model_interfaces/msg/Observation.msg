@@ -1,5 +1,12 @@
-sensor_msgs/Image[3] images
-sensor_msgs/CameraInfo[3] camera_infos
+sensor_msgs/Image left_image
+sensor_msgs/CameraInfo left_camera_info
+
+sensor_msgs/Image center_image
+sensor_msgs/CameraInfo center_camera_info
+
+sensor_msgs/Image right_image
+sensor_msgs/CameraInfo right_camera_info
+
 sensor_msgs/JointState joint_states
 geometry_msgs/WrenchStamped wrist_wrench
 geometry_msgs/TransformStamped tcp_transform

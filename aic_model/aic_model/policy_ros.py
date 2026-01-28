@@ -15,17 +15,20 @@
 #
 
 
+from abc import ABC, abstractmethod
 from aic_control_interfaces.msg import MotionUpdate, TrajectoryGenerationMode
+from aic_model_interfaces.msg import Observation
+from aic_task_interfaces.msg import Task
 from geometry_msgs.msg import Point, Pose, Quaternion, Wrench, Vector3
 import numpy as np
 
 
-class PolicyRos:
+class PolicyRos(ABC):
     def __init__(self, parent_node):
         self._parent_node = parent_node
         self.get_logger().info("PolicyRos.__init__()")
 
-    def set_pose_target(self, pose):
+    def set_pose_target(self, pose: Pose, frame_id: str = "base_link"):
         """Set a pose target for the robot arm.
 
         The robot can be controlled in several different ways. This function
@@ -46,6 +49,8 @@ class PolicyRos:
 
         motion_update_msg = MotionUpdate()
         motion_update_msg.pose = pose
+        motion_update_msg.header.frame_id = frame_id
+        motion_update_msg.header.stamp = self.get_clock().now().to_msg()
 
         motion_update_msg.target_stiffness = np.diag(
             [100.0, 100.0, 100.0, 50.0, 50.0, 50.0]
@@ -68,5 +73,33 @@ class PolicyRos:
 
         self._parent_node.motion_update_pub.publish(motion_update_msg)
 
+    @abstractmethod
+    def get_feedback_string(self) -> str:
+        """Returns a string with the insert cable action's feedback"""
+        pass
+
+    @abstractmethod
+    def start_callback(self, task: Task):
+        """Called when the insert cable action is started"""
+        pass
+
+    @abstractmethod
+    def stop_callback(self):
+        """Called when the insert cable action is stopped"""
+        pass
+
+    @abstractmethod
+    def goal_completed(self) -> bool:
+        """Returns whether the goal is considered completed by the policy"""
+        pass
+
+    @abstractmethod
+    def observation_callback(self, observation: Observation):
+        """Called whenever a new observation is received"""
+        pass
+
     def get_logger(self):
         return self._parent_node.get_logger()
+
+    def get_clock(self):
+        return self._parent_node.get_clock()

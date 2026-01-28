@@ -27,7 +27,9 @@
 #include <iostream>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
+#include <rosbag2_cpp/reader.hpp>
 #include <rosbag2_cpp/writer.hpp>
+#include <rosbag2_storage/storage_options.hpp>
 #include <string>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <vector>
@@ -46,16 +48,18 @@ bool ScoringTier2::Initialize(YAML::Node _config) {
   }
   if (!this->ParseStats(_config)) return false;
 
+  const rclcpp::QoS reliable_qos = rclcpp::QoS(rclcpp::KeepLast(10)).reliable();
+
   // Subscribe to all topics relevant for scoring.
   for (const auto &topic : this->topics) {
     auto sub = this->node->create_generic_subscription(
-        topic.name, topic.type, rclcpp::QoS(10),
+        topic.name, topic.type, reliable_qos,
         [this, topic](std::shared_ptr<const rclcpp::SerializedMessage> msg,
                       const rclcpp::MessageInfo &msg_info) {
           // Bag the data.
           const auto &rmw_info = msg_info.get_rmw_message_info();
           std::lock_guard<std::mutex> lock(this->mutex);
-          if (this->bagOpen) {
+          if (this->state == State::Recording) {
             this->bagWriter.write(msg, topic.name, topic.type,
                                   rmw_info.received_timestamp,
                                   rmw_info.source_timestamp);
@@ -84,31 +88,99 @@ void ScoringTier2::ResetConnections(
 //////////////////////////////////////////////////
 bool ScoringTier2::StartRecording(const std::string &_filename) {
   std::lock_guard<std::mutex> lock(this->mutex);
-  if (this->bagOpen) {
-    RCLCPP_ERROR(this->node->get_logger(), "Bag already opened.");
+  if (this->state != State::Idle) {
+    RCLCPP_ERROR(this->node->get_logger(), "Scoring system is busy.");
     return false;
   }
 
   try {
-    this->bagWriter.open(_filename);
+    rosbag2_storage::StorageOptions storage_options;
+    storage_options.uri = _filename;
+    this->bagWriter.open(storage_options);
   } catch (const std::exception &e) {
     RCLCPP_ERROR(this->node->get_logger(), "Failed to open bag: %s", e.what());
     return false;
   }
-  this->bagOpen = true;
+  this->state = State::Recording;
+  this->bagUri = _filename;
   return true;
 }
 
 //////////////////////////////////////////////////
 bool ScoringTier2::StopRecording() {
   std::lock_guard<std::mutex> lock(this->mutex);
-  if (!this->bagOpen) {
-    RCLCPP_ERROR(this->node->get_logger(), "Bag already closed.");
+  if (this->state != State::Recording) {
+    RCLCPP_ERROR(this->node->get_logger(), "Scoring system is not recording");
     return false;
   }
   this->bagWriter.close();
-  this->bagOpen = false;
+  this->state = State::Idle;
   return true;
+}
+
+//////////////////////////////////////////////////
+template <typename Msg>
+Msg deserialize_from_rosbag(
+    std::shared_ptr<rosbag2_storage::SerializedBagMessage> msg_in) {
+  Msg msg;
+  rclcpp::SerializedMessage extracted_serialized_msg(*msg_in->serialized_data);
+  rclcpp::Serialization<Msg> serialization;
+  serialization.deserialize_message(&extracted_serialized_msg, &msg);
+  return msg;
+}
+
+//////////////////////////////////////////////////
+std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
+  // TODO(luca) actually compute score
+  Tier2Score tier2_score("Scoring failed.");
+  Tier3Score tier3_score(0);
+  if (this->state != State::Idle) {
+    RCLCPP_ERROR(this->node->get_logger(), "Scoring system is busy.");
+    return {tier2_score, tier3_score};
+  }
+  rosbag2_cpp::Reader bagReader;
+
+  try {
+    rosbag2_storage::StorageOptions storage_options;
+    storage_options.uri = this->bagUri;
+    bagReader.open(storage_options);
+  } catch (const std::exception &e) {
+    RCLCPP_ERROR(this->node->get_logger(), "Failed to open bag: %s", e.what());
+    return {tier2_score, tier3_score};
+  }
+  this->state = State::Scoring;
+  tier2_score.message = "Scoring succeeded.";
+
+  while (bagReader.has_next()) {
+    const auto msg_ptr = bagReader.read_next();
+    // Debugging to make sure messages are in the bag
+    // RCLCPP_INFO(this->node->get_logger(), "Received message on topic '%s'",
+    //     msg_ptr->topic_name.c_str());
+    if (msg_ptr->topic_name == kJointStateTopic) {
+      const auto msg = deserialize_from_rosbag<JointStateMsg>(msg_ptr);
+      this->JointStateCallback(msg);
+    } else if (msg_ptr->topic_name == kTfTopic) {
+      const auto msg = deserialize_from_rosbag<TFMsg>(msg_ptr);
+      this->TfCallback(msg);
+    } else if (msg_ptr->topic_name == kTfStaticTopic) {
+      const auto msg = deserialize_from_rosbag<TFMsg>(msg_ptr);
+      this->TfStaticCallback(msg);
+    } else if (msg_ptr->topic_name == kContactsTopic) {
+      const auto msg = deserialize_from_rosbag<ContactsMsg>(msg_ptr);
+      this->ContactsCallback(msg);
+    } else if (msg_ptr->topic_name == kWrenchTopic) {
+      const auto msg = deserialize_from_rosbag<WrenchMsg>(msg_ptr);
+      this->WrenchCallback(msg);
+    } else {
+      RCLCPP_WARN(this->node->get_logger(),
+                  "Unexpected topic name while scoring: %s",
+                  msg_ptr->topic_name.c_str());
+    }
+  }
+  this->state = State::Idle;
+  tier2_score.add_category_score("dummy_category", 3, "It works!");
+  tier3_score = Tier3Score(1);
+  return {tier2_score, tier3_score};
 }
 
 //////////////////////////////////////////////////
@@ -162,6 +234,32 @@ bool ScoringTier2::ParseStats(YAML::Node _config) {
 
   return true;
 }
+
+//////////////////////////////////////////////////
+std::set<std::string> ScoringTier2::GetMissingRequiredTopics() const {
+  std::set<std::string> unavailable;
+  for (const auto &subscription : this->subscriptions) {
+    if (subscription->get_publisher_count() == 0) {
+      unavailable.insert(subscription->get_topic_name());
+    }
+  }
+  return unavailable;
+}
+
+//////////////////////////////////////////////////
+void ScoringTier2::JointStateCallback(const JointStateMsg &_msg) { (void)_msg; }
+
+//////////////////////////////////////////////////
+void ScoringTier2::TfCallback(const TFMsg &_msg) { (void)_msg; }
+
+//////////////////////////////////////////////////
+void ScoringTier2::TfStaticCallback(const TFMsg &_msg) { (void)_msg; }
+
+//////////////////////////////////////////////////
+void ScoringTier2::ContactsCallback(const ContactsMsg &_msg) { (void)_msg; }
+
+//////////////////////////////////////////////////
+void ScoringTier2::WrenchCallback(const WrenchMsg &_msg) { (void)_msg; }
 
 //////////////////////////////////////////////////
 ScoringTier2Node::ScoringTier2Node(const std::string &_yamlFile)

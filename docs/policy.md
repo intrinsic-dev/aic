@@ -38,7 +38,7 @@ in the following section.
 
 To integrate a policy using ROS data structures, such as `geometry_msgs.msg.Pose`,
 `sensor_msgs.msg.Image`, and so on:
- * define a Python class which derives from [`PolicyRos`](https://github.com/intrinsic-dev/aic/blob/mq/policy_doc/aic_model/aic_model/policy_ros.py)
+ * define a Python class which derives from [`PolicyRos`](https://github.com/intrinsic-dev/aic/blob/main/aic_model/aic_model/policy_ros.py)
  * implement callbacks as needed to respond to the challenge environment:
    * [`start_task_callback()`](https://github.com/intrinsic-dev/aic/blob/main/aic_example_policies/aic_example_policies/ros/WaveArm.py#L27): called when `aic_engine` requests a new task.
    * [`stop_task_callback()`](https://github.com/intrinsic-dev/aic/blob/main/aic_example_policies/aic_example_policies/ros/WaveArm.py#L30): called when `aic_engine` requests to stop the current task.
@@ -48,8 +48,8 @@ To integrate a policy using ROS data structures, such as `geometry_msgs.msg.Pose
 The `observation_callback()` function receives the Observation data structure
 as a ROS message,
 [`Observation.msg`](https://github.com/intrinsic-dev/aic/blob/main/aic_interfaces/aic_model_interfaces/msg/Observation.msg). This message is composed of several standard ROS data types:
- * [`sensor_msgs/Image[3] images`](https://github.com/ros2/common_interfaces/blob/kilted/sensor_msgs/msg/Image.msg)
- * [`sensor_msgs/CameraInfo[3] camera_infos`](https://github.com/ros2/common_interfaces/blob/kilted/sensor_msgs/msg/CameraInfo.msg)
+ * [`sensor_msgs/Image left_image`](https://github.com/ros2/common_interfaces/blob/kilted/sensor_msgs/msg/Image.msg) (and `center_image` and `right_image`)
+ * [`sensor_msgs/CameraInfo left_camera_info`](https://github.com/ros2/common_interfaces/blob/kilted/sensor_msgs/msg/CameraInfo.msg) (and `center_camera_info` and `right_camera_info`)
  * [`sensor_msgs/JointState joint_states`](https://github.com/ros2/common_interfaces/blob/kilted/sensor_msgs/msg/JointState.msg)
  * [`geometry_msgs/WrenchStamped wrist_wrench`](https://github.com/ros2/common_interfaces/blob/kilted/geometry_msgs/msg/WrenchStamped.msg)
  * [`geometry_msgs/TransformStamped tcp_transform`](https://github.com/ros2/common_interfaces/blob/kilted/geometry_msgs/msg/TransformStamped.msg)

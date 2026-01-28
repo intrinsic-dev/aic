@@ -29,10 +29,16 @@
 #include <geometry_msgs/msg/point_stamped.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <geometry_msgs/msg/vector3.hpp>
+#include <geometry_msgs/msg/wrench_stamped.hpp>
 #include <gz/math/Pose3.hh>
 #include <rclcpp/rclcpp.hpp>
+#include <ros_gz_interfaces/msg/contacts.hpp>
 #include <rosbag2_cpp/writer.hpp>
+#include <sensor_msgs/msg/joint_state.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+#include <tf2_msgs/msg/tf_message.hpp>
+
+#include <aic_scoring/TierScore.hh>
 
 namespace aic_scoring
 {
@@ -65,6 +71,32 @@ namespace aic_scoring
   // The Tier2 scoring interface.
   class ScoringTier2
   {
+    using JointStateMsg = sensor_msgs::msg::JointState;
+    using TFMsg = tf2_msgs::msg::TFMessage;
+    using ContactsMsg = ros_gz_interfaces::msg::Contacts;
+    using WrenchMsg = geometry_msgs::msg::WrenchStamped;
+
+    enum class State {
+      Idle,
+      Recording,
+      Scoring
+    };
+
+    /// \brief Topic to subscribe for joint states.
+    public: static constexpr const char* kJointStateTopic = "/joint_states";
+
+    /// \brief Topic to subscribe for static tf.
+    public: static constexpr const char* kTfStaticTopic = "/scoring/tf_static";
+
+    /// \brief Topic to subscribe for tf.
+    public: static constexpr const char* kTfTopic = "/scoring/tf";
+
+    /// \brief Topic to subscribe for contacts.
+    public: static constexpr const char* kContactsTopic = "/aic/gazebo/contacts/off_limit";
+
+    /// \brief Topic to subscribe for force torque sensor wrench.
+    public: static constexpr const char* kWrenchTopic = "/axia80_m20/wrench";
+
     /// \brief Class constructor.
     /// \param[in] _node Pointer to the ROS node.
     public: ScoringTier2(rclcpp::Node *_node);
@@ -85,6 +117,10 @@ namespace aic_scoring
     /// \brief Stop recording all scoring topics.
     /// \return True if the bag was closed correctly.
     public: bool StopRecording();
+
+    /// \brief Compute the score the bag that we just recorded.
+    /// \return A pair with the Tier2 and Tier3 scores.
+    public: std::pair<Tier2Score, Tier3Score> ComputeScore();
 
     /// \brief Populate the scoring input params from a YAML file.
     /// \param[in] _config YAML configuration for the node
@@ -133,6 +169,30 @@ namespace aic_scoring
     /// \brief Reset the plug-port distance computation state.
     public: void ResetPlugPortDistance();
 
+    /// \brief Get the topics required that are currently not being published.
+    /// \return An unordered_set with the missing required topic names.
+    public: std::set<std::string> GetMissingRequiredTopics() const;
+
+    /// \brief Callback for joint state messages received while scoring.
+    /// \param[in] _msg The received message.
+    private: void JointStateCallback(const JointStateMsg& _msg);
+
+    /// \brief Callback for tf messages received while scoring.
+    /// \param[in] _msg The received message.
+    private: void TfCallback(const TFMsg& _msg);
+
+    /// \brief Callback for static tf messages received while scoring.
+    /// \param[in] _msg The received message.
+    private: void TfStaticCallback(const TFMsg& _msg);
+
+    /// \brief Callback for contact messages received while scoring.
+    /// \param[in] _msg The received message.
+    private: void ContactsCallback(const ContactsMsg& _msg);
+
+    /// \brief Callback for force torque sensor wrenches received while scoring.
+    /// \param[in] _msg The received message.
+    private: void WrenchCallback(const WrenchMsg& _msg);
+
     /// \brief Pointer to a node.
     private: rclcpp::Node *node;
 
@@ -149,8 +209,11 @@ namespace aic_scoring
     /// \brief A rosbag2 writer.
     private: rosbag2_cpp::Writer bagWriter;
 
-    /// \brief Whether the bag is open or not.
-    private: bool bagOpen = false;
+    /// \brief The URI of the bag currently being processed.
+    private: std::string bagUri;
+
+    /// \brief State the scoring system is in.
+    private: State state = State::Idle;
 
     /// \brief Mutex to protect the access to the bag.
     private: std::mutex mutex;
