@@ -265,12 +265,9 @@ YAML::Node Score::serialize() const {
   YAML::Node score;
   score["total"] = total_score;
   for (const auto& [trial_name, trial_score] : this->breakdown) {
-    score[trial_name]["tier_1"]["score"] = trial_score.tier_1.score;
-    score[trial_name]["tier_1"]["message"] = trial_score.tier_1.message;
-    score[trial_name]["tier_2"]["score"] = trial_score.tier_2.score;
-    score[trial_name]["tier_2"]["message"] = trial_score.tier_2.message;
-    score[trial_name]["tier_3"]["score"] = trial_score.tier_3.score;
-    score[trial_name]["tier_3"]["message"] = trial_score.tier_3.message;
+    score[trial_name]["tier_1"] = trial_score.tier_1.to_yaml();
+    score[trial_name]["tier_2"] = trial_score.tier_2.to_yaml();
+    score[trial_name]["tier_3"] = trial_score.tier_3.to_yaml();
   }
   return score;
 }
@@ -280,9 +277,9 @@ int Score::calculate_total_score() const {
   // TODO(luca) check calculation
   int score = 0;
   for (const auto& [trial_name, trial_score] : this->breakdown) {
-    score += trial_score.tier_1.score;
-    score += trial_score.tier_2.score;
-    score += trial_score.tier_3.score;
+    score += trial_score.tier_1.total_score();
+    score += trial_score.tier_2.total_score();
+    score += trial_score.tier_3.total_score();
   }
   return score;
 }
@@ -575,7 +572,7 @@ TrialScore Engine::handle_trial(Trial& trial) {
   if (trial.state == TrialState::TasksExecuting) {
     if (this->tasks_completed_successfully(trial)) {
       trial.state = TrialState::AllTasksCompleted;
-      score_trial();
+      score_trial(score);
     }
   } else {
     RCLCPP_ERROR(node_->get_logger(), "Tasks cannot be started successfully.");
@@ -585,7 +582,7 @@ TrialScore Engine::handle_trial(Trial& trial) {
 
   if (trial.state != TrialState::AllTasksCompleted) {
     RCLCPP_ERROR(node_->get_logger(), "Tasks were not completed successfully.");
-    score_trial();
+    score_trial(score);
     reset_after_trial(trial);
     return score;
   }
@@ -1510,16 +1507,17 @@ bool Engine::spawn_entity(Trial& trial, std::string entity_name,
 }
 
 //==============================================================================
-std::optional<int> Engine::score_trial() {
+void Engine::score_trial(TrialScore& score) {
   if (!scoring_tier2_->StopRecording()) {
     RCLCPP_ERROR(node_->get_logger(), "Failed to stop recording.");
-    return std::nullopt;
+    return;
   }
-  auto score = scoring_tier2_->ComputeScore();
+  auto [tier2_score, tier3_score] = scoring_tier2_->ComputeScore();
+  score.tier_2 = tier2_score;
+  score.tier_3 = tier3_score;
 
   RCLCPP_INFO(node_->get_logger(), "Finished scoring trial, total score is: %u",
-              score);
-  return score;
+              score.total_score());
 }
 
 //==============================================================================

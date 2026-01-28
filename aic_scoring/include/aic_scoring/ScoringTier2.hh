@@ -32,6 +32,8 @@
 #include <sensor_msgs/msg/joint_state.hpp>
 #include <tf2_msgs/msg/tf_message.hpp>
 
+#include <aic_scoring/TierScore.hh>
+
 namespace aic_scoring
 {
   /// \brief Connection POD.
@@ -111,10 +113,8 @@ namespace aic_scoring
     public: bool StopRecording();
 
     /// \brief Compute the score the bag that we just recorded.
-    /// \return TODO(luca) have a struct that includes fields and scores.
-    /// wrapped in std::optional / std::expected for fallible operations such
-    /// as failing to open the bag
-    public: int ComputeScore();
+    /// \return A pair with the Tier2 and Tier3 scores.
+    public: std::pair<Tier2Score, Tier3Score> ComputeScore();
 
     /// \brief Populate the scoring input params from a YAML file.
     /// \param[in] _config YAML configuration for the node

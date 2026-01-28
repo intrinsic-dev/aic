@@ -126,12 +126,13 @@ Msg deserialize_from_rosbag(
 }
 
 //////////////////////////////////////////////////
-int ScoringTier2::ComputeScore() {
+std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
   // TODO(luca) actually compute score
-  int score = -1;
+  Tier2Score tier2_score("Scoring failed.");
+  Tier3Score tier3_score(0);
   if (this->state != State::Idle) {
     RCLCPP_ERROR(this->node->get_logger(), "Scoring system is busy.");
-    return score;
+    return {tier2_score, tier3_score};
   }
   rosbag2_cpp::Reader bagReader;
 
@@ -141,9 +142,10 @@ int ScoringTier2::ComputeScore() {
     bagReader.open(storage_options);
   } catch (const std::exception &e) {
     RCLCPP_ERROR(this->node->get_logger(), "Failed to open bag: %s", e.what());
-    return score;
+    return {tier2_score, tier3_score};
   }
   this->state = State::Scoring;
+  tier2_score.message = "Scoring succeeded.";
 
   while (bagReader.has_next()) {
     const auto msg_ptr = bagReader.read_next();
@@ -172,8 +174,9 @@ int ScoringTier2::ComputeScore() {
     }
   }
   this->state = State::Idle;
-  score = 10;
-  return score;
+  tier2_score.add_category_score("dummy_category", {3, "It works!"});
+  tier3_score = Tier3Score(1);
+  return {tier2_score, tier3_score};
 }
 
 //////////////////////////////////////////////////
