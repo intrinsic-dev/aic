@@ -17,51 +17,58 @@
       </visual>
 
       <collision name="v1015081011_collider_box">
-        <origin xyz="0.019353 0.0 0.0025" rpy="0.0 0.0 0.0"/>
+        <origin xyz="0.039468 0.0 0.0025" rpy="0.0 0.0 0.0"/>
         <geometry>
-          <box size="0.019294 0.01475 0.005"/>
+          <box size="0.017033 0.006 0.005"/>
         </geometry>
       </collision>
 
-      <collision name="v1015081011_collider_box_001">
-        <origin xyz="-0.00294 0.0 0.0025" rpy="0.0 0.0 0.0"/>
+      <collision name="v1015081011_collider_box.001">
+        <origin xyz="0.006285 0.0 0.0025" rpy="0.0 0.0 0.0"/>
         <geometry>
-          <box size="0.01212 0.01475 0.005"/>
+          <box size="0.018569 0.006 0.005"/>
         </geometry>
       </collision>
 
-      <collision name="v1015081011_collider_box_002">
-        <origin xyz="0.004062 0.0 0.014555" rpy="0.0 -0.785398 0.0"/>
+      <collision name="v1015081011_collider_box.002">
+        <origin xyz="0.016889 0.0 0.014186" rpy="0.0 -0.785398 0.0"/>
         <geometry>
-          <box size="0.014258 0.01475 0.002"/>
+          <box size="0.014269 0.01475 0.003054"/>
         </geometry>
       </collision>
 
-      <collision name="v1015081011_collider_box_003">
-        <origin xyz="0.015992 0.0 0.004149" rpy="0.0 -0.785398 0.0"/>
+      <collision name="v1015081011_collider_box.003">
+        <origin xyz="0.029227 0.0 0.003364" rpy="0.0 -0.785398 0.0"/>
         <geometry>
-          <box size="0.012103 0.01475 0.010218"/>
+          <box size="0.012103 0.01475 0.007998"/>
         </geometry>
       </collision>
 
-      <collision name="v1015081011_collider_box_004">
-        <origin xyz="0.001043 0.0 0.003076" rpy="0.0 -0.785398 0.0"/>
+      <collision name="v1015081011_collider_box.004">
+        <origin xyz="0.013496 0.0 0.003079" rpy="0.0 -0.785398 0.0"/>
         <geometry>
-          <box size="0.006246 0.01475 0.013841"/>
+          <box size="0.006255 0.01475 0.013841"/>
         </geometry>
       </collision>
 
-      <collision name="v1015081011_collider_box_005">
-        <origin xyz="0.00925 0.006437 0.009368" rpy="0.0 -0.785398 0.0"/>
+      <collision name="v1015081011_collider_box.005">
+        <origin xyz="0.022239 0.00575 0.008836" rpy="0.0 -0.785398 0.0"/>
         <geometry>
-          <box size="0.014258 0.001875 0.014086"/>
+          <box size="0.014269 0.00325 0.015602"/>
         </geometry>
       </collision>
 
-      <collision name="v1015081011_collider_box_006">
-        <origin xyz="0.009324 -0.006438 0.009293" rpy="0.0 -0.785398 0.0"/>
+      <collision name="v1015081011_collider_box.006">
+        <origin xyz="0.02227 -0.004513 0.008805" rpy="0.0 -0.785398 0.0"/>
         <geometry>
-          <box size="0.014258 0.001875 0.013874"/>
+          <box size="0.014269 0.005725 0.015265"/>
+        </geometry>
+      </collision>
+
+      <collision name="v1015081011_collider_box.007">
+        <origin xyz="0.032739 0.0 0.010179" rpy="0.0 -0.785398 0.0"/>
+        <geometry>
+          <box size="0.009041 0.0065 0.001804"/>
         </geometry>
       </collision>
     </link>
