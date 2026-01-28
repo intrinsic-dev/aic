@@ -858,7 +858,6 @@ bool Engine::check_endpoints() {
 
   // Check topics
   // TODO(Yadunund): Consider checking for messages received on topics.
-  // unavailable is guaranteed to be empty here
   unavailable = this->scoring_tier2_->GetMissingRequiredTopics();
   start_time = this->node_->now();
   while (!unavailable.empty() && !(this->node_->now() - start_time > timeout)) {
