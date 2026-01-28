@@ -68,6 +68,11 @@ class AICKeyboardEETeleop(KeyboardEndEffectorTeleop):
     def __init__(self, config: AICKeyboardEETeleopConfig):
         super().__init__(config)
         self.config = config
+
+        self._high_scaling = config.command_scaling
+        self._low_scaling = 0.02
+        self._is_low_speed = False
+
         self._current_actions: MotionUpdateActionDict = {
             "linear.x": 0.0,
             "linear.y": 0.0,
@@ -92,30 +97,39 @@ class AICKeyboardEETeleop(KeyboardEndEffectorTeleop):
         self._drain_pressed_keys()
 
         for key, is_pressed in self.current_pressed.items():
+
+            if key == "t" and is_pressed:
+                self._is_low_speed = not self._is_low_speed
+                self.config.command_scaling = self._low_scaling if self._is_low_speed else self._high_scaling
+                print(f"Command scaling toggled to: {self.config.command_scaling}")
+                continue
+
+            val = self._get_action_value(is_pressed)
+            
             if key == "w":
-                self._current_actions["linear.y"] = -self._get_action_value(is_pressed)
+                self._current_actions["linear.y"] = -val
             elif key == "s":
-                self._current_actions["linear.y"] = self._get_action_value(is_pressed)
+                self._current_actions["linear.y"] = val
             elif key == "a":
-                self._current_actions["linear.x"] = -self._get_action_value(is_pressed)
+                self._current_actions["linear.x"] = -val
             elif key == "d":
-                self._current_actions["linear.x"] = self._get_action_value(is_pressed)
+                self._current_actions["linear.x"] = val
             elif key == "r":
-                self._current_actions["linear.z"] = -self._get_action_value(is_pressed)
+                self._current_actions["linear.z"] = val
             elif key == "f":
-                self._current_actions["linear.z"] = self._get_action_value(is_pressed)
+                self._current_actions["linear.z"] = -val
             elif key == "W":
-                self._current_actions["angular.x"] = self._get_action_value(is_pressed)
+                self._current_actions["angular.x"] = val
             elif key == "S":
-                self._current_actions["angular.x"] = -self._get_action_value(is_pressed)
+                self._current_actions["angular.x"] = -val
             elif key == "A":
-                self._current_actions["angular.y"] = -self._get_action_value(is_pressed)
+                self._current_actions["angular.y"] = -val
             elif key == "D":
-                self._current_actions["angular.y"] = self._get_action_value(is_pressed)
+                self._current_actions["angular.y"] = val
             elif key == "q":
-                self._current_actions["angular.z"] = -self._get_action_value(is_pressed)
+                self._current_actions["angular.z"] = -val
             elif key == "e":
-                self._current_actions["angular.z"] = self._get_action_value(is_pressed)
+                self._current_actions["angular.z"] = val
             elif key == "j":
                 self._current_actions["gripper_target"] = GRIPPER_CLOSED_POS
             elif key == "k":

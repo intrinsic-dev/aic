@@ -291,7 +291,7 @@ class AICRobotAICController(Robot):
 
         msg = MotionUpdate()
         msg.header.stamp = self.node.get_clock().now().to_msg()
-        msg.header.frame_id = "gripper/tcp"
+        msg.header.frame_id = "base_link"
         msg.velocity = twist_msg
         msg.target_stiffness = np.diag([85.0, 85.0, 85.0, 85.0, 85.0, 85.0]).flatten()
         msg.target_damping = np.diag([75.0, 75.0, 75.0, 75.0, 75.0, 75.0]).flatten()
