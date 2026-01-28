@@ -25,6 +25,7 @@
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <rosbag2_cpp/writer.hpp>
+#include <rosbag2_storage/storage_options.hpp>
 #include <string>
 #include <vector>
 
@@ -86,7 +87,9 @@ bool ScoringTier2::StartRecording(const std::string &_filename) {
   }
 
   try {
-    this->bagWriter.open(_filename);
+    rosbag2_storage::StorageOptions storage_options;
+    storage_options.uri = _filename;
+    this->bagWriter.open(storage_options);
   } catch (const std::exception &e) {
     RCLCPP_ERROR(this->node->get_logger(), "Failed to open bag: %s", e.what());
     return false;

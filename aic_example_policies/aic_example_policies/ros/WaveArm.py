@@ -17,6 +17,7 @@
 
 from aic_model.policy_ros import PolicyRos
 from geometry_msgs.msg import Point, Pose, Quaternion
+from rclpy.duration import Duration
 
 
 class WaveArm(PolicyRos):
@@ -26,15 +27,20 @@ class WaveArm(PolicyRos):
 
     def start_callback(self, task):
         self.get_logger().info("WaveArm.start_callback()")
+        self.goal_start_time = self.get_clock().now()
 
     def stop_callback(self):
         self.get_logger().info("WaveArm.stop_callback()")
+        self.goal_start_time = None
+
+    def goal_completed(self):
+        return self.get_clock().now() - self.goal_start_time >= Duration(seconds=5)
 
     def observation_callback(self, observation):
         #
         # Move the arm along a line, while looking down at the task board.
         #
-        t = self.get_seconds(observation.images[0].header)
+        t = self.get_seconds(observation.left_image.header)
         tcp = observation.tcp_transform.transform.translation
 
         loop_duration = 5.0  # seconds

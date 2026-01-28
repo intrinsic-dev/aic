@@ -137,6 +137,58 @@ struct Trial {
 };
 
 //==============================================================================
+struct TrialScore {
+  struct TierScore {
+    int score;
+    std::string message;
+
+    TierScore(int s, const std::string& msg) : score(s), message(msg) {}
+  };
+
+  // Score for successful model validation (binary)
+  static const int kTier1Success = 1;
+  // Score for successful insertion  (binary)
+  static const int kTier3Success = 20;
+
+  TierScore tier_1;
+  TierScore tier_2;
+  TierScore tier_3;
+
+  TrialScore()
+      : tier_1(0, "Model validation failed"),
+        tier_2(0, "Task execution failed"),
+        tier_3(0, "Task not completed successfully") {}
+
+  void tier_1_success() {
+    this->tier_1.score = TrialScore::kTier1Success;
+    this->tier_1.message = "Model validation succeeded";
+  }
+
+  void tier_2_result(int score, const std::string& message) {
+    this->tier_2.score = score;
+    this->tier_2.message = message;
+  }
+
+  void tier_3_success() {
+    this->tier_3.score = TrialScore::kTier3Success;
+    this->tier_3.message = "Task completed successfully";
+  }
+};
+
+struct Score {
+  // Intentionally alphabetically sorted, trial_id -> trial_score
+  std::map<std::string, TrialScore> breakdown;
+
+  /// \brief Serializes the score into a YAML node for logging.
+  /// \return The resulting YAML node with serialized data.
+  YAML::Node serialize() const;
+
+ private:
+  /// \brief Computes the total score from the score breakdown.
+  int calculate_total_score() const;
+};
+
+//==============================================================================
 // Ensure rclcpp::init has been called before creating an instance.
 class Engine {
  public:
@@ -158,8 +210,8 @@ class Engine {
 
   /// \brief Handle the logic for a given trial.
   /// \param[in] trial The trial to handle.
-  /// \return The resulting state of the trial after handling.
-  TrialState handle_trial(Trial& trial);
+  /// \return The resulting score of the trial after handling.
+  TrialScore handle_trial(Trial& trial);
 
   /// \brief Reset internal and simulator states after a trial is completed.
   /// \param[in] trial The trial currently being ran
@@ -252,6 +304,10 @@ class Engine {
   /// @brief Stop the bag recording.
   /// @return True if stopping recording succeeded, false otherwise.
   bool stop_recording_scores();
+
+  /// @brief Scores the current run, writing its result to a YAML file.
+  /// \param[in] The score to serialize and write.
+  void score_run(const Score& score);
 
   // Strings.
   // Name of the aic_adapter node for lifecycle transitions.

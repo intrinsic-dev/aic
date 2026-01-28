@@ -306,6 +306,8 @@ class AICRobotAICController(Robot):
         twist_msg.angular.z = float(motion_update_action["angular.z"])
 
         msg = MotionUpdate()
+        msg.header.stamp = self.get_clock().now().to_msg()
+        msg.header.frame_id = "gripper/tcp"
         msg.velocity = twist_msg
         msg.target_stiffness = np.diag(
             [100.0, 100.0, 100.0, 50.0, 50.0, 50.0]
@@ -320,7 +322,6 @@ class AICRobotAICController(Robot):
             torque=Vector3(x=0.0, y=0.0, z=0.0),
         )
         msg.trajectory_generation_mode.mode = TrajectoryGenerationMode.MODE_VELOCITY
-        msg.time_to_target_seconds = 0.0
         if self.motion_update_pub is not None:
             self.motion_update_pub.publish(msg)
 

@@ -100,6 +100,8 @@ class HomeTrajectoryNode(Node):
     def send_trajectory(self):
         if self.use_aic_control:
             msg = MotionUpdate()
+            msg.header.stamp = self.get_clock().now().to_msg()
+            msg.header.frame_id = "base_link"
             msg.pose = Pose(
                 position=Point(x=-0.4, y=0.2, z=0.3),
                 orientation=Quaternion(x=-0.707, y=-0.707, z=0.0, w=0.0),
@@ -112,7 +114,6 @@ class HomeTrajectoryNode(Node):
                 force=Vector3(x=0.5, y=0.5, z=0.5), torque=Vector3(x=0.0, y=0.0, z=0.0)
             )
             msg.trajectory_generation_mode.mode = TrajectoryGenerationMode.MODE_POSITION
-            msg.time_to_target_seconds = 2.0
             self.publisher.publish(msg)
             self.get_logger().info(
                 "Published home joint motion update to aic_controller"
