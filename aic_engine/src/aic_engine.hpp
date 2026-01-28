@@ -30,8 +30,6 @@
 #include "aic_control_interfaces/msg/reset_joints.hpp"
 #include "aic_scoring/ScoringTier2.hh"
 #include "aic_task_interfaces/action/insert_cable.hpp"
-#include "control_msgs/action/follow_joint_trajectory.hpp"
-#include "controller_manager_msgs/srv/switch_controller.hpp"
 #include "geometry_msgs/msg/wrench_stamped.hpp"
 #include "lifecycle_msgs/msg/state.hpp"
 #include "lifecycle_msgs/srv/change_state.hpp"
@@ -39,37 +37,27 @@
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
-#include "simulation_interfaces/msg/result.hpp"
-#include "simulation_interfaces/msg/simulation_state.hpp"
 #include "simulation_interfaces/srv/delete_entity.hpp"
-#include "simulation_interfaces/srv/set_simulation_state.hpp"
 #include "simulation_interfaces/srv/spawn_entity.hpp"
 #include "std_msgs/msg/bool.hpp"
 #include "std_msgs/msg/string.hpp"
 #include "tf2/exceptions.hpp"
 #include "tf2_ros/buffer.h"
 #include "tf2_ros/transform_listener.h"
-#include "trajectory_msgs/msg/joint_trajectory_point.hpp"
 #include "yaml-cpp/yaml.h"
 
 //==============================================================================
 namespace aic {
 
 using DeleteEntitySrv = simulation_interfaces::srv::DeleteEntity;
-using FollowJointTrajectory = control_msgs::action::FollowJointTrajectory;
 using InsertCableAction = aic_task_interfaces::action::InsertCable;
 using InsertCableGoalHandle =
     rclcpp_action::ServerGoalHandle<InsertCableAction>;
 using JointStateMsg = sensor_msgs::msg::JointState;
 using JointMotionUpdateMsg = aic_control_interfaces::msg::JointMotionUpdate;
-using JointTrajectoryPoint = trajectory_msgs::msg::JointTrajectoryPoint;
 using MotionUpdateMsg = aic_control_interfaces::msg::MotionUpdate;
 using ResetJointsMsg = aic_control_interfaces::msg::ResetJoints;
-using ResultMsg = simulation_interfaces::msg::Result;
-using SetSimulationStateSrv = simulation_interfaces::srv::SetSimulationState;
-using SimulationStateMsg = simulation_interfaces::msg::SimulationState;
 using SpawnEntitySrv = simulation_interfaces::srv::SpawnEntity;
-using SwitchControllerSrv = controller_manager_msgs::srv::SwitchController;
 using Task = aic_task_interfaces::msg::Task;
 using WrenchStampedMsg = geometry_msgs::msg::WrenchStamped;
 
@@ -368,10 +356,6 @@ class Engine {
       model_get_state_client_;
   rclcpp::Client<lifecycle_msgs::srv::ChangeState>::SharedPtr
       model_change_state_client_;
-  rclcpp::Client<simulation_interfaces::srv::SetSimulationState>::SharedPtr
-      simulation_state_client_;
-  rclcpp::Client<controller_manager_msgs::srv::SwitchController>::SharedPtr
-      switch_controller_client_;
 
   // TF
   std::unique_ptr<tf2_ros::TransformListener> tf_listener_;

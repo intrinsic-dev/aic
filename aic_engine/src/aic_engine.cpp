@@ -486,12 +486,6 @@ EngineState Engine::initialize() {
   model_change_state_client_ =
       node_->create_client<lifecycle_msgs::srv::ChangeState>(
           model_change_state_service_name_);
-  simulation_state_client_ =
-      node_->create_client<simulation_interfaces::srv::SetSimulationState>(
-          "/gz_server/set_simulation_state");
-  switch_controller_client_ =
-      node_->create_client<controller_manager_msgs::srv::SwitchController>(
-          "/controller_manager/switch_controller");
   reset_joints_pub_ =
       node_->create_publisher<ResetJointsMsg>("/reset_joints", reliable_qos);
   toggle_controller_pub_ = node_->create_publisher<std_msgs::msg::Bool>(
