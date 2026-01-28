@@ -2,7 +2,7 @@
 
 ## Overview
 
-`aic_bringup` provides launch files and configuration for setting up the AI for Industry Challenge simulation environment. This package is your entry point for starting the evaluation environment, spawning robots and task boards, and running trials.
+`aic_bringup` provides launch files and configuration for setting up the AI for Industry Challenge simulation environment. This package is part of the evaluation component and is your entry point for starting the evaluation environment, spawning robots and task boards, and running trials.
 
 **What This Package Does:**
 - Launches Gazebo simulation with the UR5e robot

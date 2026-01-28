@@ -41,6 +41,41 @@ New to the challenge? Follow these steps to get started:
 
 ---
 
+## Toolkit Architecture
+
+The AI for Industry Challenge toolkit is divided into **two main components**:
+
+### 1. Evaluation Component (Provided - Run by Organizers)
+
+This component provides the complete evaluation infrastructure:
+- **`aic_engine`** - Orchestrates trials and computes scores
+- **`aic_bringup`** - Launches simulation environment (Gazebo, robot, sensors)
+- **`aic_controller`** - Low-level robot control with force management
+- **`aic_adapter`** - Sensor fusion and data synchronization
+
+**What you receive:** Standard ROS sensor topics providing camera images, joint states, force/torque measurements, and TF transforms
+
+### 2. Participant Model Component (Your Implementation - What You Submit)
+
+This is what you develop and submit:
+- **`aic_model`** - Your policy implementation that processes sensor data
+- **Your custom logic** - Code to command the robot to insert cables
+
+**What you provide:** Robot motion commands via standard ROS actions/topics/services
+
+### Development and Submission Workflow
+
+**Development Options:**
+- Develop inside a container (recommended - matches evaluation environment)
+- OR develop in native Ubuntu 24.04 environment (requires all dependencies)
+
+**Submission Requirements:**
+- Package your solution using the provided `aic_model` Dockerfile
+- Submit your container - it must respond to standard ROS inputs and command the robot to insert cables
+- Your container interfaces with the evaluation component via ROS topics
+
+---
+
 ## Documentation
 
 ### Challenge Information
