@@ -17,6 +17,7 @@
 
 from abc import ABC, abstractmethod
 from aic_control_interfaces.msg import MotionUpdate, TrajectoryGenerationMode
+from aic_model_interfaces.msg import Observation
 from aic_task_interfaces.msg import Task
 from geometry_msgs.msg import Point, Pose, Quaternion, Wrench, Vector3
 import numpy as np
@@ -89,6 +90,16 @@ class PolicyRos(ABC):
     def goal_completed(self) -> bool:
         """Returns whether the goal is considered completed by the policy"""
         return True
+
+    @abstractmethod
+    def goal_completed(self) -> bool:
+        """Returns whether the goal is considered completed by the policy"""
+        return True
+
+    @abstractmethod
+    def observation_callback(self, observation: Observation):
+        """Called whenever a new observation is received"""
+        pass
 
     def get_logger(self):
         return self._parent_node.get_logger()

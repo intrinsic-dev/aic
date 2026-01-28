@@ -16,6 +16,7 @@
 
 
 from aic_model.policy_ros import PolicyRos
+from aic_model_interfaces.msg import Observation
 from aic_task_interfaces.msg import Task
 from geometry_msgs.msg import Point, Pose, Quaternion
 from rclpy.duration import Duration
@@ -37,7 +38,7 @@ class WaveArm(PolicyRos):
     def goal_completed(self) -> bool:
         return self.get_clock().now() - self.goal_start_time >= Duration(seconds=5)
 
-    def observation_callback(self, observation):
+    def observation_callback(self, observation: Observation):
         #
         # Move the arm along a line, while looking down at the task board.
         #
