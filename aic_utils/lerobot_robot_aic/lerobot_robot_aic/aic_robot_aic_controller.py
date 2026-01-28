@@ -23,6 +23,7 @@ from functools import cached_property
 from threading import Thread
 from typing import Any, TypedDict, cast
 
+import cv2
 import numpy as np
 import rclpy
 from aic_control_interfaces.msg import (
@@ -256,14 +257,23 @@ class AICRobotAICController(Robot):
         for cam_key, cam in self.cameras.items():
             start = time.perf_counter()
             try:
-                cam_obs[cam_key] = cam.async_read(timeout_ms=300)
+                cam_obs[cam_key] = cam.async_read(timeout_ms=2000)
+                # TODO: Add config for resize factor
+                cam_obs[cam_key] = cv2.resize(
+                    cam_obs[cam_key],
+                    None,
+                    fx=0.25,
+                    fy=0.25,
+                    interpolation=cv2.INTER_AREA,
+                )
             except Exception as e:
                 logger.error(f"Failed to read camera {cam_key}: {e}")
                 cam_obs[cam_key] = None
             dt_ms = (time.perf_counter() - start) * 1e3
             logger.debug(f"{self} read {cam_key}: {dt_ms:.1f}ms")
 
-        return {**cam_obs, **controller_state_obs}
+        obs = {**cam_obs, **controller_state_obs}
+        return obs
 
     def send_action(self, action: dict[str, Any]) -> dict[str, Any]:
         if not self._is_connected or not self.node:
