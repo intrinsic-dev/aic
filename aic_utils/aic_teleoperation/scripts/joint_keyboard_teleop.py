@@ -25,30 +25,30 @@ from rclpy.node import Node
 from rclpy.executors import ExternalShutdownException
 import numpy as np
 from aic_control_interfaces.msg import (
-    MotionUpdate,
+    JointMotionUpdate,
     TrajectoryGenerationMode,
 )
 from aic_control_interfaces.srv import (
     ChangeTargetMode,
 )
 from geometry_msgs.msg import Pose, Point, Quaternion, Wrench, Vector3, Twist
+from sensor_msgs.msg import JointState
 
-LINEAR_STEP = 0.075  # Step size for linear movement (meters)
-ANGULAR_STEP = 0.25  # Step size for angular movement (radians)
+STEP = 0.05  # Step size for linear movement (meters)
 
 KEY_MAPPINGS = {
-    "w": (1, 0, 0, 0, 0, 0),  # +x
-    "s": (-1, 0, 0, 0, 0, 0),  # -x
-    "a": (0, 1, 0, 0, 0, 0),  # +y
-    "d": (0, -1, 0, 0, 0, 0),  # -y
-    "r": (0, 0, 1, 0, 0, 0),  # +z
-    "f": (0, 0, -1, 0, 0, 0),  # -z
-    "y": (0, 0, 0, 1, 0, 0),  # +roll (around X)
-    "h": (0, 0, 0, -1, 0, 0),  # -roll (around X)
-    "u": (0, 0, 0, 0, 1, 0),  # +pitch (around Y)
-    "j": (0, 0, 0, 0, -1, 0),  # -pitch (around Y)
-    "i": (0, 0, 0, 0, 0, 1),  # +yaw (around Z)
-    "k": (0, 0, 0, 0, 0, -1),  # -yaw (around Z)
+    "q": (1, 0, 0, 0, 0, 0),  # +j1
+    "a": (-1, 0, 0, 0, 0, 0),  # -j1
+    "w": (0, 1, 0, 0, 0, 0),  # +j2
+    "s": (0, -1, 0, 0, 0, 0),  # -j3
+    "e": (0, 0, 1, 0, 0, 0),  # +j3
+    "d": (0, 0, -1, 0, 0, 0),  # -j3
+    "r": (0, 0, 0, 1, 0, 0),  # +j4
+    "f": (0, 0, 0, -1, 0, 0),  # -j4
+    "t": (0, 0, 0, 0, 1, 0),  # +j5
+    "g": (0, 0, 0, 0, -1, 0),  # -j5
+    "y": (0, 0, 0, 0, 0, 1),  # +j6
+    "h": (0, 0, 0, 0, 0, -1),  # -j6
 }
 
 
@@ -62,13 +62,21 @@ class AICTeleoperatorNode(Node):
             "controller_namespace", "aic_controller"
         ).value
 
-        self.motion_update_publisher = self.create_publisher(
-            MotionUpdate, f"/{self.controller_namespace}/pose_commands", 10
+        # Create the subscription
+        self.joint_state_subscription = self.create_subscription(
+            JointState,  # Message type
+            "joint_states",  # Topic name
+            self.joint_state_callback,
+            10,
+        )  # QoS Profile (History depth)
+
+        self.joint_motion_update_publisher = self.create_publisher(
+            JointMotionUpdate, f"/{self.controller_namespace}/joint_commands", 10
         )
 
-        while self.motion_update_publisher.get_subscription_count() == 0:
+        while self.joint_motion_update_publisher.get_subscription_count() == 0:
             self.get_logger().info(
-                f"Waiting for subscriber to '{self.controller_namespace}/pose_commands'..."
+                f"Waiting for subscriber to '{self.controller_namespace}/joint_commands'..."
             )
             time.sleep(1.0)
 
@@ -89,7 +97,15 @@ class AICTeleoperatorNode(Node):
         # Poll keyboard and send commands at 50Hz
         self.timer = self.create_timer(0.02, self.send_references)
 
+        self.joint_map = None
+
         self.get_logger().info("Initialized AICTeleoperatorNode!")
+
+    def joint_state_callback(self, msg):
+        if not msg.position:
+            return
+
+        self.joint_map = dict(zip(msg.name, msg.position))
 
     def get_key(self):
         """Captures a single keypress from stdin without waiting for return."""
@@ -98,41 +114,25 @@ class AICTeleoperatorNode(Node):
         termios.tcsetattr(sys.stdin, termios.TCSADRAIN, self.settings)
         return key
 
-    def generate_motion_update(
-        self,
-        pos,
-        quat,
-        mode=TrajectoryGenerationMode.MODE_POSITION,
-        twist=None,
-    ):
+    def generate_joint_motion_update(self, joint_pos):
+        msg = JointMotionUpdate()
 
-        msg = MotionUpdate()
-        msg.header.stamp = self.get_clock().now().to_msg()
-        if mode == TrajectoryGenerationMode.MODE_POSITION:
-            msg.header.frame_id = "base_link"
-            msg.pose = Pose(
-                position=Point(x=pos[0], y=pos[1], z=pos[2]),
-                orientation=Quaternion(x=quat[0], y=quat[1], z=quat[2], w=quat[3]),
-            )
-        elif mode == TrajectoryGenerationMode.MODE_VELOCITY:
-            msg.header.frame_id = "gripper/tcp"
-            msg.velocity = twist
-        msg.target_stiffness = np.diag([85.0, 85.0, 85.0, 85.0, 85.0, 85.0]).flatten()
-        msg.target_damping = np.diag([75.0, 75.0, 75.0, 75.0, 75.0, 75.0]).flatten()
-        msg.feedforward_wrench_at_tip = Wrench(
-            force=Vector3(x=0.0, y=0.0, z=0.0),
-            torque=Vector3(x=0.0, y=0.0, z=0.0),
-        )
-        msg.wrench_feedback_gains_at_tip = Wrench(
-            force=Vector3(x=0.0, y=0.0, z=0.0),
-            torque=Vector3(x=0.0, y=0.0, z=0.0),
-        )
-        msg.trajectory_generation_mode.mode = mode
+        msg.target_state.positions = joint_pos
+        msg.target_stiffness = [100.0, 100.0, 100.0, 50.0, 50.0, 50.0]
+        msg.target_damping = [40.0, 40.0, 40.0, 15.0, 15.0, 15.0]
+        msg.trajectory_generation_mode.mode = TrajectoryGenerationMode.MODE_POSITION
 
         return msg
 
     def send_references(self):
-        twist = Twist()
+        joint_pos = [
+            self.joint_map["shoulder_pan_joint"],
+            self.joint_map["shoulder_lift_joint"],
+            self.joint_map["elbow_joint"],
+            self.joint_map["wrist_1_joint"],
+            self.joint_map["wrist_2_joint"],
+            self.joint_map["wrist_3_joint"],
+        ]
 
         key = self.get_key()
 
@@ -141,30 +141,20 @@ class AICTeleoperatorNode(Node):
 
         # Check if key is in our mapping (convert to lowercase to be safe)
         if key.lower() in KEY_MAPPINGS:
-            x, y, z, roll, pitch, yaw = KEY_MAPPINGS[key.lower()]
+            j1, j2, j3, j4, j5, j6 = KEY_MAPPINGS[key.lower()]
 
-            twist.linear.x = x * LINEAR_STEP
-            twist.linear.y = y * LINEAR_STEP
-            twist.linear.z = z * LINEAR_STEP
-            twist.angular.x = roll * ANGULAR_STEP
-            twist.angular.y = pitch * ANGULAR_STEP
-            twist.angular.z = yaw * ANGULAR_STEP
+            joint_pos[0] += j1 * STEP
+            joint_pos[1] += j2 * STEP
+            joint_pos[2] += j3 * STEP
+            joint_pos[3] += j4 * STEP
+            joint_pos[4] += j5 * STEP
+            joint_pos[5] += j6 * STEP
 
-        else:
-            twist = Twist()
-
-        self.motion_update_publisher.publish(
-            self.generate_motion_update(
-                None,
-                None,
-                mode=TrajectoryGenerationMode.MODE_VELOCITY,
-                twist=twist,
-            )
+        self.joint_motion_update_publisher.publish(
+            self.generate_joint_motion_update(joint_pos)
         )
 
-        self.get_logger().info(
-            f"Published twist: {twist.linear.x}, {twist.linear.y}, {twist.linear.z}, {twist.angular.x}, {twist.angular.y}, {twist.angular.z}"
-        )
+        self.get_logger().info(f"Published joint position: {joint_pos}")
 
     def send_change_control_mode_req(self, mode):
         ChangeTargetMode
@@ -190,31 +180,11 @@ class AICTeleoperatorNode(Node):
 
 def main(args=None):
 
-    print(
-        """
-        Keyboard teleoperation for Cartesian control
-        ---------------------------
-        Moving around:
-            W/S : +/- X axis
-            A/D : +/- Y axis
-            R/F : +/- Z axis
-
-        Rotating:
-            Y/H : +/- Roll (about X axis)
-            U/J : +/- Pitch (about Y axis)
-            I/K : +/- Yaw (about Z axis)
-
-        Press any other key to stop the robot.
-
-        CTRL-C to quit
-        """
-    )
-
     try:
         with rclpy.init(args=args):
             node = AICTeleoperatorNode()
             node.send_change_control_mode_req(
-                ChangeTargetMode.Request().TARGET_MODE_CARTESIAN
+                ChangeTargetMode.Request().TARGET_MODE_JOINT
             )
             rclpy.spin(node)
     except (KeyboardInterrupt, ExternalShutdownException):
