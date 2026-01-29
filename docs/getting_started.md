@@ -212,11 +212,14 @@ Note that you will need to bring up your model for the `aic_engine` to work corr
 
 #### Training Bringup
 
-During training, one might want to bring up the scene with randomized poses of the `TaskBoard` and `Cables`.
-The scene may then be exported to other simulation environments.
+During training, you can bring up the scene with randomized poses of the `TaskBoard` and `Cables`.
+The simulation automatically exports the complete world state to `/tmp/aic.sdf` after spawning all entities, which can be imported into other simulators like IsaacLab or MuJoCo for AI policy training.
+
 The layout of the `TaskBoard` can be configured at runtime.
 For the full list of configurable parameters, see the [aic_bringup README](../aic_bringup/README.md).
 Ground truth poses of ports and plugs can be made available in TF tree as well.
+
+**Example:** Launch with a fully configured task board and cable:
 
 
 ```bash
@@ -255,7 +258,13 @@ ros2 launch aic_bringup aic_gz_bringup.launch.py \
   nic_card_mount_4_roll:=0.0 nic_card_mount_4_pitch:=0.0 nic_card_mount_4_yaw:=0.0 \
   spawn_cable:=true cable_type:=sfp_sc_cable attach_cable_to_gripper:=true \
   ground_truth:=true start_aic_engine:=false
+
+# The complete world state is automatically saved to /tmp/aic.sdf
+# This file contains the robot, enclosure, task board, and cable with the specified configuration
+# Import this file into IsaacLab, MuJoCo, or other simulators for training
 ```
+
+**Creating multiple training scenarios:** Run the launch command with different parameter combinations to generate diverse training environments. Each launch will overwrite `/tmp/aic.sdf` with the new configuration, so copy it to a different location if you want to preserve multiple scenarios.
 
 #### Submission bringup
 

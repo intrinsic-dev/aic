@@ -63,7 +63,7 @@ def launch_setup(context, *args, **kwargs):
             "-string",
             cable_description_content,
             "-name",
-            "cable",
+            "cable_0",
             "-allow_renaming",
             "true",
             "-x",
