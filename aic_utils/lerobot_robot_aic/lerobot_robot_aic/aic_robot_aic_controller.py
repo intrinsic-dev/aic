@@ -147,8 +147,9 @@ class AICRobotAICController(Robot):
     def _cameras_ft(self) -> dict[str, tuple]:
         return {
             cam: (
-                self.config.cameras[cam].height * self.config.camera_image_scaling[cam],
-                self.config.cameras[cam].width * self.config.camera_image_scaling[cam],
+                # assuming that opencv2 rounds down when being asked to scale without perfect ratio
+                int(self.config.cameras[cam].height * self.config.camera_image_scaling[cam]),
+                int(self.config.cameras[cam].width * self.config.camera_image_scaling[cam]),
                 3,
             )
             for cam in self.cameras
