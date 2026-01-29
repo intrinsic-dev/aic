@@ -20,6 +20,7 @@
 
 #include <tf2/LinearMath/Matrix3x3.h>
 #include <tf2/LinearMath/Quaternion.h>
+#include <tf2_ros/buffer.h>
 #include <yaml-cpp/yaml.h>
 #include <memory>
 #include <mutex>
@@ -74,7 +75,9 @@ namespace aic_scoring
     using JointStateMsg = sensor_msgs::msg::JointState;
     using TFMsg = tf2_msgs::msg::TFMessage;
     using ContactsMsg = ros_gz_interfaces::msg::Contacts;
+    using PoseMsg = geometry_msgs::msg::PoseStamped;
     using WrenchMsg = geometry_msgs::msg::WrenchStamped;
+    using Vector3Msg = geometry_msgs::msg::Vector3;
 
     enum class State {
       Idle,
@@ -97,6 +100,9 @@ namespace aic_scoring
     /// \brief Topic to subscribe for force torque sensor wrench.
     public: static constexpr const char* kWrenchTopic = "/axia80_m20/wrench";
 
+    /// \brief Topic to record the end effector position.
+    public: static constexpr const char* kEndEffectorTopic = "/end_effector";
+
     /// \brief Class constructor.
     /// \param[in] _node Pointer to the ROS node.
     public: ScoringTier2(rclcpp::Node *_node);
@@ -108,6 +114,12 @@ namespace aic_scoring
     /// \brief Reset connections.
     /// \param[in] _connections New connections.
     public: void ResetConnections(const std::vector<Connection> &_connections);
+
+    /// \brief Set the gripper frame name and the TF buffer.
+    /// \param[in] _gripperFrame Gripper frame name.
+    /// \param[in out] _tBuffer TF buffer.
+    public: void SetGripperFrame(const std::string &_gripperFrame,
+                                 std::shared_ptr<tf2_ros::Buffer> &_tfBuffer);
 
     /// \brief Start recording all scoring topics.
     /// \return True if the bag was opened correctly and it's ready to record.
@@ -126,26 +138,13 @@ namespace aic_scoring
     /// \param[in] _config YAML configuration for the node
     private: bool ParseStats(YAML::Node _config);
 
-    /// \brief Update jerk computation with a new pose sample.
-    /// \param[in] _pose The new timestamped pose.
-    /// \return True if successful, false if timestamp was not increasing.
-    public: bool UpdateJerk(const geometry_msgs::msg::PoseStamped &_pose);
-
     /// \brief Get the current linear jerk.
     /// \return The linear jerk vector (x, y, z) in m/s^3.
-    public: geometry_msgs::msg::Vector3 GetLinearJerk() const;
-
-    /// \brief Get the current angular jerk.
-    /// \return The angular jerk vector (roll, pitch, yaw) in rad/s^3.
-    public: geometry_msgs::msg::Vector3 GetAngularJerk() const;
+    public: Vector3Msg GetLinearJerk() const;
 
     /// \brief Get the time-weighted average linear jerk.
     /// \return The average linear jerk vector (x, y, z) in m/s^3.
-    public: geometry_msgs::msg::Vector3 GetAvgLinearJerk() const;
-
-    /// \brief Get the time-weighted average angular jerk.
-    /// \return The average angular jerk vector (roll, pitch, yaw) in rad/s^3.
-    public: geometry_msgs::msg::Vector3 GetAvgAngularJerk() const;
+    public: Vector3Msg GetAvgLinearJerk() const;
 
     /// \brief Reset the jerk computation state.
     public: void ResetJerk();
@@ -193,6 +192,16 @@ namespace aic_scoring
     /// \param[in] _msg The received message.
     private: void WrenchCallback(const WrenchMsg& _msg);
 
+    /// \brief Update jerk computation with a new pose sample.
+    /// \param[in] _pose The new timestamped pose.
+    /// \return True if successful, false if timestamp was not increasing.
+    private: void JerkCallback(const PoseMsg &_pose);
+
+    /// \brief Compute the end effector position.
+    /// \param[out] _pose End effector pose.
+    /// \return True when the position is valid or false otherwise.
+    private: bool EndEffectorPose(PoseMsg &_pose);
+
     /// \brief Pointer to a node.
     private: rclcpp::Node *node;
 
@@ -219,28 +228,19 @@ namespace aic_scoring
     private: std::mutex mutex;
 
     /// \brief History of poses for jerk computation (stores last 4 samples).
-    private: std::vector<geometry_msgs::msg::PoseStamped> poseHistory;
+    private: std::vector<PoseMsg> poseHistory;
 
     /// \brief Computed linear jerk (x, y, z components in m/s^3).
-    private: geometry_msgs::msg::Vector3 linearJerk;
-
-    /// \brief Computed angular jerk (roll, pitch, yaw components in rad/s^3).
-    private: geometry_msgs::msg::Vector3 angularJerk;
+    private: Vector3Msg linearJerk;
 
     /// \brief Time-weighted average linear jerk (x, y, z components in m/s^3).
-    private: geometry_msgs::msg::Vector3 avgLinearJerk;
-
-    /// \brief Time-weighted average angular jerk (roll, pitch, yaw in rad/s^3).
-    private: geometry_msgs::msg::Vector3 avgAngularJerk;
+    private: Vector3Msg avgLinearJerk;
 
     /// \brief Total elapsed time since last reset (seconds).
     private: double totalJerkTime = 0.0;
 
     /// \brief Accumulated weighted linear jerk (jerk * dt sum).
-    private: geometry_msgs::msg::Vector3 accumLinearJerk;
-
-    /// \brief Accumulated weighted angular jerk (jerk * dt sum).
-    private: geometry_msgs::msg::Vector3 accumAngularJerk;
+    private: Vector3Msg accumLinearJerk;
 
     /// \brief Current plug-port connection distance (meters).
     private: double plugPortDistance = 0.0;
@@ -256,6 +256,12 @@ namespace aic_scoring
 
     /// \brief Last timestamp for plug-port distance computation.
     private: double lastPlugPortStamp = -1.0;
+
+    /// \brief TF.
+    private: std::shared_ptr<tf2_ros::Buffer> tfBuffer;
+
+    /// \brief Gripper frame name.
+    private: std::string gripperFrame;
   };
 
   // The Tier2 class as a node.

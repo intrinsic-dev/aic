@@ -59,11 +59,26 @@ bool ScoringTier2::Initialize(YAML::Node _config) {
           // Bag the data.
           const auto &rmw_info = msg_info.get_rmw_message_info();
           std::lock_guard<std::mutex> lock(this->mutex);
-          if (this->state == State::Recording) {
-            this->bagWriter.write(msg, topic.name, topic.type,
-                                  rmw_info.received_timestamp,
-                                  rmw_info.source_timestamp);
+          if (this->state != State::Recording) return;
+
+          if (topic.name == kTfStaticTopic) {
+            PoseMsg efPosition;
+            if (this->EndEffectorPose(efPosition)) {
+              // Log the end effector position.
+              auto serialized = std::make_shared<rclcpp::SerializedMessage>();
+              rclcpp::Serialization<PoseMsg> serializer;
+              serializer.serialize_message(&efPosition, serialized.get());
+
+              this->bagWriter.write(serialized, kEndEffectorTopic,
+                                    "geometry_msgs/msg/PoseStamped",
+                                    rmw_info.received_timestamp,
+                                    rmw_info.source_timestamp);
+            }
           }
+
+          this->bagWriter.write(msg, topic.name, topic.type,
+                                rmw_info.received_timestamp,
+                                rmw_info.source_timestamp);
         });
     this->subscriptions.push_back(sub);
   }
@@ -83,6 +98,13 @@ void ScoringTier2::ResetConnections(
   //   std::cout << "  port: " << c.portName << std::endl;
   //   std::cout << "  Dist: " << c.distance << std::endl;
   // }
+}
+
+//////////////////////////////////////////////////
+void ScoringTier2::SetGripperFrame(const std::string &_gripperFrame,
+                                  std::shared_ptr<tf2_ros::Buffer> &_tfBuffer) {
+  this->gripperFrame = _gripperFrame;
+  this->tfBuffer = _tfBuffer;
 }
 
 //////////////////////////////////////////////////
@@ -146,6 +168,7 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
     bagReader.open(storage_options);
   } catch (const std::exception &e) {
     RCLCPP_ERROR(this->node->get_logger(), "Failed to open bag: %s", e.what());
+    this->state = State::Idle;
     return {tier2_score, tier3_score};
   }
   this->state = State::Scoring;
@@ -159,6 +182,9 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
     if (msg_ptr->topic_name == kJointStateTopic) {
       const auto msg = deserialize_from_rosbag<JointStateMsg>(msg_ptr);
       this->JointStateCallback(msg);
+    } else if (msg_ptr->topic_name == kEndEffectorTopic) {
+      const auto msg = deserialize_from_rosbag<PoseMsg>(msg_ptr);
+      this->JerkCallback(msg);
     } else if (msg_ptr->topic_name == kTfTopic) {
       const auto msg = deserialize_from_rosbag<TFMsg>(msg_ptr);
       this->TfCallback(msg);
@@ -262,20 +288,13 @@ void ScoringTier2::ContactsCallback(const ContactsMsg &_msg) { (void)_msg; }
 void ScoringTier2::WrenchCallback(const WrenchMsg &_msg) { (void)_msg; }
 
 //////////////////////////////////////////////////
-ScoringTier2Node::ScoringTier2Node(const std::string &_yamlFile)
-    : Node("score_tier2_node") {
-  try {
-    auto config = YAML::LoadFile(_yamlFile);
-    this->score = std::make_unique<aic_scoring::ScoringTier2>(this);
-    this->score->Initialize(config);
-  } catch (const YAML::BadFile &_e) {
-    std::cerr << "Unable to open YAML file [" << _yamlFile << "]" << std::endl;
-    return;
-  }
-}
+void ScoringTier2::JerkCallback(const PoseMsg &_pose) {
+  // Debug output
+  std::cout << "("
+            << _pose.pose.position.x << " "
+            << _pose.pose.position.y << " "
+            << _pose.pose.position.z << ")" << std::endl;
 
-//////////////////////////////////////////////////
-bool ScoringTier2::UpdateJerk(const geometry_msgs::msg::PoseStamped &_pose) {
   // Helper to convert ROS time to seconds.
   auto toSeconds = [](const builtin_interfaces::msg::Time &t) {
     return static_cast<double>(t.sec) + static_cast<double>(t.nanosec) * 1e-9;
@@ -286,7 +305,7 @@ bool ScoringTier2::UpdateJerk(const geometry_msgs::msg::PoseStamped &_pose) {
     double lastTime = toSeconds(this->poseHistory.back().header.stamp);
     double newTime = toSeconds(_pose.header.stamp);
     if (newTime <= lastTime) {
-      return false;
+      return;
     }
   }
 
@@ -295,7 +314,7 @@ bool ScoringTier2::UpdateJerk(const geometry_msgs::msg::PoseStamped &_pose) {
 
   // Need 4 samples to compute jerk.
   if (this->poseHistory.size() < 4) {
-    return true;
+    return;
   }
 
   // Keep only last 4 samples.
@@ -359,11 +378,6 @@ bool ScoringTier2::UpdateJerk(const geometry_msgs::msg::PoseStamped &_pose) {
   this->linearJerk.y = computeJerk(py);
   this->linearJerk.z = computeJerk(pz);
 
-  // Compute angular jerk.
-  this->angularJerk.x = computeJerk(roll);
-  this->angularJerk.y = computeJerk(pitch);
-  this->angularJerk.z = computeJerk(yaw);
-
   // Update time-weighted average jerk.
   // Use the time interval from t1 to t2 as the weight for this jerk sample.
   double dt = t2 - t1;
@@ -374,53 +388,75 @@ bool ScoringTier2::UpdateJerk(const geometry_msgs::msg::PoseStamped &_pose) {
   this->accumLinearJerk.y += this->linearJerk.y * dt;
   this->accumLinearJerk.z += this->linearJerk.z * dt;
 
-  this->accumAngularJerk.x += this->angularJerk.x * dt;
-  this->accumAngularJerk.y += this->angularJerk.y * dt;
-  this->accumAngularJerk.z += this->angularJerk.z * dt;
-
   // Compute averages.
   if (this->totalJerkTime > 0.0) {
     this->avgLinearJerk.x = this->accumLinearJerk.x / this->totalJerkTime;
     this->avgLinearJerk.y = this->accumLinearJerk.y / this->totalJerkTime;
     this->avgLinearJerk.z = this->accumLinearJerk.z / this->totalJerkTime;
-
-    this->avgAngularJerk.x = this->accumAngularJerk.x / this->totalJerkTime;
-    this->avgAngularJerk.y = this->accumAngularJerk.y / this->totalJerkTime;
-    this->avgAngularJerk.z = this->accumAngularJerk.z / this->totalJerkTime;
   }
 
+  return;
+}
+
+//////////////////////////////////////////////////
+bool ScoringTier2::EndEffectorPose(PoseMsg &_pose) {
+  // Sanity check.
+  if (this->gripperFrame.empty() || !this->tfBuffer) {
+    RCLCPP_WARN(this->node->get_logger(),
+                "Unable to compute end effector pose yet");
+    return false;
+  }
+
+  std::string warning_msg;
+  if (!this->tfBuffer->canTransform(
+    "world", this->gripperFrame, tf2::TimePointZero,
+    &warning_msg)) {
+      RCLCPP_WARN(this->node->get_logger(), "TF Wait Failed: %s",
+                  warning_msg.c_str());
+      return false;
+  }
+
+  geometry_msgs::msg::TransformStamped t =
+    this->tfBuffer->lookupTransform("world", this->gripperFrame,
+    tf2::TimePointZero);
+
+  _pose.header = t.header;
+  _pose.pose.position.x  = t.transform.translation.x;
+  _pose.pose.position.y  = t.transform.translation.y;
+  _pose.pose.position.z  = t.transform.translation.z;
+  _pose.pose.orientation = t.transform.rotation;
   return true;
 }
 
 //////////////////////////////////////////////////
-geometry_msgs::msg::Vector3 ScoringTier2::GetLinearJerk() const {
+ScoringTier2Node::ScoringTier2Node(const std::string &_yamlFile)
+    : Node("score_tier2_node") {
+  try {
+    auto config = YAML::LoadFile(_yamlFile);
+    this->score = std::make_unique<aic_scoring::ScoringTier2>(this);
+    this->score->Initialize(config);
+  } catch (const YAML::BadFile &_e) {
+    std::cerr << "Unable to open YAML file [" << _yamlFile << "]" << std::endl;
+    return;
+  }
+}
+
+//////////////////////////////////////////////////
+ScoringTier2::Vector3Msg ScoringTier2::GetLinearJerk() const {
   return this->linearJerk;
 }
 
 //////////////////////////////////////////////////
-geometry_msgs::msg::Vector3 ScoringTier2::GetAngularJerk() const {
-  return this->angularJerk;
-}
-
-//////////////////////////////////////////////////
-geometry_msgs::msg::Vector3 ScoringTier2::GetAvgLinearJerk() const {
+ScoringTier2::Vector3Msg ScoringTier2::GetAvgLinearJerk() const {
   return this->avgLinearJerk;
-}
-
-//////////////////////////////////////////////////
-geometry_msgs::msg::Vector3 ScoringTier2::GetAvgAngularJerk() const {
-  return this->avgAngularJerk;
 }
 
 //////////////////////////////////////////////////
 void ScoringTier2::ResetJerk() {
   this->poseHistory.clear();
-  this->linearJerk = geometry_msgs::msg::Vector3();
-  this->angularJerk = geometry_msgs::msg::Vector3();
-  this->avgLinearJerk = geometry_msgs::msg::Vector3();
-  this->avgAngularJerk = geometry_msgs::msg::Vector3();
-  this->accumLinearJerk = geometry_msgs::msg::Vector3();
-  this->accumAngularJerk = geometry_msgs::msg::Vector3();
+  this->linearJerk = Vector3Msg();
+  this->avgLinearJerk = Vector3Msg();
+  this->accumLinearJerk = Vector3Msg();
   this->totalJerkTime = 0.0;
 }
 

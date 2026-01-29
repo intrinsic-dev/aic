@@ -461,7 +461,7 @@ EngineState Engine::initialize() {
   model_change_state_client_ =
       node_->create_client<lifecycle_msgs::srv::ChangeState>(
           model_change_state_service_name_);
-  tf_buffer_ = std::make_unique<tf2_ros::Buffer>(node_->get_clock());
+  tf_buffer_ = std::make_shared<tf2_ros::Buffer>(node_->get_clock());
   tf_listener_ = std::make_unique<tf2_ros::TransformListener>(*tf_buffer_);
 
   scoring_tier2_ = std::make_unique<aic_scoring::ScoringTier2>(node_.get());
@@ -469,6 +469,8 @@ EngineState Engine::initialize() {
     RCLCPP_ERROR(node_->get_logger(), "Failed to initialize scoring system");
     return EngineState::Error;
   }
+  scoring_tier2_->SetGripperFrame(
+    node_->get_parameter("gripper_frame_name").as_string(), tf_buffer_);
 
   // Create output directory for bag files.
   std::error_code ec;
