@@ -116,7 +116,7 @@
   <!-- Instantiate Task Board Base -->
   <xacro:task_board_base prefix="task_board_"/>
 
-  <!-- LC Mount Rail 0: X=0.0275, Y=-0.10625 (left side, mount rail) -->
+  <!-- LC Mount Rail 0: X=0.01, Y=-0.10625 (left side, mount rail) -->
   <xacro:if value="$(arg lc_mount_rail_0_present)">
     <xacro:lc_mount prefix="lc_mount_rail_0_"/>
     <joint name="lc_mount_rail_0_joint" type="fixed">
@@ -126,7 +126,7 @@
     </joint>
   </xacro:if>
 
-  <!-- SFP Mount Rail 0: X=0.0535, Y=-0.10625 (left side, mount rail) -->
+  <!-- SFP Mount Rail 0: X=0.055, Y=-0.10625 (left side, mount rail) -->
   <xacro:if value="$(arg sfp_mount_rail_0_present)">
     <xacro:sfp_mount prefix="sfp_mount_rail_0_"/>
     <joint name="sfp_mount_rail_0_joint" type="fixed">
@@ -136,7 +136,7 @@
     </joint>
   </xacro:if>
 
-  <!-- SC Mount Rail 0: X=0.0985, Y=-0.10625 (left side, mount rail) -->
+  <!-- SC Mount Rail 0: X=0.1, Y=-0.10625 (left side, mount rail) -->
   <xacro:if value="$(arg sc_mount_rail_0_present)">
     <xacro:sc_mount prefix="sc_mount_rail_0_"/>
     <joint name="sc_mount_rail_0_joint" type="fixed">
@@ -146,7 +146,7 @@
     </joint>
   </xacro:if>
 
-  <!-- LC Mount Rail 1: X=0.0275, Y=0.10625 (right side, mount rail) -->
+  <!-- LC Mount Rail 1: X=0.01, Y=0.10625 (right side, mount rail) -->
   <xacro:if value="$(arg lc_mount_rail_1_present)">
     <xacro:lc_mount prefix="lc_mount_rail_1_"/>
     <joint name="lc_mount_rail_1_joint" type="fixed">
@@ -156,7 +156,7 @@
     </joint>
   </xacro:if>
 
-  <!-- SFP Mount Rail 1: X=0.0535, Y=0.10625 (right side, mount rail) -->
+  <!-- SFP Mount Rail 1: X=0.055, Y=0.10625 (right side, mount rail) -->
   <xacro:if value="$(arg sfp_mount_rail_1_present)">
     <xacro:sfp_mount prefix="sfp_mount_rail_1_"/>
     <joint name="sfp_mount_rail_1_joint" type="fixed">
