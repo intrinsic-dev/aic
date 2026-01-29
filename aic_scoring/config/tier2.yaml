@@ -15,6 +15,9 @@ topics:
   - topic:
       name: "/aic/gazebo/contacts/off_limit"
       type: "ros_gz_interfaces/msg/Contacts"
+  - topic:
+      name: "/axia80_m20/wrench"
+      type: "geometry_msgs/msg/WrenchStamped"
 
 # List of entity pairs to monitor.
 plugs:

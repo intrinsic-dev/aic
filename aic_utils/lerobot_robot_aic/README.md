@@ -53,3 +53,15 @@ pixi run lerobot-record \
   --play_sounds=false \
   --display_data=true
 ```
+
+Keys:
+
+```
+| Key         | Command          |
+| ----------- | ---------------- |
+| Right Arrow | Next episode     |
+| Left Arrow  | Previous episode |
+| ESC         | Stop recording   |
+```
+
+<!-- TODO: lerobot-record doesn't load the hil processor to handle teleop events (lerobot bug?) -->

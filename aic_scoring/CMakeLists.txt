@@ -6,6 +6,7 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 find_package(ament_cmake REQUIRED)
+find_package(geometry_msgs REQUIRED)
 find_package(gz_math_vendor REQUIRED)
 find_package(gz-math REQUIRED)
 set(GZ_MATH_VER ${gz-math_VERSION_MAJOR})
@@ -25,6 +26,7 @@ add_library(${PROJECT_NAME} SHARED
 
 target_link_libraries(${PROJECT_NAME}
   PUBLIC
+    ${geometry_msgs_TARGETS}
     rclcpp::rclcpp
     rosbag2_cpp::rosbag2_cpp
     ${ros_gz_interfaces_TARGETS}
