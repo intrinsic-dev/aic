@@ -101,8 +101,9 @@ void ScoringTier2::ResetConnections(
 }
 
 //////////////////////////////////////////////////
-void ScoringTier2::SetGripperFrame(const std::string &_gripperFrame,
-                                  std::shared_ptr<tf2_ros::Buffer> &_tfBuffer) {
+void ScoringTier2::SetGripperFrame(
+    const std::string &_gripperFrame,
+    std::shared_ptr<tf2_ros::Buffer> &_tfBuffer) {
   this->gripperFrame = _gripperFrame;
   this->tfBuffer = _tfBuffer;
 }
@@ -188,8 +189,8 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
         const auto msg = deserialize_from_rosbag<JointStateMsg>(msg_ptr);
         this->JointStateCallback(msg);
       } else if (msg_ptr->topic_name == kEndEffectorTopic) {
-          const auto msg = deserialize_from_rosbag<PoseMsg>(msg_ptr);
-          this->JerkCallback(msg);
+        const auto msg = deserialize_from_rosbag<PoseMsg>(msg_ptr);
+        this->JerkCallback(msg);
       } else if (msg_ptr->topic_name == kTfTopic) {
         const auto msg = deserialize_from_rosbag<TFMsg>(msg_ptr);
         this->TfCallback(msg);
@@ -215,8 +216,8 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
       }
     }
   } catch (const std::exception &e) {
-    RCLCPP_ERROR(this->node->get_logger(),
-                 "Error during scoring: %s", e.what());
+    RCLCPP_ERROR(this->node->get_logger(), "Error during scoring: %s",
+                 e.what());
     this->state = State::Idle;
     tier2_score.message = "Scoring failed.";
     return {tier2_score, tier3_score};
@@ -319,10 +320,8 @@ void ScoringTier2::JointMotionUpdateCallback(const JointMotionUpdateMsg &_msg) {
 //////////////////////////////////////////////////
 void ScoringTier2::JerkCallback(const PoseMsg &_pose) {
   // Debug output
-  std::cout << "("
-            << _pose.pose.position.x << " "
-            << _pose.pose.position.y << " "
-            << _pose.pose.position.z << ")" << std::endl;
+  // std::cout << "(" << _pose.pose.position.x << " " << _pose.pose.position.y
+  //           << " " << _pose.pose.position.z << ")" << std::endl;
 
   // Helper to convert ROS time to seconds.
   auto toSeconds = [](const builtin_interfaces::msg::Time &t) {
@@ -422,22 +421,20 @@ bool ScoringTier2::EndEffectorPose(PoseMsg &_pose) {
   }
 
   std::string warning_msg;
-  if (!this->tfBuffer->canTransform(
-    "world", this->gripperFrame, tf2::TimePointZero,
-    &warning_msg)) {
-      RCLCPP_WARN(this->node->get_logger(), "TF Wait Failed: %s",
-                  warning_msg.c_str());
-      return false;
+  if (!this->tfBuffer->canTransform("world", this->gripperFrame,
+                                    tf2::TimePointZero, &warning_msg)) {
+    RCLCPP_WARN(this->node->get_logger(), "TF Wait Failed: %s",
+                warning_msg.c_str());
+    return false;
   }
 
-  geometry_msgs::msg::TransformStamped t =
-    this->tfBuffer->lookupTransform("world", this->gripperFrame,
-    tf2::TimePointZero);
+  geometry_msgs::msg::TransformStamped t = this->tfBuffer->lookupTransform(
+      "world", this->gripperFrame, tf2::TimePointZero);
 
   _pose.header = t.header;
-  _pose.pose.position.x  = t.transform.translation.x;
-  _pose.pose.position.y  = t.transform.translation.y;
-  _pose.pose.position.z  = t.transform.translation.z;
+  _pose.pose.position.x = t.transform.translation.x;
+  _pose.pose.position.y = t.transform.translation.y;
+  _pose.pose.position.z = t.transform.translation.z;
   _pose.pose.orientation = t.transform.rotation;
   return true;
 }
