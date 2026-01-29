@@ -1,7 +1,7 @@
 name: aic
 services:
   eval:
-    image: ghcr.io/intrinsic-dev/aic_eval
+    image: ghcr.io/intrinsic-dev/aic/aic_eval
     build:
       dockerfile: docker/aic_eval/Dockerfile
       context: ..
