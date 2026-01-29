@@ -8,6 +8,7 @@
   <license>Apache License 2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
+  <build_depend>aic_control_interfaces</build_depend>
   <build_depend>geometry_msgs</build_depend>
   <build_depend>rclcpp</build_depend>
   <build_depend>rclcpp_components</build_depend>
@@ -19,6 +20,7 @@
   <build_depend>tf2_msgs</build_depend>
   <build_depend>tf2_geometry_msgs</build_depend>
 
+  <exec_depend>aic_control_interfaces</exec_depend>
   <exec_depend>geometry_msgs</exec_depend>
   <exec_depend>rclcpp</exec_depend>
   <exec_depend>rclcpp_components</exec_depend>

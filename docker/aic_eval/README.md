@@ -15,6 +15,21 @@ ros2 run rmw_zenoh_cpp rmw_zenohd
 
 It is recommended to use [distrobox](https://distrobox.it/#installation) for easy gui, gpu and network setup.
 
+> [!NOTE]
+> If the image is hosted in a private registry, you may need to authenticate first:
+> ```bash
+> sudo docker login ghcr.io
+> ```
+> Use your GitHub username and a Personal Access Token (PAT) with appropriate permissions.
+>
+> **TODO:** Remove this authentication note once the registry is made public.
+
+> [!NOTE]
+> Distrobox may use `podman` by default. To ensure it uses Docker, set the environment variable:
+> ```bash
+> export DBX_CONTAINER_MANAGER=docker
+> ```
+
 ```bash
 docker network create --internal aic
 distrobox create -r -i ghcr.io/intrinsic-dev/aic/aic_eval:latest --unshare-all -a --network=aic aic_eval

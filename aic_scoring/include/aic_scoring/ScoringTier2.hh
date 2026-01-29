@@ -34,6 +34,10 @@
 #include <geometry_msgs/msg/wrench_stamped.hpp>
 #include <gz/math/Pose3.hh>
 #include <rclcpp/rclcpp.hpp>
+
+#include <aic_control_interfaces/msg/joint_motion_update.hpp>
+#include <aic_control_interfaces/msg/motion_update.hpp>
+#include <geometry_msgs/msg/wrench_stamped.hpp>
 #include <ros_gz_interfaces/msg/contacts.hpp>
 #include <rosbag2_cpp/writer.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
@@ -78,6 +82,8 @@ namespace aic_scoring
     using ContactsMsg = ros_gz_interfaces::msg::Contacts;
     using PoseMsg = geometry_msgs::msg::PoseStamped;
     using WrenchMsg = geometry_msgs::msg::WrenchStamped;
+    using JointMotionUpdateMsg = aic_control_interfaces::msg::JointMotionUpdate;
+    using MotionUpdateMsg = aic_control_interfaces::msg::MotionUpdate;
     using Vector3Msg = geometry_msgs::msg::Vector3;
 
     enum class State {
@@ -103,6 +109,12 @@ namespace aic_scoring
 
     /// \brief Topic to record the end effector position.
     public: static constexpr const char* kEndEffectorTopic = "/end_effector";
+
+    /// \brief Topic to subscribe for pose commands sent to the controller.
+    public: static constexpr const char* kMotionUpdateTopic = "/aic_controller/pose_commands";
+
+    /// \brief Topic to subscribe for joint commands sent to the controller.
+    public: static constexpr const char* kJointMotionUpdateTopic = "/aic_controller/joint_commands";
 
     /// \brief Class constructor.
     /// \param[in] _node Pointer to the ROS node.
@@ -202,6 +214,14 @@ namespace aic_scoring
     /// \param[out] _pose End effector pose.
     /// \return True when the position is valid or false otherwise.
     private: bool EndEffectorPose(PoseMsg &_pose);
+
+    /// \brief Callback for pose commands received while scoring.
+    /// \param[in] _msg The received message.
+    private: void MotionUpdateCallback(const MotionUpdateMsg& _msg);
+
+    /// \brief Callback for joint commands received while scoring.
+    /// \param[in] _msg The received message.
+    private: void JointMotionUpdateCallback(const JointMotionUpdateMsg& _msg);
 
     /// \brief Pointer to a node.
     private: rclcpp::Node *node;

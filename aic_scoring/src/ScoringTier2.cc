@@ -178,35 +178,39 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
 
   tier2_score.message = "Scoring succeeded.";
 
-  try {
-    while (bagReader.has_next()) {
-      const auto msg_ptr = bagReader.read_next();
-      // Debugging to make sure messages are in the bag
-      // RCLCPP_INFO(this->node->get_logger(), "Received message on topic '%s'",
-      //     msg_ptr->topic_name.c_str());
-      if (msg_ptr->topic_name == kJointStateTopic) {
-        const auto msg = deserialize_from_rosbag<JointStateMsg>(msg_ptr);
-        this->JointStateCallback(msg);
-      } else if (msg_ptr->topic_name == kEndEffectorTopic) {
+  while (bagReader.has_next()) {
+    const auto msg_ptr = bagReader.read_next();
+    // Debugging to make sure messages are in the bag
+    // RCLCPP_INFO(this->node->get_logger(), "Received message on topic '%s'",
+    //     msg_ptr->topic_name.c_str());
+    if (msg_ptr->topic_name == kJointStateTopic) {
+      const auto msg = deserialize_from_rosbag<JointStateMsg>(msg_ptr);
+      this->JointStateCallback(msg);
+    } else if (msg_ptr->topic_name == kEndEffectorTopic) {
         const auto msg = deserialize_from_rosbag<PoseMsg>(msg_ptr);
         this->JerkCallback(msg);
-      } else if (msg_ptr->topic_name == kTfTopic) {
-        const auto msg = deserialize_from_rosbag<TFMsg>(msg_ptr);
-        this->TfCallback(msg);
-      } else if (msg_ptr->topic_name == kTfStaticTopic) {
-        const auto msg = deserialize_from_rosbag<TFMsg>(msg_ptr);
-        this->TfStaticCallback(msg);
-      } else if (msg_ptr->topic_name == kContactsTopic) {
-        const auto msg = deserialize_from_rosbag<ContactsMsg>(msg_ptr);
-        this->ContactsCallback(msg);
-      } else if (msg_ptr->topic_name == kWrenchTopic) {
-        const auto msg = deserialize_from_rosbag<WrenchMsg>(msg_ptr);
-        this->WrenchCallback(msg);
-      } else {
-        RCLCPP_WARN(this->node->get_logger(),
-                    "Unexpected topic name while scoring: %s",
-                    msg_ptr->topic_name.c_str());
-      }
+    } else if (msg_ptr->topic_name == kTfTopic) {
+      const auto msg = deserialize_from_rosbag<TFMsg>(msg_ptr);
+      this->TfCallback(msg);
+    } else if (msg_ptr->topic_name == kTfStaticTopic) {
+      const auto msg = deserialize_from_rosbag<TFMsg>(msg_ptr);
+      this->TfStaticCallback(msg);
+    } else if (msg_ptr->topic_name == kContactsTopic) {
+      const auto msg = deserialize_from_rosbag<ContactsMsg>(msg_ptr);
+      this->ContactsCallback(msg);
+    } else if (msg_ptr->topic_name == kWrenchTopic) {
+      const auto msg = deserialize_from_rosbag<WrenchMsg>(msg_ptr);
+      this->WrenchCallback(msg);
+    } else if (msg_ptr->topic_name == kMotionUpdateTopic) {
+      const auto msg = deserialize_from_rosbag<MotionUpdateMsg>(msg_ptr);
+      this->MotionUpdateCallback(msg);
+    } else if (msg_ptr->topic_name == kJointMotionUpdateTopic) {
+      const auto msg = deserialize_from_rosbag<JointMotionUpdateMsg>(msg_ptr);
+      this->JointMotionUpdateCallback(msg);
+    } else {
+      RCLCPP_WARN(this->node->get_logger(),
+                  "Unexpected topic name while scoring: %s",
+                  msg_ptr->topic_name.c_str());
     }
   } catch (const std::exception &e) {
     RCLCPP_ERROR(this->node->get_logger(), "Error during scoring: %s", e.what());
@@ -298,6 +302,16 @@ void ScoringTier2::ContactsCallback(const ContactsMsg &_msg) { (void)_msg; }
 
 //////////////////////////////////////////////////
 void ScoringTier2::WrenchCallback(const WrenchMsg &_msg) { (void)_msg; }
+
+//////////////////////////////////////////////////
+void ScoringTier2::MotionUpdateCallback(const MotionUpdateMsg &_msg) {
+  (void)_msg;
+}
+
+//////////////////////////////////////////////////
+void ScoringTier2::JointMotionUpdateCallback(const JointMotionUpdateMsg &_msg) {
+  (void)_msg;
+}
 
 //////////////////////////////////////////////////
 void ScoringTier2::JerkCallback(const PoseMsg &_pose) {

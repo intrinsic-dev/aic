@@ -6,6 +6,7 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 find_package(ament_cmake REQUIRED)
+find_package(aic_control_interfaces REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(gz_math_vendor REQUIRED)
 find_package(gz-math REQUIRED)
@@ -28,6 +29,7 @@ add_library(${PROJECT_NAME} SHARED
 
 target_link_libraries(${PROJECT_NAME}
   PUBLIC
+    ${aic_control_interfaces_TARGETS}
     ${geometry_msgs_TARGETS}
     rclcpp::rclcpp
     rosbag2_cpp::rosbag2_cpp
@@ -85,6 +87,6 @@ endif()
 
 # Export the targets and dependencies
 ament_export_targets(${PROJECT_NAME}_targets HAS_LIBRARY_TARGET)
-ament_export_dependencies(gz-math8 rclcpp rclcpp_components ros_gz_interfaces rosbag2_cpp sensor_msgs std_msgs tf2_msgs tf2_geometry_msgs yaml-cpp)
+ament_export_dependencies(aic_control_interfaces gz-math8 rclcpp rclcpp_components ros_gz_interfaces rosbag2_cpp sensor_msgs std_msgs tf2_msgs tf2_geometry_msgs yaml-cpp)
 
 ament_package()
