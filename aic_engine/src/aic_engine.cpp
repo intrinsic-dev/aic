@@ -433,6 +433,12 @@ EngineState Engine::initialize() {
   // Create ROS endpoints.
   const rclcpp::QoS reliable_qos = rclcpp::QoS(rclcpp::KeepLast(10)).reliable();
 
+  joint_state_sub_ = node_->create_subscription<JointStateMsg>(
+      "/joint_states", reliable_qos, [this](JointStateMsg::ConstSharedPtr msg) {
+        (void)msg;
+        last_joint_state_msg_ = msg;
+      });
+
   // Create subscriptions that ignore local publications as aic_engine will
   // also publish these messages to home the robot.
   rclcpp::SubscriptionOptions sub_options_ignore_local;
@@ -481,9 +487,8 @@ EngineState Engine::initialize() {
                 "Waiting for first joint state message...");
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
-  for (const auto& joint_name : last_joint_state_msg_->name) {
-    joint_names_.emplace_back(joint_name);
-  }
+  joint_names_ = last_joint_state_msg_->name;
+  joint_state_sub_.reset();
 
   scoring_tier2_ = std::make_unique<aic_scoring::ScoringTier2>(node_.get());
   if (!scoring_tier2_->Initialize(config_["scoring"])) {

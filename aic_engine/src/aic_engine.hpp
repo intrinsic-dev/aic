@@ -308,6 +308,7 @@ class Engine {
   // Internal ROS 2 node.
   rclcpp::Node::SharedPtr node_;
   // Subscriptions.
+  rclcpp::Subscription<JointStateMsg>::SharedPtr joint_state_sub_;
   rclcpp::Subscription<JointMotionUpdateMsg>::SharedPtr
       joint_motion_update_sub_;
   rclcpp::Subscription<MotionUpdateMsg>::SharedPtr motion_update_sub_;
