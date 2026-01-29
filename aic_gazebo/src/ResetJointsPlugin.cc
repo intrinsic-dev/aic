@@ -58,6 +58,8 @@ void ResetJointsPlugin::Configure(
 
   this->rosNode = rclcpp::Node::make_shared("reset_joints_node");
   const rclcpp::QoS reliable_qos = rclcpp::QoS(rclcpp::KeepLast(10)).reliable();
+  const rclcpp::QoS transient_qos =
+      rclcpp::QoS(rclcpp::KeepLast(10)).transient_local();
   // Subscribe to joint_states to get initial positions
   this->jointStateSub =
       this->rosNode->create_subscription<sensor_msgs::msg::JointState>(
@@ -71,6 +73,12 @@ void ResetJointsPlugin::Configure(
                       << ": " << msg->position[i] << std::endl;
               }
             }
+            sensor_msgs::msg::JointState initial_state;
+            initial_state.name = msg->name;
+            initial_state.position = msg->position;
+            initial_state.velocity = msg->velocity;
+            initial_state.effort = msg->effort;
+            this->homeJointStatePub->publish(initial_state);
           });
   // Subscribe to reset joint requests
   this->resetJointsReqSub = this->rosNode->create_subscription<
@@ -85,6 +93,10 @@ void ResetJointsPlugin::Configure(
         }
         this->requestId = msg->request_id;
       });
+  // Publish home joint states
+  this->homeJointStatePub =
+      this->rosNode->create_publisher<sensor_msgs::msg::JointState>(
+          "/home_joint_states", transient_qos);
   // Publish results for reset joint requests
   this->resetJointsResPub =
       this->rosNode->create_publisher<std_msgs::msg::String>(

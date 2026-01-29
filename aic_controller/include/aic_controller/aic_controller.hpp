@@ -260,9 +260,6 @@ class Controller : public controller_interface::ControllerInterface {
   ControlMode control_mode_;
   TargetMode target_mode_;
 
-  // Toggle to enable/disable the controller without deactivating it
-  bool enabled_ = false;
-
   CartesianLimits cartesian_limits_;
   std::vector<JointLimits> joint_limits_;
 
@@ -284,7 +281,6 @@ class Controller : public controller_interface::ControllerInterface {
   // ROS2 subscribers for user commands
   rclcpp::Subscription<MotionUpdate>::SharedPtr motion_update_sub_;
   rclcpp::Subscription<JointMotionUpdate>::SharedPtr joint_motion_update_sub_;
-  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr toggle_controller_sub_;
 
   // ROS2 Service servers for updating controller states
   rclcpp::Service<ChangeTargetMode>::SharedPtr change_target_mode_srv_;

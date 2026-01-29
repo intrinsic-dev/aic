@@ -179,14 +179,6 @@ controller_interface::CallbackReturn Controller::on_configure(
   motion_update_sub_ = this->get_node()->create_subscription<MotionUpdate>(
       "~/pose_commands", reliable_qos,
       [this](const MotionUpdate::SharedPtr msg) {
-        if (!enabled_) {
-          RCLCPP_WARN(get_node()->get_logger(),
-                      "Controller is not enabled. "
-                      "Ignoring MotionUpdate message.");
-
-          return;
-        }
-
         if (get_node()->get_current_state().id() !=
             lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE) {
           RCLCPP_WARN_THROTTLE(get_node()->get_logger(),
@@ -237,14 +229,6 @@ controller_interface::CallbackReturn Controller::on_configure(
       this->get_node()->create_subscription<JointMotionUpdate>(
           "~/joint_commands", reliable_qos,
           [this](const JointMotionUpdate::SharedPtr msg) {
-            if (!enabled_) {
-              RCLCPP_WARN(get_node()->get_logger(),
-                          "Controller is not enabled. "
-                          "Ignoring JointMotionUpdate message.");
-
-              return;
-            }
-
             if (get_node()->get_current_state().id() !=
                 lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE) {
               RCLCPP_WARN_THROTTLE(
@@ -333,13 +317,6 @@ controller_interface::CallbackReturn Controller::on_configure(
 
             joint_motion_update_rt_.set(*msg);
             motion_update_received_ = true;
-          });
-
-  toggle_controller_sub_ =
-      this->get_node()->create_subscription<std_msgs::msg::Bool>(
-          "~/toggle_controller", reliable_qos,
-          [this](const std_msgs::msg::Bool::SharedPtr msg) {
-            enabled_ = msg->data;
           });
 
   change_target_mode_srv_ = this->get_node()->create_service<ChangeTargetMode>(
@@ -666,8 +643,6 @@ controller_interface::CallbackReturn Controller::on_configure(
   state_publisher_rt_ =
       std::make_unique<realtime_tools::RealtimePublisher<ControllerState>>(
           state_publisher_);
-
-  enabled_ = true;
 
   return controller_interface::CallbackReturn::SUCCESS;
 }

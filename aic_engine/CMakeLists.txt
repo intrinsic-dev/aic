@@ -19,6 +19,7 @@ find_package(rclcpp_action REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(simulation_interfaces REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(trajectory_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(yaml_cpp_vendor REQUIRED)
 find_package(yaml-cpp REQUIRED)
@@ -41,6 +42,7 @@ target_link_libraries(aic_engine
   ${lifecycle_msgs_TARGETS}
   ${sensor_msgs_TARGETS}
   ${std_msgs_TARGETS}
+  ${trajectory_msgs_TARGETS}
   ${simulation_interfaces_TARGETS}
   ${tf2_ros_TARGETS}
 )

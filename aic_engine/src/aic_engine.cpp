@@ -430,13 +430,29 @@ EngineState Engine::initialize() {
     return engine_state_;
   }
 
+  if (!config_["robot"]) {
+    RCLCPP_ERROR(node_->get_logger(), "Config missing required key: 'robot'");
+    engine_state_ = EngineState::Error;
+    return engine_state_;
+  }
+  const auto& robot_config = config_["robot"];
+  if (!robot_config["joint_names"]) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "Config missing required key: 'robot.joint_names'");
+    engine_state_ = EngineState::Error;
+    return engine_state_;
+  }
+
   // Create ROS endpoints.
   const rclcpp::QoS reliable_qos = rclcpp::QoS(rclcpp::KeepLast(10)).reliable();
+  const rclcpp::QoS transient_qos =
+      rclcpp::QoS(rclcpp::KeepLast(10)).transient_local();
 
-  joint_state_sub_ = node_->create_subscription<JointStateMsg>(
-      "/joint_states", reliable_qos, [this](JointStateMsg::ConstSharedPtr msg) {
+  home_joint_state_sub_ = node_->create_subscription<JointStateMsg>(
+      "/home_joint_states", transient_qos,
+      [this](JointStateMsg::ConstSharedPtr msg) {
         (void)msg;
-        last_joint_state_msg_ = msg;
+        home_joint_state_msg_ = msg;
       });
 
   // Create subscriptions that ignore local publications as aic_engine will
@@ -463,12 +479,17 @@ EngineState Engine::initialize() {
         }
       });
 
+  joint_motion_update_pub_ = node_->create_publisher<JointMotionUpdateMsg>(
+      "/aic_controller/joint_commands", reliable_qos);
+
   insert_cable_action_client_ =
       rclcpp_action::create_client<InsertCableAction>(node_, "/insert_cable");
   spawn_entity_client_ =
       node_->create_client<SpawnEntitySrv>("/gz_server/spawn_entity");
   delete_entity_client_ =
       node_->create_client<DeleteEntitySrv>("/gz_server/delete_entity");
+  change_target_mode_client_ = node_->create_client<ChangeTargetModeSrv>(
+      "/aic_controller/change_target_mode");
   model_get_state_client_ = node_->create_client<lifecycle_msgs::srv::GetState>(
       model_get_state_service_name_);
   model_change_state_client_ =
@@ -482,13 +503,31 @@ EngineState Engine::initialize() {
   tf_listener_ = std::make_unique<tf2_ros::TransformListener>(*tf_buffer_);
 
   // Fetch joint names from initial joint states
-  while (!last_joint_state_msg_) {
-    RCLCPP_INFO(node_->get_logger(),
-                "Waiting for first joint state message...");
+  while (!home_joint_state_msg_) {
+    // Retrieve home joint states from ResetJoints plugin instead of
+    // /joint_states topic because it might have changed
+    RCLCPP_INFO(node_->get_logger(), "Waiting for home joint state message...");
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
-  joint_names_ = last_joint_state_msg_->name;
-  joint_state_sub_.reset();
+
+  const auto joint_name_config = robot_config["joint_names"];
+  for (auto it = joint_name_config.begin(); it != joint_name_config.end();
+       ++it) {
+    const std::string joint_name = it->as<std::string>();
+    for (std::size_t i = 0; i < home_joint_state_msg_->name.size(); ++i) {
+      const auto name = home_joint_state_msg_->name[i];
+      if (name == joint_name) {
+        auto pos = home_joint_state_msg_->position[i];
+        home_joint_positions_.emplace_back(name, pos);
+        break;
+      }
+    }
+  }
+  for (const auto [n, p] : home_joint_positions_) {
+    RCLCPP_INFO(node_->get_logger(), "========== home joint [%s] - [%f]",
+                n.c_str(), p);
+  }
+  home_joint_state_sub_.reset();
 
   scoring_tier2_ = std::make_unique<aic_scoring::ScoringTier2>(node_.get());
   if (!scoring_tier2_->Initialize(config_["scoring"])) {
@@ -1323,18 +1362,57 @@ void Engine::reset_after_trial(const Trial& trial) {
 bool Engine::home_robot() {
   RCLCPP_INFO(node_->get_logger(), "Homing robot to initial positions...");
 
-  // Disable aic controller
-  std_msgs::msg::Bool enable;
-  enable.data = false;
-  toggle_controller_pub_->publish(enable);
-  RCLCPP_INFO(node_->get_logger(), "Disabling aic_controller to home robot");
+  // Change target mode to Joint
+  {
+    auto change_mode_request = std::make_shared<ChangeTargetModeSrv::Request>();
+    change_mode_request->target_mode =
+        ChangeTargetModeSrv::Request::TARGET_MODE_JOINT;
+    auto change_mode_future =
+        change_target_mode_client_->async_send_request(change_mode_request);
+    if (change_mode_future.wait_for(std::chrono::seconds(5)) !=
+        std::future_status::ready) {
+      RCLCPP_ERROR(node_->get_logger(),
+                   "ChangeTargetMode service call timed out when changing to "
+                   "JOINT mode");
+      return false;
+    }
+    auto change_mode_response = change_mode_future.get();
+    if (!change_mode_response->success) {
+      RCLCPP_ERROR(node_->get_logger(),
+                   "Failed to change target mode to JOINT mode");
+      return false;
+    }
+    RCLCPP_INFO(node_->get_logger(),
+                "Successfully changed target mode to JOINT mode");
+  }
+
+  // Publish joint command to controller to hold in place
+  auto joint_msg = JointMotionUpdateMsg();
+  auto home_point = JointTrajectoryPoint();
+  home_point.positions = {};
+  for (const auto& [joint_name, joint_position] : home_joint_positions_) {
+    home_point.positions.emplace_back(joint_position);
+  }
+  if (home_point.positions.size() != 6) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "Home joint positions should account for exactly 6 joints.");
+    return false;
+  }
+  home_point.time_from_start.sec = 1;
+  joint_msg.target_state = home_point;
+  // Stiffness and damping values taken from home_robot.py
+  joint_msg.target_stiffness = {100.0, 100.0, 100.0, 50.0, 50.0, 50.0};
+  joint_msg.target_damping = {40.0, 40.0, 40.0, 15.0, 15.0, 15.0};
+  joint_msg.trajectory_generation_mode.mode =
+      TrajectoryGenerationMode::MODE_POSITION;
+  joint_motion_update_pub_->publish(joint_msg);
 
   // Publish ResetJoints msg containing all 6 joints
   ResetJointsMsg msg;
   const auto request_id =
       "reset_joint_" + std::to_string(this->node_->now().nanoseconds());
   msg.request_id = request_id;
-  for (const auto& name : joint_names_) {
+  for (const auto& [name, _] : home_joint_positions_) {
     msg.joint_names.emplace_back(name);
   }
   reset_joints_pub_->publish(msg);
@@ -1356,6 +1434,30 @@ bool Engine::home_robot() {
     break;
   }
   reset_request_ = std::nullopt;
+
+  // Change target mode back to Cartesian
+  {
+    auto change_mode_request = std::make_shared<ChangeTargetModeSrv::Request>();
+    change_mode_request->target_mode =
+        ChangeTargetModeSrv::Request::TARGET_MODE_CARTESIAN;
+    auto change_mode_future =
+        change_target_mode_client_->async_send_request(change_mode_request);
+    if (change_mode_future.wait_for(std::chrono::seconds(5)) !=
+        std::future_status::ready) {
+      RCLCPP_ERROR(node_->get_logger(),
+                   "ChangeTargetMode service call timed out when changing to "
+                   "CARTESIAN mode");
+      return false;
+    }
+    auto change_mode_response = change_mode_future.get();
+    if (!change_mode_response->success) {
+      RCLCPP_ERROR(node_->get_logger(),
+                   "Failed to change target mode to CARTESIAN mode");
+      return false;
+    }
+    RCLCPP_INFO(node_->get_logger(),
+                "Successfully changed target mode to CARTESIAN mode");
+  }
 
   if (!homed) {
     RCLCPP_ERROR(node_->get_logger(), "Robot failed to home within timeout.");

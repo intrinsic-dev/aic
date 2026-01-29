@@ -28,6 +28,8 @@
 #include "aic_control_interfaces/msg/joint_motion_update.hpp"
 #include "aic_control_interfaces/msg/motion_update.hpp"
 #include "aic_control_interfaces/msg/reset_joints.hpp"
+#include "aic_control_interfaces/msg/trajectory_generation_mode.hpp"
+#include "aic_control_interfaces/srv/change_target_mode.hpp"
 #include "aic_scoring/ScoringTier2.hh"
 #include "aic_scoring/TierScore.hh"
 #include "aic_task_interfaces/action/insert_cable.hpp"
@@ -45,21 +47,26 @@
 #include "tf2/exceptions.hpp"
 #include "tf2_ros/buffer.h"
 #include "tf2_ros/transform_listener.h"
+#include "trajectory_msgs/msg/joint_trajectory_point.hpp"
 #include "yaml-cpp/yaml.h"
 
 //==============================================================================
 namespace aic {
 
+using ChangeTargetModeSrv = aic_control_interfaces::srv::ChangeTargetMode;
 using DeleteEntitySrv = simulation_interfaces::srv::DeleteEntity;
 using InsertCableAction = aic_task_interfaces::action::InsertCable;
 using InsertCableGoalHandle =
     rclcpp_action::ServerGoalHandle<InsertCableAction>;
 using JointStateMsg = sensor_msgs::msg::JointState;
 using JointMotionUpdateMsg = aic_control_interfaces::msg::JointMotionUpdate;
+using JointTrajectoryPoint = trajectory_msgs::msg::JointTrajectoryPoint;
 using MotionUpdateMsg = aic_control_interfaces::msg::MotionUpdate;
 using ResetJointsMsg = aic_control_interfaces::msg::ResetJoints;
 using SpawnEntitySrv = simulation_interfaces::srv::SpawnEntity;
 using Task = aic_task_interfaces::msg::Task;
+using TrajectoryGenerationMode =
+    aic_control_interfaces::msg::TrajectoryGenerationMode;
 using WrenchStampedMsg = geometry_msgs::msg::WrenchStamped;
 
 //==============================================================================
@@ -308,18 +315,19 @@ class Engine {
   // Internal ROS 2 node.
   rclcpp::Node::SharedPtr node_;
   // Subscriptions.
-  rclcpp::Subscription<JointStateMsg>::SharedPtr joint_state_sub_;
+  rclcpp::Subscription<JointStateMsg>::SharedPtr home_joint_state_sub_;
   rclcpp::Subscription<JointMotionUpdateMsg>::SharedPtr
       joint_motion_update_sub_;
   rclcpp::Subscription<MotionUpdateMsg>::SharedPtr motion_update_sub_;
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr
       reset_joint_result_sub_;
   // Publishers.
+  rclcpp::Publisher<JointMotionUpdateMsg>::SharedPtr joint_motion_update_pub_;
   rclcpp::Publisher<ResetJointsMsg>::SharedPtr reset_joints_pub_;
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr toggle_controller_pub_;
 
   // Subscription messages.
-  JointStateMsg::ConstSharedPtr last_joint_state_msg_;
+  JointStateMsg::ConstSharedPtr home_joint_state_msg_;
   JointMotionUpdateMsg::ConstSharedPtr last_joint_motion_update_msg_;
   MotionUpdateMsg::ConstSharedPtr last_motion_update_msg_;
 
@@ -330,6 +338,7 @@ class Engine {
   // Service clients.
   rclcpp::Client<SpawnEntitySrv>::SharedPtr spawn_entity_client_;
   rclcpp::Client<DeleteEntitySrv>::SharedPtr delete_entity_client_;
+  rclcpp::Client<ChangeTargetModeSrv>::SharedPtr change_target_mode_client_;
   rclcpp::Client<lifecycle_msgs::srv::GetState>::SharedPtr
       model_get_state_client_;
   rclcpp::Client<lifecycle_msgs::srv::ChangeState>::SharedPtr
@@ -363,8 +372,8 @@ class Engine {
   // Whether the participant model has been discovered and readied.
   bool model_discovered_;
 
-  // Robot joint name
-  std::vector<std::string> joint_names_;
+  // Robot initial joint positions
+  std::vector<std::pair<std::string, double>> home_joint_positions_;
 
   // Request ID for resetting robot joints to inital positions.
   std::optional<std::pair<std::string, bool>> reset_request_;
