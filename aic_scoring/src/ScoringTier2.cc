@@ -168,41 +168,53 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
     bagReader.open(storage_options);
   } catch (const std::exception &e) {
     RCLCPP_ERROR(this->node->get_logger(), "Failed to open bag: %s", e.what());
-    this->state = State::Idle;
     return {tier2_score, tier3_score};
   }
   this->state = State::Scoring;
+
+  // Reset scoring state from previous sessions.
+  this->ResetJerk();
+  this->ResetPlugPortDistance();
+
   tier2_score.message = "Scoring succeeded.";
 
-  while (bagReader.has_next()) {
-    const auto msg_ptr = bagReader.read_next();
-    // Debugging to make sure messages are in the bag
-    // RCLCPP_INFO(this->node->get_logger(), "Received message on topic '%s'",
-    //     msg_ptr->topic_name.c_str());
-    if (msg_ptr->topic_name == kJointStateTopic) {
-      const auto msg = deserialize_from_rosbag<JointStateMsg>(msg_ptr);
-      this->JointStateCallback(msg);
-    } else if (msg_ptr->topic_name == kEndEffectorTopic) {
-      const auto msg = deserialize_from_rosbag<PoseMsg>(msg_ptr);
-      this->JerkCallback(msg);
-    } else if (msg_ptr->topic_name == kTfTopic) {
-      const auto msg = deserialize_from_rosbag<TFMsg>(msg_ptr);
-      this->TfCallback(msg);
-    } else if (msg_ptr->topic_name == kTfStaticTopic) {
-      const auto msg = deserialize_from_rosbag<TFMsg>(msg_ptr);
-      this->TfStaticCallback(msg);
-    } else if (msg_ptr->topic_name == kContactsTopic) {
-      const auto msg = deserialize_from_rosbag<ContactsMsg>(msg_ptr);
-      this->ContactsCallback(msg);
-    } else if (msg_ptr->topic_name == kWrenchTopic) {
-      const auto msg = deserialize_from_rosbag<WrenchMsg>(msg_ptr);
-      this->WrenchCallback(msg);
-    } else {
-      RCLCPP_WARN(this->node->get_logger(),
-                  "Unexpected topic name while scoring: %s",
-                  msg_ptr->topic_name.c_str());
+  try {
+    while (bagReader.has_next()) {
+      const auto msg_ptr = bagReader.read_next();
+      // Debugging to make sure messages are in the bag
+      // RCLCPP_INFO(this->node->get_logger(), "Received message on topic '%s'",
+      //     msg_ptr->topic_name.c_str());
+      if (msg_ptr->topic_name == kJointStateTopic) {
+        const auto msg = deserialize_from_rosbag<JointStateMsg>(msg_ptr);
+        this->JointStateCallback(msg);
+      } else if (msg_ptr->topic_name == kEndEffectorTopic) {
+        const auto msg = deserialize_from_rosbag<PoseMsg>(msg_ptr);
+        this->JerkCallback(msg);
+      } else if (msg_ptr->topic_name == kTfTopic) {
+        const auto msg = deserialize_from_rosbag<TFMsg>(msg_ptr);
+        this->TfCallback(msg);
+      } else if (msg_ptr->topic_name == kTfStaticTopic) {
+        const auto msg = deserialize_from_rosbag<TFMsg>(msg_ptr);
+        this->TfStaticCallback(msg);
+      } else if (msg_ptr->topic_name == kContactsTopic) {
+        const auto msg = deserialize_from_rosbag<ContactsMsg>(msg_ptr);
+        this->ContactsCallback(msg);
+      } else if (msg_ptr->topic_name == kWrenchTopic) {
+        const auto msg = deserialize_from_rosbag<WrenchMsg>(msg_ptr);
+        this->WrenchCallback(msg);
+      } else {
+        RCLCPP_WARN(this->node->get_logger(),
+                    "Unexpected topic name while scoring: %s",
+                    msg_ptr->topic_name.c_str());
+      }
     }
+  } catch (const std::exception &e) {
+    RCLCPP_ERROR(this->node->get_logger(), "Error during scoring: %s", e.what());
+    this->state = State::Idle;
+    tier2_score.message = "Scoring failed.";
+    return {tier2_score, tier3_score};
   }
+
   this->state = State::Idle;
   tier2_score.add_category_score("dummy_category", 3, "It works!");
   tier3_score = Tier3Score(1);
@@ -328,27 +340,12 @@ void ScoringTier2::JerkCallback(const PoseMsg &_pose) {
   double t2 = toSeconds(this->poseHistory[2].header.stamp);
   double t3 = toSeconds(this->poseHistory[3].header.stamp);
 
-  // Helper to convert quaternion to Euler angles (roll, pitch, yaw).
-  auto quatToEuler = [](const geometry_msgs::msg::Quaternion &q, double &roll,
-                        double &pitch, double &yaw) {
-    tf2::Quaternion quat_tf;
-    tf2::fromMsg(q, quat_tf);
-    tf2::Matrix3x3(quat_tf).getRPY(roll, pitch, yaw);
-  };
-
   // Extract positions.
   double px[4], py[4], pz[4];
   for (int i = 0; i < 4; ++i) {
     px[i] = this->poseHistory[i].pose.position.x;
     py[i] = this->poseHistory[i].pose.position.y;
     pz[i] = this->poseHistory[i].pose.position.z;
-  }
-
-  // Extract Euler angles.
-  double roll[4], pitch[4], yaw[4];
-  for (int i = 0; i < 4; ++i) {
-    quatToEuler(this->poseHistory[i].pose.orientation, roll[i], pitch[i],
-                yaw[i]);
   }
 
   // Compute finite differences for jerk.
