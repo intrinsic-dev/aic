@@ -21,4 +21,6 @@ from .aic_teleop import (
     AICKeyboardEETeleopConfig,
     AICKeyboardTeleop,
     AICKeyboardTeleopConfig,
+    AICSpaceMouseTeleop,
+    AICSpaceMouseTeleopConfig
 )
