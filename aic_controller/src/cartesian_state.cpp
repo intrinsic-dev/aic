@@ -26,9 +26,11 @@ CartesianState::CartesianState()
 
 //==============================================================================
 CartesianState::CartesianState(const geometry_msgs::msg::Pose& pose_msg,
-                               const geometry_msgs::msg::Twist& velocity_msg) {
+                               const geometry_msgs::msg::Twist& velocity_msg,
+                               const std_msgs::msg::Header& header_msg) {
   tf2::fromMsg(pose_msg, pose);
   tf2::fromMsg(velocity_msg, velocity);
+  header = header_msg;
 }
 
 //==============================================================================

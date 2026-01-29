@@ -38,7 +38,7 @@ in the following section.
 
 To integrate a policy using ROS data structures, such as `geometry_msgs.msg.Pose`,
 `sensor_msgs.msg.Image`, and so on:
- * define a Python class which derives from [`PolicyRos`](https://github.com/intrinsic-dev/aic/blob/mq/policy_doc/aic_model/aic_model/policy_ros.py)
+ * define a Python class which derives from [`PolicyRos`](https://github.com/intrinsic-dev/aic/blob/main/aic_model/aic_model/policy_ros.py)
  * implement callbacks as needed to respond to the challenge environment:
    * [`start_task_callback()`](https://github.com/intrinsic-dev/aic/blob/main/aic_example_policies/aic_example_policies/ros/WaveArm.py#L27): called when `aic_engine` requests a new task.
    * [`stop_task_callback()`](https://github.com/intrinsic-dev/aic/blob/main/aic_example_policies/aic_example_policies/ros/WaveArm.py#L30): called when `aic_engine` requests to stop the current task.

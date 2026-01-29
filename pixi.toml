@@ -9,6 +9,7 @@ preview = ["pixi-build"]
 
 [dependencies]
 evdev = ">=1.9.2,<2"
+opencv = "<4.13.0"
 ros-kilted-aic-control-interfaces = { path = "aic_interfaces/aic_control_interfaces" }
 ros-kilted-aic-example-policies = { path = "aic_example_policies" }
 ros-kilted-aic-model = { path = "aic_model" }

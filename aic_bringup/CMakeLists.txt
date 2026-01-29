@@ -16,6 +16,7 @@ install(
 install(PROGRAMS
   scripts/move_to_contact.py
   scripts/gripper_action.py
+  scripts/teleop_keyboard.py
   scripts/test_impedance.py
   scripts/home_robot.py
   DESTINATION lib/${PROJECT_NAME}

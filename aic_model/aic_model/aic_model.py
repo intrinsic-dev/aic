@@ -137,7 +137,7 @@ class AicModel(LifecycleNode):
     def observation_callback(self, msg):
         if not self.is_active:
             return
-        if self._policy:
+        if self._policy and self.goal_handle is not None and self.goal_handle.is_active:
             self._policy.observation_callback(msg)
 
     def insert_cable_goal_callback(self, goal_request):
