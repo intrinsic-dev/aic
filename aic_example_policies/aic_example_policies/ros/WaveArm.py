@@ -30,66 +30,57 @@ class WaveArm(PolicyRos):
         super().__init__(parent_node)
         self.get_logger().info("WaveArm.__init__()")
 
-    def start_callback(self, task: Task):
-        self.get_logger().info("WaveArm.start_callback()")
-        self.goal_start_time = self.get_clock().now()
-
-    def stop_callback(self):
-        self.get_logger().info("WaveArm.stop_callback()")
-        self.goal_start_time = None
-
-    def goal_completed(self) -> bool:
-        return self.get_clock().now() - self.goal_start_time >= Duration(seconds=5)
-
-    def observation_callback(self, observation: Observation):
-        #
-        # Move the arm along a line, while looking down at the task board.
-        #
-        t = self.get_seconds(observation.left_image.header)
-        tcp = observation.tcp_transform.transform.translation
-
-        loop_duration = 5.0  # seconds
-
-        # loop_fraction smoothly interpolates from 0..1 during the loop time
-        loop_fraction = (t % loop_duration) / loop_duration
-
-        # y_fraction smoothly interpolates from -1..1..-1 during the loop time
-        y_fraction = 2 * loop_fraction
-        if y_fraction > 1.0:
-            y_fraction = 2.0 - y_fraction
-        y_fraction -= 1.0
-
-        # create a smooth series of target points that flies over the task board
-        target_x = -0.4
-        target_y = 0.45 + 0.3 * y_fraction
-        target_z = 0.25
-
-        self.set_pose_target(
-            Pose(
-                position=Point(x=target_x, y=target_y, z=target_z),
-                orientation=Quaternion(x=0.0, y=1.0, z=0.0, w=0.0),
-            )
-        )
-
-        self.get_logger().info(
-            (
-                f"tcp: ({tcp.x:+0.3f} {tcp.y:+0.3f}, {tcp.z:+0.3f}) "
-                f"target: ({target_x:+0.3f} {target_y:0.3f} {target_z:0.3f})"
-            )
-        )
-
-    def get_seconds(self, header):
-        return header.stamp.sec + header.stamp.nanosec / 1e9
-
-    def get_feedback_string(self) -> str:
-        return "Hello, world!"
-
-    def insert_cable(self, get_observation: Callable[[], Observation]):
-        self.get_logger().info("WaveArm.insert_cable() enter")
+    def insert_cable(
+        self,
+        task: Task,
+        get_observation: Callable[[], Observation],
+        set_pose_target: Callable[[Pose, str], []],
+        send_feedback: Callable[[str], []],
+    ):
+        self.get_logger().info(f"WaveArm.insert_cable() enter. Task: {task}")
         start_time = time.clock_gettime(0)
-        while time.clock_gettime(0) - start_time < 3.0:
-            time.sleep(0.5)
+        send_feedback("waving the arm around")
+        while time.clock_gettime(0) - start_time < 10.0:
+            time.sleep(0.25)
             observation = get_observation()
-            t = self.get_seconds(observation.center_image.header)
+            t = (
+                observation.center_image.header.stamp.sec
+                + observation.center_image.header.stamp.nanosec / 1e9
+            )
             self.get_logger().info(f"observation time: {t}")
+
+            #
+            # Move the arm along a line, while looking down at the task board.
+            #
+            tcp = observation.tcp_transform.transform.translation
+            loop_duration = 5.0  # seconds
+
+            # loop_fraction smoothly interpolates from 0..1 during the loop time
+            loop_fraction = (t % loop_duration) / loop_duration
+
+            # y_fraction smoothly interpolates from -1..1..-1 during the loop time
+            y_fraction = 2 * loop_fraction
+            if y_fraction > 1.0:
+                y_fraction = 2.0 - y_fraction
+            y_fraction -= 1.0
+
+            # create a smooth series of target points that flies over the task board
+            target_x = -0.4
+            target_y = 0.45 + 0.3 * y_fraction
+            target_z = 0.25
+
+            set_pose_target(
+                Pose(
+                    position=Point(x=target_x, y=target_y, z=target_z),
+                    orientation=Quaternion(x=0.0, y=1.0, z=0.0, w=0.0),
+                )
+            )
+
+            self.get_logger().info(
+                (
+                    f"tcp: ({tcp.x:+0.3f} {tcp.y:+0.3f}, {tcp.z:+0.3f}) "
+                    f"target: ({target_x:+0.3f} {target_y:0.3f} {target_z:0.3f})"
+                )
+            )
+
         self.get_logger().info("WaveArm.insert_cable() exit")

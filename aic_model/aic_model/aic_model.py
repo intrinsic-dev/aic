@@ -91,7 +91,7 @@ class AicModel(LifecycleNode):
             goal_callback=self.insert_cable_goal_callback,
             handle_accepted_callback=self.insert_cable_accepted_goal_callback,
             cancel_callback=self.insert_cable_cancel_callback,
-            # callback_group=self._action_callback_group,
+            callback_group=self._action_callback_group,
         )
         self.motion_update_pub = self.create_lifecycle_publisher(
             MotionUpdate, "/aic_controller/pose_commands", 2
@@ -120,7 +120,6 @@ class AicModel(LifecycleNode):
 
     def on_deactivate(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.get_logger().info(f"on_deactivate({state})")
-        self._policy.stop_callback()
         self._policy = None
         self.is_active = False
         return super().on_deactivate(state)
@@ -147,9 +146,6 @@ class AicModel(LifecycleNode):
         return Empty.Response()
 
     def observation_callback(self, msg):
-        if not self.is_active:
-            return
-        self.get_logger().info("observation")
         self._observation_msg = msg
 
     # def get_observation(self, max_seconds_to_wait=0.0):
@@ -183,20 +179,75 @@ class AicModel(LifecycleNode):
         return CancelResponse.ACCEPT
 
     def observation_callable(self):
-        self.get_logger().info("observation_callable()")
         return self._observation_msg
+
+    def set_pose_target(self, pose: Pose, frame_id: str = "base_link"):
+        """Set a pose target for the robot arm.
+
+        The robot can be controlled in several different ways. This function
+        is intended to be the simplest way to move the arm around, by sending
+        a desired pose (position and orientation) for the gripper's
+        "tool control point" (TCP), which is the "pinch point" between the very
+        end of the gripper fingers. The rest of the control stack will take care
+        of moving all the arm's joints to so that the gripper TCP ends up in
+        the desired position and orientation.
+
+        The constants defined in this function are intended to provide
+        reasonable default behavior if the arm is unable to achieve the
+        requested pose. Different values for stiffness, damping, wrenches, and
+        so on can be used for different types of arm behavior. These values
+        are only intended to provide a starting point, and can be adjusted as
+        desired.
+        """
+
+        motion_update_msg = MotionUpdate()
+        motion_update_msg.pose = pose
+        motion_update_msg.header.frame_id = frame_id
+        motion_update_msg.header.stamp = self.get_clock().now().to_msg()
+
+        motion_update_msg.target_stiffness = np.diag(
+            [100.0, 100.0, 100.0, 50.0, 50.0, 50.0]
+        ).flatten()
+        motion_update_msg.target_damping = np.diag(
+            [40.0, 40.0, 40.0, 15.0, 15.0, 15.0]
+        ).flatten()
+
+        motion_update_msg.feedforward_wrench_at_tip = Wrench(
+            force=Vector3(x=0.0, y=0.0, z=0.0), torque=Vector3(x=0.0, y=0.0, z=0.0)
+        )
+
+        motion_update_msg.wrench_feedback_gains_at_tip = Wrench(
+            force=Vector3(x=0.5, y=0.5, z=0.5), torque=Vector3(x=0.0, y=0.0, z=0.0)
+        )
+
+        motion_update_msg.trajectory_generation_mode.mode = (
+            TrajectoryGenerationMode.MODE_POSITION
+        )
+
+        self.motion_update_pub.publish(motion_update_msg)
+
+    def send_feedback(self, goal_handle, feedback):
+        feedback_msg = InsertCable.Feedback()
+        feedback_msg.message = feedback
+        goal_handle.publish_feedback(feedback_msg)
 
     async def insert_cable_execute_callback(self, goal_handle):
         self.get_logger().info("Entering insert_cable_execute_callback()")
         await self.set_cartesian_mode()
-        self._policy.insert_cable(get_observation = lambda: self.observation_callable())
-        # self._action_thread = threading.Thread(
-        #     target=self._policy.insert_cable,
-        #     kwargs={"get_observation": lambda: self.observation_callable},
-        # )
-        # self._action_thread.start()
-
-        # await self._policy.insert_cable(goal_handle.request.task, lambda: self.observation_callable)
+        self._action_thread = threading.Thread(
+            target=self._policy.insert_cable,
+            kwargs={
+                "task": goal_handle.request,
+                "get_observation": lambda: self.observation_callable(),
+                "set_pose_target": lambda pose, frame_id="base_link": self.set_pose_target(
+                    pose, frame_id
+                ),
+                "send_feedback": lambda feedback: self.send_feedback(
+                    goal_handle, feedback
+                ),
+            },
+        )
+        self._action_thread.start()
 
         while rclpy.ok():
             self.get_logger().info("insert_cable execute loop")
@@ -238,21 +289,13 @@ class AicModel(LifecycleNode):
                 return result
 
             # Check if the task has been completed.
-            if not self._action_thread.is_alive(): #self._policy.goal_completed():
-                self.get_logger().info(
-                    "Policy thread exited. Action complete."
-                )
+            if not self._action_thread.is_alive():
+                self.get_logger().info("Policy thread exited. Action complete.")
                 goal_handle.succeed()
                 result = InsertCable.Result()
                 result.success = True  # todo: get the result from the policy
                 self.goal_handle = None
                 return result
-
-            # Send a feedback message.
-            feedback = InsertCable.Feedback()
-            if self._policy:
-                feedback.message = self._policy.get_feedback_string()
-            goal_handle.publish_feedback(feedback)
 
         self.get_logger().info("Exiting insert_cable execute loop")
 
