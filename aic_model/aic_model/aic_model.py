@@ -19,6 +19,7 @@ import importlib
 import inspect
 import numpy as np
 import rclpy
+import threading
 
 from aic_control_interfaces.msg import (
     JointMotionUpdate,
@@ -31,7 +32,7 @@ from aic_task_interfaces.action import InsertCable
 from geometry_msgs.msg import Point, Pose, Quaternion, Wrench, Vector3
 from rclpy.action import ActionServer, CancelResponse, GoalResponse
 from rclpy.callback_groups import ReentrantCallbackGroup
-from rclpy.executors import ExternalShutdownException
+from rclpy.executors import ExternalShutdownException, MultiThreadedExecutor
 from rclpy.lifecycle import (
     LifecycleNode,
     LifecycleState,
@@ -60,6 +61,7 @@ class AicModel(LifecycleNode):
         self.get_logger().info(f"Loaded policy module {policy_module_name}")
         policy_module_classes = inspect.getmembers(policy_module, inspect.isclass)
         self._policy_class = None
+        self._observation_msg = None
         expected_policy_class_name = policy_module_name.split(".")[-1]
         for policy_class_name, policy_class in policy_module_classes:
             if policy_class_name == expected_policy_class_name:
@@ -79,6 +81,8 @@ class AicModel(LifecycleNode):
         self.observation_sub = self.create_subscription(
             Observation, "observations", self.observation_callback, 10
         )
+        self._action_callback_group = ReentrantCallbackGroup()
+        self._action_thread = None
         self.action_server = ActionServer(
             self,
             InsertCable,
@@ -87,6 +91,7 @@ class AicModel(LifecycleNode):
             goal_callback=self.insert_cable_goal_callback,
             handle_accepted_callback=self.insert_cable_accepted_goal_callback,
             cancel_callback=self.insert_cable_cancel_callback,
+            # callback_group=self._action_callback_group,
         )
         self.motion_update_pub = self.create_lifecycle_publisher(
             MotionUpdate, "/aic_controller/pose_commands", 2
@@ -144,8 +149,13 @@ class AicModel(LifecycleNode):
     def observation_callback(self, msg):
         if not self.is_active:
             return
-        if self._policy and self.goal_handle is not None and self.goal_handle.is_active:
-            self._policy.observation_callback(msg)
+        self.get_logger().info("observation")
+        self._observation_msg = msg
+
+    # def get_observation(self, max_seconds_to_wait=0.0):
+    #     if max_seconds_to_wait == 0.0:
+    #         return self._observation_msg
+    #     else:
 
     def insert_cable_goal_callback(self, goal_request):
         if not self.is_active:
@@ -172,10 +182,21 @@ class AicModel(LifecycleNode):
         self.get_logger().info("Received insert_cable cancel request")
         return CancelResponse.ACCEPT
 
+    def observation_callable(self):
+        self.get_logger().info("observation_callable()")
+        return self._observation_msg
+
     async def insert_cable_execute_callback(self, goal_handle):
         self.get_logger().info("Entering insert_cable_execute_callback()")
         await self.set_cartesian_mode()
-        self._policy.start_callback(goal_handle.request.task)
+        self._policy.insert_cable(get_observation = lambda: self.observation_callable())
+        # self._action_thread = threading.Thread(
+        #     target=self._policy.insert_cable,
+        #     kwargs={"get_observation": lambda: self.observation_callable},
+        # )
+        # self._action_thread.start()
+
+        # await self._policy.insert_cable(goal_handle.request.task, lambda: self.observation_callable)
 
         while rclpy.ok():
             self.get_logger().info("insert_cable execute loop")
@@ -217,13 +238,13 @@ class AicModel(LifecycleNode):
                 return result
 
             # Check if the task has been completed.
-            if self._policy.goal_completed():
+            if not self._action_thread.is_alive(): #self._policy.goal_completed():
                 self.get_logger().info(
-                    "Exiting insert_cable execute loop after success."
+                    "Policy thread exited. Action complete."
                 )
                 goal_handle.succeed()
                 result = InsertCable.Result()
-                result.success = True
+                result.success = True  # todo: get the result from the policy
                 self.goal_handle = None
                 return result
 
@@ -256,7 +277,9 @@ def main(args=None):
     try:
         with rclpy.init(args=args):
             aic_model_node = AicModel()
-            rclpy.spin(aic_model_node)
+            executor = MultiThreadedExecutor()
+            executor.add_node(aic_model_node)
+            executor.spin()
     except (KeyboardInterrupt, ExternalShutdownException):
         pass
 

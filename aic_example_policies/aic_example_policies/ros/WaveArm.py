@@ -15,11 +15,14 @@
 #
 
 
+import time
+
 from aic_model.policy_ros import PolicyRos
 from aic_model_interfaces.msg import Observation
 from aic_task_interfaces.msg import Task
 from geometry_msgs.msg import Point, Pose, Quaternion
 from rclpy.duration import Duration
+from typing import Callable
 
 
 class WaveArm(PolicyRos):
@@ -80,3 +83,13 @@ class WaveArm(PolicyRos):
 
     def get_feedback_string(self) -> str:
         return "Hello, world!"
+
+    def insert_cable(self, get_observation: Callable[[], Observation]):
+        self.get_logger().info("WaveArm.insert_cable() enter")
+        start_time = time.clock_gettime(0)
+        while time.clock_gettime(0) - start_time < 3.0:
+            time.sleep(0.5)
+            observation = get_observation()
+            t = self.get_seconds(observation.center_image.header)
+            self.get_logger().info(f"observation time: {t}")
+        self.get_logger().info("WaveArm.insert_cable() exit")

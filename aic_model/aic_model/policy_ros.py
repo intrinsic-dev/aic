@@ -20,6 +20,7 @@ from aic_control_interfaces.msg import MotionUpdate, TrajectoryGenerationMode
 from aic_model_interfaces.msg import Observation
 from aic_task_interfaces.msg import Task
 from geometry_msgs.msg import Point, Pose, Quaternion, Wrench, Vector3
+from typing import Callable
 import numpy as np
 
 
@@ -103,3 +104,8 @@ class PolicyRos(ABC):
 
     def get_clock(self):
         return self._parent_node.get_clock()
+
+    @abstractmethod
+    def insert_cable(self, get_observation: Callable[[], Observation]):
+        """Called when the insert_cable task is requested by aic_engine"""
+        pass
