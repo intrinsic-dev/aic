@@ -70,16 +70,21 @@ bool CartesianImpedanceAction::compute(
   if ((params.pose_error_integrator_gain.array() > 0).any()) {
     pose_error_integrated_ += tool_pose_error;
     // Clamp to pose error integrated bounds
-    pose_error_integrated_.cwiseMin(params.pose_error_integrator_bound)
-        .cwiseMax(-params.pose_error_integrator_bound);
+    pose_error_integrated_ =
+        pose_error_integrated_.cwiseMin(params.pose_error_integrator_bound)
+            .cwiseMax(-params.pose_error_integrator_bound);
 
     control_wrench +=
         params.pose_error_integrator_gain.cwiseProduct(pose_error_integrated_);
   }
 
   // Clamp to wrench value bounds
-  control_wrench.cwiseMin(params.maximum_wrench)
-      .cwiseMax(-params.maximum_wrench);
+  control_wrench = control_wrench.cwiseMin(params.maximum_wrench)
+                       .cwiseMax(-params.maximum_wrench);
+
+  RCLCPP_WARN_STREAM_THROTTLE(logging_if_->get_logger(),
+                              *clock_if_->get_clock(), 1000,
+                              "Control wrench: " << control_wrench.transpose());
 
   // Get target torque from jacobian
   Eigen::VectorXd target_torque = jacobian.transpose() * control_wrench;

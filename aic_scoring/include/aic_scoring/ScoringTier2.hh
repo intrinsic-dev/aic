@@ -26,6 +26,8 @@
 
 #include <rclcpp/rclcpp.hpp>
 
+#include <aic_control_interfaces/msg/joint_motion_update.hpp>
+#include <aic_control_interfaces/msg/motion_update.hpp>
 #include <geometry_msgs/msg/wrench_stamped.hpp>
 #include <ros_gz_interfaces/msg/contacts.hpp>
 #include <rosbag2_cpp/writer.hpp>
@@ -69,6 +71,8 @@ namespace aic_scoring
     using TFMsg = tf2_msgs::msg::TFMessage;
     using ContactsMsg = ros_gz_interfaces::msg::Contacts;
     using WrenchMsg = geometry_msgs::msg::WrenchStamped;
+    using JointMotionUpdateMsg = aic_control_interfaces::msg::JointMotionUpdate;
+    using MotionUpdateMsg = aic_control_interfaces::msg::MotionUpdate;
 
     enum class State {
       Idle,
@@ -90,6 +94,12 @@ namespace aic_scoring
 
     /// \brief Topic to subscribe for force torque sensor wrench.
     public: static constexpr const char* kWrenchTopic = "/axia80_m20/wrench";
+
+    /// \brief Topic to subscribe for pose commands sent to the controller.
+    public: static constexpr const char* kMotionUpdateTopic = "/aic_controller/pose_commands";
+
+    /// \brief Topic to subscribe for joint commands sent to the controller.
+    public: static constexpr const char* kJointMotionUpdateTopic = "/aic_controller/joint_commands";
 
     /// \brief Class constructor.
     /// \param[in] _node Pointer to the ROS node.
@@ -143,6 +153,14 @@ namespace aic_scoring
     /// \brief Callback for force torque sensor wrenches received while scoring.
     /// \param[in] _msg The received message.
     private: void WrenchCallback(const WrenchMsg& _msg);
+
+    /// \brief Callback for pose commands received while scoring.
+    /// \param[in] _msg The received message.
+    private: void MotionUpdateCallback(const MotionUpdateMsg& _msg);
+
+    /// \brief Callback for joint commands received while scoring.
+    /// \param[in] _msg The received message.
+    private: void JointMotionUpdateCallback(const JointMotionUpdateMsg& _msg);
 
     /// \brief Pointer to a node.
     private: rclcpp::Node *node;

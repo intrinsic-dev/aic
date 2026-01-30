@@ -35,10 +35,9 @@ ros-kilted-aic-task-interfaces = { path = "aic_interfaces/aic_task_interfaces" }
 ros-kilted-lerobot-robot-aic = { path = "aic_utils/lerobot_robot_aic" }
 
 [pypi-dependencies]
-lerobot = "==0.4.2"
+lerobot = "==0.4.3"
 lerobot_robot_ros = { git = "https://github.com/koonpeng/lerobot-ros", rev = "535ce545a8887c5f58596833827312ddebcbde75", subdirectory = "lerobot_robot_ros" }
 lerobot_teleoperator_devices = { git = "https://github.com/koonpeng/lerobot-ros", rev = "535ce545a8887c5f58596833827312ddebcbde75", subdirectory = "lerobot_teleoperator_devices" }
-pyspacemouse = ">=1.1.5, <2"
 
 [activation.env]
 RMW_IMPLEMENTATION = "rmw_zenoh_cpp"
