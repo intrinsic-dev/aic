@@ -10,7 +10,7 @@ services:
     networks:
       - default
   model:
-    image: ghcr.io/intrinsic-dev/aic_model
+    image: localhost/aic/aic_model
     build:
       dockerfile: docker/aic_model/Dockerfile
       context: ..
