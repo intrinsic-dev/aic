@@ -33,6 +33,7 @@
 #include <rosbag2_cpp/writer.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
 #include <tf2_msgs/msg/tf_message.hpp>
+#include <tf2/buffer_core.hpp>
 
 #include <aic_scoring/TierScore.hh>
 
@@ -134,6 +135,12 @@ namespace aic_scoring
     /// \return An unordered_set with the missing required topic names.
     public: std::set<std::string> GetMissingRequiredTopics() const;
 
+    /// \brief Set the start time for the task.
+    public: void SetTaskStartTime(const rclcpp::Time& time);
+
+    /// \brief Set the end time for the task.
+    public: void SetTaskEndTime(const rclcpp::Time& time);
+
     /// \brief Callback for joint state messages received while scoring.
     /// \param[in] _msg The received message.
     private: void JointStateCallback(const JointStateMsg& _msg);
@@ -162,6 +169,11 @@ namespace aic_scoring
     /// \param[in] _msg The received message.
     private: void JointMotionUpdateCallback(const JointMotionUpdateMsg& _msg);
 
+    /// \brief Calculates the distance between the plug and the port.
+    /// \param[in] _timestamp Time to check the distance
+    /// \return Distance between plug and port at the end of the task. nullopt if failed
+    private: std::optional<double> GetPlugPortDistance(tf2::TimePoint t) const;
+
     /// \brief Pointer to a node.
     private: rclcpp::Node *node;
 
@@ -181,8 +193,20 @@ namespace aic_scoring
     /// \brief The URI of the bag currently being processed.
     private: std::string bagUri;
 
+    /// \brief The time the task started, used for computing task duration.
+    private: std::optional<rclcpp::Time> task_start_time;
+
+    /// \brief The time the task ended, used for computing task duration.
+    private: std::optional<rclcpp::Time> task_end_time;
+
     /// \brief State the scoring system is in.
     private: State state = State::Idle;
+
+    /// \brief Buffer to compute tf for scoring.
+    private: tf2::BufferCore tf2_buffer;
+
+    /// \brief Timestamps of received tfs to be used for distance calculation
+    private: std::set<tf2::TimePoint> timestamps;
 
     /// \brief Mutex to protect the access to the bag.
     private: std::mutex mutex;

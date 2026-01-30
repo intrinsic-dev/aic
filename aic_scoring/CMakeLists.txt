@@ -17,6 +17,8 @@ find_package(ros_gz_interfaces REQUIRED)
 find_package(rosbag2_cpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
 find_package(tf2_msgs REQUIRED)
 find_package(yaml-cpp REQUIRED)
 
@@ -34,6 +36,8 @@ target_link_libraries(${PROJECT_NAME}
     ${ros_gz_interfaces_TARGETS}
     ${sensor_msgs_TARGETS}
     ${std_msgs_TARGETS}
+    tf2::tf2
+    tf2_geometry_msgs::tf2_geometry_msgs
     ${tf2_msgs_TARGETS}
     yaml-cpp
     gz-math${GZ_MATH_VER}::gz-math${GZ_MATH_VER})
@@ -83,6 +87,6 @@ endif()
 
 # Export the targets and dependencies
 ament_export_targets(${PROJECT_NAME}_targets HAS_LIBRARY_TARGET)
-ament_export_dependencies(aic_control_interfaces gz-math8 rclcpp rclcpp_components ros_gz_interfaces rosbag2_cpp sensor_msgs std_msgs tf2_msgs yaml-cpp)
+ament_export_dependencies(aic_control_interfaces gz-math8 rclcpp rclcpp_components ros_gz_interfaces rosbag2_cpp sensor_msgs std_msgs tf2 tf2_geometry_msgs tf2_msgs yaml-cpp)
 
 ament_package()
