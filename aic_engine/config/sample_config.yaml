@@ -19,8 +19,8 @@ scoring:
         type: "geometry_msgs/msg/WrenchStamped"
 task_board_limits:
   nic_rail:
-    min_translation: -0.048  # Minimum translation from center along the rail (in meters)
-    max_translation: 0.036   # Maximum translation from center along the rail (in meters)
+    min_translation: -0.0215  # Minimum translation from center along the rail (in meters)
+    max_translation: 0.0234   # Maximum translation from center along the rail (in meters)
   sc_rail:
     min_translation: -0.055  # Minimum translation from center along the rail (in meters)
     max_translation: 0.055   # Maximum translation from center along the rail (in meters)
