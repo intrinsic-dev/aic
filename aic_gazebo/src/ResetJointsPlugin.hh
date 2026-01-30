@@ -65,10 +65,6 @@ class ResetJointsPlugin : public gz::sim::System,
   rclcpp::Subscription<aic_control_interfaces::msg::ResetJoints>::SharedPtr
       resetJointsReqSub;
 
-  /// \brief A subscriber to receive joint state messages for initial positions.
- private:
-  rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr jointStateSub;
-
   /// \brief A publisher to publish joint state reset result.
  private:
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr resetJointsResPub;
@@ -80,10 +76,6 @@ class ResetJointsPlugin : public gz::sim::System,
   /// \brief Current reset request ID.
  private:
   std::optional<std::string> requestId;
-
-  /// \brief List of joints requested to be reset.
- private:
-  std::vector<std::string> requestedJoints;
 
   /// \brief Map of joint names to their initial positions.
  private:

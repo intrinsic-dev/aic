@@ -56,41 +56,26 @@ void ResetJointsPlugin::Configure(
     rclcpp::init(0, nullptr);
   }
 
+  // Taken from ur_gz.urdf.xacro
+  this->initialJointPositions = {
+    {"shoulder_pan_joint": -0.546},
+    {"shoulder_lift_joint": -1.703},
+    {"elbow_joint": -1.291},
+    {"wrist_1_joint": -1.719},
+    {"wrist_2_joint": 1.571},
+    {"wrist_3_joint": -2.116},
+  };
+
   this->rosNode = rclcpp::Node::make_shared("reset_joints_node");
   const rclcpp::QoS reliable_qos = rclcpp::QoS(rclcpp::KeepLast(10)).reliable();
   const rclcpp::QoS transient_qos =
       rclcpp::QoS(rclcpp::KeepLast(10)).transient_local();
-  // Subscribe to joint_states to get initial positions
-  this->jointStateSub =
-      this->rosNode->create_subscription<sensor_msgs::msg::JointState>(
-          "/joint_states", reliable_qos,
-          [this](const sensor_msgs::msg::JointState::SharedPtr msg) {
-            std::lock_guard<std::mutex> lock(this->mutex);
-            if (this->initialJointPositions.empty()) {
-              for (size_t i = 0; i < msg->name.size(); ++i) {
-                this->initialJointPositions[msg->name[i]] = msg->position[i];
-                gzmsg << "Stored initial position for joint " << msg->name[i]
-                      << ": " << msg->position[i] << std::endl;
-              }
-            }
-            sensor_msgs::msg::JointState initial_state;
-            initial_state.name = msg->name;
-            initial_state.position = msg->position;
-            initial_state.velocity = msg->velocity;
-            initial_state.effort = msg->effort;
-            this->homeJointStatePub->publish(initial_state);
-          });
   // Subscribe to reset joint requests
   this->resetJointsReqSub = this->rosNode->create_subscription<
       aic_control_interfaces::msg::ResetJoints>(
       "/reset_joints", reliable_qos,
       [this](const aic_control_interfaces::msg::ResetJoints::SharedPtr msg) {
         std::lock_guard<std::mutex> lock(this->mutex);
-        for (const auto& joint_name : msg->joint_names) {
-          gzmsg << "Received reset request for joint: " << joint_name
-                << std::endl;
-          this->requestedJoints.push_back(joint_name);
-        }
         this->requestId = msg->request_id;
       });
   // Publish home joint states
@@ -101,6 +86,14 @@ void ResetJointsPlugin::Configure(
   this->resetJointsResPub =
       this->rosNode->create_publisher<std_msgs::msg::String>(
           "/reset_joints_result", reliable_qos);
+
+  // Publish transient local initial positions for late joiners
+  sensor_msgs::msg::JointState initial_state;
+  for (const auto& [jointName, initialPosition] : this->initialJointPositions) {
+    initial_state.name.emplace_back(jointName);
+    initial_state.position.emplace_back(initialPosition);
+  }
+  this->homeJointStatePub->publish(initial_state);
 
   this->spinThread = std::thread([this]() { rclcpp::spin(this->rosNode); });
 
@@ -124,29 +117,16 @@ void ResetJointsPlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
     this->jointStateSub.reset();
   }
 
-  if (this->requestedJoints.empty()) {
-    return;
-  }
   if (!this->requestId.has_value()) {
     return;
   }
 
-  for (const auto& jointName : this->requestedJoints) {
+  for (const auto& [jointName, initialPosition] : this->initialJointPositions) {
     auto jointEntity = this->model.JointByName(_ecm, jointName);
     if (!jointEntity) {
       gzwarn << "Joint " << jointName << " cannot be found! Skipping reset."
              << std::endl;
       continue;
-    }
-
-    // Get initial position for this joint, default to 0.0 if not found
-    double initialPosition = 0.0;
-    auto it = this->initialJointPositions.find(jointName);
-    if (it != this->initialJointPositions.end()) {
-      initialPosition = it->second;
-    } else {
-      gzmsg << "Warning: No initial position found for joint " << jointName
-            << ", using 0.0" << std::endl;
     }
 
     // Apply the reset components using initial position
@@ -161,7 +141,6 @@ void ResetJointsPlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
   result.data = this->requestId.value();
   this->resetJointsResPub->publish(result);
   this->requestId = std::nullopt;
-  this->requestedJoints.clear();
 }
 
 //////////////////////////////////////////////////
