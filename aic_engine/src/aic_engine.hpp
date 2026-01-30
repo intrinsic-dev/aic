@@ -301,6 +301,10 @@ class Engine {
   /// \param[in] The score to serialize and write.
   void score_run(const Score& score);
 
+  /// @brief Sends a request to change the controller target mode.
+  /// \param[in] The target mode to request.
+  bool change_target_mode(const uint8_t target_mode);
+
   // Strings.
   // Name of the aic_adapter node for lifecycle transitions.
   std::string adapter_node_name_;

@@ -445,8 +445,6 @@ EngineState Engine::initialize() {
 
   // Create ROS endpoints.
   const rclcpp::QoS reliable_qos = rclcpp::QoS(rclcpp::KeepLast(10)).reliable();
-  const rclcpp::QoS transient_qos =
-      rclcpp::QoS(rclcpp::KeepLast(10)).transient_local();
 
   // Create subscriptions that ignore local publications as aic_engine will
   // also publish these messages to home the robot.
@@ -491,7 +489,7 @@ EngineState Engine::initialize() {
     double initial_pos = it->second.as<double>();
     home_joint_positions_.emplace_back(joint_name, initial_pos);
   }
-  for (const auto [n, p] : home_joint_positions_) {
+  for (const auto& [n, p] : home_joint_positions_) {
     RCLCPP_INFO(node_->get_logger(),
                 "Retrieve home joint positions from engine config: [%s]: %f",
                 n.c_str(), p);
@@ -535,12 +533,14 @@ EngineState Engine::run() {
     RCLCPP_INFO(node_->get_logger(), "======================================");
     RCLCPP_INFO(node_->get_logger(), "Handling trial '%s'...",
                 trial_id.c_str());
+    change_target_mode(ChangeTargetModeSrv::Request::TARGET_MODE_JOINT);
     if (!home_robot()) {
       RCLCPP_ERROR(node_->get_logger(),
                    "Unable to home robot before trial '%s'.", trial_id.c_str());
       engine_state_ = EngineState::Error;
       return engine_state_;
     }
+    change_target_mode(ChangeTargetModeSrv::Request::TARGET_MODE_CARTESIAN);
     TrialScore trial_score = this->handle_trial(trial);
     score.breakdown[trial_id] = trial_score;
     if (trial.state == TrialState::AllTasksCompleted) {
@@ -1324,30 +1324,6 @@ void Engine::reset_after_trial(const Trial& trial) {
 bool Engine::home_robot() {
   RCLCPP_INFO(node_->get_logger(), "Homing robot to initial positions...");
 
-  // Change target mode to Joint
-  {
-    auto change_mode_request = std::make_shared<ChangeTargetModeSrv::Request>();
-    change_mode_request->target_mode =
-        ChangeTargetModeSrv::Request::TARGET_MODE_JOINT;
-    auto change_mode_future =
-        change_target_mode_client_->async_send_request(change_mode_request);
-    if (change_mode_future.wait_for(std::chrono::seconds(5)) !=
-        std::future_status::ready) {
-      RCLCPP_ERROR(node_->get_logger(),
-                   "ChangeTargetMode service call timed out when changing to "
-                   "JOINT mode");
-      return false;
-    }
-    auto change_mode_response = change_mode_future.get();
-    if (!change_mode_response->success) {
-      RCLCPP_ERROR(node_->get_logger(),
-                   "Failed to change target mode to JOINT mode");
-      return false;
-    }
-    RCLCPP_INFO(node_->get_logger(),
-                "Successfully changed target mode to JOINT mode");
-  }
-
   // Publish joint command to controller to hold in place
   auto joint_msg = JointMotionUpdateMsg();
   auto home_point = JointTrajectoryPoint();
@@ -1370,7 +1346,6 @@ bool Engine::home_robot() {
   joint_motion_update_pub_->publish(joint_msg);
 
   // Request for joints reset to home positions
-  bool homed = false;
   auto reset_joints_request = std::make_shared<ResetJointsSrv::Request>();
   for (const auto& [joint_name, initial_pos] : this->home_joint_positions_) {
     reset_joints_request->joint_names.emplace_back(joint_name);
@@ -1387,44 +1362,51 @@ bool Engine::home_robot() {
   auto reset_joints_response = reset_joints_future.get();
   if (!reset_joints_response->success) {
     RCLCPP_ERROR(node_->get_logger(), "Failed to request for joint reset.");
-    // Do not return here yet as we need to switch back the controller target
-    // mode
-  } else {
-    RCLCPP_INFO(node_->get_logger(),
-                "Successfully reset joints to home position.");
-    homed = true;
-  }
-
-  // Change target mode back to Cartesian
-  {
-    auto change_mode_request = std::make_shared<ChangeTargetModeSrv::Request>();
-    change_mode_request->target_mode =
-        ChangeTargetModeSrv::Request::TARGET_MODE_CARTESIAN;
-    auto change_mode_future =
-        change_target_mode_client_->async_send_request(change_mode_request);
-    if (change_mode_future.wait_for(std::chrono::seconds(5)) !=
-        std::future_status::ready) {
-      RCLCPP_ERROR(node_->get_logger(),
-                   "ChangeTargetMode service call timed out when changing to "
-                   "CARTESIAN mode");
-      return false;
-    }
-    auto change_mode_response = change_mode_future.get();
-    if (!change_mode_response->success) {
-      RCLCPP_ERROR(node_->get_logger(),
-                   "Failed to change target mode to CARTESIAN mode");
-      return false;
-    }
-    RCLCPP_INFO(node_->get_logger(),
-                "Successfully changed target mode to CARTESIAN mode");
-  }
-
-  if (!homed) {
-    RCLCPP_ERROR(node_->get_logger(), "Robot failed to home within timeout.");
     return false;
   }
 
-  RCLCPP_INFO(node_->get_logger(), "Robot homed successfully.");
+  RCLCPP_INFO(
+      node_->get_logger(),
+      "Successfully reset joints to home position, robot homed successfully.");
+  return true;
+}
+
+//==============================================================================
+bool Engine::change_target_mode(const uint8_t target_mode) {
+  auto change_mode_request = std::make_shared<ChangeTargetModeSrv::Request>();
+  change_mode_request->target_mode = target_mode;
+  std::string target_mode_str;
+  switch (target_mode) {
+    case ChangeTargetModeSrv::Request::TARGET_MODE_JOINT:
+      target_mode_str = "JOINT";
+      break;
+    case ChangeTargetModeSrv::Request::TARGET_MODE_CARTESIAN:
+      target_mode_str = "CARTESIAN";
+      break;
+    default:
+      RCLCPP_ERROR(node_->get_logger(), "Unknown target mode requested.");
+      return false;
+  }
+
+  auto change_mode_future =
+      change_target_mode_client_->async_send_request(change_mode_request);
+  if (change_mode_future.wait_for(std::chrono::seconds(5)) !=
+      std::future_status::ready) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "ChangeTargetMode service call timed out when changing to "
+                 "%s mode",
+                 target_mode_str.c_str());
+    return false;
+  }
+  auto change_mode_response = change_mode_future.get();
+  if (!change_mode_response->success) {
+    RCLCPP_ERROR(node_->get_logger(), "Failed to change target mode to %s mode",
+                 target_mode_str.c_str());
+    return false;
+  }
+  RCLCPP_INFO(node_->get_logger(),
+              "Successfully changed target mode to %s mode",
+              target_mode_str.c_str());
   return true;
 }
 
