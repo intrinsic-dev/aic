@@ -172,22 +172,21 @@ class AICCartesianTeleoperatorNode(Node):
                 sum_roll += vals[3]
                 sum_pitch += vals[4]
                 sum_yaw += vals[5]
-            else:
-                if key == "m":
-                    toggle_frame_id = True
-                    self.frame_id = "gripper/tcp" if self.frame_id == "base_link" else "base_link"
-                if key == "k":
-                    scale_linear_velocity = True
-                    self.linear_vel -= LINEAR_STEP
-                if key == "i":
-                    scale_linear_velocity = True
-                    self.linear_vel += LINEAR_STEP
-                if key == "l":
-                    scale_angular_velocity = True
-                    self.angular_vel -= ANGULAR_STEP
-                if key == "o":
-                    scale_angular_velocity = True
-                    self.angular_vel += ANGULAR_STEP
+            if key == "m":
+                toggle_frame_id = True
+                self.frame_id = "gripper/tcp" if self.frame_id == "base_link" else "base_link"
+            if key == "k":
+                scale_linear_velocity = True
+                self.linear_vel -= LINEAR_STEP
+            if key == "i":
+                scale_linear_velocity = True
+                self.linear_vel += LINEAR_STEP
+            if key == "l":
+                scale_angular_velocity = True
+                self.angular_vel -= ANGULAR_STEP
+            if key == "o":
+                scale_angular_velocity = True
+                self.angular_vel += ANGULAR_STEP
 
         if not (MIN_ANGULAR_VEL < self.angular_vel < MAX_ANGULAR_VEL):
             self.get_logger().info(
