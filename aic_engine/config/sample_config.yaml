@@ -241,13 +241,7 @@ trials:
           nic_rail_0:
             entity_present: False
           nic_rail_1:
-            entity_present: True
-            entity_name: "nic_card_1"
-            entity_pose:
-              translation: -0.02
-              roll: -0.0157
-              pitch: 0.0192
-              yaw: -0.0297
+            entity_present: False
           nic_rail_2:
             entity_present: False
           nic_rail_3:
