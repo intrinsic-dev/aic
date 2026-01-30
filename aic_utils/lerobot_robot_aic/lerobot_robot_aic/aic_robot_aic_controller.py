@@ -316,8 +316,8 @@ class AICRobotAICController(Robot):
         msg.header.stamp = self.node.get_clock().now().to_msg()
         msg.header.frame_id = "base_link"
         msg.velocity = twist_msg
-        msg.target_stiffness = np.diag([85.0, 85.0, 85.0, 85.0, 85.0, 85.0]).flatten()
-        msg.target_damping = np.diag([75.0, 75.0, 75.0, 75.0, 75.0, 75.0]).flatten()
+        msg.target_stiffness = np.diag([150.0, 150.0, 150.0, 150.0, 150.0, 150.0]).flatten() # testing to improve teleop controller oscillations/responsiveness
+        msg.target_damping = np.diag([100.0, 100.0, 100.0, 100.0, 100.0, 100.0]).flatten()
         msg.feedforward_wrench_at_tip = Wrench(
             force=Vector3(x=0.0, y=0.0, z=0.0),
             torque=Vector3(x=0.0, y=0.0, z=0.0),
