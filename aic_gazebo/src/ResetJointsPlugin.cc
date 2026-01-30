@@ -61,7 +61,7 @@ void ResetJointsPlugin::Configure(
   this->rosNode = rclcpp::Node::make_shared("reset_joints_node");
   this->reset_joints_srv_ =
       this->rosNode->create_service<aic_engine_interfaces::srv::ResetJoints>(
-          "/reset_joints",
+          "/scoring/reset_joints",
           [this](
               const std::shared_ptr<
                   aic_engine_interfaces::srv::ResetJoints::Request>

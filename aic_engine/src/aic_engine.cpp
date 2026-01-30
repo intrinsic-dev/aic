@@ -479,7 +479,8 @@ EngineState Engine::initialize() {
   model_change_state_client_ =
       node_->create_client<lifecycle_msgs::srv::ChangeState>(
           model_change_state_service_name_);
-  reset_joints_client_ = node_->create_client<ResetJointsSrv>("/reset_joints");
+  reset_joints_client_ =
+      node_->create_client<ResetJointsSrv>("/scoring/reset_joints");
   tf_buffer_ = std::make_unique<tf2_ros::Buffer>(node_->get_clock());
   tf_listener_ = std::make_unique<tf2_ros::TransformListener>(*tf_buffer_);
 
