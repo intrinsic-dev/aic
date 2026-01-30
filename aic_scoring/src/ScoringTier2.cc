@@ -167,6 +167,12 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
     } else if (msg_ptr->topic_name == kWrenchTopic) {
       const auto msg = deserialize_from_rosbag<WrenchMsg>(msg_ptr);
       this->WrenchCallback(msg);
+    } else if (msg_ptr->topic_name == kMotionUpdateTopic) {
+      const auto msg = deserialize_from_rosbag<MotionUpdateMsg>(msg_ptr);
+      this->MotionUpdateCallback(msg);
+    } else if (msg_ptr->topic_name == kJointMotionUpdateTopic) {
+      const auto msg = deserialize_from_rosbag<JointMotionUpdateMsg>(msg_ptr);
+      this->JointMotionUpdateCallback(msg);
     } else {
       RCLCPP_WARN(this->node->get_logger(),
                   "Unexpected topic name while scoring: %s",
@@ -256,6 +262,16 @@ void ScoringTier2::ContactsCallback(const ContactsMsg &_msg) { (void)_msg; }
 
 //////////////////////////////////////////////////
 void ScoringTier2::WrenchCallback(const WrenchMsg &_msg) { (void)_msg; }
+
+//////////////////////////////////////////////////
+void ScoringTier2::MotionUpdateCallback(const MotionUpdateMsg &_msg) {
+  (void)_msg;
+}
+
+//////////////////////////////////////////////////
+void ScoringTier2::JointMotionUpdateCallback(const JointMotionUpdateMsg &_msg) {
+  (void)_msg;
+}
 
 //////////////////////////////////////////////////
 ScoringTier2Node::ScoringTier2Node(const std::string &_yamlFile)

@@ -20,7 +20,11 @@ import inspect
 import numpy as np
 import rclpy
 
-from aic_control_interfaces.msg import MotionUpdate, TrajectoryGenerationMode
+from aic_control_interfaces.msg import (
+    JointMotionUpdate,
+    MotionUpdate,
+    TrajectoryGenerationMode,
+)
 from aic_control_interfaces.srv import ChangeTargetMode
 from aic_model_interfaces.msg import Observation
 from aic_task_interfaces.action import InsertCable
@@ -86,6 +90,9 @@ class AicModel(LifecycleNode):
         )
         self.motion_update_pub = self.create_lifecycle_publisher(
             MotionUpdate, "/aic_controller/pose_commands", 2
+        )
+        self.joint_motion_update_pub = self.create_lifecycle_publisher(
+            JointMotionUpdate, "/aic_controller/joint_commands", 2
         )
         self.change_target_mode_client = self.create_client(
             ChangeTargetMode, "/aic_controller/change_target_mode"

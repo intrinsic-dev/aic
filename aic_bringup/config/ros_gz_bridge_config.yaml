@@ -62,7 +62,35 @@
   lazy: true
 
 - ros_topic_name: "/scoring/tf"
-  gz_topic_name: "/cable/pose"
+  gz_topic_name: "/cable_0/pose"
+  ros_type_name: "tf2_msgs/msg/TFMessage"
+  gz_type_name: "gz.msgs.Pose_V"
+  direction: GZ_TO_ROS
+  lazy: true
+
+- ros_topic_name: "/scoring/tf"
+  gz_topic_name: "/cable_1/pose"
+  ros_type_name: "tf2_msgs/msg/TFMessage"
+  gz_type_name: "gz.msgs.Pose_V"
+  direction: GZ_TO_ROS
+  lazy: true
+
+- ros_topic_name: "/scoring/tf"
+  gz_topic_name: "/cable_2/pose"
+  ros_type_name: "tf2_msgs/msg/TFMessage"
+  gz_type_name: "gz.msgs.Pose_V"
+  direction: GZ_TO_ROS
+  lazy: true
+
+- ros_topic_name: "/scoring/tf"
+  gz_topic_name: "/cable_3/pose"
+  ros_type_name: "tf2_msgs/msg/TFMessage"
+  gz_type_name: "gz.msgs.Pose_V"
+  direction: GZ_TO_ROS
+  lazy: true
+
+- ros_topic_name: "/scoring/tf"
+  gz_topic_name: "/cable_4/pose"
   ros_type_name: "tf2_msgs/msg/TFMessage"
   gz_type_name: "gz.msgs.Pose_V"
   direction: GZ_TO_ROS

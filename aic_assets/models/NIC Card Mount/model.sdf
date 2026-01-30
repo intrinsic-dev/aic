@@ -147,36 +147,80 @@
         </geometry>
       </collision>
       <collision name="10099100-011lfc001_collider_box">
-        <pose>-0.017799 -0.052954 0.00548 3.128092 0.0 0.0</pose>
+        <pose>-0.018049 -0.052954 0.00548 3.128092 0.0 0.0</pose>
         <geometry>
           <box>
             <size>0.001099 0.04872 0.011083</size>
           </box>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.5</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.5</friction>
+              <friction2>0.5</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <collision name="10099100-011lfc001_collider_box.001">
-        <pose>-0.002687 -0.052954 0.005461 3.128092 0.0 0.0</pose>
+        <pose>-0.002437 -0.052954 0.005461 3.128092 0.0 0.0</pose>
         <geometry>
           <box>
             <size>0.001125 0.04872 0.011121</size>
           </box>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.5</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.5</friction>
+              <friction2>0.5</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <collision name="10099100-011lfc001_collider_box.002">
-        <pose>-0.010237 -0.052889 0.010234 3.128092 0.0 0.0</pose>
+        <pose>-0.010237 -0.052889 0.010484 3.128092 0.0 0.0</pose>
         <geometry>
           <box>
             <size>0.016224 0.04872 0.000923</size>
           </box>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.5</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.5</friction>
+              <friction2>0.5</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <collision name="10099100-011lfc001_collider_box.003">
-        <pose>-0.010237 -0.053024 0.000296 3.128092 0.0 0.0</pose>
+        <pose>-0.010237 -0.053024 0.000046 3.128092 0.0 0.0</pose>
         <geometry>
           <box>
             <size>0.016224 0.04872 0.001054</size>
           </box>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.5</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.5</friction>
+              <friction2>0.5</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <collision name="10099100-011lfc001_collider_box.004">
         <pose>-0.010237 -0.028738 0.003845 3.128092 0.0 0.0</pose>
@@ -187,36 +231,80 @@
         </geometry>
       </collision>
       <collision name="10099100-011lfc001_collider_box.005">
-        <pose>0.005401 -0.052954 0.00548 3.128092 0.0 0.0</pose>
+        <pose>0.005151 -0.052954 0.00548 3.128092 0.0 0.0</pose>
         <geometry>
           <box>
             <size>0.001099 0.04872 0.011083</size>
           </box>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.5</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.5</friction>
+              <friction2>0.5</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <collision name="10099100-011lfc001_collider_box.006">
-        <pose>0.020513 -0.052954 0.005461 3.128092 0.0 0.0</pose>
+        <pose>0.020763 -0.052954 0.005461 3.128092 0.0 0.0</pose>
         <geometry>
           <box>
             <size>0.001125 0.04872 0.011121</size>
           </box>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.5</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.5</friction>
+              <friction2>0.5</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <collision name="10099100-011lfc001_collider_box.007">
-        <pose>0.012963 -0.052889 0.010234 3.128092 0.0 0.0</pose>
+        <pose>0.012963 -0.052889 0.010484 3.128092 0.0 0.0</pose>
         <geometry>
           <box>
             <size>0.016224 0.04872 0.000923</size>
           </box>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.5</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.5</friction>
+              <friction2>0.5</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <collision name="10099100-011lfc001_collider_box.008">
-        <pose>0.012963 -0.053024 0.000296 3.128092 0.0 0.0</pose>
+        <pose>0.012963 -0.053024 0.000046 3.128092 0.0 0.0</pose>
         <geometry>
           <box>
             <size>0.016224 0.04872 0.001054</size>
           </box>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.5</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.5</friction>
+              <friction2>0.5</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <collision name="10099100-011lfc001_collider_box.009">
         <pose>0.012963 -0.028738 0.003845 3.128092 0.0 0.0</pose>
@@ -295,7 +383,7 @@
         <pose>0.012963 -0.032 0.003845 3.128092 0.0 0.0</pose>
         <geometry>
           <box>
-            <size>0.016224 0.00025 0.013698</size>
+            <size>0.008112 0.00025 0.006849</size>
           </box>
         </geometry>
       </collision>
@@ -303,7 +391,7 @@
         <pose>-0.010237 -0.032 0.003845 3.128092 0.0 0.0</pose>
         <geometry>
           <box>
-            <size>0.016224 0.00025 0.013698</size>
+            <size>0.008112 0.00025 0.006849</size>
           </box>
         </geometry>
       </collision>

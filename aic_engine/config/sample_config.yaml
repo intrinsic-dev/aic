@@ -1,22 +1,34 @@
 # List of topics to subscribe.
 scoring:
   topics:
-    # TODO(luca) check topic mapping
+    # Joint states for the robot arm
     - topic:
         name: "/joint_states"
         type: "sensor_msgs/msg/JointState"
     - topic:
+    # TF that contains the cable link poses
         name: "/scoring/tf"
         type: "tf2_msgs/msg/TFMessage"
     - topic:
+    # TF that contains the task board poses
         name: "/scoring/tf_static"
         type: "tf2_msgs/msg/TFMessage"
     - topic:
+    # Contains the contacts with off limit items
         name: "/aic/gazebo/contacts/off_limit"
         type: "ros_gz_interfaces/msg/Contacts"
     - topic:
+    # Insertion force sensed by the force torque sensor
         name: "/axia80_m20/wrench"
         type: "geometry_msgs/msg/WrenchStamped"
+    - topic:
+    # Joint commands sent from the model to the robot controller
+        name: "/aic_controller/joint_commands"
+        type: "aic_control_interfaces/msg/JointMotionUpdate"
+    - topic:
+    # Pose commands sent from the model to the robot controller
+        name: "/aic_controller/pose_commands"
+        type: "aic_control_interfaces/msg/MotionUpdate"
 task_board_limits:
   nic_rail:
     min_translation: -0.048  # Minimum translation from center along the rail (in meters)
@@ -229,13 +241,7 @@ trials:
           nic_rail_0:
             entity_present: False
           nic_rail_1:
-            entity_present: True
-            entity_name: "nic_card_1"
-            entity_pose:
-              translation: -0.02
-              roll: -0.0157
-              pitch: 0.0192
-              yaw: -0.0297
+            entity_present: False
           nic_rail_2:
             entity_present: False
           nic_rail_3:
