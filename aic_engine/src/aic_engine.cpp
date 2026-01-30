@@ -494,7 +494,6 @@ EngineState Engine::initialize() {
                 "Retrieve home joint positions from engine config: [%s]: %f",
                 n.c_str(), p);
   }
-  home_joint_state_sub_.reset();
 
   scoring_tier2_ = std::make_unique<aic_scoring::ScoringTier2>(node_.get());
   if (!scoring_tier2_->Initialize(config_["scoring"])) {

@@ -39,10 +39,8 @@
 #include "lifecycle_msgs/srv/get_state.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
-#include "sensor_msgs/msg/joint_state.hpp"
 #include "simulation_interfaces/srv/delete_entity.hpp"
 #include "simulation_interfaces/srv/spawn_entity.hpp"
-#include "std_msgs/msg/string.hpp"
 #include "tf2/exceptions.hpp"
 #include "tf2_ros/buffer.h"
 #include "tf2_ros/transform_listener.h"
@@ -57,7 +55,6 @@ using DeleteEntitySrv = simulation_interfaces::srv::DeleteEntity;
 using InsertCableAction = aic_task_interfaces::action::InsertCable;
 using InsertCableGoalHandle =
     rclcpp_action::ServerGoalHandle<InsertCableAction>;
-using JointStateMsg = sensor_msgs::msg::JointState;
 using JointMotionUpdateMsg = aic_control_interfaces::msg::JointMotionUpdate;
 using JointTrajectoryPoint = trajectory_msgs::msg::JointTrajectoryPoint;
 using MotionUpdateMsg = aic_control_interfaces::msg::MotionUpdate;
@@ -318,7 +315,6 @@ class Engine {
   // Internal ROS 2 node.
   rclcpp::Node::SharedPtr node_;
   // Subscriptions.
-  rclcpp::Subscription<JointStateMsg>::SharedPtr home_joint_state_sub_;
   rclcpp::Subscription<JointMotionUpdateMsg>::SharedPtr
       joint_motion_update_sub_;
   rclcpp::Subscription<MotionUpdateMsg>::SharedPtr motion_update_sub_;

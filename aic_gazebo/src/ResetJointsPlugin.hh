@@ -25,8 +25,6 @@
 #include <gz/sim/System.hh>
 #include <gz/transport/Node.hh>
 #include <rclcpp/rclcpp.hpp>
-#include <sensor_msgs/msg/joint_state.hpp>
-#include <std_msgs/msg/string.hpp>
 #include <unordered_map>
 
 namespace aic_gazebo {

@@ -18,8 +18,6 @@
 
   <depend>aic_engine_interfaces</depend>
   <depend>rclcpp</depend>
-  <depend>sensor_msgs</depend>
-  <depend>std_msgs</depend>
 
   <export>
     <build_type>ament_cmake</build_type>
