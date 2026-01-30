@@ -18,6 +18,7 @@
 #ifndef AIC_ENGINE_HPP_
 #define AIC_ENGINE_HPP_
 
+#include <aic_engine_interfaces/srv/reset_joints.hpp>
 #include <functional>
 #include <memory>
 #include <optional>
@@ -27,7 +28,6 @@
 
 #include "aic_control_interfaces/msg/joint_motion_update.hpp"
 #include "aic_control_interfaces/msg/motion_update.hpp"
-#include "aic_control_interfaces/msg/reset_joints.hpp"
 #include "aic_control_interfaces/msg/trajectory_generation_mode.hpp"
 #include "aic_control_interfaces/srv/change_target_mode.hpp"
 #include "aic_scoring/ScoringTier2.hh"
@@ -42,7 +42,6 @@
 #include "sensor_msgs/msg/joint_state.hpp"
 #include "simulation_interfaces/srv/delete_entity.hpp"
 #include "simulation_interfaces/srv/spawn_entity.hpp"
-#include "std_msgs/msg/bool.hpp"
 #include "std_msgs/msg/string.hpp"
 #include "tf2/exceptions.hpp"
 #include "tf2_ros/buffer.h"
@@ -62,7 +61,7 @@ using JointStateMsg = sensor_msgs::msg::JointState;
 using JointMotionUpdateMsg = aic_control_interfaces::msg::JointMotionUpdate;
 using JointTrajectoryPoint = trajectory_msgs::msg::JointTrajectoryPoint;
 using MotionUpdateMsg = aic_control_interfaces::msg::MotionUpdate;
-using ResetJointsMsg = aic_control_interfaces::msg::ResetJoints;
+using ResetJointsSrv = aic_engine_interfaces::srv::ResetJoints;
 using SpawnEntitySrv = simulation_interfaces::srv::SpawnEntity;
 using Task = aic_task_interfaces::msg::Task;
 using TrajectoryGenerationMode =
@@ -319,15 +318,10 @@ class Engine {
   rclcpp::Subscription<JointMotionUpdateMsg>::SharedPtr
       joint_motion_update_sub_;
   rclcpp::Subscription<MotionUpdateMsg>::SharedPtr motion_update_sub_;
-  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr
-      reset_joint_result_sub_;
   // Publishers.
   rclcpp::Publisher<JointMotionUpdateMsg>::SharedPtr joint_motion_update_pub_;
-  rclcpp::Publisher<ResetJointsMsg>::SharedPtr reset_joints_pub_;
-  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr toggle_controller_pub_;
 
   // Subscription messages.
-  JointStateMsg::ConstSharedPtr home_joint_state_msg_;
   JointMotionUpdateMsg::ConstSharedPtr last_joint_motion_update_msg_;
   MotionUpdateMsg::ConstSharedPtr last_motion_update_msg_;
 
@@ -343,6 +337,7 @@ class Engine {
       model_get_state_client_;
   rclcpp::Client<lifecycle_msgs::srv::ChangeState>::SharedPtr
       model_change_state_client_;
+  rclcpp::Client<ResetJointsSrv>::SharedPtr reset_joints_client_;
 
   // TF
   std::unique_ptr<tf2_ros::TransformListener> tf_listener_;
@@ -374,9 +369,6 @@ class Engine {
 
   // Robot initial joint positions
   std::vector<std::pair<std::string, double>> home_joint_positions_;
-
-  // Request ID for resetting robot joints to inital positions.
-  std::optional<std::pair<std::string, bool>> reset_request_;
 
   // Scoring tier 2 instance.
   std::unique_ptr<aic_scoring::ScoringTier2> scoring_tier2_;

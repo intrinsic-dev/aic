@@ -29,7 +29,7 @@ set(GZ_SIM_VER ${gz-sim_VERSION_MAJOR})
 
 find_package(Protobuf REQUIRED)
 
-find_package(aic_control_interfaces REQUIRED)
+find_package(aic_engine_interfaces REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
@@ -95,7 +95,7 @@ add_library(ResetJointsPlugin
 target_link_libraries(ResetJointsPlugin PRIVATE
   gz-sim${GZ_SIM_VER}::gz-sim${GZ_SIM_VER}
   rclcpp::rclcpp
-  ${aic_control_interfaces_TARGETS}
+  ${aic_engine_interfaces_TARGETS}
   ${sensor_msgs_TARGETS}
   ${std_msgs}
 )

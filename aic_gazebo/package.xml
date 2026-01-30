@@ -16,7 +16,7 @@
 
   <test_depend>ament_lint_auto</test_depend>
 
-  <depend>aic_control_interfaces</depend>
+  <depend>aic_engine_interfaces</depend>
   <depend>rclcpp</depend>
   <depend>sensor_msgs</depend>
   <depend>std_msgs</depend>

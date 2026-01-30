@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(aic_control_interfaces)
+project(aic_engine_interfaces)
 
 # Default to C99
 if(NOT CMAKE_C_STANDARD)
@@ -18,32 +18,18 @@ endif()
 
 find_package(ament_cmake REQUIRED)
 find_package(builtin_interfaces REQUIRED)
-find_package(geometry_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 find_package(std_msgs REQUIRED)
-find_package(trajectory_msgs REQUIRED)
-
-
-set(msg_files
-  "msg/ControllerState.msg"
-  "msg/JointMotionUpdate.msg"
-  "msg/MotionUpdate.msg"
-  "msg/TrajectoryGenerationMode.msg"
-)
 
 set(srv_files
-  "srv/ChangeTargetMode.srv"
+  "srv/ResetJoints.srv"
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}
-  ${msg_files}
   ${srv_files}
-  ${action_files}
   DEPENDENCIES
     builtin_interfaces
-    geometry_msgs
     std_msgs
-    trajectory_msgs
   ADD_LINTER_TESTS
 )
 

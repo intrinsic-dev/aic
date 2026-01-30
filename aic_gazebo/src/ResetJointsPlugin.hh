@@ -18,7 +18,7 @@
 #ifndef AIC_GAZEBO__RESET_JOINTS_PLUGIN_HH_
 #define AIC_GAZEBO__RESET_JOINTS_PLUGIN_HH_
 
-#include <aic_control_interfaces/msg/reset_joints.hpp>
+#include <aic_engine_interfaces/srv/reset_joints.hpp>
 #include <chrono>
 #include <gz/sim/EventManager.hh>
 #include <gz/sim/Model.hh>
@@ -58,28 +58,24 @@ class ResetJointsPlugin : public gz::sim::System,
  private:
   gz::sim::Model model;
 
+  /// \brief ROS 2 node to interact with the engine.
+ private:
   std::shared_ptr<rclcpp::Node> rosNode;
 
-  /// \brief A subscriber to receive joint reset commands.
+  /// \brief ROS2 Service servers for updating controller states
  private:
-  rclcpp::Subscription<aic_control_interfaces::msg::ResetJoints>::SharedPtr
-      resetJointsReqSub;
+  rclcpp::Service<aic_engine_interfaces::srv::ResetJoints>::SharedPtr
+      reset_joints_srv_;
 
-  /// \brief A publisher to publish joint state reset result.
+  /// \brief Stored promise for handling reset service response between threads
  private:
-  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr resetJointsResPub;
+  std::shared_ptr<
+      std::promise<aic_engine_interfaces::srv::ResetJoints::Response>>
+      reset_promise;
 
-  /// \brief A publisher to publish home joint states.
+  /// \brief Map of joint names to be reset to their initial positions.
  private:
-  rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr homeJointStatePub;
-
-  /// \brief Current reset request ID.
- private:
-  std::optional<std::string> requestId;
-
-  /// \brief Map of joint names to their initial positions.
- private:
-  std::unordered_map<std::string, double> initialJointPositions;
+  std::unordered_map<std::string, double> requestedJoints;
 
   /// \brief Mutex to prevent overwriting joint requests.
  private:

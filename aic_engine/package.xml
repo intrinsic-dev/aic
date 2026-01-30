@@ -11,6 +11,7 @@
 
   <depend>aic_scoring</depend>
   <depend>aic_control_interfaces</depend>
+  <depend>aic_engine_interfaces</depend>
   <depend>aic_task_interfaces</depend>
   <depend>ament_index_cpp</depend>
   <depend>geometry_msgs</depend>

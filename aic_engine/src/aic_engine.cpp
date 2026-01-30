@@ -436,9 +436,9 @@ EngineState Engine::initialize() {
     return engine_state_;
   }
   const auto& robot_config = config_["robot"];
-  if (!robot_config["joint_names"]) {
+  if (!robot_config["home_joint_positions"]) {
     RCLCPP_ERROR(node_->get_logger(),
-                 "Config missing required key: 'robot.joint_names'");
+                 "Config missing required key: 'robot.home_joint_positions'");
     engine_state_ = EngineState::Error;
     return engine_state_;
   }
@@ -447,13 +447,6 @@ EngineState Engine::initialize() {
   const rclcpp::QoS reliable_qos = rclcpp::QoS(rclcpp::KeepLast(10)).reliable();
   const rclcpp::QoS transient_qos =
       rclcpp::QoS(rclcpp::KeepLast(10)).transient_local();
-
-  home_joint_state_sub_ = node_->create_subscription<JointStateMsg>(
-      "/home_joint_states", transient_qos,
-      [this](JointStateMsg::ConstSharedPtr msg) {
-        (void)msg;
-        home_joint_state_msg_ = msg;
-      });
 
   // Create subscriptions that ignore local publications as aic_engine will
   // also publish these messages to home the robot.
@@ -471,13 +464,6 @@ EngineState Engine::initialize() {
         last_motion_update_msg_ = msg;
       },
       sub_options_ignore_local);
-  reset_joint_result_sub_ = node_->create_subscription<std_msgs::msg::String>(
-      "/reset_joints_result", reliable_qos,
-      [this](std_msgs::msg::String::ConstSharedPtr msg) {
-        if (msg->data == reset_request_->first) {
-          reset_request_->second = true;
-        }
-      });
 
   joint_motion_update_pub_ = node_->create_publisher<JointMotionUpdateMsg>(
       "/aic_controller/joint_commands", reliable_qos);
@@ -495,36 +481,19 @@ EngineState Engine::initialize() {
   model_change_state_client_ =
       node_->create_client<lifecycle_msgs::srv::ChangeState>(
           model_change_state_service_name_);
-  reset_joints_pub_ =
-      node_->create_publisher<ResetJointsMsg>("/reset_joints", reliable_qos);
-  toggle_controller_pub_ = node_->create_publisher<std_msgs::msg::Bool>(
-      "/aic_controller/toggle_controller", reliable_qos);
+  reset_joints_client_ = node_->create_client<ResetJointsSrv>("/reset_joints");
   tf_buffer_ = std::make_unique<tf2_ros::Buffer>(node_->get_clock());
   tf_listener_ = std::make_unique<tf2_ros::TransformListener>(*tf_buffer_);
 
-  // Fetch joint names from initial joint states
-  while (!home_joint_state_msg_) {
-    // Retrieve home joint states from ResetJoints plugin instead of
-    // /joint_states topic because it might have changed
-    RCLCPP_INFO(node_->get_logger(), "Waiting for home joint state message...");
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-  }
-
-  const auto joint_name_config = robot_config["joint_names"];
-  for (auto it = joint_name_config.begin(); it != joint_name_config.end();
-       ++it) {
-    const std::string joint_name = it->as<std::string>();
-    for (std::size_t i = 0; i < home_joint_state_msg_->name.size(); ++i) {
-      const auto name = home_joint_state_msg_->name[i];
-      if (name == joint_name) {
-        auto pos = home_joint_state_msg_->position[i];
-        home_joint_positions_.emplace_back(name, pos);
-        break;
-      }
-    }
+  const auto joint_config = robot_config["home_joint_positions"];
+  for (auto it = joint_config.begin(); it != joint_config.end(); ++it) {
+    const std::string joint_name = it->first.as<std::string>();
+    double initial_pos = it->second.as<double>();
+    home_joint_positions_.emplace_back(joint_name, initial_pos);
   }
   for (const auto [n, p] : home_joint_positions_) {
-    RCLCPP_INFO(node_->get_logger(), "========== home joint [%s] - [%f]",
+    RCLCPP_INFO(node_->get_logger(),
+                "Retrieve home joint positions from engine config: [%s]: %f",
                 n.c_str(), p);
   }
   home_joint_state_sub_.reset();
@@ -1083,13 +1052,6 @@ bool Engine::tasks_started(Trial& trial) {
     return false;
   }
 
-  // Enable aic controller
-  std_msgs::msg::Bool enable;
-  enable.data = true;
-  toggle_controller_pub_->publish(enable);
-  RCLCPP_INFO(node_->get_logger(), "Enabling aic_controller for trial [%s]",
-              trial.id.c_str());
-
   for (auto& task : trial.tasks) {
     // Initialize TaskState
     TaskAttempt task_attempt(task.id);
@@ -1407,33 +1369,31 @@ bool Engine::home_robot() {
       TrajectoryGenerationMode::MODE_POSITION;
   joint_motion_update_pub_->publish(joint_msg);
 
-  // Publish ResetJoints msg containing all 6 joints
-  ResetJointsMsg msg;
-  const auto request_id =
-      "reset_joint_" + std::to_string(this->node_->now().nanoseconds());
-  msg.request_id = request_id;
-  for (const auto& [name, _] : home_joint_positions_) {
-    msg.joint_names.emplace_back(name);
-  }
-  reset_joints_pub_->publish(msg);
-  RCLCPP_INFO(node_->get_logger(), "Published reset joints message.");
-  reset_request_ = std::pair<std::string, bool>(request_id, false);
-
-  // Validate joint reset
-  rclcpp::Time start_time = this->node_->now();
-  const rclcpp::Duration timeout = rclcpp::Duration::from_seconds(10);
+  // Request for joints reset to home positions
   bool homed = false;
-  while (!(this->node_->now() - start_time > timeout)) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-    if (!reset_request_->second) {
-      RCLCPP_INFO(node_->get_logger(),
-                  "Waiting for reset request result to be true...");
-      continue;
-    }
-    homed = true;
-    break;
+  auto reset_joints_request = std::make_shared<ResetJointsSrv::Request>();
+  for (const auto& [joint_name, initial_pos] : this->home_joint_positions_) {
+    reset_joints_request->joint_names.emplace_back(joint_name);
+    reset_joints_request->initial_positions.emplace_back(initial_pos);
   }
-  reset_request_ = std::nullopt;
+  auto reset_joints_future =
+      reset_joints_client_->async_send_request(reset_joints_request);
+  if (reset_joints_future.wait_for(std::chrono::seconds(10)) !=
+      std::future_status::ready) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "ResetJoints service call timed out requsting for reset!");
+    return false;
+  }
+  auto reset_joints_response = reset_joints_future.get();
+  if (!reset_joints_response->success) {
+    RCLCPP_ERROR(node_->get_logger(), "Failed to request for joint reset.");
+    // Do not return here yet as we need to switch back the controller target
+    // mode
+  } else {
+    RCLCPP_INFO(node_->get_logger(),
+                "Successfully reset joints to home position.");
+    homed = true;
+  }
 
   // Change target mode back to Cartesian
   {
