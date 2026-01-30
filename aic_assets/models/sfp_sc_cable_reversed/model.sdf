@@ -14,7 +14,7 @@
     </include>
     <include merge="true">
       <uri>model://SFP Module</uri>
-      <pose relative_to="lc_plug_link">-0 0.0341 0 0 -3.14159 -3.14159</pose>
+      <pose relative_to="lc_plug_link">-0 0.0384 0 0 -3.14159 -3.14159</pose>
     </include>
     <joint name="plug_0_joint" type="fixed">
       <parent>cable_connection_0</parent>

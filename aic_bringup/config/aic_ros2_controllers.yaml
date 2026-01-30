@@ -296,7 +296,7 @@ aic_controller:
       pose_error_integrator:
         gain: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         bound: [10., 10., 10., 2., 2., 2.]
-      maximum_wrench: [100.0, 100.0, 100.0, 100.0, 100.0, 100.0]
+      maximum_wrench: [10.0, 10.0, 10.0, 10.0, 10.0, 10.0]
       nullspace:
         target_configuration: [0.6, -1.5708, -1.5708, -1.5708, 1.5708, 0.6]
         stiffness: [0., 0., 0., 0., 0., 0.]
@@ -330,13 +330,13 @@ aic_controller:
 
     clamp_to_limits:
       min_translational_position:
-        - -0.65 # x
-        - -0.35 # y
-        - 0.0 # z
+        - -5.0 # x
+        - -5.0 # y
+        - -5.0 # z
       max_translational_position:
-        - 0.45 # x
-        - 0.65 # y
-        - 0.65 # z
+        - 5.0 # x
+        - 5.0 # y
+        - 5.0 # z
       min_translational_velocity:
         - -0.25 # x
         - -0.25 # y
