@@ -484,17 +484,40 @@ EngineState Engine::initialize() {
   tf_buffer_ = std::make_unique<tf2_ros::Buffer>(node_->get_clock());
   tf_listener_ = std::make_unique<tf2_ros::TransformListener>(*tf_buffer_);
 
+  // Pre-build home messages directly from config
   const auto joint_config = robot_config["home_joint_positions"];
+  if (joint_config.size() != 6) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "Home joint positions should account for exactly 6 joints.");
+    return EngineState::Error;
+  }
+
+  // Build JointMotionUpdateMsg and ResetJointsSrv::Request for homing
+  auto home_point = JointTrajectoryPoint();
+  home_point.positions = {};
+  home_reset_joints_request_ = std::make_shared<ResetJointsSrv::Request>();
+
   for (auto it = joint_config.begin(); it != joint_config.end(); ++it) {
     const std::string joint_name = it->first.as<std::string>();
-    double initial_pos = it->second.as<double>();
-    home_joint_positions_.emplace_back(joint_name, initial_pos);
-  }
-  for (const auto& [n, p] : home_joint_positions_) {
+    const double initial_pos = it->second.as<double>();
+
     RCLCPP_INFO(node_->get_logger(),
-                "Retrieve home joint positions from engine config: [%s]: %f",
-                n.c_str(), p);
+                "Retrieved home joint position from config: [%s]: %f",
+                joint_name.c_str(), initial_pos);
+
+    home_point.positions.emplace_back(initial_pos);
+    home_reset_joints_request_->joint_names.emplace_back(joint_name);
+    home_reset_joints_request_->initial_positions.emplace_back(initial_pos);
   }
+
+  home_point.time_from_start.sec = 1;
+  home_joint_msg_.target_state = home_point;
+  home_joint_msg_.target_stiffness = {100.0, 100.0, 100.0, 50.0, 50.0, 50.0};
+  home_joint_msg_.target_damping = {40.0, 40.0, 40.0, 15.0, 15.0, 15.0};
+  home_joint_msg_.trajectory_generation_mode.mode =
+      TrajectoryGenerationMode::MODE_POSITION;
+
+  RCLCPP_INFO(node_->get_logger(), "Pre-built home messages for robot homing.");
 
   scoring_tier2_ = std::make_unique<aic_scoring::ScoringTier2>(node_.get());
   if (!scoring_tier2_->Initialize(config_["scoring"])) {
@@ -533,14 +556,12 @@ EngineState Engine::run() {
     RCLCPP_INFO(node_->get_logger(), "======================================");
     RCLCPP_INFO(node_->get_logger(), "Handling trial '%s'...",
                 trial_id.c_str());
-    change_target_mode(ChangeTargetModeSrv::Request::TARGET_MODE_JOINT);
     if (!home_robot()) {
       RCLCPP_ERROR(node_->get_logger(),
                    "Unable to home robot before trial '%s'.", trial_id.c_str());
       engine_state_ = EngineState::Error;
       return engine_state_;
     }
-    change_target_mode(ChangeTargetModeSrv::Request::TARGET_MODE_CARTESIAN);
     TrialScore trial_score = this->handle_trial(trial);
     score.breakdown[trial_id] = trial_score;
     if (trial.state == TrialState::AllTasksCompleted) {
@@ -1324,44 +1345,36 @@ void Engine::reset_after_trial(const Trial& trial) {
 bool Engine::home_robot() {
   RCLCPP_INFO(node_->get_logger(), "Homing robot to initial positions...");
 
-  // Publish joint command to controller to hold in place
-  auto joint_msg = JointMotionUpdateMsg();
-  auto home_point = JointTrajectoryPoint();
-  home_point.positions = {};
-  for (const auto& [joint_name, joint_position] : home_joint_positions_) {
-    home_point.positions.emplace_back(joint_position);
-  }
-  if (home_point.positions.size() != 6) {
+  // Switch to joint mode
+  if (!change_target_mode(ChangeTargetModeSrv::Request::TARGET_MODE_JOINT)) {
     RCLCPP_ERROR(node_->get_logger(),
-                 "Home joint positions should account for exactly 6 joints.");
+                 "Failed to switch to joint mode for homing.");
     return false;
   }
-  home_point.time_from_start.sec = 1;
-  joint_msg.target_state = home_point;
-  // Stiffness and damping values taken from home_robot.py
-  joint_msg.target_stiffness = {100.0, 100.0, 100.0, 50.0, 50.0, 50.0};
-  joint_msg.target_damping = {40.0, 40.0, 40.0, 15.0, 15.0, 15.0};
-  joint_msg.trajectory_generation_mode.mode =
-      TrajectoryGenerationMode::MODE_POSITION;
-  joint_motion_update_pub_->publish(joint_msg);
 
-  // Request for joints reset to home positions
-  auto reset_joints_request = std::make_shared<ResetJointsSrv::Request>();
-  for (const auto& [joint_name, initial_pos] : this->home_joint_positions_) {
-    reset_joints_request->joint_names.emplace_back(joint_name);
-    reset_joints_request->initial_positions.emplace_back(initial_pos);
-  }
+  // Publish pre-built joint command to controller
+  joint_motion_update_pub_->publish(home_joint_msg_);
+
+  // Request for joints reset to home positions using pre-built request
   auto reset_joints_future =
-      reset_joints_client_->async_send_request(reset_joints_request);
+      reset_joints_client_->async_send_request(home_reset_joints_request_);
   if (reset_joints_future.wait_for(std::chrono::seconds(10)) !=
       std::future_status::ready) {
     RCLCPP_ERROR(node_->get_logger(),
-                 "ResetJoints service call timed out requsting for reset!");
+                 "ResetJoints service call timed out requesting for reset!");
     return false;
   }
   auto reset_joints_response = reset_joints_future.get();
   if (!reset_joints_response->success) {
     RCLCPP_ERROR(node_->get_logger(), "Failed to request for joint reset.");
+    return false;
+  }
+
+  // Switch to cartesian mode after homing
+  if (!change_target_mode(
+          ChangeTargetModeSrv::Request::TARGET_MODE_CARTESIAN)) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "Failed to switch to cartesian mode after homing.");
     return false;
   }
 

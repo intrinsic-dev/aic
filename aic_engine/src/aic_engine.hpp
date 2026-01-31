@@ -367,8 +367,9 @@ class Engine {
   // Whether the participant model has been discovered and readied.
   bool model_discovered_;
 
-  // Robot initial joint positions
-  std::vector<std::pair<std::string, double>> home_joint_positions_;
+  // Pre-built messages for homing robot (built once in initialize())
+  JointMotionUpdateMsg home_joint_msg_;
+  std::shared_ptr<ResetJointsSrv::Request> home_reset_joints_request_;
 
   // Scoring tier 2 instance.
   std::unique_ptr<aic_scoring::ScoringTier2> scoring_tier2_;
