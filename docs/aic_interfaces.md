@@ -65,6 +65,3 @@ The Insertion Policy controls the robot by publishing to the following topics.
 | Service Name | Service Type | Description |
 | :--- | :--- | :--- |
 | `/aic_controller/change_target_mode` | `aic_control_interfaces/srv/ChangeTargetMode` | Select the target mode (Cartesian or joint) to define the expected input. The controller will subscribe to either `/aic_controller/pose_commands` or `/aic_controller/joint_commands` accordingly.|
-| `/reset_joints` | `aic_engine_interfaces/srv/ResetJoints` | Request for the specified joint names to be reset to the provided initial positions. This request is submitted to the ResetJoints Gazebo plugin.|
-
-
