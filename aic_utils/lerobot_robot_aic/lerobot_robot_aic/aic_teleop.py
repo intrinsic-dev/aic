@@ -116,25 +116,25 @@ class AICKeyboardEETeleop(KeyboardEndEffectorTeleop):
             elif key == "s":
                 self._current_actions["linear.y"] = val
             elif key == "a":
-                self._current_actions["linear.x"] = -val
-            elif key == "d":
                 self._current_actions["linear.x"] = val
+            elif key == "d":
+                self._current_actions["linear.x"] = -val
             elif key == "r":
                 self._current_actions["linear.z"] = val
             elif key == "f":
                 self._current_actions["linear.z"] = -val
             elif key == "W":
-                self._current_actions["angular.x"] = val
-            elif key == "S":
                 self._current_actions["angular.x"] = -val
+            elif key == "S":
+                self._current_actions["angular.x"] = val
             elif key == "A":
                 self._current_actions["angular.y"] = -val
             elif key == "D":
                 self._current_actions["angular.y"] = val
             elif key == "q":
-                self._current_actions["angular.z"] = -val
-            elif key == "e":
                 self._current_actions["angular.z"] = val
+            elif key == "e":
+                self._current_actions["angular.z"] = -val
             elif key == "j":
                 self._current_actions["gripper_target"] = GRIPPER_CLOSED_POS
             elif key == "k":
@@ -240,19 +240,33 @@ class AICSpaceMouseTeleop(Teleoperator):
     def configure(self) -> None:
         pass
 
+    def apply_deadband(self, value, threshold=0.02):
+        # print("deadband", type(value))
+        return value if abs(value) > threshold else 0.0
+
     def get_action(self) -> dict[str, Any]:
         if not self.is_connected:
             raise DeviceNotConnectedError()
 
         state = pyspacemouse.read()
 
+        # print(state.x, type(state.x))
+        
+        clean_x = self.apply_deadband(float(state.x))
+        clean_y = self.apply_deadband(float(state.y))
+        clean_z = self.apply_deadband(float(state.z))
+        clean_roll = self.apply_deadband(float(state.roll))
+        clean_pitch = self.apply_deadband(float(state.pitch))
+        clean_yaw = self.apply_deadband(float(state.yaw))
+        # print(state)
+
         twist_msg = Twist()
-        twist_msg.linear.x = -float(state.y) ** 3 * self.config.command_scaling
-        twist_msg.linear.y = float(state.x) ** 3 * self.config.command_scaling
-        twist_msg.linear.z = float(state.z) ** 3 * self.config.command_scaling
-        twist_msg.angular.x = -float(state.roll) ** 3 * self.config.command_scaling
-        twist_msg.angular.y = -float(state.pitch) ** 3 * self.config.command_scaling
-        twist_msg.angular.z = -float(state.yaw) ** 3 * self.config.command_scaling
+        twist_msg.linear.x = -clean_y ** 1 * self.config.command_scaling 
+        twist_msg.linear.y = clean_x ** 1 * self.config.command_scaling
+        twist_msg.linear.z = clean_z ** 1 * self.config.command_scaling
+        twist_msg.angular.x = -clean_roll ** 1 * self.config.command_scaling
+        twist_msg.angular.y = -clean_pitch ** 1 * self.config.command_scaling
+        twist_msg.angular.z = -clean_yaw ** 1 * self.config.command_scaling
 
         if not self.config.operator_position_front:
             twist_msg.linear.x *= -1
