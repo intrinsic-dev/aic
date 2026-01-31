@@ -169,7 +169,6 @@ struct Score {
   /// \return The resulting YAML node with serialized data.
   YAML::Node serialize() const;
 
- private:
   /// \brief Computes the total score from the score breakdown.
   int calculate_total_score() const;
 };
