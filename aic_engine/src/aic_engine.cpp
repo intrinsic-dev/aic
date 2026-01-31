@@ -306,7 +306,8 @@ Engine::Engine(const rclcpp::NodeOptions& options)
   node_->declare_parameter("gripper_frame_name", std::string("gripper/tcp"));
   ground_truth_ = node_->declare_parameter("ground_truth", false);
   skip_model_ready_ = node_->declare_parameter("skip_model_ready", false);
-  skip_ready_simulator_ = node_->declare_parameter("skip_ready_simulator", false);
+  skip_ready_simulator_ =
+      node_->declare_parameter("skip_ready_simulator", false);
   node_->declare_parameter("model_discovery_timeout_seconds", 30);
   node_->declare_parameter("model_configure_timeout_seconds", 60);
   node_->declare_parameter("model_activate_timeout_seconds", 60);
