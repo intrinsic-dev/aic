@@ -945,13 +945,6 @@ bool Engine::ready_simulator(Trial& trial) {
   RCLCPP_INFO(node_->get_logger(), "Readying simulator for trial '%s'...",
               trial.id.c_str());
 
-  // Home robot before setting up simulator
-  if (!home_robot()) {
-    RCLCPP_ERROR(node_->get_logger(),
-                 "Unable to home robot before readying simulator.");
-    return false;
-  }
-
   // Spawn the task board.
   RCLCPP_INFO(node_->get_logger(), "Spawning task board.");
   const auto& task_board_config = trial.config["scene"]["task_board"];
@@ -1337,6 +1330,12 @@ void Engine::reset_after_trial(const Trial& trial) {
     }
   }
 
+  // Home robot after removing entities to prepare for next trial
+  if (!home_robot()) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "Failed to home robot during trial reset.");
+  }
+
   is_first_trial_ = false;
   model_discovered_ = false;
   RCLCPP_INFO(node_->get_logger(), "Reset after trial completed.");
@@ -1356,7 +1355,11 @@ bool Engine::home_robot() {
   // Publish pre-built joint command to controller
   joint_motion_update_pub_->publish(home_joint_msg_);
 
-  // Request for joints reset to home positions using pre-built request
+  // Wait for the robot to reach home position if possible without resetting.
+  std::this_thread::sleep_for(std::chrono::seconds(2));
+
+  // Request for joints reset to home positions using pre-built request for
+  // extra safety.
   auto reset_joints_future =
       reset_joints_client_->async_send_request(home_reset_joints_request_);
   if (reset_joints_future.wait_for(std::chrono::seconds(10)) !=
