@@ -510,7 +510,6 @@ EngineState Engine::initialize() {
     home_reset_joints_request_->initial_positions.emplace_back(initial_pos);
   }
 
-  home_point.time_from_start.sec = 1;
   home_joint_msg_.target_state = home_point;
   home_joint_msg_.target_stiffness = {100.0, 100.0, 100.0, 50.0, 50.0, 50.0};
   home_joint_msg_.target_damping = {40.0, 40.0, 40.0, 15.0, 15.0, 15.0};
