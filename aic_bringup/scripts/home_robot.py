@@ -26,7 +26,7 @@ from control_msgs.action import FollowJointTrajectory
 from rclpy.action import ActionClient
 from rclpy.node import Node
 from trajectory_msgs.msg import JointTrajectoryPoint
-from aic_control_interfaces.msg import MotionUpdate, TrajectoryGenerationMode
+from aic_control_interfaces.msg import MotionUpdate, TrajectoryGenerationMode, JointMotionUpdate
 from aic_control_interfaces.srv import ChangeTargetMode
 from geometry_msgs.msg import Pose, Point, Quaternion, Wrench, Vector3
 
@@ -41,7 +41,7 @@ class HomeTrajectoryNode(Node):
         self.controller_namespace = self.declare_parameter(
             "controller_namespace", "aic_controller"
         ).value
-        self.home_joint_positions = [0.6, -1.3, -1.9, -1.57, 1.57, 0.6]
+        self.home_joint_positions = [-0.546, -1.703, -1.291, -1.719, 1.571, -2.116] # [0.6, -1.3, -1.9, -1.57, 1.57, 0.6]
         # Create publisher if needed.
         if self.use_aic_control:
             # Change to pose target mode, in case it was in joint target mode previously
@@ -52,7 +52,7 @@ class HomeTrajectoryNode(Node):
                 self.get_logger().info("Waiting for change_target_mode service...")
             target_mode_request = ChangeTargetMode.Request()
             target_mode_request.target_mode = (
-                ChangeTargetMode.Request.TARGET_MODE_CARTESIAN
+                ChangeTargetMode.Request.TARGET_MODE_JOINT #TARGET_MODE_CARTESIAN
             )
             future = change_target_mode_client.call_async(target_mode_request)
             rclpy.spin_until_future_complete(self, future)
@@ -63,10 +63,12 @@ class HomeTrajectoryNode(Node):
                 return
             self.get_logger().info("Set target mode to CARRTESIAN")
 
+            # self.publisher = self.create_publisher(
+            #     MotionUpdate, f"/{self.controller_namespace}/pose_commands", 10
+            # )
             self.publisher = self.create_publisher(
-                MotionUpdate, f"/{self.controller_namespace}/pose_commands", 10
+                JointMotionUpdate, f"/{self.controller_namespace}/joint_commands", 10
             )
-
             while self.publisher.get_subscription_count() == 0:
                 self.get_logger().info(
                     f"Waiting for subscriber to '{self.controller_namespace}/pose_commands'..."
@@ -99,20 +101,20 @@ class HomeTrajectoryNode(Node):
 
     def send_trajectory(self):
         if self.use_aic_control:
-            msg = MotionUpdate()
-            msg.header.stamp = self.get_clock().now().to_msg()
-            msg.header.frame_id = "base_link"
-            msg.pose = Pose(
-                position=Point(x=-0.4, y=0.2, z=0.3),
-                orientation=Quaternion(x=-0.707, y=-0.707, z=0.0, w=0.0),
-            )
-            msg.target_stiffness = np.diag(
-                [100.0, 100.0, 100.0, 50.0, 50.0, 50.0]
-            ).flatten()
-            msg.target_damping = np.diag([40.0, 40.0, 40.0, 15.0, 15.0, 15.0]).flatten()
-            msg.wrench_feedback_gains_at_tip = Wrench(
-                force=Vector3(x=0.5, y=0.5, z=0.5), torque=Vector3(x=0.0, y=0.0, z=0.0)
-            )
+            # msg = MotionUpdate()
+            msg = JointMotionUpdate()
+            # msg.header.stamp = self.get_clock().now().to_msg()
+            # msg.header.frame_id = "base_link"
+            # msg.pose = Pose(
+            #     position=Point(x=-0.4, y=0.2, z=0.3),
+            #     orientation=Quaternion(x=-0.707, y=-0.707, z=0.0, w=0.0),
+            # )
+            msg.target_state.positions = self.home_joint_positions
+            msg.target_stiffness = [100.0, 100.0, 100.0, 50.0, 50.0, 50.0]
+            msg.target_damping = [40.0, 40.0, 40.0, 15.0, 15.0, 15.0]
+            # msg.wrench_feedback_gains_at_tip = Wrench(
+            #     force=Vector3(x=0.5, y=0.5, z=0.5), torque=Vector3(x=0.0, y=0.0, z=0.0)
+            # )
             msg.trajectory_generation_mode.mode = TrajectoryGenerationMode.MODE_POSITION
             self.publisher.publish(msg)
             self.get_logger().info(
