@@ -68,12 +68,7 @@ void ResetJointsPlugin::Configure(
                   request,
               std::shared_ptr<aic_engine_interfaces::srv::ResetJoints::Response>
                   response) {
-            if (!this->requestedJoints.empty() || this->reset_promise) {
-              // Reject request, another reset request is ongoing
-              response->success = false;
-              response->message = "ResetJoints service is busy!";
-              return;
-            }
+            // Validate request parameters (no mutex needed)
             if (request->joint_names.empty() ||
                 request->initial_positions.empty()) {
               // Reject empty request
@@ -91,11 +86,26 @@ void ResetJointsPlugin::Configure(
               return;
             }
 
-            this->reset_promise = std::make_shared<std::promise<
-                aic_engine_interfaces::srv::ResetJoints::Response>>();
-            auto future = this->reset_promise->get_future();
+            // Check busy state and set up request
+            std::shared_ptr<
+                std::future<aic_engine_interfaces::srv::ResetJoints::Response>>
+                future_ptr;
             {
               std::lock_guard<std::mutex> lock(this->mutex);
+
+              if (!this->requestedJoints.empty() || this->reset_promise) {
+                // Reject request, another reset request is ongoing
+                response->success = false;
+                response->message = "ResetJoints service is busy!";
+                return;
+              }
+
+              this->reset_promise = std::make_shared<std::promise<
+                  aic_engine_interfaces::srv::ResetJoints::Response>>();
+              future_ptr = std::make_shared<std::future<
+                  aic_engine_interfaces::srv::ResetJoints::Response>>(
+                  this->reset_promise->get_future());
+
               for (std::size_t i = 0; i < num_joints; ++i) {
                 const auto& jointName = request->joint_names[i];
                 const auto& initialPosition = request->initial_positions[i];
@@ -104,7 +114,9 @@ void ResetJointsPlugin::Configure(
                 this->requestedJoints[jointName] = initialPosition;
               }
             }
-            *response = future.get();
+
+            // Wait for PreUpdate to complete reset (outside mutex)
+            *response = future_ptr->get();
           });
 
   this->spinThread = std::thread([this]() { rclcpp::spin(this->rosNode); });
