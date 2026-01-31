@@ -54,11 +54,11 @@ class ResetJointsPlugin : public gz::sim::System,
 
   /// \brief The model associated with this system.
  private:
-  gz::sim::Model model;
+  gz::sim::Model model_;
 
   /// \brief ROS 2 node to interact with the engine.
  private:
-  std::shared_ptr<rclcpp::Node> rosNode;
+  std::shared_ptr<rclcpp::Node> rosNode_;
 
   /// \brief ROS2 Service servers for updating controller states
  private:
@@ -69,27 +69,27 @@ class ResetJointsPlugin : public gz::sim::System,
  private:
   std::shared_ptr<
       std::promise<aic_engine_interfaces::srv::ResetJoints::Response>>
-      reset_promise;
+      reset_promise_;
 
   /// \brief Map of joint names to be reset to their initial positions.
  private:
-  std::unordered_map<std::string, double> requestedJoints;
+  std::unordered_map<std::string, double> requestedJoints_;
 
   /// \brief Mutex to prevent overwriting joint requests.
  private:
-  std::mutex mutex;
+  std::mutex mutex_;
 
   /// \brief Thread to spin ROS 2 node.
  private:
-  std::thread spinThread;
+  std::thread spinThread_;
 
   /// \brief System update period calculated from <update_rate>.
  private:
-  std::chrono::steady_clock::duration updatePeriod{0};
+  std::chrono::steady_clock::duration updatePeriod_{0};
 
   /// \brief Last system update simulation time.
  private:
-  std::chrono::steady_clock::duration lastUpdateTime{0};
+  std::chrono::steady_clock::duration lastUpdateTime_{0};
 };
 }  // namespace aic_gazebo
 #endif

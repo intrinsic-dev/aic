@@ -22,15 +22,8 @@
 #include <future>
 #include <gz/common/Console.hh>
 #include <gz/plugin/Register.hh>
-#include <gz/sim/Conversions.hh>
-#include <gz/sim/Util.hh>
-#include <gz/sim/components/Collision.hh>
-#include <gz/sim/components/ContactSensor.hh>
-#include <gz/sim/components/ContactSensorData.hh>
 #include <gz/sim/components/JointPositionReset.hh>
 #include <gz/sim/components/JointVelocityReset.hh>
-#include <gz/sim/components/Name.hh>
-#include <gz/sim/components/World.hh>
 
 GZ_ADD_PLUGIN(aic_gazebo::ResetJointsPlugin, gz::sim::System,
               aic_gazebo::ResetJointsPlugin::ISystemConfigure,
@@ -50,17 +43,17 @@ void ResetJointsPlugin::Configure(
   // Initialize system update period.
   double rate = _sdf->Get<double>("update_rate", 1).first;
   std::chrono::duration<double> period{rate > 0 ? 1 / rate : 0};
-  this->updatePeriod =
+  this->updatePeriod_ =
       std::chrono::duration_cast<std::chrono::steady_clock::duration>(period);
 
-  this->model = gz::sim::Model(_entity);
+  this->model_ = gz::sim::Model(_entity);
   if (!rclcpp::ok()) {
     rclcpp::init(0, nullptr);
   }
 
-  this->rosNode = rclcpp::Node::make_shared("reset_joints_node");
+  this->rosNode_ = rclcpp::Node::make_shared("reset_joints_node");
   this->reset_joints_srv_ =
-      this->rosNode->create_service<aic_engine_interfaces::srv::ResetJoints>(
+      this->rosNode_->create_service<aic_engine_interfaces::srv::ResetJoints>(
           "/scoring/reset_joints",
           [this](
               const std::shared_ptr<
@@ -91,27 +84,27 @@ void ResetJointsPlugin::Configure(
                 std::future<aic_engine_interfaces::srv::ResetJoints::Response>>
                 future_ptr;
             {
-              std::lock_guard<std::mutex> lock(this->mutex);
+              std::lock_guard<std::mutex> lock(this->mutex_);
 
-              if (!this->requestedJoints.empty() || this->reset_promise) {
+              if (!this->requestedJoints_.empty() || this->reset_promise_) {
                 // Reject request, another reset request is ongoing
                 response->success = false;
                 response->message = "ResetJoints service is busy!";
                 return;
               }
 
-              this->reset_promise = std::make_shared<std::promise<
+              this->reset_promise_ = std::make_shared<std::promise<
                   aic_engine_interfaces::srv::ResetJoints::Response>>();
               future_ptr = std::make_shared<std::future<
                   aic_engine_interfaces::srv::ResetJoints::Response>>(
-                  this->reset_promise->get_future());
+                  this->reset_promise_->get_future());
 
               for (std::size_t i = 0; i < num_joints; ++i) {
                 const auto& jointName = request->joint_names[i];
                 const auto& initialPosition = request->initial_positions[i];
                 gzmsg << "Received reset request for joint: " << jointName
                       << std::endl;
-                this->requestedJoints[jointName] = initialPosition;
+                this->requestedJoints_[jointName] = initialPosition;
               }
             }
 
@@ -119,7 +112,7 @@ void ResetJointsPlugin::Configure(
             *response = future_ptr->get();
           });
 
-  this->spinThread = std::thread([this]() { rclcpp::spin(this->rosNode); });
+  this->spinThread_ = std::thread([this]() { rclcpp::spin(this->rosNode_); });
 
   gzmsg << "Initialized ResetJointsPlugin!" << std::endl;
 }
@@ -128,20 +121,20 @@ void ResetJointsPlugin::Configure(
 void ResetJointsPlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
                                   gz::sim::EntityComponentManager& _ecm) {
   // Throttle update rate.
-  auto elapsed = _info.simTime - this->lastUpdateTime;
+  auto elapsed = _info.simTime - this->lastUpdateTime_;
   if (elapsed > std::chrono::steady_clock::duration::zero() &&
-      elapsed < this->updatePeriod) {
+      elapsed < this->updatePeriod_) {
     return;
   }
-  this->lastUpdateTime = _info.simTime;
+  this->lastUpdateTime_ = _info.simTime;
 
-  std::lock_guard<std::mutex> lock(this->mutex);
-  if (this->requestedJoints.empty()) {
+  std::lock_guard<std::mutex> lock(this->mutex_);
+  if (this->requestedJoints_.empty()) {
     return;
   }
 
-  for (const auto& [jointName, initialPosition] : this->requestedJoints) {
-    auto jointEntity = this->model.JointByName(_ecm, jointName);
+  for (const auto& [jointName, initialPosition] : this->requestedJoints_) {
+    auto jointEntity = this->model_.JointByName(_ecm, jointName);
     if (!jointEntity) {
       gzwarn << "Joint " << jointName << " cannot be found! Skipping reset."
              << std::endl;
@@ -159,10 +152,10 @@ void ResetJointsPlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
 
   aic_engine_interfaces::srv::ResetJoints::Response response;
   response.success = true;
-  this->reset_promise->set_value(response);
+  this->reset_promise_->set_value(response);
 
-  this->requestedJoints.clear();
-  this->reset_promise = nullptr;
+  this->requestedJoints_.clear();
+  this->reset_promise_ = nullptr;
 }
 
 //////////////////////////////////////////////////
@@ -173,9 +166,9 @@ void ResetJointsPlugin::Reset(const gz::sim::UpdateInfo& /*_info*/,
 
 //////////////////////////////////////////////////
 ResetJointsPlugin::~ResetJointsPlugin() {
-  if (this->spinThread.joinable()) {
+  if (this->spinThread_.joinable()) {
     rclcpp::shutdown();
-    this->spinThread.join();
+    this->spinThread_.join();
   }
 }
 
