@@ -556,12 +556,6 @@ EngineState Engine::run() {
     RCLCPP_INFO(node_->get_logger(), "======================================");
     RCLCPP_INFO(node_->get_logger(), "Handling trial '%s'...",
                 trial_id.c_str());
-    if (!home_robot()) {
-      RCLCPP_ERROR(node_->get_logger(),
-                   "Unable to home robot before trial '%s'.", trial_id.c_str());
-      engine_state_ = EngineState::Error;
-      return engine_state_;
-    }
     TrialScore trial_score = this->handle_trial(trial);
     score.breakdown[trial_id] = trial_score;
     if (trial.state == TrialState::AllTasksCompleted) {
@@ -950,6 +944,13 @@ bool Engine::check_endpoints() {
 bool Engine::ready_simulator(Trial& trial) {
   RCLCPP_INFO(node_->get_logger(), "Readying simulator for trial '%s'...",
               trial.id.c_str());
+
+  // Home robot before setting up simulator
+  if (!home_robot()) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "Unable to home robot before readying simulator.");
+    return false;
+  }
 
   // Spawn the task board.
   RCLCPP_INFO(node_->get_logger(), "Spawning task board.");
