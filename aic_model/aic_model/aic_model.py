@@ -236,14 +236,12 @@ class AicModel(LifecycleNode):
             task=goal_handle.request,
             get_observation=lambda: self.observation_callable(),
             set_pose_target=lambda pose, frame_id="base_link": self.set_pose_target(
-                    pose, frame_id
+                pose, frame_id
             ),
-            send_feedback=lambda feedback: self.send_feedback(
-                goal_handle, feedback
-            ),
+            send_feedback=lambda feedback: self.send_feedback(goal_handle, feedback),
         )
         if self._action_thread_result is None:
-            self.get_logger().warn("Policy insert_cable() returned None. Assuming False...")
+            self.get_logger().warn("insert_cable() returned None. Assuming False...")
             self._action_thread_result = False
 
     async def insert_cable_execute_callback(self, goal_handle: ServerGoalHandle):
@@ -299,7 +297,9 @@ class AicModel(LifecycleNode):
 
             # Check if the task has been completed.
             if not self._action_thread.is_alive():
-                self.get_logger().info(f"Policy thread exited. Result: {self._action_thread_result}")
+                self.get_logger().info(
+                    f"insert_cable() returned {self._action_thread_result}"
+                )
                 goal_handle.succeed()
                 result = InsertCable.Result()
                 result.success = self._action_thread_result
