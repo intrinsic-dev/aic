@@ -29,8 +29,10 @@ from aic_control_interfaces.msg import (
 from aic_control_interfaces.srv import ChangeTargetMode
 from aic_model_interfaces.msg import Observation
 from aic_task_interfaces.action import InsertCable
+from aic_task_interfaces.msg import Task
 from geometry_msgs.msg import Point, Pose, Quaternion, Wrench, Vector3
 from rclpy.action import ActionServer, CancelResponse, GoalResponse
+from rclpy.action.server import ServerGoalHandle
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import ExternalShutdownException, MultiThreadedExecutor
 from rclpy.lifecycle import (
@@ -83,6 +85,7 @@ class AicModel(LifecycleNode):
         )
         self._action_callback_group = ReentrantCallbackGroup()
         self._action_thread = None
+        self._action_thread_result = None
         self.action_server = ActionServer(
             self,
             InsertCable,
@@ -168,9 +171,6 @@ class AicModel(LifecycleNode):
             return GoalResponse.ACCEPT
 
     def insert_cable_accepted_goal_callback(self, goal_handle):
-        self.get_logger().info(
-            f"Accepted insert_cable goal: {goal_handle.request.task}"
-        )
         self.goal_handle = goal_handle
         self.goal_handle.execute()
 
@@ -231,20 +231,29 @@ class AicModel(LifecycleNode):
         feedback_msg.message = feedback
         goal_handle.publish_feedback(feedback_msg)
 
-    async def insert_cable_execute_callback(self, goal_handle):
+    def action_thread_func(self, goal_handle: ServerGoalHandle):
+        self._action_thread_result = self._policy.insert_cable(
+            task=goal_handle.request,
+            get_observation=lambda: self.observation_callable(),
+            set_pose_target=lambda pose, frame_id="base_link": self.set_pose_target(
+                    pose, frame_id
+            ),
+            send_feedback=lambda feedback: self.send_feedback(
+                goal_handle, feedback
+            ),
+        )
+        if self._action_thread_result is None:
+            self.get_logger().warn("Policy insert_cable() returned None. Assuming False...")
+            self._action_thread_result = False
+
+    async def insert_cable_execute_callback(self, goal_handle: ServerGoalHandle):
         self.get_logger().info("Entering insert_cable_execute_callback()")
         await self.set_cartesian_mode()
+        self._action_thread_result = None
         self._action_thread = threading.Thread(
-            target=self._policy.insert_cable,
+            target=self.action_thread_func,
             kwargs={
-                "task": goal_handle.request,
-                "get_observation": lambda: self.observation_callable(),
-                "set_pose_target": lambda pose, frame_id="base_link": self.set_pose_target(
-                    pose, frame_id
-                ),
-                "send_feedback": lambda feedback: self.send_feedback(
-                    goal_handle, feedback
-                ),
+                "goal_handle": goal_handle,
             },
         )
         self._action_thread.start()
@@ -290,10 +299,10 @@ class AicModel(LifecycleNode):
 
             # Check if the task has been completed.
             if not self._action_thread.is_alive():
-                self.get_logger().info("Policy thread exited. Action complete.")
+                self.get_logger().info(f"Policy thread exited. Result: {self._action_thread_result}")
                 goal_handle.succeed()
                 result = InsertCable.Result()
-                result.success = True  # todo: get the result from the policy
+                result.success = self._action_thread_result
                 self.goal_handle = None
                 return result
 

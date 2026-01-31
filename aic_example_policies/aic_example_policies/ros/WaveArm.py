@@ -49,38 +49,22 @@ class WaveArm(PolicyRos):
             )
             self.get_logger().info(f"observation time: {t}")
 
-            #
             # Move the arm along a line, while looking down at the task board.
-            #
             tcp = observation.tcp_transform.transform.translation
             loop_duration = 5.0  # seconds
-
-            # loop_fraction smoothly interpolates from 0..1 during the loop time
             loop_fraction = (t % loop_duration) / loop_duration
-
-            # y_fraction smoothly interpolates from -1..1..-1 during the loop time
-            y_fraction = 2 * loop_fraction
-            if y_fraction > 1.0:
-                y_fraction = 2.0 - y_fraction
-            y_fraction -= 1.0
+            y_scale = 2 * loop_fraction
+            if y_scale > 1.0:
+                y_scale = 2.0 - y_scale
+            y_scale -= 1.0
 
             # create a smooth series of target points that flies over the task board
-            target_x = -0.4
-            target_y = 0.45 + 0.3 * y_fraction
-            target_z = 0.25
-
             set_pose_target(
                 Pose(
-                    position=Point(x=target_x, y=target_y, z=target_z),
+                    position=Point(x=-0.4, y=0.45 + 0.3 * y_scale, z=0.25),
                     orientation=Quaternion(x=0.0, y=1.0, z=0.0, w=0.0),
                 )
             )
 
-            self.get_logger().info(
-                (
-                    f"tcp: ({tcp.x:+0.3f} {tcp.y:+0.3f}, {tcp.z:+0.3f}) "
-                    f"target: ({target_x:+0.3f} {target_y:0.3f} {target_z:0.3f})"
-                )
-            )
-
-        self.get_logger().info("WaveArm.insert_cable() exit")
+        self.get_logger().info("WaveArm.insert_cable() exiting...")
+        return True
