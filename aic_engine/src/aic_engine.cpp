@@ -550,7 +550,7 @@ EngineState Engine::initialize() {
 
 //==============================================================================
 EngineState Engine::run() {
-  RCLCPP_INFO(node_->get_logger(), "");
+  RCLCPP_INFO(node_->get_logger(), " ");
   RCLCPP_INFO(node_->get_logger(),
               "\033[1;35m╔════════════════════════════════════════╗\033[0m");
   RCLCPP_INFO(node_->get_logger(),
@@ -560,7 +560,7 @@ EngineState Engine::run() {
               trials_.size());
   RCLCPP_INFO(node_->get_logger(),
               "\033[1;35m╚════════════════════════════════════════╝\033[0m");
-  RCLCPP_INFO(node_->get_logger(), "");
+  RCLCPP_INFO(node_->get_logger(), " ");
 
   engine_state_ = EngineState::Running;
   Score score;
@@ -569,7 +569,7 @@ EngineState Engine::run() {
   for (auto& trial_entry : trials_) {
     const std::string& trial_id = trial_entry.first;
     Trial& trial = trial_entry.second;
-    RCLCPP_INFO(node_->get_logger(), "");
+    RCLCPP_INFO(node_->get_logger(), " ");
     RCLCPP_INFO(node_->get_logger(),
                 "\033[1;33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m");
     RCLCPP_INFO(node_->get_logger(), "\033[1;33m  Trial %zu/%zu: %s\033[0m",
@@ -598,7 +598,7 @@ EngineState Engine::run() {
   this->shutdown_model_node();
   this->score_run(score);
 
-  RCLCPP_INFO(node_->get_logger(), "");
+  RCLCPP_INFO(node_->get_logger(), " ");
   if (engine_state_ == EngineState::Running) {
     RCLCPP_INFO(node_->get_logger(),
                 "\033[1;32m╔════════════════════════════════════════╗\033[0m");
@@ -617,7 +617,7 @@ EngineState Engine::run() {
     RCLCPP_ERROR(node_->get_logger(),
                  "\033[1;31m╚════════════════════════════════════════╝\033[0m");
   }
-  RCLCPP_INFO(node_->get_logger(), "");
+  RCLCPP_INFO(node_->get_logger(), " ");
 
   return engine_state_;
 }
