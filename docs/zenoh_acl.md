@@ -60,10 +60,10 @@ Limiting `incoming_publications_eval` and `outgoing_subscriptions_eval` to only 
 > [!warning]
 > This is not replace a full test with `docker compose up`.
 
-Start zenoh router
+Start eval router
 
 ```bash
-export ZENOH_ROUTER_CONFIG_URI=$(pwd)/src/aic/docker/aic_eval/zenoh_router_config.json5
+. src/aic/docker/acl/zenoh_config_eval_router.sh
 ros2 run rmw_zenoh_cpp rmw_zenohd
 ```
 
@@ -73,41 +73,16 @@ Start evaluator
 ros2 launch aic_bringup aic_gz_bringup.launch.py launch_rviz:=false gazebo_gui:=false
 ```
 
-Find the host docker bridge ip
+Start model router
 
 ```bash
-$ ip link
-...
-6: docker0: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc noqueue state DOWN group default 
-    link/ether 02:95:de:3a:bd:4c brd ff:ff:ff:ff:ff:ff
-    inet 172.17.0.1/16 brd 172.17.255.255 scope global docker0
-       valid_lft forever preferred_lft forever
-    inet6 fe80::95:deff:fe3a:bd4c/64 scope link 
-       valid_lft forever preferred_lft forever
+. src/aic/docker/acl/zenoh_config_model_router.sh
+ros2 run rmw_zenoh_cpp rmw_zenohd
 ```
 
-By default it should be `172.17.0.1`.
-
-Start a container
+Test with ros2 cli
 
 ```bash
-docker run -it --rm -v="$(pwd)/src/aic/docker/acl:/acl:ro" --entrypoint=bash ghcr.io/intrinsic-dev/aic/aic_eval
-# Can also use any image with ROS2 and the aic interface messages.
+. src/aic/docker/acl/zenoh_config_model.sh
+ros2 topic echo --no-daemon --once /aic_controller/controller_state
 ```
-
-Export env vars and source AIC workspace
-
-```bash
-export RMW_IMPLEMENTATION=rmw_zenoh_cpp
-HOST_IP=172.17.0.1
-export ZENOH_CONFIG_OVERRIDE=connect/endpoints='["tcp/'"$HOST_IP"':7447"];transport/auth/usrpwd/user="participant";transport/auth/usrpwd/password="CHANGE_IN_PROD";transport/auth/usrpwd/dictionary_file="/acl/credentials.txt"'
-. /ws_aic/install/setup.bash
-```
-
-Test topic echo
-
-```bash
-ros2 topic echo --once /aic_controller/controller_state
-```
-
-Quickly test new changes by updating the router config and restart the router.

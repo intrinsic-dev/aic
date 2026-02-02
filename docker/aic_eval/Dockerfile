@@ -28,10 +28,7 @@ set -e
 
 source /ws_aic/install/setup.bash
 export RMW_IMPLEMENTATION=rmw_zenoh_cpp
-ZENOH_CONFIG_OVERRIDE="\$AIC_ZENOH_ROUTER_CONFIG_OVERRIDE" ros2 run rmw_zenoh_cpp rmw_zenohd &
-ZENOHD_PID=\$!
-trap "kill -SIGINT -\$ZENOHD_PID" EXIT
-ZENOH_CONFIG_OVERRIDE="\$AIC_ZENOH_EVAL_CONFIG_OVERRIDE" exec ros2 launch aic_bringup aic_gz_bringup.launch.py "\$@"
+exec ros2 launch aic_bringup aic_gz_bringup.launch.py "\$@"
 EOF
 
 ENTRYPOINT ["/entrypoint.sh"]

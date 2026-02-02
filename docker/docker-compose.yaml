@@ -16,8 +16,23 @@ services:
         read_only: true
     environment:
       ZENOH_ROUTER_CONFIG_URI: /acl/zenoh_router_config.json5
-      AIC_ZENOH_ROUTER_CONFIG_OVERRIDE: transport/auth/usrpwd/user="router";transport/auth/usrpwd/password="CHANGE_IN_PROD";transport/auth/usrpwd/dictionary_file="/acl/credentials.txt"
-      AIC_ZENOH_EVAL_CONFIG_OVERRIDE: transport/auth/usrpwd/user="eval";transport/auth/usrpwd/password="CHANGE_IN_PROD";transport/auth/usrpwd/dictionary_file="/acl/credentials.txt"
+      ZENOH_CONFIG_OVERRIDE: connect/endpoints=["tcp/eval-router:7448"];transport/auth/usrpwd/user="eval";transport/auth/usrpwd/password="CHANGE_IN_PROD";transport/auth/usrpwd/dictionary_file="/acl/credentials.txt"
+  eval-router:
+    image: ghcr.io/intrinsic-dev/aic/rmw_zenohd
+    build:
+      dockerfile: docker/rmw_zenohd/Dockerfile
+      context: ..
+    command: ros2 run rmw_zenoh_cpp rmw_zenohd
+    networks:
+      - default
+    volumes:
+      - type: bind
+        source: acl
+        target: /acl
+        read_only: true
+    environment:
+      ZENOH_ROUTER_CONFIG_URI: /acl/zenoh_router_config.json5
+      ZENOH_CONFIG_OVERRIDE: transport/auth/usrpwd/user="eval-router";transport/auth/usrpwd/password="CHANGE_IN_PROD";transport/auth/usrpwd/dictionary_file="/acl/credentials.txt"
   model:
     image: ghcr.io/intrinsic-dev/aic_model
     build:
@@ -34,8 +49,23 @@ services:
         read_only: true
     environment:
       RMW_IMPLEMENTATION: rmw_zenoh_cpp
-      ZENOH_CONFIG_OVERRIDE: connect/endpoints=["tcp/eval:7447"];transport/auth/usrpwd/user="participant";transport/auth/usrpwd/password="CHANGE_IN_PROD";transport/auth/usrpwd/dictionary_file="/acl/credentials.txt"
+      ZENOH_CONFIG_OVERRIDE: connect/endpoints=["tcp/model-router:7447"];transport/auth/usrpwd/user="model";transport/auth/usrpwd/password="CHANGE_IN_PROD";transport/auth/usrpwd/dictionary_file="/acl/model-credentials.txt"
       ZENOH_ROUTER_CHECK_ATTEMPTS: -1
+  model-router:
+    image: ghcr.io/intrinsic-dev/aic/rmw_zenohd
+    build:
+      dockerfile: docker/rmw_zenohd/Dockerfile
+      context: ..
+    command: ros2 run rmw_zenoh_cpp rmw_zenohd
+    networks:
+      - default
+    volumes:
+      - type: bind
+        source: acl
+        target: /acl
+        read_only: true
+    environment:
+      ZENOH_CONFIG_OVERRIDE: connect/endpoints=["tcp/eval-router:7448"];routing/router/peers_failover_brokering=true;transport/auth/usrpwd/user="model-router";transport/auth/usrpwd/password="CHANGE_IN_PROD";transport/auth/usrpwd/dictionary_file="/acl/credentials.txt"
 networks:
   default:
     internal: true

@@ -88,7 +88,7 @@
     /// or different lists for router, peer and client (e.g. endpoints: { router: ["tcp/[::]:7447"], peer: ["tcp/[::]:0"] }).
     ///
     /// See https://docs.rs/zenoh/latest/zenoh/config/struct.EndPoint.html
-    endpoints: ["tcp/[::]:7447"],
+    endpoints: ["tcp/[::]:7448"],
 
     /// Global listen configuration,
     /// Accepts a single value or different values for router, peer and client.

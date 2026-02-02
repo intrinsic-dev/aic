@@ -1,5 +1,5 @@
 #!/usr/bin/bash
 
 HERE="$(dirname "${BASH_SOURCE[0]}")"
-# export ZENOH_SESSION_CONFIG_URI="$HERE/zenoh_eval_config.json5"
-export ZENOH_CONFIG_OVERRIDE='transport/auth/usrpwd/user="eval";transport/auth/usrpwd/password="CHANGE_IN_PROD";transport/auth/usrpwd/dictionary_file="'$HERE/credentials.txt'"'
+CREDENTIALS="$(readlink -f "$HERE")/credentials.txt"
+export ZENOH_CONFIG_OVERRIDE='connect/endpoints=["tcp/127.0.0.1:7448"];transport/auth/usrpwd/user="eval";transport/auth/usrpwd/password="CHANGE_IN_PROD";transport/auth/usrpwd/dictionary_file="'$CREDENTIALS'"'
