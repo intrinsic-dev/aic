@@ -73,12 +73,13 @@ void ScoringTier2::ResetConnections(
   this->connections = _connections;
 
   // Debug output.
-  std::cout << "Connections" << std::endl;
-  for (const Connection &c : this->connections) {
-    std::cout << "  plug: " << c.plugName << std::endl;
-    std::cout << "  port: " << c.portName << std::endl;
-    std::cout << "  Dist: " << c.distance << std::endl;
-  }
+  // std::cout << "Connections" << std::endl;
+  // for (const Connection &c : this->connections)
+  // {
+  //   std::cout << "  plug: " << c.plugName << std::endl;
+  //   std::cout << "  port: " << c.portName << std::endl;
+  //   std::cout << "  Dist: " << c.distance << std::endl;
+  // }
 }
 
 //////////////////////////////////////////////////
