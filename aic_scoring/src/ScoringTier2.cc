@@ -182,10 +182,6 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
                   msg_ptr->topic_name.c_str());
     }
   }
-  // Debugging to get the latest plug port distance
-  // RCLCPP_INFO(this->node->get_logger(),
-  //     "Plug port distance is %.2f",
-  //     *this->GetPlugPortDistance(tf2::TimePointZero));
   this->state = State::Idle;
   tier2_score.add_category_score("task execution", this->GetDistanceScore());
   tier3_score = Tier3Score(1);
