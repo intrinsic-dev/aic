@@ -55,8 +55,6 @@ So it will:
 
 Limiting `incoming_publications_eval` and `outgoing_subscriptions_eval` to only the evaluator allows us to *reject* any publications from the participant side which attempts to trick the evaluator.
 
-The reason we only have `_all` and `_eval` and no `_participant` is because we are using the network interface to filter the messages. We cannot target the participant as the interface name is different across every deployment. We can target the evaluator as we know it runs in the same container and will always use the loopback interface.
-
 ## Quick Testing
 
 > [!warning]
@@ -93,7 +91,7 @@ By default it should be `172.17.0.1`.
 Start a container
 
 ```bash
-docker run -it --rm --entrypoint=bash ghcr.io/intrinsic-dev/aic/aic_eval
+docker run -it --rm -v="$(pwd)/src/aic/docker/acl:/acl:ro" --entrypoint=bash ghcr.io/intrinsic-dev/aic/aic_eval
 # Can also use any image with ROS2 and the aic interface messages.
 ```
 
@@ -102,7 +100,7 @@ Export env vars and source AIC workspace
 ```bash
 export RMW_IMPLEMENTATION=rmw_zenoh_cpp
 HOST_IP=172.17.0.1
-export ZENOH_CONFIG_OVERRIDE="connect/endpoints=[\"tcp/$HOST_IP:7447\"]"
+export ZENOH_CONFIG_OVERRIDE=connect/endpoints='["tcp/'"$HOST_IP"':7447"];transport/auth/usrpwd/user="participant";transport/auth/usrpwd/password="CHANGE_IN_PROD";transport/auth/usrpwd/dictionary_file="/acl/credentials.txt"'
 . /ws_aic/install/setup.bash
 ```
 

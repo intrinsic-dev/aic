@@ -9,6 +9,15 @@ services:
     gpus: all
     networks:
       - default
+    volumes:
+      - type: bind
+        source: acl
+        target: /acl
+        read_only: true
+    environment:
+      ZENOH_ROUTER_CONFIG_URI: /acl/zenoh_router_config.json5
+      AIC_ZENOH_ROUTER_CONFIG_OVERRIDE: transport/auth/usrpwd/user="router";transport/auth/usrpwd/password="CHANGE_IN_PROD";transport/auth/usrpwd/dictionary_file="/acl/credentials.txt"
+      AIC_ZENOH_EVAL_CONFIG_OVERRIDE: transport/auth/usrpwd/user="eval";transport/auth/usrpwd/password="CHANGE_IN_PROD";transport/auth/usrpwd/dictionary_file="/acl/credentials.txt"
   model:
     image: ghcr.io/intrinsic-dev/aic_model
     build:
@@ -18,9 +27,14 @@ services:
     gpus: all
     networks:
       - default
+    volumes:
+      - type: bind
+        source: acl
+        target: /acl
+        read_only: true
     environment:
       RMW_IMPLEMENTATION: rmw_zenoh_cpp
-      ZENOH_CONFIG_OVERRIDE: connect/endpoints=["tcp/eval:7447"];routing/router/peers_failover_brokering=true
+      ZENOH_CONFIG_OVERRIDE: connect/endpoints=["tcp/eval:7447"];transport/auth/usrpwd/user="participant";transport/auth/usrpwd/password="CHANGE_IN_PROD";transport/auth/usrpwd/dictionary_file="/acl/credentials.txt"
       ZENOH_ROUTER_CHECK_ATTEMPTS: -1
 networks:
   default:

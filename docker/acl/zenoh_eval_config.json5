@@ -9,7 +9,7 @@
   // id: "1234567890abcdef",
 
   /// The node's mode (router, peer or client)
-  mode: "router",
+  mode: "peer",
 
   /// Which endpoints to connect to. E.g. tcp/localhost:7447.
   /// By configuring the endpoints, it is possible to tell zenoh which router/peer to connect to at startup.
@@ -39,8 +39,10 @@
     /// or different lists for router, peer and client (e.g. endpoints: { router: ["tcp/10.10.10.10:7447"], peer: ["tcp/11.11.11.11:7447"] }).
     ///
     /// See https://docs.rs/zenoh/latest/zenoh/config/struct.EndPoint.html
+    ///
+    /// ROS setting: By default connect to the Zenoh router on localhost on port 7447.
     endpoints: [
-      // "<proto>/<address>"
+      "tcp/localhost:7447"
     ],
 
     /// Global connect configuration,
@@ -88,7 +90,12 @@
     /// or different lists for router, peer and client (e.g. endpoints: { router: ["tcp/[::]:7447"], peer: ["tcp/[::]:0"] }).
     ///
     /// See https://docs.rs/zenoh/latest/zenoh/config/struct.EndPoint.html
-    endpoints: ["tcp/[::]:7447"],
+    ///
+    /// ROS setting: By default accept incoming connections only from localhost (i.e. from colocalized Nodes).
+    ///              All communications with other hosts are routed by the Zenoh router.
+    endpoints: [
+      "tcp/localhost:0"
+    ],
 
     /// Global listen configuration,
     /// Accepts a single value or different values for router, peer and client.
@@ -157,9 +164,9 @@
       /// (e.g. autoconnect_strategy : { to_router:  "always", to_peer: "greater-zid" }),
       /// or different values for router or peer mode
       /// (e.g. autoconnect_strategy : { peer: { to_router:  "always", to_peer: "greater-zid" } }).
-      autoconnect_strategy: {
-        router: { to_router: "always", to_peer: "always" },
-      },
+      /// ROS setting: by default all peers rely on the router to discover each other. Thus configuring the peer to send gossip
+      ///              messages only to the router is sufficient and avoids unecessary traffic between Nodes at launch time.
+      autoconnect_strategy: { peer: { to_router: "always", to_peer: "greater-zid" } },
       /// Whether or not to listen for scout messages on UDP multicast and reply to them.
       listen: true,
     },
@@ -178,8 +185,8 @@
       /// or different values for router or peer mode (e.g. target: { router: ["router", "peer"], peer: ["router"] }).
       /// Each value is a list of "peer" and/or "router".
       /// ROS setting: by default all peers rely on the router to discover each other. Thus configuring the peer to send gossip
-      ///               messages only to the router is sufficient and avoids unecessary traffic between Nodes at launch time.
-      target: { router: ["router", "peer"], peer: ["router"] },
+      ///              messages only to the router is sufficient and avoids unecessary traffic between Nodes at launch time.
+      target: { router: ["router", "peer"], peer: ["router"]},
       /// Which type of Zenoh instances to automatically establish sessions with upon discovery on gossip.
       /// Accepts a single value (e.g. autoconnect: ["router", "peer"]) which applies whatever the configured "mode" is,
       /// or different values for router or peer mode (e.g. autoconnect: { router: [], peer: ["router", "peer"] }).
@@ -187,7 +194,7 @@
       autoconnect: { router: [], peer: ["router", "peer"] },
       /// Strategy for autoconnection, mainly to avoid nodes connecting to each other redundantly.
       /// Possible options are:
-      /// - "always": always attempt to autoconnect, may result in redundant connections.
+      /// - "always": always attempt to autoconnect, may result in redundant connection which will then be closed.
       /// - "greater-zid": attempt to connect to another node only if its own zid is greater than the other's.
       ///   If both nodes use this strategy, only one will attempt the connection.
       ///   This strategy may not be suited if one of the nodes is not reachable by the other one, for example
@@ -197,9 +204,10 @@
       /// (e.g. autoconnect_strategy : { to_router:  "always", to_peer: "greater-zid" }),
       /// or different values for router or peer mode
       /// (e.g. autoconnect_strategy : { peer: { to_router:  "always", to_peer: "greater-zid" } }).
-      autoconnect_strategy: {
-        router: { to_router: "always", to_peer: "always" },
-      },
+      /// ROS setting: as by default all peers will interconnect to each other over the loopback interface,
+      ///              they are all reachable to each other. Hence using "greater-zid" for peers connecting to
+      ///              other peers is sufficient and avoids unecessary double connections between peers at startup.
+      autoconnect_strategy: { peer: { to_router: "always", to_peer: "greater-zid" } },
     },
   },
 
@@ -236,8 +244,6 @@
       /// connected to each other.
       /// The failover brokering only works if gossip discovery is enabled
       /// and peers are configured with gossip target "router".
-      /// ROS setting: disabled by default because it serves no purpose when each peer connects directly to all others,
-      ///              and it introduces additional management overhead and extra messages during system startup.
       peers_failover_brokering: true,
       /// Linkstate mode configuration.
       linkstate: {
@@ -406,11 +412,11 @@
     default_permission: "deny",
     rules: [
       {
-        "id": "liveliness_tokens",
-        "permission": "allow",
-        "flows": ["ingress", "egress"],
-        "key_exprs": ["@ros2_lv/**"],
-        "messages": [
+        id: "liveliness_tokens",
+        permission: "allow",
+        flows: ["ingress", "egress"],
+        key_exprs: ["@ros2_lv/**"],
+        messages: [
           "liveliness_token",
           "liveliness_query",
           "declare_liveliness_subscriber",
@@ -418,213 +424,73 @@
         ],
       },
       {
-        "id": "outgoing_publications_all",
-        "flows": ["egress"],
-        "key_exprs": [
-          "*/aic_controller/joint_commands/*/*",
-          "*/aic_controller/joint_commands/*/*/@adv/**",
-          "*/aic_controller/pose_commands/*/*",
-          "*/aic_controller/pose_commands/*/*/@adv/**",
+        id: "outgoing_publications",
+        flows: ["egress"],
+        key_exprs: [
           "*/aic_controller/controller_state/*/*",
           "*/aic_controller/controller_state/*/*/@adv/**",
-          "*/aic_controller/change_target_mode/*/*",
-          "*/aic_controller/change_target_mode/*/*/@adv/*/*",
-          "*/joint_states/*/*",
-          "*/joint_states/*/*/@adv/**",
-          "*/observations/*/*",
-          "*/observations/*/*/@adv/**",
-          "*/cancel_task/*/*",
-          "*/cancel_task/*/*/@adv/*/*",
-          "*/gripper_action_controller/gripper_cmd/_action/cancel_goal/*/*",
-          "*/gripper_action_controller/gripper_cmd/_action/get_result/*/*",
-          "*/gripper_action_controller/gripper_cmd/_action/send_goal/*/*",
-          "*/gripper_action_controller/gripper_cmd/_action/feedback/*/*",
-          "*/gripper_action_controller/gripper_cmd/_action/feedback/*/*/@adv/**",
-          "*/gripper_action_controller/gripper_cmd/_action/status/*/*",
-          "*/gripper_action_controller/gripper_cmd/_action/status/*/*/@adv/**",
-          "*/left_camera/camera_info/*/*",
-          "*/left_camera/camera_info/*/*/@adv/**",
-          "*/left_camera/image/*/*",
-          "*/left_camera/image/*/*/@adv/**",
-          "*/center_camera/camera_info/*/*",
-          "*/center_camera/camera_info/*/*/@adv/**",
-          "*/center_camera/image/*/*",
-          "*/center_camera/image/*/*/@adv/**",
-          "*/right_camera/camera_info/*/*",
-          "*/right_camera/camera_info/*/*/@adv/**",
-          "*/right_camera/image/*/*",
-          "*/right_camera/image/*/*/@adv/**",
         ],
-        "messages": [
+        messages: [
           "put",
           "reply",
           "declare_queryable",
           "liveliness_token",
         ],
-        "permission": "allow",
+        permission: "allow",
       },
       {
-        "id": "incoming_subscriptions_all",
-        "flows": ["ingress"],
-        "key_exprs": [
-          "*/aic_controller/joint_commands/*/*",
-          "*/aic_controller/joint_commands/*/*/@adv/**",
-          "*/aic_controller/pose_commands/*/*",
-          "*/aic_controller/pose_commands/*/*/@adv/**",
+        id: "incoming_subscriptions",
+        flows: ["ingress"],
+        key_exprs: [
           "*/aic_controller/controller_state/*/*",
           "*/aic_controller/controller_state/*/*/@adv/**",
-          "*/aic_controller/change_target_mode/*/*",
-          "*/aic_controller/change_target_mode/*/*/@adv/*/*",
-          "*/joint_states/*/*",
-          "*/joint_states/*/*/@adv/**",
-          "*/observations/*/*",
-          "*/observations/*/*/@adv/**",
-          "*/cancel_task/*/*",
-          "*/cancel_task/*/*/@adv/*/*",
-          "*/gripper_action_controller/gripper_cmd/_action/cancel_goal/*/*",
-          "*/gripper_action_controller/gripper_cmd/_action/get_result/*/*",
-          "*/gripper_action_controller/gripper_cmd/_action/send_goal/*/*",
-          "*/gripper_action_controller/gripper_cmd/_action/feedback/*/*",
-          "*/gripper_action_controller/gripper_cmd/_action/feedback/*/*/@adv/**",
-          "*/gripper_action_controller/gripper_cmd/_action/status/*/*",
-          "*/gripper_action_controller/gripper_cmd/_action/status/*/*/@adv/**",
-          "*/left_camera/camera_info/*/*",
-          "*/left_camera/camera_info/*/*/@adv/**",
-          "*/left_camera/image/*/*",
-          "*/left_camera/image/*/*/@adv/**",
-          "*/center_camera/camera_info/*/*",
-          "*/center_camera/camera_info/*/*/@adv/**",
-          "*/center_camera/image/*/*",
-          "*/center_camera/image/*/*/@adv/**",
-          "*/right_camera/camera_info/*/*",
-          "*/right_camera/camera_info/*/*/@adv/**",
-          "*/right_camera/image/*/*",
-          "*/right_camera/image/*/*/@adv/**",
         ],
-        "messages": [
+        messages: [
           "declare_subscriber",
           "query",
         ],
-        "permission": "allow",
+        permission: "allow",
       },
       {
-        "id": "incoming_publications_all",
-        "flows": ["ingress"],
-        "key_exprs": [
-          "*/aic_controller/joint_commands/*/*",
-          "*/aic_controller/joint_commands/*/*/@adv/**",
-          "*/aic_controller/pose_commands/*/*",
-          "*/aic_controller/pose_commands/*/*/@adv/**",
-          "*/aic_controller/change_target_mode/*/*",
-          "*/aic_controller/change_target_mode/*/*/@adv/*/*",
-          "*/cancel_task/*/*",
-          "*/cancel_task/*/*/@adv/*/*",
+        id: "allow_all",
+        flows: ["ingress", "egress"],
+        key_exprs: [
+          "**",
+          "@ros2_lv/**",
+          "**/@adv/**",
         ],
-        "messages": [
+        messages: [
+          "declare_subscriber",
           "put",
-          "reply",
+          "delete",
           "declare_queryable",
-          "liveliness_token",
-        ],
-        "permission": "allow",
-      },
-      {
-        "id": "outgoing_subscriptions_all",
-        "flows": ["egress"],
-        "key_exprs": [
-          "*/aic_controller/joint_commands/*/*",
-          "*/aic_controller/joint_commands/*/*/@adv/**",
-          "*/aic_controller/pose_commands/*/*",
-          "*/aic_controller/pose_commands/*/*/@adv/**",
-          "*/aic_controller/change_target_mode/*/*",
-          "*/aic_controller/change_target_mode/*/*/@adv/*/*",
-          "*/cancel_task/*/*",
-          "*/cancel_task/*/*/@adv/*/*",
-        ],
-        "messages": [
-          "declare_subscriber",
           "query",
-        ],
-        "permission": "allow",
-      },
-      {
-        "id": "incoming_publications_eval",
-        "flows": ["ingress"],
-        "key_exprs": [
-          "*/aic_controller/controller_state/*/*",
-          "*/aic_controller/controller_state/*/*/@adv/**",
-          "*/joint_states/*/*",
-          "*/joint_states/*/*/@adv/**",
-          "*/observations/*/*",
-          "*/observations/*/*/@adv/**",
-          "*/gripper_action_controller/gripper_cmd/_action/cancel_goal/*/*",
-          "*/gripper_action_controller/gripper_cmd/_action/get_result/*/*",
-          "*/gripper_action_controller/gripper_cmd/_action/send_goal/*/*",
-          "*/gripper_action_controller/gripper_cmd/_action/feedback/*/*",
-          "*/gripper_action_controller/gripper_cmd/_action/feedback/*/*/@adv/**",
-          "*/gripper_action_controller/gripper_cmd/_action/status/*/*",
-          "*/gripper_action_controller/gripper_cmd/_action/status/*/*/@adv/**",
-          "*/left_camera/camera_info/*/*",
-          "*/left_camera/camera_info/*/*/@adv/**",
-          "*/left_camera/image/*/*",
-          "*/left_camera/image/*/*/@adv/**",
-          "*/center_camera/camera_info/*/*",
-          "*/center_camera/camera_info/*/*/@adv/**",
-          "*/center_camera/image/*/*",
-          "*/center_camera/image/*/*/@adv/**",
-          "*/right_camera/camera_info/*/*",
-          "*/right_camera/camera_info/*/*/@adv/**",
-          "*/right_camera/image/*/*",
-          "*/right_camera/image/*/*/@adv/**",
-        ],
-        "messages": [
-          "put",
           "reply",
-          "declare_queryable",
           "liveliness_token",
+          "declare_liveliness_subscriber",
+          "liveliness_query",
         ],
-        "permission": "allow",
-      },
-      {
-        "id": "outgoing_subscriptions_eval",
-        "flows": ["egress"],
-        "key_exprs": [
-          "*/aic_controller/controller_state/*/*",
-          "*/aic_controller/controller_state/*/*/@adv/**",
-          "*/joint_states/*/*",
-          "*/joint_states/*/*/@adv/**",
-          "*/observations/*/*",
-          "*/observations/*/*/@adv/**",
-          "*/gripper_action_controller/gripper_cmd/_action/cancel_goal/*/*",
-          "*/gripper_action_controller/gripper_cmd/_action/get_result/*/*",
-          "*/gripper_action_controller/gripper_cmd/_action/send_goal/*/*",
-          "*/gripper_action_controller/gripper_cmd/_action/feedback/*/*",
-          "*/gripper_action_controller/gripper_cmd/_action/feedback/*/*/@adv/**",
-          "*/gripper_action_controller/gripper_cmd/_action/status/*/*",
-          "*/gripper_action_controller/gripper_cmd/_action/status/*/*/@adv/**",
-          "*/left_camera/camera_info/*/*",
-          "*/left_camera/camera_info/*/*/@adv/**",
-          "*/left_camera/image/*/*",
-          "*/left_camera/image/*/*/@adv/**",
-          "*/center_camera/camera_info/*/*",
-          "*/center_camera/camera_info/*/*/@adv/**",
-          "*/center_camera/image/*/*",
-          "*/center_camera/image/*/*/@adv/**",
-          "*/right_camera/camera_info/*/*",
-          "*/right_camera/camera_info/*/*/@adv/**",
-          "*/right_camera/image/*/*",
-          "*/right_camera/image/*/*/@adv/**",
-        ],
-        "messages": [
-          "declare_subscriber",
-          "query",
-        ],
-        "permission": "allow",
+        permission: "allow",
       },
     ],
     subjects: [
       {
-        id: "all",
+        id: "eval",
+        usernames: [
+          "eval",
+        ],
+      },
+      {
+        id: "router",
+        usernames: [
+          "router",
+        ],
+      },
+      {
+        id: "participant",
+        usernames: [
+          "participant",
+        ],
       },
       {
         id: "local",
@@ -637,19 +503,21 @@
       {
         rules: [
           "liveliness_tokens",
-          "outgoing_publications_all",
-          "incoming_subscriptions_all",
-          "incoming_publications_all",
-          "outgoing_subscriptions_all",
+          "outgoing_publications",
+          "incoming_subscriptions",
         ],
-        subjects: ["all"],
+        subjects: [
+          "router",
+          "participant",
+        ],
       },
       {
         rules: [
-          "outgoing_subscriptions_eval",
-          "incoming_publications_eval",
+          "allow_all",
         ],
-        subjects: ["local"],
+        subjects: [
+          "eval",
+        ],
       },
     ],
   },
@@ -814,10 +682,9 @@
             block: {
               /// The maximum time in microseconds to wait for an available batch before closing the transport session when sending a blocking message
               /// if still no batch is available.
-              /// ROS setting: unlike DEFAULT_RMW_ZENOH_SESSION_CONFIG.json5, no change here:
-              ///              as the router is routing messages to outside the robot, possibly over WiFi,
-              ///              keeping a lower value ensure the router is not blocked for too long in case of congestioned WiFi.
-              wait_before_close: 5000000,
+              /// ROS setting: increase the value to avoid unecessary link closure at launch time where congestion is likely
+              ///              to occur even over the loopback since all the Nodes are starting at the same time.
+              wait_before_close: 60000000,
             },
           },
           /// Perform batching of messages if they are smaller of the batch_size
@@ -916,13 +783,13 @@
       mode: "lazy",
       /// ROS setting: the section below controls SHM parameters used for large message passing on ROS
       transport_optimization: {
-        /// Enables transport optimization for large messages (default `true`).
-        /// Implicitly puts large messages into shared memory for transports with SHM-compatible connection.
-        enabled: true,
-        /// SHM memory size in bytes used for transport optimization (default `48 * 1024 * 1024`).
-        pool_size: 50331648,
-        /// Allow optimization for messages equal or larger than this threshold in bytes (default `3072`).
-        message_size_threshold: 512,
+          /// Enables transport optimization for large messages (default `true`).
+          /// Implicitly puts large messages into shared memory for transports with SHM-compatible connection.
+          enabled: true,
+          /// SHM memory size in bytes used for transport optimization (default `48 * 1024 * 1024`).
+          pool_size: 50331648,
+          /// Allow optimization for messages equal or larger than this threshold in bytes (default `3072`).
+          message_size_threshold: 512,
       },
     },
     auth: {
@@ -956,4 +823,5 @@
       write: false,
     },
   },
+
 }

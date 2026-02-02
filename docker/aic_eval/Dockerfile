@@ -22,21 +22,16 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked --mount=type=cache,t
   GZ_BUILD_FROM_SOURCE=1 colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release --merge-install --executor sequential && \
   rm -rf /ws_aic/build /ws_aic/log /ws_aic/src
 
-COPY --chmod=644 docker/aic_eval/zenoh_router_config.json5 /zenoh_router_config.json5
 COPY --chmod=755 <<EOF /entrypoint.sh
 #!/bin/bash
 set -e
 
 source /ws_aic/install/setup.bash
 export RMW_IMPLEMENTATION=rmw_zenoh_cpp
-# export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
-if [[ "$AIC_DISABLE_ACL" != "1" && "$AIC_DISABLE_ACL" != "true" ]];
-  export ZENOH_ROUTER_CONFIG_URI=/zenoh_router_config.json5
-fi
-ros2 run rmw_zenoh_cpp rmw_zenohd &
+ZENOH_CONFIG_OVERRIDE="\$AIC_ZENOH_ROUTER_CONFIG_OVERRIDE" ros2 run rmw_zenoh_cpp rmw_zenohd &
 ZENOHD_PID=\$!
 trap "kill -SIGINT -\$ZENOHD_PID" EXIT
-exec ros2 launch aic_bringup aic_gz_bringup.launch.py "\$@"
+ZENOH_CONFIG_OVERRIDE="\$AIC_ZENOH_EVAL_CONFIG_OVERRIDE" exec ros2 launch aic_bringup aic_gz_bringup.launch.py "\$@"
 EOF
 
 ENTRYPOINT ["/entrypoint.sh"]
