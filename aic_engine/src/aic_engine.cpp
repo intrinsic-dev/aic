@@ -968,7 +968,8 @@ bool Engine::ready_scoring(const Trial& trial) {
   for (const auto& task : trial.tasks) {
     aic_scoring::Connection connection;
     connection.plugName = task.cable_name + "/" + task.plug_name + "_link";
-    connection.portName = "task_board/" + task.target_module_name + "/" + task.port_name + "_link";
+    connection.portName = "task_board/" + task.target_module_name + "/" +
+                          task.port_name + "_link";
     connections.push_back(connection);
   }
   scoring_tier2_->ResetConnections(connections);
@@ -1039,7 +1040,7 @@ bool Engine::tasks_started(Trial& trial) {
     }
     current_attempt.time_started = this->node_->now();
     current_attempt.state = TaskState::TaskStarted;
-    //this->scoring_tier2_->SetTaskStartTime(current_attempt.time_started);
+    // this->scoring_tier2_->SetTaskStartTime(current_attempt.time_started);
 
     // Update trial state
     trial.state = TrialState::TasksExecuting;
@@ -1073,7 +1074,7 @@ bool Engine::tasks_started(Trial& trial) {
     RCLCPP_INFO(this->node_->get_logger(), "Task [%s] succeeded.",
                 task.id.c_str());
     current_attempt.time_completed = this->node_->now();
-    //this->scoring_tier2_->SetTaskEndTime(current_attempt.time_completed);
+    // this->scoring_tier2_->SetTaskEndTime(current_attempt.time_completed);
     current_attempt.state = TaskState::TaskCompleted;
   }
 

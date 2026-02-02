@@ -74,8 +74,7 @@ void ScoringTier2::ResetConnections(
 
   // Debug output.
   std::cout << "Connections" << std::endl;
-  for (const Connection &c : this->connections)
-  {
+  for (const Connection &c : this->connections) {
     std::cout << "  plug: " << c.plugName << std::endl;
     std::cout << "  port: " << c.portName << std::endl;
     std::cout << "  Dist: " << c.distance << std::endl;
@@ -181,7 +180,10 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
                   msg_ptr->topic_name.c_str());
     }
   }
-  RCLCPP_INFO(this->node->get_logger(), "Plug port distance is %.2f", *this->GetPlugPortDistance(tf2::TimePointZero));
+  // Debugging to get the latest plug port distance
+  // RCLCPP_INFO(this->node->get_logger(),
+  //     "Plug port distance is %.2f",
+  //     *this->GetPlugPortDistance(tf2::TimePointZero));
   this->state = State::Idle;
   tier2_score.add_category_score("dummy_category", 3, "It works!");
   tier3_score = Tier3Score(1);
@@ -252,12 +254,12 @@ std::set<std::string> ScoringTier2::GetMissingRequiredTopics() const {
 }
 
 //////////////////////////////////////////////////
-void ScoringTier2::SetTaskStartTime(const rclcpp::Time& time) {
+void ScoringTier2::SetTaskStartTime(const rclcpp::Time &time) {
   this->task_start_time = time;
 }
 
 //////////////////////////////////////////////////
-void ScoringTier2::SetTaskEndTime(const rclcpp::Time& time) {
+void ScoringTier2::SetTaskEndTime(const rclcpp::Time &time) {
   this->task_end_time = time;
 }
 
@@ -266,16 +268,17 @@ void ScoringTier2::JointStateCallback(const JointStateMsg &_msg) { (void)_msg; }
 
 //////////////////////////////////////////////////
 void ScoringTier2::TfCallback(const TFMsg &_msg) {
-  for (const auto& tf : _msg.transforms) {
+  for (const auto &tf : _msg.transforms) {
     this->tf2_buffer.setTransform(tf, "scoring", false);
-    // A bit redundant since all the messages will likely have the same timestamp
+    // A bit redundant since all the messages will likely have the same
+    // timestamp
     this->timestamps.insert(tf2::getTimestamp(tf));
   }
 }
 
 //////////////////////////////////////////////////
 void ScoringTier2::TfStaticCallback(const TFMsg &_msg) {
-  for (const auto& tf : _msg.transforms) {
+  for (const auto &tf : _msg.transforms) {
     this->tf2_buffer.setTransform(tf, "scoring", true);
   }
 }
@@ -297,33 +300,36 @@ void ScoringTier2::JointMotionUpdateCallback(const JointMotionUpdateMsg &_msg) {
 }
 
 //////////////////////////////////////////////////
-std::optional<double> ScoringTier2::GetPlugPortDistance(tf2::TimePoint t) const {
+std::optional<double> ScoringTier2::GetPlugPortDistance(
+    tf2::TimePoint t) const {
   if (this->connections.empty()) {
     RCLCPP_ERROR(this->node->get_logger(), "No connection was found");
     return std::nullopt;
   }
-  const auto& plug = this->connections[0].plugName;
-  const auto& port = this->connections[0].portName;
+  const auto &plug = this->connections[0].plugName;
+  const auto &port = this->connections[0].portName;
   // For now we only calculate the distance for the first connection
-  if (!this->tf2_buffer.canTransform("world", plug, t)) {
-    RCLCPP_ERROR(this->node->get_logger(), "Plug %s not found in the tf tree", plug.c_str());
+  if (!this->tf2_buffer.canTransform("aic_world", plug, t)) {
+    RCLCPP_ERROR(this->node->get_logger(), "Plug %s not found in the tf tree",
+                 plug.c_str());
     return std::nullopt;
   }
-  if (!this->tf2_buffer.canTransform("world", port, t)) {
-    RCLCPP_ERROR(this->node->get_logger(), "Port %s not found in the tf tree", port.c_str());
+  if (!this->tf2_buffer.canTransform("aic_world", port, t)) {
+    RCLCPP_ERROR(this->node->get_logger(), "Port %s not found in the tf tree",
+                 port.c_str());
     return std::nullopt;
   }
 
-  const auto plug_tf = this->tf2_buffer.lookupTransform("world", plug, t);
-  const auto port_tf = this->tf2_buffer.lookupTransform("world", port, t);
+  const auto plug_tf = this->tf2_buffer.lookupTransform("aic_world", plug, t);
+  const auto port_tf = this->tf2_buffer.lookupTransform("aic_world", port, t);
 
   return std::sqrt(
       (plug_tf.transform.translation.x - port_tf.transform.translation.x) *
-      (plug_tf.transform.translation.x - port_tf.transform.translation.x) +
+          (plug_tf.transform.translation.x - port_tf.transform.translation.x) +
       (plug_tf.transform.translation.y - port_tf.transform.translation.y) *
-      (plug_tf.transform.translation.y - port_tf.transform.translation.y) +
+          (plug_tf.transform.translation.y - port_tf.transform.translation.y) +
       (plug_tf.transform.translation.z - port_tf.transform.translation.z) *
-      (plug_tf.transform.translation.z - port_tf.transform.translation.z));
+          (plug_tf.transform.translation.z - port_tf.transform.translation.z));
 }
 
 //////////////////////////////////////////////////
