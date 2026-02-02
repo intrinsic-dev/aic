@@ -369,7 +369,12 @@ void Engine::start() {
 
 //==============================================================================
 EngineState Engine::initialize() {
-  RCLCPP_INFO(node_->get_logger(), "Initializing AIC Engine...");
+  RCLCPP_INFO(node_->get_logger(),
+              "\033[1;36m╔════════════════════════════════════════╗\033[0m");
+  RCLCPP_INFO(node_->get_logger(),
+              "\033[1;36m║   Initializing AIC Engine...           ║\033[0m");
+  RCLCPP_INFO(node_->get_logger(),
+              "\033[1;36m╚════════════════════════════════════════╝\033[0m");
 
   // Initialize the trials.
   const std::filesystem::path config_file_path =
@@ -430,6 +435,19 @@ EngineState Engine::initialize() {
     return engine_state_;
   }
 
+  if (!config_["robot"]) {
+    RCLCPP_ERROR(node_->get_logger(), "Config missing required key: 'robot'");
+    engine_state_ = EngineState::Error;
+    return engine_state_;
+  }
+  const auto& robot_config = config_["robot"];
+  if (!robot_config["home_joint_positions"]) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "Config missing required key: 'robot.home_joint_positions'");
+    engine_state_ = EngineState::Error;
+    return engine_state_;
+  }
+
   // Create ROS endpoints.
   const rclcpp::QoS reliable_qos = rclcpp::QoS(rclcpp::KeepLast(10)).reliable();
 
@@ -450,19 +468,60 @@ EngineState Engine::initialize() {
       },
       sub_options_ignore_local);
 
+  joint_motion_update_pub_ = node_->create_publisher<JointMotionUpdateMsg>(
+      "/aic_controller/joint_commands", reliable_qos);
+
   insert_cable_action_client_ =
       rclcpp_action::create_client<InsertCableAction>(node_, "/insert_cable");
   spawn_entity_client_ =
       node_->create_client<SpawnEntitySrv>("/gz_server/spawn_entity");
   delete_entity_client_ =
       node_->create_client<DeleteEntitySrv>("/gz_server/delete_entity");
+  change_target_mode_client_ = node_->create_client<ChangeTargetModeSrv>(
+      "/aic_controller/change_target_mode");
   model_get_state_client_ = node_->create_client<lifecycle_msgs::srv::GetState>(
       model_get_state_service_name_);
   model_change_state_client_ =
       node_->create_client<lifecycle_msgs::srv::ChangeState>(
           model_change_state_service_name_);
+  reset_joints_client_ =
+      node_->create_client<ResetJointsSrv>("/scoring/reset_joints");
   tf_buffer_ = std::make_unique<tf2_ros::Buffer>(node_->get_clock());
   tf_listener_ = std::make_unique<tf2_ros::TransformListener>(*tf_buffer_);
+
+  // Pre-build home messages directly from config
+  const auto joint_config = robot_config["home_joint_positions"];
+  if (joint_config.size() != 6) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "Home joint positions should account for exactly 6 joints.");
+    return EngineState::Error;
+  }
+
+  // Build JointMotionUpdateMsg and ResetJointsSrv::Request for homing
+  auto home_point = JointTrajectoryPoint();
+  home_point.positions = {};
+  home_reset_joints_request_ = std::make_shared<ResetJointsSrv::Request>();
+
+  for (auto it = joint_config.begin(); it != joint_config.end(); ++it) {
+    const std::string joint_name = it->first.as<std::string>();
+    const double initial_pos = it->second.as<double>();
+
+    RCLCPP_INFO(node_->get_logger(),
+                "Retrieved home joint position from config: [%s]: %f",
+                joint_name.c_str(), initial_pos);
+
+    home_point.positions.emplace_back(initial_pos);
+    home_reset_joints_request_->joint_names.emplace_back(joint_name);
+    home_reset_joints_request_->initial_positions.emplace_back(initial_pos);
+  }
+
+  home_joint_msg_.target_state = home_point;
+  home_joint_msg_.target_stiffness = {100.0, 100.0, 100.0, 50.0, 50.0, 50.0};
+  home_joint_msg_.target_damping = {40.0, 40.0, 40.0, 15.0, 15.0, 15.0};
+  home_joint_msg_.trajectory_generation_mode.mode =
+      TrajectoryGenerationMode::MODE_POSITION;
+
+  RCLCPP_INFO(node_->get_logger(), "Pre-built home messages for robot homing.");
 
   scoring_tier2_ = std::make_unique<aic_scoring::ScoringTier2>(node_.get());
   if (!scoring_tier2_->Initialize(config_["scoring"])) {
@@ -483,32 +542,51 @@ EngineState Engine::initialize() {
               scoring_output_dir_.c_str());
 
   engine_state_ = EngineState::Initialized;
-  RCLCPP_INFO(node_->get_logger(), "AIC Engine initialized successfully.");
+  RCLCPP_INFO(node_->get_logger(),
+              "\033[1;32m✓ AIC Engine initialized successfully!\033[0m");
 
   return engine_state_;
 }
 
 //==============================================================================
 EngineState Engine::run() {
-  RCLCPP_INFO(node_->get_logger(), "Running AIC Engine...");
+  RCLCPP_INFO(node_->get_logger(), " ");
+  RCLCPP_INFO(node_->get_logger(),
+              "\033[1;35m╔════════════════════════════════════════╗\033[0m");
+  RCLCPP_INFO(node_->get_logger(),
+              "\033[1;35m║      Starting AIC Engine Run           ║\033[0m");
+  RCLCPP_INFO(node_->get_logger(),
+              "\033[1;35m║   Total Trials: %-3zu                    ║\033[0m",
+              trials_.size());
+  RCLCPP_INFO(node_->get_logger(),
+              "\033[1;35m╚════════════════════════════════════════╝\033[0m");
+  RCLCPP_INFO(node_->get_logger(), " ");
 
   engine_state_ = EngineState::Running;
   Score score;
 
+  size_t trial_num = 1;
   for (auto& trial_entry : trials_) {
     const std::string& trial_id = trial_entry.first;
     Trial& trial = trial_entry.second;
-    RCLCPP_INFO(node_->get_logger(), "======================================");
-    RCLCPP_INFO(node_->get_logger(), "Handling trial '%s'...",
-                trial_id.c_str());
+    RCLCPP_INFO(node_->get_logger(), " ");
+    RCLCPP_INFO(node_->get_logger(),
+                "\033[1;33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m");
+    RCLCPP_INFO(node_->get_logger(), "\033[1;33m  Trial %zu/%zu: %s\033[0m",
+                trial_num++, trials_.size(), trial_id.c_str());
+    RCLCPP_INFO(node_->get_logger(),
+                "\033[1;33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m");
     TrialScore trial_score = this->handle_trial(trial);
     score.breakdown[trial_id] = trial_score;
     if (trial.state == TrialState::AllTasksCompleted) {
-      RCLCPP_INFO(node_->get_logger(), "Trial '%s' completed successfully.",
-                  trial_id.c_str());
+      RCLCPP_INFO(
+          node_->get_logger(),
+          "\033[1;32m✓ Trial '%s' completed successfully! Score: %d\033[0m",
+          trial_id.c_str(), trial_score.total_score());
     } else {
       RCLCPP_ERROR(node_->get_logger(),
-                   "Trial '%s' failed or was not completed.", trial_id.c_str());
+                   "\033[1;31m✗ Trial '%s' failed or was not completed\033[0m",
+                   trial_id.c_str());
       engine_state_ = EngineState::Error;
       // TODO(Yadunund): Clean up and write scoring data.
       break;
@@ -519,12 +597,35 @@ EngineState Engine::run() {
   this->cleanup_model_node();
   this->shutdown_model_node();
   this->score_run(score);
+
+  RCLCPP_INFO(node_->get_logger(), " ");
+  if (engine_state_ == EngineState::Running) {
+    RCLCPP_INFO(node_->get_logger(),
+                "\033[1;32m╔════════════════════════════════════════╗\033[0m");
+    RCLCPP_INFO(node_->get_logger(),
+                "\033[1;32m║   ✓ All Trials Completed!              ║\033[0m");
+    RCLCPP_INFO(node_->get_logger(),
+                "\033[1;32m║   Total Score: %.3d                     ║\033[0m",
+                score.calculate_total_score());
+    RCLCPP_INFO(node_->get_logger(),
+                "\033[1;32m╚════════════════════════════════════════╝\033[0m");
+  } else {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "\033[1;31m╔════════════════════════════════════════╗\033[0m");
+    RCLCPP_ERROR(node_->get_logger(),
+                 "\033[1;31m║   ✗ Engine Stopped with Errors         ║\033[0m");
+    RCLCPP_ERROR(node_->get_logger(),
+                 "\033[1;31m╚════════════════════════════════════════╝\033[0m");
+  }
+  RCLCPP_INFO(node_->get_logger(), " ");
+
   return engine_state_;
 }
 
 //==============================================================================
 TrialScore Engine::handle_trial(Trial& trial) {
-  RCLCPP_INFO(node_->get_logger(), "Starting trial '%s'...", trial.id.c_str());
+  RCLCPP_INFO(node_->get_logger(), "\033[1;36m→ Starting trial '%s'...\033[0m",
+              trial.id.c_str());
   TrialScore score;
 
   if (trial.state == TrialState::Uninitialized) {
@@ -540,57 +641,70 @@ TrialScore Engine::handle_trial(Trial& trial) {
   }
 
   if (trial.state == TrialState::ModelReady) {
+    RCLCPP_INFO(node_->get_logger(), "\033[1;32m  ✓ Model Ready\033[0m");
     score.tier_1_success();
     if (this->check_endpoints()) {
       trial.state = TrialState::EndpointsReady;
     }
   } else {
-    RCLCPP_ERROR(node_->get_logger(), "Participant model is not ready.");
+    RCLCPP_ERROR(node_->get_logger(),
+                 "\033[1;31m  ✗ Participant model is not ready\033[0m");
     reset_after_trial(trial);
     return score;
   }
 
   if (trial.state == TrialState::EndpointsReady) {
+    RCLCPP_INFO(node_->get_logger(), "\033[1;32m  ✓ Endpoints Ready\033[0m");
     if (this->ready_simulator(trial)) {
       trial.state = TrialState::SimulatorReady;
     }
   } else {
-    RCLCPP_ERROR(node_->get_logger(), "Required endpoints are not available.");
+    RCLCPP_ERROR(node_->get_logger(),
+                 "\033[1;31m  ✗ Required endpoints are not available\033[0m");
     reset_after_trial(trial);
     return score;
   }
 
   if (trial.state == TrialState::SimulatorReady) {
+    RCLCPP_INFO(node_->get_logger(), "\033[1;32m  ✓ Simulator Ready\033[0m");
     if (this->ready_scoring(trial)) {
       trial.state = TrialState::ScoringReady;
     }
   } else {
-    RCLCPP_ERROR(node_->get_logger(), "Simulator is not ready.");
+    RCLCPP_ERROR(node_->get_logger(),
+                 "\033[1;31m  ✗ Simulator is not ready\033[0m");
     reset_after_trial(trial);
     return score;
   }
 
   if (trial.state == TrialState::ScoringReady) {
+    RCLCPP_INFO(node_->get_logger(), "\033[1;32m  ✓ Scoring Ready\033[0m");
     this->tasks_started(trial);
   } else {
-    RCLCPP_ERROR(node_->get_logger(), "Scoring system is not ready.");
+    RCLCPP_ERROR(node_->get_logger(),
+                 "\033[1;31m  ✗ Scoring system is not ready\033[0m");
     reset_after_trial(trial);
     return score;
   }
 
   if (trial.state == TrialState::TasksExecuting) {
+    RCLCPP_INFO(node_->get_logger(), "\033[1;36m  ⟳ Tasks Executing...\033[0m");
     if (this->tasks_completed_successfully(trial)) {
       trial.state = TrialState::AllTasksCompleted;
+      RCLCPP_INFO(node_->get_logger(),
+                  "\033[1;32m  ✓ All Tasks Completed!\033[0m");
       score_trial(score);
     }
   } else {
-    RCLCPP_ERROR(node_->get_logger(), "Tasks cannot be started successfully.");
+    RCLCPP_ERROR(node_->get_logger(),
+                 "\033[1;31m  ✗ Tasks cannot be started successfully\033[0m");
     reset_after_trial(trial);
     return score;
   }
 
   if (trial.state != TrialState::AllTasksCompleted) {
-    RCLCPP_ERROR(node_->get_logger(), "Tasks were not completed successfully.");
+    RCLCPP_ERROR(node_->get_logger(),
+                 "\033[1;31m  ✗ Tasks were not completed successfully\033[0m");
     score_trial(score);
     reset_after_trial(trial);
     return score;
@@ -1280,9 +1394,102 @@ void Engine::reset_after_trial(const Trial& trial) {
       }
     }
   }
+
+  // Home robot after removing entities to prepare for next trial
+  if (!home_robot()) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "Failed to home robot during trial reset.");
+  }
+
   is_first_trial_ = false;
   model_discovered_ = false;
   RCLCPP_INFO(node_->get_logger(), "Reset after trial completed.");
+}
+
+//==============================================================================
+bool Engine::home_robot() {
+  RCLCPP_INFO(node_->get_logger(), "Homing robot to initial positions...");
+
+  // Switch to joint mode
+  if (!change_target_mode(ChangeTargetModeSrv::Request::TARGET_MODE_JOINT)) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "Failed to switch to joint mode for homing.");
+    return false;
+  }
+
+  // Publish pre-built joint command to controller
+  joint_motion_update_pub_->publish(home_joint_msg_);
+
+  // Wait for the robot to reach home position if possible without resetting.
+  std::this_thread::sleep_for(std::chrono::seconds(2));
+
+  // Request for joints reset to home positions using pre-built request for
+  // extra safety.
+  auto reset_joints_future =
+      reset_joints_client_->async_send_request(home_reset_joints_request_);
+  if (reset_joints_future.wait_for(std::chrono::seconds(10)) !=
+      std::future_status::ready) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "ResetJoints service call timed out requesting for reset!");
+    return false;
+  }
+  auto reset_joints_response = reset_joints_future.get();
+  if (!reset_joints_response->success) {
+    RCLCPP_ERROR(node_->get_logger(), "Failed to request for joint reset.");
+    return false;
+  }
+
+  // Switch to cartesian mode after homing
+  if (!change_target_mode(
+          ChangeTargetModeSrv::Request::TARGET_MODE_CARTESIAN)) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "Failed to switch to cartesian mode after homing.");
+    return false;
+  }
+
+  RCLCPP_INFO(
+      node_->get_logger(),
+      "Successfully reset joints to home position, robot homed successfully.");
+  return true;
+}
+
+//==============================================================================
+bool Engine::change_target_mode(const uint8_t target_mode) {
+  auto change_mode_request = std::make_shared<ChangeTargetModeSrv::Request>();
+  change_mode_request->target_mode = target_mode;
+  std::string target_mode_str;
+  switch (target_mode) {
+    case ChangeTargetModeSrv::Request::TARGET_MODE_JOINT:
+      target_mode_str = "JOINT";
+      break;
+    case ChangeTargetModeSrv::Request::TARGET_MODE_CARTESIAN:
+      target_mode_str = "CARTESIAN";
+      break;
+    default:
+      RCLCPP_ERROR(node_->get_logger(), "Unknown target mode requested.");
+      return false;
+  }
+
+  auto change_mode_future =
+      change_target_mode_client_->async_send_request(change_mode_request);
+  if (change_mode_future.wait_for(std::chrono::seconds(5)) !=
+      std::future_status::ready) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "ChangeTargetMode service call timed out when changing to "
+                 "%s mode",
+                 target_mode_str.c_str());
+    return false;
+  }
+  auto change_mode_response = change_mode_future.get();
+  if (!change_mode_response->success) {
+    RCLCPP_ERROR(node_->get_logger(), "Failed to change target mode to %s mode",
+                 target_mode_str.c_str());
+    return false;
+  }
+  RCLCPP_INFO(node_->get_logger(),
+              "Successfully changed target mode to %s mode",
+              target_mode_str.c_str());
+  return true;
 }
 
 //==============================================================================

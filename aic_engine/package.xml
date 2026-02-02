@@ -11,16 +11,17 @@
 
   <depend>aic_scoring</depend>
   <depend>aic_control_interfaces</depend>
+  <depend>aic_engine_interfaces</depend>
   <depend>aic_task_interfaces</depend>
   <depend>ament_index_cpp</depend>
   <depend>geometry_msgs</depend>
   <depend>lifecycle_msgs</depend>
   <depend>rclcpp</depend>
   <depend>rclcpp_action</depend>
-  <depend>sensor_msgs</depend>
   <depend>simulation_interfaces</depend>
   <depend>tf2</depend>
   <depend>tf2_ros</depend>
+  <depend>trajectory_msgs</depend>
   <depend>yaml_cpp_vendor</depend>
 
   <export>
