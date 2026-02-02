@@ -185,7 +185,7 @@ namespace aic_scoring
 
     /// \brief Calculates the tier 2 score based on the distance between plug and port.
     /// \return Scoring for the distance category
-    private: Tier2Score::CategoryScore GetDistanceScore() const;
+    private: Tier3Score GetDistanceScore() const;
 
     /// \brief Calculates the penalty (if any) for contacts with off limit entities.
     /// \return Scoring for the off limit contacts category

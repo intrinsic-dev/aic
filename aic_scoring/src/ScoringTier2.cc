@@ -130,7 +130,7 @@ Msg deserialize_from_rosbag(
 //////////////////////////////////////////////////
 std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
   Tier2Score tier2_score("Scoring failed.");
-  Tier3Score tier3_score(0);
+  Tier3Score tier3_score(0, "Task execution failed.");
   tf2_buffer.clear();
   if (this->state != State::Idle) {
     RCLCPP_ERROR(this->node->get_logger(), "Scoring system is busy.");
@@ -183,11 +183,10 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
                   msg_ptr->topic_name.c_str());
     }
   }
-  tier2_score.add_category_score("task execution", this->GetDistanceScore());
   tier2_score.add_category_score("insertion force",
                                  this->GetInsertionForceScore());
   tier2_score.add_category_score("contacts", this->GetContactsScore());
-  tier3_score = Tier3Score(1);
+  tier3_score = this->GetDistanceScore();
   this->Reset();
   return {tier2_score, tier3_score};
 }
@@ -374,8 +373,7 @@ static double CalculateInverseProportionalScore(const double max_score,
 }
 
 //////////////////////////////////////////////////
-Tier2Score::CategoryScore ScoringTier2::GetDistanceScore() const {
-  using CategoryScore = Tier2Score::CategoryScore;
+Tier3Score ScoringTier2::GetDistanceScore() const {
   // For now, just have the score be inversely proportional to the time
   // it took to execute the task and the final distance between plug and port
   // Linear interpolation in the interval, clamp to maximum and minimum
@@ -391,20 +389,20 @@ Tier2Score::CategoryScore ScoringTier2::GetDistanceScore() const {
   const double kFurthestTaskScore = 0.5;
 
   if (this->timestamps.empty()) {
-    return CategoryScore(0, "Distance computation failed, no tfs received");
+    return Tier3Score(0, "Distance computation failed, no tfs received");
   }
 
   if (!this->task_start_time.has_value()) {
-    return CategoryScore(0, "Time computation failed, task start time not set");
+    return Tier3Score(0, "Time computation failed, task start time not set");
   }
 
   if (!this->task_end_time.has_value()) {
-    return CategoryScore(0, "Time computation failed, task end time not set");
+    return Tier3Score(0, "Time computation failed, task end time not set");
   }
 
   const auto dist = this->GetPlugPortDistance(tf2::TimePointZero);
   if (!dist.has_value()) {
-    return CategoryScore(
+    return Tier3Score(
         0, "Distance computation failed, tf between cable and port not found");
   }
 
@@ -425,7 +423,7 @@ Tier2Score::CategoryScore ScoringTier2::GetDistanceScore() const {
   sstream << "Task completed in " << task_duration.seconds()
           << " seconds, with a distance of " << dist.value() << " meters";
 
-  return CategoryScore(score, sstream.str());
+  return Tier3Score(score, sstream.str());
 }
 
 //////////////////////////////////////////////////
