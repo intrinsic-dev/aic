@@ -150,7 +150,10 @@ struct TrialScore {
   aic_scoring::Tier2Score tier_2;
   aic_scoring::Tier3Score tier_3;
 
-  TrialScore() : tier_1(0), tier_2("Task execution failed"), tier_3(0, "Task execution failed") {}
+  TrialScore()
+      : tier_1(0),
+        tier_2("Task execution failed"),
+        tier_3(0, "Task execution failed") {}
 
   void tier_1_success() { tier_1 = aic_scoring::Tier1Score(1); }
 
