@@ -151,11 +151,6 @@ class AicModel(LifecycleNode):
     def observation_callback(self, msg):
         self._observation_msg = msg
 
-    # def get_observation(self, max_seconds_to_wait=0.0):
-    #     if max_seconds_to_wait == 0.0:
-    #         return self._observation_msg
-    #     else:
-
     def insert_cable_goal_callback(self, goal_request):
         if not self.is_active:
             self.get_logger().error("aic_model lifecycle is not in the active state")

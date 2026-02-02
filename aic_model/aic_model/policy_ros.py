@@ -42,6 +42,6 @@ class PolicyRos(ABC):
         get_observation: Callable[[], Observation],
         set_pose_target: Callable[[Pose, str], []],
         send_feedback: Callable[[str], []],
-    ):
+    ) -> bool:
         """Called when the insert_cable task is requested by aic_engine"""
         pass
