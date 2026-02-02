@@ -187,6 +187,10 @@ namespace aic_scoring
     /// \return Scoring for the distance category
     private: Tier2Score::CategoryScore GetDistanceScore() const;
 
+    /// \brief Calculates the penalty (if any) for contacts with off limit entities.
+    /// \return Scoring for the off limit contacts category
+    private: Tier2Score::CategoryScore GetContactsScore() const;
+
     /// \brief Pointer to a node.
     private: rclcpp::Node *node;
 
@@ -226,6 +230,9 @@ namespace aic_scoring
     /// \brief Readings from the force torque sensor, pair is timestamp
     /// and force
     private: std::vector<std::pair<double, Vector3Msg>> wrenches;
+
+    /// \brief Non empty contact messages received from the simulator.
+    private: std::vector<ContactsMsg> contacts;
 
     /// \brief Mutex to protect the access to the bag.
     private: std::mutex mutex;

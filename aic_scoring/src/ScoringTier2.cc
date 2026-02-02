@@ -186,6 +186,7 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
   tier2_score.add_category_score("task execution", this->GetDistanceScore());
   tier2_score.add_category_score("insertion force",
                                  this->GetInsertionForceScore());
+  tier2_score.add_category_score("contacts", this->GetContactsScore());
   tier3_score = Tier3Score(1);
   this->Reset();
   return {tier2_score, tier3_score};
@@ -201,6 +202,7 @@ void ScoringTier2::Reset() {
   this->wrenches.clear();
   this->task_start_time.reset();
   this->task_end_time.reset();
+  this->contacts.clear();
 }
 
 //////////////////////////////////////////////////
@@ -297,7 +299,11 @@ void ScoringTier2::TfStaticCallback(const TFMsg &_msg) {
 }
 
 //////////////////////////////////////////////////
-void ScoringTier2::ContactsCallback(const ContactsMsg &_msg) { (void)_msg; }
+void ScoringTier2::ContactsCallback(const ContactsMsg &_msg) {
+  if (!_msg.contacts.empty()) {
+    this->contacts.push_back(_msg);
+  }
+}
 
 //////////////////////////////////////////////////
 void ScoringTier2::WrenchCallback(const WrenchMsg &_msg) {
@@ -466,6 +472,25 @@ Tier2Score::CategoryScore ScoringTier2::GetInsertionForceScore() const {
   }
 
   return CategoryScore(score, sstream.str());
+}
+
+//////////////////////////////////////////////////
+Tier2Score::CategoryScore ScoringTier2::GetContactsScore() const {
+  using CategoryScore = Tier2Score::CategoryScore;
+  // Apply a fixed penalty if any contact was detected.
+  const double kPenalty = -20.0;
+  if (this->contacts.empty()) {
+    return CategoryScore(0, "No contact detected.");
+  }
+
+  const auto &contact = this->contacts[0].contacts[0];
+  std::stringstream sstream;
+  sstream.setf(std::ios::fixed);
+  sstream.precision(2);
+  sstream << "Contacts detected (only first reported) between entity named ["
+          << contact.collision1.name << "] and [" << contact.collision2.name
+          << "]. Penalty applied.";
+  return CategoryScore(kPenalty, sstream.str());
 }
 
 //////////////////////////////////////////////////
