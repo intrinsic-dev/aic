@@ -28,6 +28,7 @@
 
 #include <aic_control_interfaces/msg/joint_motion_update.hpp>
 #include <aic_control_interfaces/msg/motion_update.hpp>
+#include <geometry_msgs/msg/vector3.hpp>
 #include <geometry_msgs/msg/wrench_stamped.hpp>
 #include <ros_gz_interfaces/msg/contacts.hpp>
 #include <rosbag2_cpp/writer.hpp>
@@ -71,6 +72,7 @@ namespace aic_scoring
     using JointStateMsg = sensor_msgs::msg::JointState;
     using TFMsg = tf2_msgs::msg::TFMessage;
     using ContactsMsg = ros_gz_interfaces::msg::Contacts;
+    using Vector3Msg = geometry_msgs::msg::Vector3;
     using WrenchMsg = geometry_msgs::msg::WrenchStamped;
     using JointMotionUpdateMsg = aic_control_interfaces::msg::JointMotionUpdate;
     using MotionUpdateMsg = aic_control_interfaces::msg::MotionUpdate;
@@ -127,6 +129,9 @@ namespace aic_scoring
     /// \return A pair with the Tier2 and Tier3 scores.
     public: std::pair<Tier2Score, Tier3Score> ComputeScore();
 
+    /// \brief Resets the internal data structures for a new scoring session
+    public: void Reset();
+
     /// \brief Populate the scoring input params from a YAML file.
     /// \param[in] _config YAML configuration for the node
     private: bool ParseStats(YAML::Node _config);
@@ -174,6 +179,10 @@ namespace aic_scoring
     /// \return Distance between plug and port at the end of the task. nullopt if failed
     private: std::optional<double> GetPlugPortDistance(tf2::TimePoint t) const;
 
+    /// \brief Calculates the penalty (if any) for excessive insertion force.
+    /// \return Scoring for the insertion force category
+    private: Tier2Score::CategoryScore GetInsertionForceScore() const;
+
     /// \brief Calculates the tier 2 score based on the distance between plug and port.
     /// \return Scoring for the distance category
     private: Tier2Score::CategoryScore GetDistanceScore() const;
@@ -213,6 +222,10 @@ namespace aic_scoring
 
     /// \brief Timestamps of received tfs to be used for distance calculation
     private: std::set<tf2::TimePoint> timestamps;
+
+    /// \brief Readings from the force torque sensor, pair is timestamp
+    /// and force
+    private: std::vector<std::pair<double, Vector3Msg>> wrenches;
 
     /// \brief Mutex to protect the access to the bag.
     private: std::mutex mutex;

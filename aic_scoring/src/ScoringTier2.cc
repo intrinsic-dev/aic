@@ -129,12 +129,12 @@ Msg deserialize_from_rosbag(
 
 //////////////////////////////////////////////////
 std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
-  // TODO(luca) actually compute score
   Tier2Score tier2_score("Scoring failed.");
   Tier3Score tier3_score(0);
   tf2_buffer.clear();
   if (this->state != State::Idle) {
     RCLCPP_ERROR(this->node->get_logger(), "Scoring system is busy.");
+    this->Reset();
     return {tier2_score, tier3_score};
   }
   rosbag2_cpp::Reader bagReader;
@@ -145,6 +145,7 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
     bagReader.open(storage_options);
   } catch (const std::exception &e) {
     RCLCPP_ERROR(this->node->get_logger(), "Failed to open bag: %s", e.what());
+    this->Reset();
     return {tier2_score, tier3_score};
   }
   this->state = State::Scoring;
@@ -182,10 +183,24 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
                   msg_ptr->topic_name.c_str());
     }
   }
-  this->state = State::Idle;
   tier2_score.add_category_score("task execution", this->GetDistanceScore());
+  tier2_score.add_category_score("insertion force",
+                                 this->GetInsertionForceScore());
   tier3_score = Tier3Score(1);
+  this->Reset();
   return {tier2_score, tier3_score};
+}
+
+//////////////////////////////////////////////////
+void ScoringTier2::Reset() {
+  this->connections.clear();
+  this->bagUri.clear();
+  this->tf2_buffer.clear();
+  this->state = State::Idle;
+  this->timestamps.clear();
+  this->wrenches.clear();
+  this->task_start_time.reset();
+  this->task_end_time.reset();
 }
 
 //////////////////////////////////////////////////
@@ -285,7 +300,10 @@ void ScoringTier2::TfStaticCallback(const TFMsg &_msg) {
 void ScoringTier2::ContactsCallback(const ContactsMsg &_msg) { (void)_msg; }
 
 //////////////////////////////////////////////////
-void ScoringTier2::WrenchCallback(const WrenchMsg &_msg) { (void)_msg; }
+void ScoringTier2::WrenchCallback(const WrenchMsg &_msg) {
+  const auto time = rclcpp::Time(_msg.header.stamp);
+  this->wrenches.push_back({time.seconds(), _msg.wrench.force});
+}
 
 //////////////////////////////////////////////////
 void ScoringTier2::MotionUpdateCallback(const MotionUpdateMsg &_msg) {
@@ -400,6 +418,52 @@ Tier2Score::CategoryScore ScoringTier2::GetDistanceScore() const {
   sstream.precision(2);
   sstream << "Task completed in " << task_duration.seconds()
           << " seconds, with a distance of " << dist.value() << " meters";
+
+  return CategoryScore(score, sstream.str());
+}
+
+//////////////////////////////////////////////////
+Tier2Score::CategoryScore ScoringTier2::GetInsertionForceScore() const {
+  using CategoryScore = Tier2Score::CategoryScore;
+  // Apply a fixed penalty if excessive force is detected for more than a
+  // certain time
+  // Note that the resting reading of the sensor seems to be about 20N
+  const double kForceThreshold = 25.0;
+  const double kDurationThreshold = 1.0;
+  const double kPenalty = -10.0;
+
+  double time_above_threshold = 0.0;
+  // Start from 1 for easier dt calculation
+  for (std::size_t i = 1; i < this->wrenches.size(); ++i) {
+    const auto &f = this->wrenches[i].second;
+    const double force_mag = std::sqrt(f.x * f.x + f.y * f.y + f.z * f.z);
+    if (force_mag > kForceThreshold) {
+      time_above_threshold +=
+          this->wrenches[i].first - this->wrenches[i - 1].first;
+    }
+  }
+
+  std::string msg;
+  if (time_above_threshold == 0.0) {
+    return CategoryScore(0, "No excessive force detected");
+  }
+
+  double score = 0.0;
+  std::stringstream sstream;
+  sstream.setf(std::ios::fixed);
+  sstream.precision(2);
+  sstream << "Insertion force above " << kForceThreshold
+          << " N, detected for a time of " << time_above_threshold
+          << " seconds.";
+
+  if (time_above_threshold > kDurationThreshold) {
+    score = kPenalty;
+    sstream << " This is above the threshold of " << kDurationThreshold
+            << " seconds. Penalty applied.";
+  } else {
+    sstream << " This is below the threshold of " << kDurationThreshold
+            << " seconds. Penalty not applied.";
+  }
 
   return CategoryScore(score, sstream.str());
 }
