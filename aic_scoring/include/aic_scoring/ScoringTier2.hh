@@ -176,7 +176,7 @@ namespace aic_scoring
 
     /// \brief Calculates the tier 2 score based on the distance between plug and port.
     /// \return Scoring for the distance category
-    private: Tier2Score::CategoryScore GetDistanceScore() const;
+    private: Tier3Score GetDistanceScore() const;
 
     /// \brief Pointer to a node.
     private: rclcpp::Node *node;

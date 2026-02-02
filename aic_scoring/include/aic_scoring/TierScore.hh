@@ -122,21 +122,10 @@ private:
 
 class Tier3Score : public TierScore {
 private:
-  // Score for successful insertion  (binary)
-  static const int kTier3Success = 20;
-
   int score;
 
 public:
-  Tier3Score(bool success) {
-    if (success) {
-      this->score = kTier3Success;
-      this->message = "Task completed successfully.";
-    } else {
-      this->score = 0;
-      this->message = "Task not completed successfully.";
-    }
-  }
+  Tier3Score(int s, const std::string& msg) : TierScore(msg), score(s) { }
 
   int total_score() const override {
     return score;
