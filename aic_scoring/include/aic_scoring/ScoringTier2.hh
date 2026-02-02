@@ -174,6 +174,10 @@ namespace aic_scoring
     /// \return Distance between plug and port at the end of the task. nullopt if failed
     private: std::optional<double> GetPlugPortDistance(tf2::TimePoint t) const;
 
+    /// \brief Calculates the tier 2 score based on the distance between plug and port.
+    /// \return Scoring for the distance category
+    private: Tier2Score::CategoryScore GetDistanceScore() const;
+
     /// \brief Pointer to a node.
     private: rclcpp::Node *node;
 
@@ -194,6 +198,8 @@ namespace aic_scoring
     private: std::string bagUri;
 
     /// \brief The time the task started, used for computing task duration.
+    // TODO(luca) Either have an API to reset all state or destroy + rebuild
+    // this class between scoring sessions
     private: std::optional<rclcpp::Time> task_start_time;
 
     /// \brief The time the task ended, used for computing task duration.

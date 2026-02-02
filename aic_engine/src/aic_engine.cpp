@@ -1041,7 +1041,7 @@ bool Engine::tasks_started(Trial& trial) {
     current_attempt.state = TaskState::TaskStarted;
     // TODO(luca) Scoring assumes a single task per trial, revisit this
     // when this is not the case anymore
-    this->scoring_tier2_->SetTaskStartTime(current_attempt.time_started);
+    this->scoring_tier2_->SetTaskStartTime(*current_attempt.time_started);
 
     // Update trial state
     trial.state = TrialState::TasksExecuting;
@@ -1075,7 +1075,7 @@ bool Engine::tasks_started(Trial& trial) {
     RCLCPP_INFO(this->node_->get_logger(), "Task [%s] succeeded.",
                 task.id.c_str());
     current_attempt.time_completed = this->node_->now();
-    this->scoring_tier2_->SetTaskEndTime(current_attempt.time_completed);
+    this->scoring_tier2_->SetTaskEndTime(*current_attempt.time_completed);
     current_attempt.state = TaskState::TaskCompleted;
   }
 

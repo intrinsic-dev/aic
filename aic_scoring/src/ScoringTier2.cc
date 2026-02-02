@@ -27,6 +27,7 @@
 #include <rosbag2_cpp/reader.hpp>
 #include <rosbag2_cpp/writer.hpp>
 #include <rosbag2_storage/storage_options.hpp>
+#include <sstream>
 #include <string>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <vector>
@@ -186,7 +187,7 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
   //     "Plug port distance is %.2f",
   //     *this->GetPlugPortDistance(tf2::TimePointZero));
   this->state = State::Idle;
-  tier2_score.add_category_score("dummy_category", 3, "It works!");
+  tier2_score.add_category_score("task execution", this->GetDistanceScore());
   tier3_score = Tier3Score(1);
   return {tier2_score, tier3_score};
 }
@@ -331,6 +332,80 @@ std::optional<double> ScoringTier2::GetPlugPortDistance(
           (plug_tf.transform.translation.y - port_tf.transform.translation.y) +
       (plug_tf.transform.translation.z - port_tf.transform.translation.z) *
           (plug_tf.transform.translation.z - port_tf.transform.translation.z));
+}
+
+//////////////////////////////////////////////////
+// Calculates an inverse proportional score clamped to max_score for min_range
+// and min_score for max_range, and with a linear inverse proportional
+// interpolation inbetween.
+static double CalculateInverseProportionalScore(const double max_score,
+                                                const double min_score,
+                                                const double max_range,
+                                                const double min_range,
+                                                const double measurement) {
+  if (measurement >= max_range) {
+    return min_score;
+  } else if (measurement <= min_range) {
+    return max_score;
+  }
+
+  return min_score + ((max_range - measurement) / (max_range - min_range)) *
+                         (max_score - min_score);
+}
+
+//////////////////////////////////////////////////
+Tier2Score::CategoryScore ScoringTier2::GetDistanceScore() const {
+  using CategoryScore = Tier2Score::CategoryScore;
+  // For now, just have the score be inversely proportional to the time
+  // it took to execute the task and the final distance between plug and port
+  // Linear interpolation in the interval, clamp to maximum and minimum
+  // Use distance as a base score, task time as a multiplier
+  const rclcpp::Duration kMaxTaskTime = rclcpp::Duration::from_seconds(60.0);
+  const rclcpp::Duration kMinTaskTime = rclcpp::Duration::from_seconds(5.0);
+  const double kFastestTaskMultiplier = 3.0;
+  const double kSlowestTaskMultiplier = 1.0;
+
+  const double kMaxDistance = 1.0;
+  const double kMinDistance = 0.0;
+  const double kClosestTaskScore = 10.0;
+  const double kFurthestTaskScore = 0.5;
+
+  if (this->timestamps.empty()) {
+    return CategoryScore(0, "Distance computation failed, no tfs received");
+  }
+
+  if (!this->task_start_time.has_value()) {
+    return CategoryScore(0, "Time computation failed, task start time not set");
+  }
+
+  if (!this->task_end_time.has_value()) {
+    return CategoryScore(0, "Time computation failed, task end time not set");
+  }
+
+  const auto dist = this->GetPlugPortDistance(tf2::TimePointZero);
+  if (!dist.has_value()) {
+    return CategoryScore(
+        0, "Distance computation failed, tf between cable and port not found");
+  }
+
+  const rclcpp::Duration task_duration =
+      this->task_end_time.value() - this->task_start_time.value();
+  const double duration_multiplier = CalculateInverseProportionalScore(
+      kFastestTaskMultiplier, kSlowestTaskMultiplier, kMaxTaskTime.seconds(),
+      kMinTaskTime.seconds(), task_duration.seconds());
+
+  const double score =
+      duration_multiplier * CalculateInverseProportionalScore(
+                                kClosestTaskScore, kFurthestTaskScore,
+                                kMaxDistance, kMinDistance, dist.value());
+
+  std::stringstream sstream;
+  sstream.setf(std::ios::fixed);
+  sstream.precision(2);
+  sstream << "Task completed in " << task_duration.seconds()
+          << " seconds, with a distance of " << dist.value() << " meters";
+
+  return CategoryScore(score, sstream.str());
 }
 
 //////////////////////////////////////////////////

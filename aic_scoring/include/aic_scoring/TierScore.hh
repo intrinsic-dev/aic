@@ -71,7 +71,7 @@ public:
 
 
 class Tier2Score : public TierScore {
-private:
+public:
   struct CategoryScore {
     int score;
     std::optional<std::string> message;
@@ -81,10 +81,6 @@ private:
 
   using CategoryScores = std::map<std::string, CategoryScore>;
 
-  // Map of category name to its score
-  CategoryScores  category_scores;
-
-public:
   Tier2Score(const std::string& msg) : TierScore(msg) {}
 
   int total_score() const override {
@@ -112,6 +108,16 @@ public:
                           const std::optional<std::string>& msg = std::nullopt) {
     this->category_scores.insert({category, CategoryScore(score, msg)});
   }
+
+  void add_category_score(const std::string& category,
+                          const CategoryScore& score) {
+    this->category_scores.insert({category, score});
+  }
+
+private:
+  // Map of category name to its score
+  CategoryScores  category_scores;
+
 };
 
 class Tier3Score : public TierScore {
