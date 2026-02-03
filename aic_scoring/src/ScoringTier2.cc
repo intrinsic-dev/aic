@@ -60,26 +60,11 @@ bool ScoringTier2::Initialize(YAML::Node _config) {
           // Bag the data.
           const auto &rmw_info = msg_info.get_rmw_message_info();
           std::lock_guard<std::mutex> lock(this->mutex);
-          if (this->state != State::Recording) return;
-
-          if (topic.name == kTfStaticTopic) {
-            PoseMsg efPosition;
-            if (this->EndEffectorPose(efPosition)) {
-              // Log the end effector position.
-              auto serialized = std::make_shared<rclcpp::SerializedMessage>();
-              rclcpp::Serialization<PoseMsg> serializer;
-              serializer.serialize_message(&efPosition, serialized.get());
-
-              this->bagWriter.write(serialized, kEndEffectorTopic,
-                                    "geometry_msgs/msg/PoseStamped",
-                                    rmw_info.received_timestamp,
-                                    rmw_info.source_timestamp);
-            }
+          if (this->state == State::Recording) {
+            this->bagWriter.write(msg, topic.name, topic.type,
+                                  rmw_info.received_timestamp,
+                                  rmw_info.source_timestamp);
           }
-
-          this->bagWriter.write(msg, topic.name, topic.type,
-                                rmw_info.received_timestamp,
-                                rmw_info.source_timestamp);
         });
     this->subscriptions.push_back(sub);
   }
@@ -102,11 +87,8 @@ void ScoringTier2::ResetConnections(
 }
 
 //////////////////////////////////////////////////
-void ScoringTier2::SetGripperFrame(
-    const std::string &_gripperFrame,
-    std::shared_ptr<tf2_ros::Buffer> &_tfBuffer) {
+void ScoringTier2::SetGripperFrame(const std::string &_gripperFrame) {
   this->gripperFrame = _gripperFrame;
-  this->tfBuffer = _tfBuffer;
 }
 
 //////////////////////////////////////////////////
@@ -188,9 +170,6 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
     if (msg_ptr->topic_name == kJointStateTopic) {
       const auto msg = deserialize_from_rosbag<JointStateMsg>(msg_ptr);
       this->JointStateCallback(msg);
-    } else if (msg_ptr->topic_name == kEndEffectorTopic) {
-      const auto msg = deserialize_from_rosbag<PoseMsg>(msg_ptr);
-      this->JerkCallback(msg);
     } else if (msg_ptr->topic_name == kTfTopic) {
       const auto msg = deserialize_from_rosbag<TFMsg>(msg_ptr);
       this->TfCallback(msg);
@@ -529,36 +508,35 @@ void ScoringTier2::JerkCallback(const PoseMsg &_pose) {
     this->avgLinearJerk.y = this->accumLinearJerk.y / this->totalJerkTime;
     this->avgLinearJerk.z = this->accumLinearJerk.z / this->totalJerkTime;
   }
-
-  return;
 }
 
 //////////////////////////////////////////////////
-bool ScoringTier2::EndEffectorPose(PoseMsg &_pose) {
+std::optional<ScoringTier2::PoseMsg> ScoringTier2::EndEffectorPose(tf2::TimePoint t) const {
   // Sanity check.
-  if (this->gripperFrame.empty() || !this->tfBuffer) {
-    RCLCPP_WARN(this->node->get_logger(),
+  if (this->gripperFrame.empty()) {
+    RCLCPP_ERROR(this->node->get_logger(),
                 "Unable to compute end effector pose yet");
-    return false;
+    return std::nullopt;
   }
 
   std::string warning_msg;
-  if (!this->tfBuffer->canTransform("world", this->gripperFrame,
-                                    tf2::TimePointZero, &warning_msg)) {
-    RCLCPP_WARN(this->node->get_logger(), "TF Wait Failed: %s",
-                warning_msg.c_str());
-    return false;
+  if (!this->tf2_buffer.canTransform("aic_world", this->gripperFrame, t)) {
+    RCLCPP_ERROR(this->node->get_logger(),
+                 "Gripper %s not found in the tf tree",
+                 this->gripperFrame.c_str());
+    return std::nullopt;
   }
 
-  geometry_msgs::msg::TransformStamped t = this->tfBuffer->lookupTransform(
-      "world", this->gripperFrame, tf2::TimePointZero);
+  const auto gripper_tf = this->tf2_buffer.lookupTransform(
+      "aic_world", this->gripperFrame, t);
 
-  _pose.header = t.header;
-  _pose.pose.position.x = t.transform.translation.x;
-  _pose.pose.position.y = t.transform.translation.y;
-  _pose.pose.position.z = t.transform.translation.z;
-  _pose.pose.orientation = t.transform.rotation;
-  return true;
+  ScoringTier2::PoseMsg pose;
+  //pose.header = t.header;
+  pose.pose.position.x = gripper_tf.transform.translation.x;
+  pose.pose.position.y = gripper_tf.transform.translation.y;
+  pose.pose.position.z = gripper_tf.transform.translation.z;
+  pose.pose.orientation = gripper_tf.transform.rotation;
+  return pose;
 }
 
 //////////////////////////////////////////////////

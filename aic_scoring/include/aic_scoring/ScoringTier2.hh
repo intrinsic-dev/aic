@@ -107,9 +107,6 @@ namespace aic_scoring
     /// \brief Topic to subscribe for force torque sensor wrench.
     public: static constexpr const char* kWrenchTopic = "/axia80_m20/wrench";
 
-    /// \brief Topic to record the end effector position.
-    public: static constexpr const char* kEndEffectorTopic = "/end_effector";
-
     /// \brief Topic to subscribe for pose commands sent to the controller.
     public: static constexpr const char* kMotionUpdateTopic = "/aic_controller/pose_commands";
 
@@ -128,11 +125,9 @@ namespace aic_scoring
     /// \param[in] _connections New connections.
     public: void ResetConnections(const std::vector<Connection> &_connections);
 
-    /// \brief Set the gripper frame name and the TF buffer.
+    /// \brief Set the gripper frame name.
     /// \param[in] _gripperFrame Gripper frame name.
-    /// \param[in out] _tBuffer TF buffer.
-    public: void SetGripperFrame(const std::string &_gripperFrame,
-                                 std::shared_ptr<tf2_ros::Buffer> &_tfBuffer);
+    public: void SetGripperFrame(const std::string &_gripperFrame);
 
     /// \brief Start recording all scoring topics.
     /// \return True if the bag was opened correctly and it's ready to record.
@@ -196,13 +191,12 @@ namespace aic_scoring
 
     /// \brief Update jerk computation with a new pose sample.
     /// \param[in] _pose The new timestamped pose.
-    /// \return True if successful, false if timestamp was not increasing.
     private: void JerkCallback(const PoseMsg &_pose);
 
     /// \brief Compute the end effector position.
     /// \param[out] _pose End effector pose.
     /// \return True when the position is valid or false otherwise.
-    private: bool EndEffectorPose(PoseMsg &_pose);
+    private: std::optional<PoseMsg> EndEffectorPose(tf2::TimePoint t) const;
 
     /// \brief Callback for pose commands received while scoring.
     /// \param[in] _msg The received message.
@@ -274,9 +268,6 @@ namespace aic_scoring
 
     /// \brief Accumulated weighted linear jerk (jerk * dt sum).
     private: Vector3Msg accumLinearJerk;
-
-    /// \brief TF.
-    private: std::shared_ptr<tf2_ros::Buffer> tfBuffer;
 
     /// \brief Gripper frame name.
     private: std::string gripperFrame;

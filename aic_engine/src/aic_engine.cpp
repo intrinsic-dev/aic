@@ -488,7 +488,7 @@ EngineState Engine::initialize() {
           model_change_state_service_name_);
   reset_joints_client_ =
       node_->create_client<ResetJointsSrv>("/scoring/reset_joints");
-  tf_buffer_ = std::make_shared<tf2_ros::Buffer>(node_->get_clock());
+  tf_buffer_ = std::make_unique<tf2_ros::Buffer>(node_->get_clock());
   tf_listener_ = std::make_unique<tf2_ros::TransformListener>(*tf_buffer_);
 
   // Pre-build home messages directly from config
@@ -531,7 +531,7 @@ EngineState Engine::initialize() {
     return EngineState::Error;
   }
   scoring_tier2_->SetGripperFrame(
-      node_->get_parameter("gripper_frame_name").as_string(), tf_buffer_);
+    node_->get_parameter("gripper_frame_name").as_string());
 
   // Create output directory for bag files.
   std::error_code ec;
