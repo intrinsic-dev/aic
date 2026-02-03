@@ -1314,11 +1314,11 @@ void Engine::reset_after_trial(const Trial& trial) {
   is_first_trial_ = false;
   model_discovered_ = false;
 
-  // Remove spawned entities from simulator
   if (skip_ready_simulator_) {
     RCLCPP_WARN(node_->get_logger(),
                 "Skipping entity deletion (skip_ready_simulator=true)");
   } else {
+    // Remove spawned entities from simulator
     for (const auto& entity_name : trial.spawned_entities) {
       // Delete spawned entity
       auto request = std::make_shared<DeleteEntitySrv::Request>();
