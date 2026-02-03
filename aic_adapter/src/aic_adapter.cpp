@@ -112,12 +112,9 @@ AicAdapterNode::AicAdapterNode() : Node("aic_adapter_node") {
   for (size_t camera_idx = 0; camera_idx < kNumCameras; camera_idx++) {
     camera_info_subs_.push_back(
         this->create_subscription<sensor_msgs::msg::CameraInfo>(
-            std::format("/{}_camera/camera_info", kCameraNames[camera_idx]),
-            5,
-            [this, camera_idx](
-                sensor_msgs::msg::CameraInfo::UniquePtr msg) -> void {
-              this->camera_infos_[camera_idx] = std::move(msg);
-            }));
+            std::format("/{}_camera/camera_info", kCameraNames[camera_idx]), 5,
+            [this, camera_idx](sensor_msgs::msg::CameraInfo::UniquePtr msg)
+                -> void { this->camera_infos_[camera_idx] = std::move(msg); }));
     image_subs_.push_back(this->create_subscription<sensor_msgs::msg::Image>(
         std::format("/{}_camera/image", kCameraNames[camera_idx]), 5,
         [this, camera_idx](sensor_msgs::msg::Image::UniquePtr msg) -> void {
@@ -128,7 +125,7 @@ AicAdapterNode::AicAdapterNode() : Node("aic_adapter_node") {
 }
 
 void AicAdapterNode::image_callback(size_t camera_idx,
-                      sensor_msgs::msg::Image::UniquePtr msg) {
+                                    sensor_msgs::msg::Image::UniquePtr msg) {
   if (camera_idx > images_.size()) {
     RCLCPP_ERROR(this->get_logger(), "unexpected camera idx: %zu", camera_idx);
     return;
