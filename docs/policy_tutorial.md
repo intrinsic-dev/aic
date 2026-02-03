@@ -83,8 +83,16 @@ For brevity, we will reuse the code from `aic_example_policies`.
 (aic) $ cp aic_example_policies/aic_example_policies/ros/WaveArm.py my_policy_node/my_policy_node/WaveArm.py
 ```
 
-**Run the node**
+**Test the policy node**
 
+Terminal 1:
+```bash
+$ distrobox enter -r aic_eval -- /entrypoint.sh
+```
+
+<!-- TODO: Update instruction to disable ACL after https://github.com/intrinsic-dev/aic/pull/190 or https://github.com/intrinsic-dev/aic/pull/171 is merged. -->
+
+Terminal 2:
 ```bash
 $ pixi reinstall ros-kilted-my-policy-node
 $ pixi run ros2 run aic_model aic_model --ros-args -p policy:=my_policy_node.WaveArm

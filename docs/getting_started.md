@@ -84,6 +84,8 @@ Also see [Alternative Installation Methods](https://pixi.prefix.dev/latest/insta
    /entrypoint.sh
    ```
 
+<!-- TODO: Update instruction to disable ACL after https://github.com/intrinsic-dev/aic/pull/190 or https://github.com/intrinsic-dev/aic/pull/171 is merged. -->
+
 2. **Set up pixi workspace:**
    ```bash
    # Clone this repo
