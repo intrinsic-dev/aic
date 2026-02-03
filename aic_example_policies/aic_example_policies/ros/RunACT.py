@@ -99,7 +99,6 @@ class RunACT(PolicyRos):
         Example function to run inference with the loaded policy.
         The exact input format (observation) depends on your dataset structure.
         """
-        self.get_logger().info(f"Observation: {observation}")
         with torch.no_grad():
             # Pre-process the observation if necessary (policy handles this internally)
             # Assuming observation is a dictionary of tensors/numpy arrays on the correct device
@@ -109,7 +108,6 @@ class RunACT(PolicyRos):
             
             # Post-process actions if needed (policy handles this internally)
             # e.g., denormalize actions
-            self.get_logger().info(f"Actions: {actions}")
             return actions
 
     def prepare_camera_observation(self, raw_cam_image):
@@ -118,7 +116,7 @@ class RunACT(PolicyRos):
         # Manual conversion if encoding is already rgb8
         img_np = np.frombuffer(raw_cam_image.data, dtype=np.uint8).reshape(raw_cam_image.height, raw_cam_image.width, 3)
         img_tensor = torch.from_numpy(img_np).permute(2, 0, 1).float() / 255.0
-        img_tensor.unsqueeze(0).to(self.device)
+        return img_tensor.unsqueeze(0).to(self.device)
         # State usually just needs tensor conversion
         # state_tensor = torch.from_numpy(raw_robot_state).float().unsqueeze(0).to(device)
         
@@ -129,6 +127,7 @@ class RunACT(PolicyRos):
         task: Task,
         get_observation: Callable[[], Observation],
         set_pose_target: Callable[[Pose, str], []],
+        set_joint_target: Callable[[list[float]], []],
         send_feedback: Callable[[str], []],
     ):
         self.get_logger().info(f"RunACT.insert_cable() enter. Task: {task}")
@@ -165,7 +164,15 @@ class RunACT(PolicyRos):
             # "joint_positions.5": observation_msg.joint_states.position[5],
             # "joint_positions.6": observation_msg.joint_states.position[6],
             # }
-            controller_observation_state = {"observation.state": torch.from_numpy(np.zeros(26)).float().unsqueeze(0).to(self.device)}
+            controller_observation_state = torch.from_numpy(np.zeros(26))
+            controller_observation_state[19] = observation_msg.joint_states.position[0]
+            controller_observation_state[20] = observation_msg.joint_states.position[1]
+            controller_observation_state[21] = observation_msg.joint_states.position[2]
+            controller_observation_state[22] = observation_msg.joint_states.position[3]
+            controller_observation_state[23] = observation_msg.joint_states.position[4]
+            controller_observation_state[24] = observation_msg.joint_states.position[5]
+            controller_observation_state[25] = observation_msg.joint_states.position[6]
+            controller_observation_state = {"observation.state": controller_observation_state.float().unsqueeze(0).to(self.device)}
 
             camera_observation_state: CameraObservationState = {
                 "observation.images.left_camera": self.prepare_camera_observation(observation_msg.left_image),
@@ -180,6 +187,9 @@ class RunACT(PolicyRos):
                     observation_state[key] = observation_state[key].to(self.device)
             self.get_logger().info(f"Observation state keys: {observation_state.keys()}")
             actions = self.run_inference(observation_state)
-            
+            self.get_logger().info(f"Actions: {actions}")
+
+            set_joint_target(actions)
+
         self.get_logger().info("RunACT.insert_cable() exiting...")
         return True

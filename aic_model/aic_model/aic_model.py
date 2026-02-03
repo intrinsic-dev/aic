@@ -221,6 +221,20 @@ class AicModel(LifecycleNode):
 
         self.motion_update_pub.publish(motion_update_msg)
 
+    def set_joint_target(self, joint_pos: list[float]):
+        joint_motion_update_msg = JointMotionUpdate()
+
+        joint_motion_update_msg.target_state.positions = joint_pos
+
+        joint_motion_update_msg.target_stiffness = [100.0, 100.0, 100.0, 50.0, 50.0, 50.0]
+        joint_motion_update_msg.target_damping = [40.0, 40.0, 40.0, 15.0, 15.0, 15.0]
+
+        joint_motion_update_msg.trajectory_generation_mode.mode = (
+            TrajectoryGenerationMode.MODE_POSITION
+        )
+
+        self.joint_motion_update_pub.publish(joint_motion_update_msg)
+
     def send_feedback(self, goal_handle, feedback):
         feedback_msg = InsertCable.Feedback()
         feedback_msg.message = feedback
@@ -232,6 +246,9 @@ class AicModel(LifecycleNode):
             get_observation=lambda: self.observation_callable(),
             set_pose_target=lambda pose, frame_id="base_link": self.set_pose_target(
                 pose, frame_id
+            ),
+            set_joint_target=lambda joint_pos: self.set_joint_target(
+                joint_pos
             ),
             send_feedback=lambda feedback: self.send_feedback(goal_handle, feedback),
         )
