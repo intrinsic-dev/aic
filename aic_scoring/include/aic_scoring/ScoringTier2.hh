@@ -30,7 +30,6 @@
 
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <geometry_msgs/msg/vector3.hpp>
-#include <gz/math/Pose3.hh>
 #include <rclcpp/rclcpp.hpp>
 
 #include <aic_control_interfaces/msg/joint_motion_update.hpp>
@@ -193,8 +192,8 @@ namespace aic_scoring
     private: void JerkCallback(const PoseMsg &_pose);
 
     /// \brief Compute the end effector position.
-    /// \param[out] _pose End effector pose.
-    /// \return True when the position is valid or false otherwise.
+    /// \param[in] t Time to check the pose.
+    /// \return End effector pose at time t. nullopt if failed
     private: std::optional<PoseMsg> EndEffectorPose(tf2::TimePoint t) const;
 
     /// \brief Callback for pose commands received while scoring.
