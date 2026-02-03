@@ -30,7 +30,7 @@ from aic_control_interfaces.srv import ChangeTargetMode
 from aic_model_interfaces.msg import Observation
 from aic_task_interfaces.action import InsertCable
 from aic_task_interfaces.msg import Task
-from geometry_msgs.msg import Point, Pose, Quaternion, Wrench, Vector3
+from geometry_msgs.msg import Point, Pose, Quaternion, Wrench, Vector3, Twist
 from rclpy.action import ActionServer, CancelResponse, GoalResponse
 from rclpy.action.server import ServerGoalHandle
 from rclpy.callback_groups import ReentrantCallbackGroup
@@ -176,7 +176,7 @@ class AicModel(LifecycleNode):
     def observation_callable(self):
         return self._observation_msg
 
-    def set_pose_target(self, pose: Pose, frame_id: str = "base_link"):
+    def set_cartesian_target(self, pose: Pose, frame_id: str = "base_link"):
         """Set a pose target for the robot arm.
 
         The robot can be controlled in several different ways. This function
@@ -221,6 +221,33 @@ class AicModel(LifecycleNode):
 
         self.motion_update_pub.publish(motion_update_msg)
 
+    def set_cartesian_twist_target(self, twist: Twist, frame_id: str = "base_link"):
+        motion_update_msg = MotionUpdate()
+        motion_update_msg.velocity = twist
+        motion_update_msg.header.frame_id = frame_id
+        motion_update_msg.header.stamp = self.get_clock().now().to_msg()
+
+        motion_update_msg.target_stiffness = np.diag(
+            [100.0, 100.0, 100.0, 50.0, 50.0, 50.0]
+        ).flatten()
+        motion_update_msg.target_damping = np.diag(
+            [40.0, 40.0, 40.0, 15.0, 15.0, 15.0]
+        ).flatten()
+
+        motion_update_msg.feedforward_wrench_at_tip = Wrench(
+            force=Vector3(x=0.0, y=0.0, z=0.0), torque=Vector3(x=0.0, y=0.0, z=0.0)
+        )
+
+        motion_update_msg.wrench_feedback_gains_at_tip = Wrench(
+            force=Vector3(x=0.5, y=0.5, z=0.5), torque=Vector3(x=0.0, y=0.0, z=0.0)
+        )
+
+        motion_update_msg.trajectory_generation_mode.mode = (
+            TrajectoryGenerationMode.MODE_VELOCITY
+        )
+
+        self.motion_update_pub.publish(motion_update_msg)        
+
     def set_joint_target(self, joint_pos: list[float]):
         joint_motion_update_msg = JointMotionUpdate()
 
@@ -244,8 +271,11 @@ class AicModel(LifecycleNode):
         self._action_thread_result = self._policy.insert_cable(
             task=goal_handle.request,
             get_observation=lambda: self.observation_callable(),
-            set_pose_target=lambda pose, frame_id="base_link": self.set_pose_target(
+            set_cartesian_target=lambda pose, frame_id="base_link": self.set_cartesian_target(
                 pose, frame_id
+            ),
+            set_cartesian_twist_target=lambda twist, frame_id="base_link": self.set_cartesian_twist_target(
+                twist, frame_id
             ),
             set_joint_target=lambda joint_pos: self.set_joint_target(
                 joint_pos
@@ -258,7 +288,13 @@ class AicModel(LifecycleNode):
 
     async def insert_cable_execute_callback(self, goal_handle: ServerGoalHandle):
         self.get_logger().info("Entering insert_cable_execute_callback()")
+        
+        # TODO: How to allow participants to set mode.
         await self.set_cartesian_mode()
+        self.get_logger().info("Cartesian mode set")
+        # await self.set_joint_mode()
+        # self.get_logger().info("Joint mode set")
+    
         self._action_thread_result = None
         self._action_thread = threading.Thread(
             target=self.action_thread_func,
