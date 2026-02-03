@@ -376,7 +376,9 @@ Tier3Score ScoringTier2::GetDistanceScore() const {
     return Tier3Score(0, "Time computation failed, task end time not set");
   }
 
-  const auto dist = this->GetPlugPortDistance(tf2::TimePointZero);
+  const auto end_time =
+      std::chrono::nanoseconds(this->task_end_time.value().nanoseconds());
+  const auto dist = this->GetPlugPortDistance(tf2::TimePoint(end_time));
   if (!dist.has_value()) {
     return Tier3Score(
         0, "Distance computation failed, tf between cable and port not found");
