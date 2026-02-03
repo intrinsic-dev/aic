@@ -53,14 +53,30 @@ class RunACT(PolicyRos):
             actions = self.policy.select_action(observation)
             return actions
 
-    def prepare_camera_observation(self, raw_cam_image):
+    def prepare_camera_observation(self, left_image, center_image, right_image):
         # Apply resizing and tensor conversion
-
-        img_np = np.frombuffer(raw_cam_image.data, dtype=np.uint8).reshape(raw_cam_image.height, raw_cam_image.width, 3)
-        img_tensor = torch.from_numpy(img_np).permute(2, 0, 1).float() / 255.0
-        img_obs = img_tensor.unsqueeze(0).to(self.device)
-        return img_obs
-
+        def prepare_image(raw_cam_image):
+            img_np = np.frombuffer(raw_cam_image.data, dtype=np.uint8).reshape(raw_cam_image.height, raw_cam_image.width, 3)
+            img_tensor = torch.from_numpy(img_np).permute(2, 0, 1).float() / 255.0
+            img_obs = img_tensor.unsqueeze(0).to(self.device)
+            return img_obs
+        
+        camera_observation_state = {
+                "observation.images.left_camera": prepare_image(left_image),
+                "observation.images.center_camera": prepare_image(center_image),
+                "observation.images.right_camera": prepare_image(right_image),
+            }
+        
+        return camera_observation_state
+    
+    def prepare_controller_observation(self, joint_states):
+        controller_observation_state = np.zeros(26, dtype=np.float32)
+        controller_observation_state[19:26] = joint_states
+        state_tensor = torch.from_numpy(controller_observation_state).float().to(self.device)
+        state_tensor = state_tensor.unsqueeze(0) 
+        controller_observation_state = {"observation.state": state_tensor}
+        return controller_observation_state
+    
     def insert_cable(
         self,
         task: Task,
@@ -80,35 +96,17 @@ class RunACT(PolicyRos):
             time.sleep(0.25)
             observation_msg = get_observation()
 
-            controller_observation_state = np.zeros(26)
-            controller_observation_state[19] = observation_msg.joint_states.position[0]
-            controller_observation_state[20] = observation_msg.joint_states.position[1]
-            controller_observation_state[21] = observation_msg.joint_states.position[2]
-            controller_observation_state[22] = observation_msg.joint_states.position[3]
-            controller_observation_state[23] = observation_msg.joint_states.position[4]
-            controller_observation_state[24] = observation_msg.joint_states.position[5]
-            controller_observation_state[25] = observation_msg.joint_states.position[6]
-            controller_observation_state = {"observation.state": controller_observation_state}
-
-            camera_observation_state = {
-                "observation.images.left_camera": self.prepare_camera_observation(observation_msg.left_image),
-                "observation.images.center_camera": self.prepare_camera_observation(observation_msg.center_image),
-                "observation.images.right_camera": self.prepare_camera_observation(observation_msg.right_image),
-            }
+            controller_observation_state = self.prepare_controller_observation(observation_msg.joint_states.position[0:7])
+            camera_observation_state = self.prepare_camera_observation(observation_msg.left_image, observation_msg.center_image, observation_msg.right_image)
 
             observation_state = {**camera_observation_state, **controller_observation_state}
-
-            for key in observation_state:
-                if isinstance(observation_state[key], torch.Tensor):
-                    self.get_logger().info(f"key: {key}")
-                    observation_state[key] = observation_state[key].to(self.device)
 
             self.get_logger().info(f"Observation state keys: {observation_state.keys()}")
 
             actions = self.run_inference(observation_state)
-            
             actions = actions.to('cpu').tolist()[0]
             self.get_logger().info(f"Actions: {actions}")
+            
             twist = Twist(
                 linear=Vector3(x=actions[0], y=actions[1], z=actions[2]),
                 angular=Vector3(x=actions[3], y=actions[4], z=actions[5]),
