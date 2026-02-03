@@ -12,7 +12,7 @@ commands to the robot. Creating a _policy_ is at the heart of the AI for
 Industry Challenge, since it is the critical block that "closes the loop"
 between sensors and actuators.
 
-More specifically, the _policy_ receives the following data at 20 Hz:
+More specifically, the _policy_ can receive the following data at up to 20 Hz:
  * :camera: :camera: :camera: images from three cameras mounted on the robot wrist
  * :mechanical_arm: joint angles of the robot arm and gripper
  * :rightwards_pushing_hand: 3d force and 3d torque measurements at the robot wrist
@@ -22,8 +22,8 @@ More specifically, the _policy_ receives the following data at 20 Hz:
 For convenience, the `aic_adapter` in the Challenge environment combines
 time-synchronized values of the sensor suite into a single composite
 `Observation` data structure, which is delivered to the `aic_model` block at 20
-Hz.  In turn, the `aic_model` block passes these messages to a user-defined
-`policy`, which is dynamically loaded at runtime.
+Hz. The user-defined `policy` is dynamically loaded at runtime into `aic_model`
+and can retrieve the latest `Observation` at any time.
 
 The policy is responsible for issuing position or velocity targets to the
 `aic_controller`, which provides low-level control of the arm to manage contact
