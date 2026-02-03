@@ -61,7 +61,7 @@ ros-kilted-aic-task-interfaces = { path = "../aic_interfaces/aic_task_interfaces
 ```
 
 > [!Tip]
-> Normally, pixi will automatically discover the dependencies from `package.xml`. But because we are building the aic interfaces from source, we need to specify them as build dependencies. We need both `[package.host-dependencies]` and `[package.build-dependencies]` because of how pixi discovers dependencies from `package.xml`.
+> Normally, pixi will automatically discover the dependencies from `package.xml`. But because we are building the aic interfaces from source, we need to tell pixi where to find them.
 
 **Add the pixi package to the workspace**
 
