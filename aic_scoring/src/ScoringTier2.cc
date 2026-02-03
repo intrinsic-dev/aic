@@ -93,9 +93,9 @@ bool ScoringTier2::StartRecording(const std::string &_filename) {
 
   // Subscribe to all topics relevant for scoring.
   for (const auto &topic : this->topics) {
-    auto qos = topic.latched ?
-        rclcpp::QoS(rclcpp::KeepLast(1)).transient_local() :
-        rclcpp::QoS(rclcpp::KeepLast(10)).reliable();
+    auto qos = topic.latched
+                   ? rclcpp::QoS(rclcpp::KeepLast(1)).transient_local()
+                   : rclcpp::QoS(rclcpp::KeepLast(10)).reliable();
     auto sub = this->node->create_generic_subscription(
         topic.name, topic.type, qos,
         [this, topic](std::shared_ptr<const rclcpp::SerializedMessage> msg,
