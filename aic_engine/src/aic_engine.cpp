@@ -531,7 +531,7 @@ EngineState Engine::initialize() {
     return EngineState::Error;
   }
   scoring_tier2_->SetGripperFrame(
-    node_->get_parameter("gripper_frame_name").as_string());
+      node_->get_parameter("gripper_frame_name").as_string());
 
   // Create output directory for bag files.
   std::error_code ec;

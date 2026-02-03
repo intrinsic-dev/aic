@@ -178,8 +178,7 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
       this->TfStaticCallback(msg);
       if (!msg.transforms.empty()) {
         auto pose = this->EndEffectorPose(tf2::getTimestamp(msg.transforms[0]));
-        if (pose.has_value())
-          this->JerkCallback(*pose);
+        if (pose.has_value()) this->JerkCallback(*pose);
       }
     } else if (msg_ptr->topic_name == kContactsTopic) {
       const auto msg = deserialize_from_rosbag<ContactsMsg>(msg_ptr);
@@ -516,11 +515,12 @@ void ScoringTier2::JerkCallback(const PoseMsg &_pose) {
 }
 
 //////////////////////////////////////////////////
-std::optional<ScoringTier2::PoseMsg> ScoringTier2::EndEffectorPose(tf2::TimePoint t) const {
+std::optional<ScoringTier2::PoseMsg> ScoringTier2::EndEffectorPose(
+    tf2::TimePoint t) const {
   // Sanity check.
   if (this->gripperFrame.empty()) {
     RCLCPP_ERROR(this->node->get_logger(),
-                "Unable to compute end effector pose yet");
+                 "Unable to compute end effector pose yet");
     return std::nullopt;
   }
 
@@ -532,8 +532,8 @@ std::optional<ScoringTier2::PoseMsg> ScoringTier2::EndEffectorPose(tf2::TimePoin
     return std::nullopt;
   }
 
-  const auto gripper_tf = this->tf2_buffer.lookupTransform(
-      "aic_world", this->gripperFrame, t);
+  const auto gripper_tf =
+      this->tf2_buffer.lookupTransform("aic_world", this->gripperFrame, t);
 
   ScoringTier2::PoseMsg pose;
   pose.header = gripper_tf.header;
