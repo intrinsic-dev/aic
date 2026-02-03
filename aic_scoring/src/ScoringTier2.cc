@@ -199,6 +199,7 @@ void ScoringTier2::Reset() {
   this->wrenches.clear();
   this->task_start_time.reset();
   this->task_end_time.reset();
+  this->bagWriter.close();
 }
 
 //////////////////////////////////////////////////
