@@ -151,7 +151,7 @@ $ pixi reinstall <package>
 ```
 
 > [!Tip]
-> You may enter the pixi environment with `pixi shell` and force an "editable" install with `pip install -e` or `colcon build --symlink-install`. But note that this circumvents pixi and may cause unintended side effects.
+> You may enter the pixi environment with `pixi shell` and force an "editable" install with `pip install -e`. But note that this circumvents pixi and may cause unintended side effects.
 
 ## Preparing for submission
 
@@ -168,7 +168,7 @@ Update the Dockerfile with the following:
 
 ```dockerfile
 # Add other local dependencies
-COPY my_policy_node /ws_aic/src/aic/my_policy_node
+COPY my_policy_node /ws_aic/src/aic/my_policy_node # <-- Add this line
 ```
 
 Open `docker/docker-compose.yaml`, replace `docker/aic_model/Dockerfile` with the path to your Dockerfile. Also be sure to update the command to use your policy node.
@@ -181,7 +181,7 @@ Open `docker/docker-compose.yaml`, replace `docker/aic_model/Dockerfile` with th
     build:
       dockerfile: docker/my_policy_node/Dockerfile # <-- replace this line
       context: ..
-    command: --ros-args -p policy:=my_policy_node.WaveArm # <-- also replace this
+    command: --ros-args -p policy:=my_policy_node.WaveArm # <-- and this line
 ```
 
 Build the image
@@ -198,9 +198,9 @@ $ docker compose up
 
 This will run your model and the evaluator in an environment that replicates the submission portal.
 
-* External network access is restricted.
-* Zenoh ACLs will be employed to restrict what the policy node can interact with.
-* Shared memory is disabled.
+- External network access is restricted.
+- Zenoh ACLs will be employed to restrict what the policy node can interact with.
+- Shared memory is disabled.
 
 Make sure that your policy works, then export a tarball of your image.
 
@@ -218,4 +218,4 @@ In this tutorial, you have learned how to:
 - Understand the build, run, and debug cycle for developing your policy.
 - Prepare a Docker image for your policy for submission.
 
-You are now equipped with the fundamental skills to develop, test, and submit your own policies for the AIC challenge. Feel free to explore the provided example policies and other documentation for more advanced concepts and inspiration.
+You are now equipped with the fundamental skills to develop, test, and submit your own policies for the AI for Industry Challenge. Feel free to explore the provided example policies and other documentation for more advanced concepts and inspiration.

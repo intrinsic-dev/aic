@@ -2,7 +2,7 @@
 
 Welcome to the AI for Industry Challenge! This guide will help you set up your development environment and get started with building your solution.
 
-The challenge workflow relies on two distinct Docker containers:
+The challenge workflow relies on two distinct components:
 
 ### 1. Evaluation Container (`aic_eval`)
 This container hosts:
@@ -14,7 +14,6 @@ This container hosts:
 
 **How to use:**
 - Pre-built images are available at `ghcr.io/intrinsic-dev/aic/aic_eval:latest`
-- See [docker/aic_eval/README.md](../docker/aic_eval/README.md) for detailed instructions
 
 ### 2. Participant workspace
 This is your development workspace where you implement your policy.
