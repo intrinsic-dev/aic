@@ -251,13 +251,13 @@ std::set<std::string> ScoringTier2::GetMissingRequiredTopics() const {
 }
 
 //////////////////////////////////////////////////
-void ScoringTier2::SetTaskStartTime(const rclcpp::Time &time) {
-  this->task_start_time = time;
+void ScoringTier2::SetTaskStartTime(const rclcpp::Time &_time) {
+  this->task_start_time = _time;
 }
 
 //////////////////////////////////////////////////
-void ScoringTier2::SetTaskEndTime(const rclcpp::Time &time) {
-  this->task_end_time = time;
+void ScoringTier2::SetTaskEndTime(const rclcpp::Time &_time) {
+  this->task_end_time = _time;
 }
 
 //////////////////////////////////////////////////
