@@ -86,7 +86,8 @@ For brevity, we will reuse the code from `aic_example_policies`.
 **Run the node**
 
 ```bash
-(aic) $ ros2 run aic_model aic_model --ros-args -p policy:=my_policy_node.WaveArm
+$ pixi reinstall ros-kilted-my-policy-node
+$ pixi run ros2 run aic_model aic_model --ros-args -p policy:=my_policy_node.WaveArm
 ```
 
 > [!Note]
