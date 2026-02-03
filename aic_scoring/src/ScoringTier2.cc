@@ -167,6 +167,9 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
   // We need both static TF (robot URDF) and dynamic TF (joint states) to
   // compute the full transform chain to the gripper.
   while (bagReader.has_next()) {
+    // Debugging to make sure messages are in the bag
+    // RCLCPP_INFO(this->node->get_logger(), "Received message on topic '%s'",
+    //     msg_ptr->topic_name.c_str());
     const auto msg_ptr = bagReader.read_next();
     if (msg_ptr->topic_name == kJointStateTopic) {
       const auto msg = deserialize_from_rosbag<JointStateMsg>(msg_ptr);

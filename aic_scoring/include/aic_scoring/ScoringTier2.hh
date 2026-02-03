@@ -106,7 +106,6 @@ namespace aic_scoring
     /// \brief Topic to subscribe for /scoring/tf.
     public: static constexpr const char* kScoringTfTopic = "/scoring/tf";
 
-
     /// \brief Topic to subscribe for contacts.
     public: static constexpr const char* kContactsTopic = "/aic/gazebo/contacts/off_limit";
 
