@@ -114,12 +114,14 @@ namespace aic_scoring
 
     /// \brief Reset connections.
     /// \param[in] _connections New connections.
-    public: void ResetConnections(const std::vector<Connection> &_connections);
+    private: void ResetConnections(const std::vector<Connection> &_connections);
 
     /// \brief Start recording all scoring topics.
     /// \return True if the bag was opened correctly and it's ready to record.
     /// \param[in] _filename The path to the bag.
-    public: bool StartRecording(const std::string &_filename);
+    /// \param[in] _connections Connections to monitor.
+    public: bool StartRecording(const std::string &_filename,
+                const std::vector<Connection> &_connections);
 
     /// \brief Stop recording all scoring topics.
     /// \return True if the bag was closed correctly.

@@ -1085,7 +1085,6 @@ bool Engine::ready_scoring(const Trial& trial) {
                           task.port_name + "_link";
     connections.push_back(connection);
   }
-  scoring_tier2_->ResetConnections(connections);
 
   // Create unique bag filename with timestamp
   auto now = std::chrono::system_clock::now();
@@ -1100,7 +1099,7 @@ bool Engine::ready_scoring(const Trial& trial) {
       << std::setfill('0') << std::setw(3) << ms.count();
   const std::string bag_path = oss.str();
 
-  if (!scoring_tier2_->StartRecording(bag_path)) {
+  if (!scoring_tier2_->StartRecording(bag_path, connections)) {
     RCLCPP_ERROR(node_->get_logger(), "Failed to start recording to '%s'.",
                  bag_path.c_str());
     return false;

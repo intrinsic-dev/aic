@@ -84,7 +84,10 @@ void ScoringTier2::ResetConnections(
 }
 
 //////////////////////////////////////////////////
-bool ScoringTier2::StartRecording(const std::string &_filename) {
+bool ScoringTier2::StartRecording(const std::string &_filename,
+                                  const std::vector<Connection> &_connections) {
+  this->Reset();
+  this->ResetConnections(_connections);
   std::lock_guard<std::mutex> lock(this->mutex);
   if (this->state != State::Idle) {
     RCLCPP_ERROR(this->node->get_logger(), "Scoring system is busy.");
@@ -133,7 +136,6 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
   Tier3Score tier3_score(0, "Task execution failed.");
   if (this->state != State::Idle) {
     RCLCPP_ERROR(this->node->get_logger(), "Scoring system is busy.");
-    this->Reset();
     return {tier2_score, tier3_score};
   }
   rosbag2_cpp::Reader bagReader;
@@ -144,7 +146,6 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
     bagReader.open(storage_options);
   } catch (const std::exception &e) {
     RCLCPP_ERROR(this->node->get_logger(), "Failed to open bag: %s", e.what());
-    this->Reset();
     return {tier2_score, tier3_score};
   }
   this->state = State::Scoring;
@@ -185,7 +186,6 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
   tier2_score.add_category_score("insertion force",
                                  this->GetInsertionForceScore());
   tier3_score = this->GetDistanceScore();
-  this->Reset();
   return {tier2_score, tier3_score};
 }
 
