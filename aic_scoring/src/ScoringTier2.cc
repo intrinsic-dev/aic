@@ -175,7 +175,6 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
 
   // Reset scoring state from previous sessions.
   this->ResetJerk();
-  this->ResetPlugPortDistance();
 
   tier2_score.message = "Scoring succeeded.";
 
@@ -461,75 +460,6 @@ void ScoringTier2::ResetJerk() {
   this->avgLinearJerk = Vector3Msg();
   this->accumLinearJerk = Vector3Msg();
   this->totalJerkTime = 0.0;
-}
-
-//////////////////////////////////////////////////
-bool ScoringTier2::UpdatePlugPortDistance(
-    const geometry_msgs::msg::PointStamped &_plug,
-    const geometry_msgs::msg::PointStamped &_port) {
-  // Helper to convert ROS time to seconds.
-  auto toSeconds = [](const builtin_interfaces::msg::Time &t) {
-    return static_cast<double>(t.sec) + static_cast<double>(t.nanosec) * 1e-9;
-  };
-
-  // Use plug timestamp as reference.
-  double newTime = toSeconds(_plug.header.stamp);
-
-  // Compute Euclidean distance.
-  double dx = _plug.point.x - _port.point.x;
-  double dy = _plug.point.y - _port.point.y;
-  double dz = _plug.point.z - _port.point.z;
-  double distance = std::sqrt(dx * dx + dy * dy + dz * dz);
-
-  // First sample: store timestamp and distance, return true.
-  if (this->lastPlugPortStamp < 0) {
-    this->lastPlugPortStamp = newTime;
-    this->plugPortDistance = distance;
-    return true;
-  }
-
-  // Check that new timestamp > last timestamp.
-  if (newTime <= this->lastPlugPortStamp) {
-    return false;
-  }
-
-  // Compute dt.
-  double dt = newTime - this->lastPlugPortStamp;
-
-  // Update accumulated weighted distance.
-  this->accumPlugPortDistance += this->plugPortDistance * dt;
-
-  // Update total time.
-  this->totalPlugPortTime += dt;
-
-  // Compute average.
-  this->avgPlugPortDistance =
-      this->accumPlugPortDistance / this->totalPlugPortTime;
-
-  // Store new values.
-  this->lastPlugPortStamp = newTime;
-  this->plugPortDistance = distance;
-
-  return true;
-}
-
-//////////////////////////////////////////////////
-double ScoringTier2::GetPlugPortDistance() const {
-  return this->plugPortDistance;
-}
-
-//////////////////////////////////////////////////
-double ScoringTier2::GetAvgPlugPortDistance() const {
-  return this->avgPlugPortDistance;
-}
-
-//////////////////////////////////////////////////
-void ScoringTier2::ResetPlugPortDistance() {
-  this->plugPortDistance = 0.0;
-  this->avgPlugPortDistance = 0.0;
-  this->accumPlugPortDistance = 0.0;
-  this->totalPlugPortTime = 0.0;
-  this->lastPlugPortStamp = -1.0;
 }
 
 }  // namespace aic_scoring

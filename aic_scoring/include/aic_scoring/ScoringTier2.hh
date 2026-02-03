@@ -28,7 +28,6 @@
 #include <string>
 #include <vector>
 
-#include <geometry_msgs/msg/point_stamped.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <geometry_msgs/msg/vector3.hpp>
 #include <geometry_msgs/msg/wrench_stamped.hpp>
@@ -162,25 +161,6 @@ namespace aic_scoring
     /// \brief Reset the jerk computation state.
     public: void ResetJerk();
 
-    /// \brief Update plug-port connection distance computation.
-    /// \param[in] _plug The plug point (timestamped).
-    /// \param[in] _port The port point (timestamped).
-    /// \return True if successful, false if timestamp was not increasing.
-    public: bool UpdatePlugPortDistance(
-        const geometry_msgs::msg::PointStamped &_plug,
-        const geometry_msgs::msg::PointStamped &_port);
-
-    /// \brief Get the current plug-port connection distance.
-    /// \return The Euclidean distance in meters.
-    public: double GetPlugPortDistance() const;
-
-    /// \brief Get the time-weighted average plug-port connection distance.
-    /// \return The average distance in meters.
-    public: double GetAvgPlugPortDistance() const;
-
-    /// \brief Reset the plug-port distance computation state.
-    public: void ResetPlugPortDistance();
-
     /// \brief Get the topics required that are currently not being published.
     /// \return An unordered_set with the missing required topic names.
     public: std::set<std::string> GetMissingRequiredTopics() const;
@@ -262,21 +242,6 @@ namespace aic_scoring
 
     /// \brief Accumulated weighted linear jerk (jerk * dt sum).
     private: Vector3Msg accumLinearJerk;
-
-    /// \brief Current plug-port connection distance (meters).
-    private: double plugPortDistance = 0.0;
-
-    /// \brief Time-weighted average plug-port distance (meters).
-    private: double avgPlugPortDistance = 0.0;
-
-    /// \brief Accumulated weighted plug-port distance (distance * dt sum).
-    private: double accumPlugPortDistance = 0.0;
-
-    /// \brief Total elapsed time for plug-port distance computation (seconds).
-    private: double totalPlugPortTime = 0.0;
-
-    /// \brief Last timestamp for plug-port distance computation.
-    private: double lastPlugPortStamp = -1.0;
 
     /// \brief TF.
     private: std::shared_ptr<tf2_ros::Buffer> tfBuffer;
