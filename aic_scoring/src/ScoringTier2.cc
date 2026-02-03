@@ -49,25 +49,6 @@ bool ScoringTier2::Initialize(YAML::Node _config) {
   }
   if (!this->ParseStats(_config)) return false;
 
-  const rclcpp::QoS reliable_qos = rclcpp::QoS(rclcpp::KeepLast(10)).reliable();
-
-  // Subscribe to all topics relevant for scoring.
-  for (const auto &topic : this->topics) {
-    auto sub = this->node->create_generic_subscription(
-        topic.name, topic.type, reliable_qos,
-        [this, topic](std::shared_ptr<const rclcpp::SerializedMessage> msg,
-                      const rclcpp::MessageInfo &msg_info) {
-          // Bag the data.
-          const auto &rmw_info = msg_info.get_rmw_message_info();
-          std::lock_guard<std::mutex> lock(this->mutex);
-          if (this->state == State::Recording) {
-            this->bagWriter.write(msg, topic.name, topic.type,
-                                  rmw_info.received_timestamp,
-                                  rmw_info.source_timestamp);
-          }
-        });
-    this->subscriptions.push_back(sub);
-  }
   return true;
 }
 
@@ -109,6 +90,28 @@ bool ScoringTier2::StartRecording(const std::string &_filename) {
   }
   this->state = State::Recording;
   this->bagUri = _filename;
+
+  // Subscribe to all topics relevant for scoring.
+  for (const auto &topic : this->topics) {
+    auto qos = topic.latched ?
+        rclcpp::QoS(rclcpp::KeepLast(1)).transient_local() :
+        rclcpp::QoS(rclcpp::KeepLast(10)).reliable();
+    auto sub = this->node->create_generic_subscription(
+        topic.name, topic.type, qos,
+        [this, topic](std::shared_ptr<const rclcpp::SerializedMessage> msg,
+                      const rclcpp::MessageInfo &msg_info) {
+          // Bag the data.
+          const auto &rmw_info = msg_info.get_rmw_message_info();
+          std::lock_guard<std::mutex> lock(this->mutex);
+          if (this->state == State::Recording) {
+            this->bagWriter.write(msg, topic.name, topic.type,
+                                  rmw_info.received_timestamp,
+                                  rmw_info.source_timestamp);
+          }
+        });
+    this->subscriptions.push_back(sub);
+  }
+
   return true;
 }
 
@@ -198,6 +201,17 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
     }
   }
 
+  // Complete the TF tree by linking world and aic_world
+  // The aic_gz_bringup launch file uses a static tf broadcaster to do this
+  // when ground truth is enabled. Here we manually add the fixed transform to
+  // the tf buffer
+  geometry_msgs::msg::TransformStamped transform_stamped;
+  transform_stamped.header.frame_id = "world";
+  transform_stamped.child_frame_id = "aic_world";
+  TFMsg msg;
+  msg.transforms.push_back(transform_stamped);
+  this->TfStaticCallback(msg);
+
   // Second pass: Compute jerk for each stored timestamp.
   // Now the TF buffer has the complete transform tree.
   for (const auto &t : this->timestamps) {
@@ -257,6 +271,10 @@ bool ScoringTier2::ParseStats(YAML::Node _config) {
       return false;
     }
     topicInfo.type = topicProperties["type"].as<std::string>();
+
+    if (topicProperties["latched"]) {
+      topicInfo.latched = topicProperties["latched"].as<bool>();
+    }
 
     this->topics.push_back(topicInfo);
   }
