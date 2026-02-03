@@ -159,27 +159,26 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
 
   // Reset scoring state from previous sessions.
   this->ResetJerk();
+  this->timestamps.clear();
 
   tier2_score.message = "Scoring succeeded.";
 
+  // First pass: Process all messages to build the complete TF buffer.
+  // We need both static TF (robot URDF) and dynamic TF (joint states) to
+  // compute the full transform chain to the gripper.
   while (bagReader.has_next()) {
     const auto msg_ptr = bagReader.read_next();
-    // Debugging to make sure messages are in the bag
-    // RCLCPP_INFO(this->node->get_logger(), "Received message on topic '%s'",
-    //     msg_ptr->topic_name.c_str());
     if (msg_ptr->topic_name == kJointStateTopic) {
       const auto msg = deserialize_from_rosbag<JointStateMsg>(msg_ptr);
       this->JointStateCallback(msg);
-    } else if (msg_ptr->topic_name == kTfTopic) {
+    } else if (msg_ptr->topic_name == kTfTopic ||
+               msg_ptr->topic_name == kScoringTfTopic){
       const auto msg = deserialize_from_rosbag<TFMsg>(msg_ptr);
       this->TfCallback(msg);
-    } else if (msg_ptr->topic_name == kTfStaticTopic) {
+    } else if (msg_ptr->topic_name == kTfStaticTopic ||
+               msg_ptr->topic_name == kScoringTfStaticTopic) {
       const auto msg = deserialize_from_rosbag<TFMsg>(msg_ptr);
       this->TfStaticCallback(msg);
-      if (!msg.transforms.empty()) {
-        auto pose = this->EndEffectorPose(tf2::getTimestamp(msg.transforms[0]));
-        if (pose.has_value()) this->JerkCallback(*pose);
-      }
     } else if (msg_ptr->topic_name == kContactsTopic) {
       const auto msg = deserialize_from_rosbag<ContactsMsg>(msg_ptr);
       this->ContactsCallback(msg);
@@ -198,6 +197,16 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
                   msg_ptr->topic_name.c_str());
     }
   }
+
+  // Second pass: Compute jerk for each stored timestamp.
+  // Now the TF buffer has the complete transform tree.
+  for (const auto &t : this->timestamps) {
+    auto pose = this->EndEffectorPose(t);
+    if (pose.has_value()) {
+      this->JerkCallback(*pose);
+    }
+  }
+
   this->state = State::Idle;
   tier3_score = this->GetDistanceScore();
   return {tier2_score, tier3_score};

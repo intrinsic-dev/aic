@@ -94,10 +94,18 @@ namespace aic_scoring
     public: static constexpr const char* kJointStateTopic = "/joint_states";
 
     /// \brief Topic to subscribe for static tf.
-    public: static constexpr const char* kTfStaticTopic = "/scoring/tf_static";
+    public: static constexpr const char* kTfStaticTopic = "/tf_static";
 
     /// \brief Topic to subscribe for tf.
-    public: static constexpr const char* kTfTopic = "/scoring/tf";
+    public: static constexpr const char* kTfTopic = "/tf";
+
+    /// \brief Topic to subscribe for static /scoring/tf.
+    public: static constexpr const char* kScoringTfStaticTopic =
+       "/scoring/tf_static";
+
+    /// \brief Topic to subscribe for /scoring/tf.
+    public: static constexpr const char* kScoringTfTopic = "/scoring/tf";
+
 
     /// \brief Topic to subscribe for contacts.
     public: static constexpr const char* kContactsTopic = "/aic/gazebo/contacts/off_limit";
