@@ -141,10 +141,12 @@ namespace aic_scoring
     public: std::set<std::string> GetMissingRequiredTopics() const;
 
     /// \brief Set the start time for the task.
-    public: void SetTaskStartTime(const rclcpp::Time& time);
+    /// \param[in] _time The start time of the task.
+    public: void SetTaskStartTime(const rclcpp::Time& _time);
 
     /// \brief Set the end time for the task.
-    public: void SetTaskEndTime(const rclcpp::Time& time);
+    /// \param[in] _time The end time of the task.
+    public: void SetTaskEndTime(const rclcpp::Time& _time);
 
     /// \brief Callback for joint state messages received while scoring.
     /// \param[in] _msg The received message.
@@ -183,7 +185,7 @@ namespace aic_scoring
     /// \return Scoring for the insertion force category
     private: Tier2Score::CategoryScore GetInsertionForceScore() const;
 
-    /// \brief Calculates the tier 2 score based on the distance between plug and port.
+    /// \brief Calculates the tier 3 score based on the distance between plug and port.
     /// \return Scoring for the distance category
     private: Tier3Score GetDistanceScore() const;
 
