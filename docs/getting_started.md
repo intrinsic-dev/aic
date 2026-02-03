@@ -116,7 +116,7 @@ Now that you have your environment set up:
    - Explore `aic_example_policies/` for reference implementations
    - Review [AIC Interfaces](./aic_interfaces.md) to understand available sensors and actuators
    - Consult [AIC Controller](./aic_controller.md) to learn about motion commands
-   - Follow the [Creating a new policy node tutorial](./policy_tutorial.md).
+   - Follow the [Creating a new policy node tutorial](./policy_tutorial.md) to learn how to create your own policy node.
 
 3. **🧪 Test and Iterate**
    - Use the example configurations in `aic_engine/config/` to test different scenarios
