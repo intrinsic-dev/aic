@@ -235,7 +235,7 @@ def launch_setup(context, *args, **kwargs):
         executable="aic_engine",
         output="screen",
         parameters=[
-            {"config_file_path": aic_engine_config_file},
+            {"config_file_path": aic_engine_config_file, "use_sim_time": True},
         ],
         condition=IfCondition(start_aic_engine),
     )

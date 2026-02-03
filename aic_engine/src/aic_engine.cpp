@@ -541,6 +541,21 @@ EngineState Engine::initialize() {
   RCLCPP_INFO(node_->get_logger(), "Bag output directory: %s",
               scoring_output_dir_.c_str());
 
+  // Make sure a valid clock is received, it takes time to initialize
+  // the subscriber and following timeout calls might fail otherwise
+  RCLCPP_INFO(node_->get_logger(), "Waiting for clock");
+  rclcpp::Clock system_clock(RCL_SYSTEM_TIME);
+  const auto start = system_clock.now();
+  while (node_->now().seconds() == 0.0 &&
+         (system_clock.now() - start).seconds() < 10.0) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  }
+  if (node_->now().seconds() == 0.0) {
+    RCLCPP_ERROR(node_->get_logger(), "Failed to find a valid clock");
+    return EngineState::Error;
+  }
+  RCLCPP_INFO(node_->get_logger(), "Clock found successfully.");
+
   engine_state_ = EngineState::Initialized;
   RCLCPP_INFO(node_->get_logger(),
               "\033[1;32m✓ AIC Engine initialized successfully!\033[0m");
