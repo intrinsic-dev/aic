@@ -2,6 +2,13 @@
 <sdf version="1.9">
   <model name="sfp_sc_cable">
     <include merge="true">
+      <!--
+        The first link in cable intersects with gripper palm
+         Workaround this by removing this collision.
+      -->
+      <experimental:params>
+        <collision element_id="link_1::link_1_collision" action="remove"/>
+      </experimental:params>
       <uri>model://cable_base_c_rotated</uri>
     </include>
     <include merge="true">
@@ -48,7 +55,7 @@
         <collision element_id="sfp_module_link::head_collider_box.003" action="remove"/>
       </experimental:params>
       <uri>model://SFP Module</uri>
-      <pose relative_to="lc_plug_link">0 0.0341 0 0 3.14159 3.14159</pose>
+      <pose relative_to="lc_plug_link">0 0.0384 0 0 3.14159 3.14159</pose>
     </include>
     <joint name="plug_0_joint" type="fixed">
       <parent>cable_connection_0</parent>

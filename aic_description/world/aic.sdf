@@ -87,6 +87,15 @@
       <max_step_size>0.002</max_step_size>
       <real_time_factor>1.0</real_time_factor>
     </physics>
+    <!--
+        Explicitly add UserCommands to ensure it is run before other systems.
+        This is necessary for contact sensors to work properly for
+        spawned entities
+    -->
+    <plugin
+      filename="gz-sim-user-commands-system"
+      name="gz::sim::systems::UserCommands">
+    </plugin>
     <plugin
       filename="gz-sim-physics-system"
       name="gz::sim::systems::Physics">

@@ -31,14 +31,14 @@ scoring:
         type: "aic_control_interfaces/msg/MotionUpdate"
 task_board_limits:
   nic_rail:
-    min_translation: -0.048  # Minimum translation from center along the rail (in meters)
-    max_translation: 0.036   # Maximum translation from center along the rail (in meters)
+    min_translation: -0.0215  # Minimum translation from center along the rail (in meters)
+    max_translation: 0.0234   # Maximum translation from center along the rail (in meters)
   sc_rail:
-    min_translation: -0.055  # Minimum translation from center along the rail (in meters)
+    min_translation: -0.06  # Minimum translation from center along the rail (in meters)
     max_translation: 0.055   # Maximum translation from center along the rail (in meters)
   mount_rail:
-    min_translation: -0.09625  # Minimum translation from center along the rail (in meters)
-    max_translation: 0.09625   # Maximum translation from center along the rail (in meters)
+    min_translation: -0.09425  # Minimum translation from center along the rail (in meters)
+    max_translation: 0.09425   # Maximum translation from center along the rail (in meters)
 trials:
   trial_1:
     scene:
@@ -241,13 +241,7 @@ trials:
           nic_rail_0:
             entity_present: False
           nic_rail_1:
-            entity_present: True
-            entity_name: "nic_card_1"
-            entity_pose:
-              translation: -0.02
-              roll: -0.0157
-              pitch: 0.0192
-              yaw: -0.0297
+            entity_present: False
           nic_rail_2:
             entity_present: False
           nic_rail_3:
@@ -316,3 +310,11 @@ trials:
         port_name: "sc_mount_1"
         target_module_name: "sc_port_0"
         time_limit: 300
+robot:
+  home_joint_positions:
+    shoulder_pan_joint: -0.546
+    shoulder_lift_joint: -1.703
+    elbow_joint: -1.291
+    wrist_1_joint: -1.719
+    wrist_2_joint: 1.571
+    wrist_3_joint: -2.116

@@ -75,33 +75,6 @@ This is what you develop and submit:
 - Your container interfaces with the evaluation component via ROS topics
 
 ---
-
-## Documentation
-
-### Challenge Information
-
-* **[Challenge Overview](./docs/overview.md):** High-level summary of the competition goals and structure
-* **[Competition Phases](./docs/phases.md):** Details on Qualification, Phase 1, and Phase 2
-* **[Qualification Phase](./docs/qualification_phase.md):** Detailed technical overview of the qualification phase trials and scoring
-* **[Challenge Rules](./docs/challenge_rules.md):** Required behavior for participant models
-* **[Scoring](./docs/scoring.md):** Metrics and methods used to evaluate performance
-
-### Technical Documentation
-
-* **[Getting Started](./docs/getting_started.md):** How to set up your local development environment
-* **[Policy Integration](./docs/policy.md):** Guide to implementing your policy in the `aic_model` framework
-* **[AIC Interfaces](./docs/aic_interfaces.md):** ROS 2 topics, services, and actions available to your policy
-* **[AIC Controller](./docs/aic_controller.md):** Understanding the robot controller and motion commands
-* **[Scene Description](./docs/scene_description.md):** Technical details of the simulation environment
-* **[Task Board Description](./docs/task_board_description.md):** Physical layout and specifications of the task board
-* **[Troubleshooting](./docs/troubleshooting.md):** Common issues and debugging strategies
-
-### Submission
-
-* **[Submission Guidelines](./docs/submission.md):** How to package and submit your final model
-
----
-
 ## Repository Structure
 
 ```
@@ -153,6 +126,33 @@ Manages trial execution, validates participant models, and collects scoring data
 - **README**: [aic_engine/README.md](./aic_engine/README.md)
 
 ---
+
+## Additional Documentation
+
+### Challenge Information
+
+* **[Challenge Overview](./docs/overview.md):** High-level summary of the competition goals and structure
+* **[Competition Phases](./docs/phases.md):** Details on Qualification, Phase 1, and Phase 2
+* **[Qualification Phase](./docs/qualification_phase.md):** Detailed technical overview of the qualification phase trials and scoring
+* **[Challenge Rules](./docs/challenge_rules.md):** Required behavior for participant models
+* **[Scoring](./docs/scoring.md):** Metrics and methods used to evaluate performance
+
+### Technical Documentation
+
+* **[Getting Started](./docs/getting_started.md):** How to set up your local development environment
+* **[Policy Integration](./docs/policy.md):** Guide to implementing your policy in the `aic_model` framework
+* **[AIC Interfaces](./docs/aic_interfaces.md):** ROS 2 topics, services, and actions available to your policy
+* **[AIC Controller](./docs/aic_controller.md):** Understanding the robot controller and motion commands
+* **[Scene Description](./docs/scene_description.md):** Technical details of the simulation environment
+* **[Task Board Description](./docs/task_board_description.md):** Physical layout and specifications of the task board
+* **[Troubleshooting](./docs/troubleshooting.md):** Common issues and debugging strategies
+
+### Submission
+
+* **[Submission Guidelines](./docs/submission.md):** How to package and submit your final model
+
+---
+
 
 ## Support and Resources
 

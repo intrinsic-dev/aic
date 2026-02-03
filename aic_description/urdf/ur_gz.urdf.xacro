@@ -125,6 +125,7 @@
         <model>task_board</model>
       </off_limit_models>
     </plugin>
+    <plugin filename="ResetJointsPlugin" name="aic_gazebo::ResetJointsPlugin"> </plugin>
   </gazebo>
 
   <!-- ATI Force Torque sensor -->

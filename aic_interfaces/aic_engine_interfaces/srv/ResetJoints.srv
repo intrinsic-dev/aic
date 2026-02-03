@@ -1,0 +1,7 @@
+# Service to reset joints to their initial positions
+
+string[] joint_names
+float64[] initial_positions
+---
+bool success             # indicate successful reset
+string message

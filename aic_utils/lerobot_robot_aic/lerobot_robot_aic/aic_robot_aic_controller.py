@@ -85,6 +85,12 @@ ObservationState = TypedDict(
 )
 
 
+class CameraImageScaling(TypedDict):
+    left_camera: float
+    center_camera: float
+    right_camera: float
+
+
 @RobotConfig.register_subclass("aic_controller")
 @dataclass(kw_only=True)
 class AICRobotAICControllerConfig(RobotConfig):
@@ -92,6 +98,13 @@ class AICRobotAICControllerConfig(RobotConfig):
     gripper_joint_name: str = gripper_joint_name
     gripper_action_name: str = "/gripper_action_controller/gripper_cmd"
     cameras: dict[str, CameraConfig] = field(default_factory=aic_cameras.copy)
+    camera_image_scaling: CameraImageScaling = field(
+        default_factory=lambda: {
+            "left_camera": 0.25,
+            "center_camera": 0.25,
+            "right_camera": 0.25,
+        }
+    )
 
 
 class AICRobotAICController(Robot):
@@ -133,15 +146,24 @@ class AICRobotAICController(Robot):
     @cached_property
     def _cameras_ft(self) -> dict[str, tuple]:
         return {
-            cam: (self.config.cameras[cam].height, self.config.cameras[cam].width, 3)
+            cam: (
+                # assuming that opencv2 rounds down when being asked to scale without perfect ratio
+                int(
+                    self.config.cameras[cam].height
+                    * self.config.camera_image_scaling[cam]
+                ),
+                int(
+                    self.config.cameras[cam].width
+                    * self.config.camera_image_scaling[cam]
+                ),
+                3,
+            )
             for cam in self.cameras
         }
 
     @cached_property
     def observation_features(self) -> dict:
-        return {
-            **ObservationState.__annotations__,
-        }
+        return {**ObservationState.__annotations__, **self._cameras_ft}
 
     @cached_property
     def action_features(self) -> dict[str, type]:
@@ -258,14 +280,15 @@ class AICRobotAICController(Robot):
             start = time.perf_counter()
             try:
                 cam_obs[cam_key] = cam.async_read(timeout_ms=2000)
-                # TODO: Add config for resize factor
-                cam_obs[cam_key] = cv2.resize(
-                    cam_obs[cam_key],
-                    None,
-                    fx=0.25,
-                    fy=0.25,
-                    interpolation=cv2.INTER_AREA,
-                )
+                image_scale = self.config.camera_image_scaling[cam_key]
+                if image_scale != 1:
+                    cam_obs[cam_key] = cv2.resize(
+                        cam_obs[cam_key],
+                        None,
+                        fx=image_scale,
+                        fy=image_scale,
+                        interpolation=cv2.INTER_AREA,
+                    )
             except Exception as e:
                 logger.error(f"Failed to read camera {cam_key}: {e}")
                 cam_obs[cam_key] = None
