@@ -34,11 +34,11 @@ task_board_limits:
     min_translation: -0.0215  # Minimum translation from center along the rail (in meters)
     max_translation: 0.0234   # Maximum translation from center along the rail (in meters)
   sc_rail:
-    min_translation: -0.058  # Minimum translation from center along the rail (in meters)
+    min_translation: -0.06  # Minimum translation from center along the rail (in meters)
     max_translation: 0.055   # Maximum translation from center along the rail (in meters)
   mount_rail:
-    min_translation: -0.09625  # Minimum translation from center along the rail (in meters)
-    max_translation: 0.09625   # Maximum translation from center along the rail (in meters)
+    min_translation: -0.09425  # Minimum translation from center along the rail (in meters)
+    max_translation: 0.09425   # Maximum translation from center along the rail (in meters)
 trials:
   trial_1:
     scene:

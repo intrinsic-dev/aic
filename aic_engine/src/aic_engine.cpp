@@ -306,6 +306,8 @@ Engine::Engine(const rclcpp::NodeOptions& options)
   node_->declare_parameter("gripper_frame_name", std::string("gripper/tcp"));
   ground_truth_ = node_->declare_parameter("ground_truth", false);
   skip_model_ready_ = node_->declare_parameter("skip_model_ready", false);
+  skip_ready_simulator_ =
+      node_->declare_parameter("skip_ready_simulator", false);
   node_->declare_parameter("model_discovery_timeout_seconds", 30);
   node_->declare_parameter("model_configure_timeout_seconds", 60);
   node_->declare_parameter("model_activate_timeout_seconds", 60);
@@ -1004,6 +1006,12 @@ bool Engine::ready_simulator(Trial& trial) {
   RCLCPP_INFO(node_->get_logger(), "Readying simulator for trial '%s'...",
               trial.id.c_str());
 
+  if (skip_ready_simulator_) {
+    RCLCPP_WARN(node_->get_logger(),
+                "Skipping ready_simulator (skip_ready_simulator=true)");
+    return true;
+  }
+
   // Spawn the task board.
   RCLCPP_INFO(node_->get_logger(), "Spawning task board.");
   const auto& task_board_config = trial.config["scene"]["task_board"];
@@ -1369,28 +1377,36 @@ void Engine::reset_after_trial(const Trial& trial) {
     this->deactivate_model_node();
   }
 
-  // Remove spawned entities from simulator
-  for (const auto& entity_name : trial.spawned_entities) {
-    // Delete spawned entity
-    auto request = std::make_shared<DeleteEntitySrv::Request>();
-    request->entity = entity_name;
+  is_first_trial_ = false;
+  model_discovered_ = false;
 
-    auto future = delete_entity_client_->async_send_request(request);
-    if (future.wait_for(std::chrono::seconds(10)) !=
-        std::future_status::ready) {
-      RCLCPP_ERROR(node_->get_logger(),
-                   "Delete entity service call timed out for entity '%s'",
-                   request->entity.c_str());
-    } else {
-      auto response = future.get();
-      if (response->result.result !=
-          simulation_interfaces::msg::Result::RESULT_OK) {  // RESULT_OK = 1
-        RCLCPP_ERROR(node_->get_logger(), "Failed to delete entity '%s': %s",
-                     request->entity.c_str(),
-                     response->result.error_message.c_str());
+  if (skip_ready_simulator_) {
+    RCLCPP_WARN(node_->get_logger(),
+                "Skipping entity deletion (skip_ready_simulator=true)");
+  } else {
+    // Remove spawned entities from simulator
+    for (const auto& entity_name : trial.spawned_entities) {
+      // Delete spawned entity
+      auto request = std::make_shared<DeleteEntitySrv::Request>();
+      request->entity = entity_name;
+
+      auto future = delete_entity_client_->async_send_request(request);
+      if (future.wait_for(std::chrono::seconds(10)) !=
+          std::future_status::ready) {
+        RCLCPP_ERROR(node_->get_logger(),
+                     "Delete entity service call timed out for entity '%s'",
+                     request->entity.c_str());
       } else {
-        RCLCPP_INFO(node_->get_logger(), "Successfully deleted entity '%s'",
-                    request->entity.c_str());
+        auto response = future.get();
+        if (response->result.result !=
+            simulation_interfaces::msg::Result::RESULT_OK) {  // RESULT_OK = 1
+          RCLCPP_ERROR(node_->get_logger(), "Failed to delete entity '%s': %s",
+                       request->entity.c_str(),
+                       response->result.error_message.c_str());
+        } else {
+          RCLCPP_INFO(node_->get_logger(), "Successfully deleted entity '%s'",
+                      request->entity.c_str());
+        }
       }
     }
   }
@@ -1401,8 +1417,6 @@ void Engine::reset_after_trial(const Trial& trial) {
                  "Failed to home robot during trial reset.");
   }
 
-  is_first_trial_ = false;
-  model_discovered_ = false;
   RCLCPP_INFO(node_->get_logger(), "Reset after trial completed.");
 }
 
