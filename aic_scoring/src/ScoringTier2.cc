@@ -176,6 +176,11 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
     } else if (msg_ptr->topic_name == kTfStaticTopic) {
       const auto msg = deserialize_from_rosbag<TFMsg>(msg_ptr);
       this->TfStaticCallback(msg);
+      if (!msg.transforms.empty()) {
+        auto pose = this->EndEffectorPose(tf2::getTimestamp(msg.transforms[0]));
+        if (pose.has_value())
+          this->JerkCallback(*pose);
+      }
     } else if (msg_ptr->topic_name == kContactsTopic) {
       const auto msg = deserialize_from_rosbag<ContactsMsg>(msg_ptr);
       this->ContactsCallback(msg);
@@ -421,8 +426,8 @@ Tier3Score ScoringTier2::GetDistanceScore() const {
 //////////////////////////////////////////////////
 void ScoringTier2::JerkCallback(const PoseMsg &_pose) {
   // Debug output
-  // std::cout << "(" << _pose.pose.position.x << " " << _pose.pose.position.y
-  //           << " " << _pose.pose.position.z << ")" << std::endl;
+  std::cout << "(" << _pose.pose.position.x << " " << _pose.pose.position.y
+            << " " << _pose.pose.position.z << ")" << std::endl;
 
   // Helper to convert ROS time to seconds.
   auto toSeconds = [](const builtin_interfaces::msg::Time &t) {
@@ -531,7 +536,7 @@ std::optional<ScoringTier2::PoseMsg> ScoringTier2::EndEffectorPose(tf2::TimePoin
       "aic_world", this->gripperFrame, t);
 
   ScoringTier2::PoseMsg pose;
-  //pose.header = t.header;
+  pose.header = gripper_tf.header;
   pose.pose.position.x = gripper_tf.transform.translation.x;
   pose.pose.position.y = gripper_tf.transform.translation.y;
   pose.pose.position.z = gripper_tf.transform.translation.z;

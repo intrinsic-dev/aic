@@ -30,7 +30,6 @@
 
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <geometry_msgs/msg/vector3.hpp>
-#include <geometry_msgs/msg/wrench_stamped.hpp>
 #include <gz/math/Pose3.hh>
 #include <rclcpp/rclcpp.hpp>
 
