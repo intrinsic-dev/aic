@@ -203,6 +203,13 @@ aic_controller:
           fixed_size<>: 6
         }
       }
+      offset_wrench: {
+        type: double_array,
+        description: "Default offset values for wrench to compensate for payload weight outside of the kinematic chain. The wrench is with respect to base frame.",
+        validation: {
+          fixed_size<>: 6
+        }
+      }
 
   # Joint impedance controller parameters
   joint_impedance:
