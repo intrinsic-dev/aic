@@ -74,6 +74,15 @@ class CreateAndCancelTaskNode(Node):
         self.get_logger().info("Waiting for insert_cable action server...")
         self.action_client.wait_for_server()
         goal_msg = InsertCable.Goal()
+        goal_msg.task.id = "test_task"
+        goal_msg.task.cable_type = "sfp_sc"
+        goal_msg.task.cable_name = "cable_0"
+        goal_msg.task.plug_type = "sfp"
+        goal_msg.task.plug_name = "sfp_plug"
+        goal_msg.task.port_type = "sfp"
+        goal_msg.task.port_name = "sfp_port_0"
+        goal_msg.task.target_module_name = "nic_card_0"
+        goal_msg.task.time_limit = 300
         self.get_logger().info("Sending goal request...")
         self.send_goal_future = self.action_client.send_goal_async(
             goal_msg, feedback_callback=self.feedback_callback
