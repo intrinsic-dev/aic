@@ -30,6 +30,7 @@
 #include <rosbag2_cpp/reader.hpp>
 #include <rosbag2_cpp/writer.hpp>
 #include <rosbag2_storage/storage_options.hpp>
+#include <sstream>
 #include <string>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <vector>
@@ -156,7 +157,8 @@ Msg deserialize_from_rosbag(
 std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
   // TODO(luca) actually compute score
   Tier2Score tier2_score("Scoring failed.");
-  Tier3Score tier3_score(0);
+  Tier3Score tier3_score(0, "Task execution failed.");
+  tf2_buffer.clear();
   if (this->state != State::Idle) {
     RCLCPP_ERROR(this->node->get_logger(), "Scoring system is busy.");
     return {tier2_score, tier3_score};
@@ -213,10 +215,8 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
                   msg_ptr->topic_name.c_str());
     }
   }
-
   this->state = State::Idle;
-  tier2_score.add_category_score("dummy_category", 3, "It works!");
-  tier3_score = Tier3Score(1);
+  tier3_score = this->GetDistanceScore();
   return {tier2_score, tier3_score};
 }
 
@@ -284,13 +284,34 @@ std::set<std::string> ScoringTier2::GetMissingRequiredTopics() const {
 }
 
 //////////////////////////////////////////////////
+void ScoringTier2::SetTaskStartTime(const rclcpp::Time &_time) {
+  this->task_start_time = _time;
+}
+
+//////////////////////////////////////////////////
+void ScoringTier2::SetTaskEndTime(const rclcpp::Time &_time) {
+  this->task_end_time = _time;
+}
+
+//////////////////////////////////////////////////
 void ScoringTier2::JointStateCallback(const JointStateMsg &_msg) { (void)_msg; }
 
 //////////////////////////////////////////////////
-void ScoringTier2::TfCallback(const TFMsg &_msg) { (void)_msg; }
+void ScoringTier2::TfCallback(const TFMsg &_msg) {
+  for (const auto &tf : _msg.transforms) {
+    this->tf2_buffer.setTransform(tf, "scoring", false);
+    // A bit redundant since all the messages will likely have the same
+    // timestamp
+    this->timestamps.insert(tf2::getTimestamp(tf));
+  }
+}
 
 //////////////////////////////////////////////////
-void ScoringTier2::TfStaticCallback(const TFMsg &_msg) { (void)_msg; }
+void ScoringTier2::TfStaticCallback(const TFMsg &_msg) {
+  for (const auto &tf : _msg.transforms) {
+    this->tf2_buffer.setTransform(tf, "scoring", true);
+  }
+}
 
 //////////////////////////////////////////////////
 void ScoringTier2::ContactsCallback(const ContactsMsg &_msg) { (void)_msg; }
@@ -306,6 +327,116 @@ void ScoringTier2::MotionUpdateCallback(const MotionUpdateMsg &_msg) {
 //////////////////////////////////////////////////
 void ScoringTier2::JointMotionUpdateCallback(const JointMotionUpdateMsg &_msg) {
   (void)_msg;
+}
+
+//////////////////////////////////////////////////
+std::optional<double> ScoringTier2::GetPlugPortDistance(
+    tf2::TimePoint t) const {
+  if (this->connections.empty()) {
+    RCLCPP_ERROR(this->node->get_logger(), "No connection was found");
+    return std::nullopt;
+  }
+  const auto &plug = this->connections[0].plugName;
+  const auto &port = this->connections[0].portName;
+  // For now we only calculate the distance for the first connection
+  if (!this->tf2_buffer.canTransform("aic_world", plug, t)) {
+    RCLCPP_ERROR(this->node->get_logger(), "Plug %s not found in the tf tree",
+                 plug.c_str());
+    return std::nullopt;
+  }
+  if (!this->tf2_buffer.canTransform("aic_world", port, t)) {
+    RCLCPP_ERROR(this->node->get_logger(), "Port %s not found in the tf tree",
+                 port.c_str());
+    return std::nullopt;
+  }
+
+  const auto plug_tf = this->tf2_buffer.lookupTransform("aic_world", plug, t);
+  const auto port_tf = this->tf2_buffer.lookupTransform("aic_world", port, t);
+
+  return std::sqrt(
+      (plug_tf.transform.translation.x - port_tf.transform.translation.x) *
+          (plug_tf.transform.translation.x - port_tf.transform.translation.x) +
+      (plug_tf.transform.translation.y - port_tf.transform.translation.y) *
+          (plug_tf.transform.translation.y - port_tf.transform.translation.y) +
+      (plug_tf.transform.translation.z - port_tf.transform.translation.z) *
+          (plug_tf.transform.translation.z - port_tf.transform.translation.z));
+}
+
+//////////////////////////////////////////////////
+// Calculates an inverse proportional score clamped to max_score for min_range
+// and min_score for max_range, and with a linear inverse proportional
+// interpolation inbetween.
+static double CalculateInverseProportionalScore(const double max_score,
+                                                const double min_score,
+                                                const double max_range,
+                                                const double min_range,
+                                                const double measurement) {
+  if (measurement >= max_range) {
+    return min_score;
+  } else if (measurement <= min_range) {
+    return max_score;
+  }
+
+  return min_score + ((max_range - measurement) / (max_range - min_range)) *
+                         (max_score - min_score);
+}
+
+//////////////////////////////////////////////////
+Tier3Score ScoringTier2::GetDistanceScore() const {
+  // For now, just have the score be inversely proportional to the time
+  // it took to execute the task and the final distance between plug and port
+  // Linear interpolation in the interval, clamp to maximum and minimum
+  // Use distance as a base score, task time as a multiplier
+  const rclcpp::Duration kMaxTaskTime = rclcpp::Duration::from_seconds(60.0);
+  const rclcpp::Duration kMinTaskTime = rclcpp::Duration::from_seconds(5.0);
+  const double kFastestTaskMultiplier = 3.0;
+  const double kSlowestTaskMultiplier = 1.0;
+
+  const double kMaxDistance = 1.0;
+  const double kMinDistance = 0.0;
+  const double kClosestTaskScore = 10.0;
+  const double kFurthestTaskScore = 0.5;
+
+  if (this->timestamps.empty()) {
+    return Tier3Score(0, "Distance computation failed, no tfs received");
+  }
+
+  if (!this->task_start_time.has_value()) {
+    return Tier3Score(0, "Time computation failed, task start time not set");
+  }
+
+  if (!this->task_end_time.has_value()) {
+    return Tier3Score(0, "Time computation failed, task end time not set");
+  }
+
+  // TODO(luca) enable this when aic_engine is set to use simulation time
+  // const auto end_time =
+  //    std::chrono::nanoseconds(this->task_end_time.value().nanoseconds());
+  // const auto dist = this->GetPlugPortDistance(tf2::TimePoint(end_time));
+  const auto dist = this->GetPlugPortDistance(tf2::TimePointZero);
+  if (!dist.has_value()) {
+    return Tier3Score(
+        0, "Distance computation failed, tf between cable and port not found");
+  }
+
+  const rclcpp::Duration task_duration =
+      this->task_end_time.value() - this->task_start_time.value();
+  const double duration_multiplier = CalculateInverseProportionalScore(
+      kFastestTaskMultiplier, kSlowestTaskMultiplier, kMaxTaskTime.seconds(),
+      kMinTaskTime.seconds(), task_duration.seconds());
+
+  const double score =
+      duration_multiplier * CalculateInverseProportionalScore(
+                                kClosestTaskScore, kFurthestTaskScore,
+                                kMaxDistance, kMinDistance, dist.value());
+
+  std::stringstream sstream;
+  sstream.setf(std::ios::fixed);
+  sstream.precision(2);
+  sstream << "Task completed in " << task_duration.seconds()
+          << " seconds, with a distance of " << dist.value() << " meters";
+
+  return Tier3Score(score, sstream.str());
 }
 
 //////////////////////////////////////////////////

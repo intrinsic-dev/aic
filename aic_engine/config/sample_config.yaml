@@ -129,10 +129,10 @@ trials:
         cable_type: "sfp_sc"
         cable_name: "cable_0"
         plug_type: "sfp"
-        plug_name:  "sfp_plug"
+        plug_name: "sfp_tip"
         port_type: "sfp"
         port_name: "sfp_port_0"
-        target_module_name: "nic_card_0"
+        target_module_name: "nic_card_mount_0"
         time_limit: 300
   trial_2:
     scene:
@@ -223,10 +223,10 @@ trials:
         cable_type: "sfp_sc"
         cable_name: "cable_0"
         plug_type: "sfp"
-        plug_name:  "sfp_plug"
+        plug_name: "sfp_tip"
         port_type: "sfp"
         port_name: "sfp_port_0"
-        target_module_name: "nic_card_1"
+        target_module_name: "nic_card_mount_1"
         time_limit: 300
   trial_3:
     scene:
@@ -307,8 +307,8 @@ trials:
         plug_type: "sc"
         plug_name:  "sc_plug"
         port_type: "sc"
-        port_name: "sc_mount_1"
-        target_module_name: "sc_port_0"
+        port_name: "sc_port"
+        target_module_name: "sc_port_1"
         time_limit: 300
 robot:
   home_joint_positions:
