@@ -131,7 +131,6 @@ Msg deserialize_from_rosbag(
 std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
   Tier2Score tier2_score("Scoring failed.");
   Tier3Score tier3_score(0, "Task execution failed.");
-  tf2_buffer.clear();
   if (this->state != State::Idle) {
     RCLCPP_ERROR(this->node->get_logger(), "Scoring system is busy.");
     this->Reset();
