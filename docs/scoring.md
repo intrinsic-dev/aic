@@ -14,7 +14,7 @@ Each trial is scored using a tiered scoring system. Scores are cumulated across 
 
 A sanity check to ensure the submission loads and runs without errors.
 
-- The model must successfully generate robot commands on the specified ROS topic from sensor inputs
+- The model must be able to successfully activate the submitted [Policy](https://github.com/intrinsic-dev/aic/blob/main/docs/policy.md) and respond to the `InsertCable` action request. The submitted Policy must also send valid `Pose` commands to the robot arm controller.
 - Submissions failing this check will not be scored
 
 | Outcome | Score |
