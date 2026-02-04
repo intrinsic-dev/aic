@@ -17,7 +17,12 @@
 
 import time
 
-from aic_model.policy_ros import PolicyRos
+from aic_model.policy_ros import (
+    PolicyRos,
+    GetObservationCallback,
+    SetPoseTargetCallback,
+    SendFeedbackCallback,
+)
 from aic_model_interfaces.msg import Observation
 from aic_task_interfaces.msg import Task
 from geometry_msgs.msg import Point, Pose, Quaternion
@@ -33,9 +38,9 @@ class WaveArm(PolicyRos):
     def insert_cable(
         self,
         task: Task,
-        get_observation: Callable[[], Observation],
-        set_pose_target: Callable[[Pose, str], []],
-        send_feedback: Callable[[str], []],
+        get_observation: GetObservationCallback,
+        set_pose_target: SetPoseTargetCallback,
+        send_feedback: SendFeedbackCallback,
     ):
         self.get_logger().info(f"WaveArm.insert_cable() enter. Task: {task}")
         start_time = time.clock_gettime(0)
