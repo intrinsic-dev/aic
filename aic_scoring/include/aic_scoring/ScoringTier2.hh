@@ -18,21 +18,28 @@
 #ifndef AIC_SCORING__SCORING_TIER2_HH_
 #define AIC_SCORING__SCORING_TIER2_HH_
 
+#include <tf2/LinearMath/Matrix3x3.h>
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2_ros/buffer.h>
 #include <yaml-cpp/yaml.h>
 #include <memory>
 #include <mutex>
+#include <set>
 #include <string>
 #include <vector>
 
+#include <geometry_msgs/msg/pose_stamped.hpp>
+#include <geometry_msgs/msg/vector3.hpp>
 #include <rclcpp/rclcpp.hpp>
 
 #include <aic_control_interfaces/msg/joint_motion_update.hpp>
 #include <aic_control_interfaces/msg/motion_update.hpp>
-#include <geometry_msgs/msg/vector3.hpp>
+#include <geometry_msgs/msg/transform_stamped.hpp>
 #include <geometry_msgs/msg/wrench_stamped.hpp>
 #include <ros_gz_interfaces/msg/contacts.hpp>
 #include <rosbag2_cpp/writer.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <tf2_msgs/msg/tf_message.hpp>
 #include <tf2/buffer_core.hpp>
 
@@ -64,6 +71,9 @@ namespace aic_scoring
 
     /// \brief Topic type (e.g., sensor_msgs/msg/JointState).
     std::string type;
+
+    /// \brief Whether topic is latched or not
+    bool latched{false};
   };
 
   // The Tier2 scoring interface.
@@ -72,10 +82,11 @@ namespace aic_scoring
     using JointStateMsg = sensor_msgs::msg::JointState;
     using TFMsg = tf2_msgs::msg::TFMessage;
     using ContactsMsg = ros_gz_interfaces::msg::Contacts;
-    using Vector3Msg = geometry_msgs::msg::Vector3;
     using WrenchMsg = geometry_msgs::msg::WrenchStamped;
     using JointMotionUpdateMsg = aic_control_interfaces::msg::JointMotionUpdate;
     using MotionUpdateMsg = aic_control_interfaces::msg::MotionUpdate;
+    using TransformStampedMsg = geometry_msgs::msg::TransformStamped;
+    using Vector3Msg = geometry_msgs::msg::Vector3;
 
     enum class State {
       Idle,
@@ -87,10 +98,17 @@ namespace aic_scoring
     public: static constexpr const char* kJointStateTopic = "/joint_states";
 
     /// \brief Topic to subscribe for static tf.
-    public: static constexpr const char* kTfStaticTopic = "/scoring/tf_static";
+    public: static constexpr const char* kTfStaticTopic = "/tf_static";
 
     /// \brief Topic to subscribe for tf.
-    public: static constexpr const char* kTfTopic = "/scoring/tf";
+    public: static constexpr const char* kTfTopic = "/tf";
+
+    /// \brief Topic to subscribe for static /scoring/tf.
+    public: static constexpr const char* kScoringTfStaticTopic =
+       "/scoring/tf_static";
+
+    /// \brief Topic to subscribe for /scoring/tf.
+    public: static constexpr const char* kScoringTfTopic = "/scoring/tf";
 
     /// \brief Topic to subscribe for contacts.
     public: static constexpr const char* kContactsTopic = "/aic/gazebo/contacts/off_limit";
@@ -116,6 +134,10 @@ namespace aic_scoring
     /// \param[in] _connections New connections.
     private: void ResetConnections(const std::vector<Connection> &_connections);
 
+    /// \brief Set the gripper frame name.
+    /// \param[in] _gripperFrame Gripper frame name.
+    public: void SetGripperFrame(const std::string &_gripperFrame);
+
     /// \brief Start recording all scoring topics.
     /// \return True if the bag was opened correctly and it's ready to record.
     /// \param[in] _filename The path to the bag.
@@ -134,10 +156,6 @@ namespace aic_scoring
     /// \brief Resets the internal data structures for a new scoring session
     public: void Reset();
 
-    /// \brief Populate the scoring input params from a YAML file.
-    /// \param[in] _config YAML configuration for the node
-    private: bool ParseStats(YAML::Node _config);
-
     /// \brief Get the topics required that are currently not being published.
     /// \return An unordered_set with the missing required topic names.
     public: std::set<std::string> GetMissingRequiredTopics() const;
@@ -149,6 +167,13 @@ namespace aic_scoring
     /// \brief Set the end time for the task.
     /// \param[in] _time The end time of the task.
     public: void SetTaskEndTime(const rclcpp::Time& _time);
+
+    /// \brief Populate the scoring input params from a YAML file.
+    /// \param[in] _config YAML configuration for the node
+    private: bool ParseStats(YAML::Node _config);
+
+    /// \brief Reset the jerk computation state.
+    private: void ResetJerk();
 
     /// \brief Callback for joint state messages received while scoring.
     /// \param[in] _msg The received message.
@@ -170,6 +195,15 @@ namespace aic_scoring
     /// \param[in] _msg The received message.
     private: void WrenchCallback(const WrenchMsg& _msg);
 
+    /// \brief Update jerk computation with a new pose sample.
+    /// \param[in] _tf The new timestamped transform.
+    private: void JerkCallback(const TransformStampedMsg &_tf);
+
+    /// \brief Compute the end effector position.
+    /// \param[in] t Time to check the pose.
+    /// \return End effector pose at time t. nullopt if failed
+    private: std::optional<TransformStampedMsg> EndEffectorPose(tf2::TimePoint t) const;
+
     /// \brief Callback for pose commands received while scoring.
     /// \param[in] _msg The received message.
     private: void MotionUpdateCallback(const MotionUpdateMsg& _msg);
@@ -177,6 +211,20 @@ namespace aic_scoring
     /// \brief Callback for joint commands received while scoring.
     /// \param[in] _msg The received message.
     private: void JointMotionUpdateCallback(const JointMotionUpdateMsg& _msg);
+
+    /// \brief Calculates score related with the gripper trajectory jerk.
+    /// \return Scoring for the trajectory jerk score.
+    private: Tier2Score::CategoryScore GetTrajectoryJerkScore() const;
+
+    /// \brief Gets the transform for the specified entity at the requested time.
+    /// \param[in] _t the time point to get the transform.
+    /// \param[in] _target_frame the frame to get the transform for.
+    /// \param[in] _reference_frame the frame that we should get the transform relative to.
+    /// \return The transform between the two frames, if available.
+    private: std::optional<TransformStampedMsg> GetTransform(
+                 tf2::TimePoint _t,
+                 const std::string& _target_frame,
+                 const std::string& _reference_frame = "aic_world") const;
 
     /// \brief Calculates the distance between the plug and the port.
     /// \param[in] _timestamp Time to check the distance
@@ -233,6 +281,24 @@ namespace aic_scoring
 
     /// \brief Mutex to protect the access to the bag.
     private: std::mutex mutex;
+
+    /// \brief History of transforms for jerk computation (stores last 4 samples).
+    private: std::vector<TransformStampedMsg> tfHistory;
+
+    /// \brief Computed linear jerk (x, y, z components in m/s^3).
+    private: Vector3Msg linearJerk;
+
+    /// \brief Time-weighted average linear jerk (x, y, z components in m/s^3).
+    private: Vector3Msg avgLinearJerk;
+
+    /// \brief Total elapsed time since last reset (seconds).
+    private: double totalJerkTime = 0.0;
+
+    /// \brief Accumulated weighted linear jerk (jerk * dt sum).
+    private: Vector3Msg accumLinearJerk;
+
+    /// \brief Gripper frame name.
+    private: std::string gripperFrame;
   };
 
   // The Tier2 class as a node.

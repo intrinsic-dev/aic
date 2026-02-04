@@ -6,6 +6,15 @@ scoring:
         name: "/joint_states"
         type: "sensor_msgs/msg/JointState"
     - topic:
+    # TF that contains the robot and gripper poses
+        name: "/tf"
+        type: "tf2_msgs/msg/TFMessage"
+    - topic:
+    # TF that contains the robot and gripper static poses
+        name: "/tf_static"
+        type: "tf2_msgs/msg/TFMessage"
+        latched: true
+    - topic:
     # TF that contains the cable link poses
         name: "/scoring/tf"
         type: "tf2_msgs/msg/TFMessage"
@@ -34,11 +43,11 @@ task_board_limits:
     min_translation: -0.0215  # Minimum translation from center along the rail (in meters)
     max_translation: 0.0234   # Maximum translation from center along the rail (in meters)
   sc_rail:
-    min_translation: -0.058  # Minimum translation from center along the rail (in meters)
+    min_translation: -0.06  # Minimum translation from center along the rail (in meters)
     max_translation: 0.055   # Maximum translation from center along the rail (in meters)
   mount_rail:
-    min_translation: -0.09625  # Minimum translation from center along the rail (in meters)
-    max_translation: 0.09625   # Maximum translation from center along the rail (in meters)
+    min_translation: -0.09425  # Minimum translation from center along the rail (in meters)
+    max_translation: 0.09425   # Maximum translation from center along the rail (in meters)
 trials:
   trial_1:
     scene:
