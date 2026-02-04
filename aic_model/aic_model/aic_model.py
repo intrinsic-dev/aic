@@ -246,14 +246,21 @@ class AicModel(LifecycleNode):
             TrajectoryGenerationMode.MODE_VELOCITY
         )
 
-        self.motion_update_pub.publish(motion_update_msg)        
+        self.motion_update_pub.publish(motion_update_msg)
 
     def set_joint_target(self, joint_pos: list[float]):
         joint_motion_update_msg = JointMotionUpdate()
 
         joint_motion_update_msg.target_state.positions = joint_pos
 
-        joint_motion_update_msg.target_stiffness = [100.0, 100.0, 100.0, 50.0, 50.0, 50.0]
+        joint_motion_update_msg.target_stiffness = [
+            100.0,
+            100.0,
+            100.0,
+            50.0,
+            50.0,
+            50.0,
+        ]
         joint_motion_update_msg.target_damping = [40.0, 40.0, 40.0, 15.0, 15.0, 15.0]
 
         joint_motion_update_msg.trajectory_generation_mode.mode = (
@@ -277,9 +284,7 @@ class AicModel(LifecycleNode):
             set_cartesian_twist_target=lambda twist, frame_id="base_link": self.set_cartesian_twist_target(
                 twist, frame_id
             ),
-            set_joint_target=lambda joint_pos: self.set_joint_target(
-                joint_pos
-            ),
+            set_joint_target=lambda joint_pos: self.set_joint_target(joint_pos),
             send_feedback=lambda feedback: self.send_feedback(goal_handle, feedback),
         )
         if self._action_thread_result is None:
@@ -288,13 +293,13 @@ class AicModel(LifecycleNode):
 
     async def insert_cable_execute_callback(self, goal_handle: ServerGoalHandle):
         self.get_logger().info("Entering insert_cable_execute_callback()")
-        
+
         # TODO: How to allow participants to set mode.
         await self.set_cartesian_mode()
         self.get_logger().info("Cartesian mode set")
         # await self.set_joint_mode()
         # self.get_logger().info("Joint mode set")
-    
+
         self._action_thread_result = None
         self._action_thread = threading.Thread(
             target=self.action_thread_func,
