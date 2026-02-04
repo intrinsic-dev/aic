@@ -25,5 +25,5 @@ jobs:
           python-version: '3.x'
       - name: Install and run black
         run: |
-          apt install black
+          sudo apt install black -y
           black --check .
