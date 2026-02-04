@@ -453,13 +453,7 @@ EngineState Engine::initialize() {
   // Make sure a valid clock is received, it takes time to initialize
   // the subscriber and following timeout calls might fail otherwise
   RCLCPP_INFO(node_->get_logger(), "Waiting for clock");
-  rclcpp::Clock system_clock(RCL_SYSTEM_TIME);
-  const auto start = system_clock.now();
-  while (node_->now().seconds() == 0.0 &&
-         (system_clock.now() - start).seconds() < 10.0) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
-  }
-  if (node_->now().seconds() == 0.0) {
+  if (!node_->get_clock()->wait_until_started(rclcpp::Duration(10, 0))) {
     RCLCPP_ERROR(node_->get_logger(), "Failed to find a valid clock");
     return EngineState::Error;
   }
