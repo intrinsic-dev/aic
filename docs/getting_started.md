@@ -172,7 +172,7 @@ rosdep install --from-paths src --ignore-src --rosdistro kilted -yr --skip-keys 
 
 # Build the workspace
 source /opt/ros/kilted/setup.bash
-GZ_BUILD_FROM_SOURCE=1 colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release --merge-install --symlink-install --packages-ignore lerobot_robot_aic aic_lerobot_tools
+GZ_BUILD_FROM_SOURCE=1 colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release --merge-install --symlink-install --packages-ignore lerobot_robot_aic
 ```
 
 ### Running the Challenge Environment

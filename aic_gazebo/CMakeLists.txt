@@ -29,6 +29,9 @@ set(GZ_SIM_VER ${gz-sim_VERSION_MAJOR})
 
 find_package(Protobuf REQUIRED)
 
+find_package(aic_engine_interfaces REQUIRED)
+find_package(rclcpp REQUIRED)
+
 message(STATUS "Compiling against Gazebo Ionic")
 
 add_library(ScoringPlugin
@@ -79,6 +82,22 @@ target_link_libraries(OffLimitContactsPlugin PRIVATE
 
 install(
   TARGETS OffLimitContactsPlugin
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+add_library(ResetJointsPlugin
+  SHARED
+  src/ResetJointsPlugin.cc
+)
+
+target_link_libraries(ResetJointsPlugin PRIVATE
+  gz-sim${GZ_SIM_VER}::gz-sim${GZ_SIM_VER}
+  rclcpp::rclcpp
+  ${aic_engine_interfaces_TARGETS}
+)
+
+install(
+  TARGETS ResetJointsPlugin
   DESTINATION lib/${PROJECT_NAME}
 )
 

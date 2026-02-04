@@ -16,6 +16,9 @@
 
   <test_depend>ament_lint_auto</test_depend>
 
+  <depend>aic_engine_interfaces</depend>
+  <depend>rclcpp</depend>
+
   <export>
     <build_type>ament_cmake</build_type>
   </export>
