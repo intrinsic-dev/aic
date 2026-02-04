@@ -12,7 +12,7 @@ commands to the robot. Creating a _policy_ is at the heart of the AI for
 Industry Challenge, since it is the critical block that "closes the loop"
 between sensors and actuators.
 
-More specifically, the _policy_ receives the following data at 20 Hz:
+More specifically, the _policy_ can receive the following data at up to 20 Hz:
  * :camera: :camera: :camera: images from three cameras mounted on the robot wrist
  * :mechanical_arm: joint angles of the robot arm and gripper
  * :rightwards_pushing_hand: 3d force and 3d torque measurements at the robot wrist
@@ -22,8 +22,8 @@ More specifically, the _policy_ receives the following data at 20 Hz:
 For convenience, the `aic_adapter` in the Challenge environment combines
 time-synchronized values of the sensor suite into a single composite
 `Observation` data structure, which is delivered to the `aic_model` block at 20
-Hz.  In turn, the `aic_model` block passes these messages to a user-defined
-`policy`, which is dynamically loaded at runtime.
+Hz. The user-defined `policy` is dynamically loaded at runtime into `aic_model`
+and can retrieve the latest `Observation` at any time.
 
 The policy is responsible for issuing position or velocity targets to the
 `aic_controller`, which provides low-level control of the arm to manage contact
@@ -39,20 +39,18 @@ in the following section.
 To integrate a policy using ROS data structures, such as `geometry_msgs.msg.Pose`,
 `sensor_msgs.msg.Image`, and so on:
  * define a Python class which derives from [`PolicyRos`](https://github.com/intrinsic-dev/aic/blob/main/aic_model/aic_model/policy_ros.py)
- * implement callbacks as needed to respond to the challenge environment:
-   * [`start_task_callback()`](https://github.com/intrinsic-dev/aic/blob/main/aic_example_policies/aic_example_policies/ros/WaveArm.py#L27): called when `aic_engine` requests a new task.
-   * [`stop_task_callback()`](https://github.com/intrinsic-dev/aic/blob/main/aic_example_policies/aic_example_policies/ros/WaveArm.py#L30): called when `aic_engine` requests to stop the current task.
-   * [`observation_callback()`](https://github.com/intrinsic-dev/aic/blob/main/aic_example_policies/aic_example_policies/ros/WaveArm.py#L33): called when a new observation message arrives, at 20 Hz.
- * supply this Python class name as a parameter to `aic_model`.
+ * implement the [`insert_cable()`](https://github.com/intrinsic-dev/aic/blob/main/aic_model/aic_model/policy_ros.py#L39) method, which is called when `aic_engine` requests a new task.
+ * supply this Python class name as a parameter to `aic_model` at runtime.
 
-The `observation_callback()` function receives the Observation data structure
-as a ROS message,
-[`Observation.msg`](https://github.com/intrinsic-dev/aic/blob/main/aic_interfaces/aic_model_interfaces/msg/Observation.msg). This message is composed of several standard ROS data types:
- * [`sensor_msgs/Image left_image`](https://github.com/ros2/common_interfaces/blob/kilted/sensor_msgs/msg/Image.msg) (and `center_image` and `right_image`)
- * [`sensor_msgs/CameraInfo left_camera_info`](https://github.com/ros2/common_interfaces/blob/kilted/sensor_msgs/msg/CameraInfo.msg) (and `center_camera_info` and `right_camera_info`)
- * [`sensor_msgs/JointState joint_states`](https://github.com/ros2/common_interfaces/blob/kilted/sensor_msgs/msg/JointState.msg)
- * [`geometry_msgs/WrenchStamped wrist_wrench`](https://github.com/ros2/common_interfaces/blob/kilted/geometry_msgs/msg/WrenchStamped.msg)
- * [`geometry_msgs/TransformStamped tcp_transform`](https://github.com/ros2/common_interfaces/blob/kilted/geometry_msgs/msg/TransformStamped.msg)
+The `insert_cable()` function receives several `Callable` methods as parameters:
+ * `get_observation()` returns the most rececent [`Observation`](https://github.com/intrinsic-dev/aic/blob/main/aic_interfaces/aic_model_interfaces/msg/Observation.msg) as a ROS message. This message is composed of several standard ROS submessages:
+   * [`sensor_msgs/Image left_image`](https://github.com/ros2/common_interfaces/blob/kilted/sensor_msgs/msg/Image.msg) (and `center_image` and `right_image`)
+   * [`sensor_msgs/CameraInfo left_camera_info`](https://github.com/ros2/common_interfaces/blob/kilted/sensor_msgs/msg/CameraInfo.msg) (and `center_camera_info` and `right_camera_info`)
+   * [`sensor_msgs/JointState joint_states`](https://github.com/ros2/common_interfaces/blob/kilted/sensor_msgs/msg/JointState.msg)
+   * [`geometry_msgs/WrenchStamped wrist_wrench`](https://github.com/ros2/common_interfaces/blob/kilted/geometry_msgs/msg/WrenchStamped.msg)
+   * [`geometry_msgs/TransformStamped tcp_transform`](https://github.com/ros2/common_interfaces/blob/kilted/geometry_msgs/msg/TransformStamped.msg)
+ * `set_pose_target()` sends a `Pose` request to the robot arm controller.
+ * `send_feedback()` publishes a `string` as a [feedback](https://docs.ros.org/en/kilted/Tutorials/Intermediate/Creating-an-Action.html#defining-an-action) message of the `InsertCable` action, which can be useful for debugging.
 
 The _policy_ can invoke API functions which issue motion commands to the robot.
 As an implementation detail, those API functions use the `aic_model` ROS node
@@ -62,11 +60,13 @@ to publish data to the `aic_controller`, which is implemented in the
 ## Example
 
 To make this concrete, a [minimal example](https://github.com/intrinsic-dev/aic/blob/main/aic_example_policies/aic_example_policies/ros/WaveArm.py)
-, `WaveArm`, shows how to implement the necessary callbacks and issue motion
+, `WaveArm`, shows how to implement the `insert_cable()` callback and issue motion
 commands to the arm.
 
 The class name is provided when starting the `aic_model` ROS node.
-Conveniently, this can be done on the command line for interactive development:
+Conveniently, this can be done on the command line for interactive development,
+typically without requiring a rebuild, thanks to the `--symlink-install` feature
+of [`colcon`](https://colcon.readthedocs.io/en/released/reference/verb/build.html#build-build-packages).
 
 ```
 ros2 run aic_model aic_model --ros-args -p policy:=aic_example_policies.ros.WaveArm

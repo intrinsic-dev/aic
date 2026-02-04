@@ -82,7 +82,6 @@ namespace aic_scoring
     using JointStateMsg = sensor_msgs::msg::JointState;
     using TFMsg = tf2_msgs::msg::TFMessage;
     using ContactsMsg = ros_gz_interfaces::msg::Contacts;
-    using PoseMsg = geometry_msgs::msg::PoseStamped;
     using WrenchMsg = geometry_msgs::msg::WrenchStamped;
     using JointMotionUpdateMsg = aic_control_interfaces::msg::JointMotionUpdate;
     using MotionUpdateMsg = aic_control_interfaces::msg::MotionUpdate;
