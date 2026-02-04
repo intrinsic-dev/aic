@@ -13,6 +13,7 @@ scoring:
     # TF that contains the robot and gripper static poses
         name: "/tf_static"
         type: "tf2_msgs/msg/TFMessage"
+        latched: true
     - topic:
     # TF that contains the cable link poses
         name: "/scoring/tf"

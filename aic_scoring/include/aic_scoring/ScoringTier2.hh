@@ -70,6 +70,9 @@ namespace aic_scoring
 
     /// \brief Topic type (e.g., sensor_msgs/msg/JointState).
     std::string type;
+
+    /// \brief Whether topic is latched or not
+    bool latched{false};
   };
 
   // The Tier2 scoring interface.
