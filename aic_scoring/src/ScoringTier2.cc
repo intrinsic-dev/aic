@@ -212,7 +212,7 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
 
   this->state = State::Idle;
   tier2_score.add_category_score("trajectory jerk",
-                                  this->GetTrajectoryJerkScore());
+                                 this->GetTrajectoryJerkScore());
   tier3_score = this->GetDistanceScore();
   return {tier2_score, tier3_score};
 }
@@ -390,8 +390,8 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryJerkScore() const {
   const double kMinJerkValue = 0.0;
 
   auto jerk_v = this->GetAvgLinearJerk();
-  auto jerk =
-    std::sqrt(jerk_v.x * jerk_v.x + jerk_v.y * jerk_v.y + jerk_v.z * jerk_v.z);
+  auto jerk = std::sqrt(jerk_v.x * jerk_v.x + jerk_v.y * jerk_v.y +
+                        jerk_v.z * jerk_v.z);
 
   std::stringstream sstream;
   sstream.setf(std::ios::fixed);
@@ -400,7 +400,7 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryJerkScore() const {
           << jerk_v.y << ", " << jerk_v.z << "). Magnitude: " << jerk;
 
   const double score = CalculateInverseProportionalScore(
-    kMaxJerkScore, kMinJerkScore, kMaxJerkValue, kMinJerkValue, jerk);
+      kMaxJerkScore, kMinJerkScore, kMaxJerkValue, kMinJerkValue, jerk);
 
   return CategoryScore(score, sstream.str());
 }
