@@ -190,7 +190,8 @@ class AICTeleoperatorNode(Node):
 
 def main(args=None):
 
-    print("""
+    print(
+        """
         Keyboard teleoperation for Cartesian control
         ---------------------------
         Moving around:
@@ -206,7 +207,8 @@ def main(args=None):
         Press any other key to stop the robot.
 
         CTRL-C to quit
-        """)
+        """
+    )
 
     try:
         with rclpy.init(args=args):

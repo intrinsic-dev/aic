@@ -8,13 +8,11 @@ During qualification, participants use their preferred tools—including open so
 
 ### Technical Overview
 
-See [Qualification Phase: Technical Overview](./qualification_phase.md).
+Review the core technical requirements for this phase, including setup constraints, trial descriptions, and evaluation metrics. Refer to the [Qualification Phase: Technical Overview](./qualification_phase.md) document for full specifications.
 
-### Key Steps for Participation
+### Implementation Workflow
 
-To successfully qualify, participants must complete the implementation of the `aic_model` node. The primary task is to modify the provided template to integrate your custom policy.
-
-**Implementation Workflow:**
+To successfully qualify, participants must complete the implementation of the `aic_model` node. This involves modifying the provided template to integrate your custom policy.
 
 1.  **Locate the Template:** Navigate to [`aic_model/aic_model/model_node.py`](../aic_model/aic_model/model_node.py) in the provided repository.
 2.  **Load Your Model:** Implement the logic to initialize and load your trained policy (e.g., PyTorch checkpoint, ONNX model, or control policy) when the node starts.

@@ -60,6 +60,7 @@ ros2 run aic_engine aic_engine --ros-args \
   -p endpoint_ready_timeout_seconds:=10 \
   -p model_discovery_timeout_seconds:=30 \
   -p model_configuration_timeout_seconds:=60
+  -p use_sim_time:=true
 ```
 
 ### ROS Parameters
@@ -96,5 +97,6 @@ Run with a sample configuration:
 ros2 run aic_engine aic_engine --ros-args \
   -p config_file_path:=$(ros2 pkg prefix aic_engine)/share/aic_engine/config/sample_config.yaml \
   -p skip_model_ready:=false \
-  -p skip_ready_simulator:=false
+  -p skip_ready_simulator:=false \
+  -p use_sim_time:=true
 ```
