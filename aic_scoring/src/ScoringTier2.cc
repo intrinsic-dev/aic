@@ -603,8 +603,6 @@ void ScoringTier2::JerkCallback(const TransformStampedMsg &_tf) {
   }
 }
 
-
-
 //////////////////////////////////////////////////
 std::optional<ScoringTier2::TransformStampedMsg> ScoringTier2::EndEffectorPose(
     tf2::TimePoint t) const {
