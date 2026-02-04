@@ -110,7 +110,7 @@ class AICCartesianTeleoperatorNode(Node):
         try:
             # We use char.lower() to handle standard keys
             if hasattr(key, 'char') and key.char is not None:
-                k = key.char.lower()
+                k = key.char
                 self.active_keys.add(k)
         except AttributeError:
             pass
@@ -119,7 +119,7 @@ class AICCartesianTeleoperatorNode(Node):
         """Callback for keyboard listener when a key is released."""
         try:
             if hasattr(key, 'char') and key.char is not None:
-                k = key.char.lower()
+                k = key.char
                 if k in self.active_keys:
                     self.active_keys.remove(k)
         except AttributeError:
@@ -190,15 +190,14 @@ class AICCartesianTeleoperatorNode(Node):
 
         if not (MIN_ANGULAR_VEL < self.angular_vel < MAX_ANGULAR_VEL):
             self.get_logger().info(
-                f"Scaling angular velocity beyond range of [{MIN_ANGULAR_VEL:.2f}, {MAX_ANGULAR_VEL:.2f}]. Clamping to minimum and maximum values."
+                f"Angular velocity is scaled to {self.angular_vel} which is beyond the range of [{MIN_ANGULAR_VEL:.2f}, {MAX_ANGULAR_VEL:.2f}]. Clamping to minimum and maximum values."
             )
+            self.angular_vel = np.clip(self.angular_vel, MIN_ANGULAR_VEL+ANGULAR_STEP, MAX_ANGULAR_VEL-ANGULAR_STEP)
         if not (MIN_LINEAR_VEL < self.linear_vel < MAX_LINEAR_VEL):
             self.get_logger().info(
-                f"Scaling linear velocity beyond range of [{MIN_LINEAR_VEL:.2f}, {MAX_LINEAR_VEL:.2f}]. Clamping to minimum and maximum values."
+                f"Linear velocity is scaled to {self.linear_vel} which is beyond the range of [{MIN_LINEAR_VEL:.2f}, {MAX_LINEAR_VEL:.2f}]. Clamping to minimum and maximum values."
             )
-
-        np.clip(self.linear_vel, MIN_LINEAR_VEL, MAX_LINEAR_VEL)
-        np.clip(self.angular_vel, MIN_ANGULAR_VEL, MAX_ANGULAR_VEL)
+            self.linear_vel = np.clip(self.linear_vel, MIN_LINEAR_VEL+LINEAR_STEP, MAX_LINEAR_VEL-LINEAR_STEP)
 
         twist = Twist()
         twist.linear.x = sum_x * self.linear_vel
