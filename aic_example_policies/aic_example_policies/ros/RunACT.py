@@ -16,102 +16,84 @@
 
 import time
 import torch
-import torchvision.transforms as T
-from lerobot.policies.act.modeling_act import ACTPolicy
+import numpy as np
+from typing import Callable, Dict, Any
+from rclpy.node import Node
+from geometry_msgs.msg import Twist, Vector3
 
 from aic_model.policy_ros import PolicyRos
 from aic_model_interfaces.msg import Observation
 from aic_task_interfaces.msg import Task
-from geometry_msgs.msg import Point, Pose, Quaternion, Twist, Vector3
-from rclpy.duration import Duration
-from typing import Callable, Dict, Any, TypedDict
-import numpy as np
+from lerobot.policies.act.modeling_act import ACTPolicy
 
 class RunACT(PolicyRos):
-    def __init__(self, parent_node):
+    def __init__(self, parent_node: Node):
         super().__init__(parent_node)
-        self.get_logger().info("RunACT.__init__()")
-
-        policy_path = "/home/aic/ws_aic/outputs/grkw/random_start_poses_10_eps"
-
-        # Load the policy
-        self.policy = ACTPolicy.from_pretrained(policy_path)
-        self.get_logger().info(f"Policy config: {self.policy.config}")
+        
+        policy_path = "/home/aic/ws_aic/outputs/grkw/random_start_poses_10_eps" # TODO (@grkw): change this to public HF repo once it's released
+        
+        # Load Policy
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.policy.to(self.device)
+        self.policy = ACTPolicy.from_pretrained(policy_path).to(self.device)
         self.policy.eval()
-        self.get_logger().info(f"Loaded ACT policy from {policy_path}")
-
-        self.inference_tf = T.Compose([
-            T.ToTensor(),  # Converts to [0, 1] and (C, H, W)
-        ])
-
-    
-    def run_inference(self, observation: Dict[str, Any]):
-
-        with torch.no_grad():
-            actions = self.policy.select_action(observation)
-            return actions
-
-    def prepare_camera_observation(self, left_image, center_image, right_image):
-        # Apply resizing and tensor conversion
-        def prepare_image(raw_cam_image):
-            img_np = np.frombuffer(raw_cam_image.data, dtype=np.uint8).reshape(raw_cam_image.height, raw_cam_image.width, 3)
-            img_tensor = torch.from_numpy(img_np).permute(2, 0, 1).float() / 255.0
-            img_obs = img_tensor.unsqueeze(0).to(self.device)
-            return img_obs
         
-        camera_observation_state = {
-                "observation.images.left_camera": prepare_image(left_image),
-                "observation.images.center_camera": prepare_image(center_image),
-                "observation.images.right_camera": prepare_image(right_image),
-            }
+        self.get_logger().info(f"ACT Policy loaded on {self.device} from {policy_path}")
+
+    @staticmethod
+    def _img_to_tensor(raw_img, device: torch.device) -> torch.Tensor:
+        """Helper to convert ROS Image msg to normalized PyTorch tensor."""
+        img_np = np.frombuffer(raw_img.data, dtype=np.uint8).reshape(raw_img.height, raw_img.width, 3)
+        # Permute to (C, H, W) and normalize
+        return torch.from_numpy(img_np).permute(2, 0, 1).float().div(255.0).unsqueeze(0).to(device)
+
+    def prepare_observations(self, obs_msg: Observation) -> Dict[str, torch.Tensor]:
+        """Process camera and controller state for inference, i.e. prepare an observation to send to the policy. The `obs` dict format should match that of `AICRobotAICController` `get_observation()` used for recording episodes. """
+        # Process Cameras
+        obs = {
+            "observation.images.left_camera": self._img_to_tensor(obs_msg.left_image, self.device),
+            "observation.images.center_camera": self._img_to_tensor(obs_msg.center_image, self.device),
+            "observation.images.right_camera": self._img_to_tensor(obs_msg.right_image, self.device),
+        }
         
-        return camera_observation_state
-    
-    def prepare_controller_observation(self, joint_states):
-        controller_observation_state = np.zeros(26, dtype=np.float32)
-        controller_observation_state[19:26] = joint_states
-        state_tensor = torch.from_numpy(controller_observation_state).float().to(self.device)
-        state_tensor = state_tensor.unsqueeze(0) 
-        controller_observation_state = {"observation.state": state_tensor}
-        return controller_observation_state
-    
+        # Process Controller States (The example policy uses TCP pose, TCP velocity, TCP error, and joint positions. See `AICRobotAICController` `get_observation()`.)
+        state_np = np.zeros(26, dtype=np.float32)
+        state_np[19:26] = obs_msg.joint_states.position[0:7] # TODO (@grkw): fill in other fields once Observation msg contains them.
+        obs["observation.state"] = torch.from_numpy(state_np).float().unsqueeze(0).to(self.device)
+        
+        return obs
+
     def insert_cable(
         self,
         task: Task,
         get_observation: Callable[[], Observation],
-        set_cartesian_target: Callable[[Pose, str], []],
-        set_cartesian_twist_target: Callable[[Twist, str], []],
-        set_joint_target: Callable[[list[float]], []],
-        send_feedback: Callable[[str], []],
+        set_cartesian_twist_target: Callable[[Twist], None],
+        send_feedback: Callable[[str], None],
+        **kwargs  # Capture unused callbacks
     ):
-        self.policy.reset() # clear ACT temporal aggregation
+        self.policy.reset() # Clear ACT temporal aggregation
         self.get_logger().info(f"RunACT.insert_cable() enter. Task: {task}")
         start_time = time.clock_gettime(0)
-        
-        send_feedback("some feedback")
         
         while time.clock_gettime(0) - start_time < 10.0:
             time.sleep(0.25)
             observation_msg = get_observation()
 
-            controller_observation_state = self.prepare_controller_observation(observation_msg.joint_states.position[0:7])
-            camera_observation_state = self.prepare_camera_observation(observation_msg.left_image, observation_msg.center_image, observation_msg.right_image)
+            obs_tensors = self.prepare_observations(observation_msg)
+            with torch.inference_mode():
+                actions_tensor = self.policy.select_action(obs_tensors)
 
-            observation_state = {**camera_observation_state, **controller_observation_state}
-
-            self.get_logger().info(f"Observation state keys: {observation_state.keys()}")
-
-            actions = self.run_inference(observation_state)
-            actions = actions.to('cpu').tolist()[0]
+            # Action conversion (take the first action in the list)
+            actions = actions_tensor[0].to('cpu').numpy()
             self.get_logger().info(f"Actions: {actions}")
             
+            # Command robot
             twist = Twist(
-                linear=Vector3(x=actions[0], y=actions[1], z=actions[2]),
-                angular=Vector3(x=actions[3], y=actions[4], z=actions[5]),
+                linear=Vector3(x=float(actions[0]), y=float(actions[1]), z=float(actions[2])),
+                angular=Vector3(x=float(actions[3]), y=float(actions[4]), z=float(actions[5]))
             )
             set_cartesian_twist_target(twist)
 
+            send_feedback("in progress...")
+        
         self.get_logger().info("RunACT.insert_cable() exiting...")
         return True
