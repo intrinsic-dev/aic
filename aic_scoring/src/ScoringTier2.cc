@@ -345,28 +345,36 @@ void ScoringTier2::JointMotionUpdateCallback(const JointMotionUpdateMsg &_msg) {
 }
 
 //////////////////////////////////////////////////
+std::optional<ScoringTier2::TransformStampedMsg> ScoringTier2::GetTransform(
+    tf2::TimePoint _t, const std::string &_target_frame,
+    const std::string &_reference_frame) const {
+  if (!this->tf2_buffer.canTransform(_reference_frame, _target_frame, _t)) {
+    RCLCPP_ERROR(this->node->get_logger(),
+                 "Transform between %s and %s not found in the tf tree",
+                 _reference_frame.c_str(), _target_frame.c_str());
+    return std::nullopt;
+  }
+
+  return this->tf2_buffer.lookupTransform(_reference_frame, _target_frame, _t);
+}
+
+//////////////////////////////////////////////////
 std::optional<double> ScoringTier2::GetPlugPortDistance(
     tf2::TimePoint t) const {
   if (this->connections.empty()) {
     RCLCPP_ERROR(this->node->get_logger(), "No connection was found");
     return std::nullopt;
   }
-  const auto &plug = this->connections[0].plugName;
-  const auto &port = this->connections[0].portName;
   // For now we only calculate the distance for the first connection
-  if (!this->tf2_buffer.canTransform("aic_world", plug, t)) {
-    RCLCPP_ERROR(this->node->get_logger(), "Plug %s not found in the tf tree",
-                 plug.c_str());
+  const auto plug_tf_opt =
+      this->GetTransform(t, "aic_world", this->connections[0].plugName);
+  const auto port_tf_opt =
+      this->GetTransform(t, "aic_world", this->connections[0].portName);
+  if (!plug_tf_opt.has_value() || !port_tf_opt.has_value()) {
     return std::nullopt;
   }
-  if (!this->tf2_buffer.canTransform("aic_world", port, t)) {
-    RCLCPP_ERROR(this->node->get_logger(), "Port %s not found in the tf tree",
-                 port.c_str());
-    return std::nullopt;
-  }
-
-  const auto plug_tf = this->tf2_buffer.lookupTransform("aic_world", plug, t);
-  const auto port_tf = this->tf2_buffer.lookupTransform("aic_world", port, t);
+  const auto plug_tf = plug_tf_opt.value();
+  const auto port_tf = port_tf_opt.value();
 
   return std::sqrt(
       (plug_tf.transform.translation.x - port_tf.transform.translation.x) *
@@ -407,7 +415,7 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryJerkScore() const {
   const double kMaxJerkValue = 25.0;
   const double kMinJerkValue = 0.0;
 
-  auto jerk_v = this->GetAvgLinearJerk();
+  auto jerk_v = this->avgLinearJerk;
   auto jerk = std::sqrt(jerk_v.x * jerk_v.x + jerk_v.y * jerk_v.y +
                         jerk_v.z * jerk_v.z);
 
@@ -482,10 +490,11 @@ Tier3Score ScoringTier2::GetDistanceScore() const {
 }
 
 //////////////////////////////////////////////////
-void ScoringTier2::JerkCallback(const PoseMsg &_pose) {
+void ScoringTier2::JerkCallback(const TransformStampedMsg &_tf) {
   // Debug output
-  std::cout << "(" << _pose.pose.position.x << " " << _pose.pose.position.y
-            << " " << _pose.pose.position.z << ")" << std::endl;
+  // std::cout << "(" << _tf.transform.translation.x << " " <<
+  // _tf.transform.translation.y
+  //           << " " << _tf.transform.translation.z << ")" << std::endl;
 
   // Helper to convert ROS time to seconds.
   auto toSeconds = [](const builtin_interfaces::msg::Time &t) {
@@ -493,39 +502,39 @@ void ScoringTier2::JerkCallback(const PoseMsg &_pose) {
   };
 
   // Check timestamp is increasing.
-  if (!this->poseHistory.empty()) {
-    double lastTime = toSeconds(this->poseHistory.back().header.stamp);
-    double newTime = toSeconds(_pose.header.stamp);
+  if (!this->tfHistory.empty()) {
+    double lastTime = toSeconds(this->tfHistory.back().header.stamp);
+    double newTime = toSeconds(_tf.header.stamp);
     if (newTime <= lastTime) {
       return;
     }
   }
 
-  // Add pose to history.
-  this->poseHistory.push_back(_pose);
+  // Add tf to history.
+  this->tfHistory.push_back(_tf);
 
   // Need 4 samples to compute jerk.
-  if (this->poseHistory.size() < 4) {
+  if (this->tfHistory.size() < 4) {
     return;
   }
 
   // Keep only last 4 samples.
-  if (this->poseHistory.size() > 4) {
-    this->poseHistory.erase(this->poseHistory.begin());
+  if (this->tfHistory.size() > 4) {
+    this->tfHistory.erase(this->tfHistory.begin());
   }
 
   // Extract timestamps.
-  double t0 = toSeconds(this->poseHistory[0].header.stamp);
-  double t1 = toSeconds(this->poseHistory[1].header.stamp);
-  double t2 = toSeconds(this->poseHistory[2].header.stamp);
-  double t3 = toSeconds(this->poseHistory[3].header.stamp);
+  double t0 = toSeconds(this->tfHistory[0].header.stamp);
+  double t1 = toSeconds(this->tfHistory[1].header.stamp);
+  double t2 = toSeconds(this->tfHistory[2].header.stamp);
+  double t3 = toSeconds(this->tfHistory[3].header.stamp);
 
   // Extract positions.
   double px[4], py[4], pz[4];
   for (int i = 0; i < 4; ++i) {
-    px[i] = this->poseHistory[i].pose.position.x;
-    py[i] = this->poseHistory[i].pose.position.y;
-    pz[i] = this->poseHistory[i].pose.position.z;
+    px[i] = this->tfHistory[i].transform.translation.x;
+    py[i] = this->tfHistory[i].transform.translation.y;
+    pz[i] = this->tfHistory[i].transform.translation.z;
   }
 
   // Compute finite differences for jerk.
@@ -574,33 +583,15 @@ void ScoringTier2::JerkCallback(const PoseMsg &_pose) {
 }
 
 //////////////////////////////////////////////////
-std::optional<ScoringTier2::PoseMsg> ScoringTier2::EndEffectorPose(
+std::optional<ScoringTier2::TransformStampedMsg> ScoringTier2::EndEffectorPose(
     tf2::TimePoint t) const {
   // Sanity check.
   if (this->gripperFrame.empty()) {
     RCLCPP_ERROR(this->node->get_logger(),
-                 "Unable to compute end effector pose yet");
+                 "Unable to compute end effector pose, gripper frame not set");
     return std::nullopt;
   }
-
-  std::string warning_msg;
-  if (!this->tf2_buffer.canTransform("aic_world", this->gripperFrame, t)) {
-    RCLCPP_ERROR(this->node->get_logger(),
-                 "Gripper %s not found in the tf tree",
-                 this->gripperFrame.c_str());
-    return std::nullopt;
-  }
-
-  const auto gripper_tf =
-      this->tf2_buffer.lookupTransform("aic_world", this->gripperFrame, t);
-
-  ScoringTier2::PoseMsg pose;
-  pose.header = gripper_tf.header;
-  pose.pose.position.x = gripper_tf.transform.translation.x;
-  pose.pose.position.y = gripper_tf.transform.translation.y;
-  pose.pose.position.z = gripper_tf.transform.translation.z;
-  pose.pose.orientation = gripper_tf.transform.rotation;
-  return pose;
+  return this->GetTransform(t, "aic_world", this->gripperFrame);
 }
 
 //////////////////////////////////////////////////
@@ -617,18 +608,8 @@ ScoringTier2Node::ScoringTier2Node(const std::string &_yamlFile)
 }
 
 //////////////////////////////////////////////////
-ScoringTier2::Vector3Msg ScoringTier2::GetLinearJerk() const {
-  return this->linearJerk;
-}
-
-//////////////////////////////////////////////////
-ScoringTier2::Vector3Msg ScoringTier2::GetAvgLinearJerk() const {
-  return this->avgLinearJerk;
-}
-
-//////////////////////////////////////////////////
 void ScoringTier2::ResetJerk() {
-  this->poseHistory.clear();
+  this->tfHistory.clear();
   this->linearJerk = Vector3Msg();
   this->avgLinearJerk = Vector3Msg();
   this->accumLinearJerk = Vector3Msg();

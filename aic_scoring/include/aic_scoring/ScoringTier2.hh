@@ -34,6 +34,7 @@
 
 #include <aic_control_interfaces/msg/joint_motion_update.hpp>
 #include <aic_control_interfaces/msg/motion_update.hpp>
+#include <geometry_msgs/msg/transform_stamped.hpp>
 #include <geometry_msgs/msg/wrench_stamped.hpp>
 #include <ros_gz_interfaces/msg/contacts.hpp>
 #include <rosbag2_cpp/writer.hpp>
@@ -85,6 +86,7 @@ namespace aic_scoring
     using WrenchMsg = geometry_msgs::msg::WrenchStamped;
     using JointMotionUpdateMsg = aic_control_interfaces::msg::JointMotionUpdate;
     using MotionUpdateMsg = aic_control_interfaces::msg::MotionUpdate;
+    using TransformStampedMsg = geometry_msgs::msg::TransformStamped;
     using Vector3Msg = geometry_msgs::msg::Vector3;
 
     enum class State {
@@ -166,14 +168,6 @@ namespace aic_scoring
     /// \param[in] _config YAML configuration for the node
     private: bool ParseStats(YAML::Node _config);
 
-    /// \brief Get the current linear jerk.
-    /// \return The linear jerk vector (x, y, z) in m/s^3.
-    private: Vector3Msg GetLinearJerk() const;
-
-    /// \brief Get the time-weighted average linear jerk.
-    /// \return The average linear jerk vector (x, y, z) in m/s^3.
-    private: Vector3Msg GetAvgLinearJerk() const;
-
     /// \brief Reset the jerk computation state.
     private: void ResetJerk();
 
@@ -198,13 +192,13 @@ namespace aic_scoring
     private: void WrenchCallback(const WrenchMsg& _msg);
 
     /// \brief Update jerk computation with a new pose sample.
-    /// \param[in] _pose The new timestamped pose.
-    private: void JerkCallback(const PoseMsg &_pose);
+    /// \param[in] _tf The new timestamped transform.
+    private: void JerkCallback(const TransformStampedMsg &_tf);
 
     /// \brief Compute the end effector position.
     /// \param[in] t Time to check the pose.
     /// \return End effector pose at time t. nullopt if failed
-    private: std::optional<PoseMsg> EndEffectorPose(tf2::TimePoint t) const;
+    private: std::optional<TransformStampedMsg> EndEffectorPose(tf2::TimePoint t) const;
 
     /// \brief Callback for pose commands received while scoring.
     /// \param[in] _msg The received message.
@@ -217,6 +211,16 @@ namespace aic_scoring
     /// \brief Calculates score related with the gripper trajectory jerk.
     /// \return Scoring for the trajectory jerk score.
     private: Tier2Score::CategoryScore GetTrajectoryJerkScore() const;
+
+    /// \brief Gets the transform for the specified entity at the requested time.
+    /// \param[in] _t the time point to get the transform.
+    /// \param[in] _target_frame the frame to get the transform for.
+    /// \param[in] _reference_frame the frame that we should get the transform relative to.
+    /// \return The transform between the two frames, if available.
+    private: std::optional<TransformStampedMsg> GetTransform(
+                 tf2::TimePoint _t,
+                 const std::string& _target_frame,
+                 const std::string& _reference_frame = "aic_world") const;
 
     /// \brief Calculates the distance between the plug and the port.
     /// \param[in] _timestamp Time to check the distance
@@ -266,8 +270,8 @@ namespace aic_scoring
     /// \brief Mutex to protect the access to the bag.
     private: std::mutex mutex;
 
-    /// \brief History of poses for jerk computation (stores last 4 samples).
-    private: std::vector<PoseMsg> poseHistory;
+    /// \brief History of transforms for jerk computation (stores last 4 samples).
+    private: std::vector<TransformStampedMsg> tfHistory;
 
     /// \brief Computed linear jerk (x, y, z components in m/s^3).
     private: Vector3Msg linearJerk;
