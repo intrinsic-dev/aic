@@ -17,7 +17,6 @@
 #
 
 import sys
-import tty
 import time
 import rclpy
 from pynput import keyboard  
@@ -31,15 +30,15 @@ from aic_control_interfaces.msg import (
 from aic_control_interfaces.srv import (
     ChangeTargetMode,
 )
-from geometry_msgs.msg import Pose, Point, Quaternion, Wrench, Vector3, Twist
+from geometry_msgs.msg import Wrench, Vector3, Twist
 
-LINEAR_STEP = 0.025 # m/s
-ANGULAR_STEP = 0.025 # rad/s
+LINEAR_STEP = 0.025 # Step size for incrementing/decrementing linear velocity (m/s)
+ANGULAR_STEP = 0.025 # Step size for incrementing/decrementing angular velocity (rad/s)
 
 MIN_LINEAR_VEL = 0.0 # m/s
 MAX_LINEAR_VEL = 2.0 # m/s
-MIN_ANGULAR_VEL = 0.0 # m/s
-MAX_ANGULAR_VEL = 2.0 # m/s
+MIN_ANGULAR_VEL = 0.0 # rad/s
+MAX_ANGULAR_VEL = 2.0 # rad/s
 
 KEY_MAPPINGS = {
     "a": (-1, 0, 0, 0, 0, 0),  # -linear.x
@@ -154,9 +153,8 @@ class AICCartesianTeleoperatorNode(Node):
 
     def send_references(self):        
         # Accumulate inputs from all currently pressed keys to allow for diagonal movement 
-        sum_x, sum_y, sum_z = 0.0, 0.0, 0.0
-        sum_roll, sum_pitch, sum_yaw = 0.0, 0.0, 0.0
-        
+        input_twist = np.zeros(6) 
+
         teleop_keys_active = False
         scale_linear_velocity = False
         scale_angular_velocity = False
@@ -166,12 +164,8 @@ class AICCartesianTeleoperatorNode(Node):
             if key in KEY_MAPPINGS:
                 teleop_keys_active = True
                 vals = KEY_MAPPINGS[key]
-                sum_x += vals[0]
-                sum_y += vals[1]
-                sum_z += vals[2]
-                sum_roll += vals[3]
-                sum_pitch += vals[4]
-                sum_yaw += vals[5]
+                input_twist[0:3] += np.array(vals[0:3], dtype=float) * self.linear_vel
+                input_twist[3:6] += np.array(vals[3:6], dtype=float) * self.angular_vel
             if key == "m":
                 toggle_frame_id = True
                 self.frame_id = "gripper/tcp" if self.frame_id == "base_link" else "base_link"
@@ -200,12 +194,12 @@ class AICCartesianTeleoperatorNode(Node):
             self.linear_vel = np.clip(self.linear_vel, MIN_LINEAR_VEL+LINEAR_STEP, MAX_LINEAR_VEL-LINEAR_STEP)
 
         twist = Twist()
-        twist.linear.x = sum_x * self.linear_vel
-        twist.linear.y = sum_y * self.linear_vel
-        twist.linear.z = sum_z * self.linear_vel
-        twist.angular.x = sum_roll * self.angular_vel
-        twist.angular.y = sum_pitch * self.angular_vel
-        twist.angular.z = sum_yaw * self.angular_vel
+        twist.linear.x = input_twist[0] 
+        twist.linear.y = input_twist[1] 
+        twist.linear.z = input_twist[2] 
+        twist.angular.x = input_twist[3] 
+        twist.angular.y = input_twist[4] 
+        twist.angular.z = input_twist[5] 
 
         self.motion_update_publisher.publish(
             self.generate_velocity_motion_update(
