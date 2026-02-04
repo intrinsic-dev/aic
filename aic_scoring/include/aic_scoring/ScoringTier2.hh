@@ -211,6 +211,10 @@ namespace aic_scoring
     /// \param[in] _msg The received message.
     private: void JointMotionUpdateCallback(const JointMotionUpdateMsg& _msg);
 
+    /// \brief Calculates score related with the gripper trajectory jerk.
+    /// \return Scoring for the trajectory jerk score.
+    private: Tier2Score::CategoryScore GetTrajectoryJerkScore() const;
+
     /// \brief Calculates the distance between the plug and the port.
     /// \param[in] _timestamp Time to check the distance
     /// \return Distance between plug and port at the end of the task. nullopt if failed

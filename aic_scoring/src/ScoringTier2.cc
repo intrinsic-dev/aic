@@ -211,6 +211,8 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
   }
 
   this->state = State::Idle;
+  tier2_score.add_category_score("trajectory jerk",
+                                  this->GetTrajectoryJerkScore());
   tier3_score = this->GetDistanceScore();
   return {tier2_score, tier3_score};
 }
@@ -374,6 +376,33 @@ static double CalculateInverseProportionalScore(const double max_score,
 
   return min_score + ((max_range - measurement) / (max_range - min_range)) *
                          (max_score - min_score);
+}
+
+//////////////////////////////////////////////////
+Tier2Score::CategoryScore ScoringTier2::GetTrajectoryJerkScore() const {
+  using CategoryScore = Tier2Score::CategoryScore;
+
+  // For now, just have the score be inversely proportional to the magnitude
+  // of the average jerk vector.
+  const double kMaxJerkScore = 20.0;
+  const double kMinJerkScore = 1.0;
+  const double kMaxJerkValue = 25.0;
+  const double kMinJerkValue = 0.0;
+
+  auto jerk_v = this->GetAvgLinearJerk();
+  auto jerk =
+    std::sqrt(jerk_v.x * jerk_v.x + jerk_v.y * jerk_v.y + jerk_v.z * jerk_v.z);
+
+  std::stringstream sstream;
+  sstream.setf(std::ios::fixed);
+  sstream.precision(2);
+  sstream << "Average linear jerk of the end effector: (" << jerk_v.x << ", "
+          << jerk_v.y << ", " << jerk_v.z << "). Magnitude: " << jerk;
+
+  const double score = CalculateInverseProportionalScore(
+    kMaxJerkScore, kMinJerkScore, kMaxJerkValue, kMinJerkValue, jerk);
+
+  return CategoryScore(score, sstream.str());
 }
 
 //////////////////////////////////////////////////
