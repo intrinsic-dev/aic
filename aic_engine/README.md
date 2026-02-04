@@ -72,6 +72,7 @@ ros2 run aic_engine aic_engine --ros-args \
 | `gripper_frame_name` | string | "gripper/tcp" | Name of the gripper frame |
 | `ground_truth` | bool | false | Whether to publish ground truth poses from the task board |
 | `skip_model_ready` | bool | false | Skip model readiness checks (for testing only) |
+| `skip_ready_simulator` | bool | false | Skip simulator readiness and entity spawning/deletion (for testing only) |
 | `endpoint_ready_timeout_seconds` | int | 10 | Timeout for waiting for required endpoints |
 | `model_discovery_timeout_seconds` | int | 30 | Timeout for discovering the participant model |
 | `model_configure_timeout_seconds` | int | 60 | Timeout for model configuration checks |
@@ -94,5 +95,6 @@ Run with a sample configuration:
 ```bash
 ros2 run aic_engine aic_engine --ros-args \
   -p config_file_path:=$(ros2 pkg prefix aic_engine)/share/aic_engine/config/sample_config.yaml \
-  -p skip_model_ready:=true
+  -p skip_model_ready:=false \
+  -p skip_ready_simulator:=false
 ```
