@@ -19,7 +19,7 @@
 import sys
 import time
 import rclpy
-from pynput import keyboard  
+from pynput import keyboard
 from rclpy.node import Node
 from rclpy.executors import ExternalShutdownException
 import numpy as np
@@ -31,10 +31,10 @@ from aic_control_interfaces.srv import (
     ChangeTargetMode,
 )
 
-ANGULAR_STEP = 0.025 # Step size for incrementing/decrementing angular velocity (rad/s)
+ANGULAR_STEP = 0.025  # Step size for incrementing/decrementing angular velocity (rad/s)
 
-MIN_ANGULAR_VEL = 0.0 # rad/s
-MAX_ANGULAR_VEL = 2.0 # rad/s
+MIN_ANGULAR_VEL = 0.0  # rad/s
+MAX_ANGULAR_VEL = 2.0  # rad/s
 
 KEY_MAPPINGS = {
     "q": (1, 0, 0, 0, 0, 0),  # +j1
@@ -85,11 +85,10 @@ class AICTeleoperatorNode(Node):
 
         # Track currently pressed keys
         self.active_keys = set()
-        
+
         # Start the keyboard listener in a non-blocking way
         self.keyboard_listener = keyboard.Listener(
-            on_press=self.on_key_press,
-            on_release=self.on_key_release
+            on_press=self.on_key_press, on_release=self.on_key_release
         )
         self.keyboard_listener.start()
 
@@ -103,7 +102,7 @@ class AICTeleoperatorNode(Node):
         """Callback for keyboard listener when a key is pressed."""
         try:
             # We use char.lower() to handle standard keys
-            if hasattr(key, 'char') and key.char is not None:
+            if hasattr(key, "char") and key.char is not None:
                 k = key.char
                 self.active_keys.add(k)
         except AttributeError:
@@ -112,13 +111,13 @@ class AICTeleoperatorNode(Node):
     def on_key_release(self, key):
         """Callback for keyboard listener when a key is released."""
         try:
-            if hasattr(key, 'char') and key.char is not None:
+            if hasattr(key, "char") and key.char is not None:
                 k = key.char
                 if k in self.active_keys:
                     self.active_keys.remove(k)
         except AttributeError:
             pass
-        
+
         if key == keyboard.Key.esc:
             rclpy.shutdown()
 
@@ -133,7 +132,7 @@ class AICTeleoperatorNode(Node):
         return msg
 
     def send_references(self):
-        velocities = np.zeros(6) 
+        velocities = np.zeros(6)
 
         teleop_keys_active = False
         scale_angular_velocity = False
@@ -142,7 +141,7 @@ class AICTeleoperatorNode(Node):
             if key in KEY_MAPPINGS:
                 teleop_keys_active = True
                 vals = KEY_MAPPINGS[key]
-                velocities += np.array(vals, dtype=float)  * self.angular_vel
+                velocities += np.array(vals, dtype=float) * self.angular_vel
             if key == "l":
                 scale_angular_velocity = True
                 self.angular_vel -= ANGULAR_STEP
@@ -158,7 +157,11 @@ class AICTeleoperatorNode(Node):
             self.get_logger().info(
                 f"Angular velocity is scaled to {self.angular_vel} which is beyond the range of [{MIN_ANGULAR_VEL:.2f}, {MAX_ANGULAR_VEL:.2f}]. Clamping to minimum and maximum values."
             )
-            self.angular_vel = np.clip(self.angular_vel, MIN_ANGULAR_VEL+ANGULAR_STEP, MAX_ANGULAR_VEL-ANGULAR_STEP)
+            self.angular_vel = np.clip(
+                self.angular_vel,
+                MIN_ANGULAR_VEL + ANGULAR_STEP,
+                MAX_ANGULAR_VEL - ANGULAR_STEP,
+            )
 
         # Only print logs if relevant keys are pressed
         if teleop_keys_active:
@@ -166,9 +169,7 @@ class AICTeleoperatorNode(Node):
                 f"Published joint velocities: [{velocities[0]:.2f}, {velocities[1]:.2f}, {velocities[2]:.2f}, {velocities[3]:.2f}, {velocities[4]:.2f}, {velocities[5]:.2f}]"
             )
         if scale_angular_velocity:
-            self.get_logger().info(
-                f"Scaled angular velocity to {self.angular_vel:.2f}"
-            )
+            self.get_logger().info(f"Scaled angular velocity to {self.angular_vel:.2f}")
 
     def send_change_control_mode_req(self, mode):
         ChangeTargetMode
