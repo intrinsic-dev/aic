@@ -18,8 +18,8 @@
 #include "aic_engine.hpp"
 
 #include <chrono>
-#include <condition_variable>
 #include <cmath>
+#include <condition_variable>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -1095,31 +1095,30 @@ bool Engine::ready_simulator(Trial& trial) {
 
   RCLCPP_INFO(node_->get_logger(), "Waiting for robot arm to stabilize.");
   // The end-effector dips when the cable is first attached.
-  // Wait for joints to settle by checking its velocities.
+  // Wait for joints to settle by checking velocities.
   std::condition_variable cv;
   std::mutex mtx;
   bool joints_settled = false;
   const rclcpp::QoS reliable_qos = rclcpp::QoS(rclcpp::KeepLast(10)).reliable();
-  auto joint_states_sub = node_->create_subscription<sensor_msgs::msg::JointState>(
-    "/joint_states", reliable_qos,
-    [this, &joints_settled, &cv, &mtx](
-    const sensor_msgs::msg::JointState::SharedPtr msg) {
-      if (msg->velocity.empty()) return;
-      for (size_t i = 0; i < msg->velocity.size(); ++i) {
-        if (std::fabs(msg->velocity[i]) > 1e-3) return;
-      }
-      {
-        std::unique_lock<std::mutex> lock(mtx);
-        joints_settled = true;
-      }
-      cv.notify_one();
-    });
+  auto joint_states_sub =
+      node_->create_subscription<sensor_msgs::msg::JointState>(
+          "/joint_states", reliable_qos,
+          [this, &joints_settled, &cv,
+           &mtx](const sensor_msgs::msg::JointState::SharedPtr msg) {
+            if (msg->velocity.empty()) return;
+            for (size_t i = 0; i < msg->velocity.size(); ++i) {
+              if (std::fabs(msg->velocity[i]) > 1e-3) return;
+            }
+            {
+              std::unique_lock<std::mutex> lock(mtx);
+              joints_settled = true;
+            }
+            cv.notify_one();
+          });
 
   std::unique_lock<std::mutex> lock(mtx);
   cv.wait_for(lock, std::chrono::seconds(10),
-      [&joints_settled] {
-        return joints_settled;
-      });
+              [&joints_settled] { return joints_settled; });
 
   // TODO(Yadunund): Implement other simulator readiness checks.
 
