@@ -157,7 +157,7 @@ struct TrialScore {
 
   void tier_1_success() { tier_1 = aic_scoring::Tier1Score(1); }
 
-  int total_score() const {
+  double total_score() const {
     return tier_1.total_score() + tier_2.total_score() + tier_3.total_score();
   }
 };
@@ -171,7 +171,7 @@ struct Score {
   YAML::Node serialize() const;
 
   /// \brief Computes the total score from the score breakdown.
-  int calculate_total_score() const;
+  double calculate_total_score() const;
 };
 
 //==============================================================================

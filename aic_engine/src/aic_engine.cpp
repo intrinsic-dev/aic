@@ -261,7 +261,7 @@ TaskAttempt::TaskAttempt(const std::string& _id)
 
 //==============================================================================
 YAML::Node Score::serialize() const {
-  const int total_score = this->calculate_total_score();
+  const double total_score = this->calculate_total_score();
   YAML::Node score;
   score["total"] = total_score;
   for (const auto& [trial_name, trial_score] : this->breakdown) {
@@ -273,9 +273,9 @@ YAML::Node Score::serialize() const {
 }
 
 //==============================================================================
-int Score::calculate_total_score() const {
+double Score::calculate_total_score() const {
   // TODO(luca) check calculation
-  int score = 0;
+  double score = 0;
   for (const auto& [trial_name, trial_score] : this->breakdown) {
     score += trial_score.tier_1.total_score();
     score += trial_score.tier_2.total_score();
@@ -594,7 +594,7 @@ EngineState Engine::run() {
     if (trial.state == TrialState::AllTasksCompleted) {
       RCLCPP_INFO(
           node_->get_logger(),
-          "\033[1;32m✓ Trial '%s' completed successfully! Score: %d\033[0m",
+          "\033[1;32m✓ Trial '%s' completed successfully! Score: %f\033[0m",
           trial_id.c_str(), trial_score.total_score());
     } else {
       RCLCPP_ERROR(node_->get_logger(),
@@ -618,7 +618,7 @@ EngineState Engine::run() {
     RCLCPP_INFO(node_->get_logger(),
                 "\033[1;32m║   ✓ All Trials Completed!              ║\033[0m");
     RCLCPP_INFO(node_->get_logger(),
-                "\033[1;32m║   Total Score: %.3d                     ║\033[0m",
+                "\033[1;32m║   Total Score: %.3f                     ║\033[0m",
                 score.calculate_total_score());
     RCLCPP_INFO(node_->get_logger(),
                 "\033[1;32m╚════════════════════════════════════════╝\033[0m");
@@ -1762,7 +1762,7 @@ void Engine::score_trial(TrialScore& score) {
   score.tier_2 = tier2_score;
   score.tier_3 = tier3_score;
 
-  RCLCPP_INFO(node_->get_logger(), "Finished scoring trial, total score is: %u",
+  RCLCPP_INFO(node_->get_logger(), "Finished scoring trial, total score is: %f",
               score.total_score());
 }
 
