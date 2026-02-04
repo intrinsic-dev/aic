@@ -486,6 +486,9 @@ EngineState Engine::initialize() {
   model_change_state_client_ =
       node_->create_client<lifecycle_msgs::srv::ChangeState>(
           model_change_state_service_name_);
+  switch_controller_client_ =
+      node_->create_client<controller_manager_msgs::srv::SwitchController>(
+          "/controller_manager/switch_controller");
   reset_joints_client_ =
       node_->create_client<ResetJointsSrv>("/scoring/reset_joints");
   tf_buffer_ = std::make_unique<tf2_ros::Buffer>(node_->get_clock());
@@ -1418,15 +1421,26 @@ void Engine::reset_after_trial(const Trial& trial) {
 bool Engine::home_robot() {
   RCLCPP_INFO(node_->get_logger(), "Homing robot to initial positions...");
 
-  // Switch to joint mode
-  if (!change_target_mode(ChangeTargetModeSrv::Request::TARGET_MODE_JOINT)) {
+  // Deactivate aic_controller
+  auto deactivate_req = std::make_shared<SwitchControllerSrv::Request>();
+  deactivate_req->deactivate_controllers = {"aic_controller"};
+  deactivate_req->activate_controllers = {};
+  deactivate_req->strictness = SwitchControllerSrv::Request::BEST_EFFORT;
+  auto deactive_future =
+      switch_controller_client_->async_send_request(deactivate_req);
+  if (deactive_future.wait_for(std::chrono::seconds(10)) !=
+      std::future_status::ready) {
     RCLCPP_ERROR(node_->get_logger(),
-                 "Failed to switch to joint mode for homing.");
+                 "SwitchController service call timed out when deactivating "
+                 "aic_controller");
     return false;
   }
-
-  // Publish pre-built joint command to controller
-  joint_motion_update_pub_->publish(home_joint_msg_);
+  auto deactivate_resp = deactive_future.get();
+  if (!deactivate_resp->ok) {
+    RCLCPP_ERROR(node_->get_logger(), "Failed to deactivate aic_controller.");
+    return false;
+  }
+  RCLCPP_INFO(node_->get_logger(), "aic_controller deactivated successfully.");
 
   // Wait for the robot to reach home position if possible without resetting.
   std::this_thread::sleep_for(std::chrono::seconds(2));
@@ -1447,13 +1461,28 @@ bool Engine::home_robot() {
     return false;
   }
 
-  // Switch to cartesian mode after homing
-  if (!change_target_mode(
-          ChangeTargetModeSrv::Request::TARGET_MODE_CARTESIAN)) {
+  // Activate aic_controller & resume simulation
+  auto activate_req = std::make_shared<SwitchControllerSrv::Request>();
+  activate_req->deactivate_controllers = {};
+  activate_req->activate_controllers = {"aic_controller"};
+  activate_req->strictness = SwitchControllerSrv::Request::BEST_EFFORT;
+  auto activate_future =
+      switch_controller_client_->async_send_request(activate_req);
+
+  // Check that controller has been successfully activated
+  if (activate_future.wait_for(std::chrono::seconds(10)) !=
+      std::future_status::ready) {
     RCLCPP_ERROR(node_->get_logger(),
-                 "Failed to switch to cartesian mode after homing.");
+                 "SwitchController service call timed out when activating "
+                 "aic_controller");
     return false;
   }
+  auto activate_resp = activate_future.get();
+  if (!activate_resp->ok) {
+    RCLCPP_ERROR(node_->get_logger(), "Failed to activate aic_controller.");
+    return false;
+  }
+  RCLCPP_INFO(node_->get_logger(), "aic_controller activated successfully.");
 
   RCLCPP_INFO(
       node_->get_logger(),

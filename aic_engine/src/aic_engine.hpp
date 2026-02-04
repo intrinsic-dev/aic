@@ -33,6 +33,7 @@
 #include "aic_scoring/ScoringTier2.hh"
 #include "aic_scoring/TierScore.hh"
 #include "aic_task_interfaces/action/insert_cable.hpp"
+#include "controller_manager_msgs/srv/switch_controller.hpp"
 #include "geometry_msgs/msg/wrench_stamped.hpp"
 #include "lifecycle_msgs/msg/state.hpp"
 #include "lifecycle_msgs/srv/change_state.hpp"
@@ -60,6 +61,7 @@ using JointTrajectoryPoint = trajectory_msgs::msg::JointTrajectoryPoint;
 using MotionUpdateMsg = aic_control_interfaces::msg::MotionUpdate;
 using ResetJointsSrv = aic_engine_interfaces::srv::ResetJoints;
 using SpawnEntitySrv = simulation_interfaces::srv::SpawnEntity;
+using SwitchControllerSrv = controller_manager_msgs::srv::SwitchController;
 using Task = aic_task_interfaces::msg::Task;
 using TrajectoryGenerationMode =
     aic_control_interfaces::msg::TrajectoryGenerationMode;
@@ -336,6 +338,8 @@ class Engine {
       model_get_state_client_;
   rclcpp::Client<lifecycle_msgs::srv::ChangeState>::SharedPtr
       model_change_state_client_;
+  rclcpp::Client<controller_manager_msgs::srv::SwitchController>::SharedPtr
+      switch_controller_client_;
   rclcpp::Client<ResetJointsSrv>::SharedPtr reset_joints_client_;
 
   // TF
