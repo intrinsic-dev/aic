@@ -147,21 +147,6 @@ namespace aic_scoring
     /// \return A pair with the Tier2 and Tier3 scores.
     public: std::pair<Tier2Score, Tier3Score> ComputeScore();
 
-    /// \brief Populate the scoring input params from a YAML file.
-    /// \param[in] _config YAML configuration for the node
-    private: bool ParseStats(YAML::Node _config);
-
-    /// \brief Get the current linear jerk.
-    /// \return The linear jerk vector (x, y, z) in m/s^3.
-    public: Vector3Msg GetLinearJerk() const;
-
-    /// \brief Get the time-weighted average linear jerk.
-    /// \return The average linear jerk vector (x, y, z) in m/s^3.
-    public: Vector3Msg GetAvgLinearJerk() const;
-
-    /// \brief Reset the jerk computation state.
-    public: void ResetJerk();
-
     /// \brief Get the topics required that are currently not being published.
     /// \return An unordered_set with the missing required topic names.
     public: std::set<std::string> GetMissingRequiredTopics() const;
@@ -173,6 +158,21 @@ namespace aic_scoring
     /// \brief Set the end time for the task.
     /// \param[in] _time The end time of the task.
     public: void SetTaskEndTime(const rclcpp::Time& _time);
+
+    /// \brief Populate the scoring input params from a YAML file.
+    /// \param[in] _config YAML configuration for the node
+    private: bool ParseStats(YAML::Node _config);
+
+    /// \brief Get the current linear jerk.
+    /// \return The linear jerk vector (x, y, z) in m/s^3.
+    private: Vector3Msg GetLinearJerk() const;
+
+    /// \brief Get the time-weighted average linear jerk.
+    /// \return The average linear jerk vector (x, y, z) in m/s^3.
+    private: Vector3Msg GetAvgLinearJerk() const;
+
+    /// \brief Reset the jerk computation state.
+    private: void ResetJerk();
 
     /// \brief Callback for joint state messages received while scoring.
     /// \param[in] _msg The received message.
