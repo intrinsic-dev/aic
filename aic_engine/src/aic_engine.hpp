@@ -29,7 +29,6 @@
 #include "aic_control_interfaces/msg/joint_motion_update.hpp"
 #include "aic_control_interfaces/msg/motion_update.hpp"
 #include "aic_control_interfaces/msg/trajectory_generation_mode.hpp"
-#include "aic_control_interfaces/srv/change_target_mode.hpp"
 #include "aic_scoring/ScoringTier2.hh"
 #include "aic_scoring/TierScore.hh"
 #include "aic_task_interfaces/action/insert_cable.hpp"
@@ -51,7 +50,6 @@
 //==============================================================================
 namespace aic {
 
-using ChangeTargetModeSrv = aic_control_interfaces::srv::ChangeTargetMode;
 using DeleteEntitySrv = simulation_interfaces::srv::DeleteEntity;
 using InsertCableAction = aic_task_interfaces::action::InsertCable;
 using InsertCableGoalHandle =
@@ -299,10 +297,6 @@ class Engine {
   /// \param[in] The score to serialize and write.
   void score_run(const Score& score);
 
-  /// @brief Sends a request to change the controller target mode.
-  /// \param[in] The target mode to request.
-  bool change_target_mode(const uint8_t target_mode);
-
   // Strings.
   // Name of the aic_adapter node for lifecycle transitions.
   std::string adapter_node_name_;
@@ -319,8 +313,6 @@ class Engine {
   rclcpp::Subscription<JointMotionUpdateMsg>::SharedPtr
       joint_motion_update_sub_;
   rclcpp::Subscription<MotionUpdateMsg>::SharedPtr motion_update_sub_;
-  // Publishers.
-  rclcpp::Publisher<JointMotionUpdateMsg>::SharedPtr joint_motion_update_pub_;
 
   // Subscription messages.
   JointMotionUpdateMsg::ConstSharedPtr last_joint_motion_update_msg_;
@@ -333,7 +325,6 @@ class Engine {
   // Service clients.
   rclcpp::Client<SpawnEntitySrv>::SharedPtr spawn_entity_client_;
   rclcpp::Client<DeleteEntitySrv>::SharedPtr delete_entity_client_;
-  rclcpp::Client<ChangeTargetModeSrv>::SharedPtr change_target_mode_client_;
   rclcpp::Client<lifecycle_msgs::srv::GetState>::SharedPtr
       model_get_state_client_;
   rclcpp::Client<lifecycle_msgs::srv::ChangeState>::SharedPtr

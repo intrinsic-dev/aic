@@ -470,17 +470,12 @@ EngineState Engine::initialize() {
       },
       sub_options_ignore_local);
 
-  joint_motion_update_pub_ = node_->create_publisher<JointMotionUpdateMsg>(
-      "/aic_controller/joint_commands", reliable_qos);
-
   insert_cable_action_client_ =
       rclcpp_action::create_client<InsertCableAction>(node_, "/insert_cable");
   spawn_entity_client_ =
       node_->create_client<SpawnEntitySrv>("/gz_server/spawn_entity");
   delete_entity_client_ =
       node_->create_client<DeleteEntitySrv>("/gz_server/delete_entity");
-  change_target_mode_client_ = node_->create_client<ChangeTargetModeSrv>(
-      "/aic_controller/change_target_mode");
   model_get_state_client_ = node_->create_client<lifecycle_msgs::srv::GetState>(
       model_get_state_service_name_);
   model_change_state_client_ =
@@ -1487,45 +1482,6 @@ bool Engine::home_robot() {
   RCLCPP_INFO(
       node_->get_logger(),
       "Successfully reset joints to home position, robot homed successfully.");
-  return true;
-}
-
-//==============================================================================
-bool Engine::change_target_mode(const uint8_t target_mode) {
-  auto change_mode_request = std::make_shared<ChangeTargetModeSrv::Request>();
-  change_mode_request->target_mode = target_mode;
-  std::string target_mode_str;
-  switch (target_mode) {
-    case ChangeTargetModeSrv::Request::TARGET_MODE_JOINT:
-      target_mode_str = "JOINT";
-      break;
-    case ChangeTargetModeSrv::Request::TARGET_MODE_CARTESIAN:
-      target_mode_str = "CARTESIAN";
-      break;
-    default:
-      RCLCPP_ERROR(node_->get_logger(), "Unknown target mode requested.");
-      return false;
-  }
-
-  auto change_mode_future =
-      change_target_mode_client_->async_send_request(change_mode_request);
-  if (change_mode_future.wait_for(std::chrono::seconds(5)) !=
-      std::future_status::ready) {
-    RCLCPP_ERROR(node_->get_logger(),
-                 "ChangeTargetMode service call timed out when changing to "
-                 "%s mode",
-                 target_mode_str.c_str());
-    return false;
-  }
-  auto change_mode_response = change_mode_future.get();
-  if (!change_mode_response->success) {
-    RCLCPP_ERROR(node_->get_logger(), "Failed to change target mode to %s mode",
-                 target_mode_str.c_str());
-    return false;
-  }
-  RCLCPP_INFO(node_->get_logger(),
-              "Successfully changed target mode to %s mode",
-              target_mode_str.c_str());
   return true;
 }
 
