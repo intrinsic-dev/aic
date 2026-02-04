@@ -62,7 +62,7 @@ Penalizes excessive force during the insertion process to encourage gentle manip
 - **Force threshold**: 25 N
 - **Duration threshold**: 1 second
 - **Penalty**: -10 points if force exceeds threshold for longer than the duration threshold
-- **No penalty**: If excessive force duration is within threshold
+- **No penalty**: If no excessive force is detected or excessive force is within duration threshold
 
 ### Off-Limit contact penalty (0 to -20 points)
 
