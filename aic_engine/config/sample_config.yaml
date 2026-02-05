@@ -58,12 +58,12 @@ trials:
     scene:
         task_board:
           pose:
-            x: 0.25
-            y: 0.0
+            x: 0.15
+            y: -0.2
             z: 1.14
             roll: 0.0
             pitch: 0.0
-            yaw: 0.0
+            yaw: 3.1415
           nic_rail_0:
             entity_present: True # True if a NIC card is present on this rail.
             entity_name: "nic_card_0" # Name of the NIC card entity to spawn.
@@ -131,11 +131,11 @@ trials:
             pose:
               gripper_offset:
                 x: 0.0
-                y: -0.015385
+                y: 0.015385
                 z: 0.04245
               roll: 0.4432
               pitch: -0.4838
-              yaw: -1.8112
+              yaw: 1.3303
             attach_cable_to_gripper: True
             cable_type: "sfp_sc_cable" # [sfp_sc_cable, sfp_sc_cable_reversed]
     tasks:
@@ -152,12 +152,12 @@ trials:
     scene:
         task_board:
           pose:
-            x: 0.25
-            y: 0.0
+            x: 0.15
+            y: -0.2
             z: 1.14
             roll: 0.0
             pitch: 0.0
-            yaw: 0.0
+            yaw: 3.1415
           nic_rail_0:
             entity_present: False
           nic_rail_1:
@@ -225,11 +225,11 @@ trials:
             pose:
               gripper_offset:
                 x: 0.0
-                y: -0.015385
+                y: 0.015385
                 z: 0.04545
               roll: 0.4432
               pitch: -0.4838
-              yaw: -1.8112
+              yaw: 1.3303
             attach_cable_to_gripper: True
             cable_type: "sfp_sc_cable" # [sfp_sc_cable, sfp_sc_cable_reversed]
     tasks:
@@ -246,12 +246,12 @@ trials:
     scene:
         task_board:
           pose:
-            x: 0.30
-            y: -0.02
+            x: 0.17
+            y: -0.18
             z: 1.14
             roll: 0.0
             pitch: 0.0
-            yaw: 0.1
+            yaw: 3.0
           nic_rail_0:
             entity_present: False
           nic_rail_1:
@@ -307,11 +307,11 @@ trials:
             pose:
               gripper_offset:
                 x: 0.0
-                y: -0.015385
+                y: 0.015385
                 z: 0.04045
               roll: 0.4432
               pitch: -0.4838
-              yaw: -1.8112
+              yaw: 1.3303
             attach_cable_to_gripper: True
             cable_type: "sfp_sc_cable_reversed" # [sfp_sc_cable, sfp_sc_cable_reversed]
     tasks:
@@ -326,9 +326,9 @@ trials:
         time_limit: 300
 robot:
   home_joint_positions:
-    shoulder_pan_joint: -0.546
-    shoulder_lift_joint: -1.703
-    elbow_joint: -1.291
-    wrist_1_joint: -1.719
-    wrist_2_joint: 1.571
-    wrist_3_joint: -2.116
+    shoulder_pan_joint: -0.1597
+    shoulder_lift_joint: -1.3542
+    elbow_joint: -1.6648
+    wrist_1_joint: -1.6933
+    wrist_2_joint: 1.5710
+    wrist_3_joint: 1.4110
