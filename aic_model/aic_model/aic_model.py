@@ -44,6 +44,8 @@ from rclpy.lifecycle import (
 from rclpy.node import Node
 from rclpy.task import Future
 from std_srvs.srv import Empty
+from tf2_ros.buffer import Buffer
+from tf2_ros.transform_listener import TransformListener
 from trajectory_msgs.msg import JointTrajectoryPoint
 
 
@@ -74,6 +76,9 @@ class AicModel(LifecycleNode):
                 f"Class {expected_policy_class_name} not in module {policy_module_name}"
             )
             raise LookupError(expected_policy_class_name)
+
+        self._tf_buffer = Buffer()
+        self._tf_listener = TransformListener(buffer=self._tf_buffer, node=self, spin_thread=True)
 
         self.cancel_service = self.create_service(
             Empty, "cancel_task", self.cancel_task_callback
