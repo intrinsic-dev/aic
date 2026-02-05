@@ -33,6 +33,7 @@ from rclpy.executors import SingleThreadedExecutor
 from .aic_robot import arm_joint_names, GRIPPER_OPEN_POS, GRIPPER_CLOSED_POS
 from .types import MotionUpdateActionDict, JointMotionUpdateActionDict
 
+
 @TeleoperatorConfig.register_subclass("aic_keyboard_joint")
 @dataclass
 class AICKeyboardJointTeleopConfig(KeyboardJointTeleopConfig):
@@ -41,6 +42,7 @@ class AICKeyboardJointTeleopConfig(KeyboardJointTeleopConfig):
     )
     high_command_scaling: float = 0.05
     low_command_scaling: float = 0.02
+
 
 class AICKeyboardJointTeleop(KeyboardJointTeleop):
     def __init__(self, config: KeyboardJointTeleopConfig):
@@ -63,13 +65,11 @@ class AICKeyboardJointTeleop(KeyboardJointTeleop):
 
     @property
     def action_features(self) -> dict:
-        return {
-            "names": JointMotionUpdateActionDict.__annotations__
-        }
-    
+        return {"names": JointMotionUpdateActionDict.__annotations__}
+
     def _get_action_value(self, is_pressed: bool) -> float:
         return self._current_scaling if is_pressed else 0.0
-    
+
     def get_action(self) -> dict[str, Any]:
         if not self.is_connected:
             raise DeviceNotConnectedError()
@@ -80,12 +80,14 @@ class AICKeyboardJointTeleop(KeyboardJointTeleop):
 
             if key == "u" and is_pressed:
                 is_low_scaling = self._current_scaling == self._low_scaling
-                self._current_scaling = self._high_scaling if is_low_scaling else self._low_scaling
+                self._current_scaling = (
+                    self._high_scaling if is_low_scaling else self._low_scaling
+                )
                 print(f"Command scaling toggled to: {self._current_scaling}")
                 continue
 
             val = self._get_action_value(is_pressed)
-            
+
             if key == "q":
                 self.curr_joint_actions["shoulder_pan_joint"] = val
             elif key == "a":
@@ -124,11 +126,13 @@ class AICKeyboardJointTeleop(KeyboardJointTeleop):
 
         return cast(dict, self.curr_joint_actions)
 
+
 @TeleoperatorConfig.register_subclass("aic_keyboard_ee")
 @dataclass(kw_only=True)
 class AICKeyboardEETeleopConfig(KeyboardEndEffectorTeleopConfig):
     high_command_scaling: float = 0.1
     low_command_scaling: float = 0.02
+
 
 class AICKeyboardEETeleop(KeyboardEndEffectorTeleop):
     def __init__(self, config: AICKeyboardEETeleopConfig):
@@ -166,12 +170,14 @@ class AICKeyboardEETeleop(KeyboardEndEffectorTeleop):
 
             if key == "t" and is_pressed:
                 is_low_speed = self._current_scaling == self._low_scaling
-                self._current_scaling = self._high_scaling if is_low_speed else self._low_scaling
+                self._current_scaling = (
+                    self._high_scaling if is_low_speed else self._low_scaling
+                )
                 print(f"Command scaling toggled to: {self._current_scaling}")
                 continue
 
             val = self._get_action_value(is_pressed)
-            
+
             if key == "w":
                 self._current_actions["linear.y"] = -val
             elif key == "s":
@@ -210,11 +216,12 @@ class AICKeyboardEETeleop(KeyboardEndEffectorTeleop):
 
         return cast(dict, self._current_actions)
 
+
 @TeleoperatorConfig.register_subclass("aic_spacemouse")
 @dataclass(kw_only=True)
 class AICSpaceMouseTeleopConfig(TeleoperatorConfig):
     operator_position_front: bool = True
-    device_path: str = None # only needed for multiple space mice
+    device_path: str = None  # only needed for multiple space mice
     command_scaling: float = 0.1
 
 
@@ -238,7 +245,7 @@ class AICSpaceMouseTeleop(Teleoperator):
     @property
     def name(self) -> str:
         return "aic_spacemouse"
-    
+
     @property
     def action_features(self) -> dict:
         return MotionUpdateActionDict.__annotations__
@@ -309,7 +316,7 @@ class AICSpaceMouseTeleop(Teleoperator):
             raise DeviceNotConnectedError()
 
         state = pyspacemouse.read()
-        
+
         clean_x = self.apply_deadband(float(state.x))
         clean_y = self.apply_deadband(float(state.y))
         clean_z = self.apply_deadband(float(state.z))
@@ -318,12 +325,12 @@ class AICSpaceMouseTeleop(Teleoperator):
         clean_yaw = self.apply_deadband(float(state.yaw))
 
         twist_msg = Twist()
-        twist_msg.linear.x = clean_x ** 1 * self.config.command_scaling
-        twist_msg.linear.y = -clean_y ** 1 * self.config.command_scaling 
-        twist_msg.linear.z = -clean_z ** 1 * self.config.command_scaling
-        twist_msg.angular.x = -clean_pitch ** 1 * self.config.command_scaling
-        twist_msg.angular.y = clean_roll ** 1 * self.config.command_scaling #
-        twist_msg.angular.z = clean_yaw ** 1 * self.config.command_scaling
+        twist_msg.linear.x = clean_x**1 * self.config.command_scaling
+        twist_msg.linear.y = -(clean_y**1) * self.config.command_scaling
+        twist_msg.linear.z = -(clean_z**1) * self.config.command_scaling
+        twist_msg.angular.x = -(clean_pitch**1) * self.config.command_scaling
+        twist_msg.angular.y = clean_roll**1 * self.config.command_scaling  #
+        twist_msg.angular.z = clean_yaw**1 * self.config.command_scaling
 
         if not self.config.operator_position_front:
             twist_msg.linear.x *= -1

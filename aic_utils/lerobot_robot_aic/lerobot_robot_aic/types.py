@@ -23,5 +23,5 @@ JointMotionUpdateActionDict = TypedDict(
         "wrist_2_joint": float,
         "wrist_3_joint": float,
         "gripper_target": float,
-    }
+    },
 )
