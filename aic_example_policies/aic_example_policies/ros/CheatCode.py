@@ -56,7 +56,9 @@ class CheatCode(PolicyRos):
                 Time(),
             )
         except TransformException as ex:
-            self.get_logger().error(f"Could not find transform to sfp_port_0_link: {ex}")
+            self.get_logger().error(
+                f"Could not find transform to sfp_port_0_link: {ex}"
+            )
             return False
         q_port = (
             port_tf_stamped.transform.rotation.x,
@@ -83,9 +85,9 @@ class CheatCode(PolicyRos):
                 "cable_0/sfp_tip_link",
                 Time(),
             )
-    
+
             self.get_logger().info(f"sfp transform: {sfp_tf_stamped}")
-    
+
             q_module = (
                 sfp_tf_stamped.transform.rotation.x,
                 sfp_tf_stamped.transform.rotation.y,
@@ -100,7 +102,7 @@ class CheatCode(PolicyRos):
             )
             q_diff = quaternion_multiply(q_port, q_module_inv)
             self.get_logger().info(f"q_diff: {q_diff}")
-    
+
             gripper_tf_stamped = self._parent_node._tf_buffer.lookup_transform(
                 "base_link",
                 "gripper/tcp",
@@ -114,7 +116,7 @@ class CheatCode(PolicyRos):
             )
             q_gripper_target = quaternion_multiply(q_diff, q_gripper)
             q_gripper_slerp = quaternion_slerp(q_gripper, q_gripper_target, 0.5)
-    
+
             approach_pose.orientation = Quaternion(
                 x=q_gripper_slerp[0],
                 y=q_gripper_slerp[1],
@@ -124,12 +126,17 @@ class CheatCode(PolicyRos):
             self.go_to_pose(approach_pose, 2.0)
 
             translation_diff = (
-                port_tf_stamped.transform.translation.x - sfp_tf_stamped.transform.translation.x,
-                port_tf_stamped.transform.translation.y - sfp_tf_stamped.transform.translation.y,
-                port_tf_stamped.transform.translation.z - sfp_tf_stamped.transform.translation.z,
+                port_tf_stamped.transform.translation.x
+                - sfp_tf_stamped.transform.translation.x,
+                port_tf_stamped.transform.translation.y
+                - sfp_tf_stamped.transform.translation.y,
+                port_tf_stamped.transform.translation.z
+                - sfp_tf_stamped.transform.translation.z,
             )
 
-            self.get_logger().info(f"sfp: {sfp_tf_stamped.transform.translation} diff: {translation_diff}")
+            self.get_logger().info(
+                f"sfp: {sfp_tf_stamped.transform.translation} diff: {translation_diff}"
+            )
             approach_pose.position.x += translation_diff[0] * 0.5
             approach_pose.position.y += translation_diff[1] * 0.5
             if translation_diff[2] < 0.0:
