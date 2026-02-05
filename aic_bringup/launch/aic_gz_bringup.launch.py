@@ -159,6 +159,9 @@ def launch_setup(context, *args, **kwargs):
         output="log",
         arguments=["-d", rviz_config_file],
         condition=IfCondition(launch_rviz),
+        parameters=[
+            {"use_sim_time": True},
+        ],
     )
 
     joint_state_broadcaster_spawner = Node(
@@ -228,6 +231,9 @@ def launch_setup(context, *args, **kwargs):
     aic_adapter = Node(
         package="aic_adapter",
         executable="aic_adapter",
+        parameters=[
+            {"use_sim_time": True},
+        ],
     )
 
     aic_engine = Node(
@@ -235,7 +241,7 @@ def launch_setup(context, *args, **kwargs):
         executable="aic_engine",
         output="screen",
         parameters=[
-            {"config_file_path": aic_engine_config_file},
+            {"config_file_path": aic_engine_config_file, "use_sim_time": True},
         ],
         condition=IfCondition(start_aic_engine),
     )
