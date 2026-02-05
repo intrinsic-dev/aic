@@ -19,10 +19,12 @@
 
 #include <chrono>
 #include <cmath>
+#include <condition_variable>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
+#include <mutex>
 #include <sstream>
 #include <unordered_set>
 
@@ -31,6 +33,7 @@
 #include "lifecycle_msgs/msg/state.hpp"
 #include "lifecycle_msgs/srv/get_state.hpp"
 #include "rclcpp/subscription_options.hpp"
+#include "sensor_msgs/msg/joint_state.hpp"
 
 namespace aic {
 
@@ -261,7 +264,7 @@ TaskAttempt::TaskAttempt(const std::string& _id)
 
 //==============================================================================
 YAML::Node Score::serialize() const {
-  const int total_score = this->calculate_total_score();
+  const double total_score = this->calculate_total_score();
   YAML::Node score;
   score["total"] = total_score;
   for (const auto& [trial_name, trial_score] : this->breakdown) {
@@ -273,9 +276,9 @@ YAML::Node Score::serialize() const {
 }
 
 //==============================================================================
-int Score::calculate_total_score() const {
+double Score::calculate_total_score() const {
   // TODO(luca) check calculation
-  int score = 0;
+  double score = 0;
   for (const auto& [trial_name, trial_score] : this->breakdown) {
     score += trial_score.tier_1.total_score();
     score += trial_score.tier_2.total_score();
@@ -594,7 +597,7 @@ EngineState Engine::run() {
     if (trial.state == TrialState::AllTasksCompleted) {
       RCLCPP_INFO(
           node_->get_logger(),
-          "\033[1;32m✓ Trial '%s' completed successfully! Score: %d\033[0m",
+          "\033[1;32m✓ Trial '%s' completed successfully! Score: %f\033[0m",
           trial_id.c_str(), trial_score.total_score());
     } else {
       RCLCPP_ERROR(node_->get_logger(),
@@ -618,7 +621,7 @@ EngineState Engine::run() {
     RCLCPP_INFO(node_->get_logger(),
                 "\033[1;32m║   ✓ All Trials Completed!              ║\033[0m");
     RCLCPP_INFO(node_->get_logger(),
-                "\033[1;32m║   Total Score: %.3d                     ║\033[0m",
+                "\033[1;32m║   Total Score: %.3f                     ║\033[0m",
                 score.calculate_total_score());
     RCLCPP_INFO(node_->get_logger(),
                 "\033[1;32m╚════════════════════════════════════════╝\033[0m");
@@ -1086,6 +1089,36 @@ bool Engine::ready_simulator(Trial& trial) {
       return false;
     }
   }
+
+  // Wait for cable to be spawned. Sleep in sim time to ensure sim has advanced.
+  node_->get_clock()->sleep_for(rclcpp::Duration::from_seconds(0.1));
+
+  RCLCPP_INFO(node_->get_logger(), "Waiting for robot arm to stabilize.");
+  // The end-effector dips when the cable is first attached.
+  // Wait for joints to settle by checking velocities.
+  std::condition_variable cv;
+  std::mutex mtx;
+  bool joints_settled = false;
+  const rclcpp::QoS reliable_qos = rclcpp::QoS(rclcpp::KeepLast(10)).reliable();
+  auto joint_states_sub =
+      node_->create_subscription<sensor_msgs::msg::JointState>(
+          "/joint_states", reliable_qos,
+          [this, &joints_settled, &cv,
+           &mtx](const sensor_msgs::msg::JointState::SharedPtr msg) {
+            if (msg->velocity.empty()) return;
+            for (size_t i = 0; i < msg->velocity.size(); ++i) {
+              if (std::fabs(msg->velocity[i]) > 1e-3) return;
+            }
+            {
+              std::unique_lock<std::mutex> lock(mtx);
+              joints_settled = true;
+            }
+            cv.notify_one();
+          });
+
+  std::unique_lock<std::mutex> lock(mtx);
+  cv.wait_for(lock, std::chrono::seconds(10),
+              [&joints_settled] { return joints_settled; });
 
   // TODO(Yadunund): Implement other simulator readiness checks.
 
@@ -1762,7 +1795,7 @@ void Engine::score_trial(TrialScore& score) {
   score.tier_2 = tier2_score;
   score.tier_3 = tier3_score;
 
-  RCLCPP_INFO(node_->get_logger(), "Finished scoring trial, total score is: %u",
+  RCLCPP_INFO(node_->get_logger(), "Finished scoring trial, total score is: %f",
               score.total_score());
 }
 
