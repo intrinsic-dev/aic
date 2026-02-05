@@ -252,6 +252,7 @@ void ScoringTier2::Reset() {
   this->task_end_time.reset();
   this->bagWriter.close();
   this->contacts.clear();
+  this->insertion_completion = false;
 }
 
 //////////////////////////////////////////////////
