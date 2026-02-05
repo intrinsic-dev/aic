@@ -60,7 +60,7 @@ Keys:
 | Key         | Command          |
 | ----------- | ---------------- |
 | Right Arrow | Next episode     |
-| Left Arrow  | Previous episode |
+| Left Arrow  | Cancel current episode and re-record |
 | ESC         | Stop recording   |
 ```
 
