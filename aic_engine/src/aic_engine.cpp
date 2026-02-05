@@ -1124,6 +1124,8 @@ bool Engine::ready_scoring(const Trial& trial) {
       max_task_limit = task.time_limit;
     }
   }
+  // Add a few seconds for safety since this is a limit for recorded data
+  max_task_limit += 5;
   if (!scoring_tier2_->StartRecording(bag_path, connections,
                                       std::chrono::seconds(max_task_limit))) {
     RCLCPP_ERROR(node_->get_logger(), "Failed to start recording to '%s'.",
