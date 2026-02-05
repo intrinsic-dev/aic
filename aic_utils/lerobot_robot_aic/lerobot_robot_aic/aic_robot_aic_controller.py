@@ -31,6 +31,9 @@ from aic_control_interfaces.msg import (
     MotionUpdate,
     TrajectoryGenerationMode,
 )
+from aic_control_interfaces.srv import (
+    ChangeTargetMode,
+)
 from control_msgs.action import ParallelGripperCommand
 from geometry_msgs.msg import Twist, Vector3, Wrench
 from lerobot.cameras import CameraConfig, make_cameras_from_configs
@@ -146,6 +149,27 @@ class AICRobotAICController(Robot):
         self.frame_id = config.teleop_frame_id
         print(f"Teleop frame id: {self.frame_id}")
 
+    def send_change_control_mode_req(self, mode):
+        ChangeTargetMode
+
+        req = ChangeTargetMode.Request()
+        req.target_mode = mode
+
+        self.node.get_logger().info(f"Sending request to change control mode to {mode}")
+
+        future = self.node.client.call_async(req)
+
+        rclpy.spin_until_future_complete(self.node, future)
+
+        response = future.result()
+
+        if response.success:
+            self.node.get_logger().info(f"Successfully changed control mode to {mode}")
+        else:
+            self.node.get_logger().info(f"Failed to change control mode to {mode}")
+
+        time.sleep(0.5)
+
     @cached_property
     def _cameras_ft(self) -> dict[str, tuple]:
         return {
@@ -190,6 +214,20 @@ class AICRobotAICController(Robot):
 
         self.node = Node("aic_robot_node")
         self.node.get_logger().set_level(logging.DEBUG)
+
+        self.node.client = self.node.create_client(
+            ChangeTargetMode, f"/aic_controller/change_target_mode"
+        )
+
+        while not self.node.client.wait_for_service():
+            self.node.get_logger().info(
+                f"Waiting for service 'aic_controller/change_target_mode'..."
+            )
+            time.sleep(1.0)
+
+        self.send_change_control_mode_req(
+                ChangeTargetMode.Request().TARGET_MODE_CARTESIAN
+            )
 
         self.motion_update_pub = self.node.create_publisher(
             MotionUpdate, "/aic_controller/pose_commands", 10
