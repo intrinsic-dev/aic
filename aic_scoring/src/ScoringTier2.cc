@@ -200,6 +200,9 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
     } else if (msg_ptr->topic_name == kJointMotionUpdateTopic) {
       const auto msg = deserialize_from_rosbag<JointMotionUpdateMsg>(msg_ptr);
       this->JointMotionUpdateCallback(msg);
+    } else if (msg_ptr->topic_name == kInsertionCompletionTopic) {
+      const auto msg = deserialize_from_rosbag<BoolMsg>(msg_ptr);
+      this->InsertionCompletionCallback(msg);
     } else {
       RCLCPP_WARN(this->node->get_logger(),
                   "Unexpected topic name while scoring: %s",
@@ -233,7 +236,7 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
   tier2_score.add_category_score("insertion force",
                                  this->GetInsertionForceScore());
   tier2_score.add_category_score("contacts", this->GetContactsScore());
-  tier3_score = this->GetDistanceScore();
+  tier3_score = this->ComputeTier3Score();
   return {tier2_score, tier3_score};
 }
 
@@ -249,6 +252,7 @@ void ScoringTier2::Reset() {
   this->task_end_time.reset();
   this->bagWriter.close();
   this->contacts.clear();
+  this->insertion_completion = false;
 }
 
 //////////////////////////////////////////////////
@@ -369,6 +373,11 @@ void ScoringTier2::MotionUpdateCallback(const MotionUpdateMsg &_msg) {
 //////////////////////////////////////////////////
 void ScoringTier2::JointMotionUpdateCallback(const JointMotionUpdateMsg &_msg) {
   (void)_msg;
+}
+
+//////////////////////////////////////////////////
+void ScoringTier2::InsertionCompletionCallback(const BoolMsg &_msg) {
+  this->insertion_completion = _msg.data;
 }
 
 //////////////////////////////////////////////////
@@ -510,8 +519,23 @@ Tier3Score ScoringTier2::GetDistanceScore() const {
   std::stringstream sstream;
   sstream.setf(std::ios::fixed);
   sstream.precision(2);
-  sstream << "Task completed in " << task_duration.seconds()
-          << " seconds, with a distance of " << dist.value() << " meters";
+  sstream << "Task duration: " << task_duration.seconds()
+          << " seconds. Distance: " << dist.value() << " meters";
+  return Tier3Score(score, sstream.str());
+}
+
+//////////////////////////////////////////////////
+Tier3Score ScoringTier2::ComputeTier3Score() const {
+  constexpr double kInsertionCompletionScore = 100.0;
+  Tier3Score dist_score = this->GetDistanceScore();
+  double score = dist_score.total_score();
+  std::stringstream sstream;
+  if (this->insertion_completion) {
+    score += kInsertionCompletionScore;
+    sstream << "Cable insertion successful. " << dist_score.message;
+  } else {
+    sstream << "Cable insertion failed. " << dist_score.message;
+  }
 
   return Tier3Score(score, sstream.str());
 }

@@ -194,6 +194,9 @@ namespace aic_gazebo
     /// \brief Cable connection 0 port subscriber
     private: gz::transport::Node::Subscriber cableConnection0PortSub;
 
+    /// \brief Cable connection 0 port subscriber
+    private: gz::transport::Node::Publisher taskCompletionPub;
+
     /// \brief Whether to attach cable connection 0 to port
     /// This is set on cableConnection0PortSub callback
     private: std::atomic<bool> attachCableConnection0ToPort{false};
