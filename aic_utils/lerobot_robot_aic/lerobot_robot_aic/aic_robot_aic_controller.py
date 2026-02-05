@@ -381,22 +381,17 @@ class AICRobotAICController(Robot):
 
         if not self.node or not self.parallel_gripper_action_client:
             raise RuntimeError("unexpected error")
-        logger = self.node.get_logger()
 
         if self.last_gripper_target != motion_update_action["gripper_target"]:
             if self.gripper_result:
-                logger.debug("cancelling existing gripper goal")
                 self.gripper_result.cancel()
-                logger.debug("waiting for gripper goal to finish")
                 self.gripper_result.result()
-                logger.debug("gripper goal has finished")
                 self.gripper_result = None
 
             goal = ParallelGripperCommand.Goal()
             goal.command.name = [self.config.gripper_joint_name]
             goal.command.position = [motion_update_action["gripper_target"]]
             goal.command.header.stamp = self.node.get_clock().now().to_msg()
-            logger.debug(f"sending new gripper goal {goal.command.position}")
             self.gripper_result = self.parallel_gripper_action_client.send_goal_async(
                 goal
             )

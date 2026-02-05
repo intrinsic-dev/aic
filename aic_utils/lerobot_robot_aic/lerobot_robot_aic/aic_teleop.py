@@ -320,7 +320,7 @@ class AICSpaceMouseTeleop(Teleoperator):
         twist_msg = Twist()
         twist_msg.linear.x = clean_x ** 1 * self.config.command_scaling
         twist_msg.linear.y = -clean_y ** 1 * self.config.command_scaling 
-        twist_msg.linear.z = clean_z ** 1 * self.config.command_scaling
+        twist_msg.linear.z = -clean_z ** 1 * self.config.command_scaling
         twist_msg.angular.x = -clean_pitch ** 1 * self.config.command_scaling
         twist_msg.angular.y = clean_roll ** 1 * self.config.command_scaling #
         twist_msg.angular.z = clean_yaw ** 1 * self.config.command_scaling

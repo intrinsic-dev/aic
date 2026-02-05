@@ -109,6 +109,10 @@ pixi run lerobot-record \
   --display_data=true
 ```
 
+:warning: Note: In `aic_robot_aic_controller.py`, there is a class called `AICRobotAICControllerConfig` with a field called `teleop_target_mode` must be set to `"cartesian"` or `"joint"` (the `AICRobotAICController` class doesn't have access to the `--teleop.type` flag). Make sure to set this and re-build if switching between cartesian/joint space control.
+
+Upon starting the command, you may see `WARN   Watchdog Validator ThreadId(13) zenoh_shm::watchdog::periodic_task: Some("Watchdog Validator")` which is safe to ignore; just look for `INFO ... ls/utils.py:227 Recording episode 0`.
+
 LeRobot recording keys:
 
 ```
