@@ -78,7 +78,9 @@ class AicModel(LifecycleNode):
             raise LookupError(expected_policy_class_name)
 
         self._tf_buffer = Buffer()
-        self._tf_listener = TransformListener(buffer=self._tf_buffer, node=self, spin_thread=True)
+        self._tf_listener = TransformListener(
+            buffer=self._tf_buffer, node=self, spin_thread=True
+        )
 
         self.cancel_service = self.create_service(
             Empty, "cancel_task", self.cancel_task_callback
