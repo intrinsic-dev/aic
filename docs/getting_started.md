@@ -12,9 +12,6 @@ This container hosts:
 - Trial orchestration via `aic_engine`
 - Scoring system
 
-**How to use:**
-- Pre-built images are available at `ghcr.io/intrinsic-dev/aic/aic_eval:latest`
-
 ### 2. Participant workspace
 This is your development workspace where you implement your policy.
 
@@ -22,9 +19,6 @@ This is your development workspace where you implement your policy.
 - Implement your policy in the `aic_model` package
 - Test locally against the evaluation container
 - Build and submit your container image for official evaluation
-
-**How to use:**
-- See [Policy Integration Guide](./policy.md) for implementation details
 
 ### Requirements
 
@@ -77,6 +71,7 @@ Also see [Alternative Installation Methods](https://pixi.prefix.dev/latest/insta
    export DBX_CONTAINER_MANAGER=docker
 
    # Create and enter the eval container
+   docker pull ghcr.io/intrinsic-dev/aic/aic_eval:latest
    distrobox create -r -i ghcr.io/intrinsic-dev/aic/aic_eval:latest aic_eval
    distrobox enter -r aic_eval
 
@@ -84,7 +79,12 @@ Also see [Alternative Installation Methods](https://pixi.prefix.dev/latest/insta
    /entrypoint.sh
    ```
 
-<!-- TODO: Update instruction to disable ACL after https://github.com/intrinsic-dev/aic/pull/190 or https://github.com/intrinsic-dev/aic/pull/171 is merged. -->
+   <!-- TODO: Update instruction to disable ACL after https://github.com/intrinsic-dev/aic/pull/190 or https://github.com/intrinsic-dev/aic/pull/171 is merged. -->
+
+   > [!Note]
+   > You may need to [login to ghcr.io](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-with-a-personal-access-token-classic).
+
+   <!-- TODO: Shouldn't need to login after we make it public -->
 
 2. **Set up pixi workspace:**
    ```bash
@@ -97,6 +97,9 @@ Also see [Alternative Installation Methods](https://pixi.prefix.dev/latest/insta
    cd ~/ws_aic/src/arc
    pixi install
    ```
+
+   > [!Tip]
+   > `pixi install` also builds the local dependencies.
 
 3. **Run an example policy:**
    ```bash

@@ -77,7 +77,7 @@ ros-kilted-my-policy-node = { path = "my_policy_node" }
 
 **Implement `PolicyRos`**
 
-For brevity, we will reuse the code from `aic_example_policies`.
+For brevity, we will reuse the code from `aic_example_policies`. See the [Policy Integration Guide](./policy.md) for implementation details.
 
 ```bash
 (aic) $ cp aic_example_policies/aic_example_policies/ros/WaveArm.py my_policy_node/my_policy_node/WaveArm.py
