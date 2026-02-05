@@ -93,13 +93,10 @@ Also see [Alternative Installation Methods](https://pixi.prefix.dev/latest/insta
    cd ~/ws_aic/src
    git clone https://github.com/intrinsic-dev/aic
 
-   # Install dependencies
+   # Install and build dependencies
    cd ~/ws_aic/src/arc
    pixi install
    ```
-
-   > [!Tip]
-   > `pixi install` also builds the local dependencies.
 
 3. **Run an example policy:**
    ```bash
