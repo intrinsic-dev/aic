@@ -55,7 +55,6 @@ class WaveArm(PolicyRos):
             self.get_logger().info(f"observation time: {t}")
 
             # Move the arm along a line, while looking down at the task board.
-            tcp = observation.tcp_transform.transform.translation
             loop_duration = 5.0  # seconds
             loop_fraction = (t % loop_duration) / loop_duration
             y_scale = 2 * loop_fraction
