@@ -94,6 +94,7 @@ class CameraImageScaling(TypedDict):
 @RobotConfig.register_subclass("aic_controller")
 @dataclass(kw_only=True)
 class AICRobotAICControllerConfig(RobotConfig):
+    teleop_frame_id: str = "gripper/tcp" # or "base_link"
     arm_joint_names: list[str] = field(default_factory=arm_joint_names.copy)
     gripper_joint_name: str = gripper_joint_name
     gripper_action_name: str = "/gripper_action_controller/gripper_cmd"
@@ -142,6 +143,8 @@ class AICRobotAICController(Robot):
             | None
         ) = None
         self._is_connected = False
+        self.frame_id = config.teleop_frame_id
+        print(f"Teleop frame id: {self.frame_id}")
 
     @cached_property
     def _cameras_ft(self) -> dict[str, tuple]:
@@ -314,10 +317,10 @@ class AICRobotAICController(Robot):
 
         msg = MotionUpdate()
         msg.header.stamp = self.node.get_clock().now().to_msg()
-        msg.header.frame_id = "base_link"
+        msg.header.frame_id = self.frame_id
         msg.velocity = twist_msg
-        msg.target_stiffness = np.diag([150.0, 150.0, 150.0, 150.0, 150.0, 150.0]).flatten() # testing to improve teleop controller oscillations/responsiveness
-        msg.target_damping = np.diag([100.0, 100.0, 100.0, 100.0, 100.0, 100.0]).flatten()
+        msg.target_stiffness = np.diag([85.0, 85.0, 85.0, 85.0, 85.0, 85.0]).flatten()
+        msg.target_damping = np.diag([75.0, 75.0, 75.0, 75.0, 75.0, 75.0]).flatten()
         msg.feedforward_wrench_at_tip = Wrench(
             force=Vector3(x=0.0, y=0.0, z=0.0),
             torque=Vector3(x=0.0, y=0.0, z=0.0),
