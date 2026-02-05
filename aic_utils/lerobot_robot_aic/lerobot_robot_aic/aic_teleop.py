@@ -116,25 +116,25 @@ class AICKeyboardEETeleop(KeyboardEndEffectorTeleop):
             elif key == "s":
                 self._current_actions["linear.y"] = val
             elif key == "a":
-                self._current_actions["linear.x"] = val
-            elif key == "d":
                 self._current_actions["linear.x"] = -val
+            elif key == "d":
+                self._current_actions["linear.x"] = val
             elif key == "r":
-                self._current_actions["linear.z"] = val
-            elif key == "f":
                 self._current_actions["linear.z"] = -val
+            elif key == "f":
+                self._current_actions["linear.z"] = val
             elif key == "W":
-                self._current_actions["angular.x"] = -val
-            elif key == "S":
                 self._current_actions["angular.x"] = val
+            elif key == "S":
+                self._current_actions["angular.x"] = -val
             elif key == "A":
                 self._current_actions["angular.y"] = -val
             elif key == "D":
                 self._current_actions["angular.y"] = val
             elif key == "q":
-                self._current_actions["angular.z"] = val
-            elif key == "e":
                 self._current_actions["angular.z"] = -val
+            elif key == "e":
+                self._current_actions["angular.z"] = val
             elif key == "j":
                 self._current_actions["gripper_target"] = GRIPPER_CLOSED_POS
             elif key == "k":
