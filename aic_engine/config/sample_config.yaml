@@ -38,6 +38,11 @@ scoring:
     # Pose commands sent from the model to the robot controller
         name: "/aic_controller/pose_commands"
         type: "aic_control_interfaces/msg/MotionUpdate"
+    - topic:
+    # Cable plug-port insertion task completion event
+        name: "/scoring/insertion_completion"
+        type: "std_msgs/msg/Bool"
+
 task_board_limits:
   nic_rail:
     min_translation: -0.0215  # Minimum translation from center along the rail (in meters)

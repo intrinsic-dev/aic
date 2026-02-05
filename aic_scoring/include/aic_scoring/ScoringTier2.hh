@@ -39,6 +39,7 @@
 #include <ros_gz_interfaces/msg/contacts.hpp>
 #include <rosbag2_cpp/writer.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
+#include <std_msgs/msg/bool.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <tf2_msgs/msg/tf_message.hpp>
 #include <tf2/buffer_core.hpp>
@@ -79,6 +80,7 @@ namespace aic_scoring
   // The Tier2 scoring interface.
   class ScoringTier2
   {
+    using BoolMsg = std_msgs::msg::Bool;
     using JointStateMsg = sensor_msgs::msg::JointState;
     using TFMsg = tf2_msgs::msg::TFMessage;
     using ContactsMsg = ros_gz_interfaces::msg::Contacts;
@@ -121,6 +123,10 @@ namespace aic_scoring
 
     /// \brief Topic to subscribe for joint commands sent to the controller.
     public: static constexpr const char* kJointMotionUpdateTopic = "/aic_controller/joint_commands";
+
+    /// \brief Topic to subscribe for insertion completion event
+    public: static constexpr const char* kInsertionCompletionTopic =
+        "/scoring/insertion_completion";
 
     /// \brief Class constructor.
     /// \param[in] _node Pointer to the ROS node.
@@ -212,6 +218,10 @@ namespace aic_scoring
     /// \param[in] _msg The received message.
     private: void JointMotionUpdateCallback(const JointMotionUpdateMsg& _msg);
 
+    /// \brief Callback for insertion completion event while scoring.
+    /// \param[in] _msg The received message.
+    private: void InsertionCompletionCallback(const BoolMsg& _msg);
+
     /// \brief Calculates score related with the gripper trajectory jerk.
     /// \return Scoring for the trajectory jerk score.
     private: Tier2Score::CategoryScore GetTrajectoryJerkScore() const;
@@ -238,6 +248,9 @@ namespace aic_scoring
     /// \brief Calculates the tier 3 score based on the distance between plug and port.
     /// \return Scoring for the distance category
     private: Tier3Score GetDistanceScore() const;
+
+    /// \return Compute Tier3 score
+    private: Tier3Score ComputeTier3Score() const;
 
     /// \brief Calculates the penalty (if any) for contacts with off limit entities.
     /// \return Scoring for the off limit contacts category
@@ -306,6 +319,9 @@ namespace aic_scoring
 
     /// \brief Gripper frame name.
     private: std::string gripperFrame;
+
+    /// \brief Whether cable plug-port insertion was completed
+    private: bool insertion_completion{false};
   };
 
   // The Tier2 class as a node.
