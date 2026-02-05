@@ -81,8 +81,9 @@ repositories:
     version: 0.2.6
   gazebo/gz_ros2_control:
     type: git
-    url: https://github.com/ros-controls/gz_ros2_control.git
-    version: 2.0.13
+    # Using JT's forked branch for fix in deactivating effort
+    url: https://github.com/JohnTGZ/gz_ros2_control.git
+    version: jt/fix-hold-joints-after-deactivating-effort
   gazebo/ros_gz:
     type: git
     url: https://github.com/gazebosim/ros_gz.git
