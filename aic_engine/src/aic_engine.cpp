@@ -1486,11 +1486,7 @@ bool Engine::home_robot() {
   }
   RCLCPP_INFO(node_->get_logger(), "aic_controller deactivated successfully.");
 
-  // Wait for the robot to reach home position if possible without resetting.
-  std::this_thread::sleep_for(std::chrono::seconds(2));
-
-  // Request for joints reset to home positions using pre-built request for
-  // extra safety.
+  // Request for joints reset to home positions using pre-built request.
   auto reset_joints_future =
       reset_joints_client_->async_send_request(home_reset_joints_request_);
   if (reset_joints_future.wait_for(std::chrono::seconds(10)) !=

@@ -81,7 +81,7 @@ repositories:
     version: 0.2.6
   gazebo/gz_ros2_control:
     type: git
-    # Using JT's forked branch for fix in holding joint positions after deactivating effort controllers
+    # Using JohnTGZ's forked branch for fix in holding joint positions after deactivating effort controllers
     url: https://github.com/JohnTGZ/gz_ros2_control.git
     version: jt/2.0.13-patch-hold-joints
   gazebo/ros_gz:
