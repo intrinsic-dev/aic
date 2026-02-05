@@ -15,9 +15,10 @@ between sensors and actuators.
 More specifically, the _policy_ can receive the following data at up to 20 Hz:
  * :camera: :camera: :camera: images from three cameras mounted on the robot wrist
  * :mechanical_arm: joint angles of the robot arm and gripper
- * :rightwards_pushing_hand: 3d force and 3d torque measurements at the robot wrist
- * :triangular_ruler: a transform between the gripper-fingers tool center point
-   (TCP) and the center of the robot base
+ * :balance_scale: 3d force and 3d torque measurements at the robot wrist
+ * :triangular_ruler: target and actual poses of the gripper-fingers tool center
+   point (TCP)
+ * :comet: velocity of the gripper-fingers tool center point (TCP)
 
 For convenience, the `aic_adapter` in the Challenge environment combines
 time-synchronized values of the sensor suite into a single composite
@@ -43,12 +44,12 @@ To integrate a policy using ROS data structures, such as `geometry_msgs.msg.Pose
  * supply this Python class name as a parameter to `aic_model` at runtime.
 
 The `insert_cable()` function receives several `Callable` methods as parameters:
- * `get_observation()` returns the most rececent [`Observation`](https://github.com/intrinsic-dev/aic/blob/main/aic_interfaces/aic_model_interfaces/msg/Observation.msg) as a ROS message. This message is composed of several standard ROS submessages:
+ * `get_observation()` returns the most rececent [`Observation`](https://github.com/intrinsic-dev/aic/blob/main/aic_interfaces/aic_model_interfaces/msg/Observation.msg) as a ROS message. This message is composed of several ROS submessages:
    * [`sensor_msgs/Image left_image`](https://github.com/ros2/common_interfaces/blob/kilted/sensor_msgs/msg/Image.msg) (and `center_image` and `right_image`)
    * [`sensor_msgs/CameraInfo left_camera_info`](https://github.com/ros2/common_interfaces/blob/kilted/sensor_msgs/msg/CameraInfo.msg) (and `center_camera_info` and `right_camera_info`)
    * [`sensor_msgs/JointState joint_states`](https://github.com/ros2/common_interfaces/blob/kilted/sensor_msgs/msg/JointState.msg)
    * [`geometry_msgs/WrenchStamped wrist_wrench`](https://github.com/ros2/common_interfaces/blob/kilted/geometry_msgs/msg/WrenchStamped.msg)
-   * [`geometry_msgs/TransformStamped tcp_transform`](https://github.com/ros2/common_interfaces/blob/kilted/geometry_msgs/msg/TransformStamped.msg)
+   * [`aic_control_interfaces/ControllerState controller_state`](https://github.com/intrinsic-dev/aic/blob/main/aic_interfaces/aic_control_interfaces/msg/ControllerState.msg)
  * `set_pose_target()` sends a `Pose` request to the robot arm controller.
  * `send_feedback()` publishes a `string` as a [feedback](https://docs.ros.org/en/kilted/Tutorials/Intermediate/Creating-an-Action.html#defining-an-action) message of the `InsertCable` action, which can be useful for debugging.
 
