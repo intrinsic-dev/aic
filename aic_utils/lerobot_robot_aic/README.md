@@ -19,11 +19,12 @@ pixi run lerobot-teleoperate \
 ```
 
 Options for `teleop.type`:
+
 - `aic_keyboard_ee` for cartesian-space keyboard control
 - `aic_spacemouse` for cartesian-space SpaceMouse control
 - `aic_keyboard_joint` for joint-space control
 
-Important gotcha: In `aic_robot_aic_controller.py`, there is a class called `AICRobotAICControllerConfig` with a field called `teleop_target_mode` must be set to `"cartesian"` or `"joint"` (the `AICRobotAICController` class doesn't have access to the `--teleop.type` flag). Make sure to set this and re-build if switching between cartesian/joint space control.
+:warning: Note: In `aic_robot_aic_controller.py`, there is a class called `AICRobotAICControllerConfig` with a field called `teleop_target_mode` must be set to `"cartesian"` or `"joint"` (the `AICRobotAICController` class doesn't have access to the `--teleop.type` flag). Make sure to set this and re-build if switching between cartesian/joint space control.
 
 #### Cartesian space control
 
@@ -54,7 +55,7 @@ View and edit key mappings and speed settings in `AICKeyboardJointTeleop` and `A
 
 ##### SpaceMouse
 
-Note: SpaceMouse teleoperation is laggier than keyboard teleoperation.
+:warning: Note: In our experience, SpaceMouse teleoperation was laggier than keyboard teleoperation.
 
 We used a 3Dconnexion SpaceMouse. To enable USB permissions, you may need to add the following to your `/etc/udev/rules.d/99-spacemouse.rules`:
 ``` bash
