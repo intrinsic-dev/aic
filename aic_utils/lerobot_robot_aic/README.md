@@ -32,7 +32,7 @@ In `aic_robot_aic_controller.py`, there is a class called `AICRobotAICController
 
 ##### Keyboard
 
-> Note on using the Shift+<key> commands: To stop, let go of <key> *before* letting go of Shift. Otherwise, the robot will continue rotating even after you let go of both Shift and <key>.
+> Note on using the Shift+&lt;key&gt; commands: To stop, let go of &lt;key&gt; *before* letting go of Shift. Otherwise, the robot will continue rotating even after you let go of both Shift and &lt;key&gt;.
 
 | Key     | Cartesian      |
 | ------- | ---------- |
