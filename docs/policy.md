@@ -64,10 +64,7 @@ To make this concrete, a [minimal example](https://github.com/intrinsic-dev/aic/
 commands to the arm.
 
 The class name is provided when starting the `aic_model` ROS node.
-Conveniently, this can be done on the command line for interactive development,
-typically without requiring a rebuild, thanks to the `--symlink-install` feature
-of [`colcon`](https://colcon.readthedocs.io/en/released/reference/verb/build.html#build-build-packages).
-
+For interactive development, you can pass this via the command line-—usually without a rebuild—-thanks to colcon’s `--symlink-install` feature.
 ```
 ros2 run aic_model aic_model --ros-args -p policy:=aic_example_policies.ros.WaveArm
 ```

@@ -14,9 +14,9 @@ The task board provides a standardized physical interface for the manipulation o
 ## 2. Zone Descriptions
 
 The AIC task board is organized into four functional zones that simulate a complete electronics assembly workflow. Zones 1 and 2 serve as the assembly targets:
-* Zone 1 houses the Network Interface Cards (NIC) with SFP ports, representing the server compute tray, 
-* Zone 2 mimics an optical patch panel with SC ports. 
-* Zones 3 and 4 act as the Pick Locations, providing a high-mix supply area where SFP modules and fiber optic plugs are staged on adjustable mounts.
+* [Zone 1](#zone-1-network-interface-cards-nic) houses the Network Interface Cards (NIC) with SFP ports, representing the server compute tray, 
+* [Zone 2](zone-2-sc-optical-ports) mimics an optical patch panel with SC ports. 
+* [Zones 3](#zone-3--4-pick-locations) and 4 act as the Pick Locations, providing a high-mix supply area where SFP modules and fiber optic plugs are staged on adjustable mounts.
 
 This modular layout requires the robot to transition from organized picking from zones 3 and 4 to precise, dexterous insertion in zones 1 and 2.
 

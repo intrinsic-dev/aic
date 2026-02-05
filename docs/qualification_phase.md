@@ -52,14 +52,14 @@ The qualification phase consists of **three specific trials** designed to test d
 	* SC ports are mounted on the task board: `SC_PORT_0` on `SC_RAIL_0` and `SC_PORT_1` on `SC_RAIL_1`, each with random translation and orientation offsets.
 	* The opposite end of the cable (SFP module) remains free and unconnected.
 
-* **Manipulation Task:** Insert the grasped `SC_PLUG` into one of the SC ports (`SC_PORT_0` or `SC_PORT_1`) mounted on the task board along the SC rails.
+* **Manipulation Task:** Insert the grasped `SC_PLUG` into one of the SC ports (`SC_PORT_0` or `SC_PORT_1`), ensuring alignment with the task board's SC rails.
 
 
 ## 3. Evaluation Metrics & Scoring
 
 Each trial is scored using a tiered system. Only submissions passing Tier 1 will proceed to quantitative scoring.
 
-### Tier 1: policy Validity (Prerequisite)
+### Tier 1: Policy Validity (Prerequisite)
 
 * **Check:** Submission must load and run without errors.
 * **Requirement:** The policy must generate robot commands on the specified ROS topics from sensor inputs.
