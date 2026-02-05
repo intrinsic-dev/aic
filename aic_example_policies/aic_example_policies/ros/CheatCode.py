@@ -77,16 +77,14 @@ class CheatCode(PolicyRos):
             ),
             orientation=Quaternion(x=1.0, y=0.0, z=0.0, w=0.0),
         )
-        self.go_to_pose(approach_pose, 2.0)
+        self.go_to_pose(approach_pose, 5.0)
 
-        for approach_count in range(0, 20):
+        while True:
             sfp_tf_stamped = self._parent_node._tf_buffer.lookup_transform(
                 "base_link",
                 "cable_0/sfp_tip_link",
                 Time(),
             )
-
-            self.get_logger().info(f"sfp transform: {sfp_tf_stamped}")
 
             q_module = (
                 sfp_tf_stamped.transform.rotation.x,
@@ -101,7 +99,6 @@ class CheatCode(PolicyRos):
                 -q_module[3],
             )
             q_diff = quaternion_multiply(q_port, q_module_inv)
-            self.get_logger().info(f"q_diff: {q_diff}")
 
             gripper_tf_stamped = self._parent_node._tf_buffer.lookup_transform(
                 "base_link",
@@ -115,7 +112,7 @@ class CheatCode(PolicyRos):
                 gripper_tf_stamped.transform.rotation.w,
             )
             q_gripper_target = quaternion_multiply(q_diff, q_gripper)
-            q_gripper_slerp = quaternion_slerp(q_gripper, q_gripper_target, 0.5)
+            q_gripper_slerp = quaternion_slerp(q_gripper, q_gripper_target, 0.2)
 
             approach_pose.orientation = Quaternion(
                 x=q_gripper_slerp[0],
@@ -123,7 +120,6 @@ class CheatCode(PolicyRos):
                 z=q_gripper_slerp[2],
                 w=q_gripper_slerp[3],
             )
-            self.go_to_pose(approach_pose, 2.0)
 
             translation_diff = (
                 port_tf_stamped.transform.translation.x
@@ -134,16 +130,14 @@ class CheatCode(PolicyRos):
                 - sfp_tf_stamped.transform.translation.z,
             )
 
-            self.get_logger().info(
-                f"sfp: {sfp_tf_stamped.transform.translation} diff: {translation_diff}"
-            )
-            approach_pose.position.x += translation_diff[0] * 0.5
-            approach_pose.position.y += translation_diff[1] * 0.5
-            if translation_diff[2] < 0.0:
-                approach_pose.position.z -= 0.01
+            approach_pose.position.x += translation_diff[0] * 0.1
+            approach_pose.position.y += translation_diff[1] * 0.1
+            self.get_logger().info(f"z diff: {translation_diff[2]:0.5}")
+            if translation_diff[2] < 0.001:
+                approach_pose.position.z -= 0.0003
             else:
                 break
-            self.go_to_pose(approach_pose, 2.0)
+            self.go_to_pose(approach_pose, 0.05)
 
         self.get_logger().info("CheatCode.insert_cable() exiting...")
         return True
