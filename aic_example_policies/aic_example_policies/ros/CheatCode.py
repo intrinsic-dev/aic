@@ -17,14 +17,18 @@
 
 import time
 
-from aic_model.policy_ros import PolicyRos
+from aic_model.policy_ros import (
+    PolicyRos,
+    GetObservationCallback,
+    SetPoseTargetCallback,
+    SendFeedbackCallback,
+)
 from aic_model_interfaces.msg import Observation
 from aic_task_interfaces.msg import Task
 from geometry_msgs.msg import Point, Pose, Quaternion
 from rclpy.duration import Duration
 from rclpy.time import Time
 from tf2_ros import TransformException
-from typing import Callable
 from tf_transformations import quaternion_multiply, quaternion_slerp
 
 
@@ -41,9 +45,9 @@ class CheatCode(PolicyRos):
     def insert_cable(
         self,
         task: Task,
-        get_observation: Callable[[], Observation],
-        set_pose_target: Callable[[Pose, str], []],
-        send_feedback: Callable[[str], []],
+        get_observation: GetObservationCallback,
+        set_pose_target: SetPoseTargetCallback,
+        send_feedback: SendFeedbackCallback,
     ):
         self.get_logger().info(f"CheatCode.insert_cable() enter. Task: {task}")
         self._set_pose_target = set_pose_target
