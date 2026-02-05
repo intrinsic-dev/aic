@@ -1466,15 +1466,17 @@ bool Engine::home_robot() {
   RCLCPP_INFO(node_->get_logger(), "Homing robot to initial positions...");
 
   // Lambda to switch controllers
-  auto switch_controllers = [this](const std::vector<std::string>& activate,
-                                    const std::vector<std::string>& deactivate) -> bool {
+  auto switch_controllers =
+      [this](const std::vector<std::string>& activate,
+             const std::vector<std::string>& deactivate) -> bool {
     auto request = std::make_shared<SwitchControllerSrv::Request>();
     request->activate_controllers = activate;
     request->deactivate_controllers = deactivate;
     request->strictness = SwitchControllerSrv::Request::BEST_EFFORT;
 
     auto future = switch_controller_client_->async_send_request(request);
-    if (future.wait_for(std::chrono::seconds(10)) != std::future_status::ready) {
+    if (future.wait_for(std::chrono::seconds(10)) !=
+        std::future_status::ready) {
       RCLCPP_ERROR(node_->get_logger(),
                    "SwitchController service call timed out");
       return false;
