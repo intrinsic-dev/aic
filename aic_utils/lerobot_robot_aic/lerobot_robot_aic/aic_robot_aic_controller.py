@@ -29,6 +29,7 @@ import rclpy
 from aic_control_interfaces.msg import (
     ControllerState,
     MotionUpdate,
+    JointMotionUpdate,
     TrajectoryGenerationMode,
 )
 from aic_control_interfaces.srv import (
@@ -97,7 +98,9 @@ class CameraImageScaling(TypedDict):
 @RobotConfig.register_subclass("aic_controller")
 @dataclass(kw_only=True)
 class AICRobotAICControllerConfig(RobotConfig):
+    teleop_target_mode: str = "cartesian" # or "joint"
     teleop_frame_id: str = "gripper/tcp" # or "base_link"
+    
     arm_joint_names: list[str] = field(default_factory=arm_joint_names.copy)
     gripper_joint_name: str = gripper_joint_name
     gripper_action_name: str = "/gripper_action_controller/gripper_cmd"
@@ -225,12 +228,17 @@ class AICRobotAICController(Robot):
             )
             time.sleep(1.0)
 
+        change_mode_req = ChangeTargetMode.Request.TARGET_MODE_JOINT if self.config.teleop_target_mode == "joint" else ChangeTargetMode.Request.TARGET_MODE_CARTESIAN
         self.send_change_control_mode_req(
-                ChangeTargetMode.Request().TARGET_MODE_CARTESIAN
+                change_mode_req
             )
 
         self.motion_update_pub = self.node.create_publisher(
             MotionUpdate, "/aic_controller/pose_commands", 10
+        )
+
+        self.joint_motion_update_pub = self.node.create_publisher(
+            JointMotionUpdate, "/aic_controller/joint_commands", 10
         )
 
         def controller_state_cb(msg: ControllerState):
@@ -339,7 +347,7 @@ class AICRobotAICController(Robot):
         obs = {**cam_obs, **controller_state_obs}
         return obs
 
-    def send_action(self, action: dict[str, Any]) -> dict[str, Any]:
+    def send_action_cartesian(self, action: dict[str, Any]) -> dict[str, Any]:
         if not self._is_connected or not self.node:
             raise DeviceNotConnectedError()
 
@@ -394,7 +402,26 @@ class AICRobotAICController(Robot):
             )
             self.last_gripper_target = motion_update_action["gripper_target"]
 
-        return action
+    def send_action_joint(self, action: dict[str, Any]) -> dict[str, Any]:
+        msg = JointMotionUpdate()
+
+        msg.target_state.velocities = list(action.values())[0:-1] # omit gripper_target at the end
+
+        msg.target_stiffness = [85.0, 85.0, 85.0, 85.0, 85.0, 85.0]
+        msg.target_damping =[75.0, 75.0, 75.0, 75.0, 75.0, 75.0]
+        msg.trajectory_generation_mode.mode = TrajectoryGenerationMode.MODE_VELOCITY
+
+        if self.joint_motion_update_pub is not None:
+            self.joint_motion_update_pub.publish(msg)
+
+    def send_action(self, action: dict[str, Any]) -> dict[str, Any]:
+        if self.config.teleop_target_mode == "cartesian":
+            return self.send_action_cartesian(action)
+        elif self.config.teleop_target_mode == "joint":
+            return self.send_action_joint(action)
+        else:
+            logger.debug("Invalid teleop_target_mode")
+            return None
 
     def disconnect(self) -> None:
         if not self.is_connected:
