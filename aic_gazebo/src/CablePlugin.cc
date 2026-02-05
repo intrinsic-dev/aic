@@ -142,7 +142,7 @@ void CablePlugin::Configure(const gz::sim::Entity& _entity,
   this->creator = std::make_unique<SdfEntityCreator>(_ecm, _eventManager);
 
   this->taskCompletionPub = this->node.Advertise<gz::msgs::Boolean>(
-      "/" + this->cableModelName +  "/insertion_completion");
+      "/" + this->cableModelName + "/insertion_completion");
 
   gzmsg << "Cable transitioning to HARNESS state." << std::endl;
   this->cableState = CableState::HARNESS;
