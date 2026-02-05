@@ -96,8 +96,8 @@ class CreateAndCancelTaskNode(Node):
             rclpy.shutdown()
             return
         self.goal_handle = goal_handle
-        self.get_logger().info("Waiting 30 seconds before canceling goal....")
-        self.timer = self.create_timer(30.0, self.timer_callback)
+        self.get_logger().info("Waiting 60 seconds before canceling goal....")
+        self.timer = self.create_timer(60.0, self.timer_callback)
         self.get_result_future = goal_handle.get_result_async()
         self.get_result_future.add_done_callback(self.get_result_callback)
 

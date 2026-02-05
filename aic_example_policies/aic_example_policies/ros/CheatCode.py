@@ -31,14 +31,11 @@ from tf_transformations import quaternion_multiply, quaternion_slerp
 class CheatCode(PolicyRos):
     def __init__(self, parent_node):
         super().__init__(parent_node)
-        self.get_logger().info("CheatCode.__init__()")
 
     def go_to_pose(self, pose: Pose, timeout_sec: float) -> bool:
         self._set_pose_target(pose)
-        self.get_logger().info("Waiting to reach pose...")
         # todo: smart stuff here to wait for the robot to reach the pose
         time.sleep(timeout_sec)
-        self.get_logger().info("Reached pose, hopefully...")
         return True
 
     def insert_cable(
@@ -49,11 +46,9 @@ class CheatCode(PolicyRos):
         send_feedback: Callable[[str], []],
     ):
         self.get_logger().info(f"CheatCode.insert_cable() enter. Task: {task}")
-        self._get_observation = get_observation
         self._set_pose_target = set_pose_target
 
         start_time = time.clock_gettime(0)
-        # send_feedback("waving the arm around")
         try:
             port_tf_stamped = self._parent_node._tf_buffer.lookup_transform(
                 "base_link",
@@ -63,6 +58,12 @@ class CheatCode(PolicyRos):
         except TransformException as ex:
             self.get_logger().error(f"Could not find transform to sfp_port_0_link: {ex}")
             return False
+        q_port = (
+            port_tf_stamped.transform.rotation.x,
+            port_tf_stamped.transform.rotation.y,
+            port_tf_stamped.transform.rotation.z,
+            port_tf_stamped.transform.rotation.w,
+        )
 
         self.get_logger().info(f"base to port transform: {port_tf_stamped}")
 
@@ -73,17 +74,8 @@ class CheatCode(PolicyRos):
                 z=port_tf_stamped.transform.translation.z + 0.1,
             ),
             orientation=Quaternion(x=1.0, y=0.0, z=0.0, w=0.0),
-            # orientation=Quaternion(
-            #     x=port_tf_stamped.transform.rotation.x,
-            #     y=port_tf_stamped.transform.rotation.y,
-            #     z=port_tf_stamped.transform.rotation.z,
-            #     w=port_tf_stamped.transform.rotation.w,
-            # ),
         )
         self.go_to_pose(approach_pose, 2.0)
-
-        #approach_pose.orientation = sfp_tf_stamped.transform.rotation
-        #self.go_to_pose(approach_pose)
 
         for approach_count in range(0, 20):
             sfp_tf_stamped = self._parent_node._tf_buffer.lookup_transform(
@@ -94,7 +86,6 @@ class CheatCode(PolicyRos):
     
             self.get_logger().info(f"sfp transform: {sfp_tf_stamped}")
     
-            q_receptacle = (1.0, 0.0, 0.0, 0.0)  # todo: query tf for this...
             q_module = (
                 sfp_tf_stamped.transform.rotation.x,
                 sfp_tf_stamped.transform.rotation.y,
@@ -102,12 +93,12 @@ class CheatCode(PolicyRos):
                 sfp_tf_stamped.transform.rotation.w,
             )
             q_module_inv = (
-                -q_module[0],
-                -q_module[1],
-                -q_module[2],
-                q_module[3],
+                q_module[0],
+                q_module[1],
+                q_module[2],
+                -q_module[3],
             )
-            q_diff = quaternion_multiply(q_receptacle, q_module_inv)
+            q_diff = quaternion_multiply(q_port, q_module_inv)
             self.get_logger().info(f"q_diff: {q_diff}")
     
             gripper_tf_stamped = self._parent_node._tf_buffer.lookup_transform(
@@ -121,20 +112,16 @@ class CheatCode(PolicyRos):
                 gripper_tf_stamped.transform.rotation.z,
                 gripper_tf_stamped.transform.rotation.w,
             )
-            # 1.0, 0.0, 0.0, 0.0)  # todo: query TF for this
-            q_gripper_next = quaternion_multiply(q_gripper, q_diff)
-            q_gripper_slerp = quaternion_slerp(q_gripper, q_gripper_next, 0.2)
-
-            # todo: slerp this rather than "snap" to the target orientation
+            q_gripper_target = quaternion_multiply(q_diff, q_gripper)
+            q_gripper_slerp = quaternion_slerp(q_gripper, q_gripper_target, 0.5)
     
-            if approach_count == 0:
-                approach_pose.orientation = Quaternion(
-                    x=q_gripper_next[0],
-                    y=q_gripper_next[1],
-                    z=q_gripper_next[2],
-                    w=q_gripper_next[3],
-                )
-            # self.go_to_pose(approach_pose, 2.0)
+            approach_pose.orientation = Quaternion(
+                x=q_gripper_slerp[0],
+                y=q_gripper_slerp[1],
+                z=q_gripper_slerp[2],
+                w=q_gripper_slerp[3],
+            )
+            self.go_to_pose(approach_pose, 2.0)
 
             translation_diff = (
                 port_tf_stamped.transform.translation.x - sfp_tf_stamped.transform.translation.x,
@@ -143,41 +130,13 @@ class CheatCode(PolicyRos):
             )
 
             self.get_logger().info(f"sfp: {sfp_tf_stamped.transform.translation} diff: {translation_diff}")
-            approach_pose.position.x += translation_diff[0] * 0.2
-            approach_pose.position.y += translation_diff[1] * 0.2
-            if translation_diff[2] < 0:
+            approach_pose.position.x += translation_diff[0] * 0.5
+            approach_pose.position.y += translation_diff[1] * 0.5
+            if translation_diff[2] < 0.0:
                 approach_pose.position.z -= 0.01
             else:
                 break
             self.go_to_pose(approach_pose, 2.0)
-
-        # set_pose_target(sfp_pose)
-
-        # while time.clock_gettime(0) - start_time < 10.0:
-        #     time.sleep(0.25)
-        #     observation = get_observation()
-        #     t = (
-        #         observation.center_image.header.stamp.sec
-        #         + observation.center_image.header.stamp.nanosec / 1e9
-        #     )
-        #     self.get_logger().info(f"observation time: {t}")
-
-        #     # Move the arm along a line, while looking down at the task board.
-        #     tcp = observation.tcp_transform.transform.translation
-        #     loop_duration = 5.0  # seconds
-        #     loop_fraction = (t % loop_duration) / loop_duration
-        #     y_scale = 2 * loop_fraction
-        #     if y_scale > 1.0:
-        #         y_scale = 2.0 - y_scale
-        #     y_scale -= 1.0
-
-        #     # create a smooth series of target points that flies over the task board
-        #     set_pose_target(
-        #         Pose(
-        #             position=Point(x=-0.4, y=0.45 + 0.3 * y_scale, z=0.25),
-        #             orientation=Quaternion(x=0.0, y=1.0, z=0.0, w=0.0),
-        #         )
-        #     )
 
         self.get_logger().info("CheatCode.insert_cable() exiting...")
         return True
