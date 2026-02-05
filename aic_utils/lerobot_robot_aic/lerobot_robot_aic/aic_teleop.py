@@ -30,53 +30,114 @@ from lerobot.utils.errors import DeviceNotConnectedError, DeviceAlreadyConnected
 from lerobot_teleoperator_devices import KeyboardJointTeleop, KeyboardJointTeleopConfig
 from rclpy.executors import SingleThreadedExecutor
 
-from .aic_robot import arm_joint_names
-from .types import MotionUpdateActionDict
+from .aic_robot import arm_joint_names, GRIPPER_OPEN_POS, GRIPPER_CLOSED_POS
+from .types import MotionUpdateActionDict, JointMotionUpdateActionDict
 
-GRIPPER_CLOSED_POS = 0.012
-GRIPPER_OPEN_POS = 0.025
-
-
-@TeleoperatorConfig.register_subclass("aic_keyboard")
+@TeleoperatorConfig.register_subclass("aic_keyboard_joint")
 @dataclass
-class AICKeyboardTeleopConfig(KeyboardJointTeleopConfig):
+class AICKeyboardJointTeleopConfig(KeyboardJointTeleopConfig):
     arm_action_keys: list[str] = field(
-        default_factory=lambda: [f"{x}.pos" for x in arm_joint_names]
+        default_factory=lambda: [f"{x}" for x in arm_joint_names]
     )
-    action_increment: float = 0.02
+    high_command_scaling: float = 0.05
+    low_command_scaling: float = 0.02
 
-
-class AICKeyboardTeleop(KeyboardJointTeleop):
+class AICKeyboardJointTeleop(KeyboardJointTeleop):
     def __init__(self, config: KeyboardJointTeleopConfig):
         super().__init__(config)
-        # Set initial goals.
-        # Not sure if it is a bug or intended, lerobot-ros does not normalize arm joints,
-        # it clamps them instead. But it does normalize for gripper.
-        self.curr_joint_actions = {
-            "shoulder_pan_joint.pos": -0.546,
-            "shoulder_lift_joint.pos": -1.703,
-            "elbow_joint.pos": -1.291,
-        "wrist_1_joint.pos": -1.719,
-            "wrist_2_joint.pos": 1.571,
-            "wrist_3_joint.pos": -2.116,
-            "gripper.pos": GRIPPER_CLOSED_POS,  # closed
+
+        self.config = config
+        self._low_scaling = config.low_command_scaling
+        self._high_scaling = config.high_command_scaling
+        self._current_scaling = self._high_scaling
+
+        self.curr_joint_actions: JointMotionUpdateActionDict = {
+            "shoulder_pan_joint": 0.0,
+            "shoulder_lift_joint": 0.0,
+            "elbow_joint": 0.0,
+            "wrist_1_joint": 0.0,
+            "wrist_2_joint": 0.0,
+            "wrist_3_joint": 0.0,
+            "gripper_target": GRIPPER_CLOSED_POS,
         }
 
+    @property
+    def action_features(self) -> dict:
+        return {
+            "names": JointMotionUpdateActionDict.__annotations__
+        }
+    
+    def _get_action_value(self, is_pressed: bool) -> float:
+        return self._current_scaling if is_pressed else 0.0
+    
+    def get_action(self) -> dict[str, Any]:
+        if not self.is_connected:
+            raise DeviceNotConnectedError()
+
+        self._drain_pressed_keys()
+
+        for key, is_pressed in self.current_pressed.items():
+
+            if key == "u" and is_pressed:
+                is_low_scaling = self._current_scaling == self._low_scaling
+                self._current_scaling = self._high_scaling if is_low_scaling else self._low_scaling
+                print(f"Command scaling toggled to: {self._current_scaling}")
+                continue
+
+            val = self._get_action_value(is_pressed)
+            
+            if key == "q":
+                self.curr_joint_actions["shoulder_pan_joint"] = val
+            elif key == "a":
+                self.curr_joint_actions["shoulder_pan_joint"] = -val
+            elif key == "w":
+                self.curr_joint_actions["shoulder_lift_joint"] = val
+            elif key == "s":
+                self.curr_joint_actions["shoulder_lift_joint"] = -val
+            elif key == "e":
+                self.curr_joint_actions["elbow_joint"] = val
+            elif key == "d":
+                self.curr_joint_actions["elbow_joint"] = -val
+            elif key == "r":
+                self.curr_joint_actions["wrist_1_joint"] = val
+            elif key == "f":
+                self.curr_joint_actions["wrist_1_joint"] = -val
+            elif key == "t":
+                self.curr_joint_actions["wrist_2_joint"] = val
+            elif key == "g":
+                self.curr_joint_actions["wrist_2_joint"] = -val
+            elif key == "y":
+                self.curr_joint_actions["wrist_3_joint"] = val
+            elif key == "h":
+                self.curr_joint_actions["wrist_3_joint"] = -val
+            elif key == "j":
+                self.curr_joint_actions["gripper_target"] = GRIPPER_CLOSED_POS
+            elif key == "k":
+                self.curr_joint_actions["gripper_target"] = GRIPPER_OPEN_POS
+            elif is_pressed:
+                # If the key is pressed, add it to the misc_keys_queue
+                # this will record key presses that are not part of the delta_x, delta_y, delta_z
+                # this is useful for retrieving other events like interventions for RL, episode success, etc.
+                self.misc_keys_queue.put(key)
+
+        self.current_pressed.clear()
+
+        return cast(dict, self.curr_joint_actions)
 
 @TeleoperatorConfig.register_subclass("aic_keyboard_ee")
 @dataclass(kw_only=True)
 class AICKeyboardEETeleopConfig(KeyboardEndEffectorTeleopConfig):
-    command_scaling: float = 0.1
-
+    high_command_scaling: float = 0.1
+    low_command_scaling: float = 0.02
 
 class AICKeyboardEETeleop(KeyboardEndEffectorTeleop):
     def __init__(self, config: AICKeyboardEETeleopConfig):
         super().__init__(config)
         self.config = config
 
-        self._high_scaling = config.command_scaling
-        self._low_scaling = 0.02
-        self._is_low_speed = False
+        self._high_scaling = config.high_command_scaling
+        self._low_scaling = config.low_command_scaling
+        self._current_scaling = self._high_scaling
 
         self._current_actions: MotionUpdateActionDict = {
             "linear.x": 0.0,
@@ -93,7 +154,7 @@ class AICKeyboardEETeleop(KeyboardEndEffectorTeleop):
         return MotionUpdateActionDict.__annotations__
 
     def _get_action_value(self, is_pressed: bool) -> float:
-        return self.config.command_scaling if is_pressed else 0.0
+        return self._current_scaling if is_pressed else 0.0
 
     def get_action(self) -> dict[str, Any]:
         if not self.is_connected:
@@ -104,9 +165,9 @@ class AICKeyboardEETeleop(KeyboardEndEffectorTeleop):
         for key, is_pressed in self.current_pressed.items():
 
             if key == "t" and is_pressed:
-                self._is_low_speed = not self._is_low_speed
-                self.config.command_scaling = self._low_scaling if self._is_low_speed else self._high_scaling
-                print(f"Command scaling toggled to: {self.config.command_scaling}")
+                is_low_speed = self._current_scaling == self._low_scaling
+                self._current_scaling = self._high_scaling if is_low_speed else self._low_scaling
+                print(f"Command scaling toggled to: {self._current_scaling}")
                 continue
 
             val = self._get_action_value(is_pressed)
@@ -241,7 +302,6 @@ class AICSpaceMouseTeleop(Teleoperator):
         pass
 
     def apply_deadband(self, value, threshold=0.02):
-        # print("deadband", type(value))
         return value if abs(value) > threshold else 0.0
 
     def get_action(self) -> dict[str, Any]:
@@ -249,8 +309,6 @@ class AICSpaceMouseTeleop(Teleoperator):
             raise DeviceNotConnectedError()
 
         state = pyspacemouse.read()
-
-        # print(state.x, type(state.x))
         
         clean_x = self.apply_deadband(float(state.x))
         clean_y = self.apply_deadband(float(state.y))
@@ -258,15 +316,14 @@ class AICSpaceMouseTeleop(Teleoperator):
         clean_roll = self.apply_deadband(float(state.roll))
         clean_pitch = self.apply_deadband(float(state.pitch))
         clean_yaw = self.apply_deadband(float(state.yaw))
-        # print(state)
 
         twist_msg = Twist()
-        twist_msg.linear.x = -clean_y ** 1 * self.config.command_scaling 
-        twist_msg.linear.y = clean_x ** 1 * self.config.command_scaling
+        twist_msg.linear.x = clean_x ** 1 * self.config.command_scaling
+        twist_msg.linear.y = -clean_y ** 1 * self.config.command_scaling 
         twist_msg.linear.z = clean_z ** 1 * self.config.command_scaling
-        twist_msg.angular.x = -clean_roll ** 1 * self.config.command_scaling
-        twist_msg.angular.y = -clean_pitch ** 1 * self.config.command_scaling
-        twist_msg.angular.z = -clean_yaw ** 1 * self.config.command_scaling
+        twist_msg.angular.x = -clean_pitch ** 1 * self.config.command_scaling
+        twist_msg.angular.y = clean_roll ** 1 * self.config.command_scaling #
+        twist_msg.angular.z = clean_yaw ** 1 * self.config.command_scaling
 
         if not self.config.operator_position_front:
             twist_msg.linear.x *= -1
