@@ -85,10 +85,6 @@ bool CartesianImpedanceAction::compute(
   // Add a fixed offset wrench to account for payload weight
   control_wrench += params.offset_wrench;
 
-  RCLCPP_WARN_STREAM_THROTTLE(logging_if_->get_logger(),
-                              *clock_if_->get_clock(), 1000,
-                              "Control wrench: " << control_wrench.transpose());
-
   // Get target torque from jacobian
   Eigen::VectorXd target_torque = jacobian.transpose() * control_wrench;
 

@@ -36,8 +36,8 @@ ros-kilted-lerobot-robot-aic = { path = "aic_utils/lerobot_robot_aic" }
 
 [pypi-dependencies]
 lerobot = "==0.4.3"
-lerobot_robot_ros = { git = "https://github.com/koonpeng/lerobot-ros", rev = "535ce545a8887c5f58596833827312ddebcbde75", subdirectory = "lerobot_robot_ros" }
-lerobot_teleoperator_devices = { git = "https://github.com/koonpeng/lerobot-ros", rev = "535ce545a8887c5f58596833827312ddebcbde75", subdirectory = "lerobot_teleoperator_devices" }
+lerobot_robot_ros = { git = "https://github.com/koonpeng/lerobot-ros", rev = "b4a635fc5264266bd1575f07d54be3d4bbd620e0", subdirectory = "lerobot_robot_ros" }
+lerobot_teleoperator_devices = { git = "https://github.com/koonpeng/lerobot-ros", rev = "b4a635fc5264266bd1575f07d54be3d4bbd620e0", subdirectory = "lerobot_teleoperator_devices" }
 
 [activation.env]
 RMW_IMPLEMENTATION = "rmw_zenoh_cpp"

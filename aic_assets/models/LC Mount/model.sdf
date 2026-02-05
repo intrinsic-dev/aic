@@ -1,5 +1,5 @@
 <?xml version="1.0" ?>
-<sdf version="1.9">
+<sdf xmlns:intrinsic="https://intrinsic.ai/" version="1.9">
   <model name="LC Mount">
     <link name="lc_mount_link">
       <visual name="lc_mount_visual">
@@ -10,58 +10,66 @@
         </geometry>
       </visual>
       <collision name="v1015081011_collider_box">
-        <pose>0.019353 -0.0 0.0025 0.0 -0.0 0.0</pose>
+        <pose>0.039468 -0.0 0.0025 0.0 -0.0 0.0</pose>
         <geometry>
           <box>
-            <size>0.019294 0.01475 0.005</size>
+            <size>0.017033 0.006 0.005</size>
           </box>
         </geometry>
       </collision>
       <collision name="v1015081011_collider_box.001">
-        <pose>-0.00294 -0.0 0.0025 0.0 -0.0 0.0</pose>
+        <pose>0.006285 0.0 0.0025 0.0 -0.0 0.0</pose>
         <geometry>
           <box>
-            <size>0.01212 0.01475 0.005</size>
+            <size>0.018569 0.006 0.005</size>
           </box>
         </geometry>
       </collision>
       <collision name="v1015081011_collider_box.002">
-        <pose>0.004062 -0.0 0.014555 0.0 -0.785398 0.0</pose>
+        <pose>0.016889 -0.0 0.014186 0.0 -0.785398 0.0</pose>
         <geometry>
           <box>
-            <size>0.014258 0.01475 0.002</size>
+            <size>0.014269 0.01475 0.003054</size>
           </box>
         </geometry>
       </collision>
       <collision name="v1015081011_collider_box.003">
-        <pose>0.015992 -0.0 0.004149 0.0 -0.785398 0.0</pose>
+        <pose>0.029227 -0.0 0.003364 0.0 -0.785398 0.0</pose>
         <geometry>
           <box>
-            <size>0.012103 0.01475 0.010218</size>
+            <size>0.012103 0.01475 0.007998</size>
           </box>
         </geometry>
       </collision>
       <collision name="v1015081011_collider_box.004">
-        <pose>0.001043 -0.0 0.003076 0.0 -0.785398 0.0</pose>
+        <pose>0.013496 -0.0 0.003079 0.0 -0.785398 0.0</pose>
         <geometry>
           <box>
-            <size>0.006246 0.01475 0.013841</size>
+            <size>0.006255 0.01475 0.013841</size>
           </box>
         </geometry>
       </collision>
       <collision name="v1015081011_collider_box.005">
-        <pose>0.00925 0.006437 0.009368 0.0 -0.785398 0.0</pose>
+        <pose>0.022239 0.00575 0.008836 0.0 -0.785398 0.0</pose>
         <geometry>
           <box>
-            <size>0.014258 0.001875 0.014086</size>
+            <size>0.014269 0.00325 0.015602</size>
           </box>
         </geometry>
       </collision>
       <collision name="v1015081011_collider_box.006">
-        <pose>0.009324 -0.006438 0.009293 0.0 -0.785398 0.0</pose>
+        <pose>0.02227 -0.004513 0.008805 0.0 -0.785398 0.0</pose>
         <geometry>
           <box>
-            <size>0.014258 0.001875 0.013874</size>
+            <size>0.014269 0.005725 0.015265</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="v1015081011_collider_box.007">
+        <pose>0.032739 0.0 0.010179 0.0 -0.785398 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.009041 0.0065 0.001804</size>
           </box>
         </geometry>
       </collision>

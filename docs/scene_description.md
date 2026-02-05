@@ -29,15 +29,15 @@ The global simulation settings—including lighting, physics properties, and gen
 
 ### Simulation Launch
 
-To view the complete scene in Gazebo, first follow the instructions in [Getting Started](./getting_started.md) to build your workspace.
+To view the complete scene in Gazebo, first follow the [Getting Started](./getting_started.md) instructions to build your workspace.
 Once the build is complete, launch the simulator with the following command `ros2 launch aic_bringup aic_gz_bringup.launch.py`.
 
 The launch file does the following:
 
-- Initializes the World: Loads Gazebo with the [`aic.sdf`](../aic_description/world/aic.sdf) environment settings.
-- Parses Xacros: Processes the robot and task board Xacro files into URDF format.
-- Spawns Entities: Automatically places the robot arm and the task board into the simulation scene.
-- Starts various ROS 2 nodes including the Gazebo<->ROS bridge and ROS 2 controller to command the robot.
+- **Initializes the World**: Loads Gazebo with the [`aic.sdf`](../aic_description/world/aic.sdf) environment settings.
+- **Parses Xacros**: Processes the robot and task board Xacro files into URDF format.
+- **Spawns Entities**: Automatically places the robot arm and the task board into the simulation scene.
+- **Starts various ROS 2 nodes** including the Gazebo<->ROS bridge and ROS 2 controller to command the robot.
 - **Exports World State:** After spawning all entities, the simulation automatically saves the complete world state to `/tmp/aic.sdf`.
 
 ### Exporting World State for AI Training
