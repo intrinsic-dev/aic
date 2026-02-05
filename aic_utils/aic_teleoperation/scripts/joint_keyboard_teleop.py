@@ -16,6 +16,13 @@
 #  limitations under the License.
 #
 
+"""
+This script is used for teleoperation of the robot joints using the keyboard.
+Note that this script uses pynput to monitor keyboard input which might have issues working 
+on the Wayland display server, but has been tested successfully with the X11 display server.
+This script can also be run within the pixi environment.  
+"""
+
 import sys
 import time
 import rclpy
@@ -31,10 +38,8 @@ from aic_control_interfaces.srv import (
     ChangeTargetMode,
 )
 
-ANGULAR_STEP = 0.025  # Step size for incrementing/decrementing angular velocity (rad/s)
-
-MIN_ANGULAR_VEL = 0.0  # rad/s
-MAX_ANGULAR_VEL = 2.0  # rad/s
+SLOW_ANGULAR_VEL = 0.075
+FAST_ANGULAR_VEL = 0.2
 
 KEY_MAPPINGS = {
     "q": (1, 0, 0, 0, 0, 0),  # +j1
@@ -96,7 +101,7 @@ class AICTeleoperatorNode(Node):
         self.timer = self.create_timer(0.02, self.send_references)
 
         # Variable parameters for teleoperation
-        self.angular_vel = 0.2  # Angular velocity (rad/s)
+        self.angular_vel = FAST_ANGULAR_VEL  # Angular velocity (rad/s)
 
     def on_key_press(self, key):
         """Callback for keyboard listener when a key is pressed."""
@@ -125,8 +130,8 @@ class AICTeleoperatorNode(Node):
         msg = JointMotionUpdate()
 
         msg.target_state.velocities = velocities
-        msg.target_stiffness = [100.0, 100.0, 100.0, 50.0, 50.0, 50.0]
-        msg.target_damping = [40.0, 40.0, 40.0, 15.0, 15.0, 15.0]
+        msg.target_stiffness = [85.0, 85.0, 85.0, 85.0, 85.0, 85.0]
+        msg.target_damping = [75.0, 75.0, 75.0, 75.0, 75.0, 75.0]
         msg.trajectory_generation_mode.mode = TrajectoryGenerationMode.MODE_VELOCITY
 
         return msg
@@ -135,41 +140,38 @@ class AICTeleoperatorNode(Node):
         velocities = np.zeros(6)
 
         teleop_keys_active = False
-        scale_angular_velocity = False
+        activate_slow_mode = False
+        activate_fast_mode = False
 
         for key in self.active_keys:
             if key in KEY_MAPPINGS:
                 teleop_keys_active = True
                 vals = KEY_MAPPINGS[key]
                 velocities += np.array(vals, dtype=float) * self.angular_vel
+            if key == "k":
+                activate_slow_mode = True
+                self.angular_vel = SLOW_ANGULAR_VEL
             if key == "l":
-                scale_angular_velocity = True
-                self.angular_vel -= ANGULAR_STEP
-            if key == "o":
-                scale_angular_velocity = True
-                self.angular_vel += ANGULAR_STEP
+                activate_fast_mode = True
+                self.angular_vel = FAST_ANGULAR_VEL
 
         self.joint_motion_update_publisher.publish(
             self.generate_joint_motion_update(velocities)
         )
-
-        if not (MIN_ANGULAR_VEL < self.angular_vel < MAX_ANGULAR_VEL):
-            self.get_logger().info(
-                f"Angular velocity is scaled to {self.angular_vel} which is beyond the range of [{MIN_ANGULAR_VEL:.2f}, {MAX_ANGULAR_VEL:.2f}]. Clamping to minimum and maximum values."
-            )
-            self.angular_vel = np.clip(
-                self.angular_vel,
-                MIN_ANGULAR_VEL + ANGULAR_STEP,
-                MAX_ANGULAR_VEL - ANGULAR_STEP,
-            )
 
         # Only print logs if relevant keys are pressed
         if teleop_keys_active:
             self.get_logger().info(
                 f"Published joint velocities: [{velocities[0]:.2f}, {velocities[1]:.2f}, {velocities[2]:.2f}, {velocities[3]:.2f}, {velocities[4]:.2f}, {velocities[5]:.2f}]"
             )
-        if scale_angular_velocity:
-            self.get_logger().info(f"Scaled angular velocity to {self.angular_vel:.2f}")
+        if activate_slow_mode:
+            self.get_logger().info(
+                f"Activated slow mode: Angular velocity = {self.angular_vel} rad/s"
+            )
+        if activate_fast_mode:
+            self.get_logger().info(
+                f"Activated fast mode: Angular velocity = {self.angular_vel} rad/s"
+            )
 
     def send_change_control_mode_req(self, mode):
         ChangeTargetMode
@@ -194,6 +196,26 @@ class AICTeleoperatorNode(Node):
 
 
 def main(args=None):
+
+    print(
+        f"""
+        Keyboard teleoperation for joint control
+        ---------------------------
+        Angular joint movement:
+            a/q : -/+ Joint 1 (shoulder_pan_joint)
+            s/w : -/+ Joint 2 (shoulder_lift_joint)
+            d/e : -/+ Joint 3 (elbow_joint)
+            f/r : -/+ Joint 4 (wrist_1_joint)
+            g/t : -/+ Joint 5 (wrist_2_joint)
+            h/y : -/+ Joint 6 (wrist_3_joint)
+
+        Toggle between SLOW and FAST teleoperation:
+            k : Activate SLOW mode ({SLOW_ANGULAR_VEL} rad/s)
+            l : Activate FAST mode ({FAST_ANGULAR_VEL} rad/s)
+
+        Press ESC to quit
+        """
+    )
 
     try:
         with rclpy.init(args=args):

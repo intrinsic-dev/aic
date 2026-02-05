@@ -16,6 +16,14 @@
 #  limitations under the License.
 #
 
+"""
+This script is used for teleoperation of the robot end-effector Cartesian pose 
+using the keyboard.
+Note that this script uses pynput to monitor keyboard input which might have issues working 
+on the Wayland display server, but has been tested successfully with the X11 display server.
+This script can also be run within the pixi environment.  
+"""
+
 import sys
 import time
 import rclpy
@@ -32,27 +40,24 @@ from aic_control_interfaces.srv import (
 )
 from geometry_msgs.msg import Wrench, Vector3, Twist
 
-LINEAR_STEP = 0.025  # Step size for incrementing/decrementing linear velocity (m/s)
-ANGULAR_STEP = 0.025  # Step size for incrementing/decrementing angular velocity (rad/s)
-
-MIN_LINEAR_VEL = 0.0  # m/s
-MAX_LINEAR_VEL = 2.0  # m/s
-MIN_ANGULAR_VEL = 0.0  # rad/s
-MAX_ANGULAR_VEL = 2.0  # rad/s
+SLOW_LINEAR_VEL = 0.02
+SLOW_ANGULAR_VEL = 0.02
+FAST_LINEAR_VEL = 0.1
+FAST_ANGULAR_VEL = 0.1
 
 KEY_MAPPINGS = {
-    "a": (-1, 0, 0, 0, 0, 0),  # -linear.x
-    "d": (1, 0, 0, 0, 0, 0),  # +linear.x
+    "d": (-1, 0, 0, 0, 0, 0),  # -linear.x
+    "a": (1, 0, 0, 0, 0, 0),  # +linear.x
     "w": (0, -1, 0, 0, 0, 0),  # -linear.y
     "s": (0, 1, 0, 0, 0, 0),  # +linear.y
     "r": (0, 0, -1, 0, 0, 0),  # -linear.z
     "f": (0, 0, 1, 0, 0, 0),  # +linear.z
-    "S": (0, 0, 0, -1, 0, 0),  # -angular.x
-    "W": (0, 0, 0, 1, 0, 0),  # +angular.x
+    "W": (0, 0, 0, -1, 0, 0),  # -angular.x
+    "S": (0, 0, 0, 1, 0, 0),  # +angular.x
     "A": (0, 0, 0, 0, -1, 0),  # -angular.y
     "D": (0, 0, 0, 0, 1, 0),  # +angular.y
-    "Q": (0, 0, 0, 0, 0, -1),  # -angular.z
-    "E": (0, 0, 0, 0, 0, 1),  # +angular.z
+    "e": (0, 0, 0, 0, 0, -1),  # -angular.z
+    "q": (0, 0, 0, 0, 0, 1),  # +angular.z
 }
 
 
@@ -99,8 +104,8 @@ class AICCartesianTeleoperatorNode(Node):
         self.timer = self.create_timer(0.04, self.send_references)
 
         # Variable parameters for teleoperation
-        self.linear_vel = 0.1  # Linear velocity (m/s)
-        self.angular_vel = 0.2  # Angular velocity (rad/s)
+        self.linear_vel = FAST_LINEAR_VEL  # Linear velocity (m/s)
+        self.angular_vel = FAST_ANGULAR_VEL  # Angular velocity (rad/s)
         self.frame_id = "base_link"
 
     def on_key_press(self, key):
@@ -151,8 +156,8 @@ class AICCartesianTeleoperatorNode(Node):
         input_twist = np.zeros(6)
 
         teleop_keys_active = False
-        scale_linear_velocity = False
-        scale_angular_velocity = False
+        activate_slow_mode = False
+        activate_fast_mode = False
         toggle_frame_id = False
 
         for key in self.active_keys:
@@ -161,42 +166,20 @@ class AICCartesianTeleoperatorNode(Node):
                 vals = KEY_MAPPINGS[key]
                 input_twist[0:3] += np.array(vals[0:3], dtype=float) * self.linear_vel
                 input_twist[3:6] += np.array(vals[3:6], dtype=float) * self.angular_vel
+            if key == "n":
+                toggle_frame_id = True
+                self.frame_id = "gripper/tcp"
             if key == "m":
                 toggle_frame_id = True
-                self.frame_id = (
-                    "gripper/tcp" if self.frame_id == "base_link" else "base_link"
-                )
+                self.frame_id = "base_link"
             if key == "k":
-                scale_linear_velocity = True
-                self.linear_vel -= LINEAR_STEP
-            if key == "i":
-                scale_linear_velocity = True
-                self.linear_vel += LINEAR_STEP
+                activate_slow_mode = True
+                self.linear_vel = SLOW_LINEAR_VEL
+                self.angular_vel = SLOW_ANGULAR_VEL
             if key == "l":
-                scale_angular_velocity = True
-                self.angular_vel -= ANGULAR_STEP
-            if key == "o":
-                scale_angular_velocity = True
-                self.angular_vel += ANGULAR_STEP
-
-        if not (MIN_ANGULAR_VEL < self.angular_vel < MAX_ANGULAR_VEL):
-            self.get_logger().info(
-                f"Angular velocity is scaled to {self.angular_vel} which is beyond the range of [{MIN_ANGULAR_VEL:.2f}, {MAX_ANGULAR_VEL:.2f}]. Clamping to minimum and maximum values."
-            )
-            self.angular_vel = np.clip(
-                self.angular_vel,
-                MIN_ANGULAR_VEL + ANGULAR_STEP,
-                MAX_ANGULAR_VEL - ANGULAR_STEP,
-            )
-        if not (MIN_LINEAR_VEL < self.linear_vel < MAX_LINEAR_VEL):
-            self.get_logger().info(
-                f"Linear velocity is scaled to {self.linear_vel} which is beyond the range of [{MIN_LINEAR_VEL:.2f}, {MAX_LINEAR_VEL:.2f}]. Clamping to minimum and maximum values."
-            )
-            self.linear_vel = np.clip(
-                self.linear_vel,
-                MIN_LINEAR_VEL + LINEAR_STEP,
-                MAX_LINEAR_VEL - LINEAR_STEP,
-            )
+                activate_fast_mode = True
+                self.linear_vel = FAST_LINEAR_VEL
+                self.angular_vel = FAST_ANGULAR_VEL
 
         twist = Twist()
         twist.linear.x = input_twist[0]
@@ -217,10 +200,14 @@ class AICCartesianTeleoperatorNode(Node):
             )
         if toggle_frame_id:
             self.get_logger().info(f"Toggled target frame_id to '{self.frame_id}'")
-        if scale_linear_velocity:
-            self.get_logger().info(f"Scaled linear velocity to {self.linear_vel:.2f}")
-        if scale_angular_velocity:
-            self.get_logger().info(f"Scaled angular velocity to {self.angular_vel:.2f}")
+        if activate_slow_mode:
+            self.get_logger().info(
+                f"Activated slow mode: Linear velocity = {self.linear_vel} m/s, angular velocity = {self.angular_vel} rad/s"
+            )
+        if activate_fast_mode:
+            self.get_logger().info(
+                f"Activated fast mode: Linear velocity = {self.linear_vel}, angular velocity = {self.angular_vel} rad/s"
+            )
 
     def send_change_control_mode_req(self, mode):
         ChangeTargetMode
@@ -251,25 +238,26 @@ class AICCartesianTeleoperatorNode(Node):
 def main(args=None):
 
     print(
-        """
+        f"""
         Keyboard teleoperation for Cartesian control
         ---------------------------
-        Linear movement:
-            a/d : -/+ Linear X
+        Linear translation:
+            d/a : -/+ Linear X
             w/s : -/+ Linear Y
             r/f : -/+ Linear Z
 
         Angular rotation:
-            Shift + s/w : -/+ Angular X
+            Shift + w/s : -/+ Angular X
             Shift + a/d : -/+ Angular Y
-            Shift + q/e : -/+ Angular Z
+            e/q : -/+ Angular Z
 
-        Scale linear and angular velocity:
-            k/i : -/+ 0.025 m/s
-            l/o : -/+ 0.025 rad/s
+        Toggle between SLOW and FAST teleoperation:
+            k : Activate SLOW mode ({SLOW_LINEAR_VEL} m/s and {SLOW_ANGULAR_VEL} rad/s)
+            l : Activate FAST mode ({FAST_LINEAR_VEL} m/s and {FAST_ANGULAR_VEL} rad/s)
 
         Toggle target between global and TCP frames:
-            m : Toggle between global ('base_link') and TCP ('gripper/tcp') frame
+            n : Use TCP ('gripper/tcp') frame
+            m : Use global ('base_link') frame
 
         Press ESC to quit
         """
