@@ -14,7 +14,7 @@ Each trial is scored using a tiered scoring system. Scores are cumulated across 
 
 A sanity check to ensure the submission loads and runs without errors.
 
-- The model must be able to successfully activate the submitted [Policy](https://github.com/intrinsic-dev/aic/blob/main/docs/policy.md) and respond to the `InsertCable` action request. The submitted Policy must also send valid `Pose` commands to the robot arm controller.
+- The model must be able to successfully activate the submitted [Policy](https://github.com/intrinsic-dev/aic/blob/main/docs/policy.md) and respond to the `InsertCable` action request. The submitted Policy must also send valid commands to the robot arm controller via `MotionUpdate` (target position/velocities) or `JointMotionUpdate` (target joint states).
 - Submissions failing this check will not be scored
 
 | Outcome | Score |
@@ -76,11 +76,11 @@ Penalizes collisions with restricted areas of the environment (enclosure or task
 The primary objective verifying successful cable insertion. A model is successful if it correctly aligns and inserts the cable connector into the target port.
 
 - **Verification**: Connection detected via contact sensors and force/torque feedback
-- **Score**: Successful completion yields a significant score bonus
+- **Score**: Successful completion yields a 100-point bonus
 
 | Outcome | Score |
 |---------|-------|
-| Connection verified | TBD |
+| Connection verified | 100 |
 | Connection not verified | 0 |
 
 ## Total Score Calculation
@@ -91,8 +91,8 @@ Total Score = Tier 1 + Tier 2 + Tier 3
 
 Where:
 - **Tier 1**: 0 or 1 point
-- **Tier 2**: Sum of jerk score, distance score, and penalties (can be negative due to penalties)
-- **Tier 3**: Binary success bonus
+- **Tier 2**: Sum of jerk score, distance score, and penalties
+- **Tier 3**: Cable insertion success bonus
 
 ## Final Ranking
 
