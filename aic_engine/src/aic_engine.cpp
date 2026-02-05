@@ -1465,22 +1465,32 @@ void Engine::reset_after_trial(const Trial& trial) {
 bool Engine::home_robot() {
   RCLCPP_INFO(node_->get_logger(), "Homing robot to initial positions...");
 
+  // Lambda to switch controllers
+  auto switch_controllers = [this](const std::vector<std::string>& activate,
+                                    const std::vector<std::string>& deactivate) -> bool {
+    auto request = std::make_shared<SwitchControllerSrv::Request>();
+    request->activate_controllers = activate;
+    request->deactivate_controllers = deactivate;
+    request->strictness = SwitchControllerSrv::Request::BEST_EFFORT;
+
+    auto future = switch_controller_client_->async_send_request(request);
+    if (future.wait_for(std::chrono::seconds(10)) != std::future_status::ready) {
+      RCLCPP_ERROR(node_->get_logger(),
+                   "SwitchController service call timed out");
+      return false;
+    }
+
+    auto response = future.get();
+    if (!response->ok) {
+      RCLCPP_ERROR(node_->get_logger(), "Failed to switch controllers.");
+      return false;
+    }
+
+    return true;
+  };
+
   // Deactivate aic_controller
-  auto deactivate_req = std::make_shared<SwitchControllerSrv::Request>();
-  deactivate_req->deactivate_controllers = {"aic_controller"};
-  deactivate_req->activate_controllers = {};
-  deactivate_req->strictness = SwitchControllerSrv::Request::BEST_EFFORT;
-  auto deactive_future =
-      switch_controller_client_->async_send_request(deactivate_req);
-  if (deactive_future.wait_for(std::chrono::seconds(10)) !=
-      std::future_status::ready) {
-    RCLCPP_ERROR(node_->get_logger(),
-                 "SwitchController service call timed out when deactivating "
-                 "aic_controller");
-    return false;
-  }
-  auto deactivate_resp = deactive_future.get();
-  if (!deactivate_resp->ok) {
+  if (!switch_controllers({}, {"aic_controller"})) {
     RCLCPP_ERROR(node_->get_logger(), "Failed to deactivate aic_controller.");
     return false;
   }
@@ -1502,23 +1512,7 @@ bool Engine::home_robot() {
   }
 
   // Activate aic_controller & resume simulation
-  auto activate_req = std::make_shared<SwitchControllerSrv::Request>();
-  activate_req->deactivate_controllers = {};
-  activate_req->activate_controllers = {"aic_controller"};
-  activate_req->strictness = SwitchControllerSrv::Request::BEST_EFFORT;
-  auto activate_future =
-      switch_controller_client_->async_send_request(activate_req);
-
-  // Check that controller has been successfully activated
-  if (activate_future.wait_for(std::chrono::seconds(10)) !=
-      std::future_status::ready) {
-    RCLCPP_ERROR(node_->get_logger(),
-                 "SwitchController service call timed out when activating "
-                 "aic_controller");
-    return false;
-  }
-  auto activate_resp = activate_future.get();
-  if (!activate_resp->ok) {
+  if (!switch_controllers({"aic_controller"}, {})) {
     RCLCPP_ERROR(node_->get_logger(), "Failed to activate aic_controller.");
     return false;
   }
