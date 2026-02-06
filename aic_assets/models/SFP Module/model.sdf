@@ -157,7 +157,7 @@
         </geometry>
       </collision>
       <collision name="body_collider_box">
-        <pose>0.0 0.0 0.00383 0.0 0.0 0.0</pose>
+        <pose>0.0 0.001 0.00383 0.0 0.0 0.0</pose>
         <geometry>
           <box>
             <size>0.01375 0.0473 0.000789</size>
@@ -165,7 +165,7 @@
         </geometry>
       </collision>
       <collision name="body_collider_box.001">
-        <pose>0.0 0.0 -0.004138 0.0 0.0 0.0</pose>
+        <pose>0.0 0.001 -0.004138 0.0 0.0 0.0</pose>
         <geometry>
           <box>
             <size>0.01375 0.0473 0.000178</size>
@@ -173,7 +173,7 @@
         </geometry>
       </collision>
       <collision name="body_collider_box.002">
-        <pose>-0.006588 0.0 0.0 0.0 0.0 0.0</pose>
+        <pose>-0.006588 0.001 0.0 0.0 0.0 0.0</pose>
         <geometry>
           <box>
             <size>0.000574 0.0473 0.00845</size>
@@ -181,18 +181,10 @@
         </geometry>
       </collision>
       <collision name="body_collider_box.003">
-        <pose>0.00647 0.0 0.0 0.0 0.0 0.0</pose>
+        <pose>0.00647 0.001 0.0 0.0 0.0 0.0</pose>
         <geometry>
           <box>
             <size>0.000811 0.0473 0.00845</size>
-          </box>
-        </geometry>
-      </collision>
-      <collision name="body_collider_box.004">
-        <pose>0.0 -0.018731 0.0 0.0 0.0 0.0</pose>
-        <geometry>
-          <box>
-            <size>0.01375 0.009838 0.00845</size>
           </box>
         </geometry>
       </collision>
@@ -230,6 +222,22 @@
           <izz>1e-6</izz>
         </inertia>
       </inertial>
+      <collision name="contact_collision">
+        <pose>0.0 0.0021125 -0.0005 0 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.01375 0.004225 0.001</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="non_contact_collision">
+        <pose>0.0 -0.0021125 -0.0005 0 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.01375 0.004225 0.001</size>
+          </box>
+        </geometry>
+      </collision>
       <pose>0 -0.02365 0 1.5708 0 0</pose>
     </link>
     <joint name="sfp_tip_joint" type="fixed">

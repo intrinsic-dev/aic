@@ -10,7 +10,7 @@
         <plugin
           filename="gz-sim-touchplugin-system"
           name="gz::sim::systems::TouchPlugin">
-          <target>sfp_module</target>
+          <target>sfp_tip_link/collision/contact_collision</target>
           <time>1</time>
           <namespace>${prefix}</namespace>
           <enabled>true</enabled>
