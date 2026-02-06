@@ -704,6 +704,11 @@ controller_interface::CallbackReturn Controller::on_deactivate(
   target_state_ = std::nullopt;
   joint_target_state_ = std::nullopt;
 
+  // Reset feedforward wrenches
+  feedforward_wrench_at_tip_.setZero();
+  impedance_params_.feedforward_wrench.setZero();
+  joint_impedance_params_.feedforward_torques.setZero();
+
   return controller_interface::CallbackReturn::SUCCESS;
 }
 
