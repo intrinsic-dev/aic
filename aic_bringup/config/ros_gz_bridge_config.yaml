@@ -109,3 +109,10 @@
   gz_type_name: "gz.msgs.Boolean"
   direction: GZ_TO_ROS
   lazy: true
+
+- ros_topic_name: "/cable_0/wrench"
+  gz_topic_name: "/world/aic_world/model/cable_0/joint/plug_0_joint/sensor/force_torque_sensor/forcetorque"
+  ros_type_name: "geometry_msgs/msg/WrenchStamped"
+  gz_type_name: "gz.msgs.Wrench"
+  direction: GZ_TO_ROS
+  lazy: true

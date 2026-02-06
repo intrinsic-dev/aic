@@ -60,6 +60,13 @@
     <joint name="plug_0_joint" type="fixed">
       <parent>cable_connection_0</parent>
       <child>lc_plug_link</child>
+      <sensor name="force_torque_sensor" type="force_torque">
+        <update_rate>50</update_rate>
+        <force_torque>
+          <frame>sensor</frame>
+        </force_torque>
+      </sensor>
+
     </joint>
     <joint name="plug_1_joint" type="fixed">
       <parent>cable_connection_1</parent>
