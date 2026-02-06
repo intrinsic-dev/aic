@@ -46,7 +46,7 @@ aws configure --profile <username>
 ```
 This will prompt you to enter your AWS Access Key ID, Secret Access Key, region (use `us-east-1`), and output format (you can use the sensible default by pressing enter).
 
-Check that `AWS_PROFILE` is set correctly:
+Set that `AWS_PROFILE` to your username:
 
 ```bash
 export AWS_PROFILE=<username>
