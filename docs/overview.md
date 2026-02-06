@@ -32,6 +32,8 @@ Scoring across all three phases is automated. Rankings are determined by a combi
 * **Safety:** Penalties applied for collisions or excessive force exerted on connectors or cables.
 * **Efficiency:** Measurement of the overall cycle time to complete the assembly tasks; faster solutions are rewarded.
 
+For details, see [Scoring](scoring.md).
+
 ## Submission
 
 To advance in the challenge and remain eligible for prizes, teams must submit their models at the end of each phase.
