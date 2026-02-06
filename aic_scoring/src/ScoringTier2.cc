@@ -220,9 +220,9 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
     } else if (msg_ptr->topic_name == kJointMotionUpdateTopic) {
       const auto msg = deserialize_from_rosbag<JointMotionUpdateMsg>(msg_ptr);
       this->JointMotionUpdateCallback(msg);
-    } else if (msg_ptr->topic_name == kInsertionCompletionTopic) {
-      const auto msg = deserialize_from_rosbag<BoolMsg>(msg_ptr);
-      this->InsertionCompletionCallback(msg);
+    } else if (msg_ptr->topic_name == kInsertionEventTopic) {
+      const auto msg = deserialize_from_rosbag<StringMsg>(msg_ptr);
+      this->InsertionEventCallback(msg);
     } else {
       RCLCPP_WARN(this->node->get_logger(),
                   "Unexpected topic name while scoring: %s",
@@ -272,7 +272,8 @@ void ScoringTier2::Reset(const std::chrono::seconds &_buffer_size) {
   this->task_end_time.reset();
   this->bagWriter.close();
   this->contacts.clear();
-  this->insertion_completion = false;
+  this->insertionCompletion = false;
+  this->insertionPortNamespace.clear();
   // Jerk computation variables
   this->tfHistory.clear();
   this->linearJerk = Vector3Msg();
@@ -402,8 +403,11 @@ void ScoringTier2::JointMotionUpdateCallback(const JointMotionUpdateMsg &_msg) {
 }
 
 //////////////////////////////////////////////////
-void ScoringTier2::InsertionCompletionCallback(const BoolMsg &_msg) {
-  this->insertion_completion = _msg.data;
+void ScoringTier2::InsertionEventCallback(const StringMsg &_msg) {
+  // \todo(iche033) For now, assume only one insertion event per task
+  // Mark insertion completion as true as soon as one insertion is done.
+  this->insertionPortNamespace = _msg.data;
+  this->insertionCompletion = true;
 }
 
 //////////////////////////////////////////////////
@@ -432,9 +436,9 @@ std::optional<double> ScoringTier2::GetPlugPortDistance(
   }
   // For now we only calculate the distance for the first connection
   const auto plug_tf_opt =
-      this->GetTransform(t, "aic_world", this->connections[0].plugName);
+      this->GetTransform(t, "aic_world", this->connections[0].PlugTfName());
   const auto port_tf_opt =
-      this->GetTransform(t, "aic_world", this->connections[0].portName);
+      this->GetTransform(t, "aic_world", this->connections[0].PortTfName());
   if (!plug_tf_opt.has_value() || !port_tf_opt.has_value()) {
     return std::nullopt;
   }
@@ -554,12 +558,43 @@ Tier3Score ScoringTier2::GetDistanceScore() const {
 //////////////////////////////////////////////////
 Tier3Score ScoringTier2::ComputeTier3Score() const {
   constexpr double kInsertionCompletionScore = 100.0;
+  constexpr double kInsertionPenalty = -10.0;
   Tier3Score dist_score = this->GetDistanceScore();
   double score = dist_score.total_score();
+
+  // Check if insertion is completed or not
   std::stringstream sstream;
-  if (this->insertion_completion) {
-    score += kInsertionCompletionScore;
-    sstream << "Cable insertion successful. " << dist_score.message;
+  if (this->insertionCompletion) {
+    // Tokenize the namespace string. The first token should be the
+    // target module name and the second token should be the port name
+    std::string namespaceStr = this->insertionPortNamespace;
+    std::vector<std::string> tokens;
+    size_t pos = 0;
+    std::string token;
+    std::string delimiter = "/";
+    while ((pos = namespaceStr.find(delimiter)) != std::string::npos) {
+      std::string token = namespaceStr.substr(0, pos);
+      if (!token.empty()) tokens.push_back(token);
+      namespaceStr.erase(0, pos + delimiter.length());
+    }
+    tokens.push_back(namespaceStr);
+
+    if (tokens.size() >= 2u) {
+      // Verify the plug is inserted into the correct target port
+      if (tokens[0] == connections[0].targetModuleName &&
+          tokens[1] == connections[0].portName) {
+        score += kInsertionCompletionScore;
+        sstream << "Cable insertion successful. " << dist_score.message;
+        std::cerr << " insertion success !!  " << std::endl;
+      } else {
+        score += kInsertionPenalty;
+        sstream << "Cable insertion failed. Incorrect Port. "
+                << dist_score.message;
+      }
+    } else {
+      std::cerr << "Error parsing insertion port namespace: "
+                << this->insertionPortNamespace << std::endl;
+    }
   } else {
     sstream << "Cable insertion failed. " << dist_score.message;
   }

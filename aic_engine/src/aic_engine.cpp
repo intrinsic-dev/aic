@@ -1130,9 +1130,11 @@ bool Engine::ready_scoring(const Trial& trial) {
   std::vector<aic_scoring::Connection> connections;
   for (const auto& task : trial.tasks) {
     aic_scoring::Connection connection;
-    connection.plugName = task.cable_name + "/" + task.plug_name + "_link";
-    connection.portName = "task_board/" + task.target_module_name + "/" +
-                          task.port_name + "_link";
+    connection.cableName = task.cable_name;
+    connection.taskBoardName = "task_board";
+    connection.plugName = task.plug_name;
+    connection.portName = task.port_name;
+    connection.targetModuleName = task.target_module_name;
     connections.push_back(connection);
   }
 

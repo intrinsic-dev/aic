@@ -103,7 +103,7 @@ repositories:
   gazebo/gz-sim:
     type: git
     url: https://github.com/gazebosim/gz-sim
-    version: f65641d9f8f6c28a8626a479001ac327747638ad
+    version: d99d458c9987b20a18347b9a273f907d3391db61
   gazebo/gz-gui:
     type: git
     url: https://github.com/gazebosim/gz-gui
