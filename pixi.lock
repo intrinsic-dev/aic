@@ -5226,6 +5226,7 @@ packages:
     target_platform: linux-64
   depends:
   - ros-kilted-rosidl-default-runtime
+  - ros-kilted-aic-control-interfaces
   - ros-kilted-builtin-interfaces
   - ros-kilted-geometry-msgs
   - ros-kilted-sensor-msgs
