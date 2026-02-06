@@ -208,10 +208,10 @@ class AicModel(LifecycleNode):
         motion_update_msg.header.stamp = self.get_clock().now().to_msg()
 
         motion_update_msg.target_stiffness = np.diag(
-            [85.0, 85.0, 85.0, 85.0, 85.0, 85.0]
+            [85.0, 85.0, 85.0, 50.0, 50.0, 50.0]
         ).flatten()
         motion_update_msg.target_damping = np.diag(
-            [75.0, 75.0, 75.0, 30.0, 30.0, 30.0]
+            [40.0, 40.0, 40.0, 20.0, 20.0, 20.0]
         ).flatten()
 
         motion_update_msg.feedforward_wrench_at_tip = Wrench(
@@ -219,7 +219,7 @@ class AicModel(LifecycleNode):
         )
 
         motion_update_msg.wrench_feedback_gains_at_tip = Wrench(
-            force=Vector3(x=0.0, y=0.0, z=0.0), torque=Vector3(x=0.0, y=0.0, z=0.0)
+            force=Vector3(x=0.5, y=0.5, z=0.5), torque=Vector3(x=0.0, y=0.0, z=0.0)
         )
 
         motion_update_msg.trajectory_generation_mode.mode = (

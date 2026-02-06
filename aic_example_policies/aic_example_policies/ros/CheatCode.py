@@ -77,7 +77,7 @@ class CheatCode(PolicyRos):
             position=Point(
                 x=port_tf_stamped.transform.translation.x,
                 y=port_tf_stamped.transform.translation.y,
-                z=port_tf_stamped.transform.translation.z + 0.15,
+                z=port_tf_stamped.transform.translation.z + 0.1,
             ),
             orientation=Quaternion(x=1.0, y=0.0, z=0.0, w=0.0),
         )
@@ -116,7 +116,7 @@ class CheatCode(PolicyRos):
                 gripper_tf_stamped.transform.rotation.w,
             )
             q_gripper_target = quaternion_multiply(q_diff, q_gripper)
-            q_gripper_slerp = quaternion_slerp(q_gripper, q_gripper_target, 0.2)
+            q_gripper_slerp = quaternion_slerp(q_gripper, q_gripper_target, 0.3)
 
             approach_pose.orientation = Quaternion(
                 x=q_gripper_slerp[0],
@@ -137,8 +137,8 @@ class CheatCode(PolicyRos):
             approach_pose.position.x += translation_diff[0] * 0.1
             approach_pose.position.y += translation_diff[1] * 0.1
             self.get_logger().info(f"z diff: {translation_diff[2]:0.5}")
-            if translation_diff[2] < 0.001:
-                approach_pose.position.z -= 0.001
+            if translation_diff[2] < 0.0:
+                approach_pose.position.z -= 0.0003
             else:
                 break
             self.go_to_pose(approach_pose, 0.05)
