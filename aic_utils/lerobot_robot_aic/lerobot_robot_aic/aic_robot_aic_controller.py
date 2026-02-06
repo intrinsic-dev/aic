@@ -149,20 +149,20 @@ class AICRobotAICController(Robot):
             | None
         ) = None
         self._is_connected = False
-        
+
         if config.teleop_frame_id not in ["gripper/tcp", "base_link"]:
-             raise ValueError(
-        f"Invalid teleop_frame_id: '{config.teleop_frame_id}'. "
-        "Supported frames are 'gripper/tcp' or 'base_link'."
-    )
+            raise ValueError(
+                f"Invalid teleop_frame_id: '{config.teleop_frame_id}'. "
+                "Supported frames are 'gripper/tcp' or 'base_link'."
+            )
         self.frame_id = config.teleop_frame_id
 
         if config.teleop_target_mode not in ["cartesian", "joint"]:
             raise ValueError(
-            f"Invalid teleop_target_mode: '{config.teleop_target_mode}'. "
-            "Supported modes are 'cartesian' or 'joint'."
-        )
-        self.teleop_target_mode = config.teleop_target_mode        
+                f"Invalid teleop_target_mode: '{config.teleop_target_mode}'. "
+                "Supported modes are 'cartesian' or 'joint'."
+            )
+        self.teleop_target_mode = config.teleop_target_mode
 
         print(f"Teleop frame id: {self.frame_id}")
         print(f"Teleop target mode: {self.teleop_target_mode}")
@@ -211,7 +211,11 @@ class AICRobotAICController(Robot):
 
     @cached_property
     def action_features(self) -> dict[str, type]:
-        return MotionUpdateActionDict.__annotations__ if self.teleop_target_mode == "cartesian" else JointMotionUpdateActionDict.__annotations__
+        return (
+            MotionUpdateActionDict.__annotations__
+            if self.teleop_target_mode == "cartesian"
+            else JointMotionUpdateActionDict.__annotations__
+        )
 
     @property
     def is_connected(self) -> bool:
@@ -374,7 +378,9 @@ class AICRobotAICController(Robot):
         try:
             twist_msg.linear.x = float(motion_update_action["linear.x"])
         except KeyError:
-            raise KeyError("Missing key 'linear.x'. If using `--teleop.type=aic_keyboard_joint`, have you set `--robot.teleop_target_mode=joint`?") from None
+            raise KeyError(
+                "Missing key 'linear.x'. If using `--teleop.type=aic_keyboard_joint`, have you set `--robot.teleop_target_mode=joint`?"
+            ) from None
         twist_msg.linear.y = float(motion_update_action["linear.y"])
         twist_msg.linear.z = float(motion_update_action["linear.z"])
         twist_msg.angular.x = float(motion_update_action["angular.x"])
@@ -425,7 +431,9 @@ class AICRobotAICController(Robot):
         msg = JointMotionUpdate()
 
         if "shoulder_pan_joint" not in joint_motion_update_action:
-            raise KeyError("Missing key 'shoulder_pan_joint'. If using `--teleop.type=aic_keyboard_ee` or `--teleop.type=aic_spacemouse`, have you set `--robot.teleop_target_mode=cartesian`?")
+            raise KeyError(
+                "Missing key 'shoulder_pan_joint'. If using `--teleop.type=aic_keyboard_ee` or `--teleop.type=aic_spacemouse`, have you set `--robot.teleop_target_mode=cartesian`?"
+            )
 
         msg.target_state.velocities = list(action.values())[
             0:-1
