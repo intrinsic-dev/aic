@@ -308,6 +308,7 @@ aic_controller:
       default_values:
         control_stiffness: [75.0, 75.0, 75.0, 75.0, 75.0, 75.0]
         control_damping: [35.0, 35.0, 35.0, 35.0, 35.0, 35.0]
+        offset_wrench: [0.0, 0.0, 0.7848, 0.0, 0.0, 0.0]
 
     joint_impedance:
       interpolator:

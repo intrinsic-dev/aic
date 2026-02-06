@@ -528,6 +528,10 @@ controller_interface::CallbackReturn Controller::on_configure(
         Eigen::Map<const Eigen::Matrix<double, 6, 1>>(
             params_.impedance.pose_error_integrator.bound.data());
 
+    impedance_params_.offset_wrench =
+        Eigen::Map<const Eigen::Matrix<double, 6, 1>>(
+            params_.impedance.default_values.offset_wrench.data());
+
     if (!populate_cartesian_limits(params_, cartesian_limits_)) {
       RCLCPP_ERROR(get_node()->get_logger(),
                    "Error populating cartesian limits from parameters.");
