@@ -138,7 +138,7 @@ class CheatCode(PolicyRos):
             approach_pose.position.y += translation_diff[1] * 0.1
             self.get_logger().info(f"z diff: {translation_diff[2]:0.5}")
             if translation_diff[2] < 0.001:
-                approach_pose.position.z -= 0.0003
+                approach_pose.position.z -= 0.001
             else:
                 break
             self.go_to_pose(approach_pose, 0.05)
