@@ -30,7 +30,7 @@ from lerobot.utils.errors import DeviceNotConnectedError, DeviceAlreadyConnected
 from lerobot_teleoperator_devices import KeyboardJointTeleop, KeyboardJointTeleopConfig
 from rclpy.executors import SingleThreadedExecutor
 
-from .aic_robot import arm_joint_names, GRIPPER_OPEN_POS, GRIPPER_CLOSED_POS
+from .aic_robot import arm_joint_names
 from .types import MotionUpdateActionDict, JointMotionUpdateActionDict
 
 
@@ -60,7 +60,6 @@ class AICKeyboardJointTeleop(KeyboardJointTeleop):
             "wrist_1_joint": 0.0,
             "wrist_2_joint": 0.0,
             "wrist_3_joint": 0.0,
-            "gripper_target": GRIPPER_CLOSED_POS,
         }
 
     @property
@@ -112,10 +111,6 @@ class AICKeyboardJointTeleop(KeyboardJointTeleop):
                 self.curr_joint_actions["wrist_3_joint"] = val
             elif key == "h":
                 self.curr_joint_actions["wrist_3_joint"] = -val
-            elif key == "j":
-                self.curr_joint_actions["gripper_target"] = GRIPPER_CLOSED_POS
-            elif key == "k":
-                self.curr_joint_actions["gripper_target"] = GRIPPER_OPEN_POS
             elif is_pressed:
                 # If the key is pressed, add it to the misc_keys_queue
                 # this will record key presses that are not part of the delta_x, delta_y, delta_z
@@ -150,7 +145,6 @@ class AICKeyboardEETeleop(KeyboardEndEffectorTeleop):
             "angular.x": 0.0,
             "angular.y": 0.0,
             "angular.z": 0.0,
-            "gripper_target": GRIPPER_CLOSED_POS,
         }
 
     @property
@@ -202,10 +196,6 @@ class AICKeyboardEETeleop(KeyboardEndEffectorTeleop):
                 self._current_actions["angular.z"] = -val
             elif key == "e":
                 self._current_actions["angular.z"] = val
-            elif key == "j":
-                self._current_actions["gripper_target"] = GRIPPER_CLOSED_POS
-            elif key == "k":
-                self._current_actions["gripper_target"] = GRIPPER_OPEN_POS
             elif is_pressed:
                 # If the key is pressed, add it to the misc_keys_queue
                 # this will record key presses that are not part of the delta_x, delta_y, delta_z
@@ -230,7 +220,6 @@ class AICSpaceMouseTeleop(Teleoperator):
         super().__init__(config)
         self.config = config
         self._is_connected = False
-        self._target_gripper_target: float = 1.0
 
         self._current_actions: MotionUpdateActionDict = {
             "linear.x": 0.0,
@@ -239,7 +228,6 @@ class AICSpaceMouseTeleop(Teleoperator):
             "angular.x": 0.0,
             "angular.y": 0.0,
             "angular.z": 0.0,
-            "gripper_target": GRIPPER_CLOSED_POS,
         }
 
     @property
@@ -259,15 +247,6 @@ class AICSpaceMouseTeleop(Teleoperator):
     def is_connected(self) -> bool:
         return self._is_connected
 
-    def _button_callback(self, state, buttons, pressed_buttons):
-        if 0 in pressed_buttons:
-            print("Button 1 pressed")
-            self._target_gripper_target = 0.0
-
-        elif 1 in pressed_buttons:
-            print("Button 2 pressed")
-            self._target_gripper_target = 1.0
-
     def connect(self, calibrate: bool = True) -> None:
         if self.is_connected:
             raise DeviceAlreadyConnectedError()
@@ -283,10 +262,10 @@ class AICSpaceMouseTeleop(Teleoperator):
 
         self._device_open_success = pyspacemouse.open(
             dof_callback=None,
-            button_callback_arr=[
-                pyspacemouse.ButtonCallback([0], self._button_callback),  # Button 1
-                pyspacemouse.ButtonCallback([1], self._button_callback),  # Button 2
-            ],
+            # button_callback_arr=[
+            #     pyspacemouse.ButtonCallback([0], self._button_callback),  # Button 1
+            #     pyspacemouse.ButtonCallback([1], self._button_callback),  # Button 2
+            # ],
             path=self.config.device_path,
         )
 
@@ -345,7 +324,6 @@ class AICSpaceMouseTeleop(Teleoperator):
             "angular.x": twist_msg.angular.x,
             "angular.y": twist_msg.angular.y,
             "angular.z": twist_msg.angular.z,
-            "gripper_target": self._target_gripper_target,
         }
 
         return cast(dict, self._current_actions)

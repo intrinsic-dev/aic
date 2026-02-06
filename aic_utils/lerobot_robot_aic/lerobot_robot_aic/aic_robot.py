@@ -26,10 +26,6 @@ arm_joint_names = [
     "wrist_3_joint",
 ]
 
-gripper_joint_name = "gripper/left_finger_joint"
-GRIPPER_CLOSED_POS = 0.012
-GRIPPER_OPEN_POS = 0.025
-
 aic_cameras: dict[str, CameraConfig] = {
     "left_camera": ROS2CameraConfig(
         name="left_camera",

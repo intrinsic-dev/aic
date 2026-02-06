@@ -88,8 +88,6 @@ View and edit axis mappings and speed settings in `AICSpaceMouseTeleop` and `AIC
 | g   | +wrist_2       |
 | y   | -wrist_3       |
 | h   | +wrist_3       |
-| o   | -gripper       |
-| l   | +gripper       |
 
 Press 'u' to toggle between slow and fast mode.
 

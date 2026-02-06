@@ -35,7 +35,6 @@ from aic_control_interfaces.msg import (
 from aic_control_interfaces.srv import (
     ChangeTargetMode,
 )
-from control_msgs.action import ParallelGripperCommand
 from geometry_msgs.msg import Twist, Vector3, Wrench
 from lerobot.cameras import CameraConfig, make_cameras_from_configs
 from lerobot.robots import Robot, RobotConfig
@@ -50,7 +49,7 @@ from rclpy.subscription import Subscription
 from rclpy.task import Future as RclFuture
 from sensor_msgs.msg import JointState
 
-from .aic_robot import aic_cameras, arm_joint_names, gripper_joint_name
+from .aic_robot import aic_cameras, arm_joint_names
 from .types import MotionUpdateActionDict, JointMotionUpdateActionDict
 
 logger = logging.getLogger(__name__)
@@ -102,8 +101,7 @@ class AICRobotAICControllerConfig(RobotConfig):
     teleop_frame_id: str = "gripper/tcp"  # or "base_link"
 
     arm_joint_names: list[str] = field(default_factory=arm_joint_names.copy)
-    gripper_joint_name: str = gripper_joint_name
-    gripper_action_name: str = "/gripper_action_controller/gripper_cmd"
+
     cameras: dict[str, CameraConfig] = field(default_factory=aic_cameras.copy)
     camera_image_scaling: CameraImageScaling = field(
         default_factory=lambda: {
@@ -129,25 +127,7 @@ class AICRobotAICController(Robot):
         self.last_controller_state: ControllerState | None = None
         self.joint_states_sub: Subscription[JointState] | None = None
         self.last_joint_states: JointState | None = None
-        self.parallel_gripper_action_client: (
-            ActionClient[
-                ParallelGripperCommand.Goal,
-                ParallelGripperCommand.Result,
-                ParallelGripperCommand.Feedback,
-            ]
-            | None
-        ) = None
-        self.last_gripper_target: float | None = None
-        self.gripper_result: (
-            RclFuture[
-                ClientGoalHandle[
-                    ParallelGripperCommand.Goal,
-                    ParallelGripperCommand.Result,
-                    ParallelGripperCommand.Feedback,
-                ]
-            ]
-            | None
-        ) = None
+
         self._is_connected = False
 
         if config.teleop_frame_id not in ["gripper/tcp", "base_link"]:
@@ -275,13 +255,6 @@ class AICRobotAICController(Robot):
             JointState, "/joint_states", joint_states_cb, qos_profile_sensor_data
         )
 
-        self.parallel_gripper_action_client = ActionClient(
-            self.node,
-            ParallelGripperCommand,
-            self.config.gripper_action_name,
-            callback_group=ReentrantCallbackGroup(),
-        )
-
         for cam in self.cameras.values():
             cam.connect()
 
@@ -405,24 +378,6 @@ class AICRobotAICController(Robot):
         if self.motion_update_pub is not None:
             self.motion_update_pub.publish(msg)
 
-        if not self.node or not self.parallel_gripper_action_client:
-            raise RuntimeError("unexpected error")
-
-        if self.last_gripper_target != motion_update_action["gripper_target"]:
-            if self.gripper_result:
-                self.gripper_result.cancel()
-                self.gripper_result.result()
-                self.gripper_result = None
-
-            goal = ParallelGripperCommand.Goal()
-            goal.command.name = [self.config.gripper_joint_name]
-            goal.command.position = [motion_update_action["gripper_target"]]
-            goal.command.header.stamp = self.node.get_clock().now().to_msg()
-            self.gripper_result = self.parallel_gripper_action_client.send_goal_async(
-                goal
-            )
-            self.last_gripper_target = motion_update_action["gripper_target"]
-
     def send_action_joint(self, action: dict[str, Any]) -> dict[str, Any]:
         if not self._is_connected or not self.node:
             raise DeviceNotConnectedError()
@@ -435,9 +390,7 @@ class AICRobotAICController(Robot):
                 "Missing key 'shoulder_pan_joint'. If using `--teleop.type=aic_keyboard_ee` or `--teleop.type=aic_spacemouse`, have you set `--robot.teleop_target_mode=cartesian`?"
             )
 
-        msg.target_state.velocities = list(action.values())[
-            0:-1
-        ]  # omit gripper_target at the end
+        msg.target_state.velocities = list(action.values())
 
         msg.target_stiffness = [85.0, 85.0, 85.0, 85.0, 85.0, 85.0]
         msg.target_damping = [75.0, 75.0, 75.0, 75.0, 75.0, 75.0]
