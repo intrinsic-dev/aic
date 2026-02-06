@@ -68,6 +68,27 @@ For interactive development, you can pass this via the command line—usually wi
 ros2 run aic_model aic_model --ros-args -p policy:=aic_example_policies.ros.WaveArm
 ```
 
+## Example 2: a "Cheating" policy
+
+For a more complex example, a "cheating" solution is provided in [CheatCode.py](https://github.com/intrinsic-dev/aic/blob/main/aic_example_policies/aic_example_policies/ros/CheatCode.py).
+This solution uses the TF transformation tree provided by the simulation when `ground_truth:=true` is set at launch time.
+The ground truth data will not be available at the competition's evaluation time, but it can be useful for training and debugging.
+`CheatCode.py` uses the poses of the plug and port to calculate target poses to send to `aic_controller`.
+To launch the simulation with ground truth enabled, and the port, plug, and cable present:
+```
+ros2 launch aic_bringup aic_gz_bringup.launch.py nic_card_mount_0_present:=true sc_port_0_present:=true ground_truth:=true spawn_task_board:=true spawn_cable:=true attach_cable_to_gripper:=true sfp_mount_rail_0_present:=true
+```
+
+Then, the `CheatCode.py` example policy can be started:
+```
+ros2 run aic_model aic_model --ros-args -p policy:=aic_example_policies.ros.CheatCode
+```
+
+To give `CheatCode.py` a goal so that it starts moving:
+```
+src/aic/aic_model/test/create_and_cancel_task.py
+```
+
 ## Tutorial: Creating a new policy node
 
 A policy node is essentially a ROS 2 node that subscribes to observations and publishes actions to be executed.
