@@ -19,10 +19,12 @@
 
 #include <chrono>
 #include <cmath>
+#include <condition_variable>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
+#include <mutex>
 #include <sstream>
 #include <unordered_set>
 
@@ -31,6 +33,7 @@
 #include "lifecycle_msgs/msg/state.hpp"
 #include "lifecycle_msgs/srv/get_state.hpp"
 #include "rclcpp/subscription_options.hpp"
+#include "sensor_msgs/msg/joint_state.hpp"
 
 namespace aic {
 
@@ -261,7 +264,7 @@ TaskAttempt::TaskAttempt(const std::string& _id)
 
 //==============================================================================
 YAML::Node Score::serialize() const {
-  const int total_score = this->calculate_total_score();
+  const double total_score = this->calculate_total_score();
   YAML::Node score;
   score["total"] = total_score;
   for (const auto& [trial_name, trial_score] : this->breakdown) {
@@ -273,9 +276,9 @@ YAML::Node Score::serialize() const {
 }
 
 //==============================================================================
-int Score::calculate_total_score() const {
+double Score::calculate_total_score() const {
   // TODO(luca) check calculation
-  int score = 0;
+  double score = 0;
   for (const auto& [trial_name, trial_score] : this->breakdown) {
     score += trial_score.tier_1.total_score();
     score += trial_score.tier_2.total_score();
@@ -306,6 +309,8 @@ Engine::Engine(const rclcpp::NodeOptions& options)
   node_->declare_parameter("gripper_frame_name", std::string("gripper/tcp"));
   ground_truth_ = node_->declare_parameter("ground_truth", false);
   skip_model_ready_ = node_->declare_parameter("skip_model_ready", false);
+  skip_ready_simulator_ =
+      node_->declare_parameter("skip_ready_simulator", false);
   node_->declare_parameter("model_discovery_timeout_seconds", 30);
   node_->declare_parameter("model_configure_timeout_seconds", 60);
   node_->declare_parameter("model_activate_timeout_seconds", 60);
@@ -448,6 +453,15 @@ EngineState Engine::initialize() {
     return engine_state_;
   }
 
+  // Make sure a valid clock is received, it takes time to initialize
+  // the subscriber and following timeout calls might fail otherwise
+  RCLCPP_INFO(node_->get_logger(), "Waiting for clock");
+  if (!node_->get_clock()->wait_until_started(rclcpp::Duration(10, 0))) {
+    RCLCPP_ERROR(node_->get_logger(), "Failed to find a valid clock");
+    return EngineState::Error;
+  }
+  RCLCPP_INFO(node_->get_logger(), "Clock found successfully.");
+
   // Create ROS endpoints.
   const rclcpp::QoS reliable_qos = rclcpp::QoS(rclcpp::KeepLast(10)).reliable();
 
@@ -468,22 +482,20 @@ EngineState Engine::initialize() {
       },
       sub_options_ignore_local);
 
-  joint_motion_update_pub_ = node_->create_publisher<JointMotionUpdateMsg>(
-      "/aic_controller/joint_commands", reliable_qos);
-
   insert_cable_action_client_ =
       rclcpp_action::create_client<InsertCableAction>(node_, "/insert_cable");
   spawn_entity_client_ =
       node_->create_client<SpawnEntitySrv>("/gz_server/spawn_entity");
   delete_entity_client_ =
       node_->create_client<DeleteEntitySrv>("/gz_server/delete_entity");
-  change_target_mode_client_ = node_->create_client<ChangeTargetModeSrv>(
-      "/aic_controller/change_target_mode");
   model_get_state_client_ = node_->create_client<lifecycle_msgs::srv::GetState>(
       model_get_state_service_name_);
   model_change_state_client_ =
       node_->create_client<lifecycle_msgs::srv::ChangeState>(
           model_change_state_service_name_);
+  switch_controller_client_ =
+      node_->create_client<controller_manager_msgs::srv::SwitchController>(
+          "/controller_manager/switch_controller");
   reset_joints_client_ =
       node_->create_client<ResetJointsSrv>("/scoring/reset_joints");
   tf_buffer_ = std::make_unique<tf2_ros::Buffer>(node_->get_clock());
@@ -528,6 +540,8 @@ EngineState Engine::initialize() {
     RCLCPP_ERROR(node_->get_logger(), "Failed to initialize scoring system");
     return EngineState::Error;
   }
+  scoring_tier2_->SetGripperFrame(
+      node_->get_parameter("gripper_frame_name").as_string());
 
   // Create output directory for bag files.
   std::error_code ec;
@@ -581,7 +595,7 @@ EngineState Engine::run() {
     if (trial.state == TrialState::AllTasksCompleted) {
       RCLCPP_INFO(
           node_->get_logger(),
-          "\033[1;32m✓ Trial '%s' completed successfully! Score: %d\033[0m",
+          "\033[1;32m✓ Trial '%s' completed successfully! Score: %f\033[0m",
           trial_id.c_str(), trial_score.total_score());
     } else {
       RCLCPP_ERROR(node_->get_logger(),
@@ -605,7 +619,7 @@ EngineState Engine::run() {
     RCLCPP_INFO(node_->get_logger(),
                 "\033[1;32m║   ✓ All Trials Completed!              ║\033[0m");
     RCLCPP_INFO(node_->get_logger(),
-                "\033[1;32m║   Total Score: %.3d                     ║\033[0m",
+                "\033[1;32m║   Total Score: %.3f                     ║\033[0m",
                 score.calculate_total_score());
     RCLCPP_INFO(node_->get_logger(),
                 "\033[1;32m╚════════════════════════════════════════╝\033[0m");
@@ -1004,6 +1018,12 @@ bool Engine::ready_simulator(Trial& trial) {
   RCLCPP_INFO(node_->get_logger(), "Readying simulator for trial '%s'...",
               trial.id.c_str());
 
+  if (skip_ready_simulator_) {
+    RCLCPP_WARN(node_->get_logger(),
+                "Skipping ready_simulator (skip_ready_simulator=true)");
+    return true;
+  }
+
   // Spawn the task board.
   RCLCPP_INFO(node_->get_logger(), "Spawning task board.");
   const auto& task_board_config = trial.config["scene"]["task_board"];
@@ -1068,6 +1088,36 @@ bool Engine::ready_simulator(Trial& trial) {
     }
   }
 
+  // Wait for cable to be spawned. Sleep in sim time to ensure sim has advanced.
+  node_->get_clock()->sleep_for(rclcpp::Duration::from_seconds(0.1));
+
+  RCLCPP_INFO(node_->get_logger(), "Waiting for robot arm to stabilize.");
+  // The end-effector dips when the cable is first attached.
+  // Wait for joints to settle by checking velocities.
+  std::condition_variable cv;
+  std::mutex mtx;
+  bool joints_settled = false;
+  const rclcpp::QoS reliable_qos = rclcpp::QoS(rclcpp::KeepLast(10)).reliable();
+  auto joint_states_sub =
+      node_->create_subscription<sensor_msgs::msg::JointState>(
+          "/joint_states", reliable_qos,
+          [this, &joints_settled, &cv,
+           &mtx](const sensor_msgs::msg::JointState::SharedPtr msg) {
+            if (msg->velocity.empty()) return;
+            for (size_t i = 0; i < msg->velocity.size(); ++i) {
+              if (std::fabs(msg->velocity[i]) > 1e-3) return;
+            }
+            {
+              std::unique_lock<std::mutex> lock(mtx);
+              joints_settled = true;
+            }
+            cv.notify_one();
+          });
+
+  std::unique_lock<std::mutex> lock(mtx);
+  cv.wait_for(lock, std::chrono::seconds(10),
+              [&joints_settled] { return joints_settled; });
+
   // TODO(Yadunund): Implement other simulator readiness checks.
 
   return true;
@@ -1080,11 +1130,11 @@ bool Engine::ready_scoring(const Trial& trial) {
   std::vector<aic_scoring::Connection> connections;
   for (const auto& task : trial.tasks) {
     aic_scoring::Connection connection;
-    connection.plugName = task.cable_name + "::" + task.plug_name;
-    connection.portName = task.target_module_name + "::" + task.port_name;
+    connection.plugName = task.cable_name + "/" + task.plug_name + "_link";
+    connection.portName = "task_board/" + task.target_module_name + "/" +
+                          task.port_name + "_link";
     connections.push_back(connection);
   }
-  scoring_tier2_->ResetConnections(connections);
 
   // Create unique bag filename with timestamp
   auto now = std::chrono::system_clock::now();
@@ -1099,7 +1149,16 @@ bool Engine::ready_scoring(const Trial& trial) {
       << std::setfill('0') << std::setw(3) << ms.count();
   const std::string bag_path = oss.str();
 
-  if (!scoring_tier2_->StartRecording(bag_path)) {
+  unsigned int max_task_limit = 0;
+  for (const auto& task : trial.tasks) {
+    if (task.time_limit > max_task_limit) {
+      max_task_limit = task.time_limit;
+    }
+  }
+  // Add a few seconds for safety since this is a limit for recorded data
+  max_task_limit += 5;
+  if (!scoring_tier2_->StartRecording(bag_path, connections,
+                                      std::chrono::seconds(max_task_limit))) {
     RCLCPP_ERROR(node_->get_logger(), "Failed to start recording to '%s'.",
                  bag_path.c_str());
     return false;
@@ -1152,6 +1211,10 @@ bool Engine::tasks_started(Trial& trial) {
     }
     current_attempt.time_started = this->node_->now();
     current_attempt.state = TaskState::TaskStarted;
+    // TODO(luca) Scoring assumes a single task per trial, revisit this
+    // when this is not the case anymore
+    this->scoring_tier2_->SetTaskStartTime(*current_attempt.time_started);
+
     // Update trial state
     trial.state = TrialState::TasksExecuting;
     RCLCPP_INFO(this->node_->get_logger(), "TrialState: TasksExecuting");
@@ -1184,6 +1247,7 @@ bool Engine::tasks_started(Trial& trial) {
     RCLCPP_INFO(this->node_->get_logger(), "Task [%s] succeeded.",
                 task.id.c_str());
     current_attempt.time_completed = this->node_->now();
+    this->scoring_tier2_->SetTaskEndTime(*current_attempt.time_completed);
     current_attempt.state = TaskState::TaskCompleted;
   }
 
@@ -1363,28 +1427,36 @@ void Engine::reset_after_trial(const Trial& trial) {
     this->deactivate_model_node();
   }
 
-  // Remove spawned entities from simulator
-  for (const auto& entity_name : trial.spawned_entities) {
-    // Delete spawned entity
-    auto request = std::make_shared<DeleteEntitySrv::Request>();
-    request->entity = entity_name;
+  is_first_trial_ = false;
+  model_discovered_ = false;
 
-    auto future = delete_entity_client_->async_send_request(request);
-    if (future.wait_for(std::chrono::seconds(10)) !=
-        std::future_status::ready) {
-      RCLCPP_ERROR(node_->get_logger(),
-                   "Delete entity service call timed out for entity '%s'",
-                   request->entity.c_str());
-    } else {
-      auto response = future.get();
-      if (response->result.result !=
-          simulation_interfaces::msg::Result::RESULT_OK) {  // RESULT_OK = 1
-        RCLCPP_ERROR(node_->get_logger(), "Failed to delete entity '%s': %s",
-                     request->entity.c_str(),
-                     response->result.error_message.c_str());
+  if (skip_ready_simulator_) {
+    RCLCPP_WARN(node_->get_logger(),
+                "Skipping entity deletion (skip_ready_simulator=true)");
+  } else {
+    // Remove spawned entities from simulator
+    for (const auto& entity_name : trial.spawned_entities) {
+      // Delete spawned entity
+      auto request = std::make_shared<DeleteEntitySrv::Request>();
+      request->entity = entity_name;
+
+      auto future = delete_entity_client_->async_send_request(request);
+      if (future.wait_for(std::chrono::seconds(10)) !=
+          std::future_status::ready) {
+        RCLCPP_ERROR(node_->get_logger(),
+                     "Delete entity service call timed out for entity '%s'",
+                     request->entity.c_str());
       } else {
-        RCLCPP_INFO(node_->get_logger(), "Successfully deleted entity '%s'",
-                    request->entity.c_str());
+        auto response = future.get();
+        if (response->result.result !=
+            simulation_interfaces::msg::Result::RESULT_OK) {  // RESULT_OK = 1
+          RCLCPP_ERROR(node_->get_logger(), "Failed to delete entity '%s': %s",
+                       request->entity.c_str(),
+                       response->result.error_message.c_str());
+        } else {
+          RCLCPP_INFO(node_->get_logger(), "Successfully deleted entity '%s'",
+                      request->entity.c_str());
+        }
       }
     }
   }
@@ -1395,8 +1467,6 @@ void Engine::reset_after_trial(const Trial& trial) {
                  "Failed to home robot during trial reset.");
   }
 
-  is_first_trial_ = false;
-  model_discovered_ = false;
   RCLCPP_INFO(node_->get_logger(), "Reset after trial completed.");
 }
 
@@ -1404,21 +1474,40 @@ void Engine::reset_after_trial(const Trial& trial) {
 bool Engine::home_robot() {
   RCLCPP_INFO(node_->get_logger(), "Homing robot to initial positions...");
 
-  // Switch to joint mode
-  if (!change_target_mode(ChangeTargetModeSrv::Request::TARGET_MODE_JOINT)) {
-    RCLCPP_ERROR(node_->get_logger(),
-                 "Failed to switch to joint mode for homing.");
+  // Lambda to switch controllers
+  auto switch_controllers =
+      [this](const std::vector<std::string>& activate,
+             const std::vector<std::string>& deactivate) -> bool {
+    auto request = std::make_shared<SwitchControllerSrv::Request>();
+    request->activate_controllers = activate;
+    request->deactivate_controllers = deactivate;
+    request->strictness = SwitchControllerSrv::Request::BEST_EFFORT;
+
+    auto future = switch_controller_client_->async_send_request(request);
+    if (future.wait_for(std::chrono::seconds(10)) !=
+        std::future_status::ready) {
+      RCLCPP_ERROR(node_->get_logger(),
+                   "SwitchController service call timed out");
+      return false;
+    }
+
+    auto response = future.get();
+    if (!response->ok) {
+      RCLCPP_ERROR(node_->get_logger(), "Failed to switch controllers.");
+      return false;
+    }
+
+    return true;
+  };
+
+  // Deactivate aic_controller
+  if (!switch_controllers({}, {"aic_controller"})) {
+    RCLCPP_ERROR(node_->get_logger(), "Failed to deactivate aic_controller.");
     return false;
   }
+  RCLCPP_INFO(node_->get_logger(), "aic_controller deactivated successfully.");
 
-  // Publish pre-built joint command to controller
-  joint_motion_update_pub_->publish(home_joint_msg_);
-
-  // Wait for the robot to reach home position if possible without resetting.
-  std::this_thread::sleep_for(std::chrono::seconds(2));
-
-  // Request for joints reset to home positions using pre-built request for
-  // extra safety.
+  // Request for joints reset to home positions using pre-built request.
   auto reset_joints_future =
       reset_joints_client_->async_send_request(home_reset_joints_request_);
   if (reset_joints_future.wait_for(std::chrono::seconds(10)) !=
@@ -1433,56 +1522,16 @@ bool Engine::home_robot() {
     return false;
   }
 
-  // Switch to cartesian mode after homing
-  if (!change_target_mode(
-          ChangeTargetModeSrv::Request::TARGET_MODE_CARTESIAN)) {
-    RCLCPP_ERROR(node_->get_logger(),
-                 "Failed to switch to cartesian mode after homing.");
+  // Activate aic_controller & resume simulation
+  if (!switch_controllers({"aic_controller"}, {})) {
+    RCLCPP_ERROR(node_->get_logger(), "Failed to activate aic_controller.");
     return false;
   }
+  RCLCPP_INFO(node_->get_logger(), "aic_controller activated successfully.");
 
   RCLCPP_INFO(
       node_->get_logger(),
       "Successfully reset joints to home position, robot homed successfully.");
-  return true;
-}
-
-//==============================================================================
-bool Engine::change_target_mode(const uint8_t target_mode) {
-  auto change_mode_request = std::make_shared<ChangeTargetModeSrv::Request>();
-  change_mode_request->target_mode = target_mode;
-  std::string target_mode_str;
-  switch (target_mode) {
-    case ChangeTargetModeSrv::Request::TARGET_MODE_JOINT:
-      target_mode_str = "JOINT";
-      break;
-    case ChangeTargetModeSrv::Request::TARGET_MODE_CARTESIAN:
-      target_mode_str = "CARTESIAN";
-      break;
-    default:
-      RCLCPP_ERROR(node_->get_logger(), "Unknown target mode requested.");
-      return false;
-  }
-
-  auto change_mode_future =
-      change_target_mode_client_->async_send_request(change_mode_request);
-  if (change_mode_future.wait_for(std::chrono::seconds(5)) !=
-      std::future_status::ready) {
-    RCLCPP_ERROR(node_->get_logger(),
-                 "ChangeTargetMode service call timed out when changing to "
-                 "%s mode",
-                 target_mode_str.c_str());
-    return false;
-  }
-  auto change_mode_response = change_mode_future.get();
-  if (!change_mode_response->success) {
-    RCLCPP_ERROR(node_->get_logger(), "Failed to change target mode to %s mode",
-                 target_mode_str.c_str());
-    return false;
-  }
-  RCLCPP_INFO(node_->get_logger(),
-              "Successfully changed target mode to %s mode",
-              target_mode_str.c_str());
   return true;
 }
 
@@ -1732,7 +1781,7 @@ void Engine::score_trial(TrialScore& score) {
   score.tier_2 = tier2_score;
   score.tier_3 = tier3_score;
 
-  RCLCPP_INFO(node_->get_logger(), "Finished scoring trial, total score is: %u",
+  RCLCPP_INFO(node_->get_logger(), "Finished scoring trial, total score is: %f",
               score.total_score());
 }
 

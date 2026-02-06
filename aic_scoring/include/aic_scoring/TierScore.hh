@@ -36,7 +36,7 @@ public:
 
   std::string message;
 
-  virtual int total_score() const = 0;
+  virtual double total_score() const = 0;
 
   virtual YAML::Node to_yaml() const {
     YAML::Node score;
@@ -64,31 +64,27 @@ public:
     }
   }
 
-  int total_score() const override {
+  double total_score() const override {
     return score;
   }
 };
 
 
 class Tier2Score : public TierScore {
-private:
+public:
   struct CategoryScore {
-    int score;
+    double score;
     std::optional<std::string> message;
 
-    CategoryScore(int s, const std::optional<std::string>& msg) : score(s), message(msg) {}
+    CategoryScore(double s, const std::optional<std::string>& msg) : score(s), message(msg) {}
   };
 
   using CategoryScores = std::map<std::string, CategoryScore>;
 
-  // Map of category name to its score
-  CategoryScores  category_scores;
-
-public:
   Tier2Score(const std::string& msg) : TierScore(msg) {}
 
-  int total_score() const override {
-    int score = 0;
+  double total_score() const override {
+    double score = 0;
     for (const auto& category : category_scores) {
       score += category.second.score;
     }
@@ -108,31 +104,30 @@ public:
     return score;
   }
 
-  void add_category_score(const std::string& category, int score,
+  void add_category_score(const std::string& category, double score,
                           const std::optional<std::string>& msg = std::nullopt) {
     this->category_scores.insert({category, CategoryScore(score, msg)});
   }
+
+  void add_category_score(const std::string& category,
+                          const CategoryScore& score) {
+    this->category_scores.insert({category, score});
+  }
+
+private:
+  // Map of category name to its score
+  CategoryScores  category_scores;
+
 };
 
 class Tier3Score : public TierScore {
 private:
-  // Score for successful insertion  (binary)
-  static const int kTier3Success = 20;
-
-  int score;
+  double score;
 
 public:
-  Tier3Score(bool success) {
-    if (success) {
-      this->score = kTier3Success;
-      this->message = "Task completed successfully.";
-    } else {
-      this->score = 0;
-      this->message = "Task not completed successfully.";
-    }
-  }
+  Tier3Score(double s, const std::string& msg) : TierScore(msg), score(s) { }
 
-  int total_score() const override {
+  double total_score() const override {
     return score;
   }
 };

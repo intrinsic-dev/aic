@@ -29,10 +29,10 @@
 #include "aic_control_interfaces/msg/joint_motion_update.hpp"
 #include "aic_control_interfaces/msg/motion_update.hpp"
 #include "aic_control_interfaces/msg/trajectory_generation_mode.hpp"
-#include "aic_control_interfaces/srv/change_target_mode.hpp"
 #include "aic_scoring/ScoringTier2.hh"
 #include "aic_scoring/TierScore.hh"
 #include "aic_task_interfaces/action/insert_cable.hpp"
+#include "controller_manager_msgs/srv/switch_controller.hpp"
 #include "geometry_msgs/msg/wrench_stamped.hpp"
 #include "lifecycle_msgs/msg/state.hpp"
 #include "lifecycle_msgs/srv/change_state.hpp"
@@ -50,7 +50,6 @@
 //==============================================================================
 namespace aic {
 
-using ChangeTargetModeSrv = aic_control_interfaces::srv::ChangeTargetMode;
 using DeleteEntitySrv = simulation_interfaces::srv::DeleteEntity;
 using InsertCableAction = aic_task_interfaces::action::InsertCable;
 using InsertCableGoalHandle =
@@ -60,6 +59,7 @@ using JointTrajectoryPoint = trajectory_msgs::msg::JointTrajectoryPoint;
 using MotionUpdateMsg = aic_control_interfaces::msg::MotionUpdate;
 using ResetJointsSrv = aic_engine_interfaces::srv::ResetJoints;
 using SpawnEntitySrv = simulation_interfaces::srv::SpawnEntity;
+using SwitchControllerSrv = controller_manager_msgs::srv::SwitchController;
 using Task = aic_task_interfaces::msg::Task;
 using TrajectoryGenerationMode =
     aic_control_interfaces::msg::TrajectoryGenerationMode;
@@ -150,13 +150,14 @@ struct TrialScore {
   aic_scoring::Tier2Score tier_2;
   aic_scoring::Tier3Score tier_3;
 
-  TrialScore() : tier_1(0), tier_2("Task execution failed"), tier_3(0) {}
+  TrialScore()
+      : tier_1(0),
+        tier_2("Task execution failed"),
+        tier_3(0, "Task execution failed") {}
 
   void tier_1_success() { tier_1 = aic_scoring::Tier1Score(1); }
 
-  void tier_3_success() { tier_3 = aic_scoring::Tier3Score(1); }
-
-  int total_score() const {
+  double total_score() const {
     return tier_1.total_score() + tier_2.total_score() + tier_3.total_score();
   }
 };
@@ -170,7 +171,7 @@ struct Score {
   YAML::Node serialize() const;
 
   /// \brief Computes the total score from the score breakdown.
-  int calculate_total_score() const;
+  double calculate_total_score() const;
 };
 
 //==============================================================================
@@ -297,10 +298,6 @@ class Engine {
   /// \param[in] The score to serialize and write.
   void score_run(const Score& score);
 
-  /// @brief Sends a request to change the controller target mode.
-  /// \param[in] The target mode to request.
-  bool change_target_mode(const uint8_t target_mode);
-
   // Strings.
   // Name of the aic_adapter node for lifecycle transitions.
   std::string adapter_node_name_;
@@ -317,8 +314,6 @@ class Engine {
   rclcpp::Subscription<JointMotionUpdateMsg>::SharedPtr
       joint_motion_update_sub_;
   rclcpp::Subscription<MotionUpdateMsg>::SharedPtr motion_update_sub_;
-  // Publishers.
-  rclcpp::Publisher<JointMotionUpdateMsg>::SharedPtr joint_motion_update_pub_;
 
   // Subscription messages.
   JointMotionUpdateMsg::ConstSharedPtr last_joint_motion_update_msg_;
@@ -331,11 +326,12 @@ class Engine {
   // Service clients.
   rclcpp::Client<SpawnEntitySrv>::SharedPtr spawn_entity_client_;
   rclcpp::Client<DeleteEntitySrv>::SharedPtr delete_entity_client_;
-  rclcpp::Client<ChangeTargetModeSrv>::SharedPtr change_target_mode_client_;
   rclcpp::Client<lifecycle_msgs::srv::GetState>::SharedPtr
       model_get_state_client_;
   rclcpp::Client<lifecycle_msgs::srv::ChangeState>::SharedPtr
       model_change_state_client_;
+  rclcpp::Client<controller_manager_msgs::srv::SwitchController>::SharedPtr
+      switch_controller_client_;
   rclcpp::Client<ResetJointsSrv>::SharedPtr reset_joints_client_;
 
   // TF
@@ -362,6 +358,7 @@ class Engine {
 
   // Parameters to skip states for testing purposes.
   bool skip_model_ready_;
+  bool skip_ready_simulator_;
 
   // Whether the participant model has been discovered and readied.
   bool model_discovered_;

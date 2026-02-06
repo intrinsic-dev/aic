@@ -11,9 +11,8 @@ COPY aic_interfaces /ws_aic/src/aic/aic_interfaces
 COPY aic_utils /ws_aic/src/aic/aic_utils
 COPY pixi.toml pixi.lock /ws_aic/src/aic
 SHELL ["/bin/bash", "-c"]
-RUN cd /ws_aic/src/aic && pixi install --frozen \
-    && pixi clean --build \
-    && pixi clean cache -y
+RUN --mount=type=cache,target=/root/.cache/rattler/cache --mount=type=cache,target=/ws_aic/src/aic/.pixi/build \
+    cd /ws_aic/src/aic && pixi install --frozen
 
 WORKDIR /ws_aic/src/aic
 ENTRYPOINT [ \

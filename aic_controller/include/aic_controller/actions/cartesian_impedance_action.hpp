@@ -52,6 +52,8 @@ struct CartesianImpedanceParameters {
   Eigen::Matrix<double, 6, 1> feedforward_interpolation_wrench_min;
   Eigen::Matrix<double, 6, 1> feedforward_interpolation_wrench_max;
   Eigen::Matrix<double, 6, 1> feedforward_interpolation_max_wrench_dot;
+  // Offset added to control wrench to account for payload weight
+  Eigen::Matrix<double, 6, 1> offset_wrench;
   // The activation_percentage specifies the percentage (0,1) of the range in
   // which the activation potential is active.
   // It is used as follows:
