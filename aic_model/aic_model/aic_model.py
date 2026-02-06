@@ -211,7 +211,7 @@ class AicModel(LifecycleNode):
             [85.0, 85.0, 85.0, 85.0, 85.0, 85.0]
         ).flatten()
         motion_update_msg.target_damping = np.diag(
-            [75.0, 75.0, 75.0, 75.0, 75.0, 75.0]
+            [75.0, 75.0, 75.0, 30.0, 30.0, 30.0]
         ).flatten()
 
         motion_update_msg.feedforward_wrench_at_tip = Wrench(

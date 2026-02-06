@@ -77,7 +77,7 @@ class CheatCode(PolicyRos):
             position=Point(
                 x=port_tf_stamped.transform.translation.x,
                 y=port_tf_stamped.transform.translation.y,
-                z=port_tf_stamped.transform.translation.z + 0.1,
+                z=port_tf_stamped.transform.translation.z + 0.15,
             ),
             orientation=Quaternion(x=1.0, y=0.0, z=0.0, w=0.0),
         )
