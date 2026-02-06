@@ -51,7 +51,7 @@ from rclpy.task import Future as RclFuture
 from sensor_msgs.msg import JointState
 
 from .aic_robot import aic_cameras, arm_joint_names, gripper_joint_name
-from .types import MotionUpdateActionDict
+from .types import MotionUpdateActionDict, JointMotionUpdateActionDict
 
 logger = logging.getLogger(__name__)
 
@@ -149,11 +149,25 @@ class AICRobotAICController(Robot):
             | None
         ) = None
         self._is_connected = False
+        
+        if config.teleop_frame_id not in ["gripper/tcp", "base_link"]:
+             raise ValueError(
+        f"Invalid teleop_frame_id: '{config.teleop_frame_id}'. "
+        "Supported frames are 'gripper/tcp' or 'base_link'."
+    )
         self.frame_id = config.teleop_frame_id
-        print(f"Teleop frame id: {self.frame_id}")
 
-    def send_change_control_mode_req(self, mode):
-        ChangeTargetMode
+        if config.teleop_target_mode not in ["cartesian", "joint"]:
+            raise ValueError(
+            f"Invalid teleop_target_mode: '{config.teleop_target_mode}'. "
+            "Supported modes are 'cartesian' or 'joint'."
+        )
+        self.teleop_target_mode = config.teleop_target_mode        
+
+        print(f"Teleop frame id: {self.frame_id}")
+        print(f"Teleop target mode: {self.teleop_target_mode}")
+
+    def send_change_control_mode_req(self, mode: ChangeTargetMode.Request):
 
         req = ChangeTargetMode.Request()
         req.target_mode = mode
@@ -197,7 +211,7 @@ class AICRobotAICController(Robot):
 
     @cached_property
     def action_features(self) -> dict[str, type]:
-        return MotionUpdateActionDict.__annotations__
+        return MotionUpdateActionDict.__annotations__ if self.teleop_target_mode == "cartesian" else JointMotionUpdateActionDict.__annotations__
 
     @property
     def is_connected(self) -> bool:
@@ -230,7 +244,7 @@ class AICRobotAICController(Robot):
 
         change_mode_req = (
             ChangeTargetMode.Request.TARGET_MODE_JOINT
-            if self.config.teleop_target_mode == "joint"
+            if self.teleop_target_mode == "joint"
             else ChangeTargetMode.Request.TARGET_MODE_CARTESIAN
         )
         self.send_change_control_mode_req(change_mode_req)
@@ -356,7 +370,11 @@ class AICRobotAICController(Robot):
         motion_update_action = cast(MotionUpdateActionDict, action)
 
         twist_msg = Twist()
-        twist_msg.linear.x = float(motion_update_action["linear.x"])
+
+        try:
+            twist_msg.linear.x = float(motion_update_action["linear.x"])
+        except KeyError:
+            raise KeyError("Missing key 'linear.x'. If using `--teleop.type=aic_keyboard_joint`, have you set `--robot.teleop_target_mode=joint`?") from None
         twist_msg.linear.y = float(motion_update_action["linear.y"])
         twist_msg.linear.z = float(motion_update_action["linear.z"])
         twist_msg.angular.x = float(motion_update_action["angular.x"])
@@ -400,7 +418,14 @@ class AICRobotAICController(Robot):
             self.last_gripper_target = motion_update_action["gripper_target"]
 
     def send_action_joint(self, action: dict[str, Any]) -> dict[str, Any]:
+        if not self._is_connected or not self.node:
+            raise DeviceNotConnectedError()
+
+        joint_motion_update_action = cast(JointMotionUpdateActionDict, action)
         msg = JointMotionUpdate()
+
+        if "shoulder_pan_joint" not in joint_motion_update_action:
+            raise KeyError("Missing key 'shoulder_pan_joint'. If using `--teleop.type=aic_keyboard_ee` or `--teleop.type=aic_spacemouse`, have you set `--robot.teleop_target_mode=cartesian`?")
 
         msg.target_state.velocities = list(action.values())[
             0:-1
@@ -414,9 +439,9 @@ class AICRobotAICController(Robot):
             self.joint_motion_update_pub.publish(msg)
 
     def send_action(self, action: dict[str, Any]) -> dict[str, Any]:
-        if self.config.teleop_target_mode == "cartesian":
+        if self.teleop_target_mode == "cartesian":
             return self.send_action_cartesian(action)
-        elif self.config.teleop_target_mode == "joint":
+        elif self.teleop_target_mode == "joint":
             return self.send_action_joint(action)
         else:
             logger.debug("Invalid teleop_target_mode")

@@ -15,20 +15,21 @@ cd ~/ws_aic/src/aic
 pixi run lerobot-teleoperate \
   --robot.type=aic_controller --robot.id=aic \
   --teleop.type=<teleop-type> --teleop.id=aic \
+  --robot.teleop_target_mode=<mode> --robot.teleop_frame_id=<frame_id> \
   --display_data=true
 ```
 
-Options for `teleop.type`:
+Options for `--teleop.type` (and setting `--robot.teleop_target_mode` accordingly):
 
-- `aic_keyboard_ee` for cartesian-space keyboard control
-- `aic_spacemouse` for cartesian-space SpaceMouse control
-- `aic_keyboard_joint` for joint-space control
+- `aic_keyboard_ee` for cartesian-space keyboard control (and set `--robot.teleop_target_mode=cartesian`)
+- `aic_spacemouse` for cartesian-space SpaceMouse control (and set `--robot.teleop_target_mode=cartesian`)
+- `aic_keyboard_joint` for joint-space control (and set `--robot.teleop_target_mode=joint`)
 
-:warning: Note: In `aic_robot_aic_controller.py`, there is a class called `AICRobotAICControllerConfig` with a field called `teleop_target_mode` must be set to `"cartesian"` or `"joint"` (the `AICRobotAICController` class doesn't have access to the `--teleop.type` flag). Make sure to set this and re-build if switching between cartesian/joint space control.
+:warning: Note: In addition to setting `--teleop.type` you must set `--robot.teleop_target_mode` because the `AICRobotAICController` class needs to know which type of actions to send to the controller and it doesn't have access to `--teleop.type`.
 
 #### Cartesian space control
 
-In `aic_robot_aic_controller.py`, there is a class called `AICRobotAICControllerConfig` with a field called `teleop_frame_id` (the reference frame used for cartesian control) which sets the reference frame for cartesian control. Set this to either the gripper TCP (`"gripper/tcp"`) or the robot base link (`"base_link"`).
+For cartesian control, in addition to setting `--teleop.type` and `--robot.teleop_target_mode`, you can also set `teleop_frame_id` (the reference frame used for cartesian control) which sets the reference frame. Set this to either the gripper TCP (`"gripper/tcp"`, the default) or the robot base link (`"base_link"`).
 
 ##### Keyboard
 
@@ -101,6 +102,7 @@ cd ~/ws_aic/src/aic
 pixi run lerobot-record \
   --robot.type=aic_controller --robot.id=aic \
   --teleop.type=<teleop-type> --teleop.id=aic \
+  --robot.teleop_target_mode=<mode> --robot.teleop_frame_id=<frame_id> \
   --dataset.repo_id=<hf-repo> \
   --dataset.single_task=<task-prompt> \
   --dataset.push_to_hub=false \
@@ -109,7 +111,7 @@ pixi run lerobot-record \
   --display_data=true
 ```
 
-:warning: Note (same as with `lerobot-teleoperate` above): In `aic_robot_aic_controller.py`, there is a class called `AICRobotAICControllerConfig` with a field called `teleop_target_mode` must be set to `"cartesian"` or `"joint"` (the `AICRobotAICController` class doesn't have access to the `--teleop.type` flag). Make sure to set this and re-build if switching between cartesian/joint space control.
+:warning: Note (same as with `lerobot-teleoperate` above): In addition to setting `--teleop.type` you must set `--robot.teleop_target_mode` because the `AICRobotAICController` class needs to know which type of actions to send to the controller and it doesn't have access to `--teleop.type`.
 
 Upon starting the command, you may see `WARN   Watchdog Validator ThreadId(13) zenoh_shm::watchdog::periodic_task: Some("Watchdog Validator")` which is safe to ignore; just look for `INFO ... ls/utils.py:227 Recording episode 0`.
 
