@@ -327,6 +327,9 @@ namespace aic_scoring
 
     /// \brief Whether the tf from a cable was recorded.
     private: std::atomic<bool> cableTfReceived = false;
+
+    /// \brief Whether the tf from a gripper was recorded.
+    private: std::atomic<bool> gripperTfReceived = false;
   };
 
   // The Tier2 class as a node.

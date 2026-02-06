@@ -114,6 +114,9 @@ bool ScoringTier2::StartRecording(const std::string &_filename,
             if (topic.name == kScoringTfTopic) {
               // A new cable transform was received
               this->cableTfReceived = true;
+            } else if (topic.name == kTfTopic) {
+              // A new gripper  transform was received
+              this->gripperTfReceived = true;
             }
           }
         });
@@ -129,11 +132,12 @@ bool ScoringTier2::StopRecording() {
   // end of the task might require extrapolation into the future which tf2
   // doesn't support.
   this->cableTfReceived = false;
+  this->gripperTfReceived = false;
   // Simple spinlock to avoid locking, condition variables etc. for a fairly
   // straightforward wait.
   const auto start = this->node->get_clock()->now();
   const auto timeout = std::chrono::seconds(10);
-  while (!this->cableTfReceived &&
+  while (!this->cableTfReceived && !this->gripperTfReceived &&
          this->node->get_clock()->now() - start < timeout) {
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
   }
