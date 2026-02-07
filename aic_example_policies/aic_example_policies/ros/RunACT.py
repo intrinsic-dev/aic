@@ -76,12 +76,25 @@ class RunACT(PolicyRos):
 
         tcp_pose = obs_msg.controller_state.tcp_pose
         tcp_velocity = obs_msg.controller_state.tcp_velocity
-        state_np[0:7] = [tcp_pose.position.x, tcp_pose.position.y, tcp_pose.position.z, tcp_pose.orientation.x, tcp_pose.orientation.y, tcp_pose.orientation.z, tcp_pose.orientation.w]
-        state_np[7:13] = [tcp_velocity.linear.x, tcp_velocity.linear.y, tcp_velocity.linear.z, tcp_velocity.angular.x, tcp_velocity.angular.y, tcp_velocity.angular.z]
-        state_np[13:19] = obs_msg.controller_state.tcp_error
-        state_np[19:26] = obs_msg.joint_states.position[
-            0:7
+        state_np[0:7] = [
+            tcp_pose.position.x,
+            tcp_pose.position.y,
+            tcp_pose.position.z,
+            tcp_pose.orientation.x,
+            tcp_pose.orientation.y,
+            tcp_pose.orientation.z,
+            tcp_pose.orientation.w,
         ]
+        state_np[7:13] = [
+            tcp_velocity.linear.x,
+            tcp_velocity.linear.y,
+            tcp_velocity.linear.z,
+            tcp_velocity.angular.x,
+            tcp_velocity.angular.y,
+            tcp_velocity.angular.z,
+        ]
+        state_np[13:19] = obs_msg.controller_state.tcp_error
+        state_np[19:26] = obs_msg.joint_states.position[0:7]
         obs["observation.state"] = (
             torch.from_numpy(state_np).float().unsqueeze(0).to(self.device)
         )
