@@ -208,10 +208,10 @@ class AicModel(LifecycleNode):
         motion_update_msg.header.stamp = self.get_clock().now().to_msg()
 
         motion_update_msg.target_stiffness = np.diag(
-            [85.0, 85.0, 85.0, 50.0, 50.0, 50.0]
+            [70.0, 70.0, 70.0, 50.0, 50.0, 50.0]
         ).flatten()
         motion_update_msg.target_damping = np.diag(
-            [40.0, 40.0, 40.0, 20.0, 20.0, 20.0]
+            [50.0, 50.0, 50.0, 20.0, 20.0, 20.0]
         ).flatten()
 
         motion_update_msg.feedforward_wrench_at_tip = Wrench(
@@ -235,7 +235,7 @@ class AicModel(LifecycleNode):
 
     def action_thread_func(self, goal_handle: ServerGoalHandle):
         self._action_thread_result = self._policy.insert_cable(
-            task=goal_handle.request,
+            task=goal_handle.request.task,
             get_observation=lambda: self.observation_callable(),
             set_pose_target=lambda pose, frame_id="base_link": self.set_pose_target(
                 pose, frame_id

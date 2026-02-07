@@ -15,6 +15,7 @@
 #
 
 
+import numpy as np
 import time
 
 from aic_model.policy_ros import (
@@ -25,22 +26,142 @@ from aic_model.policy_ros import (
 )
 from aic_model_interfaces.msg import Observation
 from aic_task_interfaces.msg import Task
-from geometry_msgs.msg import Point, Pose, Quaternion
+from geometry_msgs.msg import Point, Pose, Quaternion, Transform
 from rclpy.duration import Duration
 from rclpy.time import Time
 from tf2_ros import TransformException
-from tf_transformations import quaternion_multiply, quaternion_slerp
+from transforms3d._gohlketransforms import quaternion_multiply, quaternion_slerp
+
+
+QuaternionTuple = tuple[float, float, float, float]
 
 
 class CheatCode(PolicyRos):
     def __init__(self, parent_node):
-        super().__init__(parent_node)
+       self._tip_x_error_integrator = 0.0
+       self._tip_y_error_integrator = 0.0
+       self._max_integrator_windup = 0.05
+       self._task = None
+       super().__init__(parent_node)
 
     def go_to_pose(self, pose: Pose, timeout_sec: float) -> bool:
         self._set_pose_target(pose)
         # todo: smart stuff here to wait for the robot to reach the pose
         time.sleep(timeout_sec)
         return True
+
+    def calc_gripper_pose(
+        self,
+        port_transform: Transform,
+        slerp_fraction: float=1.0,
+        position_fraction: float=1.0,
+        z_offset: float=0.1,
+        reset_xy_integrator: bool=False,
+    ) -> Pose:
+        '''Find the gripper pose that results in SFP module alignment.'''
+        q_port = (
+            port_transform.rotation.w,
+            port_transform.rotation.x,
+            port_transform.rotation.y,
+            port_transform.rotation.z,
+        )
+        sfp_tf_stamped = self._parent_node._tf_buffer.lookup_transform(
+            "base_link",
+            f"{self._task.cable_name}/{self._task.plug_type}_tip_link",
+            Time(),
+        )
+        q_module = (
+            sfp_tf_stamped.transform.rotation.w,
+            sfp_tf_stamped.transform.rotation.x,
+            sfp_tf_stamped.transform.rotation.y,
+            sfp_tf_stamped.transform.rotation.z,
+        )
+        q_module_inv = (
+            -q_module[0],
+            q_module[1],
+            q_module[2],
+            q_module[3],
+        )
+        q_diff = quaternion_multiply(q_port, q_module_inv)
+        gripper_tf_stamped = self._parent_node._tf_buffer.lookup_transform(
+            "base_link",
+            "gripper/tcp",
+            Time(),
+        )
+        q_gripper = (
+            gripper_tf_stamped.transform.rotation.w,
+            gripper_tf_stamped.transform.rotation.x,
+            gripper_tf_stamped.transform.rotation.y,
+            gripper_tf_stamped.transform.rotation.z,
+        )
+        q_gripper_target = quaternion_multiply(q_diff, q_gripper)
+        q_gripper_slerp = quaternion_slerp(q_gripper, q_gripper_target, slerp_fraction)
+
+        gripper_xyz = (
+            gripper_tf_stamped.transform.translation.x,
+            gripper_tf_stamped.transform.translation.y,
+            gripper_tf_stamped.transform.translation.z,
+        )
+        port_xy = (
+            port_transform.translation.x,
+            port_transform.translation.y,
+        )
+        module_xyz = (
+            sfp_tf_stamped.transform.translation.x,
+            sfp_tf_stamped.transform.translation.y,
+            sfp_tf_stamped.transform.translation.z,
+        )
+        sfp_tip_gripper_offset = (
+            gripper_xyz[0] - module_xyz[0],
+            gripper_xyz[1] - module_xyz[1],
+            gripper_xyz[2] - module_xyz[2],
+        )
+
+        tip_x_error = port_xy[0] - module_xyz[0]
+        tip_y_error = port_xy[1] - module_xyz[1]
+
+        if reset_xy_integrator:
+            self._tip_x_error_integrator = 0.0
+            self._tip_y_error_integrator = 0.0
+        else:
+            self._tip_x_error_integrator = np.clip(
+                self._tip_x_error_integrator + tip_x_error,
+                -self._max_integrator_windup,
+                self._max_integrator_windup
+            )
+            self._tip_y_error_integrator = np.clip(
+                self._tip_y_error_integrator + tip_y_error,
+                -self._max_integrator_windup,
+                self._max_integrator_windup
+            )
+
+        self.get_logger().info(f"pfrac: {position_fraction:.3} xy_error: {tip_x_error:0.3} {tip_y_error:0.3}   integrators: {self._tip_x_error_integrator:.3} , {self._tip_y_error_integrator:.3}")
+        
+        i_gain = 0.15
+
+        target_x = port_xy[0] + i_gain * self._tip_x_error_integrator
+        target_y = port_xy[1] + i_gain * self._tip_y_error_integrator
+        target_z = port_transform.translation.z + z_offset - sfp_tip_gripper_offset[2]
+
+        blend_xyz = (
+            position_fraction * target_x + (1.0 - position_fraction) * gripper_xyz[0],
+            position_fraction * target_y + (1.0 - position_fraction) * gripper_xyz[1],
+            position_fraction * target_z + (1.0 - position_fraction) * gripper_xyz[2],
+        )
+
+        return Pose(
+            position=Point(
+                x=blend_xyz[0],
+                y=blend_xyz[1],
+                z=blend_xyz[2],
+            ),
+            orientation=Quaternion(
+                w=q_gripper_slerp[0],
+                x=q_gripper_slerp[1],
+                y=q_gripper_slerp[2],
+                z=q_gripper_slerp[3],
+            )
+        )
 
     def insert_cable(
         self,
@@ -49,99 +170,49 @@ class CheatCode(PolicyRos):
         set_pose_target: SetPoseTargetCallback,
         send_feedback: SendFeedbackCallback,
     ):
-        self.get_logger().info(f"CheatCode.insert_cable() enter. Task: {task}")
+        self.get_logger().info(f"CheatCode.insert_cable() task: {task}")
         self._set_pose_target = set_pose_target
+        self._task = task
 
-        start_time = time.clock_gettime(0)
         try:
+            card_prefix = task.target_module_name[:-2]
+            card_suffix = task.target_module_name[-1:]
+            port_frame = f"task_board/{card_prefix}_mount_{card_suffix}/{task.port_name}_link"
             port_tf_stamped = self._parent_node._tf_buffer.lookup_transform(
                 "base_link",
-                "task_board/nic_card_mount_0/sfp_port_0_link",
+                port_frame,
                 Time(),
             )
         except TransformException as ex:
-            self.get_logger().error(
-                f"Could not find transform to sfp_port_0_link: {ex}"
-            )
+            self.get_logger().error(f"Could not find transform to port: {ex}")
             return False
-        q_port = (
-            port_tf_stamped.transform.rotation.x,
-            port_tf_stamped.transform.rotation.y,
-            port_tf_stamped.transform.rotation.z,
-            port_tf_stamped.transform.rotation.w,
-        )
+        port_transform = port_tf_stamped.transform
 
-        self.get_logger().info(f"base to port transform: {port_tf_stamped}")
+        z_offset = 0.1
 
-        approach_pose = Pose(
-            position=Point(
-                x=port_tf_stamped.transform.translation.x,
-                y=port_tf_stamped.transform.translation.y,
-                z=port_tf_stamped.transform.translation.z + 0.1,
-            ),
-            orientation=Quaternion(x=1.0, y=0.0, z=0.0, w=0.0),
-        )
-        self.go_to_pose(approach_pose, 5.0)
+        for t in range(0, 100):
+            interp_fraction = t / 100.0
+            self.go_to_pose(
+                self.calc_gripper_pose(
+                    port_transform,
+                    slerp_fraction=interp_fraction,
+                    position_fraction=interp_fraction,
+                    z_offset=z_offset,
+                    reset_xy_integrator=True,
+                ),
+                0.05,
+            )
 
         while True:
-            sfp_tf_stamped = self._parent_node._tf_buffer.lookup_transform(
-                "base_link",
-                "cable_0/sfp_tip_link",
-                Time(),
-            )
-
-            q_module = (
-                sfp_tf_stamped.transform.rotation.x,
-                sfp_tf_stamped.transform.rotation.y,
-                sfp_tf_stamped.transform.rotation.z,
-                sfp_tf_stamped.transform.rotation.w,
-            )
-            q_module_inv = (
-                q_module[0],
-                q_module[1],
-                q_module[2],
-                -q_module[3],
-            )
-            q_diff = quaternion_multiply(q_port, q_module_inv)
-
-            gripper_tf_stamped = self._parent_node._tf_buffer.lookup_transform(
-                "base_link",
-                "gripper/tcp",
-                Time(),
-            )
-            q_gripper = (
-                gripper_tf_stamped.transform.rotation.x,
-                gripper_tf_stamped.transform.rotation.y,
-                gripper_tf_stamped.transform.rotation.z,
-                gripper_tf_stamped.transform.rotation.w,
-            )
-            q_gripper_target = quaternion_multiply(q_diff, q_gripper)
-            q_gripper_slerp = quaternion_slerp(q_gripper, q_gripper_target, 0.3)
-
-            approach_pose.orientation = Quaternion(
-                x=q_gripper_slerp[0],
-                y=q_gripper_slerp[1],
-                z=q_gripper_slerp[2],
-                w=q_gripper_slerp[3],
-            )
-
-            translation_diff = (
-                port_tf_stamped.transform.translation.x
-                - sfp_tf_stamped.transform.translation.x,
-                port_tf_stamped.transform.translation.y
-                - sfp_tf_stamped.transform.translation.y,
-                port_tf_stamped.transform.translation.z
-                - sfp_tf_stamped.transform.translation.z,
-            )
-
-            approach_pose.position.x += translation_diff[0] * 0.1
-            approach_pose.position.y += translation_diff[1] * 0.1
-            self.get_logger().info(f"z diff: {translation_diff[2]:0.5}")
-            if translation_diff[2] < 0.0:
-                approach_pose.position.z -= 0.0003
-            else:
+            if z_offset < -0.005:
                 break
-            self.go_to_pose(approach_pose, 0.05)
+
+            z_offset -= 0.0005
+            self.get_logger().info(f"z_offset: {z_offset:0.5}")
+            self.go_to_pose(
+                self.calc_gripper_pose(port_transform, z_offset=z_offset),
+                0.05,
+            )
 
         self.get_logger().info("CheatCode.insert_cable() exiting...")
         return True

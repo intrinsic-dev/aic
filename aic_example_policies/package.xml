@@ -12,11 +12,11 @@
   <depend>aic_model_interfaces</depend>
   <depend>aic_task_interfaces</depend>
   <depend>geometry_msgs</depend>
+  <depend>python3-transforms3d</depend>
   <depend>rclpy</depend>
   <depend>sensor_msgs</depend>
   <depend>std_srvs</depend>
   <depend>trajectory_msgs</depend>
-  <depend>tf_transformations</depend>
 
   <export>
     <build_type>ament_python</build_type>
