@@ -208,7 +208,7 @@ class AicModel(LifecycleNode):
         motion_update_msg.header.stamp = self.get_clock().now().to_msg()
 
         motion_update_msg.target_stiffness = np.diag(
-            [70.0, 70.0, 70.0, 50.0, 50.0, 50.0]
+            [90.0, 90.0, 90.0, 50.0, 50.0, 50.0]
         ).flatten()
         motion_update_msg.target_damping = np.diag(
             [50.0, 50.0, 50.0, 20.0, 20.0, 20.0]
