@@ -52,7 +52,15 @@ Check that `AWS_PROFILE` is set correctly:
 export AWS_PROFILE=<username>
 ```
 
-Then, authenticate your local client with our private registry. Use the credentials from your onboarding email:
+For example, if your username is `team123`, you would run:
+
+```bash
+aws configure --profile team123
+# Complete the prompts with your credentials
+export AWS_PROFILE=team123
+```
+
+Then, authenticate your local client with our private registry.
 
 ```bash
 aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 123456789.dkr.ecr.us-east-1.amazonaws.com
