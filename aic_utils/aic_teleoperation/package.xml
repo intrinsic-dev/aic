@@ -3,20 +3,14 @@
 <package format="3">
   <name>aic_teleoperation</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
+  <description>Scripts to teleoperate a robot controlled by aic_controller</description>
   <maintainer email="johntgz@todo.todo">johntgz</maintainer>
   <license>Apache-2.0</license>
 
-  <depend>rclpy</depend>
-  <depend>geometry_msgs</depend>
-  <depend>aic_control_interfaces</depend>
-
-  <test_depend>ament_copyright</test_depend>
-  <test_depend>ament_flake8</test_depend>
-  <test_depend>ament_mypy</test_depend>
-  <test_depend>ament_pep257</test_depend>
-  <test_depend>ament_xmllint</test_depend>
-  <test_depend>python3-pytest</test_depend>
+	<depend>aic_control_interfaces</depend>
+	<depend>geometry_msgs</depend>
+	<depend>python3-pynput</depend>
+	<depend>rclpy</depend>
 
   <export>
     <build_type>ament_python</build_type>
