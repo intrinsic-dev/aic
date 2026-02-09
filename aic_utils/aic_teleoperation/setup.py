@@ -17,11 +17,10 @@ setup(
     maintainer_email="johntangz@intrinsic.ai",
     description="Utility scripts for AIC teleoperation",
     license="Apache-2.0",
-    scripts=[
-        "scripts/cartesian_keyboard_teleop.py",
-        "scripts/joint_keyboard_teleop.py",
-    ],
     entry_points={
-        "console_scripts": [],
+        "console_scripts": [
+            "cartesian_keyboard_teleop = aic_teleoperation.cartesian_keyboard_teleop:main",
+            "joint_keyboard_teleop = aic_teleoperation.joint_keyboard_teleop:main",
+        ],
     },
 )

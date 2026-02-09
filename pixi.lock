@@ -447,6 +447,7 @@ environments:
       - conda: aic_interfaces/aic_model_interfaces
       - conda: aic_interfaces/aic_task_interfaces
       - conda: aic_model
+      - conda: aic_utils/aic_teleoperation
       - conda: aic_utils/lerobot_robot_aic
       - pypi: https://files.pythonhosted.org/packages/9f/d2/c581486aa6c4fbd7394c23c47b83fa1a919d34194e16944241daf9e762dd/accelerate-1.12.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/0f/15/5bf3b99495fb160b63f95972b81750f18f7f4e02ad051373b669d17d44f2/aiohappyeyeballs-2.6.1-py3-none-any.whl
@@ -5034,6 +5035,25 @@ packages:
     target_platform: linux-64
   depends:
   - ros-kilted-rosidl-default-runtime
+  - ros2-distro-mutex
+  - ros2-distro-mutex >=0.13.0,<0.14.0a0
+  - libgcc >=15
+  - libgcc >=15
+  - libstdcxx >=15
+  - python_abi 3.12.* *_cp312
+  - numpy >=1.23,<3
+  license: LicenseRef-Apache-2.0
+- conda: aic_utils/aic_teleoperation
+  name: ros-kilted-aic-teleoperation
+  version: 0.0.0
+  build: hb0f4dca_0
+  subdir: linux-64
+  variants:
+    target_platform: linux-64
+  depends:
+  - ros-kilted-aic-control-interfaces
+  - ros-kilted-geometry-msgs
+  - ros-kilted-rclpy
   - ros2-distro-mutex
   - ros2-distro-mutex >=0.13.0,<0.14.0a0
   - libgcc >=15
