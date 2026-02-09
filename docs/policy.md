@@ -40,7 +40,7 @@ in the following section.
 To integrate a policy using ROS data structures, such as `geometry_msgs.msg.Pose`,
 `sensor_msgs.msg.Image`, and so on:
  * define a Python class which derives from [`PolicyRos`](https://github.com/intrinsic-dev/aic/blob/main/aic_model/aic_model/policy_ros.py)
- * implement the [`insert_cable()`](https://github.com/intrinsic-dev/aic/blob/main/aic_model/aic_model/policy_ros.py#L39) method, which is called when `aic_engine` requests a new task.
+ * implement the [`insert_cable()`](https://github.com/intrinsic-dev/aic/blob/main/aic_model/aic_model/policy_ros.py#L49) method, which is called when `aic_engine` requests a new task.
  * supply this Python class name as a parameter to `aic_model` at runtime.
 
 The `insert_cable()` function receives several `Callable` methods as parameters:
@@ -55,7 +55,7 @@ The `insert_cable()` function receives several `Callable` methods as parameters:
 
 The _policy_ can invoke API functions which issue motion commands to the robot.
 As an implementation detail, those API functions use the `aic_model` ROS node
-to publish data to the `aic_controller`, which is implemented in the
+to publish data to the `aic_controller`, which is implemented using the
 [`ros2_control`](https://control.ros.org/rolling/index.html) framework.
 
 ## Example
