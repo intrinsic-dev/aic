@@ -439,10 +439,8 @@ std::optional<double> ScoringTier2::GetPlugPortDistance(
     return std::nullopt;
   }
   // For now we only calculate the distance for the first connection
-  const auto plug_tf_opt =
-      this->GetTransform(t, this->connections[0].plugName, "aic_world");
-  const auto port_tf_opt =
-      this->GetTransform(t, this->connections[0].portName, "aic_world");
+  const auto plug_tf_opt = this->GetTransform(t, this->connections[0].plugName);
+  const auto port_tf_opt = this->GetTransform(t, this->connections[0].portName);
   if (!plug_tf_opt.has_value() || !port_tf_opt.has_value()) {
     return std::nullopt;
   }
@@ -677,7 +675,7 @@ std::optional<ScoringTier2::TransformStampedMsg> ScoringTier2::EndEffectorPose(
                  "Unable to compute end effector pose, gripper frame not set");
     return std::nullopt;
   }
-  return this->GetTransform(t, "aic_world", this->gripperFrame);
+  return this->GetTransform(t, this->gripperFrame);
 }
 
 //////////////////////////////////////////////////
