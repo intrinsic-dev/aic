@@ -7,6 +7,7 @@ sensor_msgs/CameraInfo center_camera_info
 sensor_msgs/Image right_image
 sensor_msgs/CameraInfo right_camera_info
 
-sensor_msgs/JointState joint_states
 geometry_msgs/WrenchStamped wrist_wrench
-geometry_msgs/TransformStamped tcp_transform
+
+sensor_msgs/JointState joint_states
+aic_control_interfaces/ControllerState controller_state

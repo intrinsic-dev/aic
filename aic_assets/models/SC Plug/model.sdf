@@ -72,6 +72,22 @@
           </cylinder>
         </geometry>
       </collision>
+      <collision name="side_box_collision">
+        <pose>0.00146 -0.00632 0.0042 0.0 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.00425 0.00162 0.001</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="side_box_collision_2">
+        <pose>0.00146 0.00632 0.0042 0.0 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.00425 0.00162 0.001</size>
+          </box>
+        </geometry>
+      </collision>
     </link>
   </model>
 </sdf>

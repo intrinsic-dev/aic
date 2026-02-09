@@ -82,6 +82,9 @@ bool CartesianImpedanceAction::compute(
   control_wrench = control_wrench.cwiseMin(params.maximum_wrench)
                        .cwiseMax(-params.maximum_wrench);
 
+  // Add a fixed offset wrench to account for payload weight
+  control_wrench += params.offset_wrench;
+
   // Get target torque from jacobian
   Eigen::VectorXd target_torque = jacobian.transpose() * control_wrench;
 

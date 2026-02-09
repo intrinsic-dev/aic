@@ -590,14 +590,14 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             "task_board_x",
-            default_value="0.25",
+            default_value="0.15",
             description="Task board spawn X position",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
             "task_board_y",
-            default_value="0.0",
+            default_value="-0.2",
             description="Task board spawn Y position",
         )
     )
@@ -625,7 +625,7 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             "task_board_yaw",
-            default_value="0.0",
+            default_value="3.1415",
             description="Task board spawn yaw orientation (radians)",
         )
     )
@@ -664,21 +664,21 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             "cable_x",
-            default_value="0.1956",
+            default_value="0.172",
             description="Cable spawn X position",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
             "cable_y",
-            default_value="-0.2112",
+            default_value="0.025",
             description="Cable spawn Y position",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
             "cable_z",
-            default_value="1.53",
+            default_value="1.51",
             description="Cable spawn Z position",
         )
     )
@@ -692,14 +692,14 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             "cable_pitch",
-            default_value="-0.4838",
+            default_value="-0.45",
             description="Cable spawn pitch orientation (radians)",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
             "cable_yaw",
-            default_value="-1.8112",
+            default_value="1.3303",
             description="Cable spawn yaw orientation (radians)",
         )
     )
