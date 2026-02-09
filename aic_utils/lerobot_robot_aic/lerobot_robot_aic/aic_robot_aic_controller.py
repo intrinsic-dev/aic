@@ -405,7 +405,7 @@ class AICRobotAICController(Robot):
         elif self.teleop_target_mode == "joint":
             return self.send_action_joint(action)
         else:
-            raise ValueError("Invalid teleop_target_mode")  
+            raise ValueError("Invalid teleop_target_mode")
 
     def disconnect(self) -> None:
         if not self.is_connected:
