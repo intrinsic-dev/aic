@@ -117,7 +117,7 @@ Also see [Alternative Installation Methods](https://pixi.prefix.dev/latest/insta
 Now that you have your environment set up:
 
 1. **📚 Read the Documentation**
-   - [Qualification Phase Details](./qualification_phase.md) - Understand the trials you'll be evaluated on
+   - [Qualification Phase](./phases.md#qualification-phase-train-your-model) - Implementation workflow and [technical details](./qualification_phase.md) of trials and scoring
    - [Challenge Rules](./challenge_rules.md) - Ensure your policy complies with all requirements
    - [Policy Integration Guide](./policy.md) - Learn how to implement your policy
 
