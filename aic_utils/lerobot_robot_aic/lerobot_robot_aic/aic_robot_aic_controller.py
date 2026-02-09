@@ -97,8 +97,8 @@ class CameraImageScaling(TypedDict):
 @RobotConfig.register_subclass("aic_controller")
 @dataclass(kw_only=True)
 class AICRobotAICControllerConfig(RobotConfig):
-    teleop_target_mode: str = "cartesian"  # or "joint"
-    teleop_frame_id: str = "gripper/tcp"  # or "base_link"
+    teleop_target_mode: str = "cartesian"  # "cartesian" or "joint"
+    teleop_frame_id: str = "gripper/tcp"  # "gripper/tcp" or "base_link"
 
     arm_joint_names: list[str] = field(default_factory=arm_joint_names.copy)
 
