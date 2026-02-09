@@ -105,7 +105,6 @@ aic/
 This package provides a ready-to-use ROS 2 Lifecycle node that dynamically loads and executes your Python policy implementation. It handles all ROS 2 boilerplate, lifecycle management, and challenge rule compliance, allowing you to focus on implementing your policy logic.
 - **Location**: `aic_model/`.
 - **Documentation**: [Policy Integration Guide](./docs/policy.md).
-- **README**: [aic_model/README.md](./aic_model/README.md).
 - **Tutorial**: [Creating a New Policy Node](./docs/policy.md#tutorial-creating-a-new-policy-node).
 
 > **Note:** While we recommend using this framework, you may implement your own ROS 2 node from scratch as long as it adheres to the [Challenge Rules](./docs/challenge_rules.md).
