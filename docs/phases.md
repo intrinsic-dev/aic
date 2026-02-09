@@ -12,15 +12,29 @@ Review the core technical requirements for this phase, including setup constrain
 
 ### Implementation Workflow
 
-To successfully qualify, participants must complete the implementation of the `aic_model` node. This involves modifying the provided template to integrate your custom policy.
+To successfully qualify, participants must create a ROS 2 node that adheres to the behavioral requirements specified in the [Challenge Rules](./challenge_rules.md).
 
-1.  **Locate the Template:** Navigate to [`aic_model/aic_model/aic_model.py`](../aic_model/aic_model/aic_model.py) in the provided repository.
-2.  **Load Your Model:** Implement the logic to initialize and load your trained policy (e.g., PyTorch checkpoint, ONNX model, or control policy) when the node starts.
-3.  **Run Inference:** Configure the node to subscribe to observation topics. When an observation is received, pass the data through your model to generate the next action.
-4.  **Output Commands:** Publish the generated actions to the appropriate command topics to move the robot.
-5.  **Trigger Completion:** Once the cable insertion is successfully detected, your node must trigger the completion callback to signal the end of the task.
+#### Recommended Approach: Using the `aic_model` Framework
 
-> **Note:** You can reference the template structure here: [aic_model/aic_model/aic_model.py](../aic_model/aic_model/aic_model.py)
+For convenience, we provide an `aic_model` framework that handles all ROS 2 lifecycle management and boilerplate. You simply implement a Python policy class:
+
+1.  **Create a Policy Class:** Define a Python class that derives from [`PolicyRos`](https://github.com/intrinsic-dev/aic/blob/main/aic_model/aic_model/policy_ros.py).
+2.  **Implement `insert_cable()`:** This method is called when `aic_engine` requests a new task. It receives observation data and callable methods for robot control.
+3.  **Load Your Model:** Initialize your trained policy (e.g., PyTorch checkpoint, ONNX model, or control algorithm) when your class is instantiated.
+4.  **Process Observations:** Use the provided `get_observation()` callback to retrieve sensor data at up to 20 Hz.
+5.  **Output Commands:** Use `set_pose_target()` and other provided methods to command the robot.
+6.  **Return on Completion:** Your `insert_cable()` method should return when the task is complete.
+
+> **Tutorial:** For a step-by-step guide, see [Creating a New Policy Node](./policy.md#tutorial-creating-a-new-policy-node).
+>
+> **Example:** Reference implementation: [`WaveArm.py`](../aic_example_policies/aic_example_policies/ros/WaveArm.py)
+
+#### Alternative: Implement Your Own Node
+
+You may also implement your own ROS 2 node from scratch, as long as it:
+- Is named `aic_model` and implements the ROS 2 Lifecycle interface
+- Responds to the `/insert_cable` action server
+- Follows all requirements in the [Challenge Rules](./challenge_rules.md)
 
 ---
 
