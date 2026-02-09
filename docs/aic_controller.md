@@ -92,7 +92,7 @@ The table below shows some relevant controller target parameters that will typic
 | `target_stiffness` | `float64[36]` | The 6x6 stiffness matrix that controls how strongly the robot resists deviations from the target pose. <br /> Higher values correspond to stiffer control and lower values corresponds to more compliant control. |
 | `target_damping` | `float64[36]` | The 6x6 damping matrix controls the suppression of oscillations. <br /> The damping term is usually tuned relative to `target_stiffness` to ensure stability (e.g., critical damping) and prevent oscillations.|
 | `feedforward_wrench_at_tip` | `geometry_msgs/Wrench` | An optional external wrench term at the TCP frame. <br /> This might be useful for contact tasks such as applying a constant downward force or compensating for known tool-environment interactions. |
-| `wrench_feedback_gains_at_tip` | `geometry_msgs/Wrench` | Feedback gains of force feedback control. |
+| `wrench_feedback_gains_at_tip` | `geometry_msgs/Wrench` | Feedback gains on wrench measured by force torque sensor. |
 | `trajectory_generation_mode` | `TrajectoryGenerationMode` | Defines how the target is interpreted. <br /> `MODE_POSITION` tracks the `pose` target values. <br /> `MODE_VELOCITY` tracks the `velocity` target values. |
 
 ### JointMotionUpdate
