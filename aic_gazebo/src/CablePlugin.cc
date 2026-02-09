@@ -141,6 +141,9 @@ void CablePlugin::Configure(const gz::sim::Entity& _entity,
   this->createJointDelay = delay;
   this->creator = std::make_unique<SdfEntityCreator>(_ecm, _eventManager);
 
+  this->taskCompletionPub = this->node.Advertise<gz::msgs::Boolean>(
+      "/" + this->cableModelName + "/insertion_completion");
+
   gzmsg << "Cable transitioning to HARNESS state." << std::endl;
   this->cableState = CableState::HARNESS;
 }
@@ -306,6 +309,9 @@ void CablePlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
     this->detachableJoint0Entity = this->MakeStatic(
         this->endEffectorLinkEntity, true, this->creator.get(), _ecm);
 
+    gz::msgs::Boolean msg;
+    msg.set_data(true);
+    this->taskCompletionPub.Publish(msg);
     gzmsg << "Cable transitioning to COMPLETED state." << std::endl;
     this->cableState = CableState::COMPLETED;
   }

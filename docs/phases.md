@@ -14,13 +14,13 @@ Review the core technical requirements for this phase, including setup constrain
 
 To successfully qualify, participants must complete the implementation of the `aic_model` node. This involves modifying the provided template to integrate your custom policy.
 
-1.  **Locate the Template:** Navigate to [`aic_model/aic_model/model_node.py`](../aic_model/aic_model/model_node.py) in the provided repository.
+1.  **Locate the Template:** Navigate to [`aic_model/aic_model/aic_model.py`](../aic_model/aic_model/aic_model.py) in the provided repository.
 2.  **Load Your Model:** Implement the logic to initialize and load your trained policy (e.g., PyTorch checkpoint, ONNX model, or control policy) when the node starts.
 3.  **Run Inference:** Configure the node to subscribe to observation topics. When an observation is received, pass the data through your model to generate the next action.
 4.  **Output Commands:** Publish the generated actions to the appropriate command topics to move the robot.
 5.  **Trigger Completion:** Once the cable insertion is successfully detected, your node must trigger the completion callback to signal the end of the task.
 
-> **Note:** You can reference the template structure here: [aic_model/aic_model/model_node.py](../aic_model/aic_model/model_node.py)
+> **Note:** You can reference the template structure here: [aic_model/aic_model/aic_model.py](../aic_model/aic_model/aic_model.py)
 
 ---
 

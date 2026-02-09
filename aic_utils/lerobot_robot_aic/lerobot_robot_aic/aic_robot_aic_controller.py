@@ -29,9 +29,12 @@ import rclpy
 from aic_control_interfaces.msg import (
     ControllerState,
     MotionUpdate,
+    JointMotionUpdate,
     TrajectoryGenerationMode,
 )
-from control_msgs.action import ParallelGripperCommand
+from aic_control_interfaces.srv import (
+    ChangeTargetMode,
+)
 from geometry_msgs.msg import Twist, Vector3, Wrench
 from lerobot.cameras import CameraConfig, make_cameras_from_configs
 from lerobot.robots import Robot, RobotConfig
@@ -46,8 +49,8 @@ from rclpy.subscription import Subscription
 from rclpy.task import Future as RclFuture
 from sensor_msgs.msg import JointState
 
-from .aic_robot import aic_cameras, arm_joint_names, gripper_joint_name
-from .types import MotionUpdateActionDict
+from .aic_robot import aic_cameras, arm_joint_names
+from .types import MotionUpdateActionDict, JointMotionUpdateActionDict
 
 logger = logging.getLogger(__name__)
 
@@ -94,9 +97,11 @@ class CameraImageScaling(TypedDict):
 @RobotConfig.register_subclass("aic_controller")
 @dataclass(kw_only=True)
 class AICRobotAICControllerConfig(RobotConfig):
+    teleop_target_mode: str = "cartesian"  # "cartesian" or "joint"
+    teleop_frame_id: str = "gripper/tcp"  # "gripper/tcp" or "base_link"
+
     arm_joint_names: list[str] = field(default_factory=arm_joint_names.copy)
-    gripper_joint_name: str = gripper_joint_name
-    gripper_action_name: str = "/gripper_action_controller/gripper_cmd"
+
     cameras: dict[str, CameraConfig] = field(default_factory=aic_cameras.copy)
     camera_image_scaling: CameraImageScaling = field(
         default_factory=lambda: {
@@ -122,26 +127,45 @@ class AICRobotAICController(Robot):
         self.last_controller_state: ControllerState | None = None
         self.joint_states_sub: Subscription[JointState] | None = None
         self.last_joint_states: JointState | None = None
-        self.parallel_gripper_action_client: (
-            ActionClient[
-                ParallelGripperCommand.Goal,
-                ParallelGripperCommand.Result,
-                ParallelGripperCommand.Feedback,
-            ]
-            | None
-        ) = None
-        self.last_gripper_target: float | None = None
-        self.gripper_result: (
-            RclFuture[
-                ClientGoalHandle[
-                    ParallelGripperCommand.Goal,
-                    ParallelGripperCommand.Result,
-                    ParallelGripperCommand.Feedback,
-                ]
-            ]
-            | None
-        ) = None
+
         self._is_connected = False
+
+        if config.teleop_frame_id not in ["gripper/tcp", "base_link"]:
+            raise ValueError(
+                f"Invalid teleop_frame_id: '{config.teleop_frame_id}'. "
+                "Supported frames are 'gripper/tcp' or 'base_link'."
+            )
+        self.frame_id = config.teleop_frame_id
+
+        if config.teleop_target_mode not in ["cartesian", "joint"]:
+            raise ValueError(
+                f"Invalid teleop_target_mode: '{config.teleop_target_mode}'. "
+                "Supported modes are 'cartesian' or 'joint'."
+            )
+        self.teleop_target_mode = config.teleop_target_mode
+
+        print(f"Teleop frame id: {self.frame_id}")
+        print(f"Teleop target mode: {self.teleop_target_mode}")
+
+    def send_change_control_mode_req(self, mode: ChangeTargetMode.Request):
+
+        req = ChangeTargetMode.Request()
+        req.target_mode = mode
+
+        self.node.get_logger().info(f"Sending request to change control mode to {mode}")
+
+        future = self.node.client.call_async(req)
+
+        rclpy.spin_until_future_complete(self.node, future)
+
+        response = future.result()
+
+        if response.success:
+            self.node.get_logger().info(f"Successfully changed control mode to {mode}")
+        else:
+            self.node.get_logger().info(f"Failed to change control mode to {mode}")
+
+        time.sleep(0.5)
 
     @cached_property
     def _cameras_ft(self) -> dict[str, tuple]:
@@ -167,7 +191,11 @@ class AICRobotAICController(Robot):
 
     @cached_property
     def action_features(self) -> dict[str, type]:
-        return MotionUpdateActionDict.__annotations__
+        return (
+            MotionUpdateActionDict.__annotations__
+            if self.teleop_target_mode == "cartesian"
+            else JointMotionUpdateActionDict.__annotations__
+        )
 
     @property
     def is_connected(self) -> bool:
@@ -188,8 +216,29 @@ class AICRobotAICController(Robot):
         self.node = Node("aic_robot_node")
         self.node.get_logger().set_level(logging.DEBUG)
 
+        self.node.client = self.node.create_client(
+            ChangeTargetMode, f"/aic_controller/change_target_mode"
+        )
+
+        while not self.node.client.wait_for_service():
+            self.node.get_logger().info(
+                f"Waiting for service 'aic_controller/change_target_mode'..."
+            )
+            time.sleep(1.0)
+
+        change_mode_req = (
+            ChangeTargetMode.Request.TARGET_MODE_JOINT
+            if self.teleop_target_mode == "joint"
+            else ChangeTargetMode.Request.TARGET_MODE_CARTESIAN
+        )
+        self.send_change_control_mode_req(change_mode_req)
+
         self.motion_update_pub = self.node.create_publisher(
             MotionUpdate, "/aic_controller/pose_commands", 10
+        )
+
+        self.joint_motion_update_pub = self.node.create_publisher(
+            JointMotionUpdate, "/aic_controller/joint_commands", 10
         )
 
         def controller_state_cb(msg: ControllerState):
@@ -204,13 +253,6 @@ class AICRobotAICController(Robot):
 
         self.node.create_subscription(
             JointState, "/joint_states", joint_states_cb, qos_profile_sensor_data
-        )
-
-        self.parallel_gripper_action_client = ActionClient(
-            self.node,
-            ParallelGripperCommand,
-            self.config.gripper_action_name,
-            callback_group=ReentrantCallbackGroup(),
         )
 
         for cam in self.cameras.values():
@@ -298,14 +340,20 @@ class AICRobotAICController(Robot):
         obs = {**cam_obs, **controller_state_obs}
         return obs
 
-    def send_action(self, action: dict[str, Any]) -> dict[str, Any]:
+    def send_action_cartesian(self, action: dict[str, Any]) -> dict[str, Any]:
         if not self._is_connected or not self.node:
             raise DeviceNotConnectedError()
 
         motion_update_action = cast(MotionUpdateActionDict, action)
 
         twist_msg = Twist()
-        twist_msg.linear.x = float(motion_update_action["linear.x"])
+
+        try:
+            twist_msg.linear.x = float(motion_update_action["linear.x"])
+        except KeyError:
+            raise KeyError(
+                "Missing key 'linear.x'. If using `--teleop.type=aic_keyboard_joint`, have you set `--robot.teleop_target_mode=joint`?"
+            ) from None
         twist_msg.linear.y = float(motion_update_action["linear.y"])
         twist_msg.linear.z = float(motion_update_action["linear.z"])
         twist_msg.angular.x = float(motion_update_action["angular.x"])
@@ -314,7 +362,7 @@ class AICRobotAICController(Robot):
 
         msg = MotionUpdate()
         msg.header.stamp = self.node.get_clock().now().to_msg()
-        msg.header.frame_id = "gripper/tcp"
+        msg.header.frame_id = self.frame_id
         msg.velocity = twist_msg
         msg.target_stiffness = np.diag([85.0, 85.0, 85.0, 85.0, 85.0, 85.0]).flatten()
         msg.target_damping = np.diag([75.0, 75.0, 75.0, 75.0, 75.0, 75.0]).flatten()
@@ -330,30 +378,34 @@ class AICRobotAICController(Robot):
         if self.motion_update_pub is not None:
             self.motion_update_pub.publish(msg)
 
-        if not self.node or not self.parallel_gripper_action_client:
-            raise RuntimeError("unexpected error")
-        logger = self.node.get_logger()
+    def send_action_joint(self, action: dict[str, Any]) -> dict[str, Any]:
+        if not self._is_connected or not self.node:
+            raise DeviceNotConnectedError()
 
-        if self.last_gripper_target != motion_update_action["gripper_target"]:
-            if self.gripper_result:
-                logger.debug("cancelling existing gripper goal")
-                self.gripper_result.cancel()
-                logger.debug("waiting for gripper goal to finish")
-                self.gripper_result.result()
-                logger.debug("gripper goal has finished")
-                self.gripper_result = None
+        joint_motion_update_action = cast(JointMotionUpdateActionDict, action)
+        msg = JointMotionUpdate()
 
-            goal = ParallelGripperCommand.Goal()
-            goal.command.name = [self.config.gripper_joint_name]
-            goal.command.position = [motion_update_action["gripper_target"]]
-            goal.command.header.stamp = self.node.get_clock().now().to_msg()
-            logger.debug(f"sending new gripper goal {goal.command.position}")
-            self.gripper_result = self.parallel_gripper_action_client.send_goal_async(
-                goal
+        if "shoulder_pan_joint" not in joint_motion_update_action:
+            raise KeyError(
+                "Missing key 'shoulder_pan_joint'. If using `--teleop.type=aic_keyboard_ee` or `--teleop.type=aic_spacemouse`, have you set `--robot.teleop_target_mode=cartesian`?"
             )
-            self.last_gripper_target = motion_update_action["gripper_target"]
 
-        return action
+        msg.target_state.velocities = list(action.values())
+
+        msg.target_stiffness = [85.0, 85.0, 85.0, 85.0, 85.0, 85.0]
+        msg.target_damping = [75.0, 75.0, 75.0, 75.0, 75.0, 75.0]
+        msg.trajectory_generation_mode.mode = TrajectoryGenerationMode.MODE_VELOCITY
+
+        if self.joint_motion_update_pub is not None:
+            self.joint_motion_update_pub.publish(msg)
+
+    def send_action(self, action: dict[str, Any]) -> dict[str, Any]:
+        if self.teleop_target_mode == "cartesian":
+            return self.send_action_cartesian(action)
+        elif self.teleop_target_mode == "joint":
+            return self.send_action_joint(action)
+        else:
+            raise ValueError("Invalid teleop_target_mode")
 
     def disconnect(self) -> None:
         if not self.is_connected:

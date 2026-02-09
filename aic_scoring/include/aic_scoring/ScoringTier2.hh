@@ -22,6 +22,8 @@
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_ros/buffer.h>
 #include <yaml-cpp/yaml.h>
+
+#include <atomic>
 #include <memory>
 #include <mutex>
 #include <set>
@@ -39,6 +41,7 @@
 #include <ros_gz_interfaces/msg/contacts.hpp>
 #include <rosbag2_cpp/writer.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
+#include <std_msgs/msg/bool.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <tf2_msgs/msg/tf_message.hpp>
 #include <tf2/buffer_core.hpp>
@@ -79,6 +82,7 @@ namespace aic_scoring
   // The Tier2 scoring interface.
   class ScoringTier2
   {
+    using BoolMsg = std_msgs::msg::Bool;
     using JointStateMsg = sensor_msgs::msg::JointState;
     using TFMsg = tf2_msgs::msg::TFMessage;
     using ContactsMsg = ros_gz_interfaces::msg::Contacts;
@@ -122,6 +126,10 @@ namespace aic_scoring
     /// \brief Topic to subscribe for joint commands sent to the controller.
     public: static constexpr const char* kJointMotionUpdateTopic = "/aic_controller/joint_commands";
 
+    /// \brief Topic to subscribe for insertion completion event
+    public: static constexpr const char* kInsertionCompletionTopic =
+        "/scoring/insertion_completion";
+
     /// \brief Class constructor.
     /// \param[in] _node Pointer to the ROS node.
     public: ScoringTier2(rclcpp::Node *_node);
@@ -142,8 +150,10 @@ namespace aic_scoring
     /// \return True if the bag was opened correctly and it's ready to record.
     /// \param[in] _filename The path to the bag.
     /// \param[in] _connections Connections to monitor.
+    /// \param[in] _max_task_time The maximum time to record for, used for tf buffer size.
     public: bool StartRecording(const std::string &_filename,
-                const std::vector<Connection> &_connections);
+                const std::vector<Connection> &_connections,
+                const std::chrono::seconds &_max_task_time);
 
     /// \brief Stop recording all scoring topics.
     /// \return True if the bag was closed correctly.
@@ -154,7 +164,8 @@ namespace aic_scoring
     public: std::pair<Tier2Score, Tier3Score> ComputeScore();
 
     /// \brief Resets the internal data structures for a new scoring session
-    public: void Reset();
+    /// \param[in] _buffer_size The tf buffer size.
+    public: void Reset(const std::chrono::seconds &_buffer_size);
 
     /// \brief Get the topics required that are currently not being published.
     /// \return An unordered_set with the missing required topic names.
@@ -171,9 +182,6 @@ namespace aic_scoring
     /// \brief Populate the scoring input params from a YAML file.
     /// \param[in] _config YAML configuration for the node
     private: bool ParseStats(YAML::Node _config);
-
-    /// \brief Reset the jerk computation state.
-    private: void ResetJerk();
 
     /// \brief Callback for joint state messages received while scoring.
     /// \param[in] _msg The received message.
@@ -212,6 +220,10 @@ namespace aic_scoring
     /// \param[in] _msg The received message.
     private: void JointMotionUpdateCallback(const JointMotionUpdateMsg& _msg);
 
+    /// \brief Callback for insertion completion event while scoring.
+    /// \param[in] _msg The received message.
+    private: void InsertionCompletionCallback(const BoolMsg& _msg);
+
     /// \brief Calculates score related with the gripper trajectory jerk.
     /// \return Scoring for the trajectory jerk score.
     private: Tier2Score::CategoryScore GetTrajectoryJerkScore() const;
@@ -238,6 +250,9 @@ namespace aic_scoring
     /// \brief Calculates the tier 3 score based on the distance between plug and port.
     /// \return Scoring for the distance category
     private: Tier3Score GetDistanceScore() const;
+
+    /// \return Compute Tier3 score
+    private: Tier3Score ComputeTier3Score() const;
 
     /// \brief Calculates the penalty (if any) for contacts with off limit entities.
     /// \return Scoring for the off limit contacts category
@@ -274,7 +289,7 @@ namespace aic_scoring
     private: State state = State::Idle;
 
     /// \brief Buffer to compute tf for scoring.
-    private: tf2::BufferCore tf2_buffer;
+    private: std::unique_ptr<tf2::BufferCore> tf2_buffer;
 
     /// \brief Timestamps of received tfs to be used for distance calculation
     private: std::set<tf2::TimePoint> timestamps;
@@ -306,6 +321,15 @@ namespace aic_scoring
 
     /// \brief Gripper frame name.
     private: std::string gripperFrame;
+
+    /// \brief Whether cable plug-port insertion was completed
+    private: bool insertion_completion{false};
+
+    /// \brief Whether the tf from a cable was recorded.
+    private: std::atomic<bool> cableTfReceived = false;
+
+    /// \brief Whether the tf from a gripper was recorded.
+    private: std::atomic<bool> gripperTfReceived = false;
   };
 
   // The Tier2 class as a node.
