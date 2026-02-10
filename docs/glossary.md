@@ -18,19 +18,48 @@
 ## Task & Environment
 
 **Cable Insertion Task**
-- The primary challenge objective: autonomously routing and inserting fiber optic cables into network interface cards using a robotic arm with force sensing capabilities.
+- The primary challenge objective: autonomously routing and inserting fiber optic cables into network interface cards using a robotic arm with force sensing capabilities. During qualification trials, only one plug end of the cable is tested for insertion while the other end remains free and unconnected.
 
 **Task Board**
-- The physical environment where the cable insertion challenge takes place, composed of multiple zones with network interface cards, cable routing paths, and component pick locations.
+- The modular, reconfigurable platform where the cable insertion challenge takes place. Divided into four functional zones: assembly targets (Zones 1 & 2) and pick locations (Zones 3 & 4) with randomizable component positions and orientations.
 
 **Zone (Task Board Zones)**
-- Designated areas on the task board serving different functions:
-  - **Zone 1:** Network Interface Cards (NICs) where cables are inserted
-  - **Zone 2:** Cable routing paths and management areas
-  - **Zones 3 & 4:** Pick locations for components (LC plugs, SC plugs, and SFP modules) before they are routed and inserted
+- Four functional areas on the task board that simulate a complete electronics assembly workflow:
+  - **Zone 1:** Network Interface Cards (NICs) with SFP ports - represents the server compute tray where data links are established
+  - **Zone 2:** SC optical ports - emulates the optical patch panel or backplane of a server rack
+  - **Zones 3 & 4:** Pick locations - organized supply areas where SFP modules, LC plugs, and SC plugs are staged on adjustable mounts before routing and insertion
 
 **Gazebo**
-- The simulation environment used for training models and evaluation. Provides realistic physics simulation of the robot and cable insertion task.
+- The primary simulation environment used for evaluation and training. Provides realistic physics simulation of the robot and cable insertion task. World state can be exported to `/tmp/aic.sdf` for use in other simulators.
+
+## Connector Types & Components
+
+**SFP (Small Form-factor Pluggable)**
+- Transceiver module type used in network interface cards. The SFP module end of the cable plugs into SFP ports on NIC cards in Zone 1.
+
+**LC (Lucent Connector)**
+- Fiber optic connector type with a small form factor. LC plugs are staged in pick locations (Zones 3 & 4) for cable assembly tasks.
+
+**SC (Subscriber Connector)**
+- Fiber optic connector type with a larger form factor than LC. SC plugs insert into SC ports in Zone 2, emulating optical patch panel connections.
+
+**NIC (Network Interface Card)**
+- Network hardware component with SFP ports that serve as primary insertion targets in Zone 1. Up to five dual-port NICs can be mounted on adjustable rails.
+
+**Port**
+- Insertion target on the task board. Types include SFP ports (on NIC cards) and SC ports (on optical panel). Each port requires precise alignment for successful insertion.
+
+**Plug**
+- The connector end of a cable being manipulated and inserted. Types include SFP modules, LC plugs, and SC plugs. The robot grasps one plug while the other end remains free during insertion.
+
+**Rails**
+- Adjustable mounting tracks on the task board allowing components to slide with randomized positions:
+  - **NIC Rails** (5 total): Hold network interface cards with translation range [0, 0.062] meters and rotation [-10, +10] degrees
+  - **SC Rails** (2 total): Hold SC ports with translation range [0, 0.115] meters
+  - **Fixture Rails** (in Zones 3 & 4): Hold component mounts with translation range [0, 0.188] meters and rotation [-60, +60] degrees
+
+**Fixture/Mount**
+- Specialized holders securing components on the task board. In Zones 3 & 4, fixtures hold LC plugs, SC plugs, and SFP modules in organized pick locations with adjustable positions and orientations.
 
 ## Robot & Control
 
@@ -108,13 +137,13 @@
 - Configuration file defining how to build the participant's policy container image for submission.
 
 **aic_engine**
-- Trial orchestration system that manages experiment execution, validates participant models, and collects performance scoring data.
+- Trial orchestration system that manages the complete trial lifecycle including: spawning randomized task boards, validating policy behavior and lifecycle conformance, monitoring task execution, triggering the InsertCable action, and collecting performance scoring data from multiple ROS 2 topics.
 
 **Qualification Phase**
-- Initial competition phase where participants train models in simulation and submit solutions for evaluation against baseline tests.
+- Initial simulation-only competition phase where participants train models and submit solutions for evaluation against three specific trials. Conducted entirely in Gazebo, with mirror environments available in IsaacLab (NVIDIA) and MuJoCo (Google DeepMind) for training robust policies through domain randomization.
 
 **Trial**
-- A single execution of the cable insertion task under specified conditions, used to evaluate policy performance.
+- A single execution of the cable insertion task where only one plug end of the cable is tested for insertion into a randomized target port. Each trial evaluates policy performance under specific board configurations and component placements.
 
 ## Specialized Components
 
@@ -136,6 +165,43 @@
 **aic_utils**
 - Utility packages and helper tools used across the toolkit.
 
+## Simulation & Training
+
+**IsaacLab**
+- NVIDIA's alternative simulation environment providing a mirror of the AIC challenge for policy training. Enables domain randomization across different physics engines to improve sim-to-real transfer.
+
+**MuJoCo**
+- Google DeepMind's alternative simulation environment providing another mirror of the AIC challenge. Used alongside Gazebo and IsaacLab for multi-simulator training strategies.
+
+**Domain Randomization**
+- Training technique where policies are exposed to variations across different simulators (Gazebo, IsaacLab, MuJoCo). Physical discrepancies between simulators serve as natural randomization, preparing models for sim-to-sim-to-real transfer.
+
+## Evaluation Metrics
+
+**Jerk**
+- Smoothness metric computed as the rate of change of joint accelerations (third derivative of position). Calculated from `/joint_states` topic data. Lower jerk values indicate smoother, more controlled trajectories and receive higher scores.
+
+**Convergence**
+- Performance metric measuring the Euclidean distance between plug tip and target port over time. Sourced from `/ground_truth_poses` topic. Higher scores awarded for minimizing distance and achieving faster convergence rates.
+
+**Task Completion Time**
+- Duration from task start to successful insertion completion. Monitored via `TaskState` messages from aic_engine. Faster completion times receive higher scores.
+
+**Smoothness**
+- Overall trajectory quality metric based on jerk calculations. Evaluates how gracefully the robot moves during insertion attempts.
+
+**Success Rate**
+- Binary metric indicating successful cable insertion with correct alignment and full seating within tolerance thresholds. Verified via contact sensors, force/torque feedback, and Gazebo plugins. Forms the primary Tier 3 evaluation criterion.
+
+**Collision Penalty**
+- Score deduction for unintended contact with environment or task board. Detected by custom Gazebo plugin monitoring all contacts (excluding intentional cable-related contacts). Severity proportional to collision frequency and force.
+
+**Force Safety**
+- Monitoring of forces applied during insertion to ensure they remain within component safety limits. Excessive forces beyond thresholds result in score deductions based on magnitude and duration.
+
+**Command Safety**
+- Validation of motion commands sent to aic_controller for excessive values. Monitored from `MotionUpdate` and `JointMotionUpdate` messages. Unsafe command values result in score deductions.
+
 ## Transformation & Coordinates
 
 **TF (Transform Frames)**
@@ -146,4 +212,3 @@
 
 **Quaternion**
 - Mathematical representation of 3D orientation using four components (x, y, z, w), avoiding gimbal lock issues inherent in Euler angles.
-
