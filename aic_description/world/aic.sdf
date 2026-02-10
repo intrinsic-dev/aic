@@ -36,7 +36,7 @@
         <gz-gui>
           <property type="string" key="state">docked_collapsed</property>
         </gz-gui>
-        <enabled>true</enabled>
+        <enabled>false</enabled>
         <highQuality>false</highQuality>
         <resolution>256 256 256</resolution>
         <octantCount>1 1 1</octantCount>
@@ -101,6 +101,7 @@
       name="gz::sim::systems::Physics">
       <engine><filename>gz-physics-bullet-featherstone-plugin</filename></engine>
     </plugin>
+<!--
     <plugin
       filename="gz-sim-sensors-system"
       name="gz::sim::systems::Sensors">
@@ -117,6 +118,7 @@
         <debug_vis_mode>none</debug_vis_mode>
       </global_illumination>
     </plugin>
+-->
     <plugin
       filename="ScoringPlugin"
       name="aic_gazebo::ScoringPlugin">

@@ -266,7 +266,7 @@ void CablePlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
             gzdbg << "Cable connection 0 touched: " << _msg.data()
                   << ". Topic: " << _info.Topic() << std::endl;
           };
-      for (const auto &topic : this->cableConnection0PortTopics) {
+      for (const auto& topic : this->cableConnection0PortTopics) {
         this->cableConnection0PortSubs.emplace_back(
             this->node.CreateSubscriber(topic, callback));
       }
