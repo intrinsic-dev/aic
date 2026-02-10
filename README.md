@@ -23,7 +23,7 @@ New to the challenge? Follow these steps to get started:
    - Review the [Qualification Phase](./docs/qualification_phase.md) to understand what you'll be building.
 
 2. **🔧 Set Up Your Environment**
-   - Follow the [Installation Guide](./docs/getting_started.md) to set up your development environment.
+   - Follow the [Getting Started](./docs/getting_started.md) to set up your development environment.
    - Choose between local setup or Docker containers.
 
 3. **💻 Develop Your Policy**

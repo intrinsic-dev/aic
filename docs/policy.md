@@ -233,58 +233,7 @@ $ pixi reinstall <package>
 > [!Tip]
 > You may enter the pixi environment with `pixi shell` and force an "editable" install with `pip install -e`. But note that this circumvents pixi and may cause unintended side effects.
 
-### Preparing for Submission
 
-After you are satisfied with your policy, you will need to prepare a Docker image for submission.
-
-```bash
-$ mkdir -p docker/my_policy_node
-$ cp docker/aic_model/Dockerfile docker/my_policy_node/
-```
-
-Open the Dockerfile and add your policy node to the build instructions:
-
-```dockerfile
-# Add other local dependencies
-COPY my_policy_node /ws_aic/src/aic/my_policy_node # <-- Add this line
-```
-
-Open `docker/docker-compose.yaml` and update the model service configuration to use your Dockerfile and policy:
-
-`docker/docker-compose.yaml`:
-
-```yaml
-	model:
-		image: localhost/aic/aic_model
-		build:
-			dockerfile: docker/my_policy_node/Dockerfile # <-- replace this line
-			context: ..
-		command: --ros-args -p policy:=my_policy_node.WaveArm # <-- and this line
-```
-
-Build the image:
-
-```bash
-$ docker compose build model
-```
-
-Test that everything works:
-
-```bash
-$ docker compose up
-```
-
-This will run your model and the evaluator in an environment that replicates the submission portal:
-
-- External network access is restricted.
-- Zenoh ACLs will be employed to restrict what the policy node can interact with.
-- Shared memory is disabled.
-
-Make sure that your policy works, then export a tarball of your image.
-
-```bash
-$ docker save localhost/aic/my_policy_node | gzip > my_policy_node.tar.gz
-```
 
 ### Conclusion
 
@@ -294,6 +243,5 @@ In this tutorial, you have learned how to:
 - Create and set up a new ROS 2 package for a policy node.
 - Manage Python and ROS dependencies within a `pixi` workspace.
 - Understand the build, run, and debug cycle for developing your policy.
-- Prepare a Docker image for your policy for submission.
 
-You are now equipped with the fundamental skills to develop, test, and submit your own policies for the AI for Industry Challenge. Feel free to explore the provided example policies and other documentation for more advanced concepts and inspiration.
+You are now equipped with the fundamental skills to develop and test your own policies for the AI for Industry Challenge. Next, lets prepare a docker for [policy submission](./submission.md).
