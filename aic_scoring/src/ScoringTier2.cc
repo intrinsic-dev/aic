@@ -49,6 +49,34 @@ bool ScoringTier2::Initialize(YAML::Node _config) {
   }
   if (!this->ParseStats(_config)) return false;
 
+  // Subscribe to all topics relevant for scoring.
+  for (const auto &topic : this->topics) {
+    auto qos = topic.latched
+                   ? rclcpp::QoS(rclcpp::KeepLast(1)).transient_local()
+                   : rclcpp::QoS(rclcpp::KeepLast(10)).reliable();
+    auto sub = this->node->create_generic_subscription(
+        topic.name, topic.type, qos,
+        [this, topic](std::shared_ptr<const rclcpp::SerializedMessage> msg,
+                      const rclcpp::MessageInfo &msg_info) {
+          // Bag the data.
+          const auto &rmw_info = msg_info.get_rmw_message_info();
+          std::lock_guard<std::mutex> lock(this->mutex);
+          if (this->state == State::Recording) {
+            this->bagWriter.write(msg, topic.name, topic.type,
+                                  rmw_info.received_timestamp,
+                                  rmw_info.source_timestamp);
+            if (topic.name == kScoringTfTopic) {
+              // A new cable transform was received
+              this->cableTfReceived = true;
+            } else if (topic.name == kTfTopic) {
+              // A new gripper  transform was received
+              this->gripperTfReceived = true;
+            }
+          }
+        });
+    this->subscriptions.push_back(sub);
+  }
+
   return true;
 }
 
@@ -96,34 +124,6 @@ bool ScoringTier2::StartRecording(const std::string &_filename,
     }
     this->state = State::Recording;
     this->bagUri = _filename;
-  }
-
-  // Subscribe to all topics relevant for scoring.
-  for (const auto &topic : this->topics) {
-    auto qos = topic.latched
-                   ? rclcpp::QoS(rclcpp::KeepLast(1)).transient_local()
-                   : rclcpp::QoS(rclcpp::KeepLast(10)).reliable();
-    auto sub = this->node->create_generic_subscription(
-        topic.name, topic.type, qos,
-        [this, topic](std::shared_ptr<const rclcpp::SerializedMessage> msg,
-                      const rclcpp::MessageInfo &msg_info) {
-          // Bag the data.
-          const auto &rmw_info = msg_info.get_rmw_message_info();
-          std::lock_guard<std::mutex> lock(this->mutex);
-          if (this->state == State::Recording) {
-            this->bagWriter.write(msg, topic.name, topic.type,
-                                  rmw_info.received_timestamp,
-                                  rmw_info.source_timestamp);
-            if (topic.name == kScoringTfTopic) {
-              // A new cable transform was received
-              this->cableTfReceived = true;
-            } else if (topic.name == kTfTopic) {
-              // A new gripper  transform was received
-              this->gripperTfReceived = true;
-            }
-          }
-        });
-    this->subscriptions.push_back(sub);
   }
 
   return this->WaitForTfs();
