@@ -14,6 +14,7 @@
   <depend>aic_engine_interfaces</depend>
   <depend>aic_task_interfaces</depend>
   <depend>ament_index_cpp</depend>
+  <depend>controller_manager_msgs</depend>
   <depend>geometry_msgs</depend>
   <depend>lifecycle_msgs</depend>
   <depend>rclcpp</depend>

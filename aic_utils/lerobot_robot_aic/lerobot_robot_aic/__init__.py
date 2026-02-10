@@ -18,6 +18,8 @@ from .aic_robot_aic_controller import AICRobotAICController, AICRobotAICControll
 from .aic_teleop import (
     AICKeyboardEETeleop,
     AICKeyboardEETeleopConfig,
-    AICKeyboardTeleop,
-    AICKeyboardTeleopConfig,
+    AICKeyboardJointTeleop,
+    AICKeyboardJointTeleopConfig,
+    AICSpaceMouseTeleop,
+    AICSpaceMouseTeleopConfig,
 )

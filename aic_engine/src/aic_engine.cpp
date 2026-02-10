@@ -482,22 +482,20 @@ EngineState Engine::initialize() {
       },
       sub_options_ignore_local);
 
-  joint_motion_update_pub_ = node_->create_publisher<JointMotionUpdateMsg>(
-      "/aic_controller/joint_commands", reliable_qos);
-
   insert_cable_action_client_ =
       rclcpp_action::create_client<InsertCableAction>(node_, "/insert_cable");
   spawn_entity_client_ =
       node_->create_client<SpawnEntitySrv>("/gz_server/spawn_entity");
   delete_entity_client_ =
       node_->create_client<DeleteEntitySrv>("/gz_server/delete_entity");
-  change_target_mode_client_ = node_->create_client<ChangeTargetModeSrv>(
-      "/aic_controller/change_target_mode");
   model_get_state_client_ = node_->create_client<lifecycle_msgs::srv::GetState>(
       model_get_state_service_name_);
   model_change_state_client_ =
       node_->create_client<lifecycle_msgs::srv::ChangeState>(
           model_change_state_service_name_);
+  switch_controller_client_ =
+      node_->create_client<controller_manager_msgs::srv::SwitchController>(
+          "/controller_manager/switch_controller");
   reset_joints_client_ =
       node_->create_client<ResetJointsSrv>("/scoring/reset_joints");
   tf_buffer_ = std::make_unique<tf2_ros::Buffer>(node_->get_clock());
@@ -1151,7 +1149,16 @@ bool Engine::ready_scoring(const Trial& trial) {
       << std::setfill('0') << std::setw(3) << ms.count();
   const std::string bag_path = oss.str();
 
-  if (!scoring_tier2_->StartRecording(bag_path, connections)) {
+  unsigned int max_task_limit = 0;
+  for (const auto& task : trial.tasks) {
+    if (task.time_limit > max_task_limit) {
+      max_task_limit = task.time_limit;
+    }
+  }
+  // Add a few seconds for safety since this is a limit for recorded data
+  max_task_limit += 5;
+  if (!scoring_tier2_->StartRecording(bag_path, connections,
+                                      std::chrono::seconds(max_task_limit))) {
     RCLCPP_ERROR(node_->get_logger(), "Failed to start recording to '%s'.",
                  bag_path.c_str());
     return false;
@@ -1467,21 +1474,40 @@ void Engine::reset_after_trial(const Trial& trial) {
 bool Engine::home_robot() {
   RCLCPP_INFO(node_->get_logger(), "Homing robot to initial positions...");
 
-  // Switch to joint mode
-  if (!change_target_mode(ChangeTargetModeSrv::Request::TARGET_MODE_JOINT)) {
-    RCLCPP_ERROR(node_->get_logger(),
-                 "Failed to switch to joint mode for homing.");
+  // Lambda to switch controllers
+  auto switch_controllers =
+      [this](const std::vector<std::string>& activate,
+             const std::vector<std::string>& deactivate) -> bool {
+    auto request = std::make_shared<SwitchControllerSrv::Request>();
+    request->activate_controllers = activate;
+    request->deactivate_controllers = deactivate;
+    request->strictness = SwitchControllerSrv::Request::BEST_EFFORT;
+
+    auto future = switch_controller_client_->async_send_request(request);
+    if (future.wait_for(std::chrono::seconds(10)) !=
+        std::future_status::ready) {
+      RCLCPP_ERROR(node_->get_logger(),
+                   "SwitchController service call timed out");
+      return false;
+    }
+
+    auto response = future.get();
+    if (!response->ok) {
+      RCLCPP_ERROR(node_->get_logger(), "Failed to switch controllers.");
+      return false;
+    }
+
+    return true;
+  };
+
+  // Deactivate aic_controller
+  if (!switch_controllers({}, {"aic_controller"})) {
+    RCLCPP_ERROR(node_->get_logger(), "Failed to deactivate aic_controller.");
     return false;
   }
+  RCLCPP_INFO(node_->get_logger(), "aic_controller deactivated successfully.");
 
-  // Publish pre-built joint command to controller
-  joint_motion_update_pub_->publish(home_joint_msg_);
-
-  // Wait for the robot to reach home position if possible without resetting.
-  std::this_thread::sleep_for(std::chrono::seconds(2));
-
-  // Request for joints reset to home positions using pre-built request for
-  // extra safety.
+  // Request for joints reset to home positions using pre-built request.
   auto reset_joints_future =
       reset_joints_client_->async_send_request(home_reset_joints_request_);
   if (reset_joints_future.wait_for(std::chrono::seconds(10)) !=
@@ -1496,56 +1522,16 @@ bool Engine::home_robot() {
     return false;
   }
 
-  // Switch to cartesian mode after homing
-  if (!change_target_mode(
-          ChangeTargetModeSrv::Request::TARGET_MODE_CARTESIAN)) {
-    RCLCPP_ERROR(node_->get_logger(),
-                 "Failed to switch to cartesian mode after homing.");
+  // Activate aic_controller & resume simulation
+  if (!switch_controllers({"aic_controller"}, {})) {
+    RCLCPP_ERROR(node_->get_logger(), "Failed to activate aic_controller.");
     return false;
   }
+  RCLCPP_INFO(node_->get_logger(), "aic_controller activated successfully.");
 
   RCLCPP_INFO(
       node_->get_logger(),
       "Successfully reset joints to home position, robot homed successfully.");
-  return true;
-}
-
-//==============================================================================
-bool Engine::change_target_mode(const uint8_t target_mode) {
-  auto change_mode_request = std::make_shared<ChangeTargetModeSrv::Request>();
-  change_mode_request->target_mode = target_mode;
-  std::string target_mode_str;
-  switch (target_mode) {
-    case ChangeTargetModeSrv::Request::TARGET_MODE_JOINT:
-      target_mode_str = "JOINT";
-      break;
-    case ChangeTargetModeSrv::Request::TARGET_MODE_CARTESIAN:
-      target_mode_str = "CARTESIAN";
-      break;
-    default:
-      RCLCPP_ERROR(node_->get_logger(), "Unknown target mode requested.");
-      return false;
-  }
-
-  auto change_mode_future =
-      change_target_mode_client_->async_send_request(change_mode_request);
-  if (change_mode_future.wait_for(std::chrono::seconds(5)) !=
-      std::future_status::ready) {
-    RCLCPP_ERROR(node_->get_logger(),
-                 "ChangeTargetMode service call timed out when changing to "
-                 "%s mode",
-                 target_mode_str.c_str());
-    return false;
-  }
-  auto change_mode_response = change_mode_future.get();
-  if (!change_mode_response->success) {
-    RCLCPP_ERROR(node_->get_logger(), "Failed to change target mode to %s mode",
-                 target_mode_str.c_str());
-    return false;
-  }
-  RCLCPP_INFO(node_->get_logger(),
-              "Successfully changed target mode to %s mode",
-              target_mode_str.c_str());
   return true;
 }
 

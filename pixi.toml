@@ -15,6 +15,7 @@ ros-kilted-aic-example-policies = { path = "aic_example_policies" }
 ros-kilted-aic-model = { path = "aic_model" }
 ros-kilted-aic-model-interfaces = { path = "aic_interfaces/aic_model_interfaces" }
 ros-kilted-aic-task-interfaces = { path = "aic_interfaces/aic_task_interfaces" }
+ros-kilted-aic-teleoperation = { path = "aic_utils/aic_teleoperation" }
 ros-kilted-control-msgs = "*"                                                          # lerobot_robot_ros
 ros-kilted-geometry-msgs = "*"                                                         # lerobot_robot_ros
 ros-kilted-rmw-zenoh-cpp = "*"
@@ -26,18 +27,12 @@ ros-kilted-sensor-msgs = "*"                                                    
 ros-kilted-std-msgs = "*"                                                              # lerobot_robot_ros
 ros-kilted-std-srvs = "*"                                                              # lerobot_robot_ros
 
-[dev]
-ros-kilted-aic-control-interfaces = { path = "aic_interfaces/aic_control_interfaces" }
-ros-kilted-aic-example-policies = { path = "aic_example_policies" }
-ros-kilted-aic-model = { path = "aic_model" }
-ros-kilted-aic-model-interfaces = { path = "aic_interfaces/aic_model_interfaces" }
-ros-kilted-aic-task-interfaces = { path = "aic_interfaces/aic_task_interfaces" }
-ros-kilted-lerobot-robot-aic = { path = "aic_utils/lerobot_robot_aic" }
-
 [pypi-dependencies]
 lerobot = "==0.4.3"
 lerobot_robot_ros = { git = "https://github.com/koonpeng/lerobot-ros", rev = "b4a635fc5264266bd1575f07d54be3d4bbd620e0", subdirectory = "lerobot_robot_ros" }
 lerobot_teleoperator_devices = { git = "https://github.com/koonpeng/lerobot-ros", rev = "b4a635fc5264266bd1575f07d54be3d4bbd620e0", subdirectory = "lerobot_teleoperator_devices" }
+pynput = ">=1.7.6,<2"
+pyspacemouse = ">=2.0.0, <3"
 
 [activation.env]
 RMW_IMPLEMENTATION = "rmw_zenoh_cpp"

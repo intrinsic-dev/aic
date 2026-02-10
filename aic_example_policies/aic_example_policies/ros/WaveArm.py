@@ -17,8 +17,8 @@
 
 import time
 
-from aic_model.policy_ros import (
-    PolicyRos,
+from aic_model.policy import (
+    Policy,
     GetObservationCallback,
     SetPoseTargetCallback,
     SendFeedbackCallback,
@@ -30,7 +30,7 @@ from rclpy.duration import Duration
 from typing import Callable
 
 
-class WaveArm(PolicyRos):
+class WaveArm(Policy):
     def __init__(self, parent_node):
         super().__init__(parent_node)
         self.get_logger().info("WaveArm.__init__()")
@@ -66,7 +66,7 @@ class WaveArm(PolicyRos):
             set_pose_target(
                 Pose(
                     position=Point(x=-0.4, y=0.45 + 0.3 * y_scale, z=0.25),
-                    orientation=Quaternion(x=0.0, y=1.0, z=0.0, w=0.0),
+                    orientation=Quaternion(x=1.0, y=0.0, z=0.0, w=0.0),
                 )
             )
 

@@ -108,28 +108,28 @@ class AicModel(LifecycleNode):
 
     def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.get_logger().info(f"on_configure({state})")
-        return TransitionCallbackReturn.SUCCESS
-
-    def on_activate(self, state: LifecycleState) -> TransitionCallbackReturn:
-        self.get_logger().info(f"activating...")
         self.get_logger().info(f"Instantiating policy...")
         try:
             self._policy = self._policy_class(self)
         except Exception as e:
             self.get_logger().error(f"Error instantiating policy: {e}")
+            return TransitionCallbackReturn.ERROR
+        return TransitionCallbackReturn.SUCCESS
+
+    def on_activate(self, state: LifecycleState) -> TransitionCallbackReturn:
+        self.get_logger().info(f"on_activate()")
         self.is_active = True
-        self.get_logger().info(f"activate() calling superclass")
         return super().on_activate(state)
 
     def on_deactivate(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.get_logger().info(f"on_deactivate({state})")
-        self._policy = None
         self.is_active = False
         return super().on_deactivate(state)
 
     def on_cleanup(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.get_logger().info(f"on_cleanup({state})")
         self.is_active = False
+        self._policy = None
         return TransitionCallbackReturn.SUCCESS
 
     def on_shutdown(self, state: LifecycleState) -> TransitionCallbackReturn:
@@ -201,10 +201,10 @@ class AicModel(LifecycleNode):
         motion_update_msg.header.stamp = self.get_clock().now().to_msg()
 
         motion_update_msg.target_stiffness = np.diag(
-            [100.0, 100.0, 100.0, 50.0, 50.0, 50.0]
+            [85.0, 85.0, 85.0, 85.0, 85.0, 85.0]
         ).flatten()
         motion_update_msg.target_damping = np.diag(
-            [40.0, 40.0, 40.0, 15.0, 15.0, 15.0]
+            [75.0, 75.0, 75.0, 75.0, 75.0, 75.0]
         ).flatten()
 
         motion_update_msg.feedforward_wrench_at_tip = Wrench(
@@ -212,7 +212,7 @@ class AicModel(LifecycleNode):
         )
 
         motion_update_msg.wrench_feedback_gains_at_tip = Wrench(
-            force=Vector3(x=0.5, y=0.5, z=0.5), torque=Vector3(x=0.0, y=0.0, z=0.0)
+            force=Vector3(x=0.0, y=0.0, z=0.0), torque=Vector3(x=0.0, y=0.0, z=0.0)
         )
 
         motion_update_msg.trajectory_generation_mode.mode = (

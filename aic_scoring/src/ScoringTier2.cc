@@ -74,8 +74,9 @@ void ScoringTier2::SetGripperFrame(const std::string &_gripperFrame) {
 
 //////////////////////////////////////////////////
 bool ScoringTier2::StartRecording(const std::string &_filename,
-                                  const std::vector<Connection> &_connections) {
-  this->Reset();
+                                  const std::vector<Connection> &_connections,
+                                  const std::chrono::seconds &_max_task_time) {
+  this->Reset(_max_task_time);
   this->ResetConnections(_connections);
   std::lock_guard<std::mutex> lock(this->mutex);
   if (this->state != State::Idle) {
@@ -110,6 +111,13 @@ bool ScoringTier2::StartRecording(const std::string &_filename,
             this->bagWriter.write(msg, topic.name, topic.type,
                                   rmw_info.received_timestamp,
                                   rmw_info.source_timestamp);
+            if (topic.name == kScoringTfTopic) {
+              // A new cable transform was received
+              this->cableTfReceived = true;
+            } else if (topic.name == kTfTopic) {
+              // A new gripper  transform was received
+              this->gripperTfReceived = true;
+            }
           }
         });
     this->subscriptions.push_back(sub);
@@ -120,6 +128,24 @@ bool ScoringTier2::StartRecording(const std::string &_filename,
 
 //////////////////////////////////////////////////
 bool ScoringTier2::StopRecording() {
+  // Make sure we received one extra cable tf or finding the transform at the
+  // end of the task might require extrapolation into the future which tf2
+  // doesn't support.
+  this->cableTfReceived = false;
+  this->gripperTfReceived = false;
+  // Simple spinlock to avoid locking, condition variables etc. for a fairly
+  // straightforward wait.
+  const auto start = this->node->get_clock()->now();
+  const auto timeout = std::chrono::seconds(10);
+  while (!this->cableTfReceived && !this->gripperTfReceived &&
+         this->node->get_clock()->now() - start < timeout) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  }
+  if (!this->cableTfReceived) {
+    RCLCPP_ERROR(this->node->get_logger(),
+                 "Cable transform not received at the end of the recording.");
+    return false;
+  }
   std::lock_guard<std::mutex> lock(this->mutex);
   if (this->state != State::Recording) {
     RCLCPP_ERROR(this->node->get_logger(), "Scoring system is not recording");
@@ -143,10 +169,8 @@ Msg deserialize_from_rosbag(
 
 //////////////////////////////////////////////////
 std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
-  // TODO(luca) actually compute score
   Tier2Score tier2_score("Scoring failed.");
   Tier3Score tier3_score(0, "Task execution failed.");
-  tf2_buffer.clear();
   if (this->state != State::Idle) {
     RCLCPP_ERROR(this->node->get_logger(), "Scoring system is busy.");
     return {tier2_score, tier3_score};
@@ -162,10 +186,6 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
     return {tier2_score, tier3_score};
   }
   this->state = State::Scoring;
-
-  // Reset scoring state from previous sessions.
-  this->ResetJerk();
-  this->timestamps.clear();
 
   tier2_score.message = "Scoring succeeded.";
 
@@ -241,10 +261,10 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
 }
 
 //////////////////////////////////////////////////
-void ScoringTier2::Reset() {
+void ScoringTier2::Reset(const std::chrono::seconds &_buffer_size) {
   this->connections.clear();
   this->bagUri.clear();
-  this->tf2_buffer.clear();
+  this->tf2_buffer = std::make_unique<tf2::BufferCore>(_buffer_size);
   this->state = State::Idle;
   this->timestamps.clear();
   this->wrenches.clear();
@@ -253,6 +273,12 @@ void ScoringTier2::Reset() {
   this->bagWriter.close();
   this->contacts.clear();
   this->insertion_completion = false;
+  // Jerk computation variables
+  this->tfHistory.clear();
+  this->linearJerk = Vector3Msg();
+  this->avgLinearJerk = Vector3Msg();
+  this->accumLinearJerk = Vector3Msg();
+  this->totalJerkTime = 0.0;
 }
 
 //////////////////////////////////////////////////
@@ -338,7 +364,7 @@ void ScoringTier2::JointStateCallback(const JointStateMsg &_msg) { (void)_msg; }
 //////////////////////////////////////////////////
 void ScoringTier2::TfCallback(const TFMsg &_msg) {
   for (const auto &tf : _msg.transforms) {
-    this->tf2_buffer.setTransform(tf, "scoring", false);
+    this->tf2_buffer->setTransform(tf, "scoring", false);
     // A bit redundant since all the messages will likely have the same
     // timestamp
     this->timestamps.insert(tf2::getTimestamp(tf));
@@ -348,7 +374,7 @@ void ScoringTier2::TfCallback(const TFMsg &_msg) {
 //////////////////////////////////////////////////
 void ScoringTier2::TfStaticCallback(const TFMsg &_msg) {
   for (const auto &tf : _msg.transforms) {
-    this->tf2_buffer.setTransform(tf, "scoring", true);
+    this->tf2_buffer->setTransform(tf, "scoring", true);
   }
 }
 
@@ -384,14 +410,17 @@ void ScoringTier2::InsertionCompletionCallback(const BoolMsg &_msg) {
 std::optional<ScoringTier2::TransformStampedMsg> ScoringTier2::GetTransform(
     tf2::TimePoint _t, const std::string &_target_frame,
     const std::string &_reference_frame) const {
-  if (!this->tf2_buffer.canTransform(_reference_frame, _target_frame, _t)) {
-    RCLCPP_ERROR(this->node->get_logger(),
-                 "Transform between %s and %s not found in the tf tree",
-                 _reference_frame.c_str(), _target_frame.c_str());
+  std::string error;
+  if (!this->tf2_buffer->canTransform(_reference_frame, _target_frame, _t,
+                                      &error)) {
+    RCLCPP_ERROR(
+        this->node->get_logger(),
+        "Transform between %s and %s not found in the tf tree, error: %s",
+        _reference_frame.c_str(), _target_frame.c_str(), error.c_str());
     return std::nullopt;
   }
 
-  return this->tf2_buffer.lookupTransform(_reference_frame, _target_frame, _t);
+  return this->tf2_buffer->lookupTransform(_reference_frame, _target_frame, _t);
 }
 
 //////////////////////////////////////////////////
@@ -495,11 +524,9 @@ Tier3Score ScoringTier2::GetDistanceScore() const {
     return Tier3Score(0, "Time computation failed, task end time not set");
   }
 
-  // TODO(luca) enable this when aic_engine is set to use simulation time
-  // const auto end_time =
-  //    std::chrono::nanoseconds(this->task_end_time.value().nanoseconds());
-  // const auto dist = this->GetPlugPortDistance(tf2::TimePoint(end_time));
-  const auto dist = this->GetPlugPortDistance(tf2::TimePointZero);
+  const auto end_time =
+      std::chrono::nanoseconds(this->task_end_time.value().nanoseconds());
+  const auto dist = this->GetPlugPortDistance(tf2::TimePoint(end_time));
   if (!dist.has_value()) {
     return Tier3Score(
         0, "Distance computation failed, tf between cable and port not found");
@@ -721,15 +748,6 @@ ScoringTier2Node::ScoringTier2Node(const std::string &_yamlFile)
     std::cerr << "Unable to open YAML file [" << _yamlFile << "]" << std::endl;
     return;
   }
-}
-
-//////////////////////////////////////////////////
-void ScoringTier2::ResetJerk() {
-  this->tfHistory.clear();
-  this->linearJerk = Vector3Msg();
-  this->avgLinearJerk = Vector3Msg();
-  this->accumLinearJerk = Vector3Msg();
-  this->totalJerkTime = 0.0;
 }
 
 }  // namespace aic_scoring
