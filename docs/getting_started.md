@@ -97,7 +97,7 @@ Also see [Alternative Installation Methods](https://pixi.prefix.dev/latest/insta
    git clone https://github.com/intrinsic-dev/aic
 
    # Install and build dependencies
-   cd ~/ws_aic/src/arc
+   cd ~/ws_aic/src/aic
    pixi install
    ```
 
