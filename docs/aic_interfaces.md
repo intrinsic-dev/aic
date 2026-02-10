@@ -56,7 +56,7 @@ The Insertion Policy controls the robot by publishing to the following topics.
 
 > **Note:** The model can command the robot using either joint configurations (via `/aic_controller/joint_commands`) or Cartesian poses (via `/aic_controller/pose_commands`). Publishing references to both topics simultaneously is discouraged to avoid control conflicts.
 
-> **Note:** You must set the active target mode via the `/aic_controller/change_target_mode` ROS 2 service before the controller will accept commands of that type. For example, to publish joint targets via `/aic_controller/joint_commands`, first call the service to switch the controller to joint mode."
+> **Note:** You must set the active target mode via the `/aic_controller/change_target_mode` ROS 2 service before the controller will accept commands of that type. For example, to publish joint targets via `/aic_controller/joint_commands`, first call the service to switch the controller to joint mode.
 
 ### Controller Configuration
 

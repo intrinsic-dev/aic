@@ -85,7 +85,7 @@ This is your development workspace where you implement your policy.
 
 3. **Test your policy:**
    - Your policy will communicate with the evaluation container over ROS 2
-   - See [Testing Your Policy](#testing-your-policy) below
+   - Follow the [Testing Your Policy](#testing-your-policy) section below for detailed steps
 
 ---
 
@@ -213,7 +213,8 @@ Note that you will need to bring up your model for the `aic_engine` to work corr
 #### Training Bringup
 
 During training, you can bring up the scene with randomized poses of the `TaskBoard` and `Cables`.
-The simulation automatically exports the complete world state to `/tmp/aic.sdf` after spawning all entities, which can be imported into other simulators like IsaacLab or MuJoCo for AI policy training.
+After spawning all entities, the simulation automatically exports the world state to `/tmp/aic.sdf`. 
+The file can then be imported into simulators such as  IsaacLab or MuJoCo for AI policy training.
 
 The layout of the `TaskBoard` can be configured at runtime.
 For the full list of configurable parameters, see the [aic_bringup README](../aic_bringup/README.md).
@@ -340,17 +341,17 @@ Now that you have your environment set up:
    - [Policy Integration Guide](./policy.md) - Learn how to implement your policy
 
 2. **💻 Start Developing**
-   - Explore `aic_example_policies/` for reference implementations
+   - Explore [aic_example_policies/](../aic_example_policies/) for reference implementations
    - Review [AIC Interfaces](./aic_interfaces.md) to understand available sensors and actuators
    - Consult [AIC Controller](./aic_controller.md) to learn about motion commands
 
 3. **🧪 Test and Iterate**
-   - Use the example configurations in `aic_engine/config/` to test different scenarios
+   - Use the example configurations in [aic_engine/config/](../aic_engine/config/) to test different scenarios
    - Monitor your policy's behavior with ground truth data during development
    - Refer to [Troubleshooting](./troubleshooting.md) if you encounter issues
 
 4. **📦 Prepare for Submission**
-   - Package your solution following [Submission Guidelines](./submission.md)
+   - Package your solution as specified in the [Submission Guidelines](./submission.md)
    - Test your container before submitting
    - Submit through the official portal
 
