@@ -17,7 +17,7 @@
 
 ## LeRobot Data collection and Training
 
-- [lerobot_robot_aic](../aic_utils/lerobot_robot_aic/README.md#recording-training-data): LeRobot integration with AIC, which enables teleoperation and dataset recording using LeRobot
+- [lerobot_robot_aic](../aic_utils/lerobot_robot_aic/README.md#recording-training-data): [LeRobot](https://huggingface.co/lerobot) integration with AIC, which enables teleoperation and dataset recording using LeRobot
 
 ## Plotting
 
