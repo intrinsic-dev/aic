@@ -130,7 +130,7 @@ Now that you have your environment set up:
 3. **🧪 Test and Iterate**
    - Use the example configurations in `aic_engine/config/` to test different scenarios
    - Monitor your policy's behavior with ground truth data during development
-   - Refer to [Participant Utilities](/.participant_utilities.md) for a list of helpful tools
+   - Refer to [Participant Utilities](./participant_utilities.md) for a list of helpful tools
    - Refer to [Troubleshooting](./troubleshooting.md) if you encounter issues
 
 4. **📦 Prepare for Submission**
