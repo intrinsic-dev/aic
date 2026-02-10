@@ -108,28 +108,28 @@ class AicModel(LifecycleNode):
 
     def on_configure(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.get_logger().info(f"on_configure({state})")
-        return TransitionCallbackReturn.SUCCESS
-
-    def on_activate(self, state: LifecycleState) -> TransitionCallbackReturn:
-        self.get_logger().info(f"activating...")
         self.get_logger().info(f"Instantiating policy...")
         try:
             self._policy = self._policy_class(self)
         except Exception as e:
             self.get_logger().error(f"Error instantiating policy: {e}")
+            return TransitionCallbackReturn.ERROR
+        return TransitionCallbackReturn.SUCCESS
+
+    def on_activate(self, state: LifecycleState) -> TransitionCallbackReturn:
+        self.get_logger().info(f"on_activate()")
         self.is_active = True
-        self.get_logger().info(f"activate() calling superclass")
         return super().on_activate(state)
 
     def on_deactivate(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.get_logger().info(f"on_deactivate({state})")
-        self._policy = None
         self.is_active = False
         return super().on_deactivate(state)
 
     def on_cleanup(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.get_logger().info(f"on_cleanup({state})")
         self.is_active = False
+        self._policy = None
         return TransitionCallbackReturn.SUCCESS
 
     def on_shutdown(self, state: LifecycleState) -> TransitionCallbackReturn:
