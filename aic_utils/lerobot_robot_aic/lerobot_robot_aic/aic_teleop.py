@@ -15,23 +15,23 @@
 #
 
 from dataclasses import dataclass, field
-from typing import Any, cast
-import pyspacemouse, rclpy
 from threading import Thread
+from typing import Any, cast
 
+import pyspacemouse
+import rclpy
 from geometry_msgs.msg import Twist
-
-from lerobot.teleoperators import TeleoperatorConfig, Teleoperator
+from lerobot.teleoperators import Teleoperator, TeleoperatorConfig
 from lerobot.teleoperators.keyboard import (
     KeyboardEndEffectorTeleop,
     KeyboardEndEffectorTeleopConfig,
 )
-from lerobot.utils.errors import DeviceNotConnectedError, DeviceAlreadyConnectedError
+from lerobot.utils.errors import DeviceAlreadyConnectedError, DeviceNotConnectedError
 from lerobot_teleoperator_devices import KeyboardJointTeleop, KeyboardJointTeleopConfig
 from rclpy.executors import SingleThreadedExecutor
 
 from .aic_robot import arm_joint_names
-from .types import MotionUpdateActionDict, JointMotionUpdateActionDict
+from .types import JointMotionUpdateActionDict, MotionUpdateActionDict
 
 
 @TeleoperatorConfig.register_subclass("aic_keyboard_joint")
@@ -45,7 +45,7 @@ class AICKeyboardJointTeleopConfig(KeyboardJointTeleopConfig):
 
 
 class AICKeyboardJointTeleop(KeyboardJointTeleop):
-    def __init__(self, config: KeyboardJointTeleopConfig):
+    def __init__(self, config: AICKeyboardJointTeleopConfig):
         super().__init__(config)
 
         self.config = config
@@ -211,7 +211,7 @@ class AICKeyboardEETeleop(KeyboardEndEffectorTeleop):
 @dataclass(kw_only=True)
 class AICSpaceMouseTeleopConfig(TeleoperatorConfig):
     operator_position_front: bool = True
-    device_path: str = None  # only needed for multiple space mice
+    device: str | None = None  # only needed for multiple space mice
     command_scaling: float = 0.1
 
 
@@ -220,6 +220,7 @@ class AICSpaceMouseTeleop(Teleoperator):
         super().__init__(config)
         self.config = config
         self._is_connected = False
+        self._device: pyspacemouse.SpaceMouseDevice | None = None
 
         self._current_actions: MotionUpdateActionDict = {
             "linear.x": 0.0,
@@ -266,7 +267,7 @@ class AICSpaceMouseTeleop(Teleoperator):
             #     pyspacemouse.ButtonCallback([0], self._button_callback),  # Button 1
             #     pyspacemouse.ButtonCallback([1], self._button_callback),  # Button 2
             # ],
-            path=self.config.device_path,
+            device=self.config.device,
         )
 
         self._executor = SingleThreadedExecutor()
@@ -291,10 +292,10 @@ class AICSpaceMouseTeleop(Teleoperator):
         return value if abs(value) > threshold else 0.0
 
     def get_action(self) -> dict[str, Any]:
-        if not self.is_connected:
+        if not self.is_connected or not self._device:
             raise DeviceNotConnectedError()
 
-        state = pyspacemouse.read()
+        state = self._device.read()
 
         clean_x = self.apply_deadband(float(state.x))
         clean_y = self.apply_deadband(float(state.y))
@@ -332,6 +333,7 @@ class AICSpaceMouseTeleop(Teleoperator):
         pass
 
     def disconnect(self) -> None:
-        pyspacemouse.close()
+        if self._device:
+            self._device.close()
         self._is_connected = False
         pass
