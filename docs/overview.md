@@ -44,7 +44,7 @@ For detailed upload instructions, see [Submission Guidelines](./submission.md).
 
 ## Baseline Solution
 
-*TODO*
+See [Policy](./policy.md) for how to run the provided [ACT policy](TODO) in `aic_example_policies`.
 
 ---
 

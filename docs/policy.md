@@ -68,6 +68,13 @@ For interactive development, you can pass this via the command line—usually wi
 ros2 run aic_model aic_model --ros-args -p policy:=aic_example_policies.ros.WaveArm
 ```
 
+## Baseline solution
+
+`RunACT` implements a [LeRobot ACT](https://huggingface.co/docs/lerobot/en/act) policy trained with a small dataset available on [HuggingFace](TODO).
+```
+ros2 run aic_model aic_model --ros-args -p policy:=aic_example_policies.ros.RunACT
+```
+
 ## Tutorial: Creating a new policy node
 
 A policy node is essentially a ROS 2 node that subscribes to observations and publishes actions to be executed.
@@ -146,7 +153,7 @@ It should look like this
 ros-kilted-my-policy-node = { path = "my_policy_node" }
 ```
 
-### Implement `PolicyRos`
+### Implement `Policy`
 
 For brevity, we will reuse the code from `aic_example_policies`. See the [ROS Policy API](#ros-policy-api) section above for implementation details.
 
