@@ -6,3 +6,9 @@ channels = [
   "robostack-kilted",
   "conda-forge",
 ]
+
+[package.host-dependencies]
+ros-kilted-aic-control-interfaces = { path = "../aic_control_interfaces" }
+
+[package.build-dependencies]
+ros-kilted-aic-control-interfaces = { path = "../aic_control_interfaces" }

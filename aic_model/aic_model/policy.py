@@ -20,14 +20,24 @@ from aic_control_interfaces.msg import MotionUpdate, TrajectoryGenerationMode
 from aic_model_interfaces.msg import Observation
 from aic_task_interfaces.msg import Task
 from geometry_msgs.msg import Point, Pose, Quaternion, Wrench, Vector3
-from typing import Callable
+from typing import Callable, Protocol
 import numpy as np
 
 
-class PolicyRos(ABC):
+GetObservationCallback = Callable[[], Observation]
+
+
+class SetPoseTargetCallback(Protocol):
+    def __call__(self, pose: Pose, frame_id: str = "base_link") -> None: ...
+
+
+SendFeedbackCallback = Callable[[str], None]
+
+
+class Policy(ABC):
     def __init__(self, parent_node):
         self._parent_node = parent_node
-        self.get_logger().info("PolicyRos.__init__()")
+        self.get_logger().info("Policy.__init__()")
 
     def get_logger(self):
         return self._parent_node.get_logger()
@@ -39,9 +49,9 @@ class PolicyRos(ABC):
     def insert_cable(
         self,
         task: Task,
-        get_observation: Callable[[], Observation],
-        set_pose_target: Callable[[Pose, str], []],
-        send_feedback: Callable[[str], []],
+        get_observation: GetObservationCallback,
+        set_pose_target: SetPoseTargetCallback,
+        send_feedback: SendFeedbackCallback,
     ) -> bool:
         """Called when the insert_cable task is requested by aic_engine"""
         pass

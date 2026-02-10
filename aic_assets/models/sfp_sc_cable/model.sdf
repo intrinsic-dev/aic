@@ -8,6 +8,7 @@
       -->
       <experimental:params>
         <collision element_id="link_1::link_1_collision" action="remove"/>
+        <collision element_id="cable_end_0::base_collision" action="remove"/>
       </experimental:params>
       <uri>model://cable_base_c_rotated</uri>
     </include>
