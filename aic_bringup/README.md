@@ -252,45 +252,6 @@ ros2 launch aic_bringup spawn_cable.launch.py
 
 ---
 
-### 4. `gripper_action.launch.py`
-
-Launch file for sending gripper action commands to control the gripper position and/or effort.
-
-#### Usage
-```bash
-ros2 launch aic_bringup gripper_action.launch.py use_position:=true position:=0.5
-```
-
-#### Configurable Parameters
-
-- `gripper_name` (default: `"gripper"`) - Name of the gripper
-- `gripper_action_name` (default: `"/gripper_action_controller/gripper_cmd"`) - Action server name for gripper control
-- `use_position` (default: `"false"`) - If enabled, send a position command
-- `position` (default: `"0.0"`) - Gripper position command (0.0 = closed, 1.0 = open)
-- `use_effort` (default: `"false"`) - If enabled, send an effort command
-- `effort` (default: `"0.0"`) - Gripper effort command (Newtons)
-
-**Note:** At least one of `use_position` or `use_effort` should be set to `true` for the action to have effect.
-
----
-
-### 5. `move_to_contact.launch.py`
-
-Launch file for moving the robot tool frame until contact is detected based on force feedback.
-
-#### Usage
-```bash
-ros2 launch aic_bringup move_to_contact.launch.py contact_force_z:=15.0
-```
-
-#### Configurable Parameters
-
-- `controller_namespace` (default: `"admittance_controller"`) - Namespace for the admittance controller node
-- `tool_frame` (default: `"tool0"`) - Tool frame for the move-to-contact behavior
-- `contact_force_z` (default: `"10.0"`) - Contact detection threshold force along Z-axis (Newtons)
-
----
-
 ## Example Usage
 
 ### Basic Simulation Launch
