@@ -44,6 +44,28 @@ class CheatCode(PolicyRos):
        self._task = None
        super().__init__(parent_node)
 
+    def _wait_for_tf(
+        self, target_frame: str, source_frame: str, timeout_sec: float = 10.0
+    ) -> bool:
+        """Wait for a TF frame to become available."""
+        attempts = int(timeout_sec / 0.1)
+        for attempt in range(attempts):
+            try:
+                self._parent_node._tf_buffer.lookup_transform(
+                    target_frame, source_frame, Time(),
+                )
+                return True
+            except TransformException:
+                if attempt % 20 == 0:
+                    self.get_logger().info(
+                        f"Waiting for transform '{source_frame}'..."
+                    )
+                time.sleep(0.1)
+        self.get_logger().error(
+            f"Transform '{source_frame}' not available after {timeout_sec}s"
+        )
+        return False
+
     def go_to_pose(self, pose: Pose, timeout_sec: float) -> bool:
         self._set_pose_target(pose)
         # todo: smart stuff here to wait for the robot to reach the pose
@@ -174,17 +196,21 @@ class CheatCode(PolicyRos):
         self._set_pose_target = set_pose_target
         self._task = task
 
+        port_frame = f"task_board/{task.target_module_name}/{task.port_name}_link"
+        cable_tip_frame = f"{task.cable_name}/{task.plug_type}_tip_link"
+
+        # Wait for both the port and cable tip TFs to become available.
+        # These come via the ground_truth relay and may not be immediate.
+        for frame in [port_frame, cable_tip_frame]:
+            if not self._wait_for_tf("base_link", frame):
+                return False
+
         try:
-            card_prefix = task.target_module_name[:-2]
-            card_suffix = task.target_module_name[-1:]
-            port_frame = f"task_board/{card_prefix}_mount_{card_suffix}/{task.port_name}_link"
             port_tf_stamped = self._parent_node._tf_buffer.lookup_transform(
-                "base_link",
-                port_frame,
-                Time(),
+                "base_link", port_frame, Time(),
             )
         except TransformException as ex:
-            self.get_logger().error(f"Could not find transform to port: {ex}")
+            self.get_logger().error(f"Could not look up port transform: {ex}")
             return False
         port_transform = port_tf_stamped.transform
 
@@ -192,16 +218,20 @@ class CheatCode(PolicyRos):
 
         for t in range(0, 100):
             interp_fraction = t / 100.0
-            self.go_to_pose(
-                self.calc_gripper_pose(
-                    port_transform,
-                    slerp_fraction=interp_fraction,
-                    position_fraction=interp_fraction,
-                    z_offset=z_offset,
-                    reset_xy_integrator=True,
-                ),
-                0.05,
-            )
+            try:
+                self.go_to_pose(
+                    self.calc_gripper_pose(
+                        port_transform,
+                        slerp_fraction=interp_fraction,
+                        position_fraction=interp_fraction,
+                        z_offset=z_offset,
+                        reset_xy_integrator=True,
+                    ),
+                    0.05,
+                )
+            except TransformException as ex:
+                self.get_logger().warn(f"TF lookup failed during interpolation: {ex}")
+                time.sleep(0.05)
 
         while True:
             if z_offset < -0.005:
@@ -209,10 +239,14 @@ class CheatCode(PolicyRos):
 
             z_offset -= 0.0005
             self.get_logger().info(f"z_offset: {z_offset:0.5}")
-            self.go_to_pose(
-                self.calc_gripper_pose(port_transform, z_offset=z_offset),
-                0.05,
-            )
+            try:
+                self.go_to_pose(
+                    self.calc_gripper_pose(port_transform, z_offset=z_offset),
+                    0.05,
+                )
+            except TransformException as ex:
+                self.get_logger().warn(f"TF lookup failed during insertion: {ex}")
+                time.sleep(0.05)
 
         self.get_logger().info("CheatCode.insert_cable() exiting...")
         return True
