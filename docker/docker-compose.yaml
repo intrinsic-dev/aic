@@ -5,7 +5,8 @@ services:
     build:
       dockerfile: docker/aic_eval/Dockerfile
       context: ..
-    command: gazebo_gui:=false launch_rviz:=false ground_truth:=false start_aic_engine:=true
+    entrypoint: ["/entrypoint_eval.sh"]
+    command: gazebo_gui:=false launch_rviz:=false ground_truth:=false start_aic_engine:=true shutdown_on_aic_engine_exit:=true
     gpus: all
     networks:
       - default
