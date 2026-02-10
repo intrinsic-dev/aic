@@ -25,7 +25,7 @@
 
 ## RViz
 
-- [RViz User Guide](https://docs.ros.org/en/kilted/Tutorials/Intermediate/RViz/RViz-User-Guide/RViz-User-Guide.html) is a vizualizer for ROS 2. The RViz configuration file provided (`aic.rviz`) only displays the center camera stream due to bandwidth concerns, but you may find it helpful to add views for the other two cameras.
+- [RViz](https://docs.ros.org/en/kilted/Tutorials/Intermediate/RViz/RViz-User-Guide/RViz-User-Guide.html) is a vizualizer for ROS 2. The RViz configuration file provided (`aic.rviz`) only displays the center camera stream due to bandwidth concerns, but you may find it helpful to add views for the other two cameras.
 
 ## ROS 2 CLI Tools
 
