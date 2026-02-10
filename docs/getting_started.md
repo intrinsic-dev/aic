@@ -130,6 +130,7 @@ Now that you have your environment set up:
 3. **🧪 Test and Iterate**
    - Use the example configurations in `aic_engine/config/` to test different scenarios
    - Monitor your policy's behavior with ground truth data during development
+   - Refer to [Participant Utilities](./participant_utilities.md) for a list of helpful tools
    - Refer to [Troubleshooting](./troubleshooting.md) if you encounter issues
 
 4. **📦 Prepare for Submission**
@@ -347,38 +348,6 @@ cd ~/ws_aic/src/aic/aic_model/test
 - Watch the Gazebo window for robot movement
 - Check terminal output for task progress and scoring information
 - Results will be saved to `$HOME/aic_results/` (or `$AIC_RESULTS_DIR` if set)
-
----
-
-### Additional Resources
-
-#### LeRobot Support
-
-A LeRobot interface is available for training policies using [LeRobot](https://huggingface.co/lerobot). See [lerobot_robot_aic](../aic_utils/lerobot_robot_aic/README.md) for details.
-
-#### Debugging Commands
-
-These commands assume you've already sourced the workspace and set the required environment variables.
-
-**Send reference wrench command (force control):**
-```bash
-ros2 launch aic_bringup move_to_contact.launch.py contact_force_z:=10.0
-```
-
-**Control gripper via ROS 2 Action (range: 0.0 to 0.025m):**
-```bash
-ros2 launch aic_bringup gripper_action.launch.py use_position:=true position:=0.024
-```
-
-**Send joint-position command:**
-```bash
-# Switch to joint target mode
-ros2 service call /aic_controller/change_target_mode aic_control_interfaces/srv/ChangeTargetMode '{target_mode: 1}'
-
-# Send joint target
-ros2 topic pub /aic_controller/joint_commands aic_control_interfaces/msg/JointMotionUpdate '{target_state:
-{positions: [0.0, -1.57, -1.57, -1.57, 1.57, 0] }, target_stiffness: [100.0, 100.0, 100.0, 50.0, 50.0, 50.0], target_damping: [40.0, 40.0, 40.0, 15.0, 15.0, 15.0], trajectory_generation_mode: {mode: 2}, time_to_target_seconds: 1.0 }' --once
-```
 
 ---
 

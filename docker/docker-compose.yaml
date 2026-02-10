@@ -5,7 +5,7 @@ services:
     build:
       dockerfile: docker/aic_eval/Dockerfile
       context: ..
-    command: gazebo_gui:=false launch_rviz:=false
+    command: gazebo_gui:=false launch_rviz:=false ground_truth:=false start_aic_engine:=true
     gpus: all
     networks:
       - default
