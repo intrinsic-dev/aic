@@ -32,17 +32,16 @@ from rclpy.time import Time
 from tf2_ros import TransformException
 from transforms3d._gohlketransforms import quaternion_multiply, quaternion_slerp
 
-
 QuaternionTuple = tuple[float, float, float, float]
 
 
 class CheatCode(PolicyRos):
     def __init__(self, parent_node):
-       self._tip_x_error_integrator = 0.0
-       self._tip_y_error_integrator = 0.0
-       self._max_integrator_windup = 0.05
-       self._task = None
-       super().__init__(parent_node)
+        self._tip_x_error_integrator = 0.0
+        self._tip_y_error_integrator = 0.0
+        self._max_integrator_windup = 0.05
+        self._task = None
+        super().__init__(parent_node)
 
     def _wait_for_tf(
         self, target_frame: str, source_frame: str, timeout_sec: float = 10.0
@@ -52,14 +51,14 @@ class CheatCode(PolicyRos):
         for attempt in range(attempts):
             try:
                 self._parent_node._tf_buffer.lookup_transform(
-                    target_frame, source_frame, Time(),
+                    target_frame,
+                    source_frame,
+                    Time(),
                 )
                 return True
             except TransformException:
                 if attempt % 20 == 0:
-                    self.get_logger().info(
-                        f"Waiting for transform '{source_frame}'..."
-                    )
+                    self.get_logger().info(f"Waiting for transform '{source_frame}'...")
                 time.sleep(0.1)
         self.get_logger().error(
             f"Transform '{source_frame}' not available after {timeout_sec}s"
@@ -75,12 +74,12 @@ class CheatCode(PolicyRos):
     def calc_gripper_pose(
         self,
         port_transform: Transform,
-        slerp_fraction: float=1.0,
-        position_fraction: float=1.0,
-        z_offset: float=0.1,
-        reset_xy_integrator: bool=False,
+        slerp_fraction: float = 1.0,
+        position_fraction: float = 1.0,
+        z_offset: float = 0.1,
+        reset_xy_integrator: bool = False,
     ) -> Pose:
-        '''Find the gripper pose that results in SFP module alignment.'''
+        """Find the gripper pose that results in SFP module alignment."""
         q_port = (
             port_transform.rotation.w,
             port_transform.rotation.x,
@@ -149,16 +148,18 @@ class CheatCode(PolicyRos):
             self._tip_x_error_integrator = np.clip(
                 self._tip_x_error_integrator + tip_x_error,
                 -self._max_integrator_windup,
-                self._max_integrator_windup
+                self._max_integrator_windup,
             )
             self._tip_y_error_integrator = np.clip(
                 self._tip_y_error_integrator + tip_y_error,
                 -self._max_integrator_windup,
-                self._max_integrator_windup
+                self._max_integrator_windup,
             )
 
-        self.get_logger().info(f"pfrac: {position_fraction:.3} xy_error: {tip_x_error:0.3} {tip_y_error:0.3}   integrators: {self._tip_x_error_integrator:.3} , {self._tip_y_error_integrator:.3}")
-        
+        self.get_logger().info(
+            f"pfrac: {position_fraction:.3} xy_error: {tip_x_error:0.3} {tip_y_error:0.3}   integrators: {self._tip_x_error_integrator:.3} , {self._tip_y_error_integrator:.3}"
+        )
+
         i_gain = 0.15
 
         target_x = port_xy[0] + i_gain * self._tip_x_error_integrator
@@ -182,7 +183,7 @@ class CheatCode(PolicyRos):
                 x=q_gripper_slerp[1],
                 y=q_gripper_slerp[2],
                 z=q_gripper_slerp[3],
-            )
+            ),
         )
 
     def insert_cable(
@@ -200,14 +201,16 @@ class CheatCode(PolicyRos):
         cable_tip_frame = f"{task.cable_name}/{task.plug_type}_tip_link"
 
         # Wait for both the port and cable tip TFs to become available.
-        # These come via the ground_truth relay and may not be immediate.
+        # These come via ground_truth and may not be immediate.
         for frame in [port_frame, cable_tip_frame]:
             if not self._wait_for_tf("base_link", frame):
                 return False
 
         try:
             port_tf_stamped = self._parent_node._tf_buffer.lookup_transform(
-                "base_link", port_frame, Time(),
+                "base_link",
+                port_frame,
+                Time(),
             )
         except TransformException as ex:
             self.get_logger().error(f"Could not look up port transform: {ex}")
