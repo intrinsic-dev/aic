@@ -23,7 +23,11 @@ Here is how we are addressing physics discrepancies:
 
 ## 2. Trial Descriptions
 
-The qualification phase consists of **three specific trials** designed to test different aspects of the participant's policy. The participant must use the same policy for each trial. In each trial, the robot spawns at a pre-specified (not random pose), and the cable plug is fixed in its gripper.
+The qualification phase consists of **three specific trials** designed to test different aspects of the participant's policy.
+
+The same policy submitted by the participant will be used for all three trials.
+
+In each trial, the robot spawns at a pre-specified (not random) pose, and the cable plug is fixed in its gripper.
 
 ### Trial 1 and 2: Policy validity and convergence
 
