@@ -14,6 +14,7 @@
   <depend>geometry_msgs</depend>
   <depend>python3-transforms3d</depend>
   <depend>rclpy</depend>
+  <depend>tf2_ros</depend>
   <depend>sensor_msgs</depend>
   <depend>std_srvs</depend>
   <depend>trajectory_msgs</depend>
