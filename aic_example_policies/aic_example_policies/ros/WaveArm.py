@@ -45,30 +45,30 @@ class WaveArm(PolicyRos):
         self.get_logger().info(f"WaveArm.insert_cable() enter. Task: {task}")
         start_time = time.clock_gettime(0)
         send_feedback("waving the arm around")
-        while time.clock_gettime(0) - start_time < 15.0:
+        while time.clock_gettime(0) - start_time < 10.0:
             time.sleep(0.25)
-            # observation = get_observation()
-            # t = (
-            #     observation.center_image.header.stamp.sec
-            #     + observation.center_image.header.stamp.nanosec / 1e9
-            # )
-            # self.get_logger().info(f"observation time: {t}")
+            observation = get_observation()
+            t = (
+                observation.center_image.header.stamp.sec
+                + observation.center_image.header.stamp.nanosec / 1e9
+            )
+            self.get_logger().info(f"observation time: {t}")
 
-            # # Move the arm along a line, while looking down at the task board.
-            # loop_duration = 5.0  # seconds
-            # loop_fraction = (t % loop_duration) / loop_duration
-            # y_scale = 2 * loop_fraction
-            # if y_scale > 1.0:
-            #     y_scale = 2.0 - y_scale
-            # y_scale -= 1.0
+            # Move the arm along a line, while looking down at the task board.
+            loop_duration = 5.0  # seconds
+            loop_fraction = (t % loop_duration) / loop_duration
+            y_scale = 2 * loop_fraction
+            if y_scale > 1.0:
+                y_scale = 2.0 - y_scale
+            y_scale -= 1.0
 
-            # # create a smooth series of target points that flies over the task board
-            # set_pose_target(
-            #     Pose(
-            #         position=Point(x=-0.4, y=0.45 + 0.3 * y_scale, z=0.25),
-            #         orientation=Quaternion(x=1.0, y=0.0, z=0.0, w=0.0),
-            #     )
-            # )
+            # create a smooth series of target points that flies over the task board
+            set_pose_target(
+                Pose(
+                    position=Point(x=-0.4, y=0.45 + 0.3 * y_scale, z=0.25),
+                    orientation=Quaternion(x=1.0, y=0.0, z=0.0, w=0.0),
+                )
+            )
 
         self.get_logger().info("WaveArm.insert_cable() exiting...")
         return True

@@ -338,10 +338,8 @@ namespace aic_scoring
     /// \brief Gripper frame name.
     private: std::string gripperFrame;
 
-    /// \brief Whether cable plug-port insertion was completed
-    private: bool insertionCompletion{false};
-
-    /// \brief The insertion port namespace as detected by the cable plugins
+    /// \brief The insertion port namespace as detected by the cable plugins.
+    /// Empty string means no insertion event detected.
     private: std::string insertionPortNamespace;
 
     /// \brief Whether the tf from a cable was recorded.

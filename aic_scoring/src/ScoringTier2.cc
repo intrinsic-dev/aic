@@ -272,7 +272,6 @@ void ScoringTier2::Reset(const std::chrono::seconds &_buffer_size) {
   this->task_end_time.reset();
   this->bagWriter.close();
   this->contacts.clear();
-  this->insertionCompletion = false;
   this->insertionPortNamespace.clear();
   // Jerk computation variables
   this->tfHistory.clear();
@@ -407,7 +406,6 @@ void ScoringTier2::InsertionEventCallback(const StringMsg &_msg) {
   // \todo(iche033) For now, assume only one insertion event per task
   // Mark insertion completion as true as soon as one insertion is done.
   this->insertionPortNamespace = _msg.data;
-  this->insertionCompletion = true;
 }
 
 //////////////////////////////////////////////////
@@ -564,7 +562,7 @@ Tier3Score ScoringTier2::ComputeTier3Score() const {
 
   // Check if insertion is completed or not
   std::stringstream sstream;
-  if (this->insertionCompletion) {
+  if (!this->insertionPortNamespace.empty()) {
     // Tokenize the namespace string. The first token should be the
     // target module name and the second token should be the port name
     std::string namespaceStr = this->insertionPortNamespace;
@@ -585,7 +583,6 @@ Tier3Score ScoringTier2::ComputeTier3Score() const {
           tokens[1] == connections[0].portName) {
         score += kInsertionCompletionScore;
         sstream << "Cable insertion successful. " << dist_score.message;
-        std::cerr << " insertion success !!  " << std::endl;
       } else {
         score += kInsertionPenalty;
         sstream << "Cable insertion failed. Incorrect Port. "
