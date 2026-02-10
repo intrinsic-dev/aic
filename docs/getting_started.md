@@ -181,6 +181,9 @@ cd ~/ws_aic
 sudo rosdep init  # Only if running rosdep for the first time
 rosdep install --from-paths src --ignore-src --rosdistro kilted -yr --skip-keys "gz-cmake3 DART libogre-dev libogre-next-2.3-dev rosetta"
 
+# Install additional Python dependencies for teleoperation
+sudo apt install -y python3-pynput
+
 # Build the workspace
 source /opt/ros/kilted/setup.bash
 GZ_BUILD_FROM_SOURCE=1 colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release --merge-install --symlink-install --packages-ignore lerobot_robot_aic
