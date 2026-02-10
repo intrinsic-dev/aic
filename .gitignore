@@ -7,3 +7,6 @@ files.txt
 # pixi environments
 .pixi/*
 !.pixi/config.toml
+
+# sphinx build files
+sphinx_docs/_build/

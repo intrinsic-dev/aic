@@ -1,0 +1,111 @@
+/* =========================================
+   UMICH-Inspired Light/Dark Theme Override
+   ========================================= */
+
+/* -------- LIGHT THEME (No Maize) -------- */
+html[data-theme="light"] {
+    --pst-color-primary: #234c74;           /* Michigan Blue */
+    --pst-color-secondary: #1A4472;         /* Stronger contrast blue */
+    --pst-color-secondary-highlight: #1A4472;
+    --pst-color-inline-code-links: #00274C;
+    --pst-color-info: var(--pst-color-primary);
+    --pst-color-info-highlight: var(--pst-color-primary);
+    --pst-color-info-bg: #daedb9;
+    --pst-color-attention: #ffc107;
+    --pst-color-text-base: #323232;
+    --pst-color-text-muted: #646464;
+    --pst-color-shadow: #d8d8d8;
+    --pst-color-border: #c9c9c9;
+    --pst-color-inline-code: #061033;
+    --pst-color-target: #fbe54e;
+    --pst-color-background: #fff;
+    --pst-color-on-background: #fff;
+    --pst-color-surface: #f5f5f5;
+    --pst-color-on-surface: #e1e1e1;
+    --pst-color-link: var(--pst-color-primary);
+    --pst-color-link-hover: #040a63;
+    --pst-color-table-row-hover-bg: #daedb9;
+    --pst-color-accent: var(--pst-color-primary);
+}
+
+
+
+/* -------- DARK THEME -------- */
+html[data-theme="dark"] {
+    --pst-color-primary: #FFCB05;           /* Maize */
+    --pst-color-secondary: #FFD54F;
+    --pst-color-secondary-highlight: #FFD54F;
+    --pst-color-inline-code-links: #FFD54F;
+    --pst-color-info: var(--pst-color-primary);
+    --pst-color-info-highlight: var(--pst-color-primary);
+    --pst-color-info-bg: #132B42;
+    --pst-color-attention: #FFC107;
+    --pst-color-text-base: #F4F3EC;
+    --pst-color-text-muted: #A0AAB4;
+    --pst-color-shadow: #1a1a1a;
+    --pst-color-border: #37475A;
+    --pst-color-inline-code: #FFD54F;
+    --pst-color-target: #FFCB05;
+    --pst-color-background: #0C1D2B;        /* Deep navy */
+    --pst-color-on-background: #132B42;
+    --pst-color-surface: #142838;
+    --pst-color-on-surface: #22394E;
+    --pst-color-link: var(--pst-color-primary);
+    --pst-color-link-hover: #FFDE59;
+    --pst-color-table-row-hover-bg: #132B42;
+    --pst-color-accent: var(--pst-color-primary);
+}
+
+/* -------- GENERAL -------- */
+
+/* Ensure links don't have underline clutter */
+a {
+    text-decoration: none !important;
+}
+
+/* Announcement + warning banners */
+.bd-header-announcement a,
+.bd-header-version-warning a {
+    color: #FFCB05;
+}
+
+/* Navbar search box - minimal borders */
+.form-control {
+    border-radius: 0 !important;
+    border: none !important;
+    outline: none !important;
+}
+
+/* Reduce padding around navbar logo and icons */
+.navbar-brand,
+.navbar-icon-links {
+    padding-top: 0rem !important;
+    padding-bottom: 0rem !important;
+}
+
+/* Showcase-style tables (optional styling) */
+.showcase-table {
+    min-width: 75%;
+}
+
+.showcase-table td {
+    border-color: gray;
+    border-style: solid;
+    border-width: 1px;
+}
+
+.showcase-table p {
+    margin: 0;
+    padding: 0;
+}
+
+.showcase-table .rot90 {
+    transform: rotate(-90deg);
+    margin: 0;
+    padding: 0;
+}
+
+.showcase-table .center {
+    text-align: center;
+    vertical-align: middle;
+}

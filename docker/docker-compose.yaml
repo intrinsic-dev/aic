@@ -22,5 +22,15 @@ services:
       RMW_IMPLEMENTATION: rmw_zenoh_cpp
       ZENOH_CONFIG_OVERRIDE: connect/endpoints=["tcp/eval:7447"];routing/router/peers_failover_brokering=true
       ZENOH_ROUTER_CHECK_ATTEMPTS: -1
+  docs:
+    build:
+      dockerfile: docker/aic_docs/Dockerfile
+      context: ..
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../sphinx_docs:/src/docs
+    command: sphinx-autobuild docs docs/_build/html --host 0.0.0.0 --port 8000
+
 networks:
   default:

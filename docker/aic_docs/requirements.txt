@@ -1,0 +1,13 @@
+autodocsumm
+sphinx
+sphinx-book-theme
+sphinx-autobuild
+sphinxemoji
+sphinx-icon
+sphinx_design
+sphinxcontrib-bibtex
+sphinx-copybutton
+sphinx-multiversion
+pyyaml
+typeguard
+myst-parser
