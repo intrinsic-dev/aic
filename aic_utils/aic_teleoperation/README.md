@@ -34,22 +34,22 @@ Control individual robot joints directly.
 Control end-effector pose (position and orientation).
 
 **Linear Movement:**
-- `a/d` - X axis: +/-
-- `w/s` - Y axis: +/-
-- `q/e` - Z axis: +/-
+- `a/d` - X axis: -/+
+- `w/s` - Y axis: -/+
+- `r/f` - Z axis: -/+
 
 **Angular Movement:**
-- `j/l` - Roll: +/-
-- `i/k` - Pitch: +/-
-- `u/o` - Yaw: +/-
+- `Shift + s/w` : -/+ Angular X
+- `Shift + a/d` : -/+ Angular Y
+- `q/e` : -/+ Angular Z
 
 **Speed Control:**
-- `n` - Slow mode (linear: 0.02 m/s, angular: 0.02 rad/s)
-- `m` - Fast mode (linear: 0.1 m/s, angular: 0.1 rad/s)
+- `k` - Slow mode (linear: 0.02 m/s, angular: 0.02 rad/s)
+- `l` - Fast mode (linear: 0.1 m/s, angular: 0.1 rad/s)
 
 **Frame Toggle:**
-- `b` - Tool frame (end-effector)
-- `m` - Global frame (base_link)
+- `n` - Tool frame (`gripper/tcp`)
+- `m` - Global frame (`base_link`)
 
 **Exit:**
 - `ESC` - Quit teleoperation
@@ -84,4 +84,4 @@ ros2 run aic_teleoperation cartesian_keyboard_teleop
 
 - The scripts automatically switch the controller to the appropriate control mode (joint or Cartesian) when started
 - Press ESC to cleanly exit teleoperation
-- Ensure you have focus on the terminal window for keyboard input to be captured
+- Keyboard input will be captured regardless of whether keyboard focus is on the terminal window

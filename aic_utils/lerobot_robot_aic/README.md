@@ -58,7 +58,7 @@ View and edit key mappings and speed settings in `AICKeyboardJointTeleop` and `A
 
 :warning: Note: In our experience, SpaceMouse teleoperation was laggier than keyboard teleoperation.
 
-We used a 3Dconnexion SpaceMouse. To enable USB permissions, you may need to add the following to your `/etc/udev/rules.d/99-spacemouse.rules`:
+We used a 3Dconnexion SpaceMouse with the [pyspacemouse](https://github.com/JakubAndrysek/PySpaceMouse?tab=readme-ov-file#dependencies) library. To enable USB permissions, you may need to add the following to your `/etc/udev/rules.d/99-spacemouse.rules`:
 ``` bash
 # Apply to all hidraw nodes for 3Dconnexion devices
 KERNEL=="hidraw*", ATTRS{idVendor}=="046d", MODE="0666", GROUP="plugdev"
