@@ -233,6 +233,8 @@ Replace `aic_example_policies.ros.WaveArm` with your policy implementation.
 
 #### Training Mode
 
+> Note: If you would like to launch the simulation with custom configurations, you must use local setup (see [Building Locally on Ubuntu 24.04](#building-locally-on-ubuntu-2404) above).
+
 For training, you can launch the simulation with custom configurations. Here's a complete example with all available task board parameters:
 
 ```bash
@@ -299,20 +301,30 @@ After setting up your environment, you can test your policy implementation:
 
 #### 1. Start the Evaluation Environment
 
-**Terminal 1 - Start Zenoh Router:**
+**If using local setup:**
+
+Terminal 1 - Start Zenoh Router:
 ```bash
 source ~/ws_aic/install/setup.bash
 export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
 ros2 run rmw_zenoh_cpp rmw_zenohd
 ```
 
-**Terminal 2 - Launch Evaluation Environment:**
+Terminal 2 - Launch Evaluation Environment:
 ```bash
 source ~/ws_aic/install/setup.bash
 export RMW_IMPLEMENTATION=rmw_zenoh_cpp
 export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
 ros2 launch aic_bringup aic_gz_bringup.launch.py ground_truth:=false start_aic_engine:=true
 ```
+
+**If using container + pixi setup:**
+
+```bash
+export DBX_CONTAINER_MANAGER=docker
+distrobox enter -r aic_eval
+/entrypoint.sh
+   ```
 
 #### 2. Run Your Policy
 
