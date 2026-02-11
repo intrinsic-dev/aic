@@ -12,7 +12,7 @@ This container hosts:
 - Trial orchestration via `aic_engine`
 - Scoring system
 
-### 2. Participant workspace
+### 2. Participant Workspace
 This is your development workspace where you implement your policy.
 
 **What you'll do:**
@@ -20,48 +20,50 @@ This is your development workspace where you implement your policy.
 - Test locally against the evaluation container
 - Build and submit your container image for official evaluation
 
-### Requirements
+<hr>
 
-* [docker](https://www.docker.com/)
-* [nvidia-continer-toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/index.html)
-* [distrobox](https://distrobox.it/)
-* [pixi](https://prefix.dev/tools/pixi)
+### Prerequisite
+* [Docker](#setup-docker)
+* [Nvidia Container Toolkit](#setup-and-configure-nvidia-container-toolkit)
+* [Distrobox](#setup-distrobox)
+* [Pixi](#setup-pixi)
 
-#### Install docker
+#### Setup Docker
 
-Refer to [Docker Engine Installation](https://docs.docker.com/engine/install/).
+1. Install [Docker Engine](https://docs.docker.com/engine/install/) depending on your Platform.
+2. Make sure to complete [Linux post-installation steps for Docker Engine](https://docs.docker.com/engine/install/linux-postinstall/). This will allow managing Docker as a non-root user.
 
-#### Install and configure nvidia-container-toolkit
+#### Setup and Configure Nvidia Container Toolkit
 
-Follow https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/index.html to install nvidia-container-toolkit.
+1. Install [Nvidia Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) which will allow Docker Engine to access Nvidia GPU.
 
-After installing, be sure to enable it for docker:
+2. After installing Nvidia Container Toolkit, configure docker to use nvidia runtime:
+    ```bash
+    sudo nvidia-ctk runtime configure --runtime=docker
+    sudo systemctl restart docker
+    ```
 
-```bash
-sudo nvidia-ctk runtime configure --runtime=docker
-sudo systemctl restart docker
-```
+#### Setup Distrobox
 
-#### Install distrobox
+We use [Distrobox](https://distrobox.it/) to tightly integrate aic_eval container to host. It is recommended to install Distrobox with the package manager. Check [supported distros](https://distrobox.it/#installation) to see if your distro already supports distrobox.
 
-If your distro already supports distrobox ([supported distros](https://distrobox.it/#installation)). It is recommended to install with the package manager.
+For example, in case of Ubuntu you can run following:
+    ```bash
+    sudo apt install distrobox
+    ```
 
-For example, in ubuntu:
+In case it is not supported, refer to [Alternative methods](https://distrobox.it/#alternative-methods) to install distrobox.
 
-```bash
-sudo apt install distrobox
-```
+#### Setup pixi
 
-If it is not supported, refer to [Alternative methods](https://distrobox.it/#alternative-methods) to install distrobox.
-
-#### Install pixi
-
-```bash
-curl -fsSL https://pixi.sh/install.sh | sh
-# Restart the terminal
-```
-
+We use [Pixi](https://pixi.prefix.dev/latest/) to manage packages and dependencies. Install it using following:
+    ```bash
+    curl -fsSL https://pixi.sh/install.sh | sh
+    # Restart the terminal
+    ```
 Also see [Alternative Installation Methods](https://pixi.prefix.dev/latest/installation/#alternative-installation-methods).
+
+<hr>
 
 ### Quick Start
 

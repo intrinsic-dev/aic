@@ -21,12 +21,12 @@ Open `docker/docker-compose.yaml` and update the model service configuration to 
 `docker/docker-compose.yaml`:
 
 ```yaml
-	model:
-		image: localhost/aic/aic_model
-		build:
-			dockerfile: docker/my_policy_node/Dockerfile # <-- replace this line
-			context: ..
-		command: --ros-args -p policy:=my_policy_node.WaveArm # <-- and this line
+model:
+	image: localhost/aic/aic_model
+	build:
+		dockerfile: docker/my_policy_node/Dockerfile # <-- replace this line
+		context: ..
+	command: --ros-args -p policy:=my_policy_node.WaveArm # <-- and this line
 ```
 
 Build the image:
@@ -53,5 +53,5 @@ Make sure that your policy works, then export a tarball of your image.
 $ docker save localhost/aic/my_policy_node | gzip > my_policy_node.tar.gz
 ```
 
-Conclusion:
-- Prepare a Docker image for your policy for submission.
+You are now ready to submit the tarball of your image to the participation portal.
+*TODO*
