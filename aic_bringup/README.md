@@ -278,11 +278,6 @@ ros2 launch aic_bringup spawn_task_board.launch.py \
   lc_mount_rail_0_translation:=0.05
 ```
 
-### Open Gripper
-```bash
-ros2 launch aic_bringup gripper_action.launch.py use_position:=true position:=0.8
-```
-
 ---
 
 ## Launching with the Impedance Controller

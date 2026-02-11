@@ -43,6 +43,14 @@ The following topics provide sensory data and state information to the model.
 | :--- | :--- | :--- |
 | `/insert_cable` | `aic_task_interfaces/action/InsertCable` | Trigger for the autonomous insertion task. |
 
+**Controller Topics**
+
+The following topic provides high-frequency and real-time state telemetry data for monitoring and debugging.
+
+| Topic | Message Type | Description |
+| :--- | :--- | :--- |
+| `/aic_controller/controller_state` | `aic_control_interfaces/msg/ControllerState` | Data on current TCP pose and velocity, reference TCP pose, TCP tracking error and reference joint efforts. |
+
 ### Outputs
 
 The Insertion Policy controls the robot by publishing to the following topics.
@@ -56,7 +64,7 @@ The Insertion Policy controls the robot by publishing to the following topics.
 
 > **Note:** The model can command the robot using either joint configurations (via `/aic_controller/joint_commands`) or Cartesian poses (via `/aic_controller/pose_commands`). Publishing references to both topics simultaneously is discouraged to avoid control conflicts.
 
-> **Note:** You must set the active target mode via the `/aic_controller/change_target_mode` ROS 2 service before the controller will accept commands of that type. For example, to publish joint targets via `/aic_controller/joint_commands`, first call the service to switch the controller to joint mode.
+> **Note:** The controller operates in mutually exclusive modes. For example, if the controller is in `Cartesian` target mdoe, it will process messages from the `/aic_controller/pose_commands` topic and ignore messages from `/aic_controller/joint_commands`. You must set the active target mode via the `/aic_controller/change_target_mode` service before the controller will accept commands of that type.
 
 ### Controller Configuration
 
