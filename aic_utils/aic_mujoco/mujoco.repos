@@ -1,0 +1,13 @@
+repositories:
+  mujoco_vendor:
+    type: git
+    url: https://github.com/pal-robotics/mujoco_vendor.git
+    version: 0.0.6
+  mujoco_ros2_control:
+    type: git
+    url: https://github.com/moveit/mujoco_ros2_control.git
+    version: c811dcca2039cf6a88af3077e3f3dbbbd9c37a66
+  gazebo/gz-mujoco:
+    type: git
+    url: https://github.com/azeey/gz-mujoco.git
+    version: fix_mesh_uri_handling
