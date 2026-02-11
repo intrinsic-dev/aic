@@ -388,8 +388,13 @@ export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
 # Switch to joint target mode on the controller
 ros2 service call /aic_controller/change_target_mode aic_control_interfaces/srv/ChangeTargetMode '{target_mode: 1}'
 # Send joint target
-ros2 topic pub /aic_controller/joint_commands aic_control_interfaces/msg/JointMotionUpdate '{target_state:
-{positions: [0.0, -1.57, -1.57, -1.57, 1.57, 0] }, target_stiffness: [100.0, 100.0, 100.0, 50.0, 50.0, 50.0], target_damping: [40.0, 40.0, 40.0, 15.0, 15.0, 15.0], trajectory_generation_mode: {mode: 2}, time_to_target_seconds: 1.0 }' --once
+ros2 topic pub --once /aic_controller/joint_commands aic_control_interfaces/msg/JointMotionUpdate "{
+  target_state: {
+    positions: [0.0, -1.57, -1.57, -1.57, 1.57, 0]
+  },
+  target_stiffness: [85.0, 85.0, 85.0, 85.0, 85.0, 85.0],
+  target_damping: [75.0, 75.0, 75.0, 75.0, 75.0, 75.0], trajectory_generation_mode: {mode: 2}
+}"
 ```
 
 ---
