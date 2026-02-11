@@ -42,17 +42,17 @@ We use Amazon Elastic Container Registry (ECR) to host team OCI images.
 First authenticate to AWS with the credentials provided in your onboarding email:
 
 ```bash
-aws configure --profile <username>
+aws configure --profile <team_name_slug>
 ```
 This will prompt you to enter your AWS Access Key ID, Secret Access Key, region (use `us-east-1`), and output format (you can use the sensible default by pressing enter).
 
-Set that `AWS_PROFILE` to your username:
+Set that `AWS_PROFILE` to your team name slug:
 
 ```bash
-export AWS_PROFILE=<username>
+export AWS_PROFILE=<team_name_slug>
 ```
 
-For example, if your username is `team123`, you would run:
+For example, if your team name slug is `team123`, you would run:
 
 ```bash
 aws configure --profile team123
