@@ -25,20 +25,19 @@ This is your development workspace where you implement your policy.
 > environment is read-only/stateless, meaning any manual changes made to the 
 > container will not be reflected during the final evaluation.
 
----
 
-### Prerequisite
+## Prerequisite
 * [Docker](#setup-docker)
 * [Nvidia Container Toolkit](#setup-and-configure-nvidia-container-toolkit)
 * [Distrobox](#setup-distrobox)
 * [Pixi](#setup-pixi)
 
-#### Setup Docker
+### Setup Docker
 
 1. Install [Docker Engine](https://docs.docker.com/engine/install/) depending on your Platform.
 2. Make sure to complete [Linux post-installation steps for Docker Engine](https://docs.docker.com/engine/install/linux-postinstall/). This will allow managing Docker as a non-root user.
 
-#### Setup and Configure Nvidia Container Toolkit
+### Setup and Configure Nvidia Container Toolkit
 
 1. Install [Nvidia Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) which will allow Docker Engine to access Nvidia GPU.
 
@@ -48,7 +47,7 @@ This is your development workspace where you implement your policy.
     sudo systemctl restart docker
     ```
 
-#### Setup Distrobox
+### Setup Distrobox
 
 We use [Distrobox](https://distrobox.it/) to tightly integrate aic_eval container to host. It is recommended to install Distrobox with the package manager. Check [supported distros](https://distrobox.it/#installation) to see if your distro already supports distrobox.
 - For Ubuntu you can run following:
@@ -58,7 +57,7 @@ We use [Distrobox](https://distrobox.it/) to tightly integrate aic_eval containe
 
 Refer to [Alternative methods](https://distrobox.it/#alternative-methods) if you are on different distro.
 
-#### Setup pixi
+### Setup pixi
 
 We use [Pixi](https://pixi.prefix.dev/latest/) to manage packages and dependencies including ROS2. 
 - For Ubuntu you can run following:
@@ -68,9 +67,8 @@ We use [Pixi](https://pixi.prefix.dev/latest/) to manage packages and dependenci
     ```
 Refer to [Alternative Installation Methods](https://pixi.prefix.dev/latest/installation/#alternative-installation-methods) if you are on different OS.
 
----
 
-### Quick Start
+## Quick Start
 
 1. **Start the evaluation container with distrobox:**
    ```bash
@@ -122,11 +120,13 @@ Refer to [Alternative Installation Methods](https://pixi.prefix.dev/latest/insta
 > - Learn where results are saved and how to monitor progress in [Monitoring and Results](#monitoring-and-results).
 
 
-Next step is to check out how you can [prepare your policy for submission](./submission.md).
+Next step: Check out how you can [prepare your policy for submission](./submission.md).
 
----
 
-## Advanced Topics
+## Explore Environment
+
+
+## Development
 
 ### Building Locally on Ubuntu 24.04
 
@@ -217,7 +217,7 @@ ros2 run aic_model aic_model --ros-args -p policy:=aic_example_policies.ros.Wave
 
 Replace `aic_example_policies.ros.WaveArm` with your policy implementation.
 
-#### Training Mode
+### Training Mode
 
 For training, you can launch the simulation with custom configurations. Here's a complete example with all available task board parameters:
 
@@ -262,7 +262,7 @@ The complete world state is automatically saved to `/tmp/aic.sdf`, which can be 
 
 For the full list of configurable parameters, see the [aic_bringup README](../aic_bringup/README.md).
 
-#### Manual Task Submission
+### Manual Task Submission
 
 For testing, you can manually submit tasks:
 
@@ -271,7 +271,7 @@ cd ~/ws_aic/src/aic/aic_model/test
 ./create_and_cancel_task.py
 ```
 
-#### Monitoring and Results
+### Monitoring and Results
 
 - Watch the Gazebo window for robot movement
 - Check terminal output for task progress and scoring information
@@ -279,11 +279,11 @@ cd ~/ws_aic/src/aic/aic_model/test
 
 ---
 
-### Testing Your Policy
+## Testing Your Policy
 
 After setting up your environment, you can test your policy implementation:
 
-#### 1. Start the Evaluation Environment
+### 1. Start the Evaluation Environment
 
 **Terminal 1 - Start Zenoh Router:**
 ```bash
@@ -300,7 +300,7 @@ export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
 ros2 launch aic_bringup aic_gz_bringup.launch.py ground_truth:=false start_aic_engine:=true
 ```
 
-#### 2. Run Your Policy
+### 2. Run Your Policy
 
 **Terminal 3 - Start Your aic_model:**
 ```bash
@@ -329,7 +329,7 @@ cd ~/ws_aic/src/aic/aic_model/test
 ```
 
 
-#### 3. Monitor Progress
+### 3. Monitor Progress
 
 - Watch the Gazebo window for robot movement
 - Check terminal output for task progress and scoring information
