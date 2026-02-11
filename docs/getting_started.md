@@ -90,13 +90,13 @@ Refer to [Alternative Installation Methods](https://pixi.prefix.dev/latest/insta
 
    <!-- TODO: Update instruction to disable ACL after https://github.com/intrinsic-dev/aic/pull/190 or https://github.com/intrinsic-dev/aic/pull/171 is merged. -->
 
-   > [!Note]
-   > If your docker pull fails, you would need to [login to ghcr.io](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-with-a-personal-access-token-classic).
+> [!Note]
+> If your docker pull fails, you would need to [login to ghcr.io](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-with-a-personal-access-token-classic).
 
    <!-- TODO: Shouldn't need to login after we make it public -->
 
-   > [!Tip]
-   > Prefer building locally? See [Building Locally on Ubuntu 24.04](#building-locally-on-ubuntu-2404) for native installation instructions.
+> [!Tip]
+> Prefer building locally? See [Building Locally on Ubuntu 24.04](#building-locally-on-ubuntu-2404) for native installation instructions.
 
 2. **Set up pixi workspace:**
    ```bash
@@ -117,9 +117,9 @@ Refer to [Alternative Installation Methods](https://pixi.prefix.dev/latest/insta
 
    Now the arm should be waving to you. If that's not the case checkout [Toubleshooting](./troubleshooting.md) section. 
 
-   > [!Tip]
-   > - Want to customize your training environment? See [Training Mode](#training-mode) to learn how to configure task board layouts and cable positions.
-   > - Learn where results are saved and how to monitor progress in [Monitoring and Results](#monitoring-and-results).
+> [!Tip]
+> - Want to customize your training environment? See [Training Mode](#training-mode) to learn how to configure task board layouts and cable positions.
+> - Learn where results are saved and how to monitor progress in [Monitoring and Results](#monitoring-and-results).
 
 
 Next step is to check out how you can [prepare your policy for submission](./submission.md).
