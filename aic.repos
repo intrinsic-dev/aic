@@ -148,3 +148,19 @@ repositories:
     type: git
     url: https://github.com/gazebosim/sdformat
     version: 940be3dcf9e9a0a43ded60703985fa7ebed40980
+  ros-control/control_toolbox:
+    type: git
+    url: https://github.com/ros-controls/control_toolbox.git
+    version: 5.8.3
+  ros-control/kinematics_interface:
+    type: git
+    url: https://github.com/ros-controls/kinematics_interface.git
+    version: 2.4.0
+  ros-control/ros2_controllers:
+    type: git
+    url: https://github.com/ros-controls/ros2_controllers.git
+  ros-control/ros2_control:
+    type: git
+    url: https://github.com/ros-controls/ros2_control.git
+    version: 5.11.3
+    version: 5.12.0
