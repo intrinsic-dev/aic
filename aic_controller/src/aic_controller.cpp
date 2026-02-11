@@ -1699,7 +1699,8 @@ void Controller::interpolate_impedance_parameters() {
     impedance_params_.feedforward_wrench.tail<3>() =
         current_tool_state_.pose.rotation() * total_wrench_at_tip.tail<3>();
 
-    // Update offset wrench by transforming it to the gripper frame
+    // Update offset wrench by transforming it from the global frame to the
+    // TCP frame
     impedance_params_.offset_wrench =
         Eigen::Map<const Eigen::Matrix<double, 6, 1>>(
             params_.impedance.default_values.offset_wrench.data());
