@@ -20,7 +20,12 @@ This is your development workspace where you implement your policy.
 - Test locally against the evaluation container
 - Build and submit your container image for official evaluation
 
-<hr>
+> [!WARNING]
+> Exploration of the aic_eval container logic is welcome. However, the evaluation 
+> environment is read-only/stateless, meaning any manual changes made to the 
+> container will not be reflected during the final evaluation.
+
+---
 
 ### Prerequisite
 * [Docker](#setup-docker)
@@ -61,15 +66,15 @@ We use [Pixi](https://pixi.prefix.dev/latest/) to manage packages and dependenci
     curl -fsSL https://pixi.sh/install.sh | sh
     # Restart the terminal
     ```
-Refere to [Alternative Installation Methods](https://pixi.prefix.dev/latest/installation/#alternative-installation-methods) if you are on different OS.
+Refer to [Alternative Installation Methods](https://pixi.prefix.dev/latest/installation/#alternative-installation-methods) if you are on different OS.
 
-<hr>
+---
 
 ### Quick Start
 
-1. **Start the evaluation container:**
+1. **Start the evaluation container with distrobox:**
    ```bash
-   # Set up Docker container manager
+   # Indicate distrobox to use Docker as container manager
    export DBX_CONTAINER_MANAGER=docker
 
    # Create and enter the eval container
@@ -78,13 +83,15 @@ Refere to [Alternative Installation Methods](https://pixi.prefix.dev/latest/inst
    distrobox enter -r aic_eval
 
    # Inside the container, start the environment
-   /entrypoint.sh
+   /entrypoint.sh start_aic_engine:=true
    ```
+
+   The ```entrypoint.sh``` script runs a Zenoh router and ```aic_gz_bringup.launch.py``` launch file. If everything launched successfully you should see Gazebo and RVIZ window showcasing a workcell with Universal Robots UR5e manipulator and a task board. Check out [Scene Description](./scene_description.md) for more details.
 
    <!-- TODO: Update instruction to disable ACL after https://github.com/intrinsic-dev/aic/pull/190 or https://github.com/intrinsic-dev/aic/pull/171 is merged. -->
 
    > [!Note]
-   > You may need to [login to ghcr.io](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-with-a-personal-access-token-classic).
+   > If your docker pull fails, you would need to [login to ghcr.io](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-with-a-personal-access-token-classic).
 
    <!-- TODO: Shouldn't need to login after we make it public -->
 
@@ -108,37 +115,14 @@ Refere to [Alternative Installation Methods](https://pixi.prefix.dev/latest/inst
    pixi run ros2 run aic_model aic_model --ros-args -p policy:=aic_example_policies.ros.WaveArm
    ```
 
+   Now the arm should be waving to you. If that's not the case checkout [Toubleshooting](./troubleshooting.md) section. 
+
    > [!Tip]
    > - Want to customize your training environment? See [Training Mode](#training-mode) to learn how to configure task board layouts and cable positions.
    > - Learn where results are saved and how to monitor progress in [Monitoring and Results](#monitoring-and-results).
 
----
 
-## Next Steps
-
-Now that you have your environment set up:
-
-1. **📚 Read the Documentation**
-   - [Qualification Phase](./phases.md#qualification-phase-train-your-model) - Implementation workflow and [technical details](./qualification_phase.md) of trials and scoring
-   - [Challenge Rules](./challenge_rules.md) - Ensure your policy complies with all requirements
-   - [Policy Integration Guide](./policy.md) - Learn how to implement your policy
-
-2. **💻 Start Developing**
-   - Explore `aic_example_policies/` for reference implementations
-   - Review [AIC Interfaces](./aic_interfaces.md) to understand available sensors and actuators
-   - Consult [AIC Controller](./aic_controller.md) to learn about motion commands
-   - Follow the [Creating a new policy node tutorial](./policy_tutorial.md) to learn how to create your own policy node.
-
-3. **🧪 Test and Iterate**
-   - Use the example configurations in `aic_engine/config/` to test different scenarios
-   - Monitor your policy's behavior with ground truth data during development
-   - Refer to [Participant Utilities](./participant_utilities.md) for a list of helpful tools
-   - Refer to [Troubleshooting](./troubleshooting.md) if you encounter issues
-
-4. **📦 Prepare for Submission**
-   - Package your solution following [Submission Guidelines](./submission.md)
-   - Test your container before submitting
-   - Submit through the official portal
+Next step is to check out how you can [prepare your policy for submission](./submission.md).
 
 ---
 
