@@ -753,7 +753,7 @@
         /// Implicitly puts large messages into shared memory for transports with SHM-compatible connection.
         enabled: true,
         /// SHM memory size in bytes used for transport optimization (default `48 * 1024 * 1024`).
-        pool_size: 50331648,
+        pool_size: 536870912,
         /// Allow optimization for messages equal or larger than this threshold in bytes (default `3072`).
         message_size_threshold: 512,
       },

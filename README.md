@@ -151,6 +151,10 @@ Manages trial execution, validates participant models, and collects scoring data
 * **[Task Board Description](./docs/task_board_description.md):** Physical layout and specifications of the task board.
 * **[Troubleshooting](./docs/troubleshooting.md):** Common issues and debugging strategies.
 
+### Reference Materials
+
+* **[Glossary](./docs/glossary.md):** Terminology and definitions used throughout the AI for Industry Challenge
+
 ### Submission
 
 * **[Submission Guidelines](./docs/submission.md):** How to package and submit your final model.

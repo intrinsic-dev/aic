@@ -258,6 +258,10 @@ namespace aic_scoring
     /// \return Scoring for the off limit contacts category
     private: Tier2Score::CategoryScore GetContactsScore() const;
 
+    /// \brief Wait for the cable and gripper TFs to be received.
+    /// \return True if the transform were received, false if timeout occurred.
+    private: bool WaitForTfs();
+
     /// \brief Pointer to a node.
     private: rclcpp::Node *node;
 

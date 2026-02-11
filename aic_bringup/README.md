@@ -20,7 +20,7 @@
 ```bash
 source ~/ws_aic/install/setup.bash
 export RMW_IMPLEMENTATION=rmw_zenoh_cpp
-export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
+export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true;transport/shared_memory/transport_optimization/pool_size=536870912'
 
 ros2 launch aic_bringup aic_gz_bringup.launch.py
 ```
@@ -129,6 +129,7 @@ ros2 launch aic_bringup aic_gz_bringup.launch.py [parameters]
 
 **AIC Engine:**
 - `start_aic_engine` (default: `"false"`) - Start the `aic_engine` orchestrator node for evaluation.
+- `shutdown_on_aic_engine_exit` (default: `"false"`) - Shutdown the entire launch file when `aic_engine` exits, propagating its exit code. Only takes effect when `start_aic_engine` is `true`. Useful for automated evaluation where the container should exit after trial completion.
 - `aic_engine_config_file` (default: `"aic_engine/config/sample_config.yaml"`) - Absolute path to YAML file with the AIC engine configuration.
 
 ---

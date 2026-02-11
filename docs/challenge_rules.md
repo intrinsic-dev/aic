@@ -2,7 +2,7 @@
 
 ## aic_model
 - The submission container must start a process with a ROS 2 Lifecycle node with name `aic_model`.
-- The `aic_model` node must exhibit the following behavior
+- The `aic_model` node must exhibit the following behavior:
   - Start in `unconfigured` lifecycle state.
 	  - In `unconfigured` state, no topics should be published by node, especially to command the robot.
 	- A transition to `configured` state must succeed within a timeout of 60s. Loading of any models should occur within this window.

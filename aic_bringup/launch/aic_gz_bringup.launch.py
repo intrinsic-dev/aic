@@ -23,6 +23,7 @@ from launch.actions import (
     OpaqueFunction,
     RegisterEventHandler,
     SetEnvironmentVariable,
+    Shutdown,
 )
 from launch.conditions import IfCondition, UnlessCondition
 from launch.event_handlers import OnProcessExit
@@ -82,6 +83,7 @@ def launch_setup(context, *args, **kwargs):
     cable_type = LaunchConfiguration("cable_type")
     ground_truth = LaunchConfiguration("ground_truth")
     start_aic_engine = LaunchConfiguration("start_aic_engine")
+    shutdown_on_aic_engine_exit = LaunchConfiguration("shutdown_on_aic_engine_exit")
     aic_engine_config_file = LaunchConfiguration("aic_engine_config_file")
 
     gripper_initial_pos = "0.00655"
@@ -246,6 +248,29 @@ def launch_setup(context, *args, **kwargs):
         condition=IfCondition(start_aic_engine),
     )
 
+    # Event handler to shutdown launch file when aic_engine exits
+    shutdown_on_aic_engine_exit_handler = RegisterEventHandler(
+        OnProcessExit(
+            target_action=aic_engine,
+            on_exit=[
+                Shutdown(
+                    reason="aic_engine exited",
+                )
+            ],
+        ),
+        condition=IfCondition(
+            PythonExpression(
+                [
+                    "'",
+                    start_aic_engine,
+                    "' == 'true' and '",
+                    shutdown_on_aic_engine_exit,
+                    "' == 'true'",
+                ]
+            )
+        ),
+    )
+
     # Task board spawning (conditional)
     spawn_task_board = LaunchConfiguration("spawn_task_board")
     task_board_description_file = LaunchConfiguration("task_board_description_file")
@@ -398,6 +423,7 @@ def launch_setup(context, *args, **kwargs):
         ground_truth_tf_static_relay,
         ground_truth_static_tf_publisher,
         aic_engine,
+        shutdown_on_aic_engine_exit_handler,
     ]
 
     return nodes_to_start
@@ -715,6 +741,14 @@ def generate_launch_description():
             "start_aic_engine",
             default_value="false",
             description="Whether to start the AIC engine.",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "shutdown_on_aic_engine_exit",
+            default_value="false",
+            description="Whether to shutdown the launch file when aic_engine exits. "
+            "Only takes effect when start_aic_engine is true.",
         )
     )
     declared_arguments.append(

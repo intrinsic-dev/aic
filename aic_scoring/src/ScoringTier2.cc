@@ -78,22 +78,25 @@ bool ScoringTier2::StartRecording(const std::string &_filename,
                                   const std::chrono::seconds &_max_task_time) {
   this->Reset(_max_task_time);
   this->ResetConnections(_connections);
-  std::lock_guard<std::mutex> lock(this->mutex);
-  if (this->state != State::Idle) {
-    RCLCPP_ERROR(this->node->get_logger(), "Scoring system is busy.");
-    return false;
-  }
+  {
+    std::lock_guard<std::mutex> lock(this->mutex);
+    if (this->state != State::Idle) {
+      RCLCPP_ERROR(this->node->get_logger(), "Scoring system is busy.");
+      return false;
+    }
 
-  try {
-    rosbag2_storage::StorageOptions storage_options;
-    storage_options.uri = _filename;
-    this->bagWriter.open(storage_options);
-  } catch (const std::exception &e) {
-    RCLCPP_ERROR(this->node->get_logger(), "Failed to open bag: %s", e.what());
-    return false;
+    try {
+      rosbag2_storage::StorageOptions storage_options;
+      storage_options.uri = _filename;
+      this->bagWriter.open(storage_options);
+    } catch (const std::exception &e) {
+      RCLCPP_ERROR(this->node->get_logger(), "Failed to open bag: %s",
+                   e.what());
+      return false;
+    }
+    this->state = State::Recording;
+    this->bagUri = _filename;
   }
-  this->state = State::Recording;
-  this->bagUri = _filename;
 
   // Subscribe to all topics relevant for scoring.
   for (const auto &topic : this->topics) {
@@ -123,27 +126,32 @@ bool ScoringTier2::StartRecording(const std::string &_filename,
     this->subscriptions.push_back(sub);
   }
 
-  return true;
+  return this->WaitForTfs();
 }
 
 //////////////////////////////////////////////////
-bool ScoringTier2::StopRecording() {
-  // Make sure we received one extra cable tf or finding the transform at the
-  // end of the task might require extrapolation into the future which tf2
-  // doesn't support.
+bool ScoringTier2::WaitForTfs() {
   this->cableTfReceived = false;
   this->gripperTfReceived = false;
   // Simple spinlock to avoid locking, condition variables etc. for a fairly
   // straightforward wait.
   const auto start = this->node->get_clock()->now();
   const auto timeout = std::chrono::seconds(10);
-  while (!this->cableTfReceived && !this->gripperTfReceived &&
+  while ((!this->cableTfReceived || !this->gripperTfReceived) &&
          this->node->get_clock()->now() - start < timeout) {
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
   }
-  if (!this->cableTfReceived) {
+  if (!this->cableTfReceived || !this->gripperTfReceived) {
     RCLCPP_ERROR(this->node->get_logger(),
-                 "Cable transform not received at the end of the recording.");
+                 "Timeout while waiting for transforms for scoring.");
+    return false;
+  }
+  return true;
+}
+
+//////////////////////////////////////////////////
+bool ScoringTier2::StopRecording() {
+  if (!this->WaitForTfs()) {
     return false;
   }
   std::lock_guard<std::mutex> lock(this->mutex);
@@ -431,10 +439,8 @@ std::optional<double> ScoringTier2::GetPlugPortDistance(
     return std::nullopt;
   }
   // For now we only calculate the distance for the first connection
-  const auto plug_tf_opt =
-      this->GetTransform(t, "aic_world", this->connections[0].plugName);
-  const auto port_tf_opt =
-      this->GetTransform(t, "aic_world", this->connections[0].portName);
+  const auto plug_tf_opt = this->GetTransform(t, this->connections[0].plugName);
+  const auto port_tf_opt = this->GetTransform(t, this->connections[0].portName);
   if (!plug_tf_opt.has_value() || !port_tf_opt.has_value()) {
     return std::nullopt;
   }
@@ -669,7 +675,7 @@ std::optional<ScoringTier2::TransformStampedMsg> ScoringTier2::EndEffectorPose(
                  "Unable to compute end effector pose, gripper frame not set");
     return std::nullopt;
   }
-  return this->GetTransform(t, "aic_world", this->gripperFrame);
+  return this->GetTransform(t, this->gripperFrame);
 }
 
 //////////////////////////////////////////////////
