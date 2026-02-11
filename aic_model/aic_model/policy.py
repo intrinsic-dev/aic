@@ -34,10 +34,10 @@ class SetPoseTargetCallback(Protocol):
 SendFeedbackCallback = Callable[[str], None]
 
 
-class PolicyRos(ABC):
+class Policy(ABC):
     def __init__(self, parent_node):
         self._parent_node = parent_node
-        self.get_logger().info("PolicyRos.__init__()")
+        self.get_logger().info("Policy.__init__()")
 
     def get_logger(self):
         return self._parent_node.get_logger()
