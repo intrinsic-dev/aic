@@ -117,8 +117,7 @@ Refer to [Alternative Installation Methods](https://pixi.prefix.dev/latest/insta
    pixi run ros2 run aic_model aic_model --ros-args -p policy:=aic_example_policies.ros.WaveArm
    ```
 
-   After running the aic_model node, in the Gazebo window a cable attached to gripper and task board 
-   will be spawned by AIC engine. In the eval container terminal you can see 3 successive trials with correspoinding scores. Refer [Scoring](./scoring.md) for more detail.
+   Once the aic_model node starts, the AIC engine spawns a task board and a gripper-attached cable within the Gazebo window. The eval container terminal will then track three successive trials and display their scores.Refer [Scoring](./scoring.md) for more detail.
 
    After executing the sample policy, the arm should be waving to you. In the terminal If that's not the case checkout [Toubleshooting](./troubleshooting.md) section. 
 
