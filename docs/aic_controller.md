@@ -61,8 +61,8 @@ $$
 
 The `aic_controller` accepts commands via two ROS2 Topics. For detailed message definitions, refer to [Controller Target Parameters](#controller-target-parameters).
 
-- **Cartesian Targets** (`MotionUpdate`): `/aic_controller/joint_commands`
-- **Joint Targets** (`JointMotionUpdate`): `/aic_controller/pose_commands`
+- **Cartesian Targets** (`MotionUpdate`): `/aic_controller/pose_commands`
+- **Joint Targets** (`JointMotionUpdate`): `/aic_controller/joint_commands`
 
 #### Switching between joint and Cartesian target modes
 
