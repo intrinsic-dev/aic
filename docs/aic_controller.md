@@ -225,4 +225,5 @@ ros2 topic pub --once /aic_controller/joint_commands aic_control_interfaces/msg/
 ## Controller Configuration Parameters
 
 The `aic_controller` uses the ROS 2 parameter interface to define constants used in target clamping, interpolation and impedance control. These are defined within [aic_controller_parameters.yaml](../aic_controller/src/aic_controller_parameters.yaml) along with their descriptions and expected data types.
-The configuration is fixed during the eval stage and all participants will use the same controller settings.
+
+> **Note:** The configuration is fixed during the eval stage and all participants will use the same controller settings.
