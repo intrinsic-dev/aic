@@ -59,7 +59,7 @@ $$
 
 #### Command Interfaces
 
-The `aic_controller` accepts commands via two ROS2 Topics. For detailed message definitions, refer to [Controller Target Parameters](#Controller-Target-Parameters).
+The `aic_controller` accepts commands via two ROS2 Topics. For detailed message definitions, refer to [Controller Target Parameters](#controller-target-parameters).
 
 - **Joint Targets**: `/aic_controller/joint_commands`
 - **Cartesian Targets**: `/aic_controller/pose_commands`
