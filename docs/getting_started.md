@@ -113,18 +113,13 @@ Refer to [Alternative Installation Methods](https://pixi.prefix.dev/latest/insta
 
    After executing the sample policy, the arm should be waving to you. In the terminal If that's not the case checkout [Toubleshooting](./troubleshooting.md) section. 
 
-> [!Tip]
-> - Want to customize your training environment? See [Training Mode](#training-mode) to learn how to configure task board layouts and cable positions.
-> - Learn where results are saved and how to monitor progress in [Monitoring and Results](#monitoring-and-results).
-
-
 
 ## Next Steps
 
 Now that you have your environment set up:
 
 1. **💻 Start Developing**
-   - See [Explore Environment](./explore_environment.md) to understand available arguments and configurations.
+   - See [Explore Environment](./explore_environment.md) to understand how to customize training environment.
    - Checkout `aic_example_policies/` for reference implementations
    - Review [AIC Interfaces](./aic_interfaces.md) to understand available sensors and actuators
    - Consult [AIC Controller](./aic_controller.md) to learn about motion commands
