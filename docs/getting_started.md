@@ -84,9 +84,15 @@ Refer to [Alternative Installation Methods](https://pixi.prefix.dev/latest/insta
    /entrypoint.sh start_aic_engine:=true ground_truth:=false
    ```
 
-   The ```entrypoint.sh``` script runs a Zenoh router and ```aic_gz_bringup.launch.py``` launch file. If everything launched successfully you should see Gazebo and RVIZ window showcasing a workcell with Universal Robots UR5e manipulator, cable and a task board. Check out [Scene Description](./scene_description.md) for more details.
+   The ```entrypoint.sh``` script runs a Zenoh router and ```aic_gz_bringup.launch.py``` launch file. If everything launched successfully you should see Gazebo and RVIZ window showcasing a workcell with Universal Robots UR5e manipulator. In the terminal you should see that AIC engine is initialized and waiting for aic_model node. Check out [Scene Description](./scene_description.md) for more details.
 
    <!-- TODO: Update instruction to disable ACL after https://github.com/intrinsic-dev/aic/pull/190 or https://github.com/intrinsic-dev/aic/pull/171 is merged. -->
+
+> [!TIP]
+> If you have Nvidia GPU on you system, create distrobox container with it for optimal performance:
+> ```bash
+> distrobox create -r --nvidia -i ghcr.io/intrinsic-dev/aic/aic_eval:latest aic_eval
+> ```
 
 > [!Note]
 > If your docker pull fails, you would need to [login to ghcr.io](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-with-a-personal-access-token-classic).
@@ -102,7 +108,7 @@ Refer to [Alternative Installation Methods](https://pixi.prefix.dev/latest/insta
    git clone https://github.com/intrinsic-dev/aic
 
    # Install and build dependencies
-   cd ~/ws_aic/src/arc
+   cd ~/ws_aic/src/aic
    pixi install
    ```
 
@@ -110,6 +116,9 @@ Refer to [Alternative Installation Methods](https://pixi.prefix.dev/latest/insta
    ```bash
    pixi run ros2 run aic_model aic_model --ros-args -p policy:=aic_example_policies.ros.WaveArm
    ```
+
+   After running the aic_model node, in the Gazebo window a cable attached to gripper and task board 
+   will be spawned by AIC engine. In the eval container terminal you can see 3 successive trials with correspoinding scores. Refer [Scoring](./scoring.md) for more detail.
 
    After executing the sample policy, the arm should be waving to you. In the terminal If that's not the case checkout [Toubleshooting](./troubleshooting.md) section. 
 
