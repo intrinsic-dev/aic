@@ -18,8 +18,8 @@
 import numpy as np
 import time
 
-from aic_model.policy_ros import (
-    PolicyRos,
+from aic_model.policy import (
+    Policy,
     GetObservationCallback,
     SetPoseTargetCallback,
     SendFeedbackCallback,
@@ -35,7 +35,7 @@ from transforms3d._gohlketransforms import quaternion_multiply, quaternion_slerp
 QuaternionTuple = tuple[float, float, float, float]
 
 
-class CheatCode(PolicyRos):
+class CheatCode(Policy):
     def __init__(self, parent_node):
         self._tip_x_error_integrator = 0.0
         self._tip_y_error_integrator = 0.0
