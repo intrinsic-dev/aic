@@ -20,6 +20,8 @@ This is your development workspace where you implement your policy.
 - Test locally against the evaluation container
 - Build and submit your container image for official evaluation
 
+![AIC Competition Components](../../media/aic_competition_components.png)
+
 > [!WARNING]
 > Exploration of the aic_eval container logic is welcome. However, the evaluation 
 > environment is read-only/stateless, meaning any manual changes made to the 
