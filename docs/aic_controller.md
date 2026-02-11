@@ -68,7 +68,7 @@ The `aic_controller` accepts commands via two ROS2 Topics. For detailed message 
 
 To switch between joint and Cartesian control, a ROS2 service request is sent to the service `/aic_controller/change_target_mode`.
 
-> **Note:** The controller operates in mutually exclusive modes. For example, if the controller is in `Cartesian` target mdoe, it will process messages from the `/aic_controller/pose_commands` topic and ignore messages from ``/aic_controller/joint_commands`. You must set the active target mode via the `/aic_controller/change_target_mode` service before the controller will accept commands of that type. See [Controller Configuration](../docs/aic_interfaces.md#Controller-Configuration) for more details.
+> **Note:** The controller operates in mutually exclusive modes. For example, if the controller is in `Cartesian` target mdoe, it will process messages from the `/aic_controller/pose_commands` topic and ignore messages from `/aic_controller/joint_commands`. You must set the active target mode via the `/aic_controller/change_target_mode` service before the controller will accept commands of that type. See [Controller Configuration](../docs/aic_interfaces.md#Controller-Configuration) for more details.
 
 #### State feedback
 
