@@ -81,7 +81,7 @@ Refer to [Alternative Installation Methods](https://pixi.prefix.dev/latest/insta
    distrobox enter -r aic_eval
 
    # Inside the container, start the environment
-   /entrypoint.sh start_aic_engine:=true ground_truth:=false
+   /entrypoint.sh ground_truth:=false start_aic_engine:=true 
    ```
 
    The ```entrypoint.sh``` script runs a Zenoh router and ```aic_gz_bringup.launch.py``` launch file. If everything launched successfully you should see Gazebo and RVIZ window showcasing a workcell with Universal Robots UR5e manipulator. In the terminal you should see that AIC engine is initialized and waiting for aic_model node. Check out [Scene Description](./scene_description.md) for more details.
@@ -117,7 +117,7 @@ Refer to [Alternative Installation Methods](https://pixi.prefix.dev/latest/insta
    pixi run ros2 run aic_model aic_model --ros-args -p policy:=aic_example_policies.ros.WaveArm
    ```
 
-   Once the aic_model node starts, the AIC engine spawns a task board and a gripper-attached cable within the Gazebo window. The eval container terminal will then track three successive trials and display their scores.Refer [Scoring](./scoring.md) for more detail.
+   Once the aic_model node starts, the AIC engine spawns a task board and a gripper-attached cable within the Gazebo window. The eval container terminal will then track three successive trials and display their scores. Refer [Scoring](./scoring.md) for more detail.
 
    After executing the sample policy, the arm should be waving to you. In the terminal If that's not the case checkout [Toubleshooting](./troubleshooting.md) section. 
 

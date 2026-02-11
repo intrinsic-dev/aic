@@ -1,14 +1,18 @@
 # Explore Environment
 
-> [!Tip]
-> Prefer building locally? See [Building Locally on Ubuntu 24.04](#building-locally-on-ubuntu-2404) for native installation instructions.
 
-## Training Mode
+Let's explore the environment with eval container and pixi workspace. You will look into how to
+run simulation with different configuration, manually submit the task, monitor and see results. 
+
+> [!Tip]
+> Prefer working locally? See [Building Locally on Ubuntu 24.04](#building-locally-on-ubuntu-2404) for native installation instructions.
+
+### 1. Training Mode
 
 For training, you can launch the simulation with custom configurations. Here's a complete example with all available task board parameters:
 
 ```bash
-ros2 launch aic_bringup aic_gz_bringup.launch.py \
+pixi run ros2 launch aic_bringup aic_gz_bringup.launch.py \
     spawn_task_board:=true \
     task_board_x:=0.3 task_board_y:=-0.1 task_board_z:=1.2 \
     task_board_roll:=0.0 task_board_pitch:=0.0 task_board_yaw:=0.785 \
@@ -48,90 +52,30 @@ The complete world state is automatically saved to `/tmp/aic.sdf`, which can be 
 
 For the full list of configurable parameters, see the [aic_bringup README](../aic_bringup/README.md).
 
-### Manual Task Submission
+### 2. Manual Task Submission
 
-For testing, you can manually submit tasks:
+For testing, you can manually submit the task. Make sure the eval container is running.
 
 ```bash
 cd ~/ws_aic/src/aic/aic_model/test
-./create_and_cancel_task.py
+pixi run ./create_and_cancel_task.py
 ```
 
-### Monitoring and Results
+### 3. Monitoring and Results
 
 - Watch the Gazebo window for robot movement
 - Check terminal output for task progress and scoring information
 - Results are saved to `$HOME/aic_results/` (or `$AIC_RESULTS_DIR` if set)
 
----
-
-## Testing Your Policy
-
-After setting up your environment, you can test your policy implementation:
-
-### 1. Start the Evaluation Environment
-
-**Terminal 1 - Start Zenoh Router:**
-```bash
-source ~/ws_aic/install/setup.bash
-export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
-ros2 run rmw_zenoh_cpp rmw_zenohd
-```
-
-**Terminal 2 - Launch Evaluation Environment:**
-```bash
-source ~/ws_aic/install/setup.bash
-export RMW_IMPLEMENTATION=rmw_zenoh_cpp
-export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
-ros2 launch aic_bringup aic_gz_bringup.launch.py ground_truth:=false start_aic_engine:=true
-```
-
-### 2. Run Your Policy
-
-**Terminal 3 - Start Your aic_model:**
-```bash
-source ~/ws_aic/install/setup.bash
-export RMW_IMPLEMENTATION=rmw_zenoh_cpp
-export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
-ros2 run aic_model aic_model --ros-args -p policy:=aic_example_policies.ros.WaveArm
-```
-
-Or rely on 🐍 Pixi
-
-```bash
-pixi run ros2 run aic_model aic_model --ros-args -p policy:=aic_example_policies.ros.WaveArm
-```
-
-Replace `aic_example_policies.ros.WaveArm` with your policy implementation.
-
-To manually submit a task,
-
-```bash
-source ~/ws_aic/install/setup.bash
-export RMW_IMPLEMENTATION=rmw_zenoh_cpp
-export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
-cd ~/ws_aic/src/aic/aic_model/test
-./create_and_cancel_task.py
-```
-
-
-### 3. Monitor Progress
-
-- Watch the Gazebo window for robot movement
-- Check terminal output for task progress and scoring information
-- Results will be saved to `$HOME/aic_results/` (or `$AIC_RESULTS_DIR` if set)
-
----
-
 
 ## Building Locally on Ubuntu 24.04
 
-For users who prefer native development without containers, you can build and run everything locally on Ubuntu 24.04 (Noble Numbat) 
+For users who prefer native development without containers, you can build and run everything locally on Ubuntu.
 
 > [!NOTE]
 > **Prerequisites**
-> | Dependency | Name |
-> | ---------- | ---- |
+> | Dependency | Release / Distro |
+> | ---------- | ------- |
 > | Operating System | [Ubuntu 24.04 (Noble Numbat)](https://releases.ubuntu.com/noble/) |
 > | ROS 2 | [ROS 2 Kilted Kaiju](https://docs.ros.org/en/kilted/Installation/Ubuntu-Install-Debs.html) |
 
@@ -215,6 +159,63 @@ For users who prefer native development without containers, you can build and ru
     ```
 
     Replace `aic_example_policies.ros.WaveArm` with your policy implementation.
+
+
+### Testing Your Policy
+
+After setting up your environment, you can test your policy implementation:
+
+1. **Start the Evaluation Environment**
+
+**Terminal 1 - Start Zenoh Router:**
+```bash
+source ~/ws_aic/install/setup.bash
+export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
+ros2 run rmw_zenoh_cpp rmw_zenohd
+```
+
+**Terminal 2 - Launch Evaluation Environment:**
+```bash
+source ~/ws_aic/install/setup.bash
+export RMW_IMPLEMENTATION=rmw_zenoh_cpp
+export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
+ros2 launch aic_bringup aic_gz_bringup.launch.py ground_truth:=false start_aic_engine:=true
+```
+
+### 2. Run Your Policy
+
+**Terminal 3 - Start Your aic_model:**
+```bash
+source ~/ws_aic/install/setup.bash
+export RMW_IMPLEMENTATION=rmw_zenoh_cpp
+export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
+ros2 run aic_model aic_model --ros-args -p policy:=aic_example_policies.ros.WaveArm
+```
+
+Or rely on 🐍 Pixi
+
+```bash
+pixi run ros2 run aic_model aic_model --ros-args -p policy:=aic_example_policies.ros.WaveArm
+```
+
+Replace `aic_example_policies.ros.WaveArm` with your policy implementation.
+
+To manually submit a task,
+
+```bash
+source ~/ws_aic/install/setup.bash
+export RMW_IMPLEMENTATION=rmw_zenoh_cpp
+export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
+cd ~/ws_aic/src/aic/aic_model/test
+./create_and_cancel_task.py
+```
+
+
+### 3. Monitor Progress
+
+- Watch the Gazebo window for robot movement
+- Check terminal output for task progress and scoring information
+- Results will be saved to `$HOME/aic_results/` (or `$AIC_RESULTS_DIR` if set)
 
 
 ## Need Help?
