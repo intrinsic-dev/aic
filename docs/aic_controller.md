@@ -17,7 +17,7 @@ The controller subscribes to targets (either Joint or Cartesian) typically publi
 
 2. **Command Interpolation**: The clamped targets are then interpolated to upsample the low-frequency policy commands into smooth high-frequency setpoints.
 
-3. **Impedance Control**: Interpolated setpoints are then processed by either [CartesianImpedanceAction](../aic_controller/include/aic_controller/actions/cartesian_impedance_action.hpp) or [JointImpedanceParameters](../aic_controller/include/aic_controller/actions/joint_impedance_action.hpp) to compute the joint torques of the robot
+3. **Impedance Control**: Interpolated setpoints are then processed by either [CartesianImpedanceAction](../aic_controller/include/aic_controller/actions/cartesian_impedance_action.hpp) or [JointImpedanceAction](../aic_controller/include/aic_controller/actions/joint_impedance_action.hpp) to compute the joint torques of the robot
 
 4. **Gravity Compensation**: An additional torque term is computed using via [GravityCompensationAction](../aic_controller/include/aic_controller/actions/gravity_compensation_action.hpp) to offset compensate for the gravitational forces of the robot links.
 
