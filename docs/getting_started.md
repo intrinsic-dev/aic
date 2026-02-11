@@ -46,22 +46,22 @@ This is your development workspace where you implement your policy.
 #### Setup Distrobox
 
 We use [Distrobox](https://distrobox.it/) to tightly integrate aic_eval container to host. It is recommended to install Distrobox with the package manager. Check [supported distros](https://distrobox.it/#installation) to see if your distro already supports distrobox.
-
-For example, in case of Ubuntu you can run following:
+- For Ubuntu you can run following:
     ```bash
     sudo apt install distrobox
     ```
 
-In case it is not supported, refer to [Alternative methods](https://distrobox.it/#alternative-methods) to install distrobox.
+Refer to [Alternative methods](https://distrobox.it/#alternative-methods) if you are on different distro.
 
 #### Setup pixi
 
-We use [Pixi](https://pixi.prefix.dev/latest/) to manage packages and dependencies. Install it using following:
+We use [Pixi](https://pixi.prefix.dev/latest/) to manage packages and dependencies including ROS2. 
+- For Ubuntu you can run following:
     ```bash
     curl -fsSL https://pixi.sh/install.sh | sh
     # Restart the terminal
     ```
-Also see [Alternative Installation Methods](https://pixi.prefix.dev/latest/installation/#alternative-installation-methods).
+Refere to [Alternative Installation Methods](https://pixi.prefix.dev/latest/installation/#alternative-installation-methods) if you are on different OS.
 
 <hr>
 
