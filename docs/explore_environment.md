@@ -1,11 +1,78 @@
 # Explore Environment
 
 
-Let's explore the environment with eval container and pixi workspace. You will look into how to
-run simulation with different configuration, manually submit the task, monitor and see results. 
+Let's explore the environment with eval container and pixi workspace. You will look into how to 
+teleoperate the arm, run simulation with different configuration, manually submit the task, monitor and see results. 
 
 > [!Tip]
 > Prefer working locally? See [Building Locally on Ubuntu 24.04](#building-locally-on-ubuntu-2404) for native installation instructions.
+
+## Teleoperation
+
+Utilize instructions to run eval container from [Quick Start Guide](./getting_started.md#quick-start-eval-container-with-pixi-workspace) 
+
+1. **Start the evaluation container with distrobox:**
+   ```bash
+   distrobox enter -r aic_eval
+
+   # Inside the container, start the environment
+   /entrypoint.sh ground_truth:=false start_aic_engine:=true 
+   ```
+
+2. **Run teleop node with pixi:**
+   ```bash
+   # Run teleoperation
+   ros2 run aic_teleoperation joint_keyboard_teleop
+   # or
+   ros2 run aic_teleoperation cartesian_keyboard_teleop
+   ```
+
+### 1. Joint Space Teleoperation (`joint_keyboard_teleop`)
+
+Control individual robot joints directly.
+
+**Key Mappings:**
+- `q/a` - Joint 1 (shoulder_pan_joint): +/-
+- `w/s` - Joint 2 (shoulder_lift_joint): +/-
+- `e/d` - Joint 3 (elbow_joint): +/-
+- `r/f` - Joint 4 (wrist_1_joint): +/-
+- `t/g` - Joint 5 (wrist_2_joint): +/-
+- `y/h` - Joint 6 (wrist_3_joint): +/-
+
+**Speed Control:**
+- `k` - Slow mode (0.075 rad/s)
+- `l` - Fast mode (0.2 rad/s)
+
+**Exit:**
+- `ESC` - Quit teleoperation
+
+### 2. Cartesian Space Teleoperation (`cartesian_keyboard_teleop`)
+
+Control end-effector pose (position and orientation).
+
+**Linear Movement:**
+- `a/d` - X axis: -/+
+- `w/s` - Y axis: -/+
+- `r/f` - Z axis: -/+
+
+**Angular Movement:**
+- `Shift + s/w` : -/+ Angular X
+- `Shift + a/d` : -/+ Angular Y
+- `q/e` : -/+ Angular Z
+
+**Speed Control:**
+- `k` - Slow mode (linear: 0.02 m/s, angular: 0.02 rad/s)
+- `l` - Fast mode (linear: 0.1 m/s, angular: 0.1 rad/s)
+
+**Frame Toggle:**
+- `n` - Tool frame (`gripper/tcp`)
+- `m` - Global frame (`base_link`)
+
+**Exit:**
+- `ESC` - Quit teleoperation
+
+
+## Environment Configurations
 
 ### 1. Training Mode
 
