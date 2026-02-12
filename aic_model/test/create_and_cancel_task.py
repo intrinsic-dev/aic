@@ -78,7 +78,7 @@ class CreateAndCancelTaskNode(Node):
         goal_msg.task.cable_type = "sfp_sc"
         goal_msg.task.cable_name = "cable_0"
         goal_msg.task.plug_type = "sfp"
-        goal_msg.task.plug_name = "sfp_plug"
+        goal_msg.task.plug_name = "sfp_tip"
         goal_msg.task.port_type = "sfp"
         goal_msg.task.port_name = "sfp_port_0"
         goal_msg.task.target_module_name = "nic_card_mount_0"
