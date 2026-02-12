@@ -597,8 +597,9 @@ Tier3Score ScoringTier2::ComputeTier3Score() const {
                 << dist_score.message;
       }
     } else {
-      std::cerr << "Error parsing insertion port namespace: "
-                << this->insertionPortNamespace << std::endl;
+      RCLCPP_ERROR(this->node->get_logger(),
+                   "Error parsing insertion port namespace: ",
+                   this->insertionPortNamespace.c_str());
     }
   } else {
     sstream << "Cable insertion failed. " << dist_score.message;
