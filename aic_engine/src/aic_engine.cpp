@@ -598,12 +598,10 @@ EngineState Engine::run() {
           "\033[1;32m✓ Trial '%s' completed successfully! Score: %f\033[0m",
           trial_id.c_str(), trial_score.total_score());
     } else {
-      RCLCPP_ERROR(node_->get_logger(),
-                   "\033[1;31m✗ Trial '%s' failed or was not completed\033[0m",
-                   trial_id.c_str());
-      engine_state_ = EngineState::Error;
-      // TODO(Yadunund): Clean up and write scoring data.
-      break;
+      RCLCPP_WARN(node_->get_logger(),
+                  "\033[1;33m⚠ Trial '%s' failed or was not completed. Score: "
+                  "%f. Continuing to next trial...\033[0m",
+                  trial_id.c_str(), trial_score.total_score());
     }
   }
 
@@ -612,12 +610,26 @@ EngineState Engine::run() {
   this->shutdown_model_node();
   this->score_run(score);
 
+  // Count successful and failed trials
+  size_t successful_trials = 0;
+  size_t failed_trials = 0;
+  for (const auto& trial_entry : trials_) {
+    if (trial_entry.second.state == TrialState::AllTasksCompleted) {
+      successful_trials++;
+    } else {
+      failed_trials++;
+    }
+  }
+
   RCLCPP_INFO(node_->get_logger(), " ");
   if (engine_state_ == EngineState::Running) {
     RCLCPP_INFO(node_->get_logger(),
                 "\033[1;32m╔════════════════════════════════════════╗\033[0m");
     RCLCPP_INFO(node_->get_logger(),
-                "\033[1;32m║   ✓ All Trials Completed!              ║\033[0m");
+                "\033[1;32m║   ✓ All Trials Processed!              ║\033[0m");
+    RCLCPP_INFO(node_->get_logger(),
+                "\033[1;32m║   Successful: %zu  Failed: %zu             ║\033[0m",
+                successful_trials, failed_trials);
     RCLCPP_INFO(node_->get_logger(),
                 "\033[1;32m║   Total Score: %.3f                     ║\033[0m",
                 score.calculate_total_score());
