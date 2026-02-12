@@ -361,12 +361,14 @@ def launch_setup(context, *args, **kwargs):
         container_name="ros_gz_container",
         create_own_container="False",
         use_composition="True",
-        bridge_params=[{
-            "qos_overrides./scoring/tf_static.publisher.durability": "transient_local",
-            "qos_overrides./scoring/tf_static.publisher.reliability": "reliable",
-            "qos_overrides./scoring/tf_static.publisher.history": "keep_last",
-            "qos_overrides./scoring/tf_static.publisher.depth": 1,
-        }],
+        bridge_params=[
+            {
+                "qos_overrides./scoring/tf_static.publisher.durability": "transient_local",
+                "qos_overrides./scoring/tf_static.publisher.reliability": "reliable",
+                "qos_overrides./scoring/tf_static.publisher.history": "keep_last",
+                "qos_overrides./scoring/tf_static.publisher.depth": 1,
+            }
+        ],
     )
 
     ground_truth_tf_relay = Node(
@@ -374,11 +376,13 @@ def launch_setup(context, *args, **kwargs):
         executable="relay",
         name="tf_relay",
         output="screen",
-        parameters=[{
-            "input_topic": "/scoring/tf",
-            "output_topic": "/tf",
-            "lazy": True,
-        }],
+        parameters=[
+            {
+                "input_topic": "/scoring/tf",
+                "output_topic": "/tf",
+                "lazy": True,
+            }
+        ],
         condition=IfCondition(ground_truth),
     )
 
@@ -387,11 +391,13 @@ def launch_setup(context, *args, **kwargs):
         executable="relay",
         name="tf_static_relay",
         output="screen",
-        parameters=[{
-            "input_topic": "/scoring/tf_static",
-            "output_topic": "/tf_static",
-            "lazy": True,
-        }],
+        parameters=[
+            {
+                "input_topic": "/scoring/tf_static",
+                "output_topic": "/tf_static",
+                "lazy": True,
+            }
+        ],
         condition=IfCondition(ground_truth),
     )
 
