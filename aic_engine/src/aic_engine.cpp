@@ -645,6 +645,21 @@ EngineState Engine::run() {
   }
   RCLCPP_INFO(node_->get_logger(), " ");
 
+  // Print full scoring breakdown
+  YAML::Node scoring_yaml = score.serialize();
+  std::stringstream ss;
+  ss << scoring_yaml;
+  RCLCPP_INFO(node_->get_logger(), "\033[1;36m╔════════════════════════════════════════╗\033[0m");
+  RCLCPP_INFO(node_->get_logger(), "\033[1;36m║        Complete Scoring Results        ║\033[0m");
+  RCLCPP_INFO(node_->get_logger(), "\033[1;36m╚════════════════════════════════════════╝\033[0m");
+
+  // Split the YAML output by lines and print each line
+  std::string line;
+  while (std::getline(ss, line)) {
+    RCLCPP_INFO(node_->get_logger(), "\033[1;36m%s\033[0m", line.c_str());
+  }
+  RCLCPP_INFO(node_->get_logger(), " ");
+
   return engine_state_;
 }
 
