@@ -1,86 +1,27 @@
 # Explore Environment
 
 
-Let's explore the environment with eval container and pixi workspace. You will look into how to 
-teleoperate the arm, run simulation with different configuration, manually submit the task, monitor and see results. 
+Let's explore the environment with eval container and pixi workspace. You will look into how to run simulation with different configuration, manually submit the task, monitor and see results. 
 
 > [!Tip]
 > Prefer working locally? See [Building Locally on Ubuntu 24.04](#building-locally-on-ubuntu-2404) for native installation instructions.
 
-## Teleoperation
-
-Utilize instructions to run eval container from [Quick Start Guide](./getting_started.md#quick-start-eval-container-with-pixi-workspace) 
-
-1. **Start the evaluation container with distrobox:**
-   ```bash
-   distrobox enter -r aic_eval
-
-   # Inside the container, start the environment
-   /entrypoint.sh ground_truth:=false start_aic_engine:=true 
-   ```
-
-2. **Run teleop node with pixi:**
-   ```bash
-   # Run teleoperation
-   ros2 run aic_teleoperation joint_keyboard_teleop
-   # or
-   ros2 run aic_teleoperation cartesian_keyboard_teleop
-   ```
-
-### 1. Joint Space Teleoperation (`joint_keyboard_teleop`)
-
-Control individual robot joints directly.
-
-**Key Mappings:**
-- `q/a` - Joint 1 (shoulder_pan_joint): +/-
-- `w/s` - Joint 2 (shoulder_lift_joint): +/-
-- `e/d` - Joint 3 (elbow_joint): +/-
-- `r/f` - Joint 4 (wrist_1_joint): +/-
-- `t/g` - Joint 5 (wrist_2_joint): +/-
-- `y/h` - Joint 6 (wrist_3_joint): +/-
-
-**Speed Control:**
-- `k` - Slow mode (0.075 rad/s)
-- `l` - Fast mode (0.2 rad/s)
-
-**Exit:**
-- `ESC` - Quit teleoperation
-
-### 2. Cartesian Space Teleoperation (`cartesian_keyboard_teleop`)
-
-Control end-effector pose (position and orientation).
-
-**Linear Movement:**
-- `a/d` - X axis: -/+
-- `w/s` - Y axis: -/+
-- `r/f` - Z axis: -/+
-
-**Angular Movement:**
-- `Shift + s/w` : -/+ Angular X
-- `Shift + a/d` : -/+ Angular Y
-- `q/e` : -/+ Angular Z
-
-**Speed Control:**
-- `k` - Slow mode (linear: 0.02 m/s, angular: 0.02 rad/s)
-- `l` - Fast mode (linear: 0.1 m/s, angular: 0.1 rad/s)
-
-**Frame Toggle:**
-- `n` - Tool frame (`gripper/tcp`)
-- `m` - Global frame (`base_link`)
-
-**Exit:**
-- `ESC` - Quit teleoperation
-
-
 ## Environment Configurations
 
-### 1. Training Mode
+### 1. Randomize Environment
 
-For training, you can launch the simulation with custom configurations. Here's a complete example with all available task board parameters:
+You can launch the simulation in evaluation container with custom configurations. Make sure you are in aic_eval container via distrobox. Refer [Quick start eval container with pixi workspace](./getting_started.md#quick-start-eval-container-with-pixi-workspace) if you are not sure how to work with distrobox.
 
+> [!TIP]
+> To check if you current terminal is inside distrobox following
+> command should result in **aic_eval**:
+> ```bash
+> echo $CONTAINER_ID
+> ```
+
+Here's a complete example with all available task board parameters:
 ```bash
-pixi run ros2 launch aic_bringup aic_gz_bringup.launch.py \
-    spawn_task_board:=true \
+/entrypoint.sh spawn_task_board:=true \
     task_board_x:=0.3 task_board_y:=-0.1 task_board_z:=1.2 \
     task_board_roll:=0.0 task_board_pitch:=0.0 task_board_yaw:=0.785 \
     lc_mount_rail_0_present:=true lc_mount_rail_0_translation:=-0.05 \
@@ -133,6 +74,11 @@ pixi run ./create_and_cancel_task.py
 - Watch the Gazebo window for robot movement
 - Check terminal output for task progress and scoring information
 - Results are saved to `$HOME/aic_results/` (or `$AIC_RESULTS_DIR` if set)
+
+
+#### 4. Teleoperation
+
+If you would like to teleoperate the robot either in joint-space or Cartesian-space, refere to [Robot Teleoperation Guide](../aic_utils/aic_teleoperation/README.md).
 
 
 ## Building Locally on Ubuntu 24.04

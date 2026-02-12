@@ -2,6 +2,8 @@
 
 Welcome to the AI for Industry Challenge! This guide will help you set up your development environment and get started with building your solution.
 
+![AIC Competition Components](../../media/aic_competition_components.png)
+
 The challenge workflow relies on two distinct components:
 
 ### 1. Evaluation Container (`aic_eval`)
@@ -20,7 +22,6 @@ This is your development workspace where you implement your policy.
 - Test locally against the evaluation container
 - Build and submit your container image for official evaluation
 
-![AIC Competition Components](../../media/aic_competition_components.png)
 
 > [!WARNING]
 > Exploration of the aic_eval container logic is welcome. However, the evaluation 
