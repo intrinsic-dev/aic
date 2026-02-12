@@ -10,6 +10,9 @@ COPY aic_model /ws_aic/src/aic/aic_model
 COPY aic_interfaces /ws_aic/src/aic/aic_interfaces
 COPY aic_utils /ws_aic/src/aic/aic_utils
 COPY pixi.toml pixi.lock /ws_aic/src/aic
+
+# Add other local dependencies
+
 SHELL ["/bin/bash", "-c"]
 RUN --mount=type=cache,target=/root/.cache/rattler/cache --mount=type=cache,target=/ws_aic/src/aic/.pixi/build \
     cd /ws_aic/src/aic && pixi install --frozen

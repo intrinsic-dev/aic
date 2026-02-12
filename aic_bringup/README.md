@@ -20,7 +20,7 @@
 ```bash
 source ~/ws_aic/install/setup.bash
 export RMW_IMPLEMENTATION=rmw_zenoh_cpp
-export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
+export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true;transport/shared_memory/transport_optimization/pool_size=536870912'
 
 ros2 launch aic_bringup aic_gz_bringup.launch.py
 ```
@@ -129,6 +129,7 @@ ros2 launch aic_bringup aic_gz_bringup.launch.py [parameters]
 
 **AIC Engine:**
 - `start_aic_engine` (default: `"false"`) - Start the `aic_engine` orchestrator node for evaluation.
+- `shutdown_on_aic_engine_exit` (default: `"false"`) - Shutdown the entire launch file when `aic_engine` exits, propagating its exit code. Only takes effect when `start_aic_engine` is `true`. Useful for automated evaluation where the container should exit after trial completion.
 - `aic_engine_config_file` (default: `"aic_engine/config/sample_config.yaml"`) - Absolute path to YAML file with the AIC engine configuration.
 
 ---
@@ -252,45 +253,6 @@ ros2 launch aic_bringup spawn_cable.launch.py
 
 ---
 
-### 4. `gripper_action.launch.py`
-
-Launch file for sending gripper action commands to control the gripper position and/or effort.
-
-#### Usage
-```bash
-ros2 launch aic_bringup gripper_action.launch.py use_position:=true position:=0.5
-```
-
-#### Configurable Parameters
-
-- `gripper_name` (default: `"gripper"`) - Name of the gripper
-- `gripper_action_name` (default: `"/gripper_action_controller/gripper_cmd"`) - Action server name for gripper control
-- `use_position` (default: `"false"`) - If enabled, send a position command
-- `position` (default: `"0.0"`) - Gripper position command (0.0 = closed, 1.0 = open)
-- `use_effort` (default: `"false"`) - If enabled, send an effort command
-- `effort` (default: `"0.0"`) - Gripper effort command (Newtons)
-
-**Note:** At least one of `use_position` or `use_effort` should be set to `true` for the action to have effect.
-
----
-
-### 5. `move_to_contact.launch.py`
-
-Launch file for moving the robot tool frame until contact is detected based on force feedback.
-
-#### Usage
-```bash
-ros2 launch aic_bringup move_to_contact.launch.py contact_force_z:=15.0
-```
-
-#### Configurable Parameters
-
-- `controller_namespace` (default: `"admittance_controller"`) - Namespace for the admittance controller node
-- `tool_frame` (default: `"tool0"`) - Tool frame for the move-to-contact behavior
-- `contact_force_z` (default: `"10.0"`) - Contact detection threshold force along Z-axis (Newtons)
-
----
-
 ## Example Usage
 
 ### Basic Simulation Launch
@@ -314,11 +276,6 @@ ros2 launch aic_bringup aic_gz_bringup.launch.py spawn_task_board:=true spawn_ca
 ros2 launch aic_bringup spawn_task_board.launch.py \
   lc_mount_rail_0_present:=true \
   lc_mount_rail_0_translation:=0.05
-```
-
-### Open Gripper
-```bash
-ros2 launch aic_bringup gripper_action.launch.py use_position:=true position:=0.8
 ```
 
 ---

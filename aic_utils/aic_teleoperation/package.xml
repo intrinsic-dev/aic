@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>aic_teleoperation</name>
+  <version>0.0.0</version>
+  <description>Scripts to teleoperate a robot controlled by aic_controller</description>
+  <maintainer email="johntgz@todo.todo">johntgz</maintainer>
+  <license>Apache-2.0</license>
+
+  <exec_depend>aic_control_interfaces</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <!-- python3-pynput is required for keyboard teleoperation but not available in robostack.
+       For native builds: sudo apt install python3-pynput
+       For pixi builds: pynput is provided via pypi-dependencies in the main pixi.toml -->
+  <!-- <exec_depend>python3-pynput</exec_depend> -->
+  <exec_depend>rclpy</exec_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>
