@@ -234,16 +234,14 @@ void CablePlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
                                 this->cableConnection0LinkEntity, "fixed"}));
     }
 
-    if (this->spawnCableGuard)
-    {
+    if (this->spawnCableGuard) {
       auto endEffectorWorldPose =
           gz::sim::worldPose(this->endEffectorLinkEntity, _ecm);
       auto cableGuardPose =
           endEffectorWorldPose * this->cableGuardOffsetFromEndEffector;
       this->detachableJointCableGuardEntity =
           this->SpawnCableGuard(cableGuardPose, this->creator.get(), _ecm);
-      gzmsg << "Spawning Cable Guard."
-            << std::endl;
+      gzmsg << "Spawning Cable Guard." << std::endl;
     }
 
     gzmsg << "Cable transitioning to CABLE_ATTACHED_TO_GRIPPER state."
