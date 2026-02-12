@@ -168,3 +168,7 @@ repositories:
     type: git
     url: https://github.com/ros-controls/ros2_controllers.git
     version: 5.12.0
+  ros-tooling/topic_tools:
+    type: git
+    url: https://github.com/ros-tooling/topic_tools.git
+    version: 791eef0fda95faef2a62e5060ee937b805741b13

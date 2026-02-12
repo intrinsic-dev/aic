@@ -385,6 +385,7 @@ def launch_setup(context, *args, **kwargs):
             {"input_topic": "/scoring/tf_static"},
             {"output_topic": "/tf_static"},
             {"lazy": True},
+            {"qos_overrides./tf_static.publisher.durability": "transient_local"},
         ],
         condition=IfCondition(ground_truth),
     )
