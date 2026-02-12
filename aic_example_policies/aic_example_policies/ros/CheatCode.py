@@ -81,31 +81,31 @@ class CheatCode(Policy):
         z_offset: float = 0.1,
         reset_xy_integrator: bool = False,
     ) -> Pose:
-        """Find the gripper pose that results in SFP module alignment."""
+        """Find the gripper pose that results in plug alignment."""
         q_port = (
             port_transform.rotation.w,
             port_transform.rotation.x,
             port_transform.rotation.y,
             port_transform.rotation.z,
         )
-        sfp_tf_stamped = self._parent_node._tf_buffer.lookup_transform(
+        plug_tf_stamped = self._parent_node._tf_buffer.lookup_transform(
             "base_link",
             f"{self._task.cable_name}/{self._task.plug_name}_link",
             Time(),
         )
-        q_module = (
-            sfp_tf_stamped.transform.rotation.w,
-            sfp_tf_stamped.transform.rotation.x,
-            sfp_tf_stamped.transform.rotation.y,
-            sfp_tf_stamped.transform.rotation.z,
+        q_plug = (
+            plug_tf_stamped.transform.rotation.w,
+            plug_tf_stamped.transform.rotation.x,
+            plug_tf_stamped.transform.rotation.y,
+            plug_tf_stamped.transform.rotation.z,
         )
-        q_module_inv = (
-            -q_module[0],
-            q_module[1],
-            q_module[2],
-            q_module[3],
+        q_plug_inv = (
+            -q_plug[0],
+            q_plug[1],
+            q_plug[2],
+            q_plug[3],
         )
-        q_diff = quaternion_multiply(q_port, q_module_inv)
+        q_diff = quaternion_multiply(q_port, q_plug_inv)
         gripper_tf_stamped = self._parent_node._tf_buffer.lookup_transform(
             "base_link",
             "gripper/tcp",
@@ -129,19 +129,19 @@ class CheatCode(Policy):
             port_transform.translation.x,
             port_transform.translation.y,
         )
-        module_xyz = (
-            sfp_tf_stamped.transform.translation.x,
-            sfp_tf_stamped.transform.translation.y,
-            sfp_tf_stamped.transform.translation.z,
+        plug_xyz = (
+            plug_tf_stamped.transform.translation.x,
+            plug_tf_stamped.transform.translation.y,
+            plug_tf_stamped.transform.translation.z,
         )
-        sfp_tip_gripper_offset = (
-            gripper_xyz[0] - module_xyz[0],
-            gripper_xyz[1] - module_xyz[1],
-            gripper_xyz[2] - module_xyz[2],
+        plug_tip_gripper_offset = (
+            gripper_xyz[0] - plug_xyz[0],
+            gripper_xyz[1] - plug_xyz[1],
+            gripper_xyz[2] - plug_xyz[2],
         )
 
-        tip_x_error = port_xy[0] - module_xyz[0]
-        tip_y_error = port_xy[1] - module_xyz[1]
+        tip_x_error = port_xy[0] - plug_xyz[0]
+        tip_y_error = port_xy[1] - plug_xyz[1]
 
         if reset_xy_integrator:
             self._tip_x_error_integrator = 0.0
@@ -166,7 +166,7 @@ class CheatCode(Policy):
 
         target_x = port_xy[0] + i_gain * self._tip_x_error_integrator
         target_y = port_xy[1] + i_gain * self._tip_y_error_integrator
-        target_z = port_transform.translation.z + z_offset - sfp_tip_gripper_offset[2]
+        target_z = port_transform.translation.z + z_offset - plug_tip_gripper_offset[2]
 
         blend_xyz = (
             position_fraction * target_x + (1.0 - position_fraction) * gripper_xyz[0],
@@ -221,6 +221,8 @@ class CheatCode(Policy):
 
         z_offset = 0.1
 
+        # Over five seconds, smoothly interpolate from the current position to
+        # a position above the port.
         for t in range(0, 100):
             interp_fraction = t / 100.0
             try:
@@ -238,8 +240,9 @@ class CheatCode(Policy):
                 self.get_logger().warn(f"TF lookup failed during interpolation: {ex}")
                 time.sleep(0.05)
 
+        # Descend until the cable is inserted into the port.
         while True:
-            if z_offset < -0.005:
+            if z_offset < -0.015:
                 break
 
             z_offset -= 0.0005
@@ -252,6 +255,9 @@ class CheatCode(Policy):
             except TransformException as ex:
                 self.get_logger().warn(f"TF lookup failed during insertion: {ex}")
                 time.sleep(0.05)
+
+        self.get_logger().info("Waiting for connector to stabilize...")
+        time.sleep(5.0)
 
         self.get_logger().info("CheatCode.insert_cable() exiting...")
         return True
