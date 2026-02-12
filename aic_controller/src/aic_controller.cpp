@@ -1717,6 +1717,19 @@ void Controller::interpolate_impedance_parameters() {
     }
     feedforward_wrench_at_tip_ = next_wrench;
 
+    // Get offset_wrench at the TCP but relative to base_link frame
+    Eigen::Matrix<double, 6, 1> offset_wrench_at_tip;
+    offset_wrench_at_tip.head<3>() =
+        current_tool_state_.pose.rotation().inverse() *
+        impedance_params_.offset_wrench.head<3>();
+    offset_wrench_at_tip.tail<3>() =
+        current_tool_state_.pose.rotation().inverse() *
+        impedance_params_.offset_wrench.tail<3>();
+
+    // Tare sensed_wrench_at_tip_ by offset_wrench
+    Eigen::Matrix<double, 6, 1> sensed_wrench_at_tip_tared =
+        sensed_wrench_at_tip_ + offset_wrench_at_tip;
+
     // Compute the total wrench at the tool tip
     // Force control via feedforward_wrench and wrench_feedback_gains.
     Eigen::Matrix<double, 6, 1> wrench_feedback_gains_at_tip;
@@ -1725,14 +1738,44 @@ void Controller::interpolate_impedance_parameters() {
     Eigen::Matrix<double, 6, 1> total_wrench_at_tip =
         feedforward_wrench_at_tip_ +
         wrench_feedback_gains_at_tip.cwiseProduct(feedforward_wrench_at_tip_ -
-                                                  sensed_wrench_at_tip_);
+                                                  sensed_wrench_at_tip_tared);
 
-    // todo(johntgz) should the rotation be inverted?
-    //  Rotate wrench at tool tip into base frame.
+    RCLCPP_WARN_STREAM_THROTTLE(
+        get_node()->get_logger(), *get_node()->get_clock(), 1000,
+        "Sensed_wrench_at_tip_ "
+            << sensed_wrench_at_tip_.head<3>().transpose());
+
+    RCLCPP_WARN_STREAM_THROTTLE(
+        get_node()->get_logger(), *get_node()->get_clock(), 1000,
+        "   sensed_wrench_at_tip_tared: "
+            << sensed_wrench_at_tip_tared.head<3>().transpose());
+
+    RCLCPP_WARN_STREAM_THROTTLE(
+        get_node()->get_logger(), *get_node()->get_clock(), 1000,
+        "   BEFORE TF: total_wrench_at_tip: "
+            << total_wrench_at_tip.head<3>().transpose());
+
+    // Transform target velocity from TCP frame into base frame
     impedance_params_.feedforward_wrench.head<3>() =
         current_tool_state_.pose.rotation() * total_wrench_at_tip.head<3>();
     impedance_params_.feedforward_wrench.tail<3>() =
         current_tool_state_.pose.rotation() * total_wrench_at_tip.tail<3>();
+
+    //  Transform wrench from base to TCP frame
+    // impedance_params_.feedforward_wrench.head<3>() =
+    //     current_tool_state_.pose.rotation().inverse() *
+    //     total_wrench_at_tip.head<3>();
+    // impedance_params_.feedforward_wrench.tail<3>() =
+    //     current_tool_state_.pose.rotation().inverse() *
+    //     total_wrench_at_tip.tail<3>();
+
+    //  No transform performed to wrench
+    // impedance_params_.feedforward_wrench = total_wrench_at_tip;
+
+    RCLCPP_WARN_STREAM_THROTTLE(
+        get_node()->get_logger(), *get_node()->get_clock(), 1000,
+        "   AFTER TF: total_wrench_at_tip: "
+            << impedance_params_.feedforward_wrench.head<3>().transpose());
 
   } else if (target_mode_ == TargetMode::Joint) {
     // We use exponential smoothing to interpolate the stiffness and damping
