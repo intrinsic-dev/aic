@@ -627,9 +627,10 @@ EngineState Engine::run() {
                 "\033[1;32m╔════════════════════════════════════════╗\033[0m");
     RCLCPP_INFO(node_->get_logger(),
                 "\033[1;32m║   ✓ All Trials Processed!              ║\033[0m");
-    RCLCPP_INFO(node_->get_logger(),
-                "\033[1;32m║   Successful: %zu  Failed: %zu             ║\033[0m",
-                successful_trials, failed_trials);
+    RCLCPP_INFO(
+        node_->get_logger(),
+        "\033[1;32m║   Successful: %zu  Failed: %zu             ║\033[0m",
+        successful_trials, failed_trials);
     RCLCPP_INFO(node_->get_logger(),
                 "\033[1;32m║   Total Score: %.3f                     ║\033[0m",
                 score.calculate_total_score());
@@ -649,9 +650,12 @@ EngineState Engine::run() {
   YAML::Node scoring_yaml = score.serialize();
   std::stringstream ss;
   ss << scoring_yaml;
-  RCLCPP_INFO(node_->get_logger(), "\033[1;36m╔════════════════════════════════════════╗\033[0m");
-  RCLCPP_INFO(node_->get_logger(), "\033[1;36m║        Complete Scoring Results        ║\033[0m");
-  RCLCPP_INFO(node_->get_logger(), "\033[1;36m╚════════════════════════════════════════╝\033[0m");
+  RCLCPP_INFO(node_->get_logger(),
+              "\033[1;36m╔════════════════════════════════════════╗\033[0m");
+  RCLCPP_INFO(node_->get_logger(),
+              "\033[1;36m║        Complete Scoring Results        ║\033[0m");
+  RCLCPP_INFO(node_->get_logger(),
+              "\033[1;36m╚════════════════════════════════════════╝\033[0m");
 
   // Split the YAML output by lines and print each line
   std::string line;
