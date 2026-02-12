@@ -76,7 +76,7 @@ pixi run ./create_and_cancel_task.py
 - Results are saved to `$HOME/aic_results/` (or `$AIC_RESULTS_DIR` if set)
 
 
-#### 4. Teleoperation
+### 4. Teleoperation
 
 If you would like to teleoperate the robot either in joint-space or Cartesian-space, refere to [Robot Teleoperation Guide](../aic_utils/aic_teleoperation/README.md).
 
