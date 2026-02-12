@@ -213,6 +213,11 @@ namespace aic_gazebo
 
     /// \brief Pose offset of cable guard w.r.t. end-effector.
     private: gz::math::Pose3d cableGuardOffsetFromEndEffector;
+
+    /// \brief Whether to spawn cable guard
+    /// This is an invisible collision that stops the cable body for moving
+    /// through the gap between the gripper fingers
+    private: bool spawnCableGuard = false;
 };
 }
 #endif

@@ -138,6 +138,8 @@ void CablePlugin::Configure(const gz::sim::Entity& _entity,
                               kCableGuardOffsetForRobotiqHandE)
           .first;
 
+  this->spawnCableGuard = _sdf->Get<bool>("spawn_cable_guard", false).first;
+
   double delay = _sdf->Get<double>("create_connection_delay_s", 0.0).first;
   this->createJointDelay = delay;
   this->creator = std::make_unique<SdfEntityCreator>(_ecm, _eventManager);
@@ -232,12 +234,17 @@ void CablePlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
                                 this->cableConnection0LinkEntity, "fixed"}));
     }
 
-    auto endEffectorWorldPose =
-        gz::sim::worldPose(this->endEffectorLinkEntity, _ecm);
-    auto cableGuardPose =
-        endEffectorWorldPose * this->cableGuardOffsetFromEndEffector;
-    this->detachableJointCableGuardEntity =
-        this->SpawnCableGuard(cableGuardPose, this->creator.get(), _ecm);
+    if (this->spawnCableGuard)
+    {
+      auto endEffectorWorldPose =
+          gz::sim::worldPose(this->endEffectorLinkEntity, _ecm);
+      auto cableGuardPose =
+          endEffectorWorldPose * this->cableGuardOffsetFromEndEffector;
+      this->detachableJointCableGuardEntity =
+          this->SpawnCableGuard(cableGuardPose, this->creator.get(), _ecm);
+      gzmsg << "Spawning Cable Guard."
+            << std::endl;
+    }
 
     gzmsg << "Cable transitioning to CABLE_ATTACHED_TO_GRIPPER state."
           << std::endl;
