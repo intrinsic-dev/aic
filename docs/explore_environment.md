@@ -174,7 +174,7 @@ For users who prefer native development without containers, you can build and ru
    # Install Gazebo dependencies
    sudo apt -y install $(sort -u $(find . -iname 'packages-'`lsb_release -cs`'.apt' -o -iname 'packages.apt' | grep -v '/\.git/') | sed '/gz\|sdf/d' | tr '\n' ' ')
 
-   # Install ROS dependencies
+   # Install ROS 2 dependencies
    cd ~/ws_aic
    sudo rosdep init  # Only if running rosdep for the first time
    rosdep install --from-paths src --ignore-src --rosdistro kilted -yr --skip-keys "gz-cmake3 DART libogre-dev libogre-next-2.3-dev rosetta"

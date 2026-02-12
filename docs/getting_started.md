@@ -61,7 +61,7 @@ Refer to [Alternative methods](https://distrobox.it/#alternative-methods) if you
 
 ### Setup pixi
 
-We use [Pixi](https://pixi.prefix.dev/latest/) to manage packages and dependencies including ROS2. 
+We use [Pixi](https://pixi.prefix.dev/latest/) to manage packages and dependencies including ROS 2. 
 - For Ubuntu you can run following:
     ```bash
     curl -fsSL https://pixi.sh/install.sh | sh
