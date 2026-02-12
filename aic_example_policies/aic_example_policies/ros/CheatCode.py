@@ -58,7 +58,9 @@ class CheatCode(Policy):
                 return True
             except TransformException:
                 if attempt % 20 == 0:
-                    self.get_logger().info(f"Waiting for transform '{source_frame}'...")
+                    self.get_logger().info(
+                        f"Waiting for transform '{source_frame}' -> '{target_frame}'..."
+                    )
                 time.sleep(0.1)
         self.get_logger().error(
             f"Transform '{source_frame}' not available after {timeout_sec}s"
@@ -88,7 +90,7 @@ class CheatCode(Policy):
         )
         sfp_tf_stamped = self._parent_node._tf_buffer.lookup_transform(
             "base_link",
-            f"{self._task.cable_name}/{self._task.plug_type}_tip_link",
+            f"{self._task.cable_name}/{self._task.plug_name}_link",
             Time(),
         )
         q_module = (
@@ -198,7 +200,7 @@ class CheatCode(Policy):
         self._task = task
 
         port_frame = f"task_board/{task.target_module_name}/{task.port_name}_link"
-        cable_tip_frame = f"{task.cable_name}/{task.plug_type}_tip_link"
+        cable_tip_frame = f"{task.cable_name}/{task.plug_name}_link"
 
         # Wait for both the port and cable tip TFs to become available.
         # These come via ground_truth and may not be immediate.
