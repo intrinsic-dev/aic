@@ -903,10 +903,10 @@ controller_interface::return_type Controller::update(
       // Transform target velocity from TCP frame into base frame
       Eigen::Matrix<double, 6, 1> new_tool_reference_base_frame;
       new_tool_reference_base_frame.head<3>() =
-          current_tool_state_.pose.rotation().inverse() *
+          current_tool_state_.pose.rotation() *
           new_tool_reference.velocity.head<3>();
       new_tool_reference_base_frame.tail<3>() =
-          current_tool_state_.pose.rotation().inverse() *
+          current_tool_state_.pose.rotation() *
           new_tool_reference.velocity.tail<3>();
 
       Eigen::Matrix<double, 6, 1> tool_vel_error =
