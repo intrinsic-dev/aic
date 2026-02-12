@@ -41,6 +41,7 @@ Controller::Controller()
       last_tool_pose_error_(Eigen::Matrix<double, 6, 1>::Zero()),
       time_to_target_seconds_(0.0),
       remaining_time_to_target_seconds_(0.0),
+      last_error_change_time_(0, 0, RCL_ROS_TIME),
       kinematics_loader_(nullptr),
       kinematics_(nullptr),
       force_torque_sensor_(nullptr) {
@@ -898,6 +899,40 @@ controller_interface::return_type Controller::update(
                      "target tool frame");
         return controller_interface::return_type::ERROR;
       }
+
+      // If there is no change in the error for a given timeout duration,
+      // the controller is not making progress towards the target so we reset
+      // the target to the current position and wait for the next MotionUpdate.
+      rclcpp::Time current_time = get_node()->get_clock()->now();
+      auto abs_change_in_error =
+          (tool_pose_error - last_tool_pose_error_).cwiseAbs();
+
+      if (motion_update_received_ &&
+          tool_pose_error.cwiseAbs().maxCoeff() > 1e-2 &&
+          abs_change_in_error.head<3>().maxCoeff() <
+              params_.clamp_to_limits.tracking_error.min_translation_change &&
+          abs_change_in_error.tail<3>().maxCoeff() <
+              params_.clamp_to_limits.tracking_error.min_angular_change) {
+        rclcpp::Duration time_since_last_error_change =
+            current_time - last_error_change_time_;
+        if (time_since_last_error_change.seconds() >
+            params_.clamp_to_limits.tracking_error.timeout) {
+          RCLCPP_ERROR(get_node()->get_logger(),
+                       "Tracking error is not converging! Resetting "
+                       "target to current position.");
+          // Reset target state to current tool position
+          new_tool_reference = current_tool_state_;
+
+          last_error_change_time_ = current_time;
+          // Reset motion update to prevent reading from it until the next
+          // received message
+          target_state_ = std::nullopt;
+          motion_update_received_ = false;
+        }
+      } else {
+        last_error_change_time_ = current_time;
+      }
+
       last_tool_pose_error_ = tool_pose_error;
 
       // Transform target velocity from TCP frame into base frame
