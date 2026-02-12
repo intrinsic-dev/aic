@@ -18,6 +18,7 @@
 #include "CablePlugin.hh"
 
 #include <gz/msgs/boolean.pb.h>
+#include <gz/msgs/stringmsg.pb.h>
 
 #include <functional>
 #include <gz/common/Console.hh>
@@ -141,8 +142,8 @@ void CablePlugin::Configure(const gz::sim::Entity& _entity,
   this->createJointDelay = delay;
   this->creator = std::make_unique<SdfEntityCreator>(_ecm, _eventManager);
 
-  this->taskCompletionPub = this->node.Advertise<gz::msgs::Boolean>(
-      "/" + this->cableModelName + "/insertion_completion");
+  this->taskCompletionPub = this->node.Advertise<gz::msgs::StringMsg>(
+      "/" + this->cableModelName + "/insertion_event");
 
   gzmsg << "Cable transitioning to HARNESS state." << std::endl;
   this->cableState = CableState::HARNESS;
@@ -244,26 +245,31 @@ void CablePlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
   }
 
   if (this->cableState == CableState::CABLE_ATTACHED_TO_GRIPPER) {
-    if (this->cableConnection0PortTopic.empty()) {
+    if (this->cableConnection0PortTopics.empty()) {
       std::vector<std::string> allTopics;
       this->node.TopicList(allTopics);
 
       for (const auto& topic : allTopics) {
         if (topic.find(this->cableConnection0PortName) != std::string::npos) {
-          this->cableConnection0PortTopic = topic;
-          break;
+          this->cableConnection0PortTopics.insert(topic);
         }
       }
 
-      if (this->cableConnection0PortTopic.empty()) return;
+      if (this->cableConnection0PortTopics.empty()) return;
 
-      std::function<void(const msgs::Boolean&)> callback =
-          [this](const msgs::Boolean& _msg) {
+      std::function<void(const msgs::Boolean&, const transport::MessageInfo&)>
+          callback = [this](const msgs::Boolean& _msg,
+                            const transport::MessageInfo& _info) {
+            size_t pos = _info.Topic().rfind("/");
+            this->touchEventCallbackNamespace = _info.Topic().substr(0, pos);
             this->attachCableConnection0ToPort = _msg.data();
-            gzdbg << "Cable connection 0 touched: " << _msg.data() << std::endl;
+            gzdbg << "Cable connection 0 touched: " << _msg.data()
+                  << ". Topic: " << _info.Topic() << std::endl;
           };
-      this->cableConnection0PortSub = this->node.CreateSubscriber(
-          this->cableConnection0PortTopic, callback);
+      for (const auto& topic : this->cableConnection0PortTopics) {
+        this->cableConnection0PortSubs.emplace_back(
+            this->node.CreateSubscriber(topic, callback));
+      }
     }
 
     if (this->attachCableConnection0ToPort) {
@@ -309,8 +315,8 @@ void CablePlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
     this->detachableJoint0Entity = this->MakeStatic(
         this->endEffectorLinkEntity, true, this->creator.get(), _ecm);
 
-    gz::msgs::Boolean msg;
-    msg.set_data(true);
+    gz::msgs::StringMsg msg;
+    msg.set_data(this->touchEventCallbackNamespace);
     this->taskCompletionPub.Publish(msg);
     gzmsg << "Cable transitioning to COMPLETED state." << std::endl;
     this->cableState = CableState::COMPLETED;

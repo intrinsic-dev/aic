@@ -10,7 +10,6 @@
   <xacro:include filename="$(find aic_assets)/models/Basler Camera/basler_camera_macro.xacro"/>
   <xacro:include filename="$(find aic_assets)/models/Robotiq Hand-E/robotiq_hande_macro.xacro"/>
 
-  <!-- <xacro:include filename="$(find ur_simulation_gz)/urdf/ur_gz.ros2_control.xacro" /> -->
   <xacro:include filename="$(find ur_description)/urdf/inc/ur_joint_control.xacro" />
 
   <xacro:property name="D2R" value="${pi / 180.0}"/>

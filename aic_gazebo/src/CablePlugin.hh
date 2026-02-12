@@ -189,17 +189,21 @@ namespace aic_gazebo
     private: CableState cableState{CableState::INITIALIZATION};
 
     /// \brief Name of the cable connection 0 port topic
-    private: std::string cableConnection0PortTopic;
+    private: std::unordered_set<std::string> cableConnection0PortTopics;
 
-    /// \brief Cable connection 0 port subscriber
-    private: gz::transport::Node::Subscriber cableConnection0PortSub;
+    /// \brief Cable connection 0 port subscribers
+    private: std::vector<gz::transport::Node::Subscriber>
+        cableConnection0PortSubs;
 
-    /// \brief Cable connection 0 port subscriber
+    /// \brief Task completion event publisher
     private: gz::transport::Node::Publisher taskCompletionPub;
 
     /// \brief Whether to attach cable connection 0 to port
     /// This is set on cableConnection0PortSub callback
     private: std::atomic<bool> attachCableConnection0ToPort{false};
+
+    /// \brief Topic in which the touch event is received
+    private: std::string touchEventCallbackNamespace;
 
     /// \brief Gazebo transport node
     private: gz::transport::Node node;
