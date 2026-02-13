@@ -37,7 +37,8 @@ The global simulation settings—including lighting, physics properties, and gen
 
 Now that you have the basic environment running, you can explore different configurations to understand the challenge better and create diverse training scenarios.
 
-See this guide on how to [navigate the scene in Gazebo](https://gazebosim.org/docs/latest/gui/#the-scene). 
+> [!TIP]
+> See this guide on how to [navigate the scene in Gazebo](https://gazebosim.org/docs/latest/gui/#the-scene).
 
 ### Customizing the Environment
 
@@ -124,7 +125,8 @@ Before teleoperating, we recommend reading the [AIC Controller Guide](./aic_cont
 
 See the [Robot Teleoperation Guide](../aic_utils/aic_teleoperation/README.md) for detailed instructions.
 
-If the robot can't seem to move when it's near an object, it might be in collision with that object even though it's not touching. To view the collision mesh for an object, right-click on it, click `View >`, and then `Collisions`.
+> [!TIP]
+> If the robot can't seem to move when it's near an object, it might be in collision with that object even though it's not touching. To view the collision mesh for an object, right-click on it, click `View >`, and then `Collisions`.
 
 ---
 
