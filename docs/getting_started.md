@@ -92,7 +92,17 @@ distrobox enter -r aic_eval
 /entrypoint.sh ground_truth:=false start_aic_engine:=true
 ```
 
-The [`entrypoint.sh`](../docker/aic_eval/Dockerfile) script runs a Zenoh router and the [`aic_gz_bringup.launch.py`](../aic_bringup/README.md#1-aic_gz_bringuplaunchpy) launch file. If everything launches successfully, you should see Gazebo and RViz windows displaying a workcell with a Universal Robots UR5e manipulator. In the terminal, you should see that the AIC engine is initialized and waiting for the `aic_model` node. See [Scene Description](./scene_description.md) for more details.
+The [`entrypoint.sh`](../docker/aic_eval/Dockerfile) script runs a Zenoh router and the [`aic_gz_bringup.launch.py`](../aic_bringup/README.md#1-aic_gz_bringuplaunchpy) launch file.
+
+**What you should see:**
+- Two windows open: **Gazebo** (simulation) and **RViz** (visualization)
+- In Gazebo: A workcell with a Universal Robots UR5e manipulator mounted on a table
+- In the terminal: Log messages indicating the AIC engine has initialized and is waiting for the `aic_model` node
+- No robot movement yet (the robot is waiting for your policy to connect)
+
+![Evaluation Environment](../../media/eval_environment_waiting.png)
+
+See [Scene Description](./scene_description.md) for more details about the simulation environment.
 
 <!-- TODO: Update instruction to disable ACL after https://github.com/intrinsic-dev/aic/pull/190 or https://github.com/intrinsic-dev/aic/pull/171 is merged. -->
 
@@ -122,6 +132,11 @@ cd ~/ws_aic/src/aic
 pixi install
 ```
 
+**What you should see:**
+- Pixi downloading and installing ROS 2 packages and dependencies
+- A successful installation message when complete
+- A `.pixi` directory created in your workspace with all dependencies
+
 ---
 
 ### Step 3: Run an Example Policy
@@ -134,22 +149,46 @@ Once the `aic_model` node starts, the AIC engine spawns a task board and a gripp
 
 **Note:** The `WaveArm` policy is a dummy example that simply moves the robot arm back and forth in a waving motion. It does not attempt to solve the cable insertion task. The purpose of this example is to demonstrate how the [`aic_engine`](../aic_engine/README.md) orchestrates trials based on the [sample configuration](../aic_engine/config/sample_config.yaml) and scores the policy based on its performance (which will be poor in this case, as expected).
 
-After executing the sample policy, the robot arm should wave at you. If this doesn't happen, check the [Troubleshooting](./troubleshooting.md) section.
+**What you should see:**
+- **In Gazebo**: The task board and a cable attached to the gripper appear in the simulation
+- **In the robot**: The arm moves back and forth in a waving motion
+- **In the eval container terminal**:
+  - Log messages showing trial progression (Trial 1/3, Trial 2/3, Trial 3/3)
+  - Scoring information after each trial
+  - Final summary with total scores across all trials
+- The robot performing three successive trials automatically
 
+![Wave Arm Policy](../../media/wave_arm_policy.gif)
+
+If the robot doesn't move or you don't see the expected behavior, check the [Troubleshooting](./troubleshooting.md) section.
+
+---
+
+## 🎉 Congratulations!
+
+You've successfully completed the Quick Start guide! You now have:
+- ✅ A running evaluation environment with Gazebo and RViz
+- ✅ A local Pixi workspace with all dependencies installed
+- ✅ Experience running an example policy and seeing how the AIC engine orchestrates trials
+
+**Next:** When you're ready to submit your solution, you'll need to containerize your participant workspace. See the [Submission Guidelines](./submission.md) for detailed instructions on packaging and submitting your policy.
+
+---
 
 ## Next Steps
 
 Now that your environment is set up:
 
 1. **💻 Start Developing**
+   - Read the [Policy Integration Guide](./policy.md) to understand how to create your own policy node
    - See [Explore Environment](./explore_environment.md) to learn how to customize the training environment
-   - Check out `aic_example_policies/` for reference implementations
+   - Check out [`aic_example_policies/`](../aic_example_policies/) for reference implementations
    - Review [AIC Interfaces](./aic_interfaces.md) to understand available sensors and actuators
    - Consult [AIC Controller](./aic_controller.md) to learn about motion commands
-   - Follow the [Creating a New Policy Node Tutorial](./policy_tutorial.md) to create your own policy node
 
 2. **🧪 Test and Iterate**
-   - Use the example configurations in `aic_engine/config/` to test different scenarios
+   - Use the example configurations in [`aic_engine/config/`](../aic_engine/config/) to test different scenarios
+   - Create your own test scenarios by following the configuration examples in [`aic_engine/config/`](../aic_engine/config/)
    - Monitor your policy's behavior with ground truth data during development
    - See [Participant Utilities](./participant_utilities.md) for a list of helpful tools
    - Refer to [Troubleshooting](./troubleshooting.md) if you encounter issues
