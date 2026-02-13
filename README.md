@@ -43,6 +43,8 @@ New to the challenge? Follow these steps to get started:
 
 ## Toolkit Architecture
 
+![AIC Competition Components](../media/aic_competition_components.png)
+
 The AI for Industry Challenge toolkit is divided into **two main components**:
 
 ### 1. Evaluation Component (Provided - Run by Organizers)

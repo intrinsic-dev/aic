@@ -1,10 +1,9 @@
 # Explore Environment
 
+This guide shows you how to customize and test the environment using the eval container and Pixi workspace. You'll learn how to run simulations with different configurations, manually submit tasks, and monitor results.
 
-Let's explore the environment with eval container and pixi workspace. You will look into how to run simulation with different configuration, manually submit the task, monitor and see results. 
-
-> [!Tip]
-> Prefer working locally? See [Building Locally on Ubuntu 24.04](#building-locally-on-ubuntu-2404) for native installation instructions.
+> [!TIP]
+> Prefer building from source? See [Building the Evaluation Component from Source](./build_eval.md) for native installation instructions.
 
 ## Environment Configurations
 
@@ -62,7 +61,7 @@ For the full list of configurable parameters, see the [aic_bringup README](../ai
 
 ### 2. Manual Task Submission
 
-For testing, you can manually submit the task. Make sure the eval container is running.
+For testing, you can manually submit tasks. Make sure the eval container is running.
 
 ```bash
 cd ~/ws_aic/src/aic/aic_model/test
@@ -75,165 +74,6 @@ pixi run ./create_and_cancel_task.py
 - Check terminal output for task progress and scoring information
 - Results are saved to `$HOME/aic_results/` (or `$AIC_RESULTS_DIR` if set)
 
-
 ### 4. Teleoperation
 
-If you would like to teleoperate the robot either in joint-space or Cartesian-space, refere to [Robot Teleoperation Guide](../aic_utils/aic_teleoperation/README.md).
-
-
-## Building Locally on Ubuntu 24.04
-
-For users who prefer native development without containers, you can build and run everything locally on Ubuntu.
-
-> [!NOTE]
-> **Prerequisites**
-> | Dependency | Release / Distro |
-> | ---------- | ------- |
-> | Operating System | [Ubuntu 24.04 (Noble Numbat)](https://releases.ubuntu.com/noble/) |
-> | ROS 2 | [ROS 2 Kilted Kaiju](https://docs.ros.org/en/kilted/Installation/Ubuntu-Install-Debs.html) |
-
-
-### Setup Instructions
-
-1. **Add Gazebo Repository**
-
-   ```bash
-   sudo curl https://packages.osrfoundation.org/gazebo.gpg --output /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg
-   echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/gazebo-stable.list > /dev/null
-   sudo apt-get update
-   ```
-
-2. **Clone and Build Workspace**
-
-   ```bash
-   # Create workspace
-   sudo apt update && sudo apt upgrade -y
-   mkdir -p ~/ws_aic/src
-   cd ~/ws_aic/src
-
-   # Clone the repository
-   git clone https://github.com/intrinsic-dev/aic
-
-   # Import dependencies
-   vcs import . < aic/aic.repos --recursive
-
-   # Install Gazebo dependencies
-   sudo apt -y install $(sort -u $(find . -iname 'packages-'`lsb_release -cs`'.apt' -o -iname 'packages.apt' | grep -v '/\.git/') | sed '/gz\|sdf/d' | tr '\n' ' ')
-
-   # Install ROS 2 dependencies
-   cd ~/ws_aic
-   sudo rosdep init  # Only if running rosdep for the first time
-   rosdep install --from-paths src --ignore-src --rosdistro kilted -yr --skip-keys "gz-cmake3 DART libogre-dev libogre-next-2.3-dev rosetta"
-
-   # Install additional Python dependencies for teleoperation
-   sudo apt install -y python3-pynput
-
-   # Build the workspace
-   source /opt/ros/kilted/setup.bash
-   GZ_BUILD_FROM_SOURCE=1 colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release --merge-install --symlink-install --packages-ignore lerobot_robot_aic
-   ```
-
-3. **Configure Environment**
-
-    Add these environment variables to your shell (required in all terminals):
-    ```bash
-    export RMW_IMPLEMENTATION=rmw_zenoh_cpp
-    export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
-    ```
-
-> [!NOTE]
-> This challenge uses [rmw_zenoh](https://github.com/ros2/rmw_zenoh) as the ROS 2 middleware. You must set the `RMW_IMPLEMENTATION` environment variable to `rmw_zenoh_cpp` in all terminals.
-
-4. **Running the System**
-
-    You'll need three terminals. Source the workspace and set environment variables in each:
-
-    ```bash
-    source ~/ws_aic/install/setup.bash
-    export RMW_IMPLEMENTATION=rmw_zenoh_cpp
-    export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
-    ```
-
-    **Terminal 1 - Start Zenoh Router:**
-    ```bash
-    ros2 run rmw_zenoh_cpp rmw_zenohd
-    ```
-
-    **Terminal 2 - Launch Evaluation Environment:**
-    ```bash
-    ros2 launch aic_bringup aic_gz_bringup.launch.py ground_truth:=false start_aic_engine:=true
-    ```
-
-    This launches Gazebo with the robot arm and end-of-arm tooling. The `TaskBoard` and `Cable` will be spawned by `aic_engine` when your model is ready.
-
-    **Terminal 3 - Run Your Policy:**
-    ```bash
-    ros2 run aic_model aic_model --ros-args -p policy:=aic_example_policies.ros.WaveArm
-    ```
-
-    Replace `aic_example_policies.ros.WaveArm` with your policy implementation.
-
-
-### Testing Your Policy
-
-After setting up your environment, you can test your policy implementation:
-
-1. **Start the Evaluation Environment**
-
-**Terminal 1 - Start Zenoh Router:**
-```bash
-source ~/ws_aic/install/setup.bash
-export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
-ros2 run rmw_zenoh_cpp rmw_zenohd
-```
-
-**Terminal 2 - Launch Evaluation Environment:**
-```bash
-source ~/ws_aic/install/setup.bash
-export RMW_IMPLEMENTATION=rmw_zenoh_cpp
-export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
-ros2 launch aic_bringup aic_gz_bringup.launch.py ground_truth:=false start_aic_engine:=true
-```
-
-### 2. Run Your Policy
-
-**Terminal 3 - Start Your aic_model:**
-```bash
-source ~/ws_aic/install/setup.bash
-export RMW_IMPLEMENTATION=rmw_zenoh_cpp
-export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
-ros2 run aic_model aic_model --ros-args -p policy:=aic_example_policies.ros.WaveArm
-```
-
-Or rely on 🐍 Pixi
-
-```bash
-pixi run ros2 run aic_model aic_model --ros-args -p policy:=aic_example_policies.ros.WaveArm
-```
-
-Replace `aic_example_policies.ros.WaveArm` with your policy implementation.
-
-To manually submit a task,
-
-```bash
-source ~/ws_aic/install/setup.bash
-export RMW_IMPLEMENTATION=rmw_zenoh_cpp
-export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
-cd ~/ws_aic/src/aic/aic_model/test
-./create_and_cancel_task.py
-```
-
-
-### 3. Monitor Progress
-
-- Watch the Gazebo window for robot movement
-- Check terminal output for task progress and scoring information
-- Results will be saved to `$HOME/aic_results/` (or `$AIC_RESULTS_DIR` if set)
-
-
-## Need Help?
-
-- **Documentation**: Check the [main README](../README.md) for links to all documentation
-- **Issues**: Report problems via [GitHub Issues](https://github.com/intrinsic-dev/aic/issues)
-- **Community**: Join discussions at [Open Robotics Discourse](https://discourse.openrobotics.org/c/competitions/ai-for-industry-challenge/)
-
+If you would like to teleoperate the robot in either joint-space or Cartesian-space, refer to the [Robot Teleoperation Guide](../aic_utils/aic_teleoperation/README.md).
