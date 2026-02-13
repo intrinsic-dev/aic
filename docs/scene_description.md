@@ -40,6 +40,11 @@ The launch file does the following:
 - **Starts various ROS 2 nodes** including the Gazebo<->ROS bridge and ROS 2 controller to command the robot.
 - **Exports World State:** After spawning all entities, the simulation automatically saves the complete world state to `/tmp/aic.sdf`.
 
+See this guide on how to [navigate the scene in Gazebo](https://gazebosim.org/docs/latest/gui/#the-scene). 
+
+If the robot can't seem to move when it's near an object, it might be in collision with that object even though it's not touching. To view the collision mesh for an object, right-click on it, click `View >`, and then `Collisions`.
+
+
 ### Exporting World State for AI Training
 
 The simulation includes a world plugin that automatically exports the complete world state after all entities (robot, task board, cable) are spawned. This feature is particularly useful for AI policy training and cross-platform simulation workflows.
