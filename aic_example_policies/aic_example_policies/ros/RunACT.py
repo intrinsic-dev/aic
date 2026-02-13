@@ -53,7 +53,13 @@ class RunACT(Policy):
         self.right_image_stds = stats["observation.images.right_camera.std"].to("cuda").view(1, 3, 1, 1)
         self.get_logger().info(f"Left camera stds: {self.left_image_stds}")
 
-        self.image_scaling = 0.25 # manually change to match `AICRobotAICControllerConfig`
+        self.image_scaling = 0.25 # must manually change to match `AICRobotAICControllerConfig`
+
+        # Action postprocessing
+        self.action_means = stats["action.mean"].to("cuda")
+        self.action_stds = stats["action.std"].to("cuda")
+        self.get_logger().info(f"Action means: {self.action_means}")
+        self.get_logger().info(f"Action stds: {self.action_stds}")
 
     @staticmethod
     def _img_to_tensor(raw_img, device: torch.device, image_scale, mean, std) -> torch.Tensor:
@@ -131,17 +137,18 @@ class RunACT(Policy):
         self.get_logger().info(f"RunACT.insert_cable() enter. Task: {task}")
         start_time = time.clock_gettime(0)
 
-        while time.clock_gettime(0) - start_time < 10.0:
+        while time.clock_gettime(0) - start_time < 30.0:
             time.sleep(0.25)
             observation_msg = get_observation()
 
             obs_tensors = self.prepare_observations(observation_msg)
             with torch.inference_mode():
-                actions_tensor = self.policy.select_action(obs_tensors)
-
+                normalized_actions_tensor = self.policy.select_action(obs_tensors)
+            
+            raw_actions_tensor = (normalized_actions_tensor * self.action_stds) + self.action_means
             # Action conversion (take the first action in the list)
-            actions = actions_tensor[0].to("cpu").numpy()
-            self.get_logger().info(f"Actions: {actions}")
+            actions = raw_actions_tensor[0].to("cpu").numpy()
+            self.get_logger().info(f"Action: {actions}")
 
             # Command robot
             twist = Twist(
