@@ -9,7 +9,6 @@ MotionUpdateActionDict = TypedDict(
         "angular.x": float,
         "angular.y": float,
         "angular.z": float,
-        "gripper_target": float,
     },
 )
 
@@ -22,6 +21,5 @@ JointMotionUpdateActionDict = TypedDict(
         "wrist_1_joint": float,
         "wrist_2_joint": float,
         "wrist_3_joint": float,
-        "gripper_target": float,
     },
 )

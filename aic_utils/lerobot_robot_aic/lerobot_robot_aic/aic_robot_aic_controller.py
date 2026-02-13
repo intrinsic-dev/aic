@@ -14,7 +14,7 @@
 #  limitations under the License.
 #
 
-"""LeRobot driver for AIC robot"""
+"""LeRobot driver for AIC robot: derived from https://github.com/huggingface/lerobot/blob/main/src/lerobot/robots/robot.py"""
 
 import logging
 import time
