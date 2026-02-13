@@ -2,6 +2,8 @@
 
 ## Low real-time factor on Gazebo
 
+### Gazebo not using the dedicated GPU
+
 If your machine has two GPUs (or a CPU with an integrated GPU), OpenGL may be using the *integrated* GPU for rendering, which causes RTF to be very low. To fix this, you may need to manually force it to use the *discrete* GPU.
 
 To check if Open GL is using the discrete GPU, run `glxinfo -B`. The output should show the details of your discrete GPU. Additionally, you can verify GPU-specific process by running `nvidia-smi`. When the AIC sim is active, `gz sim` should appear in the process list.
@@ -10,6 +12,15 @@ If the wrong GPU is selected, run `sudo prime-select nvidia`.
 **Note**: You must log out and log in again for the changes to take effect. Then, re-run `glxinfo -B` to verify that the discrete GPU is active.
 
 You can also check out [Problems with dual Intel and Nvidia GPU systems](https://gazebosim.org/docs/latest/troubleshooting/#problems-with-dual-intel-and-nvidia-gpu-systems).
+
+### Minimum compute requirements for AIC
+
+For real-time simulations, we recommend these specifications or above:
+- Operating System: Ubuntu 24.04.3 LTS (64-bit)
+- Processor (CPU): 6-Core x86-64 CPU (e.g., AMD Ryzen 5 5600X or equivalent)
+- System Memory (RAM): 32 GB
+- Graphics Card (GPU): NVIDIA RTX GPU with at least 24 GB of VRAM (e.g., RTX 3090 or RTX A5000)
+- NVIDIA Driver: Version 570.195.03 or higher
 
 ## Zenoh Shared Memory Watchdog Warnings
 
