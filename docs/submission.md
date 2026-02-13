@@ -39,7 +39,28 @@ We use Amazon Elastic Container Registry (ECR) to host team OCI images.
 
 ### Authenticate
 
-First, authenticate your local client with our private registry. Use the credentials from your onboarding email:
+First authenticate to AWS with the credentials provided in your onboarding email:
+
+```bash
+aws configure --profile <team_name_slug>
+```
+This will prompt you to enter your AWS Access Key ID, Secret Access Key, region (use `us-east-1`), and output format (you can use the sensible default by pressing enter).
+
+Set that `AWS_PROFILE` to your team name provided in your onboarding email:
+
+```bash
+export AWS_PROFILE=<team_name>
+```
+
+For example, if your team name slug is `team123`, you would run:
+
+```bash
+aws configure --profile team123
+# Complete the prompts with your credentials
+export AWS_PROFILE=team123
+```
+
+Then, authenticate your local client with our private registry.
 
 ```bash
 aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 123456789.dkr.ecr.us-east-1.amazonaws.com
