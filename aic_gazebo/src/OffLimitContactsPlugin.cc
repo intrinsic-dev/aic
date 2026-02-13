@@ -65,8 +65,14 @@ void OffLimitContactsPlugin::PreUpdate(const UpdateInfo &_info,
   }
   this->lastUpdateTime = _info.simTime;
 
-  if (this->offLimitModelNames.size() != this->offLimitEntities.size() &&
-      !this->InitializeOffLimitEntities(_ecm)) {
+  // Try to resolve any remaining off-limit model names to entities.
+  // Don't return early, detect contacts with already-resolved entities
+  // even while waiting for others (e.g. task_board spawned mid-trial).
+  if (this->offLimitModelNames.size() != this->offLimitEntities.size()) {
+    this->InitializeOffLimitEntities(_ecm);
+  }
+
+  if (this->offLimitEntities.empty()) {
     return;
   }
 
@@ -176,11 +182,12 @@ bool OffLimitContactsPlugin::InitializeOffLimitEntities(
                  });
 
     if (candidateEntities.size() == 1) {
-      // If there is one entity select that entity itself
       entity = *candidateEntities.begin();
+    } else if (candidateEntities.size() > 1) {
+      gzwarn << "Off-limit model name '" << modelName
+             << "' matched multiple entities. Skipping." << std::endl;
     }
     if (entity == kNullEntity) {
-      this->offLimitEntities.clear();
       return false;
     }
 
