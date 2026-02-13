@@ -768,13 +768,14 @@ controller_interface::return_type Controller::update(
             if (!target_state_.has_value() ||
                 target_state_.value().header.stamp !=
                     latest_target_state.header.stamp) {
-              // transform target pose from "gripper/tcp" frame to "base_link"
-              // frame
+              // Pose targets are processed in the "base_link" frame.
+              // Therefore, if the frame_id is "gripper/tcp", then we transform
+              // the pose target to the "base_link" frame
               latest_target_state.pose.linear() =
-                  current_tool_state_.pose.linear().inverse() *
+                  current_tool_state_.pose.linear() *
                   latest_target_state.pose.linear();
               latest_target_state.pose.translation() =
-                  current_tool_state_.pose.linear().inverse() *
+                  current_tool_state_.pose.linear() *
                       latest_target_state.pose.translation() +
                   current_tool_state_.pose.translation();
 
