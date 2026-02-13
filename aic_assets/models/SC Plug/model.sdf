@@ -89,5 +89,15 @@
         </geometry>
       </collision>
     </link>
+
+    <link name="sc_plug_tip_link">
+      <pose>0.01165 0 0 0 1.5708 0</pose>
+    </link>
+
+    <joint name="sc_plug_tip_joint" type="fixed">
+      <parent>sc_plug_link</parent>
+      <child>sc_plug_tip_link</child>
+    </joint>
+
   </model>
 </sdf>
