@@ -29,10 +29,14 @@ Controller::Controller()
       cartesian_impedance_action_(nullptr),
       feedforward_wrench_at_tip_(Eigen::Matrix<double, 6, 1>::Zero()),
       sensed_wrench_at_tip_(Eigen::Matrix<double, 6, 1>::Zero()),
+      tare_offset_at_base_(Eigen::Matrix<double, 6, 1>::Zero()),
+      tare_offset_at_tip_(Eigen::Matrix<double, 6, 1>::Zero()),
       joint_impedance_action_(nullptr),
       gravity_compensation_action_(nullptr),
       motion_update_sub_(nullptr),
       joint_motion_update_sub_(nullptr),
+      change_target_mode_srv_(nullptr),
+      tare_force_torque_sensor_srv_(nullptr),
       state_publisher_rt_(nullptr),
       motion_update_received_(false),
       last_commanded_state_(std::nullopt),
@@ -384,6 +388,47 @@ controller_interface::CallbackReturn Controller::on_configure(
         }
       });
 
+  tare_force_torque_sensor_srv_ =
+      this->get_node()->create_service<std_srvs::srv::Trigger>(
+          "~/tare_force_torque_sensor",
+          [this](const std::shared_ptr<std_srvs::srv::Trigger::Request>,
+                 std::shared_ptr<std_srvs::srv::Trigger::Response> response) {
+            RCLCPP_INFO(
+                get_node()->get_logger(),
+                "Received service request to tare force torque sensor!");
+
+            if (force_torque_sensor_ == nullptr) {
+              const std::string failure_msg =
+                  "Tare failure: Force torque sensor is not initialized yet.";
+              RCLCPP_ERROR(get_node()->get_logger(), failure_msg.c_str());
+              response->message = failure_msg;
+              response->success = false;
+              return;
+            }
+            if (sensed_wrench_at_tip_.isZero(1e-9)) {
+              const std::string failure_msg =
+                  "Tare failure: Force torque readings are all zero, which "
+                  "means that one of the readings is NaN.";
+              RCLCPP_ERROR(get_node()->get_logger(), failure_msg.c_str());
+              response->message = failure_msg;
+              response->success = false;
+              return;
+            }
+
+            // Sensed wrench is originally in FTS frame, so we transform from
+            // FTS frame to "base_link" frame and store the tared offset.
+            tare_offset_at_base_.head<3>() = current_tool_state_.pose.linear() *
+                                             sensed_wrench_at_tip_.head<3>();
+            tare_offset_at_base_.tail<3>() = current_tool_state_.pose.linear() *
+                                             sensed_wrench_at_tip_.tail<3>();
+
+            const std::string success_msg =
+                "Successfully tared force torque sensor.";
+            response->message = success_msg;
+            response->success = true;
+            RCLCPP_INFO(get_node()->get_logger(), success_msg.c_str());
+          });
+
   // Load the kinematics plugin
   if (!params_.kinematics.plugin_name.empty()) {
     try {
@@ -720,6 +765,7 @@ controller_interface::CallbackReturn Controller::on_cleanup(
   motion_update_sub_.reset();
   joint_motion_update_sub_.reset();
   change_target_mode_srv_.reset();
+  tare_force_torque_sensor_srv_.reset();
   state_publisher_rt_.reset();
   state_publisher_.reset();
 
@@ -1102,6 +1148,12 @@ void Controller::read_state_from_hardware(
       sensed_wrench_at_tip.tail<3>() =
           Eigen::Map<const Eigen::Vector3d>(ft_torques.data());
     }
+
+    // Transform tare offset from "base_link" to the FTS frame
+    tare_offset_at_tip_.head<3>() = tool_state_current.pose.linear().inverse() *
+                                    tare_offset_at_base_.head<3>();
+    tare_offset_at_tip_.tail<3>() = tool_state_current.pose.linear().inverse() *
+                                    tare_offset_at_base_.tail<3>();
   }
 }
 
@@ -1212,6 +1264,10 @@ void Controller::populate_controller_state(ControllerState& controller_state) {
   if (last_commanded_state_.has_value()) {
     controller_state.reference_joint_state = last_commanded_state_.value();
   }
+
+  controller_state.fts_tare_offset.header.frame_id = "ati/tool_link";
+  utils::eigen_to_wrench_msg(tare_offset_at_tip_,
+                             controller_state.fts_tare_offset.wrench);
 }
 
 //==============================================================================
@@ -1717,18 +1773,9 @@ void Controller::interpolate_impedance_parameters() {
     }
     feedforward_wrench_at_tip_ = next_wrench;
 
-    // Get offset_wrench at the TCP but relative to base_link frame
-    Eigen::Matrix<double, 6, 1> offset_wrench_at_tip;
-    offset_wrench_at_tip.head<3>() =
-        current_tool_state_.pose.rotation().inverse() *
-        impedance_params_.offset_wrench.head<3>();
-    offset_wrench_at_tip.tail<3>() =
-        current_tool_state_.pose.rotation().inverse() *
-        impedance_params_.offset_wrench.tail<3>();
-
-    // Tare sensed_wrench_at_tip_ by offset_wrench
+    // Tare the force torque sensor readings
     Eigen::Matrix<double, 6, 1> sensed_wrench_at_tip_tared =
-        sensed_wrench_at_tip_ + offset_wrench_at_tip;
+        sensed_wrench_at_tip_ - tare_offset_at_tip_;
 
     // Compute the total wrench at the tool tip
     // Force control via feedforward_wrench and wrench_feedback_gains.
@@ -1750,32 +1797,12 @@ void Controller::interpolate_impedance_parameters() {
         "   sensed_wrench_at_tip_tared: "
             << sensed_wrench_at_tip_tared.head<3>().transpose());
 
-    RCLCPP_WARN_STREAM_THROTTLE(
-        get_node()->get_logger(), *get_node()->get_clock(), 1000,
-        "   BEFORE TF: total_wrench_at_tip: "
-            << total_wrench_at_tip.head<3>().transpose());
-
-    // Transform target velocity from TCP frame into base frame
+    // Total wrench was originally in TCP frame, so we transform the wrench from
+    // TCP frame into "base_link" frame
     impedance_params_.feedforward_wrench.head<3>() =
-        current_tool_state_.pose.rotation() * total_wrench_at_tip.head<3>();
+        current_tool_state_.pose.linear() * total_wrench_at_tip.head<3>();
     impedance_params_.feedforward_wrench.tail<3>() =
-        current_tool_state_.pose.rotation() * total_wrench_at_tip.tail<3>();
-
-    //  Transform wrench from base to TCP frame
-    // impedance_params_.feedforward_wrench.head<3>() =
-    //     current_tool_state_.pose.rotation().inverse() *
-    //     total_wrench_at_tip.head<3>();
-    // impedance_params_.feedforward_wrench.tail<3>() =
-    //     current_tool_state_.pose.rotation().inverse() *
-    //     total_wrench_at_tip.tail<3>();
-
-    //  No transform performed to wrench
-    // impedance_params_.feedforward_wrench = total_wrench_at_tip;
-
-    RCLCPP_WARN_STREAM_THROTTLE(
-        get_node()->get_logger(), *get_node()->get_clock(), 1000,
-        "   AFTER TF: total_wrench_at_tip: "
-            << impedance_params_.feedforward_wrench.head<3>().transpose());
+        current_tool_state_.pose.linear() * total_wrench_at_tip.tail<3>();
 
   } else if (target_mode_ == TargetMode::Joint) {
     // We use exponential smoothing to interpolate the stiffness and damping
