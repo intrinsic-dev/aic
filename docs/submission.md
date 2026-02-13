@@ -49,7 +49,7 @@ This will prompt you to enter your AWS Access Key ID, Secret Access Key, region 
 Set that `AWS_PROFILE` to your team name slug:
 
 ```bash
-export AWS_PROFILE=<team_name_slug>
+export AWS_PROFILE=<team_name>
 ```
 
 For example, if your team name slug is `team123`, you would run:
