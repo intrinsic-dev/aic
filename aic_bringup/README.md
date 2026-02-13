@@ -304,4 +304,5 @@ ros2 run aic_bringup test_impedance.py
 - All orientation values are in radians
 - Translation ranges for mount rails are limited to prevent collisions: -0.09625 to 0.09625 meters
 - Mount rails are type-specific: LC, SFP, and SC mounts can only be attached to their respective rails
-- Port rails (sc_port and nic_card_mount) are separate from mount rails
+- Port rails (`sc_port` and `nic_card_mount`) are separate from mount rails
+- Although the task board and component orientations will not vary in roll and pitch during policy evaluation, participants may choose to configure them for the sake of domain randomization for policy training.

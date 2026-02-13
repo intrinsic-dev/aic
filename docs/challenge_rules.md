@@ -1,6 +1,7 @@
 # Challenge Rules
 
 ## aic_model
+
 - The submission container must start a process with a ROS 2 Lifecycle node with name `aic_model`.
 - The `aic_model` node must exhibit the following behavior:
   - Start in `unconfigured` lifecycle state.
