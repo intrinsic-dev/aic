@@ -181,8 +181,8 @@ You've successfully completed the Quick Start guide! You now have:
 Now that your environment is set up:
 
 1. **💻 Start Developing**
-   - Read the [Policy Integration Guide](./policy.md) to understand how to create your own policy node
    - Explore the [Scene Description](./scene_description.md) to learn how to customize and explore the environment
+   - Read the [Policy Integration Guide](./policy.md) to understand how to create your own policy node
    - Check out [`aic_example_policies/`](../aic_example_policies/) for reference implementations
    - Review [AIC Interfaces](./aic_interfaces.md) to understand available sensors and actuators
    - Consult [AIC Controller](./aic_controller.md) to learn about motion commands
