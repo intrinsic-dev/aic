@@ -77,12 +77,12 @@ ros2 launch aic_bringup aic_gz_bringup.launch.py [parameters]
 #### Configurable Parameters
 
 **Robot Spawn Position:**
-- `robot_x` (default: `"0.0"`) - Robot spawn X position (meters)
-- `robot_y` (default: `"0.0"`) - Robot spawn Y position (meters)
-- `robot_z` (default: `"0.0"`) - Robot spawn Z position (meters)
+- `robot_x` (default: `"-0.2"`) - Robot spawn X position (meters)
+- `robot_y` (default: `"0.2"`) - Robot spawn Y position (meters)
+- `robot_z` (default: `"1.14"`) - Robot spawn Z position (meters)
 - `robot_roll` (default: `"0.0"`) - Robot spawn roll orientation (radians)
 - `robot_pitch` (default: `"0.0"`) - Robot spawn pitch orientation (radians)
-- `robot_yaw` (default: `"0.0"`) - Robot spawn yaw orientation (radians)
+- `robot_yaw` (default: `"-3.141"`) - Robot spawn yaw orientation (radians)
 
 **Controller Configuration:**
 - `controllers_file` (default: `"ur_controllers.yaml"`) - YAML file with controller configuration
@@ -94,8 +94,8 @@ ros2 launch aic_bringup aic_gz_bringup.launch.py [parameters]
 **Task Board Configuration:**
 - `spawn_task_board` (default: `"false"`) - Whether to spawn the task board
 - `task_board_description_file` (default: `"task_board.urdf.xacro"`) - Task board URDF/XACRO file
-- `task_board_x` (default: `"0.25"`) - Task board spawn X position (meters)
-- `task_board_y` (default: `"0.0"`) - Task board spawn Y position (meters)
+- `task_board_x` (default: `"0.15"`) - Task board spawn X position (meters)
+- `task_board_y` (default: `"-0.2"`) - Task board spawn Y position (meters)
 - `task_board_z` (default: `"1.14"`) - Task board spawn Z position (meters)
 - `task_board_roll` (default: `"0.0"`) - Task board spawn roll orientation (radians)
 - `task_board_pitch` (default: `"0.0"`) - Task board spawn pitch orientation (radians)
@@ -106,12 +106,13 @@ ros2 launch aic_bringup aic_gz_bringup.launch.py [parameters]
 - `cable_description_file` (default: `"cable.sdf.xacro"`) - Cable SDF/XACRO file
 - `attach_cable_to_gripper` (default: `"false"`) - Whether to attach cable to gripper
 - `cable_type` (default: `"sfp_sc_cable"`) - Type of cable to spawn. Options: [`sfp_sc_cable`, `sfp_sc_cable_reversed`]
-- `cable_x` (default: `"0.1956"`) - Cable spawn X position (meters)
-- `cable_y` (default: `"-0.2112"`) - Cable spawn Y position (meters)
-- `cable_z` (default: `"1.53"`) - Cable spawn Z position (meters)
+- `cable_x` (default: `"0.172"`) - Cable spawn X position (meters)
+- `cable_y` (default: `"0.024"`) - Cable spawn Y position (meters)
+- `cable_z` (default: `"1.518"`) - Cable spawn Z position (meters)
+    - Note: set `cable_z` to `1.508` if `cable_type` is `sfp_sc_cable_reversed`
 - `cable_roll` (default: `"0.4432"`) - Cable spawn roll orientation (radians)
-- `cable_pitch` (default: `"-0.4838"`) - Cable spawn pitch orientation (radians)
-- `cable_yaw` (default: `"-1.8112"`) - Cable spawn yaw orientation (radians)
+- `cable_pitch` (default: `"-0.48"`) - Cable spawn pitch orientation (radians)
+- `cable_yaw` (default: `"1.3303"`) - Cable spawn yaw orientation (radians)
 
 **Gazebo Configuration:**
 - `world_file` (default: `"aic.sdf"`) - Gazebo world file
@@ -303,4 +304,5 @@ ros2 run aic_bringup test_impedance.py
 - All orientation values are in radians
 - Translation ranges for mount rails are limited to prevent collisions: -0.09625 to 0.09625 meters
 - Mount rails are type-specific: LC, SFP, and SC mounts can only be attached to their respective rails
-- Port rails (sc_port and nic_card_mount) are separate from mount rails
+- Port rails (`sc_port` and `nic_card_mount`) are separate from mount rails
+- Although the task board and component orientations will not vary in roll and pitch during policy evaluation, participants may choose to configure them for the sake of domain randomization for policy training.

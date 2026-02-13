@@ -124,6 +124,11 @@ aic_controller:
         default_value: 0.0,
         description: "Minimum change in translation error such that the robot is moving towards the target. Units in meters"
       }
+      min_translation_error: {
+        type: double,
+        default_value: 0.2,
+        description: "Minimum translation error to trigger clamping. Make sure it is larger than min_translation_change to avoid instability. Units in meters"
+      }
 
   # Cartesian impedance controller parameters
   impedance:

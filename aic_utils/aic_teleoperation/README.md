@@ -71,7 +71,7 @@ pixi run ros2 run aic_teleoperation cartesian_keyboard_teleop
 
 ### With native ROS 2 build
 
-See [Getting Started - Running the System](../../docs/getting_started.md#4-running-the-system) for workspace build and Zenoh setup.
+See [Getting Started - Running the System](../../docs/explore_environment.md#building-locally-on-ubuntu-2404) for workspace build and Zenoh setup.
 
 ```bash
 # Run teleoperation

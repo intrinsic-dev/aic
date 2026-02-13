@@ -122,3 +122,19 @@ LeRobot recording keys:
 | ESC         | Stop recording   |
 
 <!-- TODO: lerobot-record doesn't load the hil processor to handle teleop events (lerobot bug?) -->
+
+### Training
+
+Once you have your LeRobot dataset, you can follow the [LeRobot tutorials](https://huggingface.co/docs/lerobot/en/index) for training.
+
+```bash
+cd ~/ws_aic/src/aic
+pixi run lerobot-train \
+  --dataset.repo_id=${HF_USER}/your_dataset \
+  --policy.type=your_policy_type \
+  --output_dir=outputs/train/act_your_dataset \
+  --job_name=act_your_dataset \
+  --policy.device=cuda \
+  --wandb.enable=true \
+  --policy.repo_id=${HF_USER}/act_policy
+```

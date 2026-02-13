@@ -10,6 +10,7 @@ preview = ["pixi-build"]
 [dependencies]
 evdev = ">=1.9.2,<2"
 opencv = "<4.13.0"
+packaging = ">=24.2,<26.0"                                                             # required by lerobot==0.4.3
 ros-kilted-aic-control-interfaces = { path = "aic_interfaces/aic_control_interfaces" }
 ros-kilted-aic-example-policies = { path = "aic_example_policies" }
 ros-kilted-aic-model = { path = "aic_model" }
@@ -26,6 +27,7 @@ ros-kilted-ros-core = "*"
 ros-kilted-sensor-msgs = "*"                                                           # lerobot_robot_ros
 ros-kilted-std-msgs = "*"                                                              # lerobot_robot_ros
 ros-kilted-std-srvs = "*"                                                              # lerobot_robot_ros
+setuptools = ">=71.0.0,<81.0.0"                                                        # required by lerobot==0.4.3
 
 [pypi-dependencies]
 lerobot = "==0.4.3"

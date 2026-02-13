@@ -58,36 +58,15 @@ As an implementation detail, those API functions use the `aic_model` ROS node
 to publish data to the `aic_controller`, which is implemented using the
 [`ros2_control`](https://control.ros.org/rolling/index.html) framework.
 
-## Example
+## Baseline Policies
 
-To make this concrete, a [minimal example](https://github.com/intrinsic-dev/aic/blob/main/aic_example_policies/aic_example_policies/ros/WaveArm.py), `WaveArm`, shows how to implement the `insert_cable()` callback and issue motion commands to the arm.
+We provide several baseline policy implementations in the [`aic_example_policies`](../aic_example_policies/) package that demonstrate different approaches to the cable insertion task:
 
-The class name is provided when starting the `aic_model` ROS node.
-For interactive development, you can pass this via the command line—usually without a rebuild—thanks to colcon's `--symlink-install` feature.
-```
-ros2 run aic_model aic_model --ros-args -p policy:=aic_example_policies.ros.WaveArm
-```
+- **WaveArm** - A minimal example showing the basic Policy API structure
+- **CheatCode** - A "cheating" policy that uses ground truth data for training and debugging
+- **RunACT** - An ACT (Action Chunking with Transformers) policy implementation
 
-## Example 2: a "Cheating" policy
-
-For a more complex example, a "cheating" solution is provided in [CheatCode.py](https://github.com/intrinsic-dev/aic/blob/main/aic_example_policies/aic_example_policies/ros/CheatCode.py).
-This solution uses the TF transformation tree provided by the simulation when `ground_truth:=true` is set at launch time.
-The ground truth data will not be available at the competition's evaluation time, but it can be useful for training and debugging.
-`CheatCode.py` uses the poses of the plug and port to calculate target poses to send to `aic_controller`.
-To launch the simulation with ground truth enabled, and the port, plug, and cable present:
-```
-ros2 launch aic_bringup aic_gz_bringup.launch.py nic_card_mount_0_present:=true sc_port_0_present:=true ground_truth:=true spawn_task_board:=true spawn_cable:=true attach_cable_to_gripper:=true sfp_mount_rail_0_present:=true
-```
-
-Then, the `CheatCode.py` example policy can be started:
-```
-ros2 run aic_model aic_model --ros-args -p policy:=aic_example_policies.ros.CheatCode
-```
-
-To give `CheatCode.py` a goal so that it starts moving:
-```
-src/aic/aic_model/test/create_and_cancel_task.py
-```
+For detailed descriptions, usage instructions, and source code, see the [Example Policies README](../aic_example_policies/README.md).
 
 ## Tutorial: Creating a new policy node
 
@@ -167,9 +146,9 @@ It should look like this
 ros-kilted-my-policy-node = { path = "my_policy_node" }
 ```
 
-### Implement `Policy`
+### Implement `PolicyRos`
 
-For brevity, we will reuse the code from `aic_example_policies`. See the [ROS Policy API](#policy-api) section above for implementation details.
+For brevity, we will reuse the code from `aic_example_policies`. See the [ROS Policy API](#ros-policy-api) section above for implementation details.
 
 ```bash
 (aic) $ cp aic_example_policies/aic_example_policies/ros/WaveArm.py my_policy_node/my_policy_node/WaveArm.py

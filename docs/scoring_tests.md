@@ -12,7 +12,7 @@ Every terminal needs the ROS 2 workspace and Zenoh middleware configured:
 source ~/ws_aic/install/setup.bash
 export RMW_IMPLEMENTATION=rmw_zenoh_cpp
 export ZENOH_ROUTER_CHECK_ATTEMPTS=-1
-export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
+export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true;transport/shared_memory/transport_optimization/pool_size=536870912'
 ```
 
 Build the workspace (if not already built):

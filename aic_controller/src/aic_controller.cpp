@@ -768,13 +768,14 @@ controller_interface::return_type Controller::update(
             if (!target_state_.has_value() ||
                 target_state_.value().header.stamp !=
                     latest_target_state.header.stamp) {
-              // transform target pose from "gripper/tcp" frame to "base_link"
-              // frame
+              // Pose targets are processed in the "base_link" frame.
+              // Therefore, if the frame_id is "gripper/tcp", then we transform
+              // the pose target to the "base_link" frame
               latest_target_state.pose.linear() =
-                  current_tool_state_.pose.linear().inverse() *
+                  current_tool_state_.pose.linear() *
                   latest_target_state.pose.linear();
               latest_target_state.pose.translation() =
-                  current_tool_state_.pose.linear().inverse() *
+                  current_tool_state_.pose.linear() *
                       latest_target_state.pose.translation() +
                   current_tool_state_.pose.translation();
 
@@ -789,13 +790,17 @@ controller_interface::return_type Controller::update(
           // so that the velocity targets are applied relative to the
           // TCP frame
           latest_target_state.pose = current_tool_state_.pose;
+
+          // Velocity targets are processed in the "gripper/tcp" frame.
+          // Therefore, if the frame_id is "base_link", then we transform the
+          // velocity target to the "gripper/tcp" frame
           if (motion_update_.header.frame_id == "base_link") {
             // Transform target velocity from base frame into the TCP frame
             latest_target_state.velocity.head<3>() =
-                current_tool_state_.pose.rotation() *
+                current_tool_state_.pose.linear().inverse() *
                 latest_target_state.velocity.head<3>();
             latest_target_state.velocity.tail<3>() =
-                current_tool_state_.pose.rotation() *
+                current_tool_state_.pose.linear().inverse() *
                 latest_target_state.velocity.tail<3>();
           }
           target_state_ = latest_target_state;
@@ -908,7 +913,8 @@ controller_interface::return_type Controller::update(
           (tool_pose_error - last_tool_pose_error_).cwiseAbs();
 
       if (motion_update_received_ &&
-          tool_pose_error.cwiseAbs().maxCoeff() > 1e-2 &&
+          tool_pose_error.cwiseAbs().maxCoeff() >
+              params_.clamp_to_limits.tracking_error.min_translation_error &&
           abs_change_in_error.head<3>().maxCoeff() <
               params_.clamp_to_limits.tracking_error.min_translation_change &&
           abs_change_in_error.tail<3>().maxCoeff() <
@@ -935,13 +941,14 @@ controller_interface::return_type Controller::update(
 
       last_tool_pose_error_ = tool_pose_error;
 
-      // Transform target velocity from TCP frame into base frame
+      // The velocity target is originally in the TCP frame. Here, we transform
+      // the velocity target into the "base_link" frame
       Eigen::Matrix<double, 6, 1> new_tool_reference_base_frame;
       new_tool_reference_base_frame.head<3>() =
-          current_tool_state_.pose.rotation() *
+          current_tool_state_.pose.linear() *
           new_tool_reference.velocity.head<3>();
       new_tool_reference_base_frame.tail<3>() =
-          current_tool_state_.pose.rotation() *
+          current_tool_state_.pose.linear() *
           new_tool_reference.velocity.tail<3>();
 
       Eigen::Matrix<double, 6, 1> tool_vel_error =
