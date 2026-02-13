@@ -598,12 +598,10 @@ EngineState Engine::run() {
           "\033[1;32m✓ Trial '%s' completed successfully! Score: %f\033[0m",
           trial_id.c_str(), trial_score.total_score());
     } else {
-      RCLCPP_ERROR(node_->get_logger(),
-                   "\033[1;31m✗ Trial '%s' failed or was not completed\033[0m",
-                   trial_id.c_str());
-      engine_state_ = EngineState::Error;
-      // TODO(Yadunund): Clean up and write scoring data.
-      break;
+      RCLCPP_WARN(node_->get_logger(),
+                  "\033[1;33m⚠ Trial '%s' failed or was not completed. Score: "
+                  "%f. Continuing to next trial...\033[0m",
+                  trial_id.c_str(), trial_score.total_score());
     }
   }
 
@@ -612,12 +610,27 @@ EngineState Engine::run() {
   this->shutdown_model_node();
   this->score_run(score);
 
+  // Count successful and failed trials
+  size_t successful_trials = 0;
+  size_t failed_trials = 0;
+  for (const auto& trial_entry : trials_) {
+    if (trial_entry.second.state == TrialState::AllTasksCompleted) {
+      successful_trials++;
+    } else {
+      failed_trials++;
+    }
+  }
+
   RCLCPP_INFO(node_->get_logger(), " ");
   if (engine_state_ == EngineState::Running) {
     RCLCPP_INFO(node_->get_logger(),
                 "\033[1;32m╔════════════════════════════════════════╗\033[0m");
     RCLCPP_INFO(node_->get_logger(),
-                "\033[1;32m║   ✓ All Trials Completed!              ║\033[0m");
+                "\033[1;32m║   ✓ All Trials Processed!              ║\033[0m");
+    RCLCPP_INFO(
+        node_->get_logger(),
+        "\033[1;32m║   Successful: %zu  Failed: %zu             ║\033[0m",
+        successful_trials, failed_trials);
     RCLCPP_INFO(node_->get_logger(),
                 "\033[1;32m║   Total Score: %.3f                     ║\033[0m",
                 score.calculate_total_score());
@@ -630,6 +643,24 @@ EngineState Engine::run() {
                  "\033[1;31m║   ✗ Engine Stopped with Errors         ║\033[0m");
     RCLCPP_ERROR(node_->get_logger(),
                  "\033[1;31m╚════════════════════════════════════════╝\033[0m");
+  }
+  RCLCPP_INFO(node_->get_logger(), " ");
+
+  // Print full scoring breakdown
+  YAML::Node scoring_yaml = score.serialize();
+  std::stringstream ss;
+  ss << scoring_yaml;
+  RCLCPP_INFO(node_->get_logger(),
+              "\033[1;36m╔════════════════════════════════════════╗\033[0m");
+  RCLCPP_INFO(node_->get_logger(),
+              "\033[1;36m║        Complete Scoring Results        ║\033[0m");
+  RCLCPP_INFO(node_->get_logger(),
+              "\033[1;36m╚════════════════════════════════════════╝\033[0m");
+
+  // Split the YAML output by lines and print each line
+  std::string line;
+  while (std::getline(ss, line)) {
+    RCLCPP_INFO(node_->get_logger(), "\033[1;36m%s\033[0m", line.c_str());
   }
   RCLCPP_INFO(node_->get_logger(), " ");
 
@@ -1130,9 +1161,11 @@ bool Engine::ready_scoring(const Trial& trial) {
   std::vector<aic_scoring::Connection> connections;
   for (const auto& task : trial.tasks) {
     aic_scoring::Connection connection;
-    connection.plugName = task.cable_name + "/" + task.plug_name + "_link";
-    connection.portName = "task_board/" + task.target_module_name + "/" +
-                          task.port_name + "_link";
+    connection.cableName = task.cable_name;
+    connection.taskBoardName = "task_board";
+    connection.plugName = task.plug_name;
+    connection.portName = task.port_name;
+    connection.targetModuleName = task.target_module_name;
     connections.push_back(connection);
   }
 

@@ -2,7 +2,12 @@
 
 ![](../../media/aic_scene.png)
 
+> [!NOTE]
+> This guide assumes you've completed the [Getting Started](./getting_started.md) guide and have a running evaluation environment.
+
 The simulation environment is defined in the [`aic_description`](./../aic_description) package and comprises a robot, a task board, and various objects required for the cable insertion task. All 3D models for the scene are stored in the [`aic_assets`](./../aic_assets) package.
+
+## Scene Components
 
 ### Robot
 
@@ -16,31 +21,110 @@ The challenge utilizes a **Universal Robots UR5e** robotic arm, equipped with a 
 The core component of the challenge is the task board, defined in [`task_board.urdf.xacro`](../aic_description/urdf/task_board.urdf.xacro). This modular platform hosts various mounts, connectors, and modules required for the tasks.
 
 **Key Components:**
-* **Connectors:** Standard fiber optic connectors including LC, SC, and SFP types.
+* **Connectors:** Standard fiber optic connectors including SC and SFP types.
 * **NIC Cards:** Network Interface Cards.
 * **Mounts:** Specialized fixtures for securing the connectors and modules.
 
-**Spawning the Board:**
-The [`aic_bringup`](../aic_bringup/) package provides launch files to spawn the task board in simulation with a default layout. You can customize this layout by passing arguments to the [`spawn_task_board.launch.py`](../aic_bringup/launch/spawn_task_board.launch.py) launch file.
+See [Task Board Description](./task_board_description.md) for detailed specifications.
 
 ### Environment
 
 The global simulation settings—including lighting, physics properties, and general world setup—are defined in the [`aic.sdf`](../aic_description/world/aic.sdf) file.
 
-### Simulation Launch
+---
 
-To view the complete scene in Gazebo, first follow the [Getting Started](./getting_started.md) instructions to build your workspace.
-Once the build is complete, launch the simulator with the following command `ros2 launch aic_bringup aic_gz_bringup.launch.py`.
+## Exploring the Environment
 
-The launch file does the following:
+Now that you have the basic environment running, you can explore different configurations to understand the challenge better and create diverse training scenarios.
 
-- **Initializes the World**: Loads Gazebo with the [`aic.sdf`](../aic_description/world/aic.sdf) environment settings.
-- **Parses Xacros**: Processes the robot and task board Xacro files into URDF format.
-- **Spawns Entities**: Automatically places the robot arm and the task board into the simulation scene.
-- **Starts various ROS 2 nodes** including the Gazebo<->ROS bridge and ROS 2 controller to command the robot.
-- **Exports World State:** After spawning all entities, the simulation automatically saves the complete world state to `/tmp/aic.sdf`.
+### Customizing the Environment
 
-### Exporting World State for AI Training
+You can customize the simulation environment by passing parameters to the launch command. Whether you're using the **eval container** or a **source build**, the parameters are the same.
+
+**In the eval container (via distrobox):**
+```bash
+/entrypoint.sh [parameters]
+```
+
+**From source build:**
+```bash
+ros2 launch aic_bringup aic_gz_bringup.launch.py [parameters]
+```
+
+> [!TIP]
+> To check if your current terminal is inside the eval container:
+> ```bash
+> echo $CONTAINER_ID  # Should output: aic_eval
+> ```
+
+### Example: Custom Task Board Configuration
+
+Here's a complete example spawning a task board with various components:
+
+```bash
+spawn_task_board:=true \
+    task_board_x:=0.3 task_board_y:=-0.1 task_board_z:=1.2 \
+    task_board_roll:=0.0 task_board_pitch:=0.0 task_board_yaw:=0.785 \
+    sfp_mount_rail_0_present:=true sfp_mount_rail_0_translation:=-0.08 \
+    sc_mount_rail_0_present:=true sc_mount_rail_0_translation:=-0.09 \
+    nic_card_mount_0_present:=true nic_card_mount_0_translation:=0.005 \
+    sc_port_0_present:=true sc_port_0_translation:=-0.04 \
+    spawn_cable:=true cable_type:=sfp_sc_cable attach_cable_to_gripper:=true \
+    ground_truth:=true start_aic_engine:=false
+```
+
+**Key parameters for exploration:**
+- `ground_truth:=true` - Enables ground truth TF frames for easier debugging during development
+- `start_aic_engine:=false` - Disables automatic trial orchestration so you can freely explore
+- `spawn_task_board:=true` - Spawns the task board immediately
+- `spawn_cable:=true` - Spawns a cable in the scene
+- `attach_cable_to_gripper:=true` - Attaches the cable to the gripper
+- `cable_type:=sfp_sc_cable` - Type of cable (options: `sfp_sc_cable`, `sfp_sc_cable_reversed`)
+
+For the complete list of configurable parameters, see the [aic_bringup README](../aic_bringup/README.md).
+
+### Creating Training Scenarios
+
+**Generate diverse training environments** by varying the parameters:
+
+1. **Launch with different configurations** to create randomized scenarios
+2. **The complete world state is automatically saved** to `/tmp/aic.sdf` after spawning
+3. **Copy the file to preserve multiple scenarios:**
+   ```bash
+   cp /tmp/aic.sdf ~/training_scenarios/scenario_001.sdf
+   ```
+4. **Import into other simulators** like IsaacLab or MuJoCo for training
+
+**Example workflow:**
+```bash
+# Scenario 1: NIC card in slot 2
+/entrypoint.sh spawn_task_board:=true nic_card_mount_2_present:=true \
+    spawn_cable:=true cable_type:=sfp_sc_cable ground_truth:=true start_aic_engine:=false
+cp /tmp/aic.sdf ~/training_scenarios/nic_slot_2.sdf
+
+# Scenario 2: SC connector on right rail with different pose
+/entrypoint.sh spawn_task_board:=true task_board_yaw:=1.57 \
+    sc_mount_rail_1_present:=true spawn_cable:=true ground_truth:=true start_aic_engine:=false
+cp /tmp/aic.sdf ~/training_scenarios/sc_right_rotated.sdf
+```
+
+### Teleoperation
+
+To manually control the robot and get familiar with the environment:
+
+**Teleoperate the robot** in joint-space or Cartesian-space to:
+- Explore the workspace
+- Test cable insertion manually
+- Understand the robot's reach and limitations
+- Practice with and without cable attached
+
+Before teleoperating, we recommend reading the [AIC Controller Guide](./aic_controller.md) to understand the controller used in the challenge.
+
+See the [Robot Teleoperation Guide](../aic_utils/aic_teleoperation/README.md) for detailed instructions.
+
+---
+
+## Exporting World State for AI Training
 
 The simulation includes a world plugin that automatically exports the complete world state after all entities (robot, task board, cable) are spawned. This feature is particularly useful for AI policy training and cross-platform simulation workflows.
 
@@ -55,18 +139,13 @@ The simulation includes a world plugin that automatically exports the complete w
   - `<save_world_path>`: Path where the world file is saved (default: `/tmp/aic.sdf`)
   - `<save_world_delay_s>`: Delay in simulation seconds before exporting (default: `0.0`)
 
-**Example Workflow:**
-```bash
-# Launch with custom configuration
-ros2 launch aic_bringup aic_gz_bringup.launch.py \
-  spawn_task_board:=true \
-	nic_card_mount_1_present:=true \
-	sc_port_0_present:=true \
-  spawn_cable:=true \
-	cable_type:=sfp_sc_cable \
-	attach_cable_to_gripper:=true
+---
 
+## Next Steps
 
-# The complete world state is automatically saved to /tmp/aic.sdf
-# This file contains the robot, enclosure, task board, and cable with the specified configuration
-```
+Now that you understand the scene:
+
+- **Develop your policy:** See [Policy Integration Guide](./policy.md)
+- **Understand the interfaces:** Review [AIC Interfaces](./aic_interfaces.md)
+- **Learn about scoring:** Read [Scoring](./scoring.md)
+- **Explore example policies:** Check out [`aic_example_policies/`](../aic_example_policies/)

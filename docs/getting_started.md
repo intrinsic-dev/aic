@@ -2,397 +2,202 @@
 
 Welcome to the AI for Industry Challenge! This guide will help you set up your development environment and get started with building your solution.
 
-## Choose Your Setup Method
+## Architecture Overview
 
-When building and developing your policy, you have flexible setup options:
+The challenge uses a two-component architecture:
 
-### Environment Options
+1. **Evaluation Component** (provided) - Runs the simulation, robot, sensors, and scoring system
+2. **Participant Model** (you implement) - Your ROS 2 node that processes sensor data and commands the robot
 
-1. **🐍 Pixi Environment** (Recommended for Python-focused development)
-   - Managed Python/ROS environment using [pixi](https://pixi.prefix.dev/latest/installation/)
-   - Simplified dependency management
-   - Works locally or inside containers
-   - Ideal for developing policies with Python packages
+**Source code for both components is available in this toolkit.** Since the Evaluation Component will not change during the competition, we publish a Docker image (`aic_eval`) for convenience that you can reuse—this is the **recommended workflow**. Advanced users who prefer to build from source can follow the [Building from Source](./build_eval.md) guide.
 
-2. **💻 Native Ubuntu 24.04**
-   - Direct installation on Ubuntu 24.04
-   - Full control over system dependencies
-   - Works locally or inside containers
-   - Required for complete system-level development
-
-### Deployment Options
-
-Both environment options can be used in either:
-- **🐳 Container:** Pre-built Docker containers matching the evaluation environment (recommended)
-- **🖥️ Local:** Direct installation on your Ubuntu 24.04 system
-
-> [!TIP]
-> **Recommended Setup:** Use pixi inside the participant container for development, then submit your containerized solution. This ensures dependency consistency and matches the evaluation environment.
+For a detailed explanation of the architecture, packages, and interfaces, see the [Toolkit Architecture](../README.md#toolkit-architecture) section in the README.
 
 ---
 
-## Container Setup (Recommended)
+## Setup
 
-The challenge workflow relies on two distinct Docker containers:
+First, install the following tools:
+* [Docker](#setup-docker) (required)
+* [Distrobox](#setup-distrobox) (required)
+* [Pixi](#setup-pixi) (required)
+* [NVIDIA Container Toolkit](#setup-and-configure-nvidia-container-toolkit) (optional - for NVIDIA GPU users)
 
-### 1. Evaluation Container (`aic_eval`)
-This container hosts:
-- Gazebo simulation environment
-- Robot arm and end-of-arm tooling
-- Task board spawning and management
-- Trial orchestration via `aic_engine`
-- Scoring system
+### Setup Docker
 
-**How to use:**
-- Pre-built images are available at `ghcr.io/intrinsic-dev/aic/aic_eval:latest`
-- See [docker/aic_eval/README.md](../docker/aic_eval/README.md) for detailed instructions
+1. Install [Docker Engine](https://docs.docker.com/engine/install/) for your platform.
+2. Complete the [Linux post-installation steps for Docker Engine](https://docs.docker.com/engine/install/linux-postinstall/) to enable managing Docker as a non-root user.
 
-### 2. Participant Container (`aic_model`)
-This is your development workspace where you implement your policy.
+### Setup and Configure NVIDIA Container Toolkit (Optional)
 
-**What you'll do:**
-- Implement your policy in the `aic_model` package
-- Choose between pixi environment or native Ubuntu 24.04
-- Test locally against the evaluation container
-- Build and submit your container image for official evaluation
+> [!NOTE]
+> This step is only required if you have an NVIDIA GPU and want to use GPU acceleration for optimal performance.
 
-**How to use:**
-- See [docker/aic_model/README.md](../docker/aic_model/README.md) for detailed instructions
-- See [Policy Integration Guide](./policy.md) for implementation details
+1. Install the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) to allow Docker Engine to access your NVIDIA GPU.
 
-### Quick Start with Containers
+2. After installation, configure Docker to use the NVIDIA runtime:
+    ```bash
+    sudo nvidia-ctk runtime configure --runtime=docker
+    sudo systemctl restart docker
+    ```
 
-1. **Set up the evaluation container:**
-   ```bash
-   # Set up Docker container manager
-   export DBX_CONTAINER_MANAGER=docker
+### Setup Distrobox
 
-   # Create internal network
-   docker network create --internal aic
+We use [Distrobox](https://distrobox.it/) to tightly integrate the `aic_eval` container with your host system. We recommend installing Distrobox using your package manager. Check the [supported distros](https://distrobox.it/#installation) to see if your distribution supports Distrobox.
 
-   # Create and enter the eval container
-   distrobox create -r -i ghcr.io/intrinsic-dev/aic/aic_eval:latest --unshare-all -a --network=aic aic_eval
-   distrobox enter -r aic_eval
-
-   # Inside the container, start the environment
-   /entrypoint.sh
-   ```
-
-2. **Set up your development container:**
-   ```bash
-   # Follow instructions in docker/aic_model/README.md
-   ```
-
-3. **Test your policy:**
-   - Your policy will communicate with the evaluation container over ROS 2
-   - See [Testing Your Policy](#testing-your-policy) below
-
----
-
-## Local Setup
-
-If you prefer to build and run everything locally on Ubuntu 24.04, you can choose between a pixi-managed environment or native installation.
-
-### Prerequisites
-
-- **Operating System:** [Ubuntu 24.04 (Noble Numbat)](https://releases.ubuntu.com/noble/)
-- **ROS 2:** [ROS 2 Kilted Kaiju](https://docs.ros.org/en/kilted/Installation/Ubuntu-Install-Debs.html)
-
-### Option A: Pixi Environment (Python-Focused Development)
-
-Pixi provides a managed environment for Python dependencies and ROS packages.
-
-#### 1. Install Pixi
-
+For Ubuntu, run:
 ```bash
-curl -fsSL https://pixi.sh/install.sh | bash
-source ~/.bashrc
+sudo apt install distrobox
 ```
 
-#### 2. Clone Repository
+For other distributions, refer to the [Alternative methods](https://distrobox.it/#alternative-methods).
+
+### Setup Pixi
+
+We use [Pixi](https://pixi.prefix.dev/latest/) to manage packages and dependencies, including ROS 2.
+
+For Ubuntu, run:
+```bash
+curl -fsSL https://pixi.sh/install.sh | sh
+# Restart your terminal after installation
+```
+
+For other operating systems, refer to the [Alternative Installation Methods](https://pixi.prefix.dev/latest/installation/#alternative-installation-methods).
+
+
+## Quick Start
+
+This section will guide you through:
+
+1. **Running the Evaluation Component** - Start the `aic_eval` container to bring up the simulation environment, robot, sensors, and scoring system
+2. **Setting Up Your Workspace** - Clone the challenge repository and install dependencies using Pixi
+3. **Running an Example Policy** - Execute a provided example policy from your local workspace against the evaluation container
+
+Once you've completed these steps and want to prepare your submission, see the [Submission Guidelines](./submission.md) to learn how to containerize your participant workspace.
+
+---
+
+### Step 1: Start the Evaluation Container
 
 ```bash
+# Indicate distrobox to use Docker as container manager
+export DBX_CONTAINER_MANAGER=docker
+
+# Create and enter the eval container
+docker pull ghcr.io/intrinsic-dev/aic/aic_eval:latest
+distrobox create -r -i ghcr.io/intrinsic-dev/aic/aic_eval:latest aic_eval
+distrobox enter -r aic_eval
+
+# Inside the container, start the environment
+/entrypoint.sh ground_truth:=false start_aic_engine:=true
+```
+
+The [`entrypoint.sh`](../docker/aic_eval/Dockerfile) script runs a Zenoh router and the [`aic_gz_bringup.launch.py`](../aic_bringup/README.md#1-aic_gz_bringuplaunchpy) launch file.
+
+**What you should see:**
+- Two windows open: **Gazebo** (simulation) and **RViz** (visualization)
+- In Gazebo: A workcell with a Universal Robots UR5e manipulator mounted on a table
+- In the terminal: Log messages indicating the AIC engine has initialized and is waiting for the `aic_model` node
+- No robot movement yet (the robot is waiting for your policy to connect)
+
+![Evaluation Environment](../../media/eval_environment_waiting.png)
+
+See [Scene Description](./scene_description.md) for more details about the simulation environment.
+
+<!-- TODO: Update instruction to disable ACL after https://github.com/intrinsic-dev/aic/pull/190 or https://github.com/intrinsic-dev/aic/pull/171 is merged. -->
+
+> [!TIP]
+> If you have an NVIDIA GPU, create the distrobox container with GPU support for optimal performance:
+> ```bash
+> distrobox create -r --nvidia -i ghcr.io/intrinsic-dev/aic/aic_eval:latest aic_eval
+> ```
+
+> [!Note]
+> If the `docker pull` command fails, you may need to [log in to ghcr.io](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-with-a-personal-access-token-classic).
+
+<!-- TODO: Shouldn't need to login after we make it public -->
+
+---
+
+### Step 2: Set Up Your Workspace
+
+```bash
+# Clone this repo
 mkdir -p ~/ws_aic/src
 cd ~/ws_aic/src
 git clone https://github.com/intrinsic-dev/aic
-```
 
-#### 3. Initialize Pixi Environment
-
-```bash
+# Install and build dependencies
 cd ~/ws_aic/src/aic
 pixi install
 ```
 
-#### 4. Use Pixi Environment
-
-```bash
-# Enter the pixi shell
-pixi shell
-
-# Or run commands directly with pixi run
-pixi run ros2 run aic_model aic_model --ros-args -p policy:=aic_example_policies.ros.WaveArm
-```
-
-**Note:** The pixi environment includes ROS packages and Python dependencies configured in `pixi.toml`. See [LeRobot Integration](../aic_utils/lerobot_robot_aic/README.md) for an example of pixi usage.
-
-### Option B: Native Ubuntu 24.04 Installation
-
-For full system-level development, install all dependencies natively.
-
-#### 1. Add Gazebo Repository
-
-```bash
-sudo curl https://packages.osrfoundation.org/gazebo.gpg --output /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/gazebo-stable.list > /dev/null
-sudo apt-get update
-```
-
-#### 2. Clone and Build the Workspace
-
-```bash
-# Create workspace
-sudo apt update && sudo apt upgrade -y
-mkdir -p ~/ws_aic/src
-cd ~/ws_aic/src
-
-# Clone the repository
-git clone https://github.com/intrinsic-dev/aic
-
-# Import dependencies
-vcs import . < aic/aic.repos --recursive
-
-# Install Gazebo dependencies
-sudo apt -y install $(sort -u $(find . -iname 'packages-'`lsb_release -cs`'.apt' -o -iname 'packages.apt' | grep -v '/\.git/') | sed '/gz\|sdf/d' | tr '\n' ' ')
-
-# Install ROS dependencies
-cd ~/ws_aic
-sudo rosdep init # if running rosdep for the first time.
-rosdep install --from-paths src --ignore-src --rosdistro kilted -yr --skip-keys "gz-cmake3 DART libogre-dev libogre-next-2.3-dev rosetta"
-
-# Build the workspace
-source /opt/ros/kilted/setup.bash
-GZ_BUILD_FROM_SOURCE=1 colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release --merge-install --symlink-install --packages-ignore lerobot_robot_aic
-```
-
-### Running the Challenge Environment
-
-> [!NOTE]
-> For detailed information about all available launch files and their configurable parameters, see the [aic_bringup README](../aic_bringup/README.md).
-
-> [!NOTE]
-> We rely on [rmw_zenoh](https://github.com/ros2/rmw_zenoh) as the ROS 2 middleware for this application. Please ensure the `RMW_IMPLEMENTATION` environment variable is set to `rmw_zenoh_cpp` in all terminals.
-
-Start the Zenoh router.
-
-```bash
-source ~/ws_aic/install/setup.bash
-export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
-ros2 run rmw_zenoh_cpp rmw_zenohd
-```
-
-#### Evaluator bringup
-
-> [!NOTE]
-> Update with launch commands to start Zenoh router with ACLs.
-
-To launch the evaluator,
-
-```bash
-source ~/ws_aic/install/setup.bash
-export RMW_IMPLEMENTATION=rmw_zenoh_cpp
-export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
-ros2 launch aic_bringup aic_gz_bringup.launch.py ground_truth:=false start_aic_engine:=true
-```
-
-This will launch Gazebo with the robot arm and end-of-arm tooling together with all required drivers.
-The `TaskBoard` and `Cable` will be spawned by `aic_engine`, the orchestrator for the challenge.
-Note that you will need to bring up your model for the `aic_engine` to work correctly, see [Submission Bringup](#submission-bringup).
-
-
-#### Training Bringup
-
-During training, you can bring up the scene with randomized poses of the `TaskBoard` and `Cables`.
-The simulation automatically exports the complete world state to `/tmp/aic.sdf` after spawning all entities, which can be imported into other simulators like IsaacLab or MuJoCo for AI policy training.
-
-The layout of the `TaskBoard` can be configured at runtime.
-For the full list of configurable parameters, see the [aic_bringup README](../aic_bringup/README.md).
-Ground truth poses of ports and plugs can be made available in TF tree as well.
-
-**Example:** Launch with a fully configured task board and cable:
-
-
-```bash
-source ~/ws_aic/install/setup.bash
-export RMW_IMPLEMENTATION=rmw_zenoh_cpp
-export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
-ros2 launch aic_bringup aic_gz_bringup.launch.py \
-	spawn_task_board:=true \
-  task_board_x:=0.3 task_board_y:=-0.1 task_board_z:=1.2 \
-  task_board_roll:=0.0 task_board_pitch:=0.0 task_board_yaw:=0.785 \
-  lc_mount_rail_0_present:=true lc_mount_rail_0_translation:=-0.05 \
-  lc_mount_rail_0_roll:=0.0 lc_mount_rail_0_pitch:=0.0 lc_mount_rail_0_yaw:=0.0 \
-  sfp_mount_rail_0_present:=true sfp_mount_rail_0_translation:=-0.08 \
-  sfp_mount_rail_0_roll:=0.0 sfp_mount_rail_0_pitch:=0.0 sfp_mount_rail_0_yaw:=0.0 \
-  sc_mount_rail_0_present:=true sc_mount_rail_0_translation:=-0.09 \
-  sc_mount_rail_0_roll:=0.0 sc_mount_rail_0_pitch:=0.0 sc_mount_rail_0_yaw:=0.0 \
-  lc_mount_rail_1_present:=true lc_mount_rail_1_translation:=0.05 \
-  lc_mount_rail_1_roll:=0.0 lc_mount_rail_1_pitch:=0.0 lc_mount_rail_1_yaw:=0.0 \
-  sfp_mount_rail_1_present:=true sfp_mount_rail_1_translation:=0.08 \
-  sfp_mount_rail_1_roll:=0.0 sfp_mount_rail_1_pitch:=0.0 sfp_mount_rail_1_yaw:=0.0 \
-  sc_mount_rail_1_present:=true sc_mount_rail_1_translation:=0.09 \
-  sc_mount_rail_1_roll:=0.0 sc_mount_rail_1_pitch:=0.0 sc_mount_rail_1_yaw:=0.0 \
-  sc_port_0_present:=true sc_port_0_translation:=-0.04 \
-  sc_port_0_roll:=0.0 sc_port_0_pitch:=0.0 sc_port_0_yaw:=0.0 \
-  sc_port_1_present:=true sc_port_1_translation:=0.04 \
-  sc_port_1_roll:=0.0 sc_port_1_pitch:=0.0 sc_port_1_yaw:=0.0 \
-  nic_card_mount_0_present:=true nic_card_mount_0_translation:=0.005 \
-  nic_card_mount_0_roll:=0.0 nic_card_mount_0_pitch:=0.0 nic_card_mount_0_yaw:=0.0 \
-  nic_card_mount_1_present:=true nic_card_mount_1_translation:=-0.008 \
-  nic_card_mount_1_roll:=0.0 nic_card_mount_1_pitch:=0.0 nic_card_mount_1_yaw:=0.0 \
-  nic_card_mount_2_present:=true nic_card_mount_2_translation:=0.012 \
-  nic_card_mount_2_roll:=0.0 nic_card_mount_2_pitch:=0.0 nic_card_mount_2_yaw:=0.0 \
-  nic_card_mount_3_present:=true nic_card_mount_3_translation:=-0.015 \
-  nic_card_mount_3_roll:=0.0 nic_card_mount_3_pitch:=0.0 nic_card_mount_3_yaw:=0.0 \
-  nic_card_mount_4_present:=true nic_card_mount_4_translation:=0.01 \
-  nic_card_mount_4_roll:=0.0 nic_card_mount_4_pitch:=0.0 nic_card_mount_4_yaw:=0.0 \
-  spawn_cable:=true cable_type:=sfp_sc_cable attach_cable_to_gripper:=true \
-  ground_truth:=true start_aic_engine:=false
-
-# The complete world state is automatically saved to /tmp/aic.sdf
-# This file contains the robot, enclosure, task board, and cable with the specified configuration
-# Import this file into IsaacLab, MuJoCo, or other simulators for training
-```
-
-**Creating multiple training scenarios:** Run the launch command with different parameter combinations to generate diverse training environments. Each launch will overwrite `/tmp/aic.sdf` with the new configuration, so copy it to a different location if you want to preserve multiple scenarios.
-
-#### Submission bringup
-
-Run a minimal `aic_model` demo. This demo `aic_model` implementation should wave the arm back and forth for 30 seconds, before the goal
-
-```bash
-source ~/ws_aic/install/setup.bash
-export RMW_IMPLEMENTATION=rmw_zenoh_cpp
-export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
-ros2 run aic_model aic_model --ros-args -p policy:=aic_example_policies.ros.WaveArm
-```
-
-
-Run this in a different shell, for convenience
-```bash
-source ~/ws_aic/install/setup.bash
-export RMW_IMPLEMENTATION=rmw_zenoh_cpp
-export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
-cd ~/ws_aic/src/aic/aic_model/test
-./create_and_cancel_task.py
-```
+**What you should see:**
+- Pixi downloading and installing ROS 2 packages and dependencies
+- A successful installation message when complete
+- A `.pixi` directory created in your workspace with all dependencies
 
 ---
 
-## Testing Your Policy
+### Step 3: Run an Example Policy
 
-After setting up your environment, you can test your policy implementation:
-
-### 1. Start the Evaluation Environment
-
-**Terminal 1 - Start Zenoh Router:**
 ```bash
-source ~/ws_aic/install/setup.bash
-export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
-ros2 run rmw_zenoh_cpp rmw_zenohd
+pixi run ros2 run aic_model aic_model --ros-args -p policy:=aic_example_policies.ros.WaveArm
 ```
 
-**Terminal 2 - Launch Evaluation Environment:**
-```bash
-source ~/ws_aic/install/setup.bash
-export RMW_IMPLEMENTATION=rmw_zenoh_cpp
-export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
-ros2 launch aic_bringup aic_gz_bringup.launch.py ground_truth:=false start_aic_engine:=true
-```
+Once the `aic_model` node starts, the AIC engine spawns a task board and a gripper-attached cable in the Gazebo window. The eval container terminal will then track three successive trials and display their scores. See [Scoring](./scoring.md) for more details.
 
-### 2. Run Your Policy
+**Note:** The `WaveArm` policy is a dummy example that simply moves the robot arm back and forth in a waving motion. It does not attempt to solve the cable insertion task. The purpose of this example is to demonstrate how the [`aic_engine`](../aic_engine/README.md) orchestrates trials based on the [sample configuration](../aic_engine/config/sample_config.yaml) and scores the policy based on its performance (which will be poor in this case, as expected).
 
-**Terminal 3 - Start Your aic_model:**
-```bash
-source ~/ws_aic/install/setup.bash
-export RMW_IMPLEMENTATION=rmw_zenoh_cpp
-export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
-ros2 run aic_model aic_model --ros-args -p policy:=aic_example_policies.ros.WaveArm
-```
+**What you should see:**
+- **In Gazebo**: The task board and a cable attached to the gripper appear in the simulation
+- **In the robot**: The arm moves back and forth in a waving motion
+- **In the eval container terminal**:
+  - Log messages showing trial progression (Trial 1/3, Trial 2/3, Trial 3/3)
+  - Scoring information after each trial
+  - Final summary with total scores across all trials
+- The robot performing three successive trials automatically
+- **Results saved to**: `$HOME/aic_results/` (or `$AIC_RESULTS_DIR` if set)
 
-Replace `aic_example_policies.ros.WaveArm` with your policy implementation.
+![Wave Arm Policy](../../media/wave_arm_policy.gif)
 
-### 3. Monitor Progress
+If the robot doesn't move or you don't see the expected behavior, check the [Troubleshooting](./troubleshooting.md) section.
 
-- Watch the Gazebo window for robot movement
-- Check terminal output for task progress and scoring information
-- Results will be saved to `$HOME/aic_results/` (or `$AIC_RESULTS_DIR` if set)
+---
+
+## 🎉 Congratulations!
+
+You've successfully completed the Quick Start guide! You now have:
+- ✅ A running evaluation environment with Gazebo and RViz
+- ✅ A local Pixi workspace with all dependencies installed
+- ✅ Experience running an example policy and seeing how the AIC engine orchestrates trials
+
+**Next:** When you're ready to submit your solution, you'll need to containerize your participant workspace. See the [Submission Guidelines](./submission.md) for detailed instructions on packaging and submitting your policy.
 
 ---
 
 ## Next Steps
 
-Now that you have your environment set up:
+Now that your environment is set up:
 
-1. **📚 Read the Documentation**
-   - [Qualification Phase Details](./qualification_phase.md) - Understand the trials you'll be evaluated on
-   - [Challenge Rules](./challenge_rules.md) - Ensure your policy complies with all requirements
-   - [Policy Integration Guide](./policy.md) - Learn how to implement your policy
-
-2. **💻 Start Developing**
-   - Explore `aic_example_policies/` for reference implementations
+1. **💻 Start Developing**
+   - Explore the [Scene Description](./scene_description.md) to learn how to customize and explore the environment
+   - Read the [Policy Integration Guide](./policy.md) to understand how to create your own policy node
+   - Check out [`aic_example_policies/`](../aic_example_policies/) for reference implementations
    - Review [AIC Interfaces](./aic_interfaces.md) to understand available sensors and actuators
    - Consult [AIC Controller](./aic_controller.md) to learn about motion commands
 
-3. **🧪 Test and Iterate**
-   - Use the example configurations in `aic_engine/config/` to test different scenarios
+2. **🧪 Test and Iterate**
+   - Use the example configurations in [`aic_engine/config/`](../aic_engine/config/) to test different scenarios
+   - Create your own test scenarios by following the configuration examples in [`aic_engine/config/`](../aic_engine/config/)
    - Monitor your policy's behavior with ground truth data during development
+   - See [Participant Utilities](./participant_utilities.md) for a list of helpful tools
    - Refer to [Troubleshooting](./troubleshooting.md) if you encounter issues
 
-4. **📦 Prepare for Submission**
-   - Package your solution following [Submission Guidelines](./submission.md)
+3. **📦 Prepare for Submission**
+   - Package your solution following the [Submission Guidelines](./submission.md)
    - Test your container before submitting
    - Submit through the official portal
-
----
-
-## Advanced Topics
-
-### LeRobot Support
-
-A LeRobot interface is available to train a policy using [LeRobot](https://huggingface.co/lerobot). See [lerobot_robot_aic](../aic_utils/lerobot_robot_aic/README.md).
-
-### Debugging Commands
-
-**Send a reference wrench command (10N in the positive z-axis) to the controller:**
-```bash
-source ~/ws_aic/install/setup.bash
-export RMW_IMPLEMENTATION=rmw_zenoh_cpp
-export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
-ros2 launch aic_bringup move_to_contact.launch.py contact_force_z:=10.0
-```
-
-**Control the gripper via ROS 2 Action (range: 0.0 to 0.025m):**
-```bash
-source ~/ws_aic/install/setup.bash
-export RMW_IMPLEMENTATION=rmw_zenoh_cpp
-export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
-ros2 launch aic_bringup gripper_action.launch.py use_position:=true position:=0.024
-```
-
-**Send a joint-position command to the arm:**
-```bash
-source ~/ws_aic/install/setup.bash
-export RMW_IMPLEMENTATION=rmw_zenoh_cpp
-export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
-# Switch to joint target mode on the controller
-ros2 service call /aic_controller/change_target_mode aic_control_interfaces/srv/ChangeTargetMode '{target_mode: 1}'
-# Send joint target
-ros2 topic pub /aic_controller/joint_commands aic_control_interfaces/msg/JointMotionUpdate '{target_state:
-{positions: [0.0, -1.57, -1.57, -1.57, 1.57, 0] }, target_stiffness: [100.0, 100.0, 100.0, 50.0, 50.0, 50.0], target_damping: [40.0, 40.0, 40.0, 15.0, 15.0, 15.0], trajectory_generation_mode: {mode: 2}, time_to_target_seconds: 1.0 }' --once
-```
-
----
 
 ## Need Help?
 

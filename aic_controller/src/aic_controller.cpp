@@ -41,6 +41,7 @@ Controller::Controller()
       last_tool_pose_error_(Eigen::Matrix<double, 6, 1>::Zero()),
       time_to_target_seconds_(0.0),
       remaining_time_to_target_seconds_(0.0),
+      last_error_change_time_(0, 0, RCL_ROS_TIME),
       kinematics_loader_(nullptr),
       kinematics_(nullptr),
       force_torque_sensor_(nullptr) {
@@ -767,13 +768,14 @@ controller_interface::return_type Controller::update(
             if (!target_state_.has_value() ||
                 target_state_.value().header.stamp !=
                     latest_target_state.header.stamp) {
-              // transform target pose from "gripper/tcp" frame to "base_link"
-              // frame
+              // Pose targets are processed in the "base_link" frame.
+              // Therefore, if the frame_id is "gripper/tcp", then we transform
+              // the pose target to the "base_link" frame
               latest_target_state.pose.linear() =
-                  current_tool_state_.pose.linear().inverse() *
+                  current_tool_state_.pose.linear() *
                   latest_target_state.pose.linear();
               latest_target_state.pose.translation() =
-                  current_tool_state_.pose.linear().inverse() *
+                  current_tool_state_.pose.linear() *
                       latest_target_state.pose.translation() +
                   current_tool_state_.pose.translation();
 
@@ -788,13 +790,17 @@ controller_interface::return_type Controller::update(
           // so that the velocity targets are applied relative to the
           // TCP frame
           latest_target_state.pose = current_tool_state_.pose;
+
+          // Velocity targets are processed in the "gripper/tcp" frame.
+          // Therefore, if the frame_id is "base_link", then we transform the
+          // velocity target to the "gripper/tcp" frame
           if (motion_update_.header.frame_id == "base_link") {
             // Transform target velocity from base frame into the TCP frame
             latest_target_state.velocity.head<3>() =
-                current_tool_state_.pose.rotation() *
+                current_tool_state_.pose.linear().inverse() *
                 latest_target_state.velocity.head<3>();
             latest_target_state.velocity.tail<3>() =
-                current_tool_state_.pose.rotation() *
+                current_tool_state_.pose.linear().inverse() *
                 latest_target_state.velocity.tail<3>();
           }
           target_state_ = latest_target_state;
@@ -898,15 +904,51 @@ controller_interface::return_type Controller::update(
                      "target tool frame");
         return controller_interface::return_type::ERROR;
       }
+
+      // If there is no change in the error for a given timeout duration,
+      // the controller is not making progress towards the target so we reset
+      // the target to the current position and wait for the next MotionUpdate.
+      rclcpp::Time current_time = get_node()->get_clock()->now();
+      auto abs_change_in_error =
+          (tool_pose_error - last_tool_pose_error_).cwiseAbs();
+
+      if (motion_update_received_ &&
+          tool_pose_error.cwiseAbs().maxCoeff() >
+              params_.clamp_to_limits.tracking_error.min_translation_error &&
+          abs_change_in_error.head<3>().maxCoeff() <
+              params_.clamp_to_limits.tracking_error.min_translation_change &&
+          abs_change_in_error.tail<3>().maxCoeff() <
+              params_.clamp_to_limits.tracking_error.min_angular_change) {
+        rclcpp::Duration time_since_last_error_change =
+            current_time - last_error_change_time_;
+        if (time_since_last_error_change.seconds() >
+            params_.clamp_to_limits.tracking_error.timeout) {
+          RCLCPP_ERROR(get_node()->get_logger(),
+                       "Tracking error is not converging! Resetting "
+                       "target to current position.");
+          // Reset target state to current tool position
+          new_tool_reference = current_tool_state_;
+
+          last_error_change_time_ = current_time;
+          // Reset motion update to prevent reading from it until the next
+          // received message
+          target_state_ = std::nullopt;
+          motion_update_received_ = false;
+        }
+      } else {
+        last_error_change_time_ = current_time;
+      }
+
       last_tool_pose_error_ = tool_pose_error;
 
-      // Transform target velocity from TCP frame into base frame
+      // The velocity target is originally in the TCP frame. Here, we transform
+      // the velocity target into the "base_link" frame
       Eigen::Matrix<double, 6, 1> new_tool_reference_base_frame;
       new_tool_reference_base_frame.head<3>() =
-          current_tool_state_.pose.rotation().inverse() *
+          current_tool_state_.pose.linear() *
           new_tool_reference.velocity.head<3>();
       new_tool_reference_base_frame.tail<3>() =
-          current_tool_state_.pose.rotation().inverse() *
+          current_tool_state_.pose.linear() *
           new_tool_reference.velocity.tail<3>();
 
       Eigen::Matrix<double, 6, 1> tool_vel_error =

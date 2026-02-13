@@ -355,6 +355,11 @@ aic_controller:
         - 3.14159 # y
         - 3.14159 # z
       max_rotational_velocity: 2.0 # [rad/s]
+      tracking_error:
+        timeout: 2.0 # [s]
+        min_angular_change: 0.01 #[rad]
+        min_translation_change: 0.01 #[m]
+        min_translation_error: 0.2 #[m] make sure it's larger than min_translation_change to avoid instability
 
     control_frequency: 500.0 # [Hz]
 

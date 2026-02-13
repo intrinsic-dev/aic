@@ -40,8 +40,8 @@ scoring:
         type: "aic_control_interfaces/msg/MotionUpdate"
     - topic:
     # Cable plug-port insertion task completion event
-        name: "/scoring/insertion_completion"
-        type: "std_msgs/msg/Bool"
+        name: "/scoring/insertion_event"
+        type: "std_msgs/msg/String"
 
 task_board_limits:
   nic_rail:
