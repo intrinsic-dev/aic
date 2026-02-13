@@ -42,9 +42,11 @@ To advance in the challenge and remain eligible for prizes, teams must submit th
 
 For detailed upload instructions, see [Submission Guidelines](./submission.md).
 
-## Baseline Solution
+## Baseline Policies
 
-See [Policy](./policy.md) for how to run the provided [ACT policy](TODO) in `aic_example_policies`.
+We provide several baseline policy implementations to help you get started, including a minimal example, a ground truth-based policy for debugging, and an ACT (Action Chunking with Transformers) policy.
+
+For details on running these policies, see the [Example Policies README](../aic_example_policies/README.md) and the [Policy Integration Guide](./policy.md#baseline-policies).
 
 ---
 
