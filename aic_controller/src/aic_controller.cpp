@@ -908,7 +908,8 @@ controller_interface::return_type Controller::update(
           (tool_pose_error - last_tool_pose_error_).cwiseAbs();
 
       if (motion_update_received_ &&
-          tool_pose_error.cwiseAbs().maxCoeff() > 1e-2 &&
+          tool_pose_error.cwiseAbs().maxCoeff() >
+              params_.clamp_to_limits.tracking_error.min_translation_error &&
           abs_change_in_error.head<3>().maxCoeff() <
               params_.clamp_to_limits.tracking_error.min_translation_change &&
           abs_change_in_error.tail<3>().maxCoeff() <
