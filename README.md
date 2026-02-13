@@ -20,11 +20,11 @@ New to the challenge? Follow these steps to get started:
 
 1. **📖 Understand the Challenge**
    - Read the [Challenge Overview](./docs/overview.md) to understand the goals.
-   - Review the [Qualification Phase](./docs/qualification_phase.md) to understand what you'll be building.
+   - Review the [Qualification Phase](./docs/phases.md#qualification-phase-train-your-model) to understand what you'll be building.
 
 2. **🔧 Set Up Your Environment**
    - Follow the [Getting Started](./docs/getting_started.md) to set up your development environment.
-   - Choose between local setup or Docker containers.
+   - Run the evaluation container and set up your local workspace with Pixi.
 
 3. **💻 Develop Your Policy**
    - Start with the [Policy Integration Guide](./docs/policy.md) to implement your solution.

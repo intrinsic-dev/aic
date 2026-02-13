@@ -157,6 +157,7 @@ Once the `aic_model` node starts, the AIC engine spawns a task board and a gripp
   - Scoring information after each trial
   - Final summary with total scores across all trials
 - The robot performing three successive trials automatically
+- **Results saved to**: `$HOME/aic_results/` (or `$AIC_RESULTS_DIR` if set)
 
 ![Wave Arm Policy](../../media/wave_arm_policy.gif)
 
@@ -181,7 +182,7 @@ Now that your environment is set up:
 
 1. **💻 Start Developing**
    - Read the [Policy Integration Guide](./policy.md) to understand how to create your own policy node
-   - See [Explore Environment](./explore_environment.md) to learn how to customize the training environment
+   - Explore the [Scene Description](./scene_description.md) to learn how to customize and explore the environment
    - Check out [`aic_example_policies/`](../aic_example_policies/) for reference implementations
    - Review [AIC Interfaces](./aic_interfaces.md) to understand available sensors and actuators
    - Consult [AIC Controller](./aic_controller.md) to learn about motion commands
