@@ -21,13 +21,13 @@ from typing import Callable, Dict, Any
 from rclpy.node import Node
 from geometry_msgs.msg import Twist, Vector3
 
-from aic_model.policy_ros import PolicyRos
+from aic_model.policy import Policy
 from aic_model_interfaces.msg import Observation
 from aic_task_interfaces.msg import Task
 from lerobot.policies.act.modeling_act import ACTPolicy
 
 
-class RunACT(PolicyRos):
+class RunACT(Policy):
     def __init__(self, parent_node: Node):
         super().__init__(parent_node)
 
