@@ -125,7 +125,7 @@ Simply pushing the image to ECR does not trigger the evaluation. You must notify
 1. Copy the full Image URI you just pushed (e.g., `123456789.dkr.ecr.us-east-1.amazonaws.com/aic-team-name:v1`).
 2. Log in to the [aiforindustrychallenge.ai](https://aiforindustrychallenge.ai) portal.
 3. Click on the `AI for Industry Challenge` and then go to `Submit`.
-4. Select the `Train your model` phase and paste the URI into the submission `OCI Image` field.
+4. Select the `Qualification` phase and paste the URI into the submission `OCI Image` field.
 5. Click `Submit` to proceed.
 
 ---
