@@ -1,30 +1,41 @@
 /* =========================================
-   UMICH-Inspired Light/Dark Theme Override
+   Intrinsic Color Scheme Light/Dark Theme Override
    ========================================= */
 
 /* -------- LIGHT THEME (No Maize) -------- */
 html[data-theme="light"] {
-    --pst-color-primary: #234c74;           /* Michigan Blue */
-    --pst-color-secondary: #1A4472;         /* Stronger contrast blue */
-    --pst-color-secondary-highlight: #1A4472;
-    --pst-color-inline-code-links: #00274C;
-    --pst-color-info: var(--pst-color-primary);
-    --pst-color-info-highlight: var(--pst-color-primary);
-    --pst-color-info-bg: #daedb9;
-    --pst-color-attention: #ffc107;
-    --pst-color-text-base: #323232;
-    --pst-color-text-muted: #646464;
-    --pst-color-shadow: #d8d8d8;
-    --pst-color-border: #c9c9c9;
-    --pst-color-inline-code: #061033;
-    --pst-color-target: #fbe54e;
-    --pst-color-background: #fff;
-    --pst-color-on-background: #fff;
-    --pst-color-surface: #f5f5f5;
-    --pst-color-on-surface: #e1e1e1;
-    --pst-color-link: var(--pst-color-primary);
-    --pst-color-link-hover: #040a63;
-    --pst-color-table-row-hover-bg: #daedb9;
+    /* Core Brand Colors */
+    --pst-color-primary: #3b00c5; /* Dark of Intrinsic Bright Set - Purple */      
+    --pst-color-secondary: #7e4afc; /* Intrinsic Bright Set - Purple */       
+    --pst-color-secondary-highlight: #7e4afc; /* Intrinsic Bright Set - Purple */
+
+    --pst-color-text-base: #000000; /* Intrinsic Neutral Set - Black */
+    --pst-color-text-muted: #7f7f7f; /* Dark of Intrinsic Neutral Set - Gray */
+    --pst-color-link: var(--pst-color-primary); /* Dark of Intrinsic Bright Set - Purple */
+    --pst-color-link-hover: #7e4afc; /* Intrinsic Bright Set - Purple */
+
+    /* Inline Code & Technical Elements */
+    --pst-color-inline-code: #1e0063; /* Dark of Intrinsic Bright Set - Purple */
+    --pst-color-inline-code-links: #7e4afc; /* Intrinsic Bright Set - Purple */
+
+    /* UI Containers (Surfaces) */
+    --pst-color-background: #ffffff; /* Intrinsic Neutral Set - White */
+    --pst-color-on-background: #ffffff; /* Intrinsic Neutral Set - White */
+    --pst-color-surface: #efeeee;
+    --pst-color-on-surface: #ffffff; /* Intrinsic Neutral Set - White */
+
+    /* Admonitions & Highlights */
+    /* Following could be used to modify admonitions 
+    --pst-color-info: ;
+    --pst-color-info-bg: ;
+    --pst-color-attention: ;
+    --pst-color-target: ;
+    */
+
+    /* Functional UI */
+    --pst-color-shadow: #ffffff; /* Intrinsic Neutral Set - White */
+    --pst-color-border: #d1d1d1; /* Intrinsic Neutral Set - Gray */
+    --pst-color-table-row-hover-bg: #ffffff; /* Intrinsic Neutral Set - White */
     --pst-color-accent: var(--pst-color-primary);
 }
 
@@ -32,27 +43,40 @@ html[data-theme="light"] {
 
 /* -------- DARK THEME -------- */
 html[data-theme="dark"] {
-    --pst-color-primary: #FFCB05;           /* Maize */
-    --pst-color-secondary: #FFD54F;
-    --pst-color-secondary-highlight: #FFD54F;
-    --pst-color-inline-code-links: #FFD54F;
-    --pst-color-info: var(--pst-color-primary);
-    --pst-color-info-highlight: var(--pst-color-primary);
-    --pst-color-info-bg: #132B42;
-    --pst-color-attention: #FFC107;
-    --pst-color-text-base: #F4F3EC;
-    --pst-color-text-muted: #A0AAB4;
-    --pst-color-shadow: #1a1a1a;
-    --pst-color-border: #37475A;
-    --pst-color-inline-code: #FFD54F;
-    --pst-color-target: #FFCB05;
-    --pst-color-background: #0C1D2B;        /* Deep navy */
-    --pst-color-on-background: #132B42;
-    --pst-color-surface: #142838;
-    --pst-color-on-surface: #22394E;
-    --pst-color-link: var(--pst-color-primary);
-    --pst-color-link-hover: #FFDE59;
-    --pst-color-table-row-hover-bg: #132B42;
+    /* Core Brand Colors */
+    --pst-color-primary: #00ffaab0; /* Dark of Intrinsic Bright Set - Green */          
+    --pst-color-secondary: #00ffab; /* Intrinsic Bright Set - Green */
+    --pst-color-secondary-highlight: #00ffab;
+
+    /* Typography & Links */
+    --pst-color-text-base: #d1d1d1; /* Intrinsic Neutral Set - Gray */
+    --pst-color-text-muted: #d1d1d1ad; /* Dark of Intrinsic Neutral Set - Gray */
+    --pst-color-link: var(--pst-color-primary); /* Dark of Intrinsic Bright Set - Green */
+    --pst-color-link-hover: #00ffab; /* Hyperlink hover Intrinsic Bright Set - Green */
+
+    /* Inline Code & Technical Elements */
+    --pst-color-inline-code: #00ffaacb; /* Dark of Intrinsic Bright Set - Green (Base of hyper links) */
+    --pst-color-inline-code-links: #00ffab; /* Intrinsic Bright Set - Green */
+
+    /* UI Containers (Surfaces) */
+    --pst-color-background: #000000; /* Intrinsic Neutral Set - Black */
+    --pst-color-on-background: #000000; /* Intrinsic Neutral Set - Black (To avoid button and table select row background)*/
+    --pst-color-surface: #d1d1d100; /* Dark of Intrinsic Neutral Set - Black (For code blocks) */ 
+    --pst-color-on-surface: #000000;
+
+    /* Admonitions & Highlights */
+    /* Following could be used to modify admonitions 
+    --pst-color-info: ;
+    --pst-color-info-bg: ;
+    --pst-color-info-highlight: ; 
+    --pst-color-attention: ;
+    --pst-color-target: ;
+    */
+
+    /* Functional UI */
+    --pst-color-shadow: #000000; /* Intrinsic Neutral Set - Black (To avoid shadow) */
+    --pst-color-border: #d1d1d1; /* Intrinsic Neutral Set - Gray */
+    --pst-color-table-row-hover-bg: #000000; /* Intrinsic Neutral Set - Black (To avoid highlight) */
     --pst-color-accent: var(--pst-color-primary);
 }
 
@@ -66,7 +90,7 @@ a {
 /* Announcement + warning banners */
 .bd-header-announcement a,
 .bd-header-version-warning a {
-    color: #FFCB05;
+    color: #ff4d42;
 }
 
 /* Navbar search box - minimal borders */
@@ -89,7 +113,7 @@ a {
 }
 
 .showcase-table td {
-    border-color: gray;
+    border-color: #d1d1d1;
     border-style: solid;
     border-width: 1px;
 }
@@ -108,4 +132,11 @@ a {
 .showcase-table .center {
     text-align: center;
     vertical-align: middle;
+}
+
+/* Explicitly disable Bootstrap zebra striping often used in Sphinx themes */
+table.table-striped > tbody > tr:nth-of-type(odd),
+table.table-striped > tbody > tr:nth-of-type(even),
+.bd-content table tr {
+    background-color: var(--pst-color-table-row-bg) !important;
 }

@@ -125,7 +125,7 @@ html_theme_options = {
     "show_toc_level": 1,
     "use_sidenotes": True,
     "logo": {
-        "text": "AI for Industry Challenge Toolkit"
+        "text": "AI for Industry Challenge"
     },
     # "icon_links": [
     #         {
