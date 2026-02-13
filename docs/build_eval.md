@@ -58,8 +58,8 @@ cd ~/ws_aic
 sudo rosdep init  # Only if running rosdep for the first time
 rosdep install --from-paths src --ignore-src --rosdistro kilted -yr --skip-keys "gz-cmake3 DART libogre-dev libogre-next-2.3-dev rosetta"
 
-# Install additional Python dependencies for teleoperation
-sudo apt install -y python3-pynput
+# Install rmw_zenoh_cpp middleware and additional dependencies
+sudo apt install -y ros-kilted-rmw-zenoh-cpp python3-pynput
 
 # Build the workspace
 source /opt/ros/kilted/setup.bash
@@ -68,11 +68,16 @@ GZ_BUILD_FROM_SOURCE=1 colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release --me
 
 ### 3. Configure Environment
 
-Add these environment variables to your shell configuration (e.g., `~/.bashrc`) or set them in each terminal:
+Add these environment variables to your shell configuration (e.g., `~/.bashrc`):
 
 ```bash
 export RMW_IMPLEMENTATION=rmw_zenoh_cpp
-export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
+export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true;transport/shared_memory/transport_optimization/pool_size=536870912'
+```
+
+Then reload your shell configuration:
+```bash
+source ~/.bashrc
 ```
 
 > [!NOTE]
@@ -82,13 +87,18 @@ export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
 
 ## Running the System
 
-You'll need three terminals. In each terminal, source the workspace and set environment variables:
+You'll need three terminals. In each terminal, source the workspace:
 
 ```bash
 source ~/ws_aic/install/setup.bash
-export RMW_IMPLEMENTATION=rmw_zenoh_cpp
-export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
 ```
+
+> [!TIP]
+> If you didn't add the environment variables to `~/.bashrc` in step 3, you'll need to export them in each terminal:
+> ```bash
+> export RMW_IMPLEMENTATION=rmw_zenoh_cpp
+> export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true;transport/shared_memory/transport_optimization/pool_size=536870912'
+> ```
 
 Then run the following commands in their respective terminals:
 
@@ -120,9 +130,11 @@ Replace `aic_example_policies.ros.WaveArm` with your policy implementation.
 
 Now that you have the evaluation environment running locally:
 
-- See [Explore Environment](./explore_environment.md) to learn about environment configurations and testing
+- Explore the [Scene Description](./scene_description.md) to learn how to customize and explore the environment
+- Read the [Policy Integration Guide](./policy.md) to understand how to create your own policy node
+- Check out [`aic_example_policies/`](../aic_example_policies/) for reference implementations
 - Review [AIC Interfaces](./aic_interfaces.md) to understand available sensors and actuators
-- Check out [Policy Integration](./policy.md) to implement your solution
+- Consult [AIC Controller](./aic_controller.md) to learn about motion commands
 
 ---
 
