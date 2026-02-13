@@ -12,7 +12,7 @@
           name="gz::sim::systems::TouchPlugin">
           <target>sc_plug</target>
           <time>1</time>
-          <namespace>${prefix}</namespace>
+          <namespace>${prefix}/sc_port</namespace>
           <enabled>true</enabled>
         </plugin>
       </include>

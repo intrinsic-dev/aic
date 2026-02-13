@@ -21,6 +21,7 @@
 
   <model name="cable">
     <static>false</static>
+    <self_collide>true</self_collide>
     <include merge="true">
       <uri>model://${cable_type}</uri>
       <xacro:if value="$(arg attach_cable_to_gripper)">

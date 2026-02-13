@@ -20,7 +20,7 @@
 ```bash
 source ~/ws_aic/install/setup.bash
 export RMW_IMPLEMENTATION=rmw_zenoh_cpp
-export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
+export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true;transport/shared_memory/transport_optimization/pool_size=536870912'
 
 ros2 launch aic_bringup aic_gz_bringup.launch.py
 ```
@@ -77,12 +77,12 @@ ros2 launch aic_bringup aic_gz_bringup.launch.py [parameters]
 #### Configurable Parameters
 
 **Robot Spawn Position:**
-- `robot_x` (default: `"0.0"`) - Robot spawn X position (meters)
-- `robot_y` (default: `"0.0"`) - Robot spawn Y position (meters)
-- `robot_z` (default: `"0.0"`) - Robot spawn Z position (meters)
+- `robot_x` (default: `"-0.2"`) - Robot spawn X position (meters)
+- `robot_y` (default: `"0.2"`) - Robot spawn Y position (meters)
+- `robot_z` (default: `"1.14"`) - Robot spawn Z position (meters)
 - `robot_roll` (default: `"0.0"`) - Robot spawn roll orientation (radians)
 - `robot_pitch` (default: `"0.0"`) - Robot spawn pitch orientation (radians)
-- `robot_yaw` (default: `"0.0"`) - Robot spawn yaw orientation (radians)
+- `robot_yaw` (default: `"-3.141"`) - Robot spawn yaw orientation (radians)
 
 **Controller Configuration:**
 - `controllers_file` (default: `"ur_controllers.yaml"`) - YAML file with controller configuration
@@ -94,8 +94,8 @@ ros2 launch aic_bringup aic_gz_bringup.launch.py [parameters]
 **Task Board Configuration:**
 - `spawn_task_board` (default: `"false"`) - Whether to spawn the task board
 - `task_board_description_file` (default: `"task_board.urdf.xacro"`) - Task board URDF/XACRO file
-- `task_board_x` (default: `"0.25"`) - Task board spawn X position (meters)
-- `task_board_y` (default: `"0.0"`) - Task board spawn Y position (meters)
+- `task_board_x` (default: `"0.15"`) - Task board spawn X position (meters)
+- `task_board_y` (default: `"-0.2"`) - Task board spawn Y position (meters)
 - `task_board_z` (default: `"1.14"`) - Task board spawn Z position (meters)
 - `task_board_roll` (default: `"0.0"`) - Task board spawn roll orientation (radians)
 - `task_board_pitch` (default: `"0.0"`) - Task board spawn pitch orientation (radians)
@@ -106,12 +106,13 @@ ros2 launch aic_bringup aic_gz_bringup.launch.py [parameters]
 - `cable_description_file` (default: `"cable.sdf.xacro"`) - Cable SDF/XACRO file
 - `attach_cable_to_gripper` (default: `"false"`) - Whether to attach cable to gripper
 - `cable_type` (default: `"sfp_sc_cable"`) - Type of cable to spawn. Options: [`sfp_sc_cable`, `sfp_sc_cable_reversed`]
-- `cable_x` (default: `"0.1956"`) - Cable spawn X position (meters)
-- `cable_y` (default: `"-0.2112"`) - Cable spawn Y position (meters)
-- `cable_z` (default: `"1.53"`) - Cable spawn Z position (meters)
+- `cable_x` (default: `"0.172"`) - Cable spawn X position (meters)
+- `cable_y` (default: `"0.024"`) - Cable spawn Y position (meters)
+- `cable_z` (default: `"1.518"`) - Cable spawn Z position (meters)
+    - Note: set `cable_z` to `1.508` if `cable_type` is `sfp_sc_cable_reversed`
 - `cable_roll` (default: `"0.4432"`) - Cable spawn roll orientation (radians)
-- `cable_pitch` (default: `"-0.4838"`) - Cable spawn pitch orientation (radians)
-- `cable_yaw` (default: `"-1.8112"`) - Cable spawn yaw orientation (radians)
+- `cable_pitch` (default: `"-0.48"`) - Cable spawn pitch orientation (radians)
+- `cable_yaw` (default: `"1.3303"`) - Cable spawn yaw orientation (radians)
 
 **Gazebo Configuration:**
 - `world_file` (default: `"aic.sdf"`) - Gazebo world file
@@ -129,6 +130,7 @@ ros2 launch aic_bringup aic_gz_bringup.launch.py [parameters]
 
 **AIC Engine:**
 - `start_aic_engine` (default: `"false"`) - Start the `aic_engine` orchestrator node for evaluation.
+- `shutdown_on_aic_engine_exit` (default: `"false"`) - Shutdown the entire launch file when `aic_engine` exits, propagating its exit code. Only takes effect when `start_aic_engine` is `true`. Useful for automated evaluation where the container should exit after trial completion.
 - `aic_engine_config_file` (default: `"aic_engine/config/sample_config.yaml"`) - Absolute path to YAML file with the AIC engine configuration.
 
 ---
@@ -252,45 +254,6 @@ ros2 launch aic_bringup spawn_cable.launch.py
 
 ---
 
-### 4. `gripper_action.launch.py`
-
-Launch file for sending gripper action commands to control the gripper position and/or effort.
-
-#### Usage
-```bash
-ros2 launch aic_bringup gripper_action.launch.py use_position:=true position:=0.5
-```
-
-#### Configurable Parameters
-
-- `gripper_name` (default: `"gripper"`) - Name of the gripper
-- `gripper_action_name` (default: `"/gripper_action_controller/gripper_cmd"`) - Action server name for gripper control
-- `use_position` (default: `"false"`) - If enabled, send a position command
-- `position` (default: `"0.0"`) - Gripper position command (0.0 = closed, 1.0 = open)
-- `use_effort` (default: `"false"`) - If enabled, send an effort command
-- `effort` (default: `"0.0"`) - Gripper effort command (Newtons)
-
-**Note:** At least one of `use_position` or `use_effort` should be set to `true` for the action to have effect.
-
----
-
-### 5. `move_to_contact.launch.py`
-
-Launch file for moving the robot tool frame until contact is detected based on force feedback.
-
-#### Usage
-```bash
-ros2 launch aic_bringup move_to_contact.launch.py contact_force_z:=15.0
-```
-
-#### Configurable Parameters
-
-- `controller_namespace` (default: `"admittance_controller"`) - Namespace for the admittance controller node
-- `tool_frame` (default: `"tool0"`) - Tool frame for the move-to-contact behavior
-- `contact_force_z` (default: `"10.0"`) - Contact detection threshold force along Z-axis (Newtons)
-
----
-
 ## Example Usage
 
 ### Basic Simulation Launch
@@ -314,11 +277,6 @@ ros2 launch aic_bringup aic_gz_bringup.launch.py spawn_task_board:=true spawn_ca
 ros2 launch aic_bringup spawn_task_board.launch.py \
   lc_mount_rail_0_present:=true \
   lc_mount_rail_0_translation:=0.05
-```
-
-### Open Gripper
-```bash
-ros2 launch aic_bringup gripper_action.launch.py use_position:=true position:=0.8
 ```
 
 ---

@@ -36,3 +36,4 @@ pyspacemouse = ">=2.0.0, <3"
 
 [activation.env]
 RMW_IMPLEMENTATION = "rmw_zenoh_cpp"
+ZENOH_CONFIG_OVERRIDE = "transport/shared_memory/enabled=true;transport/shared_memory/transport_optimization/pool_size=536870912"

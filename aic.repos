@@ -7,14 +7,6 @@ repositories:
     type: git
     url: https://github.com/UniversalRobots/Universal_Robots_ROS2_Description.git
     version: 4.3.0
-  UniversalRobots/Universal_Robots_ROS2_Driver:
-    type: git
-    url: https://github.com/UniversalRobots/Universal_Robots_ROS2_Driver.git
-    version: c1d3656bcaeb998636dad0b5577c2ea563499290
-  UniversalRobots/Universal_Robots_ROS2_GZ_Simulation:
-    type: git
-    url: https://github.com/UniversalRobots/Universal_Robots_ROS2_GZ_Simulation.git
-    version: 2.5.0
   UniversalRobots/ur_msgs:
     type: git
     url: https://github.com/ros-industrial/ur_msgs.git
@@ -95,7 +87,7 @@ repositories:
   gazebo/gz-common:
     type: git
     url: https://github.com/gazebosim/gz-common
-    version: baff83c84a2ee889638ed581f4aa7c4677aa00e9
+    version: a69846b13e6db22833f12dd878d5ab83725c9c1d
   gazebo/gz-fuel-tools:
     type: git
     url: https://github.com/gazebosim/gz-fuel-tools
@@ -103,7 +95,7 @@ repositories:
   gazebo/gz-sim:
     type: git
     url: https://github.com/gazebosim/gz-sim
-    version: f65641d9f8f6c28a8626a479001ac327747638ad
+    version: d99d458c9987b20a18347b9a273f907d3391db61
   gazebo/gz-gui:
     type: git
     url: https://github.com/gazebosim/gz-gui
@@ -148,3 +140,31 @@ repositories:
     type: git
     url: https://github.com/gazebosim/sdformat
     version: 940be3dcf9e9a0a43ded60703985fa7ebed40980
+  ros-controls/control_msgs:
+    type: git
+    url: https://github.com/ros-controls/control_msgs.git
+    version: 6.7.0
+  ros/joint_state_publisher:
+    type: git
+    url: https://github.com/ros/joint_state_publisher.git
+    version: 2.4.1
+  ros-controls/control_toolbox:
+    type: git
+    url: https://github.com/ros-controls/control_toolbox.git
+    version: 5.8.3
+  ros-controls/kinematics_interface:
+    type: git
+    url: https://github.com/ros-controls/kinematics_interface.git
+    version: 2.4.0
+  ros-controls/realtime_tools:
+    type: git
+    url: https://github.com/ros-controls/realtime_tools.git
+    version: 4.7.1
+  ros-controls/ros2_control:
+    type: git
+    url: https://github.com/ros-controls/ros2_control.git
+    version: 5.11.3
+  ros-controls/ros2_controllers:
+    type: git
+    url: https://github.com/ros-controls/ros2_controllers.git
+    version: 5.12.0

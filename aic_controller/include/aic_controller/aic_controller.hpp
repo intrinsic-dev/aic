@@ -322,6 +322,9 @@ class Controller : public controller_interface::ControllerInterface {
   double time_to_target_seconds_;
   double remaining_time_to_target_seconds_;
 
+  // Time since last non-negligible change in error
+  rclcpp::Time last_error_change_time_;
+
   std::shared_ptr<
       pluginlib::ClassLoader<kinematics_interface::KinematicsInterface>>
       kinematics_loader_;
