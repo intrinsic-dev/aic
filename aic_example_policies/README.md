@@ -16,6 +16,8 @@ This package contains baseline policy implementations that demonstrate different
 
 ### 1. WaveArm - Minimal Example
 
+![Wave Arm Policy](../../media/wave_arm_policy.gif)
+
 A minimal example showing how to implement the `insert_cable()` callback and issue motion commands to the arm. This policy simply moves the robot arm back and forth in a waving motion without attempting to solve the task.
 
 **Purpose:** Demonstrates the basic Policy API structure.
@@ -69,7 +71,7 @@ src/aic/aic_model/test/create_and_cancel_task.py
 
 ### 3. RunACT - ACT Policy
 
-An implementation of a [LeRobot ACT](https://huggingface.co/docs/lerobot/en/act) (Action Chunking with Transformers) policy trained with a small dataset available on [HuggingFace](TODO).
+An implementation of a [LeRobot ACT](https://huggingface.co/docs/lerobot/en/act) (Action Chunking with Transformers) policy trained with a small dataset available on HuggingFace (TODO add link).
 
 **Purpose:** Demonstrates integration of a trained neural network policy for the cable insertion task.
 
