@@ -22,6 +22,7 @@ set(DEP_PKGS
   rclcpp
   rclcpp_lifecycle
   realtime_tools
+  std_srvs
   tf2_eigen
   trajectory_msgs
 )
@@ -70,6 +71,7 @@ target_link_libraries(aic_controller PUBLIC
   ${geometry_msgs_TARGETS}
   ${trajectory_msgs_TARGETS}
   ${control_msgs_TARGETS}
+  ${std_srvs_TARGETS}
 )
 
 pluginlib_export_plugin_description_file(controller_interface aic_controller_plugin.xml)
