@@ -140,15 +140,6 @@ Simply pushing the image to ECR does not trigger the evaluation. You must notify
 
 ---
 
-## Additional Resources
-
-- **[Policy Integration Guide](./policy.md)** - How to implement your policy
-- **[Challenge Rules](./challenge_rules.md)** - Required behavior for submissions
-- **[Getting Started](./getting_started.md)** - Development environment setup
-- **[Troubleshooting](./troubleshooting.md)** - Common issues and solutions
-
----
-
 ## Questions?
 
 - **Issues**: Report problems via [GitHub Issues](https://github.com/intrinsic-dev/aic/issues)
