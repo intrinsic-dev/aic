@@ -74,6 +74,15 @@ class CreateAndCancelTaskNode(Node):
         self.get_logger().info("Waiting for insert_cable action server...")
         self.action_client.wait_for_server()
         goal_msg = InsertCable.Goal()
+        goal_msg.task.id = "test_task"
+        goal_msg.task.cable_type = "sfp_sc"
+        goal_msg.task.cable_name = "cable_0"
+        goal_msg.task.plug_type = "sfp"
+        goal_msg.task.plug_name = "sfp_tip"
+        goal_msg.task.port_type = "sfp"
+        goal_msg.task.port_name = "sfp_port_0"
+        goal_msg.task.target_module_name = "nic_card_mount_0"
+        goal_msg.task.time_limit = 300
         self.get_logger().info("Sending goal request...")
         self.send_goal_future = self.action_client.send_goal_async(
             goal_msg, feedback_callback=self.feedback_callback
@@ -87,8 +96,8 @@ class CreateAndCancelTaskNode(Node):
             rclpy.shutdown()
             return
         self.goal_handle = goal_handle
-        self.get_logger().info("Waiting 30 seconds before canceling goal....")
-        self.timer = self.create_timer(30.0, self.timer_callback)
+        self.get_logger().info("Waiting 60 seconds before canceling goal....")
+        self.timer = self.create_timer(60.0, self.timer_callback)
         self.get_result_future = goal_handle.get_result_async()
         self.get_result_future.add_done_callback(self.get_result_callback)
 

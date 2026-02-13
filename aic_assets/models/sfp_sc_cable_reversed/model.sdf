@@ -2,6 +2,24 @@
 <sdf version="1.9">
   <model name="sfp_sc_cable_reversed">
     <include merge="true">
+      <!--
+         A few links in cable intersect with gripper palm.
+         Workaround this by removing their collisions.
+      -->
+      <experimental:params>
+        <collision element_id="link_1::link_1_collision" action="modify">
+          <pose>0 0 0.006 0 0 0</pose>
+          <geometry>
+            <cylinder>
+              <length>0.036</length>
+              <radius>0.002</radius>
+            </cylinder>
+          </geometry>
+        </collision>
+        <collision element_id="cable_end_0::base_collision" action="remove"/>
+        <collision element_id="cable_connection_0::collision_0" action="remove"/>
+        <collision element_id="cable_connection_0::collision_1" action="remove"/>
+      </experimental:params>
       <uri>model://cable_base_c_rotated_reversed</uri>
     </include>
     <include merge="true">

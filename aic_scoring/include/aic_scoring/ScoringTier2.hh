@@ -53,17 +53,33 @@ namespace aic_scoring
   /// \brief Connection POD.
   struct Connection
   {
+    /// \brief Cable name.
+    public: std::string cableName;
+
+    /// \brief Task board name.
+    public: std::string taskBoardName;
+
     /// \brief Plug name.
     public: std::string plugName;
 
     /// \brief Port name.
+    public: std::string targetModuleName;
+
+    /// \brief Port name.
     public: std::string portName;
 
-    /// \brief Plug/port type.
-    public: std::string type;
+    /// \brief Get the name of the plug TF
+    /// \return Name of the plug TF
+    public: std::string PlugTfName() const {
+      return cableName + "/" + plugName + "_link";
+    }
 
-    /// \brief Distance.
-    public: double distance = -1;
+    /// \brief Get the name of the pport TF
+    /// \return Name of the port TF
+    public: std::string PortTfName() const {
+      return taskBoardName + "/" + targetModuleName + "/" +
+          portName + "_link";
+    }
   };
 
   /// \brief Topic info POD.
@@ -82,13 +98,13 @@ namespace aic_scoring
   // The Tier2 scoring interface.
   class ScoringTier2
   {
-    using BoolMsg = std_msgs::msg::Bool;
     using JointStateMsg = sensor_msgs::msg::JointState;
     using TFMsg = tf2_msgs::msg::TFMessage;
     using ContactsMsg = ros_gz_interfaces::msg::Contacts;
     using WrenchMsg = geometry_msgs::msg::WrenchStamped;
     using JointMotionUpdateMsg = aic_control_interfaces::msg::JointMotionUpdate;
     using MotionUpdateMsg = aic_control_interfaces::msg::MotionUpdate;
+    using StringMsg = std_msgs::msg::String;
     using TransformStampedMsg = geometry_msgs::msg::TransformStamped;
     using Vector3Msg = geometry_msgs::msg::Vector3;
 
@@ -126,9 +142,9 @@ namespace aic_scoring
     /// \brief Topic to subscribe for joint commands sent to the controller.
     public: static constexpr const char* kJointMotionUpdateTopic = "/aic_controller/joint_commands";
 
-    /// \brief Topic to subscribe for insertion completion event
-    public: static constexpr const char* kInsertionCompletionTopic =
-        "/scoring/insertion_completion";
+    /// \brief Topic to subscribe for insertion event event
+    public: static constexpr const char* kInsertionEventTopic =
+        "/scoring/insertion_event";
 
     /// \brief Class constructor.
     /// \param[in] _node Pointer to the ROS node.
@@ -220,9 +236,9 @@ namespace aic_scoring
     /// \param[in] _msg The received message.
     private: void JointMotionUpdateCallback(const JointMotionUpdateMsg& _msg);
 
-    /// \brief Callback for insertion completion event while scoring.
+    /// \brief Callback for insertion event while scoring.
     /// \param[in] _msg The received message.
-    private: void InsertionCompletionCallback(const BoolMsg& _msg);
+    private: void InsertionEventCallback(const StringMsg& _msg);
 
     /// \brief Calculates score related with the gripper trajectory jerk.
     /// \return Scoring for the trajectory jerk score.
@@ -326,8 +342,9 @@ namespace aic_scoring
     /// \brief Gripper frame name.
     private: std::string gripperFrame;
 
-    /// \brief Whether cable plug-port insertion was completed
-    private: bool insertion_completion{false};
+    /// \brief The insertion port namespace as detected by the cable plugins.
+    /// Empty string means no insertion event detected.
+    private: std::string insertionPortNamespace;
 
     /// \brief Whether the tf from a cable was recorded.
     private: std::atomic<bool> cableTfReceived = false;

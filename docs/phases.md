@@ -18,7 +18,7 @@ To successfully qualify, participants must create a ROS 2 node that adheres to t
 
 For convenience, we provide an `aic_model` framework that handles all ROS 2 lifecycle management and boilerplate. You simply implement a Python policy class:
 
-1.  **Create a Policy Class:** Define a Python class that derives from [`PolicyRos`](https://github.com/intrinsic-dev/aic/blob/main/aic_model/aic_model/policy_ros.py).
+1.  **Create a Policy Class:** Define a Python class that derives from [`Policy`](https://github.com/intrinsic-dev/aic/blob/main/aic_model/aic_model/policy.py).
 2.  **Implement `insert_cable()`:** This method is called when `aic_engine` requests a new task. It receives observation data and callable methods for robot control.
 3.  **Load Your Model:** Initialize your trained policy (e.g., PyTorch checkpoint, ONNX model, or control algorithm) when your class is instantiated.
 4.  **Process Observations:** Use the provided `get_observation()` callback to retrieve sensor data at up to 20 Hz.

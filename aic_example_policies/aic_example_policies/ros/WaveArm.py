@@ -27,7 +27,6 @@ from aic_model_interfaces.msg import Observation
 from aic_task_interfaces.msg import Task
 from geometry_msgs.msg import Point, Pose, Quaternion
 from rclpy.duration import Duration
-from typing import Callable
 
 
 class WaveArm(Policy):
