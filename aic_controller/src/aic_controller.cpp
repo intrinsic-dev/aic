@@ -1787,16 +1787,6 @@ void Controller::interpolate_impedance_parameters() {
         wrench_feedback_gains_at_tip.cwiseProduct(feedforward_wrench_at_tip_ -
                                                   sensed_wrench_at_tip_tared);
 
-    RCLCPP_WARN_STREAM_THROTTLE(
-        get_node()->get_logger(), *get_node()->get_clock(), 1000,
-        "Sensed_wrench_at_tip_ "
-            << sensed_wrench_at_tip_.head<3>().transpose());
-
-    RCLCPP_WARN_STREAM_THROTTLE(
-        get_node()->get_logger(), *get_node()->get_clock(), 1000,
-        "   sensed_wrench_at_tip_tared: "
-            << sensed_wrench_at_tip_tared.head<3>().transpose());
-
     // Total wrench was originally in TCP frame, so we transform the wrench from
     // TCP frame into "base_link" frame
     impedance_params_.feedforward_wrench.head<3>() =
