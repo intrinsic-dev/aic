@@ -15,6 +15,30 @@ For a detailed explanation of the architecture, packages, and interfaces, see th
 
 ---
 
+## Requirements
+
+**Minimum Compute Specifications:**
+
+- **OS:** Ubuntu 24.04
+- **CPU:** 4-8 cores
+- **RAM:** 32GB+
+- **GPU:** NVIDIA RTX 2070+ or equivalent
+- **VRAM:** 8GB+
+
+> [!NOTE]
+> While the challenge can run on systems without a GPU, performance will be significantly reduced. See [Troubleshooting](./troubleshooting.md#no-gpu-available) for optimization tips for CPU-only systems.
+
+**Cloud Evaluation Instance:**
+
+For cloud evaluation, all participant submissions will be evaluated on the same instance type with the following specifications:
+
+- **vCPU:** 64 cores
+- **RAM:** 256 GiB
+- **GPU:** 1 x NVIDIA L4 Tensor Core
+- **VRAM:** 24 GiB
+
+---
+
 ## Setup
 
 First, install the following tools:
