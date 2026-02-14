@@ -693,14 +693,16 @@ TrialScore Engine::handle_trial(Trial& trial) {
   }
 
   if (trial.state == TrialState::ModelReady) {
-    RCLCPP_INFO(node_->get_logger(), "\033[1;32m  ✓ Model Ready for trial '%s'\033[0m",
+    RCLCPP_INFO(node_->get_logger(),
+                "\033[1;32m  ✓ Model Ready for trial '%s'\033[0m",
                 trial.id.c_str());
     score.tier_1_success();
     bool success = false;
     for (int attempt = 1; attempt <= MAX_RETRIES && !success; ++attempt) {
       if (attempt > 1) {
         RCLCPP_WARN(node_->get_logger(),
-                    "\033[1;33m  ⟳ Retrying check_endpoints (attempt %d/%d) for trial '%s'...\033[0m",
+                    "\033[1;33m  ⟳ Retrying check_endpoints (attempt %d/%d) "
+                    "for trial '%s'...\033[0m",
                     attempt, MAX_RETRIES, trial.id.c_str());
       }
       if (this->check_endpoints()) {
@@ -710,28 +712,33 @@ TrialScore Engine::handle_trial(Trial& trial) {
     }
     if (!success) {
       RCLCPP_ERROR(node_->get_logger(),
-                   "\033[1;31m  ✗ EVALUATION ERROR: Endpoints check failed after %d attempts for trial '%s'. "
-                   "This is an infrastructure issue. Is eval environment started?\033[0m",
+                   "\033[1;31m  ✗ EVALUATION ERROR: Endpoints check failed "
+                   "after %d attempts for trial '%s'. "
+                   "This is an infrastructure issue. Is eval environment "
+                   "started?\033[0m",
                    MAX_RETRIES, trial.id.c_str());
       reset_after_trial(trial);
       return score;
     }
   } else {
-    RCLCPP_ERROR(node_->get_logger(),
-                 "\033[1;31m  ✗ Participant model is not ready for trial '%s'\033[0m",
-                 trial.id.c_str());
+    RCLCPP_ERROR(
+        node_->get_logger(),
+        "\033[1;31m  ✗ Participant model is not ready for trial '%s'\033[0m",
+        trial.id.c_str());
     reset_after_trial(trial);
     return score;
   }
 
   if (trial.state == TrialState::EndpointsReady) {
-    RCLCPP_INFO(node_->get_logger(), "\033[1;32m  ✓ Endpoints Ready for trial '%s'\033[0m",
+    RCLCPP_INFO(node_->get_logger(),
+                "\033[1;32m  ✓ Endpoints Ready for trial '%s'\033[0m",
                 trial.id.c_str());
     bool success = false;
     for (int attempt = 1; attempt <= MAX_RETRIES && !success; ++attempt) {
       if (attempt > 1) {
         RCLCPP_WARN(node_->get_logger(),
-                    "\033[1;33m  ⟳ Retrying ready_simulator (attempt %d/%d) for trial '%s'...\033[0m",
+                    "\033[1;33m  ⟳ Retrying ready_simulator (attempt %d/%d) "
+                    "for trial '%s'...\033[0m",
                     attempt, MAX_RETRIES, trial.id.c_str());
         // Reset simulator before retrying (don't home robot during retry)
         reset_simulator(trial, false);
@@ -743,28 +750,33 @@ TrialScore Engine::handle_trial(Trial& trial) {
     }
     if (!success) {
       RCLCPP_ERROR(node_->get_logger(),
-                   "\033[1;31m  ✗ EVALUATION ERROR: Simulator setup failed after %d attempts for trial '%s'. "
-                   "This is an infrastructure issue. Is eval environment started?\033[0m",
+                   "\033[1;31m  ✗ EVALUATION ERROR: Simulator setup failed "
+                   "after %d attempts for trial '%s'. "
+                   "This is an infrastructure issue. Is eval environment "
+                   "started?\033[0m",
                    MAX_RETRIES, trial.id.c_str());
       reset_after_trial(trial);
       return score;
     }
   } else {
     RCLCPP_ERROR(node_->get_logger(),
-                 "\033[1;31m  ✗ Required endpoints are not available for trial '%s'\033[0m",
+                 "\033[1;31m  ✗ Required endpoints are not available for trial "
+                 "'%s'\033[0m",
                  trial.id.c_str());
     reset_after_trial(trial);
     return score;
   }
 
   if (trial.state == TrialState::SimulatorReady) {
-    RCLCPP_INFO(node_->get_logger(), "\033[1;32m  ✓ Simulator Ready for trial '%s'\033[0m",
+    RCLCPP_INFO(node_->get_logger(),
+                "\033[1;32m  ✓ Simulator Ready for trial '%s'\033[0m",
                 trial.id.c_str());
     bool success = false;
     for (int attempt = 1; attempt <= MAX_RETRIES && !success; ++attempt) {
       if (attempt > 1) {
         RCLCPP_WARN(node_->get_logger(),
-                    "\033[1;33m  ⟳ Retrying ready_scoring (attempt %d/%d) for trial '%s'...\033[0m",
+                    "\033[1;33m  ⟳ Retrying ready_scoring (attempt %d/%d) for "
+                    "trial '%s'...\033[0m",
                     attempt, MAX_RETRIES, trial.id.c_str());
       }
       if (this->ready_scoring(trial)) {
@@ -774,8 +786,10 @@ TrialScore Engine::handle_trial(Trial& trial) {
     }
     if (!success) {
       RCLCPP_ERROR(node_->get_logger(),
-                   "\033[1;31m  ✗ EVALUATION ERROR: Scoring setup failed after %d attempts for trial '%s'. "
-                   "This is an infrastructure issue. Is eval environment started?\033[0m",
+                   "\033[1;31m  ✗ EVALUATION ERROR: Scoring setup failed after "
+                   "%d attempts for trial '%s'. "
+                   "This is an infrastructure issue. Is eval environment "
+                   "started?\033[0m",
                    MAX_RETRIES, trial.id.c_str());
       reset_after_trial(trial);
       return score;
@@ -789,19 +803,22 @@ TrialScore Engine::handle_trial(Trial& trial) {
   }
 
   if (trial.state == TrialState::ScoringReady) {
-    RCLCPP_INFO(node_->get_logger(), "\033[1;32m  ✓ Scoring Ready for trial '%s'\033[0m",
+    RCLCPP_INFO(node_->get_logger(),
+                "\033[1;32m  ✓ Scoring Ready for trial '%s'\033[0m",
                 trial.id.c_str());
     this->tasks_started(trial);
   } else {
-    RCLCPP_ERROR(node_->get_logger(),
-                 "\033[1;31m  ✗ Scoring system is not ready for trial '%s'\033[0m",
-                 trial.id.c_str());
+    RCLCPP_ERROR(
+        node_->get_logger(),
+        "\033[1;31m  ✗ Scoring system is not ready for trial '%s'\033[0m",
+        trial.id.c_str());
     reset_after_trial(trial);
     return score;
   }
 
   if (trial.state == TrialState::TasksExecuting) {
-    RCLCPP_INFO(node_->get_logger(), "\033[1;36m  ⟳ Tasks Executing for trial '%s'...\033[0m",
+    RCLCPP_INFO(node_->get_logger(),
+                "\033[1;36m  ⟳ Tasks Executing for trial '%s'...\033[0m",
                 trial.id.c_str());
     if (this->tasks_completed_successfully(trial)) {
       trial.state = TrialState::AllTasksCompleted;
@@ -812,7 +829,8 @@ TrialScore Engine::handle_trial(Trial& trial) {
     }
   } else {
     RCLCPP_ERROR(node_->get_logger(),
-                 "\033[1;31m  ✗ Tasks cannot be started successfully for trial '%s'\033[0m",
+                 "\033[1;31m  ✗ Tasks cannot be started successfully for trial "
+                 "'%s'\033[0m",
                  trial.id.c_str());
     reset_after_trial(trial);
     return score;
@@ -820,7 +838,8 @@ TrialScore Engine::handle_trial(Trial& trial) {
 
   if (trial.state != TrialState::AllTasksCompleted) {
     RCLCPP_ERROR(node_->get_logger(),
-                 "\033[1;31m  ✗ Tasks were not completed successfully for trial '%s'\033[0m",
+                 "\033[1;31m  ✗ Tasks were not completed successfully for "
+                 "trial '%s'\033[0m",
                  trial.id.c_str());
     score_trial(score);
     reset_after_trial(trial);
