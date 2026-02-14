@@ -206,6 +206,11 @@ class Engine {
   /// \brief Reset robot back to home joint positions.
   bool home_robot();
 
+  /// \brief Reset simulator by deleting spawned entities for a trial.
+  /// \param[in] trial The trial whose entities should be deleted
+  /// \param[in] home_robot If true, also home the robot after cleanup
+  void reset_simulator(const Trial& trial, bool home_robot = true);
+
   /// \brief Check if the participant model is ready. As per challenge
   /// requirements. See challenge_rules.md for details. \return True if the
   /// model is ready, false otherwise.

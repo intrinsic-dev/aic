@@ -605,6 +605,11 @@ EngineState Engine::run() {
     }
   }
 
+  // Reset simulator after the last trial
+  if (!trials_.empty()) {
+    reset_simulator(trials_.back().second);
+  }
+
   // TODO(luca) refactor cleanup into single function
   this->cleanup_model_node();
   this->shutdown_model_node();
@@ -673,6 +678,8 @@ TrialScore Engine::handle_trial(Trial& trial) {
               trial.id.c_str());
   TrialScore score;
 
+  constexpr int MAX_RETRIES = 5;
+
   if (trial.state == TrialState::Uninitialized) {
     if (this->check_model()) {
       trial.state = TrialState::ModelReady;
@@ -689,8 +696,25 @@ TrialScore Engine::handle_trial(Trial& trial) {
     RCLCPP_INFO(node_->get_logger(), "\033[1;32m  ✓ Model Ready for trial '%s'\033[0m",
                 trial.id.c_str());
     score.tier_1_success();
-    if (this->check_endpoints()) {
-      trial.state = TrialState::EndpointsReady;
+    bool success = false;
+    for (int attempt = 1; attempt <= MAX_RETRIES && !success; ++attempt) {
+      if (attempt > 1) {
+        RCLCPP_WARN(node_->get_logger(),
+                    "\033[1;33m  ⟳ Retrying check_endpoints (attempt %d/%d) for trial '%s'...\033[0m",
+                    attempt, MAX_RETRIES, trial.id.c_str());
+      }
+      if (this->check_endpoints()) {
+        trial.state = TrialState::EndpointsReady;
+        success = true;
+      }
+    }
+    if (!success) {
+      RCLCPP_ERROR(node_->get_logger(),
+                   "\033[1;31m  ✗ EVALUATION ERROR: Endpoints check failed after %d attempts for trial '%s'. "
+                   "This is an infrastructure issue. Is eval environment started?\033[0m",
+                   MAX_RETRIES, trial.id.c_str());
+      reset_after_trial(trial);
+      return score;
     }
   } else {
     RCLCPP_ERROR(node_->get_logger(),
@@ -703,8 +727,27 @@ TrialScore Engine::handle_trial(Trial& trial) {
   if (trial.state == TrialState::EndpointsReady) {
     RCLCPP_INFO(node_->get_logger(), "\033[1;32m  ✓ Endpoints Ready for trial '%s'\033[0m",
                 trial.id.c_str());
-    if (this->ready_simulator(trial)) {
-      trial.state = TrialState::SimulatorReady;
+    bool success = false;
+    for (int attempt = 1; attempt <= MAX_RETRIES && !success; ++attempt) {
+      if (attempt > 1) {
+        RCLCPP_WARN(node_->get_logger(),
+                    "\033[1;33m  ⟳ Retrying ready_simulator (attempt %d/%d) for trial '%s'...\033[0m",
+                    attempt, MAX_RETRIES, trial.id.c_str());
+        // Reset simulator before retrying (don't home robot during retry)
+        reset_simulator(trial, false);
+      }
+      if (this->ready_simulator(trial)) {
+        trial.state = TrialState::SimulatorReady;
+        success = true;
+      }
+    }
+    if (!success) {
+      RCLCPP_ERROR(node_->get_logger(),
+                   "\033[1;31m  ✗ EVALUATION ERROR: Simulator setup failed after %d attempts for trial '%s'. "
+                   "This is an infrastructure issue. Is eval environment started?\033[0m",
+                   MAX_RETRIES, trial.id.c_str());
+      reset_after_trial(trial);
+      return score;
     }
   } else {
     RCLCPP_ERROR(node_->get_logger(),
@@ -717,8 +760,25 @@ TrialScore Engine::handle_trial(Trial& trial) {
   if (trial.state == TrialState::SimulatorReady) {
     RCLCPP_INFO(node_->get_logger(), "\033[1;32m  ✓ Simulator Ready for trial '%s'\033[0m",
                 trial.id.c_str());
-    if (this->ready_scoring(trial)) {
-      trial.state = TrialState::ScoringReady;
+    bool success = false;
+    for (int attempt = 1; attempt <= MAX_RETRIES && !success; ++attempt) {
+      if (attempt > 1) {
+        RCLCPP_WARN(node_->get_logger(),
+                    "\033[1;33m  ⟳ Retrying ready_scoring (attempt %d/%d) for trial '%s'...\033[0m",
+                    attempt, MAX_RETRIES, trial.id.c_str());
+      }
+      if (this->ready_scoring(trial)) {
+        trial.state = TrialState::ScoringReady;
+        success = true;
+      }
+    }
+    if (!success) {
+      RCLCPP_ERROR(node_->get_logger(),
+                   "\033[1;31m  ✗ EVALUATION ERROR: Scoring setup failed after %d attempts for trial '%s'. "
+                   "This is an infrastructure issue. Is eval environment started?\033[0m",
+                   MAX_RETRIES, trial.id.c_str());
+      reset_after_trial(trial);
+      return score;
     }
   } else {
     RCLCPP_ERROR(node_->get_logger(),
@@ -1475,42 +1535,7 @@ void Engine::reset_after_trial(const Trial& trial) {
   is_first_trial_ = false;
   model_discovered_ = false;
 
-  if (skip_ready_simulator_) {
-    RCLCPP_WARN(node_->get_logger(),
-                "Skipping entity deletion (skip_ready_simulator=true)");
-  } else {
-    // Remove spawned entities from simulator
-    for (const auto& entity_name : trial.spawned_entities) {
-      // Delete spawned entity
-      auto request = std::make_shared<DeleteEntitySrv::Request>();
-      request->entity = entity_name;
-
-      auto future = delete_entity_client_->async_send_request(request);
-      if (future.wait_for(std::chrono::seconds(10)) !=
-          std::future_status::ready) {
-        RCLCPP_ERROR(node_->get_logger(),
-                     "Delete entity service call timed out for entity '%s'",
-                     request->entity.c_str());
-      } else {
-        auto response = future.get();
-        if (response->result.result !=
-            simulation_interfaces::msg::Result::RESULT_OK) {  // RESULT_OK = 1
-          RCLCPP_ERROR(node_->get_logger(), "Failed to delete entity '%s': %s",
-                       request->entity.c_str(),
-                       response->result.error_message.c_str());
-        } else {
-          RCLCPP_INFO(node_->get_logger(), "Successfully deleted entity '%s'",
-                      request->entity.c_str());
-        }
-      }
-    }
-  }
-
-  // Home robot after removing entities to prepare for next trial
-  if (!home_robot()) {
-    RCLCPP_ERROR(node_->get_logger(),
-                 "Failed to home robot during trial reset.");
-  }
+  reset_simulator(trial);  // Homes robot by default
 
   RCLCPP_INFO(node_->get_logger(), "Reset after trial completed.");
 }
@@ -1578,6 +1603,49 @@ bool Engine::home_robot() {
       node_->get_logger(),
       "Successfully reset joints to home position, robot homed successfully.");
   return true;
+}
+
+//==============================================================================
+void Engine::reset_simulator(const Trial& trial, bool home_robot) {
+  if (skip_ready_simulator_) {
+    RCLCPP_WARN(node_->get_logger(),
+                "Skipping entity deletion (skip_ready_simulator=true)");
+    return;
+  }
+
+  // Remove spawned entities from simulator
+  for (const auto& entity_name : trial.spawned_entities) {
+    // Delete spawned entity
+    auto request = std::make_shared<DeleteEntitySrv::Request>();
+    request->entity = entity_name;
+
+    auto future = delete_entity_client_->async_send_request(request);
+    if (future.wait_for(std::chrono::seconds(10)) !=
+        std::future_status::ready) {
+      RCLCPP_ERROR(node_->get_logger(),
+                   "Delete entity service call timed out for entity '%s'",
+                   request->entity.c_str());
+    } else {
+      auto response = future.get();
+      if (response->result.result !=
+          simulation_interfaces::msg::Result::RESULT_OK) {  // RESULT_OK = 1
+        RCLCPP_ERROR(node_->get_logger(), "Failed to delete entity '%s': %s",
+                     request->entity.c_str(),
+                     response->result.error_message.c_str());
+      } else {
+        RCLCPP_INFO(node_->get_logger(), "Successfully deleted entity '%s'",
+                    request->entity.c_str());
+      }
+    }
+  }
+
+  // Home robot after removing entities to prepare for next trial
+  if (home_robot) {
+    if (!this->home_robot()) {
+      RCLCPP_ERROR(node_->get_logger(),
+                   "Failed to home robot during simulator reset.");
+    }
+  }
 }
 
 //==============================================================================
