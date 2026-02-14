@@ -15,122 +15,166 @@
 #
 
 import time
+import json
 import torch
 import numpy as np
 import cv2
-from typing import Callable, Dict, Any
+import draccus
+from pathlib import Path
+from typing import Callable, Dict, Any, List
 from rclpy.node import Node
 from geometry_msgs.msg import Twist, Vector3
 
 from aic_model.policy import Policy
 from aic_model_interfaces.msg import Observation
 from aic_task_interfaces.msg import Task
+
+# LeRobot & Safetensors
 from lerobot.policies.act.modeling_act import ACTPolicy
+from lerobot.policies.act.configuration_act import ACTConfig
 from safetensors.torch import load_file
+
 
 class RunACT(Policy):
     def __init__(self, parent_node: Node):
         super().__init__(parent_node)
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-        # Load Policy
-        policy_path = "/home/aic/ws_aic/outputs/grkw/random_start_poses_10_eps"  # TODO (@grkw): change this to public HF repo once it's released
-        self.policy = ACTPolicy.from_pretrained(policy_path).to(self.device) # reads config.json and model.safetensors
+        # -------------------------------------------------------------------------
+        # 1. Configuration & Weights Loading
+        # -------------------------------------------------------------------------
+        # Path to your checkpoint folder
+        policy_path = Path("/home/aic/ws_aic/outputs/grkw/random_start_poses_10_eps")
+        
+        # Load Config Manually (Fixes 'Draccus' error by removing unknown 'type' field)
+        with open(policy_path / "config.json", "r") as f:
+            config_dict = json.load(f)
+            if "type" in config_dict:
+                del config_dict["type"]
+        
+        config = draccus.decode(ACTConfig, config_dict)
+        
+        # Load Policy Architecture & Weights
+        self.policy = ACTPolicy(config)
+        self.policy.load_state_dict(load_file(policy_path / "model.safetensors"))
         self.policy.eval()
+        self.policy.to(self.device)
+        
         self.get_logger().info(f"ACT Policy loaded on {self.device} from {policy_path}")
 
-        # Load stats
-        stats_path = policy_path + "/policy_preprocessor_step_3_normalizer_processor.safetensors"
+        # -------------------------------------------------------------------------
+        # 2. Normalization Stats Loading
+        # -------------------------------------------------------------------------
+        stats_path = policy_path / "policy_preprocessor_step_3_normalizer_processor.safetensors"
         stats = load_file(stats_path)
 
-        # Observation state stats
-        self.state_means = stats["observation.state.mean"].to(self.device).view(1, -1)
-        self.state_stds = stats["observation.state.std"].to(self.device).view(1, -1)
-        self.get_logger().info(f"Observation state means: {self.state_means}")
-        self.get_logger().info(f"Observation state stds: {self.state_stds}")
+        # Helper to extract and shape stats for broadcasting
+        def get_stat(key, shape):
+            return stats[key].to(self.device).view(*shape)
 
-        # Image stats
-        self.left_image_means = stats["observation.images.left_camera.mean"].to("cuda").view(1, 3, 1, 1)
-        self.center_image_means = stats["observation.images.center_camera.mean"].to("cuda").view(1, 3, 1, 1)
-        self.right_image_means = stats["observation.images.right_camera.mean"].to("cuda").view(1, 3, 1, 1)
-        self.get_logger().info(f"Left camera means: {self.left_image_means}")
+        # Image Stats (1, 3, 1, 1) for broadcasting against (Batch, Channel, Height, Width)
+        self.img_stats = {
+            "left": {
+                "mean": get_stat("observation.images.left_camera.mean", (1, 3, 1, 1)),
+                "std":  get_stat("observation.images.left_camera.std", (1, 3, 1, 1))
+            },
+            "center": {
+                "mean": get_stat("observation.images.center_camera.mean", (1, 3, 1, 1)),
+                "std":  get_stat("observation.images.center_camera.std", (1, 3, 1, 1))
+            },
+            "right": {
+                "mean": get_stat("observation.images.right_camera.mean", (1, 3, 1, 1)),
+                "std":  get_stat("observation.images.right_camera.std", (1, 3, 1, 1))
+            }
+        }
+        print(f"Image stats: {self.img_stats}")
 
-        self.left_image_stds = stats["observation.images.left_camera.std"].to("cuda").view(1, 3, 1, 1)
-        self.center_image_stds = stats["observation.images.center_camera.std"].to("cuda").view(1, 3, 1, 1)
-        self.right_image_stds = stats["observation.images.right_camera.std"].to("cuda").view(1, 3, 1, 1)
-        self.get_logger().info(f"Left camera stds: {self.left_image_stds}")
+        # Robot State Stats (1, 26)
+        self.state_mean = get_stat("observation.state.mean", (1, -1))
+        self.state_std  = get_stat("observation.state.std", (1, -1))
+        print(f"Robot state mean: {self.state_mean}")
+        print(f"Robot state std: {self.state_std}")
 
-        self.image_scaling = 0.25 # must manually change to match `AICRobotAICControllerConfig`
+        # Action Stats (1, 7) - Used for Un-normalization
+        self.action_mean = get_stat("action.mean", (1, -1))
+        self.action_std  = get_stat("action.std", (1, -1))
+        print(f"Action mean: {self.action_mean}")
+        print(f"Action std: {self.action_std}")
 
-        # Action stats
-        self.action_means = stats["action.mean"].to("cuda")
-        self.action_stds = stats["action.std"].to("cuda")
-        self.get_logger().info(f"Action means: {self.action_means}")
-        self.get_logger().info(f"Action stds: {self.action_stds}")
+        # Config
+        self.image_scaling = 0.25  # Must match AICRobotAICControllerConfig
+
+        self.get_logger().info("Normalization statistics loaded successfully.")
+
 
     @staticmethod
-    def _img_to_tensor(raw_img, device: torch.device, image_scale, mean, std) -> torch.Tensor:
-        """Helper to convert ROS Image msg to normalized PyTorch tensor."""
+    def _img_to_tensor(raw_img, device: torch.device, scale: float, mean: torch.Tensor, std: torch.Tensor) -> torch.Tensor:
+        """Converts ROS Image -> Resized -> Permuted -> Normalized Tensor."""
+        # 1. Bytes to Numpy (H, W, C)
         img_np = np.frombuffer(raw_img.data, dtype=np.uint8).reshape(
             raw_img.height, raw_img.width, 3
         )
         
-        img_np_resized = cv2.resize(
-                        img_np,
-                        None,
-                        fx=image_scale,
-                        fy=image_scale,
-                        interpolation=cv2.INTER_AREA,
-                    )
+        # 2. Resize
+        if scale != 1.0:
+            img_np = cv2.resize(img_np, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA)
         
-        tensor_0_1 = torch.from_numpy(img_np_resized).permute(2, 0, 1).float().div(255.0).unsqueeze(0).to(device)
+        # 3. To Tensor -> Permute (HWC -> CHW) -> Float -> Div(255) -> Batch Dim
+        tensor = (
+            torch.from_numpy(img_np)
+            .permute(2, 0, 1)
+            .float()
+            .div(255.0)
+            .unsqueeze(0)
+            .to(device)
+        )
         
-        return (tensor_0_1 - mean / std)
+        # 4. Normalize (Apply Mean/Std)
+        # Formula: (x - mean) / std
+        return (tensor - mean) / std
 
     def prepare_observations(self, obs_msg: Observation) -> Dict[str, torch.Tensor]:
-        """Process camera and controller state for inference, i.e. prepare an observation to send to the policy. The `obs` dict format should match that of `AICRobotAICController` `get_observation()` used for recording episodes."""
-        # Process Cameras
+        """Convert ROS Observation message into dictionary of normalized tensors."""
+        
+        # --- Process Cameras ---
         obs = {
             "observation.images.left_camera": self._img_to_tensor(
-                obs_msg.left_image, self.device, self.image_scaling, self.left_image_means, self.left_image_stds
+                obs_msg.left_image, self.device, self.image_scaling, 
+                self.img_stats["left"]["mean"], self.img_stats["left"]["std"]
             ),
             "observation.images.center_camera": self._img_to_tensor(
-                obs_msg.center_image, self.device, self.image_scaling, self.center_image_means, self.center_image_stds
+                obs_msg.center_image, self.device, self.image_scaling, 
+                self.img_stats["center"]["mean"], self.img_stats["center"]["std"]
             ),
             "observation.images.right_camera": self._img_to_tensor(
-                obs_msg.right_image, self.device, self.image_scaling, self.right_image_means, self.right_image_stds
+                obs_msg.right_image, self.device, self.image_scaling, 
+                self.img_stats["right"]["mean"], self.img_stats["right"]["std"]
             ),
         }
 
-        # Process Controller States (The example policy uses TCP pose, TCP velocity, TCP error, and joint positions. See `AICRobotAICController` `get_observation()`.)
-        state_np = np.zeros(26, dtype=np.float32)
-
+        # --- Process Robot State ---
+        # Construct flat state vector (26 dims) matching training order
         tcp_pose = obs_msg.controller_state.tcp_pose
-        tcp_velocity = obs_msg.controller_state.tcp_velocity
-        state_np[0:7] = [
-            tcp_pose.position.x,
-            tcp_pose.position.y,
-            tcp_pose.position.z,
-            tcp_pose.orientation.x,
-            tcp_pose.orientation.y,
-            tcp_pose.orientation.z,
-            tcp_pose.orientation.w,
-        ]
-        state_np[7:13] = [
-            tcp_velocity.linear.x,
-            tcp_velocity.linear.y,
-            tcp_velocity.linear.z,
-            tcp_velocity.angular.x,
-            tcp_velocity.angular.y,
-            tcp_velocity.angular.z,
-        ]
-        state_np[13:19] = obs_msg.controller_state.tcp_error
-        state_np[19:26] = obs_msg.joint_states.position[0:7]
+        tcp_vel  = obs_msg.controller_state.tcp_velocity
+        
+        state_np = np.array([
+            # TCP Position (3)
+            tcp_pose.position.x, tcp_pose.position.y, tcp_pose.position.z,
+            # TCP Orientation (4)
+            tcp_pose.orientation.x, tcp_pose.orientation.y, tcp_pose.orientation.z, tcp_pose.orientation.w,
+            # TCP Linear Vel (3)
+            tcp_vel.linear.x, tcp_vel.linear.y, tcp_vel.linear.z,
+            # TCP Angular Vel (3)
+            tcp_vel.angular.x, tcp_vel.angular.y, tcp_vel.angular.z,
+            # TCP Error (6)
+            *obs_msg.controller_state.tcp_error,
+            # Joint Positions (7)
+            *obs_msg.joint_states.position[:7]
+        ], dtype=np.float32)
 
+        # Normalize State
         raw_state_tensor = torch.from_numpy(state_np).float().unsqueeze(0).to(self.device)
-        normalized_state = (raw_state_tensor - self.state_means) / self.state_stds
-
-        obs["observation.state"] = normalized_state
+        obs["observation.state"] = (raw_state_tensor - self.state_mean) / self.state_std
 
         return obs
 
@@ -140,37 +184,46 @@ class RunACT(Policy):
         get_observation: Callable[[], Observation],
         set_cartesian_twist_target: Callable[[Twist], None],
         send_feedback: Callable[[str], None],
-        **kwargs,  # Capture unused callbacks
+        **kwargs,
     ):
-        self.policy.reset()  # Clear ACT temporal aggregation
+        self.policy.reset()
         self.get_logger().info(f"RunACT.insert_cable() enter. Task: {task}")
-        start_time = time.clock_gettime(0)
-
-        while time.clock_gettime(0) - start_time < 30.0:
-            time.sleep(0.25)
-            observation_msg = get_observation()
-
-            obs_tensors = self.prepare_observations(observation_msg)
-            with torch.inference_mode():
-                normalized_actions_tensor = self.policy.select_action(obs_tensors)
+        
+        start_time = time.time()
+        
+        # Run inference for 30 seconds
+        while time.time() - start_time < 30.0:
+            loop_start = time.time()
             
-            raw_actions_tensor = (normalized_actions_tensor * self.action_stds) + self.action_means
-            # Action conversion (take the first action in the list)
-            actions = raw_actions_tensor[0].to("cpu").numpy()
-            self.get_logger().info(f"Action: {actions}")
+            # 1. Get & Process Observation
+            observation_msg = get_observation()
+            obs_tensors = self.prepare_observations(observation_msg)
+            
+            # 2. Model Inference
+            with torch.inference_mode():
+                # returns shape [1, 7] (first action of chunk)
+                normalized_action = self.policy.select_action(obs_tensors)
+            
+            # 3. Un-normalize Action
+            # Formula: (norm * std) + mean
+            raw_action_tensor = (normalized_action * self.action_std) + self.action_mean
+            
+            # 4. Extract and Command
+            # raw_action_tensor is [1, 7], taking [0] gives vector of 7
+            action = raw_action_tensor[0].cpu().numpy()
+            
+            self.get_logger().info(f"Action: {action}")
 
-            # Command robot
             twist = Twist(
-                linear=Vector3(
-                    x=float(actions[0]), y=float(actions[1]), z=float(actions[2])
-                ),
-                angular=Vector3(
-                    x=float(actions[3]), y=float(actions[4]), z=float(actions[5])
-                ),
+                linear=Vector3(x=float(action[0]), y=float(action[1]), z=float(action[2])),
+                angular=Vector3(x=float(action[3]), y=float(action[4]), z=float(action[5]))
             )
             set_cartesian_twist_target(twist)
-
             send_feedback("in progress...")
+            
+            # Maintain control rate (approx 4Hz loop = 0.25s sleep)
+            elapsed = time.time() - loop_start
+            time.sleep(max(0, 0.25 - elapsed))
 
         self.get_logger().info("RunACT.insert_cable() exiting...")
         return True
