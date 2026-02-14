@@ -25,7 +25,7 @@ Follow the sections below to navigate through each phase of the process.
    - Review the [Qualification Phase](./docs/phases.md#qualification-phase-train-your-model) to understand what you'll be building.
 
 2. **🔧 Set Up Your Environment**
-   - Follow the [Getting started](./docs/getting_started.md) guide to set up and validate your development environment.
+   - Follow the [Getting Started](./docs/getting_started.md) guide to set up and validate your development environment.
    - Run the evaluation container and set up your local workspace with Pixi.
 
 3. **💻 Develop Your Policy**
