@@ -319,9 +319,9 @@ trials:
         cable_type: "sfp_sc"
         cable_name: "cable_1"
         plug_type: "sc"
-        plug_name:  "sc_plug"
+        plug_name:  "sc_tip"
         port_type: "sc"
-        port_name: "sc_port"
+        port_name: "sc_port_base"
         target_module_name: "sc_port_1"
         time_limit: 300
 robot:

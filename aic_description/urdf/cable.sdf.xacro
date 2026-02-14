@@ -15,7 +15,7 @@
   </xacro:if>
   <xacro:if value="${cable_type == 'sfp_sc_cable_reversed'}">
     <xacro:property name="cable_connection_0_link" value="sc_plug_link" />
-    <xacro:property name="cable_connection_0_port" value="sc_port" />
+    <xacro:property name="cable_connection_0_port" value="sc_port_base" />
     <xacro:property name="cable_connection_1_link" value="lc_plug_link" />
   </xacro:if>
 
