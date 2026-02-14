@@ -30,7 +30,7 @@ from aic_control_interfaces.srv import ChangeTargetMode
 from aic_model_interfaces.msg import Observation
 from aic_task_interfaces.action import InsertCable
 from aic_task_interfaces.msg import Task
-from geometry_msgs.msg import Point, Pose, Quaternion, Wrench, Vector3, Twist
+from geometry_msgs.msg import Point, Pose, Quaternion, Wrench, Vector3
 from rclpy.action import ActionServer, CancelResponse, GoalResponse
 from rclpy.action.server import ServerGoalHandle
 from rclpy.callback_groups import ReentrantCallbackGroup
@@ -183,7 +183,7 @@ class AicModel(LifecycleNode):
     def observation_callable(self):
         return self._observation_msg
 
-    def set_cartesian_target(self, pose: Pose, frame_id: str = "base_link"):
+    def set_pose_target(self, pose: Pose, frame_id: str = "base_link"):
         """Set a pose target for the robot arm.
 
         The robot can be controlled in several different ways. This function
@@ -237,13 +237,9 @@ class AicModel(LifecycleNode):
         self._action_thread_result = self._policy.insert_cable(
             task=goal_handle.request.task,
             get_observation=lambda: self.observation_callable(),
-            set_cartesian_target=lambda pose, frame_id="base_link": self.set_cartesian_target(
+            set_pose_target=lambda pose, frame_id="base_link": self.set_pose_target(
                 pose, frame_id
             ),
-            set_cartesian_twist_target=lambda twist, frame_id="base_link": self.set_cartesian_twist_target(
-                twist, frame_id
-            ),
-            set_joint_target=lambda joint_pos: self.set_joint_target(joint_pos),
             send_feedback=lambda feedback: self.send_feedback(goal_handle, feedback),
         )
         if self._action_thread_result is None:
@@ -252,13 +248,7 @@ class AicModel(LifecycleNode):
 
     async def insert_cable_execute_callback(self, goal_handle: ServerGoalHandle):
         self.get_logger().info("Entering insert_cable_execute_callback()")
-
-        # TODO: How to allow participants to set mode.
         await self.set_cartesian_mode()
-        self.get_logger().info("Cartesian mode set")
-        # await self.set_joint_mode()
-        # self.get_logger().info("Joint mode set")
-
         self._action_thread_result = None
         self._action_thread = threading.Thread(
             target=self.action_thread_func,
