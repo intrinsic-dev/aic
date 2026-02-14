@@ -1781,6 +1781,11 @@ bool Engine::spawn_entity(Trial& trial, std::string entity_name,
   request->initial_pose.pose.orientation.z = qz;
   request->initial_pose.pose.orientation.w = qw;
 
+  // Add entity to spawned_entities list before making the service call
+  // This ensures cleanup will attempt to delete it even if the service
+  // reports failure but entity actually spawns in the background
+  trial.spawned_entities.emplace_back(entity_name);
+
   // Call service synchronously with timeout
   auto future = spawn_entity_client_->async_send_request(request);
   if (future.wait_for(std::chrono::seconds(10)) != std::future_status::ready) {
@@ -1796,8 +1801,6 @@ bool Engine::spawn_entity(Trial& trial, std::string entity_name,
                  response->result.error_message.c_str());
     return false;
   }
-
-  trial.spawned_entities.emplace_back(response->entity_name);
 
   RCLCPP_INFO(node_->get_logger(), "Successfully spawned %s as '%s'",
               entity_name.c_str(), response->entity_name.c_str());
