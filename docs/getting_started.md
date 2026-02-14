@@ -1,6 +1,6 @@
 # Getting Started
 
-Welcome to the AI for Industry Challenge! This guide will help you set up your development environment and get started with building your solution.
+Welcome to the AI for Industry Challenge! Follow this guide to familarize yourself with the toolkit structure, prepare  your environment, and confirm your setup by running a quickstart example before developing your solution.
 
 ## Architecture Overview
 
