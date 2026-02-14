@@ -51,27 +51,29 @@ class RunACT(Policy):
         # -------------------------------------------------------------------------
         # Path to your checkpoint folder
         policy_path = Path("/home/aic/ws_aic/outputs/grkw/random_start_poses_10_eps")
-        
+
         # Load Config Manually (Fixes 'Draccus' error by removing unknown 'type' field)
         with open(policy_path / "config.json", "r") as f:
             config_dict = json.load(f)
             if "type" in config_dict:
                 del config_dict["type"]
-        
+
         config = draccus.decode(ACTConfig, config_dict)
-        
+
         # Load Policy Architecture & Weights
         self.policy = ACTPolicy(config)
         self.policy.load_state_dict(load_file(policy_path / "model.safetensors"))
         self.policy.eval()
         self.policy.to(self.device)
-        
+
         self.get_logger().info(f"ACT Policy loaded on {self.device} from {policy_path}")
 
         # -------------------------------------------------------------------------
         # 2. Normalization Stats Loading
         # -------------------------------------------------------------------------
-        stats_path = policy_path / "policy_preprocessor_step_3_normalizer_processor.safetensors"
+        stats_path = (
+            policy_path / "policy_preprocessor_step_3_normalizer_processor.safetensors"
+        )
         stats = load_file(stats_path)
 
         # Helper to extract and shape stats for broadcasting
@@ -82,28 +84,28 @@ class RunACT(Policy):
         self.img_stats = {
             "left": {
                 "mean": get_stat("observation.images.left_camera.mean", (1, 3, 1, 1)),
-                "std":  get_stat("observation.images.left_camera.std", (1, 3, 1, 1))
+                "std": get_stat("observation.images.left_camera.std", (1, 3, 1, 1)),
             },
             "center": {
                 "mean": get_stat("observation.images.center_camera.mean", (1, 3, 1, 1)),
-                "std":  get_stat("observation.images.center_camera.std", (1, 3, 1, 1))
+                "std": get_stat("observation.images.center_camera.std", (1, 3, 1, 1)),
             },
             "right": {
                 "mean": get_stat("observation.images.right_camera.mean", (1, 3, 1, 1)),
-                "std":  get_stat("observation.images.right_camera.std", (1, 3, 1, 1))
-            }
+                "std": get_stat("observation.images.right_camera.std", (1, 3, 1, 1)),
+            },
         }
         print(f"Image stats: {self.img_stats}")
 
         # Robot State Stats (1, 26)
         self.state_mean = get_stat("observation.state.mean", (1, -1))
-        self.state_std  = get_stat("observation.state.std", (1, -1))
+        self.state_std = get_stat("observation.state.std", (1, -1))
         print(f"Robot state mean: {self.state_mean}")
         print(f"Robot state std: {self.state_std}")
 
         # Action Stats (1, 7) - Used for Un-normalization
         self.action_mean = get_stat("action.mean", (1, -1))
-        self.action_std  = get_stat("action.std", (1, -1))
+        self.action_std = get_stat("action.std", (1, -1))
         print(f"Action mean: {self.action_mean}")
         print(f"Action std: {self.action_std}")
 
@@ -112,19 +114,26 @@ class RunACT(Policy):
 
         self.get_logger().info("Normalization statistics loaded successfully.")
 
-
     @staticmethod
-    def _img_to_tensor(raw_img, device: torch.device, scale: float, mean: torch.Tensor, std: torch.Tensor) -> torch.Tensor:
+    def _img_to_tensor(
+        raw_img,
+        device: torch.device,
+        scale: float,
+        mean: torch.Tensor,
+        std: torch.Tensor,
+    ) -> torch.Tensor:
         """Converts ROS Image -> Resized -> Permuted -> Normalized Tensor."""
         # 1. Bytes to Numpy (H, W, C)
         img_np = np.frombuffer(raw_img.data, dtype=np.uint8).reshape(
             raw_img.height, raw_img.width, 3
         )
-        
+
         # 2. Resize
         if scale != 1.0:
-            img_np = cv2.resize(img_np, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA)
-        
+            img_np = cv2.resize(
+                img_np, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA
+            )
+
         # 3. To Tensor -> Permute (HWC -> CHW) -> Float -> Div(255) -> Batch Dim
         tensor = (
             torch.from_numpy(img_np)
@@ -134,52 +143,75 @@ class RunACT(Policy):
             .unsqueeze(0)
             .to(device)
         )
-        
+
         # 4. Normalize (Apply Mean/Std)
         # Formula: (x - mean) / std
         return (tensor - mean) / std
 
     def prepare_observations(self, obs_msg: Observation) -> Dict[str, torch.Tensor]:
         """Convert ROS Observation message into dictionary of normalized tensors."""
-        
+
         # --- Process Cameras ---
         obs = {
             "observation.images.left_camera": self._img_to_tensor(
-                obs_msg.left_image, self.device, self.image_scaling, 
-                self.img_stats["left"]["mean"], self.img_stats["left"]["std"]
+                obs_msg.left_image,
+                self.device,
+                self.image_scaling,
+                self.img_stats["left"]["mean"],
+                self.img_stats["left"]["std"],
             ),
             "observation.images.center_camera": self._img_to_tensor(
-                obs_msg.center_image, self.device, self.image_scaling, 
-                self.img_stats["center"]["mean"], self.img_stats["center"]["std"]
+                obs_msg.center_image,
+                self.device,
+                self.image_scaling,
+                self.img_stats["center"]["mean"],
+                self.img_stats["center"]["std"],
             ),
             "observation.images.right_camera": self._img_to_tensor(
-                obs_msg.right_image, self.device, self.image_scaling, 
-                self.img_stats["right"]["mean"], self.img_stats["right"]["std"]
+                obs_msg.right_image,
+                self.device,
+                self.image_scaling,
+                self.img_stats["right"]["mean"],
+                self.img_stats["right"]["std"],
             ),
         }
 
         # --- Process Robot State ---
         # Construct flat state vector (26 dims) matching training order
         tcp_pose = obs_msg.controller_state.tcp_pose
-        tcp_vel  = obs_msg.controller_state.tcp_velocity
-        
-        state_np = np.array([
-            # TCP Position (3)
-            tcp_pose.position.x, tcp_pose.position.y, tcp_pose.position.z,
-            # TCP Orientation (4)
-            tcp_pose.orientation.x, tcp_pose.orientation.y, tcp_pose.orientation.z, tcp_pose.orientation.w,
-            # TCP Linear Vel (3)
-            tcp_vel.linear.x, tcp_vel.linear.y, tcp_vel.linear.z,
-            # TCP Angular Vel (3)
-            tcp_vel.angular.x, tcp_vel.angular.y, tcp_vel.angular.z,
-            # TCP Error (6)
-            *obs_msg.controller_state.tcp_error,
-            # Joint Positions (7)
-            *obs_msg.joint_states.position[:7]
-        ], dtype=np.float32)
+        tcp_vel = obs_msg.controller_state.tcp_velocity
+
+        state_np = np.array(
+            [
+                # TCP Position (3)
+                tcp_pose.position.x,
+                tcp_pose.position.y,
+                tcp_pose.position.z,
+                # TCP Orientation (4)
+                tcp_pose.orientation.x,
+                tcp_pose.orientation.y,
+                tcp_pose.orientation.z,
+                tcp_pose.orientation.w,
+                # TCP Linear Vel (3)
+                tcp_vel.linear.x,
+                tcp_vel.linear.y,
+                tcp_vel.linear.z,
+                # TCP Angular Vel (3)
+                tcp_vel.angular.x,
+                tcp_vel.angular.y,
+                tcp_vel.angular.z,
+                # TCP Error (6)
+                *obs_msg.controller_state.tcp_error,
+                # Joint Positions (7)
+                *obs_msg.joint_states.position[:7],
+            ],
+            dtype=np.float32,
+        )
 
         # Normalize State
-        raw_state_tensor = torch.from_numpy(state_np).float().unsqueeze(0).to(self.device)
+        raw_state_tensor = (
+            torch.from_numpy(state_np).float().unsqueeze(0).to(self.device)
+        )
         obs["observation.state"] = (raw_state_tensor - self.state_mean) / self.state_std
 
         return obs
@@ -194,47 +226,51 @@ class RunACT(Policy):
     ):
         self.policy.reset()
         self.get_logger().info(f"RunACT.insert_cable() enter. Task: {task}")
-        
+
         start_time = time.time()
-        
+
         # Run inference for 30 seconds
         while time.time() - start_time < 30.0:
             loop_start = time.time()
-            
+
             # 1. Get & Process Observation
             observation_msg = get_observation()
             obs_tensors = self.prepare_observations(observation_msg)
-            
+
             # 2. Model Inference
             with torch.inference_mode():
                 # returns shape [1, 7] (first action of chunk)
                 normalized_action = self.policy.select_action(obs_tensors)
-            
+
             # 3. Un-normalize Action
             # Formula: (norm * std) + mean
             raw_action_tensor = (normalized_action * self.action_std) + self.action_mean
-            
+
             # 4. Extract and Command
             # raw_action_tensor is [1, 7], taking [0] gives vector of 7
             action = raw_action_tensor[0].cpu().numpy()
-            
+
             self.get_logger().info(f"Action: {action}")
 
             twist = Twist(
-                linear=Vector3(x=float(action[0]), y=float(action[1]), z=float(action[2])),
-                angular=Vector3(x=float(action[3]), y=float(action[4]), z=float(action[5]))
+                linear=Vector3(
+                    x=float(action[0]), y=float(action[1]), z=float(action[2])
+                ),
+                angular=Vector3(
+                    x=float(action[3]), y=float(action[4]), z=float(action[5])
+                ),
             )
             msg = self.set_cartesian_twist_target(twist)
             self._parent_node.motion_update_pub.publish(msg)
             send_feedback("in progress...")
-            
+
             # Maintain control rate (approx 4Hz loop = 0.25s sleep)
             elapsed = time.time() - loop_start
             time.sleep(max(0, 0.25 - elapsed))
 
         self.get_logger().info("RunACT.insert_cable() exiting...")
         return True
-    
+
     def set_cartesian_twist_target(self, twist: Twist, frame_id: str = "base_link"):
         motion_update_msg = MotionUpdate()
         motion_update_msg.velocity = twist
