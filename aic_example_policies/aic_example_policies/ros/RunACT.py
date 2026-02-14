@@ -39,10 +39,17 @@ class RunACT(Policy):
         self.policy.eval()
         self.get_logger().info(f"ACT Policy loaded on {self.device} from {policy_path}")
 
-        # Image preprocessing
+        # Load stats
         stats_path = policy_path + "/policy_preprocessor_step_3_normalizer_processor.safetensors"
         stats = load_file(stats_path)
 
+        # Observation state stats
+        self.state_means = stats["observation.state.mean"].to(self.device).view(1, -1)
+        self.state_stds = stats["observation.state.std"].to(self.device).view(1, -1)
+        self.get_logger().info(f"Observation state means: {self.state_means}")
+        self.get_logger().info(f"Observation state stds: {self.state_stds}")
+
+        # Image stats
         self.left_image_means = stats["observation.images.left_camera.mean"].to("cuda").view(1, 3, 1, 1)
         self.center_image_means = stats["observation.images.center_camera.mean"].to("cuda").view(1, 3, 1, 1)
         self.right_image_means = stats["observation.images.right_camera.mean"].to("cuda").view(1, 3, 1, 1)
@@ -55,7 +62,7 @@ class RunACT(Policy):
 
         self.image_scaling = 0.25 # must manually change to match `AICRobotAICControllerConfig`
 
-        # Action postprocessing
+        # Action stats
         self.action_means = stats["action.mean"].to("cuda")
         self.action_stds = stats["action.std"].to("cuda")
         self.get_logger().info(f"Action means: {self.action_means}")
@@ -119,9 +126,11 @@ class RunACT(Policy):
         ]
         state_np[13:19] = obs_msg.controller_state.tcp_error
         state_np[19:26] = obs_msg.joint_states.position[0:7]
-        obs["observation.state"] = (
-            torch.from_numpy(state_np).float().unsqueeze(0).to(self.device)
-        )
+
+        raw_state_tensor = torch.from_numpy(state_np).float().unsqueeze(0).to(self.device)
+        normalized_state = (raw_state_tensor - self.state_means) / self.state_stds
+
+        obs["observation.state"] = normalized_state
 
         return obs
 
