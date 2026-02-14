@@ -686,70 +686,82 @@ TrialScore Engine::handle_trial(Trial& trial) {
   }
 
   if (trial.state == TrialState::ModelReady) {
-    RCLCPP_INFO(node_->get_logger(), "\033[1;32m  ✓ Model Ready\033[0m");
+    RCLCPP_INFO(node_->get_logger(), "\033[1;32m  ✓ Model Ready for trial '%s'\033[0m",
+                trial.id.c_str());
     score.tier_1_success();
     if (this->check_endpoints()) {
       trial.state = TrialState::EndpointsReady;
     }
   } else {
     RCLCPP_ERROR(node_->get_logger(),
-                 "\033[1;31m  ✗ Participant model is not ready\033[0m");
+                 "\033[1;31m  ✗ Participant model is not ready for trial '%s'\033[0m",
+                 trial.id.c_str());
     reset_after_trial(trial);
     return score;
   }
 
   if (trial.state == TrialState::EndpointsReady) {
-    RCLCPP_INFO(node_->get_logger(), "\033[1;32m  ✓ Endpoints Ready\033[0m");
+    RCLCPP_INFO(node_->get_logger(), "\033[1;32m  ✓ Endpoints Ready for trial '%s'\033[0m",
+                trial.id.c_str());
     if (this->ready_simulator(trial)) {
       trial.state = TrialState::SimulatorReady;
     }
   } else {
     RCLCPP_ERROR(node_->get_logger(),
-                 "\033[1;31m  ✗ Required endpoints are not available\033[0m");
+                 "\033[1;31m  ✗ Required endpoints are not available for trial '%s'\033[0m",
+                 trial.id.c_str());
     reset_after_trial(trial);
     return score;
   }
 
   if (trial.state == TrialState::SimulatorReady) {
-    RCLCPP_INFO(node_->get_logger(), "\033[1;32m  ✓ Simulator Ready\033[0m");
+    RCLCPP_INFO(node_->get_logger(), "\033[1;32m  ✓ Simulator Ready for trial '%s'\033[0m",
+                trial.id.c_str());
     if (this->ready_scoring(trial)) {
       trial.state = TrialState::ScoringReady;
     }
   } else {
     RCLCPP_ERROR(node_->get_logger(),
-                 "\033[1;31m  ✗ Simulator is not ready\033[0m");
+                 "\033[1;31m  ✗ Simulator is not ready for trial '%s'\033[0m",
+                 trial.id.c_str());
     reset_after_trial(trial);
     return score;
   }
 
   if (trial.state == TrialState::ScoringReady) {
-    RCLCPP_INFO(node_->get_logger(), "\033[1;32m  ✓ Scoring Ready\033[0m");
+    RCLCPP_INFO(node_->get_logger(), "\033[1;32m  ✓ Scoring Ready for trial '%s'\033[0m",
+                trial.id.c_str());
     this->tasks_started(trial);
   } else {
     RCLCPP_ERROR(node_->get_logger(),
-                 "\033[1;31m  ✗ Scoring system is not ready\033[0m");
+                 "\033[1;31m  ✗ Scoring system is not ready for trial '%s'\033[0m",
+                 trial.id.c_str());
     reset_after_trial(trial);
     return score;
   }
 
   if (trial.state == TrialState::TasksExecuting) {
-    RCLCPP_INFO(node_->get_logger(), "\033[1;36m  ⟳ Tasks Executing...\033[0m");
+    RCLCPP_INFO(node_->get_logger(), "\033[1;36m  ⟳ Tasks Executing for trial '%s'...\033[0m",
+                trial.id.c_str());
     if (this->tasks_completed_successfully(trial)) {
       trial.state = TrialState::AllTasksCompleted;
       RCLCPP_INFO(node_->get_logger(),
-                  "\033[1;32m  ✓ All Tasks Completed!\033[0m");
+                  "\033[1;32m  ✓ All Tasks Completed for trial '%s'!\033[0m",
+                  trial.id.c_str());
       score_trial(score);
     }
   } else {
     RCLCPP_ERROR(node_->get_logger(),
-                 "\033[1;31m  ✗ Tasks cannot be started successfully\033[0m");
+                 "\033[1;31m  ✗ Tasks cannot be started successfully for trial '%s'\033[0m",
+                 trial.id.c_str());
     reset_after_trial(trial);
     return score;
   }
 
   if (trial.state != TrialState::AllTasksCompleted) {
     RCLCPP_ERROR(node_->get_logger(),
-                 "\033[1;31m  ✗ Tasks were not completed successfully\033[0m");
+                 "\033[1;31m  ✗ Tasks were not completed successfully for trial '%s'\033[0m",
+                 trial.id.c_str());
     score_trial(score);
     reset_after_trial(trial);
     return score;
