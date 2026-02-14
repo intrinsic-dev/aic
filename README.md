@@ -14,16 +14,18 @@ This repository contains the official toolkit to help participants start develop
 
 ---
 
-## Quick Start Guide
+## Toolkit Guide
 
-New to the challenge? Follow these steps to get started:
+Welcome to the AIC toolkit documentation. This guide walks you through the complete workflow for participating in the challenge — from understanding the requirements to submitting your solution.
+
+Follow the sections below to navigate through each phase of the process.
 
 1. **📖 Understand the Challenge**
    - Read the [Challenge Overview](./docs/overview.md) to understand the goals.
    - Review the [Qualification Phase](./docs/phases.md#qualification-phase-train-your-model) to understand what you'll be building.
 
 2. **🔧 Set Up Your Environment**
-   - Follow the [Getting Started](./docs/getting_started.md) to set up your development environment.
+   - Follow the [Getting started](./docs/getting_started.md) guide to set up and validate your development environment.
    - Run the evaluation container and set up your local workspace with Pixi.
 
 3. **💻 Develop Your Policy**
