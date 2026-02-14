@@ -29,6 +29,12 @@ from aic_model.policy import Policy
 from aic_model_interfaces.msg import Observation
 from aic_task_interfaces.msg import Task
 
+from aic_control_interfaces.msg import (
+    MotionUpdate,
+    TrajectoryGenerationMode,
+)
+from geometry_msgs.msg import Wrench
+
 # LeRobot & Safetensors
 from lerobot.policies.act.modeling_act import ACTPolicy
 from lerobot.policies.act.configuration_act import ACTConfig
@@ -218,7 +224,8 @@ class RunACT(Policy):
                 linear=Vector3(x=float(action[0]), y=float(action[1]), z=float(action[2])),
                 angular=Vector3(x=float(action[3]), y=float(action[4]), z=float(action[5]))
             )
-            set_cartesian_twist_target(twist)
+            msg = self.set_cartesian_twist_target(twist)
+            self._parent_node.motion_update_pub.publish(msg)
             send_feedback("in progress...")
             
             # Maintain control rate (approx 4Hz loop = 0.25s sleep)
@@ -227,3 +234,30 @@ class RunACT(Policy):
 
         self.get_logger().info("RunACT.insert_cable() exiting...")
         return True
+    
+    def set_cartesian_twist_target(self, twist: Twist, frame_id: str = "base_link"):
+        motion_update_msg = MotionUpdate()
+        motion_update_msg.velocity = twist
+        motion_update_msg.header.frame_id = frame_id
+        motion_update_msg.header.stamp = self.get_clock().now().to_msg()
+
+        motion_update_msg.target_stiffness = np.diag(
+            [100.0, 100.0, 100.0, 50.0, 50.0, 50.0]
+        ).flatten()
+        motion_update_msg.target_damping = np.diag(
+            [40.0, 40.0, 40.0, 15.0, 15.0, 15.0]
+        ).flatten()
+
+        motion_update_msg.feedforward_wrench_at_tip = Wrench(
+            force=Vector3(x=0.0, y=0.0, z=0.0), torque=Vector3(x=0.0, y=0.0, z=0.0)
+        )
+
+        motion_update_msg.wrench_feedback_gains_at_tip = Wrench(
+            force=Vector3(x=0.5, y=0.5, z=0.5), torque=Vector3(x=0.0, y=0.0, z=0.0)
+        )
+
+        motion_update_msg.trajectory_generation_mode.mode = (
+            TrajectoryGenerationMode.MODE_VELOCITY
+        )
+
+        return motion_update_msg

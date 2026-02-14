@@ -228,54 +228,6 @@ class AicModel(LifecycleNode):
 
         self.motion_update_pub.publish(motion_update_msg)
 
-    def set_cartesian_twist_target(self, twist: Twist, frame_id: str = "base_link"):
-        motion_update_msg = MotionUpdate()
-        motion_update_msg.velocity = twist
-        motion_update_msg.header.frame_id = frame_id
-        motion_update_msg.header.stamp = self.get_clock().now().to_msg()
-
-        motion_update_msg.target_stiffness = np.diag(
-            [100.0, 100.0, 100.0, 50.0, 50.0, 50.0]
-        ).flatten()
-        motion_update_msg.target_damping = np.diag(
-            [40.0, 40.0, 40.0, 15.0, 15.0, 15.0]
-        ).flatten()
-
-        motion_update_msg.feedforward_wrench_at_tip = Wrench(
-            force=Vector3(x=0.0, y=0.0, z=0.0), torque=Vector3(x=0.0, y=0.0, z=0.0)
-        )
-
-        motion_update_msg.wrench_feedback_gains_at_tip = Wrench(
-            force=Vector3(x=0.5, y=0.5, z=0.5), torque=Vector3(x=0.0, y=0.0, z=0.0)
-        )
-
-        motion_update_msg.trajectory_generation_mode.mode = (
-            TrajectoryGenerationMode.MODE_VELOCITY
-        )
-
-        self.motion_update_pub.publish(motion_update_msg)
-
-    def set_joint_target(self, joint_pos: list[float]):
-        joint_motion_update_msg = JointMotionUpdate()
-
-        joint_motion_update_msg.target_state.positions = joint_pos
-
-        joint_motion_update_msg.target_stiffness = [
-            100.0,
-            100.0,
-            100.0,
-            50.0,
-            50.0,
-            50.0,
-        ]
-        joint_motion_update_msg.target_damping = [40.0, 40.0, 40.0, 15.0, 15.0, 15.0]
-
-        joint_motion_update_msg.trajectory_generation_mode.mode = (
-            TrajectoryGenerationMode.MODE_POSITION
-        )
-
-        self.joint_motion_update_pub.publish(joint_motion_update_msg)
-
     def send_feedback(self, goal_handle, feedback):
         feedback_msg = InsertCable.Feedback()
         feedback_msg.message = feedback
