@@ -615,7 +615,7 @@ Tier3Score ScoringTier2::ComputeTier3Score() const {
       }
     } else {
       RCLCPP_ERROR(this->node->get_logger(),
-                   "Error parsing insertion port namespace: ",
+                   "Error parsing insertion port namespace: %s",
                    this->insertionPortNamespace.c_str());
     }
   } else {
