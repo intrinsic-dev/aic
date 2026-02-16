@@ -498,6 +498,8 @@ EngineState Engine::initialize() {
           "/controller_manager/switch_controller");
   reset_joints_client_ =
       node_->create_client<ResetJointsSrv>("/scoring/reset_joints");
+  tare_ft_client_ = node_->create_client<TriggerSrv>(
+      "/aic_controller/tare_force_torque_sensor");
   tf_buffer_ = std::make_unique<tf2_ros::Buffer>(node_->get_clock());
   tf_listener_ = std::make_unique<tf2_ros::TransformListener>(*tf_buffer_);
 
@@ -1234,6 +1236,23 @@ bool Engine::ready_simulator(Trial& trial) {
   std::unique_lock<std::mutex> lock(mtx);
   cv.wait_for(lock, std::chrono::seconds(10),
               [&joints_settled] { return joints_settled; });
+
+  tare_ft_client_ = node_->create_client<TriggerSrv>(
+      "/aic_controller/tare_force_torque_sensor");
+
+  const auto tare_req = std::make_shared<TriggerSrv::Request>();
+  auto tare_ft_future = tare_ft_client_->async_send_request(tare_req);
+  if (tare_ft_future.wait_for(std::chrono::seconds(10)) !=
+      std::future_status::ready) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "TareFt service call timed out requesting for taring!");
+    return false;
+  }
+  auto tare_ft_response = tare_ft_future.get();
+  if (!tare_ft_response->success) {
+    RCLCPP_ERROR(node_->get_logger(), "Failed to request for taring.");
+    return false;
+  }
 
   // TODO(Yadunund): Implement other simulator readiness checks.
 

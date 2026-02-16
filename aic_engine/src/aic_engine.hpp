@@ -41,6 +41,7 @@
 #include "rclcpp_action/rclcpp_action.hpp"
 #include "simulation_interfaces/srv/delete_entity.hpp"
 #include "simulation_interfaces/srv/spawn_entity.hpp"
+#include "std_srvs/srv/trigger.hpp"
 #include "tf2/exceptions.hpp"
 #include "tf2_ros/buffer.h"
 #include "tf2_ros/transform_listener.h"
@@ -63,6 +64,7 @@ using SwitchControllerSrv = controller_manager_msgs::srv::SwitchController;
 using Task = aic_task_interfaces::msg::Task;
 using TrajectoryGenerationMode =
     aic_control_interfaces::msg::TrajectoryGenerationMode;
+using TriggerSrv = std_srvs::srv::Trigger;
 using WrenchStampedMsg = geometry_msgs::msg::WrenchStamped;
 
 //==============================================================================
@@ -338,6 +340,7 @@ class Engine {
   rclcpp::Client<controller_manager_msgs::srv::SwitchController>::SharedPtr
       switch_controller_client_;
   rclcpp::Client<ResetJointsSrv>::SharedPtr reset_joints_client_;
+  rclcpp::Client<TriggerSrv>::SharedPtr tare_ft_client_;
 
   // TF
   std::unique_ptr<tf2_ros::TransformListener> tf_listener_;
