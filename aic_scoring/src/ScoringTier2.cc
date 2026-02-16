@@ -231,6 +231,9 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
     } else if (msg_ptr->topic_name == kInsertionEventTopic) {
       const auto msg = deserialize_from_rosbag<StringMsg>(msg_ptr);
       this->InsertionEventCallback(msg);
+    } else if (msg_ptr->topic_name == kControllerStateTopic) {
+      const auto msg = deserialize_from_rosbag<ControllerStateMsg>(msg_ptr);
+      this->ControllerStateCallback(msg);
     } else {
       RCLCPP_WARN(this->node->get_logger(),
                   "Unexpected topic name while scoring: %s",
@@ -281,6 +284,7 @@ void ScoringTier2::Reset(const std::chrono::seconds &_buffer_size) {
   this->bagWriter.close();
   this->contacts.clear();
   this->insertionPortNamespace.clear();
+  this->lastTaredFt.reset();
   // Jerk computation variables
   this->tfHistory.clear();
   this->linearJerk = Vector3Msg();
@@ -395,8 +399,16 @@ void ScoringTier2::ContactsCallback(const ContactsMsg &_msg) {
 
 //////////////////////////////////////////////////
 void ScoringTier2::WrenchCallback(const WrenchMsg &_msg) {
-  const auto time = rclcpp::Time(_msg.header.stamp);
-  this->wrenches.push_back({time.seconds(), _msg.wrench.force});
+  // We don't log for else statement since skipping a few wrench messages
+  // at startup is not a big issue.
+  if (this->lastTaredFt.has_value()) {
+    const auto time = rclcpp::Time(_msg.header.stamp);
+    Vector3Msg wrench;
+    wrench.x = _msg.wrench.force.x - this->lastTaredFt.value().wrench.force.x;
+    wrench.y = _msg.wrench.force.y - this->lastTaredFt.value().wrench.force.y;
+    wrench.z = _msg.wrench.force.z - this->lastTaredFt.value().wrench.force.z;
+    this->wrenches.push_back({time.seconds(), wrench});
+  }
 }
 
 //////////////////////////////////////////////////
@@ -414,6 +426,11 @@ void ScoringTier2::InsertionEventCallback(const StringMsg &_msg) {
   // \todo(iche033) For now, assume only one insertion event per task
   // Mark insertion completion as true as soon as one insertion is done.
   this->insertionPortNamespace = _msg.data;
+}
+
+//////////////////////////////////////////////////
+void ScoringTier2::ControllerStateCallback(const ControllerStateMsg &_msg) {
+  this->lastTaredFt = _msg.fts_tare_offset;
 }
 
 //////////////////////////////////////////////////
@@ -718,8 +735,8 @@ Tier2Score::CategoryScore ScoringTier2::GetInsertionForceScore() const {
   using CategoryScore = Tier2Score::CategoryScore;
   // Apply a fixed penalty if excessive force is detected for more than a
   // certain time
-  // Note that the resting reading of the sensor seems to be about 20N
-  const double kForceThreshold = 25.0;
+  // The sensor reading is tared at startup so its reading is close to 0N.
+  const double kForceThreshold = 5.0;
   const double kDurationThreshold = 1.0;
   const double kPenalty = -10.0;
 

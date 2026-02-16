@@ -34,6 +34,7 @@
 #include <geometry_msgs/msg/vector3.hpp>
 #include <rclcpp/rclcpp.hpp>
 
+#include <aic_control_interfaces/msg/controller_state.hpp>
 #include <aic_control_interfaces/msg/joint_motion_update.hpp>
 #include <aic_control_interfaces/msg/motion_update.hpp>
 #include <geometry_msgs/msg/transform_stamped.hpp>
@@ -102,6 +103,7 @@ namespace aic_scoring
     using TFMsg = tf2_msgs::msg::TFMessage;
     using ContactsMsg = ros_gz_interfaces::msg::Contacts;
     using WrenchMsg = geometry_msgs::msg::WrenchStamped;
+    using ControllerStateMsg = aic_control_interfaces::msg::ControllerState;
     using JointMotionUpdateMsg = aic_control_interfaces::msg::JointMotionUpdate;
     using MotionUpdateMsg = aic_control_interfaces::msg::MotionUpdate;
     using StringMsg = std_msgs::msg::String;
@@ -145,6 +147,10 @@ namespace aic_scoring
     /// \brief Topic to subscribe for insertion event event
     public: static constexpr const char* kInsertionEventTopic =
         "/scoring/insertion_event";
+
+    /// \brief Topic to subscribe for controller state used for FT sensor taring.
+    public: static constexpr const char* kControllerStateTopic =
+        "/aic_controller/controller_state";
 
     /// \brief Class constructor.
     /// \param[in] _node Pointer to the ROS node.
@@ -239,6 +245,10 @@ namespace aic_scoring
     /// \brief Callback for insertion event while scoring.
     /// \param[in] _msg The received message.
     private: void InsertionEventCallback(const StringMsg& _msg);
+
+    /// \brief Callback for controller state while scoring.
+    /// \param[in] _msg The received message.
+    private: void ControllerStateCallback(const ControllerStateMsg& _msg);
 
     /// \brief Calculates score related with the gripper trajectory jerk.
     /// \return Scoring for the trajectory jerk score.
@@ -351,6 +361,9 @@ namespace aic_scoring
 
     /// \brief Whether the tf from a gripper was recorded.
     private: std::atomic<bool> gripperTfReceived = false;
+
+    /// \brief The last tared ft reading rotated to the current pose received.
+    private: std::optional<WrenchMsg> lastTaredFt;
   };
 
   // The Tier2 class as a node.
