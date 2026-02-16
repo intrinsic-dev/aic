@@ -1237,9 +1237,6 @@ bool Engine::ready_simulator(Trial& trial) {
   cv.wait_for(lock, std::chrono::seconds(10),
               [&joints_settled] { return joints_settled; });
 
-  tare_ft_client_ = node_->create_client<TriggerSrv>(
-      "/aic_controller/tare_force_torque_sensor");
-
   const auto tare_req = std::make_shared<TriggerSrv::Request>();
   auto tare_ft_future = tare_ft_client_->async_send_request(tare_req);
   if (tare_ft_future.wait_for(std::chrono::seconds(10)) !=
