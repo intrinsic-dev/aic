@@ -144,5 +144,15 @@
       </sensor>
 
     </link>
+
+    <link name="sc_port_base_link">
+      <pose>0 -0.002 0 1.5708 3.14159 0</pose>
+    </link>
+
+    <joint name="sc_port_base_joint" type="fixed">
+      <parent>sc_port_link</parent>
+      <child>sc_port_base_link</child>
+    </joint>
+
   </model>
 </sdf>

@@ -89,5 +89,23 @@
         </geometry>
       </collision>
     </link>
+
+    <link name="sc_tip_link">
+      <pose>0.01165 0 0 -1.5708 0 -1.5708</pose>
+      <inertial>
+        <mass>1e-3</mass>
+        <inertia>
+          <ixx>1e-6</ixx>
+          <iyy>1e-6</iyy>
+          <izz>1e-6</izz>
+        </inertia>
+      </inertial>
+    </link>
+
+    <joint name="sc_tip_joint" type="fixed">
+      <parent>sc_plug_link</parent>
+      <child>sc_tip_link</child>
+    </joint>
+
   </model>
 </sdf>

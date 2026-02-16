@@ -46,18 +46,18 @@ FAST_LINEAR_VEL = 0.1
 FAST_ANGULAR_VEL = 0.1
 
 KEY_MAPPINGS = {
-    "d": (-1, 0, 0, 0, 0, 0),  # -linear.x
-    "a": (1, 0, 0, 0, 0, 0),  # +linear.x
+    "d": (1, 0, 0, 0, 0, 0),  # +linear.x
+    "a": (-1, 0, 0, 0, 0, 0),  # -linear.x
     "w": (0, -1, 0, 0, 0, 0),  # -linear.y
     "s": (0, 1, 0, 0, 0, 0),  # +linear.y
     "r": (0, 0, -1, 0, 0, 0),  # -linear.z
     "f": (0, 0, 1, 0, 0, 0),  # +linear.z
-    "W": (0, 0, 0, -1, 0, 0),  # -angular.x
-    "S": (0, 0, 0, 1, 0, 0),  # +angular.x
+    "W": (0, 0, 0, 1, 0, 0),  # angular.x
+    "S": (0, 0, 0, -1, 0, 0),  # -angular.x
     "A": (0, 0, 0, 0, -1, 0),  # -angular.y
     "D": (0, 0, 0, 0, 1, 0),  # +angular.y
-    "e": (0, 0, 0, 0, 0, -1),  # -angular.z
-    "q": (0, 0, 0, 0, 0, 1),  # +angular.z
+    "e": (0, 0, 0, 0, 0, 1),  # +angular.z
+    "q": (0, 0, 0, 0, 0, -1),  # -angular.z
 }
 
 
@@ -106,7 +106,7 @@ class AICCartesianTeleoperatorNode(Node):
         # Variable parameters for teleoperation
         self.linear_vel = FAST_LINEAR_VEL  # Linear velocity (m/s)
         self.angular_vel = FAST_ANGULAR_VEL  # Angular velocity (rad/s)
-        self.frame_id = "base_link"
+        self.frame_id = "gripper/tcp"
 
     def on_key_press(self, key):
         """Callback for keyboard listener when a key is pressed."""
@@ -242,14 +242,14 @@ def main(args=None):
         Keyboard teleoperation for Cartesian control
         ---------------------------
         Linear translation:
-            d/a : -/+ Linear X
+            a/d : -/+ Linear X
             w/s : -/+ Linear Y
             r/f : -/+ Linear Z
 
         Angular rotation:
-            Shift + w/s : -/+ Angular X
+            Shift + s/w : -/+ Angular X
             Shift + a/d : -/+ Angular Y
-            e/q : -/+ Angular Z
+            q/e : -/+ Angular Z
 
         Toggle between SLOW and FAST teleoperation:
             k : Activate SLOW mode ({SLOW_LINEAR_VEL} m/s and {SLOW_ANGULAR_VEL} rad/s)

@@ -14,7 +14,8 @@ Each trial is scored using a tiered scoring system. Scores are cumulated across 
 
 A sanity check to ensure the submission loads and runs without errors.
 
-- The model must be able to successfully activate the submitted [Policy](https://github.com/intrinsic-dev/aic/blob/main/docs/policy.md) and respond to the `InsertCable` action request. The submitted Policy must also send valid commands to the robot arm controller via `MotionUpdate` (target position/velocities) or `JointMotionUpdate` (target joint states).
+- The model must be able to successfully activate the submitted policy and respond to the `InsertCable` action request. The submitted policy must also send valid commands to the robot arm controller via `MotionUpdate` (target position/velocities) or `JointMotionUpdate` (target joint states).
+- The policy must comply with all behavioral requirements defined in [Challenge Rules](./challenge_rules.md#aic_model)
 - Submissions failing this check will not be scored
 
 | Outcome | Score |

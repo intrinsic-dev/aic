@@ -44,6 +44,8 @@ from rclpy.lifecycle import (
 from rclpy.node import Node
 from rclpy.task import Future
 from std_srvs.srv import Empty
+from tf2_ros.buffer import Buffer
+from tf2_ros.transform_listener import TransformListener
 from trajectory_msgs.msg import JointTrajectoryPoint
 
 
@@ -74,6 +76,11 @@ class AicModel(LifecycleNode):
                 f"Class {expected_policy_class_name} not in module {policy_module_name}"
             )
             raise LookupError(expected_policy_class_name)
+
+        self._tf_buffer = Buffer()
+        self._tf_listener = TransformListener(
+            buffer=self._tf_buffer, node=self, spin_thread=True
+        )
 
         self.cancel_service = self.create_service(
             Empty, "cancel_task", self.cancel_task_callback
@@ -201,10 +208,10 @@ class AicModel(LifecycleNode):
         motion_update_msg.header.stamp = self.get_clock().now().to_msg()
 
         motion_update_msg.target_stiffness = np.diag(
-            [85.0, 85.0, 85.0, 85.0, 85.0, 85.0]
+            [90.0, 90.0, 90.0, 50.0, 50.0, 50.0]
         ).flatten()
         motion_update_msg.target_damping = np.diag(
-            [75.0, 75.0, 75.0, 75.0, 75.0, 75.0]
+            [50.0, 50.0, 50.0, 20.0, 20.0, 20.0]
         ).flatten()
 
         motion_update_msg.feedforward_wrench_at_tip = Wrench(
@@ -212,7 +219,7 @@ class AicModel(LifecycleNode):
         )
 
         motion_update_msg.wrench_feedback_gains_at_tip = Wrench(
-            force=Vector3(x=0.0, y=0.0, z=0.0), torque=Vector3(x=0.0, y=0.0, z=0.0)
+            force=Vector3(x=0.5, y=0.5, z=0.5), torque=Vector3(x=0.0, y=0.0, z=0.0)
         )
 
         motion_update_msg.trajectory_generation_mode.mode = (
@@ -228,7 +235,7 @@ class AicModel(LifecycleNode):
 
     def action_thread_func(self, goal_handle: ServerGoalHandle):
         self._action_thread_result = self._policy.insert_cable(
-            task=goal_handle.request,
+            task=goal_handle.request.task,
             get_observation=lambda: self.observation_callable(),
             set_pose_target=lambda pose, frame_id="base_link": self.set_pose_target(
                 pose, frame_id

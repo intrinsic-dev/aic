@@ -14,17 +14,19 @@ This repository contains the official toolkit to help participants start develop
 
 ---
 
-## Quick Start Guide
+## Toolkit Guide
 
-New to the challenge? Follow these steps to get started:
+Welcome to the AIC toolkit documentation. This guide walks you through the complete workflow for participating in the challenge — from understanding the requirements to submitting your solution.
+
+Follow the sections below to navigate through each phase of the process.
 
 1. **📖 Understand the Challenge**
    - Read the [Challenge Overview](./docs/overview.md) to understand the goals.
-   - Review the [Qualification Phase](./docs/qualification_phase.md) to understand what you'll be building.
+   - Review the [Qualification Phase](./docs/phases.md#qualification-phase-train-your-model) to understand what you'll be building.
 
 2. **🔧 Set Up Your Environment**
-   - Follow the [Installation Guide](./docs/getting_started.md) to set up your development environment.
-   - Choose between local setup or Docker containers.
+   - Follow the [Getting Started](./docs/getting_started.md) guide to set up and validate your development environment.
+   - Run the evaluation container and set up your local workspace with Pixi.
 
 3. **💻 Develop Your Policy**
    - Start with the [Policy Integration Guide](./docs/policy.md) to implement your solution.
@@ -42,6 +44,8 @@ New to the challenge? Follow these steps to get started:
 ---
 
 ## Toolkit Architecture
+
+![AIC Competition Components](../media/aic_competition_components.png)
 
 The AI for Industry Challenge toolkit is divided into **two main components**:
 
@@ -150,6 +154,10 @@ Manages trial execution, validates participant models, and collects scoring data
 * **[Scene Description](./docs/scene_description.md):** Technical details of the simulation environment.
 * **[Task Board Description](./docs/task_board_description.md):** Physical layout and specifications of the task board.
 * **[Troubleshooting](./docs/troubleshooting.md):** Common issues and debugging strategies.
+
+### Reference Materials
+
+* **[Glossary](./docs/glossary.md):** Terminology and definitions used throughout the AI for Industry Challenge
 
 ### Submission
 

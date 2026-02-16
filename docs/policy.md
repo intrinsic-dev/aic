@@ -58,15 +58,15 @@ As an implementation detail, those API functions use the `aic_model` ROS node
 to publish data to the `aic_controller`, which is implemented using the
 [`ros2_control`](https://control.ros.org/rolling/index.html) framework.
 
-## Example
+## Baseline Policies
 
-To make this concrete, a [minimal example](https://github.com/intrinsic-dev/aic/blob/main/aic_example_policies/aic_example_policies/ros/WaveArm.py), `WaveArm`, shows how to implement the `insert_cable()` callback and issue motion commands to the arm.
+We provide several baseline policy implementations in the [`aic_example_policies`](../aic_example_policies/) package that demonstrate different approaches to the cable insertion task:
 
-The class name is provided when starting the `aic_model` ROS node.
-For interactive development, you can pass this via the command line—usually without a rebuild—thanks to colcon's `--symlink-install` feature.
-```
-ros2 run aic_model aic_model --ros-args -p policy:=aic_example_policies.ros.WaveArm
-```
+- **WaveArm** - A minimal example showing the basic Policy API structure
+- **CheatCode** - A "cheating" policy that uses ground truth data for training and debugging
+- **RunACT** - An ACT (Action Chunking with Transformers) policy implementation
+
+For detailed descriptions, usage instructions, and source code, see the [Example Policies README](../aic_example_policies/README.md).
 
 ## Tutorial: Creating a new policy node
 

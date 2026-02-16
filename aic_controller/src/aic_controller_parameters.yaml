@@ -108,6 +108,27 @@ aic_controller:
       default_value: 0.0,
       description: "Maximum rotational velocity in rad/s"
     }
+    tracking_error:
+      timeout: {
+        type: double,
+        default_value: 0.0,
+        description: "If there is no change in the error after the timeout duration, the tracking error will be clamped to their max values."
+      }
+      min_angular_change: {
+        type: double,
+        default_value: 0.0,
+        description: "Mininimum change in angular error such that the robot is moving towards the target. Units in radians"
+      }
+      min_translation_change: {
+        type: double,
+        default_value: 0.0,
+        description: "Minimum change in translation error such that the robot is moving towards the target. Units in meters"
+      }
+      min_translation_error: {
+        type: double,
+        default_value: 0.2,
+        description: "Minimum translation error to trigger clamping. Make sure it is larger than min_translation_change to avoid instability. Units in meters"
+      }
 
   # Cartesian impedance controller parameters
   impedance:
@@ -235,7 +256,6 @@ aic_controller:
           fixed_size<>: 6
         }
       }
-
     default_values:
       control_stiffness: {
         type: double_array,

@@ -58,7 +58,7 @@ View and edit key mappings and speed settings in `AICKeyboardJointTeleop` and `A
 
 :warning: Note: In our experience, SpaceMouse teleoperation was laggier than keyboard teleoperation.
 
-We used a 3Dconnexion SpaceMouse. To enable USB permissions, you may need to add the following to your `/etc/udev/rules.d/99-spacemouse.rules`:
+We used a 3Dconnexion SpaceMouse with the [pyspacemouse](https://github.com/JakubAndrysek/PySpaceMouse?tab=readme-ov-file#dependencies) library. To enable USB permissions, you may need to add the following to your `/etc/udev/rules.d/99-spacemouse.rules`:
 ``` bash
 # Apply to all hidraw nodes for 3Dconnexion devices
 KERNEL=="hidraw*", ATTRS{idVendor}=="046d", MODE="0666", GROUP="plugdev"
@@ -122,3 +122,19 @@ LeRobot recording keys:
 | ESC         | Stop recording   |
 
 <!-- TODO: lerobot-record doesn't load the hil processor to handle teleop events (lerobot bug?) -->
+
+### Training
+
+Once you have your LeRobot dataset, you can follow the [LeRobot tutorials](https://huggingface.co/docs/lerobot/en/index) for training.
+
+```bash
+cd ~/ws_aic/src/aic
+pixi run lerobot-train \
+  --dataset.repo_id=${HF_USER}/your_dataset \
+  --policy.type=your_policy_type \
+  --output_dir=outputs/train/act_your_dataset \
+  --job_name=act_your_dataset \
+  --policy.device=cuda \
+  --wandb.enable=true \
+  --policy.repo_id=${HF_USER}/act_policy
+```
