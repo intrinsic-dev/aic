@@ -605,11 +605,6 @@ EngineState Engine::run() {
     }
   }
 
-  // Reset simulator after the last trial
-  if (!trials_.empty()) {
-    reset_simulator(trials_.back().second);
-  }
-
   // TODO(luca) refactor cleanup into single function
   this->cleanup_model_node();
   this->shutdown_model_node();
