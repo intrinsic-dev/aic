@@ -244,6 +244,14 @@ namespace aic_scoring
     /// \return Scoring for the trajectory jerk score.
     private: Tier2Score::CategoryScore GetTrajectoryJerkScore() const;
 
+    /// \brief Accumulate path length with a new pose sample.
+    /// \param[in] _tf The new timestamped transform.
+    private: void EfficiencyCallback(const TransformStampedMsg &_tf);
+
+    /// \brief Calculates score for trajectory efficiency (path length).
+    /// \return Scoring for the trajectory efficiency category.
+    private: Tier2Score::CategoryScore GetTrajectoryEfficiencyScore() const;
+
     /// \brief Gets the transform for the specified entity at the requested time.
     /// \param[in] _t the time point to get the transform.
     /// \param[in] _target_frame the frame to get the transform for.
@@ -351,6 +359,12 @@ namespace aic_scoring
 
     /// \brief Whether the tf from a gripper was recorded.
     private: std::atomic<bool> gripperTfReceived = false;
+
+    /// \brief Total end-effector path length (meters).
+    private: double totalPathLength = 0.0;
+
+    /// \brief Previous end-effector pose for path length computation.
+    private: std::optional<TransformStampedMsg> prevPose;
   };
 
   // The Tier2 class as a node.

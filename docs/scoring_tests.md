@@ -32,6 +32,7 @@ GZ_BUILD_FROM_SOURCE=1 colcon build \
 | 1 | Model validity | Pass/fail: policy responded to `/insert_cable` action within timeout |
 | 2 | Trajectory jerk | Smoothness of arm motion (higher = smoother) |
 | 2 | Insertion force | Penalty for excessive force at the F/T sensor |
+| 2 | Trajectory efficiency | Reward for shorter end-effector path length (higher = more direct) |
 | 2 | Off-limit contacts | Penalty for collisions with the enclosure or task board |
 | 3 | Cable insertion | Score based on plug-port distance, task duration, and insertion success bonus |
 
