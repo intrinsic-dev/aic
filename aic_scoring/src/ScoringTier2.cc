@@ -515,13 +515,13 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryJerkScore() const {
 //////////////////////////////////////////////////
 void ScoringTier2::EfficiencyCallback(const TransformStampedMsg &_tf) {
   if (this->prevPose.has_value()) {
-    double dx = _tf.transform.translation.x -
-                this->prevPose->transform.translation.x;
-    double dy = _tf.transform.translation.y -
-                this->prevPose->transform.translation.y;
-    double dz = _tf.transform.translation.z -
-                this->prevPose->transform.translation.z;
-    this->totalPathLength += std::sqrt(dx*dx + dy*dy + dz*dz);
+    double dx =
+        _tf.transform.translation.x - this->prevPose->transform.translation.x;
+    double dy =
+        _tf.transform.translation.y - this->prevPose->transform.translation.y;
+    double dz =
+        _tf.transform.translation.z - this->prevPose->transform.translation.z;
+    this->totalPathLength += std::sqrt(dx * dx + dy * dy + dz * dz);
   }
   this->prevPose = _tf;
 }
@@ -542,8 +542,7 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryEfficiencyScore() const {
   ss << "Total end-effector path length: " << this->totalPathLength << " m";
 
   const double score = CalculateInverseProportionalScore(
-      kMaxEfficiencyScore, kMinEfficiencyScore,
-      kMaxPathLength, kMinPathLength,
+      kMaxEfficiencyScore, kMinEfficiencyScore, kMaxPathLength, kMinPathLength,
       this->totalPathLength);
 
   return CategoryScore(score, ss.str());
