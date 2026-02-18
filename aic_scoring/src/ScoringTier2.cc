@@ -275,9 +275,9 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
       minPathLength = initDist.value();
     }
   }
-  tier2_score.add_category_score("trajectory efficiency",
-                                 this->GetTrajectoryEfficiencyScore(
-                                     minPathLength));
+  tier2_score.add_category_score(
+      "trajectory efficiency",
+      this->GetTrajectoryEfficiencyScore(minPathLength));
   tier2_score.add_category_score("insertion force",
                                  this->GetInsertionForceScore());
   tier2_score.add_category_score("contacts", this->GetContactsScore());
