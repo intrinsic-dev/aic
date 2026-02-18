@@ -259,8 +259,11 @@ namespace aic_scoring
     private: void EfficiencyCallback(const TransformStampedMsg &_tf);
 
     /// \brief Calculates score for trajectory efficiency (path length).
+    /// \param[in] _minPathLength Minimum path length for max score (meters).
+    /// This is typically the initial plug-port distance.
     /// \return Scoring for the trajectory efficiency category.
-    private: Tier2Score::CategoryScore GetTrajectoryEfficiencyScore() const;
+    private: Tier2Score::CategoryScore GetTrajectoryEfficiencyScore(
+        double _minPathLength) const;
 
     /// \brief Gets the transform for the specified entity at the requested time.
     /// \param[in] _t the time point to get the transform.

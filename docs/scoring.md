@@ -61,9 +61,10 @@ Shorter, more direct paths score higher.
 
 - **Metric**: Cumulative Euclidean distance of end-effector positions (meters)
 - **Scoring**: Inversely proportional to total path length
-  - Path length = 0 m → 10 points (maximum)
+  - Path length ≤ initial plug-port distance → 10 points (maximum)
   - Path length ≥ 10 m → 0 points (minimum)
   - Linear interpolation between thresholds
+- The minimum path length (for a perfect score) is set dynamically to the initial Euclidean distance between the plug and port at the start of the trial
 
 ### Insertion force penalty (0 to -10 points)
 
