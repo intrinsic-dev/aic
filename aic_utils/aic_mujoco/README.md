@@ -42,7 +42,7 @@ vcs import < aic/aic_utils/aic_mujoco/mujoco.repos
 ```
 
 This adds:
-- `mujoco_vendor` (v0.0.6) - ROS 2 wrapper for MuJoCo 3.x
+- `mujoco_vendor` (v0.0.6) - ROS 2 wrapper for MuJoCo 3.x with plugins (elasticity, actuator, sensor, SDF)
 - `mujoco_ros2_control` - Integration between MuJoCo and ros2_control
 - `gz-mujoco` (with `sdformat_mjcf` tool) - Converts Gazebo SDF files to MuJoCo MJCF format
 
@@ -94,9 +94,18 @@ echo $MUJOCO_DIR
 # Should output something like:
 # /home/user/ws_aic/install/opt/mujoco_vendor
 
+# Check MUJOCO_PLUGIN_PATH is set (this is how MuJoCo finds plugins)
+echo $MUJOCO_PLUGIN_PATH
+# Should output something like:
+# /home/user/ws_aic/install/opt/mujoco_vendor/lib
+
 # Check MuJoCo installation directory
 ls $MUJOCO_DIR
-# Should show: bin, include, lib, simulate directories
+# Should show: bin, include, lib, share, simulate directories
+
+# Check that plugin libraries are installed
+ls $MUJOCO_DIR/lib/*.so
+# Should show: libelasticity.so, libactuator.so, libsensor.so, libsdf_plugin.so, libmujoco.so*
 
 # Check sdformat_mjcf tool
 which sdformat_mjcf
@@ -109,14 +118,22 @@ which simulate
 # /home/user/ws_aic/install/opt/mujoco_vendor/bin/simulate
 ```
 
-> **⚠️ Important:** If you have a previous MuJoCo installation, it may conflict with `mujoco_vendor`. Check for and remove any existing `MUJOCO_PATH` or `MUJOCO_DIR` environment variables from your shell configuration (`~/.bashrc`, etc.) before building. After cleaning the environment, rebuild the workspace:
+> **⚠️ Important:** If you have a previous MuJoCo installation, it may conflict with `mujoco_vendor`. Check for and remove any existing `MUJOCO_PATH`, `MUJOCO_PLUGIN_PATH`, or `MUJOCO_DIR` environment variables from your shell configuration (`~/.bashrc`, `~/.zshrc`, etc.) before building. After cleaning the environment, restart your shell and rebuild the workspace:
 > ```bash
 > # Check for conflicting environment variables
 > env | grep MUJOCO
 >
-> # If you see MUJOCO_PATH or incorrect MUJOCO_DIR, remove from ~/.bashrc and restart shell
-> # Then rebuild
-> colcon build --packages-select mujoco_vendor mujoco_ros2_control gz-mujoco
+> # If you see MUJOCO_PATH or MUJOCO_PLUGIN_PATH pointing to a different location,
+> # remove those exports from ~/.bashrc (or ~/.zshrc) and restart shell
+>
+> # Then rebuild mujoco_vendor
+> cd ~/ws_aic
+> colcon build --packages-select mujoco_vendor --cmake-clean-cache
+> source install/setup.bash
+>
+> # Verify the correct MUJOCO_PLUGIN_PATH is set
+> echo $MUJOCO_PLUGIN_PATH
+> # Should point to: /home/user/ws_aic/install/opt/mujoco_vendor/lib
 > ```
 
 ## Usage
@@ -205,14 +222,124 @@ simulate ~/aic_mujoco_world/scene.xml
 
 > **Tip:** Press Space to start/pause simulation in the viewer.
 
-## Training with MuJoCo
+## Controlling the Robot with ROS 2 Control
 
-MuJoCo's integration with ros2_control allows you to use the same `aic_controller` interface as in Gazebo, ensuring your policy code remains simulator-agnostic.
+MuJoCo's integration with `ros2_control` allows you to control the UR5e robot using the same `aic_controller` interface as in Gazebo, ensuring your policy code remains simulator-agnostic.
 
-Key benefits for training:
-- **Faster simulation** than Gazebo for large-scale training
+### Prerequisites
+
+The `ros2_control` integration requires building MuJoCo from source via `mujoco_vendor`. Follow the [Installation](#installation) section above to ensure you have:
+
+1. Imported the repositories from `mujoco.repos`:
+   ```bash
+   cd ~/ws_aic/src
+   vcs import < aic/aic_utils/aic_mujoco/mujoco.repos
+   ```
+
+2. Built the workspace from source:
+   ```bash
+   source /opt/ros/kilted/setup.bash
+   cd ~/ws_aic
+   colcon build
+   source install/setup.bash
+   ```
+
+3. Verified that `MUJOCO_DIR` and `MUJOCO_PLUGIN_PATH` are set correctly after sourcing:
+   ```bash
+   echo $MUJOCO_DIR
+   # Should output: /home/user/ws_aic/install/opt/mujoco_vendor
+   ```
+
+> **Note:** The pixi environment installs MuJoCo from pip, which does not include the `mujoco_ros2_control` plugin. You must use the native ROS 2 workspace with MuJoCo built from source.
+
+### Configuration
+
+The `mujoco_ros2_control` package integrates MuJoCo with ROS 2 Control using a hardware interface plugin. You'll need:
+
+1. **MJCF Model**: A MuJoCo scene file (`.xml`) with the robot model
+2. **ros2_control URDF**: Robot description with `<hardware>` tag configured for MuJoCo
+3. **Controller Configuration**: Same controller YAML as used with Gazebo
+
+The AIC robot's ros2_control configuration in `aic_description` already supports multiple hardware interfaces (Gazebo, real hardware). To use with MuJoCo, you'll need to configure the hardware interface plugin to use `mujoco_ros2_control/MujocoSystem`.
+
+### Launching MuJoCo with ros2_control
+
+#### Example Launch Flow
+
+```bash
+source ~/ws_aic/install/setup.bash
+export RMW_IMPLEMENTATION=rmw_zenoh_cpp
+export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
+
+# Launch MuJoCo simulation with ros2_control
+ros2 launch aic_bringup aic_mujoco_bringup.launch.py \
+  scene_file:=~/aic_mujoco_world/scene.xml \
+  spawn_task_board:=true \
+  spawn_cable:=true
+```
+
+> **Note:** The exact launch file may vary depending on your configuration. The key requirement is that the robot's URDF specifies the MuJoCo hardware interface plugin.
+
+#### Using aic_controller
+
+Once MuJoCo is running with ros2_control, you can interact with the robot using the same topics and services as Gazebo:
+
+```bash
+# Check available controllers
+ros2 control list_controllers
+
+# Send joint trajectory commands (same as Gazebo)
+ros2 topic pub /aic_controller/joint_trajectory_position_controller/joint_trajectory \
+  trajectory_msgs/msg/JointTrajectory ...
+
+# Monitor joint states (same interface)
+ros2 topic echo /joint_states
+
+# Use the same policy code that works with Gazebo
+python3 your_training_script.py
+```
+
+The `aic_controller` provides the same interface regardless of the underlying simulator (Gazebo or MuJoCo), allowing you to:
+- Develop and test policies in MuJoCo's faster simulation
+- Validate in Gazebo before submission
+- Use identical control code across both simulators
+
+### Training Benefits
+
+Key benefits for training with MuJoCo and ros2_control:
+- **Faster simulation** than Gazebo for large-scale policy training
 - **Domain randomization** across Gazebo, MuJoCo, and IsaacLab
-- **Same control interface** as evaluation environment
+- **Same control interface** (`aic_controller`) as evaluation environment
+- **Deterministic physics** for reproducible training runs
+- **Efficient batch simulation** for parallel training
+
+### Troubleshooting ros2_control Integration
+
+If the robot doesn't respond to commands:
+
+1. **Check controller state:**
+   ```bash
+   ros2 control list_controllers
+   # All controllers should show [active]
+   ```
+
+2. **Verify joint states are published:**
+   ```bash
+   ros2 topic hz /joint_states
+   # Should show regular updates (~100 Hz typical)
+   ```
+
+3. **Check MuJoCo plugin loaded:**
+   ```bash
+   ros2 run mujoco_ros2_control mujoco_ros2_control --help
+   # Should show the executable exists
+   ```
+
+4. **Verify MUJOCO_DIR is set:**
+   ```bash
+   echo $MUJOCO_DIR
+   # Should point to installed mujoco_vendor
+   ```
 
 ## Directory Structure
 
