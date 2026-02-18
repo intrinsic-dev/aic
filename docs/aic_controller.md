@@ -85,6 +85,17 @@ The controller publishes real-time data to `/aic_controller/controller_state` ([
 - Error between current and target TCP pose
 - Target joint torques
 
+#### Force-Torque Sensor Tare
+
+The controller provides a service to tare (zero) the force-torque sensor at `/aic_controller/tare_ft_sensor`. This service resets the current force/torque readings to zero, which is useful for calibrating the sensor or removing sensor bias. The tared offset is published in the [`ControllerState`](../aic_interfaces/aic_control_interfaces/msg/ControllerState.msg) message as `fts_tare_offset`.
+
+```bash
+# Tare the FT sensor
+ros2 service call /aic_controller/tare_ft_sensor std_srvs/srv/Trigger
+```
+
+> **Important:** This service will **not be available** during the evaluation. The force-torque sensor readings are used for scoring, and participants cannot tare the sensor during competition runs.
+
 ## Controller Target Parameters
 
 The table below shows the main controller parameters that policies typically need to modify for different tasks.

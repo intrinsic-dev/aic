@@ -42,6 +42,10 @@ scoring:
     # Cable plug-port insertion task completion event
         name: "/scoring/insertion_event"
         type: "std_msgs/msg/String"
+    - topic:
+    # Controller state for force torque tare
+        name: "/aic_controller/controller_state"
+        type: "aic_control_interfaces/msg/ControllerState"
 
 task_board_limits:
   nic_rail:
