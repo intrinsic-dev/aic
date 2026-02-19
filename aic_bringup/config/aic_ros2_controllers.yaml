@@ -20,10 +20,9 @@ fts_broadcaster:
 
 aic_controller:
   ros__parameters:
-    # Available control modes are "admittance" and "impedance".
-    # Admittance requires position command interfaces for specified joints.
-    # Impedance requires effort command interfaces for specified joints.
-    # Both modes require position state interfaces for specified joints.
+    # Currently, only "impedance" control mode is suppported.
+    # Impedance requires effort command interfaces for specified joints, 
+    # and requires position and velocity state interfaces for specified joints.
     control_mode: "impedance"
 
     # Default target mode. Available values are "joint" or "cartesian".
