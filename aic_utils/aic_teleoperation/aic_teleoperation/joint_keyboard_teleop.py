@@ -33,6 +33,7 @@ import numpy as np
 from aic_control_interfaces.msg import (
     JointMotionUpdate,
     TrajectoryGenerationMode,
+    TargetMode,
 )
 from aic_control_interfaces.srv import (
     ChangeTargetMode,
@@ -177,7 +178,7 @@ class AICTeleoperatorNode(Node):
         ChangeTargetMode
 
         req = ChangeTargetMode.Request()
-        req.target_mode = mode
+        req.target_mode.mode = mode
 
         self.get_logger().info(f"Sending request to change control mode to {mode}")
 
@@ -221,7 +222,7 @@ def main(args=None):
         with rclpy.init(args=args):
             node = AICTeleoperatorNode()
             node.send_change_control_mode_req(
-                ChangeTargetMode.Request().TARGET_MODE_JOINT
+                TargetMode.MODE_JOINT
             )
             rclpy.spin(node)
     except (KeyboardInterrupt, ExternalShutdownException):

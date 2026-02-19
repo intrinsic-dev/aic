@@ -28,6 +28,7 @@ set(msg_files
   "msg/ControllerState.msg"
   "msg/JointMotionUpdate.msg"
   "msg/MotionUpdate.msg"
+  "msg/TargetMode.msg"
   "msg/TrajectoryGenerationMode.msg"
 )
 

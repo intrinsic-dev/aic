@@ -69,10 +69,10 @@ To switch between joint and Cartesian control, send a ROS 2 service request to `
 Send a service call to switch the controller's target mode using the ROS 2 CLI:
 ```bash
 # Send a service request to switch to Cartesian target mode
-ros2 service call /aic_controller/change_target_mode aic_control_interfaces/srv/ChangeTargetMode "{target_mode: 0}"
+ros2 service call /aic_controller/change_target_mode aic_control_interfaces/srv/ChangeTargetMode "{target_mode: {mode: 1}}"
 
 # Send a service request to switch to joint target mode
-ros2 service call /aic_controller/change_target_mode aic_control_interfaces/srv/ChangeTargetMode "{target_mode: 1}"
+ros2 service call /aic_controller/change_target_mode aic_control_interfaces/srv/ChangeTargetMode "{target_mode: {mode: 2}}"
 ```
 
 > **Note:** The controller can only be in one mode at a time. For example, if the controller is in `Cartesian` mode, it will only listen to `/aic_controller/pose_commands` and ignore messages from `/aic_controller/joint_commands`. You must switch modes using the `/aic_controller/change_target_mode` service before the controller will accept that type of command. See [Controller Configuration](../docs/aic_interfaces.md#Controller-Configuration) for more details.
@@ -118,7 +118,7 @@ The table below shows the main controller parameters that policies typically nee
 To publish a pose target via the [`MotionUpdate`](../aic_interfaces/aic_control_interfaces/msg/MotionUpdate.msg) message using the ROS 2 CLI:
 ```bash
 # Send a service request to switch to Cartesian target mode
-ros2 service call /aic_controller/change_target_mode aic_control_interfaces/srv/ChangeTargetMode "{target_mode: 0}"
+ros2 service call /aic_controller/change_target_mode aic_control_interfaces/srv/ChangeTargetMode "{target_mode: {mode: 1}}"
 
 # Send a Cartesian pose target
 ros2 topic pub --once /aic_controller/pose_commands aic_control_interfaces/msg/MotionUpdate "{
@@ -207,7 +207,7 @@ Refer to the `generate_joint_motion_update()` function within [test_impedance.py
 To publish a joint position target via the [`JointMotionUpdate`](../aic_interfaces/aic_control_interfaces/msg/JointMotionUpdate.msg) message using the ROS 2 CLI:
 ```bash
 # Send a service request to switch to joint target mode
-ros2 service call /aic_controller/change_target_mode aic_control_interfaces/srv/ChangeTargetMode "{target_mode: 1}"
+ros2 service call /aic_controller/change_target_mode aic_control_interfaces/srv/ChangeTargetMode "{target_mode: {mode: 2}}"
 
 # Send a joint position target
 ros2 topic pub --once /aic_controller/joint_commands aic_control_interfaces/msg/JointMotionUpdate "{
