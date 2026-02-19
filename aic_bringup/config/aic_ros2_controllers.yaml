@@ -21,7 +21,7 @@ fts_broadcaster:
 aic_controller:
   ros__parameters:
     # Currently, only "impedance" control mode is suppported.
-    # Impedance requires effort command interfaces for specified joints, 
+    # Impedance requires effort command interfaces for specified joints,
     # and requires position and velocity state interfaces for specified joints.
     control_mode: "impedance"
 
@@ -61,7 +61,7 @@ aic_controller:
       default_values:
         control_stiffness: [75.0, 75.0, 75.0, 75.0, 75.0, 75.0]
         control_damping: [35.0, 35.0, 35.0, 35.0, 35.0, 35.0]
-        offset_wrench: [0.0, 0.0, 0.7848, 0.0, 0.0, 0.0]
+        offset_wrench: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
     joint_impedance:
       interpolator:
