@@ -151,7 +151,7 @@ trials:
         port_type: "sfp"
         port_name: "sfp_port_0"
         target_module_name: "nic_card_mount_0"
-        time_limit: 300
+        time_limit: 180
   trial_2:
     scene:
         task_board:
@@ -245,7 +245,7 @@ trials:
         port_type: "sfp"
         port_name: "sfp_port_0"
         target_module_name: "nic_card_mount_1"
-        time_limit: 300
+        time_limit: 180
   trial_3:
     scene:
         task_board:
@@ -327,7 +327,7 @@ trials:
         port_type: "sc"
         port_name: "sc_port_base"
         target_module_name: "sc_port_1"
-        time_limit: 300
+        time_limit: 180
 robot:
   home_joint_positions:
     shoulder_pan_joint: -0.1597
