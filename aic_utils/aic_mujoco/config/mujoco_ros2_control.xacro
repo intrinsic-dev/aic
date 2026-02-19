@@ -7,6 +7,17 @@
       <plugin>mujoco_ros2_control/MujocoSystem</plugin>
     </hardware>
 
+    <sensor name="AtiForceTorqueSensor">
+      <state_interface name="force.x"/>
+      <state_interface name="force.y"/>
+      <state_interface name="force.z"/>
+      <state_interface name="torque.x"/>
+      <state_interface name="torque.y"/>
+      <state_interface name="torque.z"/>
+      <param name="type">FTSensor</param>
+      <param name="frame_id">ati/tool_link</param>
+    </sensor>
+
     <xacro:ur_joint_control_description
       tf_prefix="$(arg tf_prefix)"
       initial_positions="${dict(
