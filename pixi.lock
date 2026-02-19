@@ -4977,8 +4977,8 @@ packages:
   - ros-kilted-rclpy
   - ros-kilted-sensor-msgs
   - ros-kilted-std-srvs
-  - ros-kilted-trajectory-msgs
   - ros-kilted-tf2-ros
+  - ros-kilted-trajectory-msgs
   - ros2-distro-mutex
   - ros2-distro-mutex >=0.13.0,<0.14.0a0
   - libgcc >=15

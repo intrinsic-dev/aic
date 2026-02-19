@@ -16,8 +16,8 @@
   <depend>rclpy</depend>
   <depend>sensor_msgs</depend>
   <depend>std_srvs</depend>
-  <depend>trajectory_msgs</depend>
   <depend>tf2_ros</depend>
+  <depend>trajectory_msgs</depend>
 
   <export>
     <build_type>ament_python</build_type>
