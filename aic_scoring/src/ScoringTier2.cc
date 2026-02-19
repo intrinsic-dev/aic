@@ -578,10 +578,14 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryEfficiencyScore(
 
 //////////////////////////////////////////////////
 Tier3Score ScoringTier2::GetDistanceScore() const {
-  // For now, just have the score be inversely proportional to the time
-  // it took to execute the task and the final distance between plug and port
-  // Linear interpolation in the interval, clamp to maximum and minimum
-  // Use distance as a base score, task time as a multiplier
+  // A two step approach to compute the score:
+  // * A simple distance metric, inversely proportional to the time
+  //   it took to execute the task and the final distance between plug and port
+  //   Linear interpolation in the interval, clamp to maximum and minimum
+  //   Use distance as a base score, task time as a multiplier.
+  // * A "bonus" for partial insertions, proportional to the distance from the
+  //   plug but only if the plug is partially inserted (i.e. between the
+  //   entrance of the port and its tip).
   const rclcpp::Duration kMaxTaskTime = rclcpp::Duration::from_seconds(60.0);
   const rclcpp::Duration kMinTaskTime = rclcpp::Duration::from_seconds(5.0);
   const double kFastestTaskMultiplier = 3.0;
@@ -591,6 +595,13 @@ Tier3Score ScoringTier2::GetDistanceScore() const {
   const double kMinDistance = 0.0;
   const double kClosestTaskScore = 10.0;
   const double kFurthestTaskScore = 0.5;
+
+  // TODO(anyone) revisit actual scores
+  const double kMinBonus = 5.0;
+  const double kMaxBonus = 20.0;
+  // The tolerance in x-y within the port to validate that the plug is being
+  // inserted.
+  const double kEntranceXYTol = 0.005;
 
   if (this->timestamps.empty()) {
     return Tier3Score(0, "Distance computation failed, no tfs received");
@@ -618,7 +629,7 @@ Tier3Score ScoringTier2::GetDistanceScore() const {
       kFastestTaskMultiplier, kSlowestTaskMultiplier, kMaxTaskTime.seconds(),
       kMinTaskTime.seconds(), task_duration.seconds());
 
-  const double score =
+  double score =
       duration_multiplier * CalculateInverseProportionalScore(
                                 kClosestTaskScore, kFurthestTaskScore,
                                 kMaxDistance, kMinDistance, dist.value());
@@ -627,7 +638,43 @@ Tier3Score ScoringTier2::GetDistanceScore() const {
   sstream.setf(std::ios::fixed);
   sstream.precision(2);
   sstream << "Task duration: " << task_duration.seconds()
-          << " seconds. Distance: " << dist.value() << " meters";
+          << " seconds. Distance: " << dist.value() << " meters.";
+
+  // Check if we are in partial insertion
+  const auto port_entrance_tf = this->GetTransform(
+      tf2::TimePoint(end_time), this->connections[0].PortEntranceTfName());
+  const auto port_tf = this->GetTransform(tf2::TimePoint(end_time),
+                                          this->connections[0].PortTfName());
+  const auto plug_tf = this->GetTransform(tf2::TimePoint(end_time),
+                                          this->connections[0].PlugTfName());
+
+  if (!port_entrance_tf.has_value() || !port_tf.has_value() ||
+      !plug_tf.has_value()) {
+    return Tier3Score(0,
+                      "Distance computation failed, tf between cable, port and "
+                      "entrance not found");
+  }
+
+  const auto port_entrance_trans =
+      port_entrance_tf.value().transform.translation;
+  const auto port_trans = port_tf.value().transform.translation;
+  const auto plug_trans = plug_tf.value().transform.translation;
+  if (std::abs(plug_trans.x - port_trans.x) < kEntranceXYTol &&
+      std::abs(plug_trans.y - port_trans.y) < kEntranceXYTol &&
+      (plug_trans.z - port_trans.z) < port_entrance_trans.z) {
+    // We are in partial insertion, apply a bonus proportional to how far we
+    // are from the actual port
+    const double port_to_entrance_dist = port_entrance_trans.z - port_trans.z;
+    const double plug_to_tip_dist = plug_trans.z - port_trans.z;
+
+    // The closest we are the higher we score
+    const double bonus = CalculateInverseProportionalScore(
+        kMaxBonus, kMinBonus, port_to_entrance_dist, 0.0, plug_to_tip_dist);
+    score += bonus;
+    sstream << " Partial insertion detected with distance of "
+            << plug_to_tip_dist << "m, additional bonus of " << bonus;
+  }
+
   return Tier3Score(score, sstream.str());
 }
 

@@ -149,6 +149,15 @@
       <pose>0 -0.002 0 1.5708 3.14159 0</pose>
     </link>
 
+    <link name="sc_port_base_link_entrance">
+      <pose relative_to="sc_port_base_link">0 0 -0.00714 0 0 0</pose>
+    </link>
+
+    <joint name="sc_port_base_entrance_joint" type="fixed">
+      <parent>sc_port_base_link</parent>
+      <child>sc_port_base_link_entrance</child>
+    </joint>
+
     <joint name="sc_port_base_joint" type="fixed">
       <parent>sc_port_link</parent>
       <child>sc_port_base_link</child>
