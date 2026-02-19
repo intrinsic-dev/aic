@@ -17,11 +17,11 @@
 #
 
 """
-This script is used for teleoperation of the robot end-effector Cartesian pose 
+This script is used for teleoperation of the robot end-effector Cartesian pose
 using the keyboard.
-Note that this script uses pynput to monitor keyboard input which might have issues working 
+Note that this script uses pynput to monitor keyboard input which might have issues working
 on the Wayland display server, but has been tested successfully with the X11 display server.
-This script can also be run within the pixi environment.  
+This script can also be run within the pixi environment.
 """
 
 import sys
@@ -267,9 +267,7 @@ def main(args=None):
     try:
         with rclpy.init(args=args):
             node = AICCartesianTeleoperatorNode()
-            node.send_change_control_mode_req(
-                TargetMode.MODE_CARTESIAN
-            )
+            node.send_change_control_mode_req(TargetMode.MODE_CARTESIAN)
             rclpy.spin(node)
     except (KeyboardInterrupt, ExternalShutdownException):
         pass

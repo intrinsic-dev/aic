@@ -26,7 +26,11 @@ from control_msgs.action import FollowJointTrajectory
 from rclpy.action import ActionClient
 from rclpy.node import Node
 from trajectory_msgs.msg import JointTrajectoryPoint
-from aic_control_interfaces.msg import MotionUpdate, TrajectoryGenerationMode, TargetMode
+from aic_control_interfaces.msg import (
+    MotionUpdate,
+    TrajectoryGenerationMode,
+    TargetMode,
+)
 from aic_control_interfaces.srv import ChangeTargetMode
 from geometry_msgs.msg import Pose, Point, Quaternion, Wrench, Vector3
 
@@ -51,9 +55,7 @@ class HomeTrajectoryNode(Node):
             while not change_target_mode_client.wait_for_service(timeout_sec=1.0):
                 self.get_logger().info("Waiting for change_target_mode service...")
             target_mode_request = ChangeTargetMode.Request()
-            target_mode_request.target_mode.mode = (
-                TargetMode.MODE_CARTESIAN
-            )
+            target_mode_request.target_mode.mode = TargetMode.MODE_CARTESIAN
             future = change_target_mode_client.call_async(target_mode_request)
             rclpy.spin_until_future_complete(self, future)
             response = future.result()
