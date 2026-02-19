@@ -515,6 +515,8 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryJerkScore() const {
 
   const double score = CalculateInverseProportionalScore(
       kMaxJerkScore, kMinJerkScore, kMaxJerkValue, kMinJerkValue, jerk);
+  std::cerr << " =================== JERK " << score << ": " << sstream.str() << std::endl;
+  std::cerr << " =================== js and jt " << js << ": " << jt << std::endl;
 
   return CategoryScore(score, sstream.str());
 }
@@ -701,6 +703,7 @@ void ScoringTier2::JerkCallback(const TransformStampedMsg &_tf) {
 
   constexpr double kVelocityThreshold = 0.01;  // m/s
   if (speed > kVelocityThreshold) {
+    jt++;
     // Compute linear jerk.
     this->linearJerk.x = computeJerk(px);
     this->linearJerk.y = computeJerk(py);
@@ -710,10 +713,15 @@ void ScoringTier2::JerkCallback(const TransformStampedMsg &_tf) {
                                this->linearJerk.y * this->linearJerk.y +
                                this->linearJerk.z * this->linearJerk.z);
     double dt = (t3 - t0) / 3.0;
+    // std::cerr << " ===========jerk and  dt " << dt << " vs " <<
+        // this->linearJerk.x << " "  << this->linearJerk.y << " " << this->linearJerk.z << std::endl;
     this->totalJerkTime += dt;
     this->accumLinearJerkMagnitude += jerkMag * dt;
     this->avgLinearJerkMagnitude =
         this->accumLinearJerkMagnitude / this->totalJerkTime;
+  }
+  else {
+    js++;
   }
 }
 

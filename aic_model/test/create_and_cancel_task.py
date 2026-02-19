@@ -77,11 +77,16 @@ class CreateAndCancelTaskNode(Node):
         goal_msg.task.id = "test_task"
         goal_msg.task.cable_type = "sfp_sc"
         goal_msg.task.cable_name = "cable_0"
-        goal_msg.task.plug_type = "sfp"
-        goal_msg.task.plug_name = "sfp_tip"
-        goal_msg.task.port_type = "sfp"
-        goal_msg.task.port_name = "sfp_port_0"
-        goal_msg.task.target_module_name = "nic_card_mount_0"
+        # goal_msg.task.plug_type = "sfp"
+        # goal_msg.task.plug_name = "sfp_tip"
+        # goal_msg.task.port_type = "sfp"
+        # goal_msg.task.port_name = "sfp_port_0"
+        # goal_msg.task.target_module_name = "nic_card_mount_0"
+        goal_msg.task.plug_type = "sc"
+        goal_msg.task.plug_name = "sc_tip"
+        goal_msg.task.port_type = "sc"
+        goal_msg.task.port_name = "sc_port_base"
+        goal_msg.task.target_module_name = "sc_port_0"
         goal_msg.task.time_limit = 300
         self.get_logger().info("Sending goal request...")
         self.send_goal_future = self.action_client.send_goal_async(

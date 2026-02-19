@@ -364,6 +364,9 @@ namespace aic_scoring
 
     /// \brief The last tared ft reading rotated to the current pose received.
     private: std::optional<WrenchMsg> lastTaredFt;
+
+    private: int jt = 0;
+    private: int js = 0;
   };
 
   // The Tier2 class as a node.
