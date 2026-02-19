@@ -36,7 +36,7 @@ aic_controller:
 
   control_mode: {
     type: string,
-    default_value: "admittance",
+    default_value: "impedance",
     description: "Sets the controller used, which can be either 'impedance' or 'admittance'"
   }
 
