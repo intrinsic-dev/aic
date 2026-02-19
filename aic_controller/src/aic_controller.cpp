@@ -1786,9 +1786,9 @@ void Controller::interpolate_impedance_parameters() {
 
     // Compute the total wrench at the tool tip
     // Force control via feedforward_wrench and wrench_feedback_gains.
-    Eigen::Matrix<double, 6, 1> wrench_feedback_gains_at_tip;
-    utils::wrench_msg_to_eigen(motion_update_.wrench_feedback_gains_at_tip,
-                               wrench_feedback_gains_at_tip);
+    Eigen::Matrix<double, 6, 1> wrench_feedback_gains_at_tip =
+        Eigen::Map<const Eigen::Matrix<double, 6, 1>>(
+            motion_update_.wrench_feedback_gains_at_tip.data());
     Eigen::Matrix<double, 6, 1> total_wrench_at_tip =
         feedforward_wrench_at_tip_ +
         wrench_feedback_gains_at_tip.cwiseProduct(feedforward_wrench_at_tip_ -

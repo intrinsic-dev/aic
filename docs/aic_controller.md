@@ -110,7 +110,7 @@ The table below shows the main controller parameters that policies typically nee
 | `target_stiffness` | `float64[36]` | The 6x6 stiffness matrix that controls how strongly the robot resists moving away from the target pose. <br /> Higher values = stiffer control, lower values = more compliant control. |
 | `target_damping` | `float64[36]` | The 6x6 damping matrix that reduces oscillations. <br /> Usually tuned relative to `target_stiffness` to prevent wobbling and ensure stable motion.|
 | `feedforward_wrench_at_tip` | `geometry_msgs/Wrench` | Optional external force/torque at the TCP. <br /> Useful for contact tasks like applying constant downward force or dealing with known tool-environment interactions. |
-| `wrench_feedback_gains_at_tip` | `geometry_msgs/Wrench` | Feedback gains on force/torque measured by the sensor. |
+| `wrench_feedback_gains_at_tip` | `float64[6]` | Feedback gains on force/torque measured by the sensor. |
 | `trajectory_generation_mode` | `TrajectoryGenerationMode` | How the target should be interpreted. <br /> `MODE_POSITION` follows the `pose` values. <br /> `MODE_VELOCITY` follows the `velocity` values. |
 
 #### Examples
@@ -149,10 +149,9 @@ ros2 topic pub --once /aic_controller/pose_commands aic_control_interfaces/msg/M
     force: {x: 0.0, y: 0.0, z: 0.0},
     torque: {x: 0.0, y: 0.0, z: 0.0}
   },
-  wrench_feedback_gains_at_tip: {
-    force: {x: 0.0, y: 0.0, z: 0.0},
-    torque: {x: 0.0, y: 0.0, z: 0.0}
-  },
+  wrench_feedback_gains_at_tip: [
+    0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+  ],
   trajectory_generation_mode: {mode: 2}
 }"
 ```

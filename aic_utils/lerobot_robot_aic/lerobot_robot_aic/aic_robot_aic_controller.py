@@ -370,10 +370,7 @@ class AICRobotAICController(Robot):
             force=Vector3(x=0.0, y=0.0, z=0.0),
             torque=Vector3(x=0.0, y=0.0, z=0.0),
         )
-        msg.wrench_feedback_gains_at_tip = Wrench(
-            force=Vector3(x=0.0, y=0.0, z=0.0),
-            torque=Vector3(x=0.0, y=0.0, z=0.0),
-        )
+        msg.wrench_feedback_gains_at_tip = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         msg.trajectory_generation_mode.mode = TrajectoryGenerationMode.MODE_VELOCITY
         if self.motion_update_pub is not None:
             self.motion_update_pub.publish(msg)

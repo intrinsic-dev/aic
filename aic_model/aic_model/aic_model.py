@@ -218,9 +218,7 @@ class AicModel(LifecycleNode):
             force=Vector3(x=0.0, y=0.0, z=0.0), torque=Vector3(x=0.0, y=0.0, z=0.0)
         )
 
-        motion_update_msg.wrench_feedback_gains_at_tip = Wrench(
-            force=Vector3(x=0.5, y=0.5, z=0.5), torque=Vector3(x=0.0, y=0.0, z=0.0)
-        )
+        motion_update_msg.wrench_feedback_gains_at_tip = [0.5, 0.5, 0.5, 0.0, 0.0, 0.0]
 
         motion_update_msg.trajectory_generation_mode.mode = (
             TrajectoryGenerationMode.MODE_POSITION
