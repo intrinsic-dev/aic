@@ -11,7 +11,7 @@ services:
     networks:
       - default
   model:
-    image: localhost/aic/aic_model
+    image: my-solution:v1
     build:
       dockerfile: docker/aic_model/Dockerfile
       context: ..
