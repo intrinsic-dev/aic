@@ -35,7 +35,7 @@ class WaveArm(Policy):
         self.get_logger().info("WaveArm.__init__()")
 
     def _clock_sleep(self, duration_sec):
-        """Sleep for the given duration using the node's clock (sim-time-aware)."""
+        """Sleep for the given duration using the node's clock (sim-time)."""
         clock = self.get_clock()
         start = clock.now()
         target = start + Duration(seconds=duration_sec)
