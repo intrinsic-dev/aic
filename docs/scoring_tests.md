@@ -27,14 +27,16 @@ GZ_BUILD_FROM_SOURCE=1 colcon build \
 
 ## Scoring Tiers Reference
 
-| Tier | Category | Description |
-|------|----------|-------------|
-| 1 | Model validity | Pass/fail: policy responded to `/insert_cable` action within timeout |
-| 2 | Trajectory jerk | Smoothness of arm motion (higher = smoother) |
-| 2 | Insertion force | Penalty for excessive force at the F/T sensor |
-| 2 | Trajectory efficiency | Reward for shorter end-effector path length (higher = more direct) |
-| 2 | Off-limit contacts | Penalty for collisions with the enclosure or task board |
-| 3 | Cable insertion | Score based on plug-port distance, task duration, and insertion success bonus |
+| Tier | Category | Range | Description |
+|------|----------|-------|-------------|
+| 1 | Model validity | 0-1 | Pass/fail: policy responded to `/insert_cable` action within timeout |
+| 2 | Trajectory smoothness | 0-5 | Smoothness of arm motion; inversely proportional to jerk (higher = smoother) |
+| 2 | Task duration | 0-10 | Reward for faster completion; only awarded on successful insertion |
+| 2 | Trajectory efficiency | 0-5 | Reward for shorter end-effector path length (higher = more direct) |
+| 2 | Insertion force | 0 to -10 | Penalty for force > 5 N sustained for > 1 second |
+| 2 | Off-limit contacts | 0 to -20 | Penalty for collisions with the enclosure or task board |
+| 3 | Successful insertion | 60 or -10 | Bonus for correct-port insertion; penalty for wrong-port insertion |
+| 3 | Partial insertion | 0-40 | Score based on plug proximity to port or insertion depth |
 
 Results are written to `$AIC_RESULTS_DIR/scoring.yaml` when using the engine.
 The default directory is `~/aic_results`. Each engine run **overwrites** the previous
@@ -72,17 +74,18 @@ ros2 launch aic_bringup aic_gz_bringup.launch.py \
 ## Example 2: CheatCode Reference Solution
 
 **Goal:** Run the CheatCode policy through the full engine pipeline as the reference
-solution. Exercises Tier 1 (pass), Tier 2 (jerk, force), and Tier 3
-(cable insertion).
+solution. Exercises Tier 1 (pass), Tier 2 (smoothness, duration, efficiency, force),
+and Tier 3 (cable insertion).
 
 **Expected outcome:**
 - All 3 trials complete.
 - Tier 1 should **pass** for all trials.
-- Tier 2 should show high jerk scores, no force penalty, and no off-limit contacts.
-- Tier 3 should report successful cable insertion for Trials 1 and 2.
+- Tier 2 should show high smoothness scores (up to 5), a task duration bonus
+  (up to 10) for successful trials, and no force penalty or off-limit contacts.
+- Tier 3 should report successful cable insertion (60 points) for Trials 1 and 2.
 - **Known issue:** Trial 3 uses an SC plug. CheatCode cannot resolve the SC
   cable tip TF frame, so it logs a transform timeout error and returns early.
-  Tier 2 and Tier 3 scores for Trial 3 will be low or zero.
+  Tier 3 for Trial 3 will show a proximity score instead of an insertion bonus.
 
 ### Terminal 0 -- Zenoh Router
 
@@ -110,14 +113,15 @@ ros2 launch aic_bringup aic_gz_bringup.launch.py \
 ## Example 3: WaveArm Baseline
 
 **Goal:** Run the WaveArm policy through the engine. The arm waves but never
-inserts the cable. Exercises Tier 1 (pass) and Tier 2 (smooth jerk, poor distance).
+inserts the cable. Exercises Tier 1 (pass) and Tier 2 (smoothness, efficiency).
 
 **Expected outcome:**
 - All 3 trials complete.
 - Tier 1 should **pass** for all trials.
-- Tier 2 should show high jerk scores (smooth waving motion), no force penalty,
-  and no off-limit contacts.
-- Tier 3 should report failed cable insertion for all trials (the arm waves but
+- Tier 2 should show high smoothness scores (smooth waving motion), no task
+  duration bonus (no successful insertion), no force penalty, and no off-limit
+  contacts.
+- Tier 3 should report a low proximity score for all trials (the arm waves but
   never approaches the port).
 
 ### Terminal 0 -- Zenoh Router
@@ -152,9 +156,9 @@ scoring output.
 **Expected outcome:**
 - All 3 trials complete.
 - Tier 1 should **pass** for all trials.
-- Tier 2 should show an off-limit contacts penalty for all trials where a
+- Tier 2 should show an off-limit contacts penalty (-20) for all trials where a
   robot link (e.g. `forearm_link`) collided with the enclosure wall.
-- Tier 3 should report failed cable insertion for all trials.
+- Tier 3 should report a low proximity score for all trials (no insertion).
 
 > **Note — Off-limit contacts:** "Off-limit" models are surfaces the robot must
 > not touch during the task. The `OffLimitContactsPlugin` monitors three models:
@@ -201,9 +205,9 @@ insertion force penalty.
 **Expected outcome:**
 - All 3 trials complete.
 - Tier 1 should **pass** for all trials.
-- Tier 2 should show an insertion force penalty for all trials. Off-limit
-  contacts may also appear as a side effect of the wall contact.
-- Tier 3 should report failed cable insertion for all trials.
+- Tier 2 should show an insertion force penalty (-10) for all trials. Off-limit
+  contacts penalty (-20) may also appear as a side effect of the wall contact.
+- Tier 3 should report a low proximity score for all trials (no insertion).
 
 ### Terminal 0 -- Zenoh Router
 
@@ -237,10 +241,11 @@ producing minimal jerk (high Tier 2 jerk score).
 **Expected outcome:**
 - All 3 trials complete.
 - Tier 1 should **pass** for all trials.
-- Tier 2 should show high jerk scores (slow, smooth motion), no force penalty,
-  and no off-limit contacts. Compare with Example 7 (`SpeedDemon`) to see the
-  difference in jerk.
-- Tier 3 should report failed cable insertion for all trials.
+- Tier 2 should show high smoothness scores (slow, smooth motion), no task
+  duration bonus (no successful insertion), no force penalty, and no off-limit
+  contacts. Compare with Example 7 (`SpeedDemon`) to see the difference in
+  smoothness.
+- Tier 3 should report a low proximity score for all trials (no insertion).
 
 ### Terminal 0 -- Zenoh Router
 
@@ -274,11 +279,11 @@ producing aggressive motion that triggers the insertion force penalty.
 **Expected outcome:**
 - All 3 trials complete.
 - Tier 1 should **pass** for all trials.
-- Tier 2 should show lower jerk scores than GentleGiant (Example 6) due to
-  aggressive motion, plus an insertion force penalty for all trials. The arm
+- Tier 2 should show lower smoothness scores than GentleGiant (Example 6) due to
+  aggressive motion, plus an insertion force penalty (-10) for all trials. The arm
   oscillates aggressively due to low damping, generating sustained force at
   the F/T sensor. The arm should visibly snap between positions.
-- Tier 3 should report failed cable insertion for all trials.
+- Tier 3 should report a low proximity score for all trials (no insertion).
 
 ### Terminal 0 -- Zenoh Router
 

@@ -118,7 +118,7 @@ bool ScoringTier2::StartRecording(const std::string &_filename,
               // A new cable transform was received
               this->cableTfReceived = true;
             } else if (topic.name == kTfTopic) {
-              // A new gripper  transform was received
+              // A new gripper transform was received
               this->gripperTfReceived = true;
             }
           }
