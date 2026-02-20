@@ -67,7 +67,7 @@ Shorter, more direct paths score higher.
 Penalizes excessive force during the insertion process to encourage gentle manipulation.
 The force sensor reading is tared at startup, so the baseline is close to 0 N.
 
-- **Force threshold**: 5 N
+- **Force threshold**: 20 N
 - **Duration threshold**: 1 second
 - **Penalty**: -10 points if force exceeds threshold for longer than the duration threshold
 - **No penalty**: If no excessive force is detected or excessive force is within duration threshold
