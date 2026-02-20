@@ -29,7 +29,7 @@ GZ_BUILD_FROM_SOURCE=1 colcon build \
 
 | Tier | Category | Range | Description |
 |------|----------|-------|-------------|
-| 1 | Model validity | 0-1 | Pass/fail: policy responded to `/insert_cable` action within timeout |
+| 1 | Model validity | 0-1 | Pass/fail: Prerequisite check that model loads and conforms to expectations |
 | 2 | Trajectory smoothness | 0-5 | Smoothness of arm motion; inversely proportional to jerk (higher = smoother) |
 | 2 | Task duration | 0-10 | Reward for faster completion; only awarded on successful insertion or plug is within close proximity to port |
 | 2 | Trajectory efficiency | 0-5 | Reward for shorter end-effector path length (higher = more direct) |
@@ -46,13 +46,12 @@ The default directory is `~/aic_results`. Each engine run **overwrites** the pre
 ## Example 1: Tier 1 Failure -- No Model Running
 
 **Goal:** Start the engine without launching `aic_model`. The engine should
-time out waiting for the policy to accept the `/insert_cable` action, resulting
-in Tier 1 failure.
+time out waiting for the policy to be discovered.
 
 **Expected outcome:**
 - The engine reports a timeout or failure for each trial.
 - Tier 1 should **fail** for all trials.
-- Tier 2 and Tier 3 are skipped (all scores are zero).
+- Tier 2 and Tier 3 will also fail in a similar manner.
 
 ### Terminal 0 -- Zenoh Router
 

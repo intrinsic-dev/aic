@@ -6,7 +6,7 @@ Each trial is scored using a tiered scoring system. Scores are cumulated across 
 
 | Tier | Name | Description |
 |------|------|-------------|
-| Tier 1 | Model Validity | Prerequisite check that submission loads and runs |
+| Tier 1 | Model Validity | Prerequisite check that model loads and conforms to expectations |
 | Tier 2 | Performance & Convergence | Quantitative metrics for motion quality |
 | Tier 3 | Cable Insertion | Primary objective - successful or partial insertion verified |
 
