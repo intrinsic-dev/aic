@@ -113,6 +113,9 @@ You must tag your local image to match the remote repository URI provided to you
 docker tag my-solution:v1 123456789.dkr.ecr.us-east-1.amazonaws.com/aic-team-name:v1
 ```
 
+> [!IMPORTANT]
+> Image tags in our ECR registry are immutable. You cannot overwrite an existing tag. For each new submission or build, you must increment your version tag (e.g., :v2, :v3) or use a unique identifier like a Git commit SHA. If you try to push an image with a tag that already exists in the registry, the push will fail.
+
 ### Push Your Image
 
 Upload the tagged image to the challenge registry:
