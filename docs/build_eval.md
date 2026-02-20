@@ -119,7 +119,7 @@ This launches Gazebo with the robot arm and end-of-arm tooling. The `TaskBoard` 
 ### Terminal 3 - Run Your Policy
 
 ```bash
-ros2 run aic_model aic_model --ros-args -p policy:=aic_example_policies.ros.WaveArm
+ros2 run aic_model aic_model --ros-args -p use_sim_time:=true -p policy:=aic_example_policies.ros.WaveArm
 ```
 
 Replace `aic_example_policies.ros.WaveArm` with your policy implementation.

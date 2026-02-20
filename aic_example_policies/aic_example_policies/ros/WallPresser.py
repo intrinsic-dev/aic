@@ -16,6 +16,8 @@
 
 import time
 
+from rclpy.duration import Duration
+
 from aic_control_interfaces.msg import JointMotionUpdate
 from aic_control_interfaces.msg import TrajectoryGenerationMode
 from aic_control_interfaces.msg import TargetMode
@@ -43,13 +45,23 @@ class WallPresser(Policy):
         super().__init__(parent_node)
         self.get_logger().info("WallPresser.__init__()")
 
+    def _clock_sleep(self, duration_sec):
+        """Sleep for the given duration using the node's clock (sim-time-aware)."""
+        clock = self.get_clock()
+        start = clock.now()
+        target = start + Duration(seconds=duration_sec)
+        while clock.now() < target:
+            time.sleep(0.001)
+
     def _switch_target_mode(self, mode):
         """Switch controller between Cartesian (0) and Joint (1) mode."""
         req = ChangeTargetMode.Request()
         req.target_mode.mode = mode
         future = self._parent_node.change_target_mode_client.call_async(req)
-        start = time.time()
-        while not future.done() and (time.time() - start) < 5.0:
+        clock = self.get_clock()
+        start = clock.now()
+        timeout = Duration(seconds=5.0)
+        while not future.done() and (clock.now() - start) < timeout:
             time.sleep(0.01)
         if future.done():
             result = future.result()
@@ -109,20 +121,20 @@ class WallPresser(Policy):
             self.get_logger().info(f"Cycle {cycle + 1}: retracting")
             for _ in range(30):
                 self._publish_joint_command(retracted)
-                time.sleep(0.1)
+                self._clock_sleep(0.1)
 
             # Push into the wall and hold
             self.get_logger().info(f"Cycle {cycle + 1}: pushing into wall")
             for _ in range(50):
                 self._publish_joint_command(extended, stiffness=high_stiffness)
-                time.sleep(0.1)
+                self._clock_sleep(0.1)
 
         # Return to home position
         self.get_logger().info("Returning to home position")
         home = [-0.16, -1.35, -1.66, -1.69, 1.57, 1.41]
         for _ in range(50):
             self._publish_joint_command(home)
-            time.sleep(0.1)
+            self._clock_sleep(0.1)
 
         # Switch back to Cartesian mode for engine reset
         self.get_logger().info("Switching back to Cartesian mode")

@@ -34,6 +34,14 @@ class WaveArm(Policy):
         super().__init__(parent_node)
         self.get_logger().info("WaveArm.__init__()")
 
+    def _clock_sleep(self, duration_sec):
+        """Sleep for the given duration using the node's clock (sim-time-aware)."""
+        clock = self.get_clock()
+        start = clock.now()
+        target = start + Duration(seconds=duration_sec)
+        while clock.now() < target:
+            time.sleep(0.001)
+
     def insert_cable(
         self,
         task: Task,
@@ -42,10 +50,12 @@ class WaveArm(Policy):
         send_feedback: SendFeedbackCallback,
     ):
         self.get_logger().info(f"WaveArm.insert_cable() enter. Task: {task}")
-        start_time = time.clock_gettime(0)
+        clock = self.get_clock()
+        start_time = clock.now()
+        timeout = Duration(seconds=10.0)
         send_feedback("waving the arm around")
-        while time.clock_gettime(0) - start_time < 10.0:
-            time.sleep(0.25)
+        while (clock.now() - start_time) < timeout:
+            self._clock_sleep(0.25)
             observation = get_observation()
             t = (
                 observation.center_image.header.stamp.sec

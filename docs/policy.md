@@ -166,7 +166,7 @@ $ distrobox enter -r aic_eval -- /entrypoint.sh
 Terminal 2:
 ```bash
 $ pixi reinstall ros-kilted-my-policy-node
-$ pixi run ros2 run aic_model aic_model --ros-args -p policy:=my_policy_node.WaveArm
+$ pixi run ros2 run aic_model aic_model --ros-args -p use_sim_time:=true -p policy:=my_policy_node.WaveArm
 ```
 
 > [!Note]
