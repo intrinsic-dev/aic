@@ -242,7 +242,7 @@ producing minimal jerk (high Tier 2 jerk score).
 - All 3 trials complete.
 - Tier 1 should **pass** for all trials.
 - Tier 2 should show high smoothness scores (slow, smooth motion), no task
-  duration bonus (no successful insertion), no force penalty, and no off-limit
+  duration bonus (plug not within close proximity to port), no force penalty, and no off-limit
   contacts. Compare with Example 7 (`SpeedDemon`) to see the difference in
   smoothness.
 - Tier 3 should report a low proximity score for all trials (no insertion).
