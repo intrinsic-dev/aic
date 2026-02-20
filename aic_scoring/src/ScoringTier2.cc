@@ -263,7 +263,7 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
   }
 
   this->state = State::Idle;
-  tier2_score.add_category_score("trajectory jerk",
+  tier2_score.add_category_score("trajectory smoothness",
                                  this->GetTrajectoryJerkScore());
   // Compute initial plug-port distance for trajectory efficiency scoring.
   // The robot must travel at least this distance, so it becomes the minimum
@@ -920,7 +920,7 @@ Tier2Score::CategoryScore ScoringTier2::GetTaskDurationScore(
   const rclcpp::Duration kMaxTaskTime = rclcpp::Duration::from_seconds(60.0);
   const rclcpp::Duration kMinTaskTime = rclcpp::Duration::from_seconds(5.0);
   const double kFastestTaskScore = 10.0;
-  const double kSlowestTaskScore = 1.0;
+  const double kSlowestTaskScore = 0.0;
 
   if (_tier3.total_score() <= 0) {
     return CategoryScore(
