@@ -219,7 +219,7 @@ class CheatCode(Policy):
             return False
         port_transform = port_tf_stamped.transform
 
-        z_offset = 0.1
+        z_offset = 0.2
 
         # Over five seconds, smoothly interpolate from the current position to
         # a position above the port.
