@@ -144,6 +144,7 @@ Manages trial execution, validates participant models, and collects scoring data
 * **[Qualification Phase](./docs/qualification_phase.md):** Detailed technical overview of the qualification phase trials and scoring.
 * **[Challenge Rules](./docs/challenge_rules.md):** Required behavior for participant models.
 * **[Scoring](./docs/scoring.md):** Metrics and methods used to evaluate performance.
+* **[Scoring Test Examples](./docs/scoring_tests.md):** Reproducible examples exercising each scoring tier with exact commands.
 
 ### Technical Documentation
 

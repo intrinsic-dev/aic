@@ -68,6 +68,8 @@ We provide several baseline policy implementations in the [`aic_example_policies
 
 For detailed descriptions, usage instructions, and source code, see the [Example Policies README](../aic_example_policies/README.md).
 
+To see expected scoring results for each baseline policy, see the [Scoring Test & Evaluation Guide](./scoring_tests.md).
+
 ## Tutorial: Creating a new policy node
 
 A policy node is essentially a ROS 2 node that subscribes to observations and publishes actions to be executed.

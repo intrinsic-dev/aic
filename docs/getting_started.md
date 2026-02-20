@@ -187,6 +187,8 @@ Once the `aic_model` node starts, the AIC engine spawns a task board and a gripp
 
 If the robot doesn't move or you don't see the expected behavior, check the [Troubleshooting](./troubleshooting.md) section.
 
+For more example policies and expected scoring results, see the [Scoring Test & Evaluation Guide](./scoring_tests.md).
+
 ---
 
 ## 🎉 Congratulations!

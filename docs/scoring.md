@@ -108,3 +108,7 @@ Where:
 ## Final Ranking
 
 The final ranking is determined by cumulating scores across all trials, combining the quantitative performance metrics from Tier 2 and the task success bonus from Tier 3.
+
+## See Also
+
+For reproducible examples that exercise each scoring tier, see the [Scoring Test & Evaluation Guide](./scoring_tests.md).

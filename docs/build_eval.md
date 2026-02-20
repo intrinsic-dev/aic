@@ -135,6 +135,7 @@ Now that you have the evaluation environment running locally:
 - Check out [`aic_example_policies/`](../aic_example_policies/) for reference implementations
 - Review [AIC Interfaces](./aic_interfaces.md) to understand available sensors and actuators
 - Consult [AIC Controller](./aic_controller.md) to learn about motion commands
+- Run the [Scoring Test Examples](./scoring_tests.md) to see expected results for each baseline policy
 
 ---
 
