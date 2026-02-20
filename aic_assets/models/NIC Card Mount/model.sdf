@@ -389,7 +389,7 @@
     </link>
 
     <link name="sfp_port_1_link_entrance">
-      <pose relative_to="sfp_port_1_link">0 0 -0.048871 0 0 0</pose>
+      <pose relative_to="sfp_port_1_link">0 0 -0.0458 0 0 0</pose>
     </link>
 
     <joint name="sfp_port_1_joint" type="fixed">

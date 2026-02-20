@@ -250,7 +250,7 @@
     </joint>
 
     <link name="sfp_port_0_link_entrance">
-      <pose>0 0 -0.048871 0 0 0</pose>
+      <pose>0 0 -0.0458 0 0 0</pose>
     </link>
 
     <joint name="sfp_port_0_entrance_joint" type="fixed">
@@ -263,7 +263,7 @@
     </link>
 
     <link name="sfp_port_1_link_entrance">
-      <pose>0 0 -0.048871 0 0 0</pose>
+      <pose>0 0 -0.0458 0 0 0</pose>
     </link>
 
     <joint name="sfp_port_1_joint" type="fixed">
