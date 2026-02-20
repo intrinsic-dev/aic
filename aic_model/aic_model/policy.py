@@ -14,12 +14,15 @@
 #  limitations under the License.
 #
 
+import time
+
 import numpy as np
 from abc import ABC, abstractmethod
 from aic_control_interfaces.msg import MotionUpdate, TrajectoryGenerationMode
 from aic_model_interfaces.msg import Observation
 from aic_task_interfaces.msg import Task
 from geometry_msgs.msg import Point, Pose, Quaternion, Wrench, Vector3
+from rclpy.duration import Duration
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 from typing import Callable, Protocol
@@ -45,6 +48,18 @@ class Policy(ABC):
 
     def get_clock(self):
         return self._parent_node.get_clock()
+
+    def time_now(self):
+        """Return the current time from the node's clock (sim-time aware)."""
+        return self.get_clock().now()
+
+    def sleep_for(self, duration_sec: float) -> None:
+        """Sleep for the given duration using the node's clock (sim-time aware)."""
+        clock = self.get_clock()
+        start = clock.now()
+        target = start + Duration(seconds=duration_sec)
+        while clock.now() < target:
+            time.sleep(0.001)
 
     @abstractmethod
     def insert_cable(
