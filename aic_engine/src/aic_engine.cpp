@@ -1158,7 +1158,8 @@ bool Engine::ready_simulator(Trial& trial) {
     RCLCPP_ERROR(node_->get_logger(), "Failed to spawn task board.");
   }
 
-  // Tare the force-torque sensor before attaching any cables to ensure accurate
+  // Tare the force-torque sensor before attaching any cables to compensate for
+  // the weight of the end-effector.
   const auto tare_req = std::make_shared<TriggerSrv::Request>();
   auto tare_ft_future = tare_ft_client_->async_send_request(tare_req);
   if (tare_ft_future.wait_for(std::chrono::seconds(10)) !=
