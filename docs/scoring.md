@@ -96,7 +96,7 @@ If the cable connector is fully inserted into the **correct** target port, verif
 
 When full insertion is not detected, the score is based on how close the plug is to the port at task completion:
 
-- **Partial insertion** (30-40 points): If the plug is inside a bounding box between the port entrance and the port end (within a 5 mm x-y tolerance), the score is proportional to insertion depth. Deeper insertion scores higher.
+- **Partial insertion** (30-40 points): If the plug is inside a bounding box between the port entrance and the bottom of the port (within a 5 mm x-y tolerance), the score is proportional to insertion depth. Deeper insertion scores higher.
 - **Proximity** (0-20 points): If the plug is not inside the port, the score is inversely proportional to the distance from the port entrance. The scoring region extends 0.3 m beyond the port entrance distance.
   - At the port entrance → 20 points (maximum)
   - At port entrance distance + 0.3 m or further → 0 points (minimum)
