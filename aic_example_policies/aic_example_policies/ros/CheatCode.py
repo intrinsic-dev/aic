@@ -46,11 +46,10 @@ class CheatCode(Policy):
         self, target_frame: str, source_frame: str, timeout_sec: float = 10.0
     ) -> bool:
         """Wait for a TF frame to become available."""
-        clock = self.get_clock()
-        start = clock.now()
+        start = self.time_now()
         timeout = Duration(seconds=timeout_sec)
         attempt = 0
-        while (clock.now() - start) < timeout:
+        while (self.time_now() - start) < timeout:
             try:
                 self._parent_node._tf_buffer.lookup_transform(
                     target_frame,

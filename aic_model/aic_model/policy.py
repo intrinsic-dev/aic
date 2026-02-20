@@ -49,6 +49,10 @@ class Policy(ABC):
     def get_clock(self):
         return self._parent_node.get_clock()
 
+    def time_now(self):
+        """Return the current time from the node's clock (sim-time aware)."""
+        return self.get_clock().now()
+
     def sleep_for(self, duration_sec: float) -> None:
         """Sleep for the given duration using the node's clock (sim-time aware)."""
         clock = self.get_clock()

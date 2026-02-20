@@ -40,11 +40,10 @@ class WaveArm(Policy):
         send_feedback: SendFeedbackCallback,
     ):
         self.get_logger().info(f"WaveArm.insert_cable() enter. Task: {task}")
-        clock = self.get_clock()
-        start_time = clock.now()
+        start_time = self.time_now()
         timeout = Duration(seconds=10.0)
         send_feedback("waving the arm around")
-        while (clock.now() - start_time) < timeout:
+        while (self.time_now() - start_time) < timeout:
             self.sleep_for(0.25)
             observation = get_observation()
             t = (

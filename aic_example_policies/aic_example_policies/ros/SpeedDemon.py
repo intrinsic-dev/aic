@@ -44,10 +44,9 @@ class SpeedDemon(Policy):
         req = ChangeTargetMode.Request()
         req.target_mode.mode = mode
         future = self._parent_node.change_target_mode_client.call_async(req)
-        clock = self.get_clock()
-        start = clock.now()
+        start = self.time_now()
         timeout = Duration(seconds=5.0)
-        while not future.done() and (clock.now() - start) < timeout:
+        while not future.done() and (self.time_now() - start) < timeout:
             time.sleep(0.01)
         if future.done():
             return future.result().success
