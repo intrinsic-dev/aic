@@ -18,6 +18,7 @@ import time
 
 from aic_control_interfaces.msg import JointMotionUpdate
 from aic_control_interfaces.msg import TrajectoryGenerationMode
+from aic_control_interfaces.msg import TargetMode
 from aic_control_interfaces.srv import ChangeTargetMode
 from aic_model.policy import (
     Policy,
@@ -44,7 +45,7 @@ class WallToucher(Policy):
     def _switch_target_mode(self, mode):
         """Switch controller between Cartesian (0) and Joint (1) mode."""
         req = ChangeTargetMode.Request()
-        req.target_mode = mode
+        req.target_mode.mode = mode
         future = self._parent_node.change_target_mode_client.call_async(req)
         start = time.time()
         while not future.done() and (time.time() - start) < 5.0:
@@ -81,7 +82,7 @@ class WallToucher(Policy):
 
         # Switch to joint target mode
         self.get_logger().info("Switching to joint target mode")
-        if not self._switch_target_mode(ChangeTargetMode.Request.TARGET_MODE_JOINT):
+        if not self._switch_target_mode(TargetMode.MODE_JOINT):
             self.get_logger().error("Failed to switch to joint mode")
             return True
 
@@ -123,7 +124,7 @@ class WallToucher(Policy):
 
         # Switch back to Cartesian mode for engine reset
         self.get_logger().info("Switching back to Cartesian mode")
-        self._switch_target_mode(ChangeTargetMode.Request.TARGET_MODE_CARTESIAN)
+        self._switch_target_mode(TargetMode.MODE_CARTESIAN)
 
         self.get_logger().info("WallToucher.insert_cable() exiting...")
         return True

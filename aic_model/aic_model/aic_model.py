@@ -25,6 +25,7 @@ from aic_control_interfaces.msg import (
     JointMotionUpdate,
     MotionUpdate,
     TrajectoryGenerationMode,
+    TargetMode,
 )
 from aic_control_interfaces.srv import ChangeTargetMode
 from aic_model_interfaces.msg import Observation
@@ -218,9 +219,7 @@ class AicModel(LifecycleNode):
             force=Vector3(x=0.0, y=0.0, z=0.0), torque=Vector3(x=0.0, y=0.0, z=0.0)
         )
 
-        motion_update_msg.wrench_feedback_gains_at_tip = Wrench(
-            force=Vector3(x=0.5, y=0.5, z=0.5), torque=Vector3(x=0.0, y=0.0, z=0.0)
-        )
+        motion_update_msg.wrench_feedback_gains_at_tip = [0.5, 0.5, 0.5, 0.0, 0.0, 0.0]
 
         motion_update_msg.trajectory_generation_mode.mode = (
             TrajectoryGenerationMode.MODE_POSITION
@@ -312,7 +311,7 @@ class AicModel(LifecycleNode):
 
     async def set_target_mode(self, target_mode):
         target_mode_request = ChangeTargetMode.Request()
-        target_mode_request.target_mode = target_mode
+        target_mode_request.target_mode.mode = target_mode
         future = self.change_target_mode_client.call_async(target_mode_request)
         await future
         # rclpy.spin_until_future_complete(self, future)
@@ -321,10 +320,10 @@ class AicModel(LifecycleNode):
             self.get_logger().error("Unable to set target mode")
 
     async def set_joint_mode(self):
-        await self.set_target_mode(ChangeTargetMode.Request.TARGET_MODE_JOINT)
+        await self.set_target_mode(TargetMode.MODE_JOINT)
 
     async def set_cartesian_mode(self):
-        await self.set_target_mode(ChangeTargetMode.Request.TARGET_MODE_CARTESIAN)
+        await self.set_target_mode(TargetMode.MODE_CARTESIAN)
 
 
 def main(args=None):

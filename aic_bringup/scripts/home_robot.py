@@ -26,7 +26,11 @@ from control_msgs.action import FollowJointTrajectory
 from rclpy.action import ActionClient
 from rclpy.node import Node
 from trajectory_msgs.msg import JointTrajectoryPoint
-from aic_control_interfaces.msg import MotionUpdate, TrajectoryGenerationMode
+from aic_control_interfaces.msg import (
+    MotionUpdate,
+    TrajectoryGenerationMode,
+    TargetMode,
+)
 from aic_control_interfaces.srv import ChangeTargetMode
 from geometry_msgs.msg import Pose, Point, Quaternion, Wrench, Vector3
 
@@ -51,9 +55,7 @@ class HomeTrajectoryNode(Node):
             while not change_target_mode_client.wait_for_service(timeout_sec=1.0):
                 self.get_logger().info("Waiting for change_target_mode service...")
             target_mode_request = ChangeTargetMode.Request()
-            target_mode_request.target_mode = (
-                ChangeTargetMode.Request.TARGET_MODE_CARTESIAN
-            )
+            target_mode_request.target_mode.mode = TargetMode.MODE_CARTESIAN
             future = change_target_mode_client.call_async(target_mode_request)
             rclpy.spin_until_future_complete(self, future)
             response = future.result()
@@ -110,9 +112,7 @@ class HomeTrajectoryNode(Node):
                 [100.0, 100.0, 100.0, 50.0, 50.0, 50.0]
             ).flatten()
             msg.target_damping = np.diag([40.0, 40.0, 40.0, 15.0, 15.0, 15.0]).flatten()
-            msg.wrench_feedback_gains_at_tip = Wrench(
-                force=Vector3(x=0.5, y=0.5, z=0.5), torque=Vector3(x=0.0, y=0.0, z=0.0)
-            )
+            msg.wrench_feedback_gains_at_tip = [0.5, 0.5, 0.5, 0.0, 0.0, 0.0]
             msg.trajectory_generation_mode.mode = TrajectoryGenerationMode.MODE_POSITION
             self.publisher.publish(msg)
             self.get_logger().info(

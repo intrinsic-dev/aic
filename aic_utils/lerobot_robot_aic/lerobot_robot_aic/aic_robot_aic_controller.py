@@ -31,6 +31,7 @@ from aic_control_interfaces.msg import (
     MotionUpdate,
     JointMotionUpdate,
     TrajectoryGenerationMode,
+    TargetMode,
 )
 from aic_control_interfaces.srv import (
     ChangeTargetMode,
@@ -150,7 +151,7 @@ class AICRobotAICController(Robot):
     def send_change_control_mode_req(self, mode: ChangeTargetMode.Request):
 
         req = ChangeTargetMode.Request()
-        req.target_mode = mode
+        req.target_mode.mode = mode
 
         self.node.get_logger().info(f"Sending request to change control mode to {mode}")
 
@@ -227,9 +228,9 @@ class AICRobotAICController(Robot):
             time.sleep(1.0)
 
         change_mode_req = (
-            ChangeTargetMode.Request.TARGET_MODE_JOINT
+            TargetMode.MODE_JOINT
             if self.teleop_target_mode == "joint"
-            else ChangeTargetMode.Request.TARGET_MODE_CARTESIAN
+            else TargetMode.MODE_CARTESIAN
         )
         self.send_change_control_mode_req(change_mode_req)
 
@@ -370,10 +371,7 @@ class AICRobotAICController(Robot):
             force=Vector3(x=0.0, y=0.0, z=0.0),
             torque=Vector3(x=0.0, y=0.0, z=0.0),
         )
-        msg.wrench_feedback_gains_at_tip = Wrench(
-            force=Vector3(x=0.0, y=0.0, z=0.0),
-            torque=Vector3(x=0.0, y=0.0, z=0.0),
-        )
+        msg.wrench_feedback_gains_at_tip = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         msg.trajectory_generation_mode.mode = TrajectoryGenerationMode.MODE_VELOCITY
         if self.motion_update_pub is not None:
             self.motion_update_pub.publish(msg)

@@ -16,7 +16,7 @@ geometry_msgs/Wrench feedforward_wrench_at_tip
 
 # [OPTIONAL] Feedback gains of force feedback control. These gains must be in [0, 0.95]
 # to minimize risk of instability.
-geometry_msgs/Wrench wrench_feedback_gains_at_tip
+float64[6] wrench_feedback_gains_at_tip
 
 # The mode of trajectory generation.
 TrajectoryGenerationMode trajectory_generation_mode

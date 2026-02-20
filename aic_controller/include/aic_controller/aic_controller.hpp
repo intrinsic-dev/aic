@@ -45,6 +45,7 @@
 #include "aic_control_interfaces/msg/controller_state.hpp"
 #include "aic_control_interfaces/msg/joint_motion_update.hpp"
 #include "aic_control_interfaces/msg/motion_update.hpp"
+#include "aic_control_interfaces/msg/target_mode.hpp"
 #include "aic_control_interfaces/msg/trajectory_generation_mode.hpp"
 #include "aic_control_interfaces/srv/change_target_mode.hpp"
 #include "lifecycle_msgs/msg/state.hpp"
@@ -61,6 +62,7 @@ namespace aic_controller {
 using MotionUpdate = aic_control_interfaces::msg::MotionUpdate;
 using JointMotionUpdate = aic_control_interfaces::msg::JointMotionUpdate;
 using ChangeTargetMode = aic_control_interfaces::srv::ChangeTargetMode;
+using TargetMode = aic_control_interfaces::msg::TargetMode;
 using TrajectoryGenerationMode =
     aic_control_interfaces::msg::TrajectoryGenerationMode;
 using JointTrajectoryPoint = trajectory_msgs::msg::JointTrajectoryPoint;
@@ -69,8 +71,6 @@ using JointLimits = joint_limits::JointLimits;
 
 //==============================================================================
 enum class ControlMode : uint8_t { Invalid = 0, Admittance = 1, Impedance = 2 };
-
-enum class TargetMode : uint8_t { Invalid = 0, Joint = 1, Cartesian = 2 };
 
 //==============================================================================
 /**
@@ -258,7 +258,7 @@ class Controller : public controller_interface::ControllerInterface {
   std::size_t num_joints_;
 
   ControlMode control_mode_;
-  TargetMode target_mode_;
+  uint8_t target_mode_value_;
 
   CartesianLimits cartesian_limits_;
   std::vector<JointLimits> joint_limits_;
