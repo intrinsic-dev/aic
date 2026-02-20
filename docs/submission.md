@@ -102,7 +102,7 @@ export AWS_PROFILE=<team_name>
 Finally, authenticate your local Docker client with our private registry:
 
 ```bash
-aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 123456789.dkr.ecr.us-east-1.amazonaws.com
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 973918476471.dkr.ecr.us-east-1.amazonaws.com
 ```
 
 ### Tag Your Image
@@ -110,7 +110,7 @@ aws ecr get-login-password --region us-east-1 | docker login --username AWS --pa
 You must tag your local image to match the remote repository URI provided to your team. Replace the dummy URI below with your specific team URI:
 
 ```bash
-docker tag my-solution:v1 123456789.dkr.ecr.us-east-1.amazonaws.com/aic-team-name:v1
+docker tag my-solution:v1 973918476471.dkr.ecr.us-east-1.amazonaws.com/aic-team/<team_name>:v1
 ```
 
 > [!IMPORTANT]
@@ -121,7 +121,7 @@ docker tag my-solution:v1 123456789.dkr.ecr.us-east-1.amazonaws.com/aic-team-nam
 Upload the tagged image to the challenge registry:
 
 ```bash
-docker push 123456789.dkr.ecr.us-east-1.amazonaws.com/aic-team-name:v1
+docker push 973918476471.dkr.ecr.us-east-1.amazonaws.com/aic-team/<team_name>:v1
 ```
 
 ---
@@ -130,7 +130,7 @@ docker push 123456789.dkr.ecr.us-east-1.amazonaws.com/aic-team-name:v1
 
 Simply pushing the image to ECR does not trigger the evaluation. You must notify the platform that a new version is ready for scoring.
 
-1. Copy the full Image URI you just pushed (e.g., `123456789.dkr.ecr.us-east-1.amazonaws.com/aic-team-name:v1`).
+1. Copy the full Image URI you just pushed (e.g., `973918476471.dkr.ecr.us-east-1.amazonaws.com/aic-team/<team_name>:v1`).
 2. Log in to the [aiforindustrychallenge.ai](https://aiforindustrychallenge.ai) portal.
 3. Click on the `AI for Industry Challenge` and then go to `Submit`.
 4. Select the `Qualification` phase and paste the URI into the submission `OCI Image` field.
