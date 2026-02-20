@@ -566,11 +566,6 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryEfficiencyScore(
   const double kMinEfficiencyScore = 0.0;              // Longest path
   const double kMaxPathLength = 1.0 + _minPathLength;  // Path for min score
 
-  if (_tier3.total_score() <= 0) {
-    return CategoryScore(
-        0, "Task not completed successfully, not assigning efficiency bonus");
-  }
-
   std::stringstream ss;
   ss << std::fixed << std::setprecision(2);
   ss << "Total end-effector path length: " << this->totalPathLength << " m"
@@ -926,9 +921,6 @@ Tier2Score::CategoryScore ScoringTier2::GetTaskDurationScore(
   if (!this->task_end_time.has_value()) {
     return CategoryScore(0, "Time computation failed, task end time not set");
   }
-
-  const auto end_time =
-      std::chrono::nanoseconds(this->task_end_time.value().nanoseconds());
 
   const rclcpp::Duration task_duration =
       this->task_end_time.value() - this->task_start_time.value();
