@@ -39,7 +39,9 @@ Measures the smoothness of the end effector trajectory. Lower jerk values indica
 
 ### Task duration (0-10 points)
 
-Rewards faster task completion. Only awarded when the task is completed successfully (Tier 3 score > 0).
+Rewards faster task completion. Only awarded if either
+* the task is completed successfully, or 
+* the final position of the plug is within a bounding radius of the target port (Tier 3 score > 0). The bounding radius is set to half of the distance between the initial position of the plug and the target port.
 
 - **Metric**: Elapsed time from task start to task end
 - **Scoring**: Inversely proportional to duration
