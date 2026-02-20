@@ -258,7 +258,7 @@ class Controller : public controller_interface::ControllerInterface {
   std::size_t num_joints_;
 
   ControlMode control_mode_;
-  uint8_t target_mode_;
+  uint8_t target_mode_value_;
 
   CartesianLimits cartesian_limits_;
   std::vector<JointLimits> joint_limits_;
