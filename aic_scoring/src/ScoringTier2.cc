@@ -665,14 +665,14 @@ Tier3Score ScoringTier2::GetDistanceScore() const {
     // We are in partial insertion, apply a bonus proportional to how far we
     // are from the actual port
     const double port_to_entrance_dist = port_entrance_trans.z - port_trans.z;
-    const double plug_to_tip_dist = plug_trans.z - port_trans.z;
+    const double plug_to_port_dist = plug_trans.z - port_trans.z;
 
     // The closest we are the higher we score
     const double bonus = CalculateInverseProportionalScore(
-        kMaxBonus, kMinBonus, port_to_entrance_dist, 0.0, plug_to_tip_dist);
+        kMaxBonus, kMinBonus, port_to_entrance_dist, 0.0, plug_to_port_dist);
     score += bonus;
     sstream << " Partial insertion detected with distance of "
-            << plug_to_tip_dist << "m, additional bonus of " << bonus;
+            << plug_to_port_dist << "m, additional bonus of " << bonus;
   }
 
   return Tier3Score(score, sstream.str());
