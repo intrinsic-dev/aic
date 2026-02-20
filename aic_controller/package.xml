@@ -27,6 +27,7 @@
   <depend>rclcpp_lifecycle</depend>
   <depend>realtime_tools</depend>
   <depend>sophus</depend>
+  <depend>std_srvs</depend>
   <depend>tf2_eigen</depend>
   <depend>trajectory_msgs</depend>
 

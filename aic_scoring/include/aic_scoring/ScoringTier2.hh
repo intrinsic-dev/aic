@@ -34,6 +34,7 @@
 #include <geometry_msgs/msg/vector3.hpp>
 #include <rclcpp/rclcpp.hpp>
 
+#include <aic_control_interfaces/msg/controller_state.hpp>
 #include <aic_control_interfaces/msg/joint_motion_update.hpp>
 #include <aic_control_interfaces/msg/motion_update.hpp>
 #include <geometry_msgs/msg/transform_stamped.hpp>
@@ -102,6 +103,7 @@ namespace aic_scoring
     using TFMsg = tf2_msgs::msg::TFMessage;
     using ContactsMsg = ros_gz_interfaces::msg::Contacts;
     using WrenchMsg = geometry_msgs::msg::WrenchStamped;
+    using ControllerStateMsg = aic_control_interfaces::msg::ControllerState;
     using JointMotionUpdateMsg = aic_control_interfaces::msg::JointMotionUpdate;
     using MotionUpdateMsg = aic_control_interfaces::msg::MotionUpdate;
     using StringMsg = std_msgs::msg::String;
@@ -145,6 +147,10 @@ namespace aic_scoring
     /// \brief Topic to subscribe for insertion event event
     public: static constexpr const char* kInsertionEventTopic =
         "/scoring/insertion_event";
+
+    /// \brief Topic to subscribe for controller state used for FT sensor taring.
+    public: static constexpr const char* kControllerStateTopic =
+        "/aic_controller/controller_state";
 
     /// \brief Class constructor.
     /// \param[in] _node Pointer to the ROS node.
@@ -240,9 +246,24 @@ namespace aic_scoring
     /// \param[in] _msg The received message.
     private: void InsertionEventCallback(const StringMsg& _msg);
 
+    /// \brief Callback for controller state while scoring.
+    /// \param[in] _msg The received message.
+    private: void ControllerStateCallback(const ControllerStateMsg& _msg);
+
     /// \brief Calculates score related with the gripper trajectory jerk.
     /// \return Scoring for the trajectory jerk score.
     private: Tier2Score::CategoryScore GetTrajectoryJerkScore() const;
+
+    /// \brief Accumulate path length with a new pose sample.
+    /// \param[in] _tf The new timestamped transform.
+    private: void EfficiencyCallback(const TransformStampedMsg &_tf);
+
+    /// \brief Calculates score for trajectory efficiency (path length).
+    /// \param[in] _minPathLength Minimum path length for max score (meters).
+    /// This is typically the initial plug-port distance.
+    /// \return Scoring for the trajectory efficiency category.
+    private: Tier2Score::CategoryScore GetTrajectoryEfficiencyScore(
+        double _minPathLength) const;
 
     /// \brief Gets the transform for the specified entity at the requested time.
     /// \param[in] _t the time point to get the transform.
@@ -330,14 +351,14 @@ namespace aic_scoring
     /// \brief Computed linear jerk (x, y, z components in m/s^3).
     private: Vector3Msg linearJerk;
 
-    /// \brief Time-weighted average linear jerk (x, y, z components in m/s^3).
-    private: Vector3Msg avgLinearJerk;
+    /// \brief Time-weighted average linear jerk magnitude (m/s^3).
+    private: double avgLinearJerkMagnitude = 0.0;
 
-    /// \brief Total elapsed time since last reset (seconds).
+    /// \brief Total elapsed time where the arm was moving (seconds).
     private: double totalJerkTime = 0.0;
 
-    /// \brief Accumulated weighted linear jerk (jerk * dt sum).
-    private: Vector3Msg accumLinearJerk;
+    /// \brief Accumulated weighted linear jerk magnitude (jerkMag * dt sum).
+    private: double accumLinearJerkMagnitude = 0.0;
 
     /// \brief Gripper frame name.
     private: std::string gripperFrame;
@@ -351,6 +372,15 @@ namespace aic_scoring
 
     /// \brief Whether the tf from a gripper was recorded.
     private: std::atomic<bool> gripperTfReceived = false;
+
+    /// \brief The last tared ft reading rotated to the current pose received.
+    private: std::optional<WrenchMsg> lastTaredFt;
+  
+    /// \brief Total end-effector path length (meters).
+    private: double totalPathLength = 0.0;
+
+    /// \brief Previous end-effector pose for path length computation.
+    private: std::optional<TransformStampedMsg> prevPose;
   };
 
   // The Tier2 class as a node.

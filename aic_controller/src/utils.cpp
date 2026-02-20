@@ -71,6 +71,17 @@ void wrench_msg_to_eigen(const geometry_msgs::msg::Wrench& msg,
   wrench_eigen(5) = msg.torque.z;
 }
 
+//==============================================================================
+void eigen_to_wrench_msg(const Eigen::Matrix<double, 6, 1>& wrench_eigen,
+                         geometry_msgs::msg::Wrench& msg) {
+  msg.force.x = wrench_eigen(0);
+  msg.force.y = wrench_eigen(1);
+  msg.force.z = wrench_eigen(2);
+  msg.torque.x = wrench_eigen(3);
+  msg.torque.y = wrench_eigen(4);
+  msg.torque.z = wrench_eigen(5);
+}
+
 }  // namespace utils
 
 }  // namespace aic_controller

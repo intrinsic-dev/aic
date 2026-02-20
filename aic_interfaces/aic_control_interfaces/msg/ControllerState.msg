@@ -13,3 +13,10 @@ geometry_msgs/Pose reference_tcp_pose
 float64[6] tcp_error
 # Reference joint state commands
 trajectory_msgs/JointTrajectoryPoint reference_joint_state
+
+# Current mode for target execution
+TargetMode target_mode
+
+# Tare offset for force torque sensor. 
+# header.frame_id: The reference coordinate frame of the tare values.
+geometry_msgs/WrenchStamped fts_tare_offset

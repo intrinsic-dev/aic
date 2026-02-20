@@ -54,7 +54,17 @@ Measures how close the plug is to the port at task completion, with a time multi
   - Maximum: 10 × 3 = 30 points
   - Minimum: 0.5 × 1 = 0.5 points
 
-> **TODO**: Add scoring for total distance traveled by the end effector during task execution. A shorter path (reduced distance traveled) will be rewarded with more points. Details to be defined.
+### Trajectory efficiency (0-10 points)
+
+Measures the total distance traveled by the end effector during task execution.
+Shorter, more direct paths score higher.
+
+- **Metric**: Cumulative Euclidean distance of end-effector positions (meters)
+- **Scoring**: Inversely proportional to total path length
+  - Path length ≤ initial plug-port distance → 10 points (maximum)
+  - Path length ≥ 10 m → 0 points (minimum)
+  - Linear interpolation between thresholds
+- The minimum path length (for a perfect score) is set dynamically to the initial Euclidean distance between the plug and port at the start of the trial
 
 ### Insertion force penalty (0 to -10 points)
 

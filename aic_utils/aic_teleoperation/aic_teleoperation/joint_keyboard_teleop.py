@@ -18,9 +18,9 @@
 
 """
 This script is used for teleoperation of the robot joints using the keyboard.
-Note that this script uses pynput to monitor keyboard input which might have issues working 
+Note that this script uses pynput to monitor keyboard input which might have issues working
 on the Wayland display server, but has been tested successfully with the X11 display server.
-This script can also be run within the pixi environment.  
+This script can also be run within the pixi environment.
 """
 
 import sys
@@ -33,6 +33,7 @@ import numpy as np
 from aic_control_interfaces.msg import (
     JointMotionUpdate,
     TrajectoryGenerationMode,
+    TargetMode,
 )
 from aic_control_interfaces.srv import (
     ChangeTargetMode,
@@ -177,7 +178,7 @@ class AICTeleoperatorNode(Node):
         ChangeTargetMode
 
         req = ChangeTargetMode.Request()
-        req.target_mode = mode
+        req.target_mode.mode = mode
 
         self.get_logger().info(f"Sending request to change control mode to {mode}")
 
@@ -220,9 +221,7 @@ def main(args=None):
     try:
         with rclpy.init(args=args):
             node = AICTeleoperatorNode()
-            node.send_change_control_mode_req(
-                ChangeTargetMode.Request().TARGET_MODE_JOINT
-            )
+            node.send_change_control_mode_req(TargetMode.MODE_JOINT)
             rclpy.spin(node)
     except (KeyboardInterrupt, ExternalShutdownException):
         pass

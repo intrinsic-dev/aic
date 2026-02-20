@@ -1,7 +1,6 @@
 # Service to change target mode between Cartesian and joint targets
 
-uint8 TARGET_MODE_CARTESIAN = 0 # Mode to execute Cartesian targets
-uint8 TARGET_MODE_JOINT = 1     # Mode to execute joint targets
-uint8 target_mode
+# Mode for target execution
+TargetMode target_mode
 ---
-bool success             # indicate successful change of target
+bool success             # indicate successful change of target mode

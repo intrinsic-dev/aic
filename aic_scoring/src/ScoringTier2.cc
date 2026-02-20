@@ -231,6 +231,9 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
     } else if (msg_ptr->topic_name == kInsertionEventTopic) {
       const auto msg = deserialize_from_rosbag<StringMsg>(msg_ptr);
       this->InsertionEventCallback(msg);
+    } else if (msg_ptr->topic_name == kControllerStateTopic) {
+      const auto msg = deserialize_from_rosbag<ControllerStateMsg>(msg_ptr);
+      this->ControllerStateCallback(msg);
     } else {
       RCLCPP_WARN(this->node->get_logger(),
                   "Unexpected topic name while scoring: %s",
@@ -249,18 +252,32 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
   msg.transforms.push_back(transform_stamped);
   this->TfStaticCallback(msg);
 
-  // Second pass: Compute jerk for each stored timestamp.
+  // Second pass: Compute jerk and path length for each stored timestamp.
   // Now the TF buffer has the complete transform tree.
   for (const auto &t : this->timestamps) {
     auto pose = this->EndEffectorPose(t);
     if (pose.has_value()) {
       this->JerkCallback(*pose);
+      this->EfficiencyCallback(*pose);
     }
   }
 
   this->state = State::Idle;
   tier2_score.add_category_score("trajectory jerk",
                                  this->GetTrajectoryJerkScore());
+  // Compute initial plug-port distance for trajectory efficiency scoring.
+  // The robot must travel at least this distance, so it becomes the minimum
+  // path length for a perfect score.
+  double minPathLength = 0.0;
+  if (!this->timestamps.empty()) {
+    const auto initDist = this->GetPlugPortDistance(*this->timestamps.begin());
+    if (initDist.has_value()) {
+      minPathLength = initDist.value();
+    }
+  }
+  tier2_score.add_category_score(
+      "trajectory efficiency",
+      this->GetTrajectoryEfficiencyScore(minPathLength));
   tier2_score.add_category_score("insertion force",
                                  this->GetInsertionForceScore());
   tier2_score.add_category_score("contacts", this->GetContactsScore());
@@ -281,12 +298,16 @@ void ScoringTier2::Reset(const std::chrono::seconds &_buffer_size) {
   this->bagWriter.close();
   this->contacts.clear();
   this->insertionPortNamespace.clear();
+  this->lastTaredFt.reset();
   // Jerk computation variables
   this->tfHistory.clear();
   this->linearJerk = Vector3Msg();
-  this->avgLinearJerk = Vector3Msg();
-  this->accumLinearJerk = Vector3Msg();
+  this->avgLinearJerkMagnitude = 0.0;
+  this->accumLinearJerkMagnitude = 0.0;
   this->totalJerkTime = 0.0;
+  // Efficiency computation variables
+  this->totalPathLength = 0.0;
+  this->prevPose.reset();
 }
 
 //////////////////////////////////////////////////
@@ -395,8 +416,16 @@ void ScoringTier2::ContactsCallback(const ContactsMsg &_msg) {
 
 //////////////////////////////////////////////////
 void ScoringTier2::WrenchCallback(const WrenchMsg &_msg) {
-  const auto time = rclcpp::Time(_msg.header.stamp);
-  this->wrenches.push_back({time.seconds(), _msg.wrench.force});
+  // We don't log for else statement since skipping a few wrench messages
+  // at startup is not a big issue.
+  if (this->lastTaredFt.has_value()) {
+    const auto time = rclcpp::Time(_msg.header.stamp);
+    Vector3Msg wrench;
+    wrench.x = _msg.wrench.force.x - this->lastTaredFt.value().wrench.force.x;
+    wrench.y = _msg.wrench.force.y - this->lastTaredFt.value().wrench.force.y;
+    wrench.z = _msg.wrench.force.z - this->lastTaredFt.value().wrench.force.z;
+    this->wrenches.push_back({time.seconds(), wrench});
+  }
 }
 
 //////////////////////////////////////////////////
@@ -414,6 +443,11 @@ void ScoringTier2::InsertionEventCallback(const StringMsg &_msg) {
   // \todo(iche033) For now, assume only one insertion event per task
   // Mark insertion completion as true as soon as one insertion is done.
   this->insertionPortNamespace = _msg.data;
+}
+
+//////////////////////////////////////////////////
+void ScoringTier2::ControllerStateCallback(const ControllerStateMsg &_msg) {
+  this->lastTaredFt = _msg.fts_tare_offset;
 }
 
 //////////////////////////////////////////////////
@@ -483,27 +517,59 @@ static double CalculateInverseProportionalScore(const double max_score,
 Tier2Score::CategoryScore ScoringTier2::GetTrajectoryJerkScore() const {
   using CategoryScore = Tier2Score::CategoryScore;
 
-  // For now, just have the score be inversely proportional to the magnitude
-  // of the average jerk vector.
   const double kMaxJerkScore = 20.0;
   const double kMinJerkScore = 1.0;
-  const double kMaxJerkValue = 25.0;
+  const double kMaxJerkValue = 25000.0;
   const double kMinJerkValue = 0.0;
 
-  auto jerk_v = this->avgLinearJerk;
-  auto jerk = std::sqrt(jerk_v.x * jerk_v.x + jerk_v.y * jerk_v.y +
-                        jerk_v.z * jerk_v.z);
+  double jerk = this->avgLinearJerkMagnitude;
 
   std::stringstream sstream;
   sstream.setf(std::ios::fixed);
   sstream.precision(2);
-  sstream << "Average linear jerk of the end effector: (" << jerk_v.x << ", "
-          << jerk_v.y << ", " << jerk_v.z << "). Magnitude: " << jerk;
+  sstream << "Average linear jerk magnitude of the end effector: " << jerk
+          << " m/s^3";
 
   const double score = CalculateInverseProportionalScore(
       kMaxJerkScore, kMinJerkScore, kMaxJerkValue, kMinJerkValue, jerk);
 
   return CategoryScore(score, sstream.str());
+}
+
+//////////////////////////////////////////////////
+void ScoringTier2::EfficiencyCallback(const TransformStampedMsg &_tf) {
+  if (this->prevPose.has_value()) {
+    double dx =
+        _tf.transform.translation.x - this->prevPose->transform.translation.x;
+    double dy =
+        _tf.transform.translation.y - this->prevPose->transform.translation.y;
+    double dz =
+        _tf.transform.translation.z - this->prevPose->transform.translation.z;
+    this->totalPathLength += std::sqrt(dx * dx + dy * dy + dz * dz);
+  }
+  this->prevPose = _tf;
+}
+
+//////////////////////////////////////////////////
+Tier2Score::CategoryScore ScoringTier2::GetTrajectoryEfficiencyScore(
+    double _minPathLength) const {
+  using CategoryScore = Tier2Score::CategoryScore;
+
+  // Score range and path length bounds (meters).
+  const double kMaxEfficiencyScore = 10.0;  // Shortest path
+  const double kMinEfficiencyScore = 0.0;   // Longest path
+  const double kMaxPathLength = 10.0;       // Path length for min score
+
+  std::stringstream ss;
+  ss << std::fixed << std::setprecision(2);
+  ss << "Total end-effector path length: " << this->totalPathLength << " m"
+     << ", initial plug-port distance: " << _minPathLength << " m";
+
+  const double score = CalculateInverseProportionalScore(
+      kMaxEfficiencyScore, kMinEfficiencyScore, kMaxPathLength, _minPathLength,
+      this->totalPathLength);
+
+  return CategoryScore(score, ss.str());
 }
 
 //////////////////////////////////////////////////
@@ -598,7 +664,7 @@ Tier3Score ScoringTier2::ComputeTier3Score() const {
       }
     } else {
       RCLCPP_ERROR(this->node->get_logger(),
-                   "Error parsing insertion port namespace: ",
+                   "Error parsing insertion port namespace: %s",
                    this->insertionPortNamespace.c_str());
     }
   } else {
@@ -678,26 +744,29 @@ void ScoringTier2::JerkCallback(const TransformStampedMsg &_tf) {
     return (a2 - a1) / (mid_a2 - mid_a1);
   };
 
-  // Compute linear jerk.
-  this->linearJerk.x = computeJerk(px);
-  this->linearJerk.y = computeJerk(py);
-  this->linearJerk.z = computeJerk(pz);
+  // Compute velocity at the central sample (v2) to gate jerk accumulation.
+  // Only accumulate jerk when the arm is actually moving, so that stillness
+  // periods don't dilute the average toward zero.
+  double v2x = (px[2] - px[1]) / (t2 - t1);
+  double v2y = (py[2] - py[1]) / (t2 - t1);
+  double v2z = (pz[2] - pz[1]) / (t2 - t1);
+  double speed = std::sqrt(v2x * v2x + v2y * v2y + v2z * v2z);
 
-  // Update time-weighted average jerk.
-  // Use the time interval from t1 to t2 as the weight for this jerk sample.
-  double dt = t2 - t1;
-  this->totalJerkTime += dt;
+  constexpr double kVelocityThreshold = 0.01;  // m/s
+  if (speed > kVelocityThreshold) {
+    // Compute linear jerk.
+    this->linearJerk.x = computeJerk(px);
+    this->linearJerk.y = computeJerk(py);
+    this->linearJerk.z = computeJerk(pz);
 
-  // Accumulate weighted jerk.
-  this->accumLinearJerk.x += this->linearJerk.x * dt;
-  this->accumLinearJerk.y += this->linearJerk.y * dt;
-  this->accumLinearJerk.z += this->linearJerk.z * dt;
-
-  // Compute averages.
-  if (this->totalJerkTime > 0.0) {
-    this->avgLinearJerk.x = this->accumLinearJerk.x / this->totalJerkTime;
-    this->avgLinearJerk.y = this->accumLinearJerk.y / this->totalJerkTime;
-    this->avgLinearJerk.z = this->accumLinearJerk.z / this->totalJerkTime;
+    double jerkMag = std::sqrt(this->linearJerk.x * this->linearJerk.x +
+                               this->linearJerk.y * this->linearJerk.y +
+                               this->linearJerk.z * this->linearJerk.z);
+    double dt = (t3 - t0) / 3.0;
+    this->totalJerkTime += dt;
+    this->accumLinearJerkMagnitude += jerkMag * dt;
+    this->avgLinearJerkMagnitude =
+        this->accumLinearJerkMagnitude / this->totalJerkTime;
   }
 }
 
@@ -718,8 +787,8 @@ Tier2Score::CategoryScore ScoringTier2::GetInsertionForceScore() const {
   using CategoryScore = Tier2Score::CategoryScore;
   // Apply a fixed penalty if excessive force is detected for more than a
   // certain time
-  // Note that the resting reading of the sensor seems to be about 20N
-  const double kForceThreshold = 25.0;
+  // The sensor reading is tared at startup so its reading is close to 0N.
+  const double kForceThreshold = 5.0;
   const double kDurationThreshold = 1.0;
   const double kPenalty = -10.0;
 

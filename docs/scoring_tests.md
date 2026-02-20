@@ -32,6 +32,7 @@ GZ_BUILD_FROM_SOURCE=1 colcon build \
 | 1 | Model validity | Pass/fail: policy responded to `/insert_cable` action within timeout |
 | 2 | Trajectory jerk | Smoothness of arm motion (higher = smoother) |
 | 2 | Insertion force | Penalty for excessive force at the F/T sensor |
+| 2 | Trajectory efficiency | Reward for shorter end-effector path length (higher = more direct) |
 | 2 | Off-limit contacts | Penalty for collisions with the enclosure or task board |
 | 3 | Cable insertion | Score based on plug-port distance, task duration, and insertion success bonus |
 
@@ -273,16 +274,11 @@ producing aggressive motion that triggers the insertion force penalty.
 **Expected outcome:**
 - All 3 trials complete.
 - Tier 1 should **pass** for all trials.
-- Tier 2 should show an insertion force penalty for all trials. The arm
+- Tier 2 should show lower jerk scores than GentleGiant (Example 6) due to
+  aggressive motion, plus an insertion force penalty for all trials. The arm
   oscillates aggressively due to low damping, generating sustained force at
   the F/T sensor. The arm should visibly snap between positions.
 - Tier 3 should report failed cable insertion for all trials.
-
-> **Known limitation — jerk score:** The jerk metric averages the jerk
-> **vector** over time, so positive/negative contributions cancel out and
-> stillness dilutes the result. SpeedDemon and GentleGiant produce similar
-> jerk scores (~20) despite different motion profiles. The two policies are
-> differentiated by the **insertion force penalty** instead.
 
 ### Terminal 0 -- Zenoh Router
 

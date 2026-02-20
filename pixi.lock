@@ -189,7 +189,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/opencv-4.12.0-qt6_py312h7bb6282_612.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/openexr-3.4.4-h40f6f1d_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/openh264-2.6.0-hc22cd8d_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/linux-64/openjph-0.26.1-h8d634f6_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/openjph-0.26.0-h8d634f6_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/openldap-2.6.10-he970967_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/openssl-3.6.1-h35e630c_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-25.0-pyh29332c3_1.conda
@@ -388,7 +388,9 @@ environments:
       - conda: https://conda.anaconda.org/robostack-kilted/linux-64/ros-kilted-stereo-msgs-5.5.1-np2py312h2ed9cc7_15.conda
       - conda: https://conda.anaconda.org/robostack-kilted/linux-64/ros-kilted-tf2-0.41.6-np2py312h2ed9cc7_15.conda
       - conda: https://conda.anaconda.org/robostack-kilted/linux-64/ros-kilted-tf2-msgs-0.41.6-np2py312h2ed9cc7_15.conda
+      - conda: https://conda.anaconda.org/robostack-kilted/linux-64/ros-kilted-tf2-py-0.41.6-np2py312h2ed9cc7_15.conda
       - conda: https://conda.anaconda.org/robostack-kilted/linux-64/ros-kilted-tf2-ros-0.41.6-np2py312h2ed9cc7_15.conda
+      - conda: https://conda.anaconda.org/robostack-kilted/linux-64/ros-kilted-tf2-ros-py-0.41.6-np2py312h2ed9cc7_15.conda
       - conda: https://conda.anaconda.org/robostack-kilted/linux-64/ros-kilted-tinyxml2-vendor-0.10.1-np2py312h2ed9cc7_15.conda
       - conda: https://conda.anaconda.org/robostack-kilted/linux-64/ros-kilted-tracetools-8.6.0-np2py312h2ed9cc7_15.conda
       - conda: https://conda.anaconda.org/robostack-kilted/linux-64/ros-kilted-trajectory-msgs-5.5.1-np2py312h2ed9cc7_15.conda
@@ -477,7 +479,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/6a/c6/9511d6eb3814d6ddedcc036b084e2268f0a4153d35fd3191209b8bf13a5b/easyhid_ng-0.1.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/2a/09/f8d8f8f31e4483c10a906437b4ce31bdf3d6d417b73fe33f1a8b59e34228/einops-0.8.2-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/05/2c/ffc08c54c05cdce6fbed2aeebc46348dbe180c6d2c541c7af7ba0aa5f5f8/Farama_Notifications-0.0.4-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/97/64/3613e89811e79aca8d0d4f2c984fc66336bc9d83529c1cbe02f5df010d0a/filelock-3.24.1-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/98/73/3a18f1e1276810e81477c431009b55eeccebbd7301d28a350b77aacf3c33/filelock-3.21.2-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/6a/bd/d91c5e39f490a49df14320f4e8c80161cfcce09f1e2cde1edd16a551abb3/frozenlist-1.8.0-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/47/71/70db47e4f6ce3e5c37a607355f80da8860a33226be640226ac52cb05ef2e/fsspec-2025.9.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/a0/61/5c78b91c3143ed5c14207f463aecfc8f9dbb5092fb2869baf37c273b2705/gitdb-4.0.12-py3-none-any.whl
@@ -520,7 +522,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/bf/2e/9211f09bedb04f9832122942de8b051804b31a39cfbad199a819bb88d9f3/pandas-3.0.0-cp312-cp312-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/8c/d7/8ff98376b1acc4503253b685ea09981697385ce344d4e3935c2af49e044d/pfzy-0.3.4-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/ff/79/6df7b2ee763d619cda2fb4fea498e5f79d984dae304d45a8999b80d6cf5c/pillow-12.1.1-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
-      - pypi: https://files.pythonhosted.org/packages/70/77/e8c95e95f1d4cdd88c90a96e31980df7e709e51059fac150046ad67fac63/platformdirs-4.9.1-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/cb/e3/1eddccb2c39ecfbe09b3add42a04abcc3fa5b468aa4224998ffb8a7e9c8f/platformdirs-4.7.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/84/03/0d3ce49e2505ae70cf43bc5bb3033955d2fc9f932163e84dc0779cc47f48/prompt_toolkit-3.0.52-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/46/4b/3aae6835b8e5f44ea6a68348ad90f78134047b503765087be2f9912140ea/propcache-0.4.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/9b/53/a9443aa3ca9ba8724fdfa02dd1887c1bcd8e89556b715cfbacca6b63dbec/protobuf-6.33.5-cp39-abi3-manylinux2014_x86_64.whl
@@ -1400,10 +1402,10 @@ packages:
   purls: []
   size: 12496109
   timestamp: 1769486435109
-- pypi: https://files.pythonhosted.org/packages/97/64/3613e89811e79aca8d0d4f2c984fc66336bc9d83529c1cbe02f5df010d0a/filelock-3.24.1-py3-none-any.whl
+- pypi: https://files.pythonhosted.org/packages/98/73/3a18f1e1276810e81477c431009b55eeccebbd7301d28a350b77aacf3c33/filelock-3.21.2-py3-none-any.whl
   name: filelock
-  version: 3.24.1
-  sha256: 7c59f595e3cf4887dc95b403a896849da49ed183d7c9d7ee855646ca99f10698
+  version: 3.21.2
+  sha256: d6cd4dbef3e1bb63bc16500fc5aa100f16e405bbff3fb4231711851be50c1560
   requires_python: '>=3.10'
 - conda: https://conda.anaconda.org/conda-forge/noarch/flake8-7.3.0-pyhd8ed1ab_0.conda
   sha256: a32e511ea71a9667666935fd9f497f00bcc6ed0099ef04b9416ac24606854d58
@@ -4177,18 +4179,19 @@ packages:
   purls: []
   size: 731471
   timestamp: 1739400677213
-- conda: https://conda.anaconda.org/conda-forge/linux-64/openjph-0.26.1-h8d634f6_0.conda
-  sha256: 5c87322edbbf19aa3ba053cdf75926fc01a1e7322cd950f443b3c07b704aed8a
-  md5: cc109dc1a4bedbd4f66c15502cb5df5b
+- conda: https://conda.anaconda.org/conda-forge/linux-64/openjph-0.26.0-h8d634f6_0.conda
+  sha256: 5f8e3ad6e707c3ffee81c3c2cbc1ac8f66eb10bbe0fe2edbe1cdad0972e006c8
+  md5: 65900b71509b2fd6c0a34a5dc1bd893a
   depends:
-  - libstdcxx >=14
   - libgcc >=14
+  - libstdcxx >=14
   - __glibc >=2.17,<3.0.a0
   - libtiff >=4.7.1,<4.8.0a0
   license: BSD-2-Clause
+  license_family: BSD
   purls: []
-  size: 279779
-  timestamp: 1771181562551
+  size: 279868
+  timestamp: 1766578366964
 - conda: https://conda.anaconda.org/conda-forge/linux-64/openldap-2.6.10-he970967_0.conda
   sha256: cb0b07db15e303e6f0a19646807715d28f1264c6350309a559702f4f34f37892
   md5: 2e5bf4f1da39c0b32778561c3c4e5878
@@ -4446,10 +4449,10 @@ packages:
   purls: []
   size: 115175
   timestamp: 1720805894943
-- pypi: https://files.pythonhosted.org/packages/70/77/e8c95e95f1d4cdd88c90a96e31980df7e709e51059fac150046ad67fac63/platformdirs-4.9.1-py3-none-any.whl
+- pypi: https://files.pythonhosted.org/packages/cb/e3/1eddccb2c39ecfbe09b3add42a04abcc3fa5b468aa4224998ffb8a7e9c8f/platformdirs-4.7.0-py3-none-any.whl
   name: platformdirs
-  version: 4.9.1
-  sha256: 61d8b967d34791c162d30d60737369cbbd77debad5b981c4bfda1842e71e0d66
+  version: 4.7.0
+  sha256: 1ed8db354e344c5bb6039cd727f096af975194b508e37177719d562b2b540ee6
   requires_python: '>=3.10'
 - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
   sha256: e14aafa63efa0528ca99ba568eaf506eb55a0371d12e6250aaaa61718d2eb62e
@@ -5044,6 +5047,7 @@ packages:
   - ros-kilted-rclpy
   - ros-kilted-sensor-msgs
   - ros-kilted-std-srvs
+  - ros-kilted-tf2-ros
   - ros-kilted-trajectory-msgs
   - ros2-distro-mutex
   - ros2-distro-mutex >=0.13.0,<0.14.0a0
@@ -8675,6 +8679,28 @@ packages:
   license: BSD-3-Clause
   size: 257119
   timestamp: 1769483520948
+- conda: https://conda.anaconda.org/robostack-kilted/linux-64/ros-kilted-tf2-py-0.41.6-np2py312h2ed9cc7_15.conda
+  sha256: e7024c02667f385a4fafc75217786cab04c54a1b045a09631c11757841f6795c
+  md5: bb5308a0a66ce79c3b0228e68e1adf22
+  depends:
+  - python
+  - ros-kilted-builtin-interfaces
+  - ros-kilted-geometry-msgs
+  - ros-kilted-rclpy
+  - ros-kilted-ros-workspace
+  - ros-kilted-rpyutils
+  - ros-kilted-tf2
+  - ros2-distro-mutex 0.13.* kilted_*
+  - libstdcxx >=14
+  - libgcc >=14
+  - __glibc >=2.17,<3.0.a0
+  - libgcc >=14
+  - ros2-distro-mutex >=0.13.0,<0.14.0a0
+  - numpy >=1.23,<3
+  - python_abi 3.12.* *_cp312
+  license: BSD-3-Clause
+  size: 58183
+  timestamp: 1769485080772
 - conda: https://conda.anaconda.org/robostack-kilted/linux-64/ros-kilted-tf2-ros-0.41.6-np2py312h2ed9cc7_15.conda
   sha256: 7df967525743aa81ceede8ca3094e25903fb1c9b273f4aed81c0bad7e362c16e
   md5: 41520013813a7dd61d019521a2cffda0
@@ -8701,6 +8727,29 @@ packages:
   license: BSD-3-Clause
   size: 467234
   timestamp: 1769485587108
+- conda: https://conda.anaconda.org/robostack-kilted/linux-64/ros-kilted-tf2-ros-py-0.41.6-np2py312h2ed9cc7_15.conda
+  sha256: 06152bb6e22f1cf6300417e08388b475bb2bfed72869bcdfd072e63453c32c19
+  md5: 3ec772c6a3b77ac5ca62a0ca0a9c2a64
+  depends:
+  - python
+  - ros-kilted-builtin-interfaces
+  - ros-kilted-geometry-msgs
+  - ros-kilted-rclpy
+  - ros-kilted-ros-workspace
+  - ros-kilted-sensor-msgs
+  - ros-kilted-std-msgs
+  - ros-kilted-tf2-msgs
+  - ros-kilted-tf2-py
+  - ros2-distro-mutex 0.13.* kilted_*
+  - libstdcxx >=14
+  - libgcc >=14
+  - __glibc >=2.17,<3.0.a0
+  - ros2-distro-mutex >=0.13.0,<0.14.0a0
+  - numpy >=1.23,<3
+  - python_abi 3.12.* *_cp312
+  license: BSD-3-Clause
+  size: 49085
+  timestamp: 1769485272336
 - conda: https://conda.anaconda.org/robostack-kilted/linux-64/ros-kilted-tinyxml2-vendor-0.10.1-np2py312h2ed9cc7_15.conda
   sha256: 9a380496ccb6bcd409ed31aed29d922540edf334da9582ced959ba4dbaf4c056
   md5: 3e60e3276f0e46cdbcf2cdc8af8ba9bb

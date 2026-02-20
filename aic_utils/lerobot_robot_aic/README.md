@@ -25,6 +25,21 @@ Options for `--teleop.type` (and setting `--robot.teleop_target_mode` accordingl
 - `aic_spacemouse` for cartesian-space SpaceMouse control (and set `--robot.teleop_target_mode=cartesian`)
 - `aic_keyboard_joint` for joint-space control (and set `--robot.teleop_target_mode=joint`)
 
+Options for `--robot.teleop_frame_id` when `--robot.teleop_target_mode` is `cartesian`:
+- `base_link` to send cartesian targets with respect to the robot's base link.
+- `gripper/tcp` to send cartesian targets with respect to the `tcp` frame attached to the robot's gripper.
+
+As an example,
+```bash
+cd ~/ws_aic/src/aic
+pixi run lerobot-teleoperate \
+  --robot.type=aic_controller --robot.id=aic \
+  --teleop.type=aic_keyboard_ee --teleop.id=aic \
+  --robot.teleop_target_mode=cartesian --robot.teleop_frame_id=base_link \
+  --display_data=true
+```
+
+
 :warning: Note: In addition to setting `--teleop.type` you must set `--robot.teleop_target_mode` because the `AICRobotAICController` class needs to know which type of actions to send to the controller and it doesn't have access to `--teleop.type`.
 
 #### Cartesian space control

@@ -18,6 +18,7 @@ import time
 
 from aic_control_interfaces.msg import JointMotionUpdate
 from aic_control_interfaces.msg import TrajectoryGenerationMode
+from aic_control_interfaces.msg import TargetMode
 from aic_control_interfaces.srv import ChangeTargetMode
 from aic_model.policy import (
     Policy,
@@ -39,7 +40,7 @@ class SpeedDemon(Policy):
     def _switch_target_mode(self, mode):
         """Switch controller between Cartesian (0) and Joint (1) mode."""
         req = ChangeTargetMode.Request()
-        req.target_mode = mode
+        req.target_mode.mode = mode
         future = self._parent_node.change_target_mode_client.call_async(req)
         start = time.time()
         while not future.done() and (time.time() - start) < 5.0:
@@ -67,7 +68,7 @@ class SpeedDemon(Policy):
         self.get_logger().info("SpeedDemon.insert_cable() enter")
         send_feedback("moving fast and aggressively")
 
-        self._switch_target_mode(ChangeTargetMode.Request.TARGET_MODE_JOINT)
+        self._switch_target_mode(TargetMode.MODE_JOINT)
 
         # High stiffness + low damping = fast, jerky motion (high jerk)
         stiffness = [500.0, 500.0, 500.0, 200.0, 200.0, 200.0]
@@ -95,7 +96,7 @@ class SpeedDemon(Policy):
             self._publish_joint_command(home, settle_stiffness, settle_damping)
             time.sleep(0.1)
 
-        self._switch_target_mode(ChangeTargetMode.Request.TARGET_MODE_CARTESIAN)
+        self._switch_target_mode(TargetMode.MODE_CARTESIAN)
 
         self.get_logger().info("SpeedDemon.insert_cable() exiting...")
         return True

@@ -1,4 +1,4 @@
-FROM ros:kilted-ros-core AS build
+FROM docker.io/library/ros:kilted-ros-core AS build
 
 # Install pixi
 RUN apt update && apt install -y git && curl -fsSL https://pixi.sh/install.sh | bash
