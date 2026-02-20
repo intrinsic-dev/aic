@@ -525,8 +525,8 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryJerkScore() const {
 
   // For now, just have the score be inversely proportional to the magnitude
   // of the average jerk vector.
-  const double kMaxJerkScore = 20.0;
-  const double kMinJerkScore = 1.0;
+  const double kMaxJerkScore = 5.0;
+  const double kMinJerkScore = 0.0;
   const double kMaxJerkValue = 25.0;
   const double kMinJerkValue = 0.0;
 
