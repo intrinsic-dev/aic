@@ -865,8 +865,7 @@ Tier2Score::CategoryScore ScoringTier2::GetInsertionForceScore() const {
       time_above_threshold +=
           this->wrenches[i].first - this->wrenches[i - 1].first;
     }
-    if (force_mag > max_force)
-      max_force = force_mag;
+    if (force_mag > max_force) max_force = force_mag;
   }
 
   std::string msg;
@@ -925,8 +924,9 @@ Tier2Score::CategoryScore ScoringTier2::GetTaskDurationScore(
 
   if (_tier3.total_score() <= 0) {
     return CategoryScore(
-        0, "Plug is not within max bounding radius from target port, "
-           "not assigning time bonus");
+        0,
+        "Plug is not within max bounding radius from target port, "
+        "not assigning time bonus");
   }
 
   if (!this->task_start_time.has_value()) {
