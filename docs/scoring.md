@@ -48,7 +48,7 @@ Rewards faster task completion. Only awarded if either
   - Duration ≤ 5 seconds → 10 points (maximum)
   - Duration ≥ 60 seconds → 1 point (minimum)
   - Linear interpolation between thresholds
-- **Not awarded**: 0 points if the task was not completed successfully
+- **Not awarded**: 0 points if the final position of the plug is outside the bounding radius of the target port (Tier 3 score <= 0).
 
 ### Trajectory efficiency (0-5 points)
 
