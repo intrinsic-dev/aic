@@ -83,7 +83,7 @@ Penalizes collisions with restricted areas of the environment (enclosure or task
 
 The primary objective verifying successful cable insertion. Scoring uses a two-step approach that rewards both full insertion and partial progress toward the port.
 
-### Successful insertion (60 points)
+### Successful insertion (-10 to 60 points)
 
 If the cable connector is fully inserted into the **correct** target port, verified via contact sensors:
 
