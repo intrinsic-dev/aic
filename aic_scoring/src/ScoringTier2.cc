@@ -282,12 +282,12 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
   tier2_score.add_category_score("insertion force",
                                  this->GetInsertionForceScore());
   tier2_score.add_category_score("contacts", this->GetContactsScore());
+  tier2_score.add_category_score(
+      "trajectory efficiency",
+      this->GetTrajectoryEfficiencyScore(minPathLength));
   tier3_score = this->ComputeTier3Score();
   tier2_score.add_category_score("duration",
                                  this->GetTaskDurationScore(tier3_score));
-  tier2_score.add_category_score(
-      "trajectory efficiency",
-      this->GetTrajectoryEfficiencyScore(minPathLength, tier3_score));
   return {tier2_score, tier3_score};
 }
 
@@ -558,7 +558,7 @@ void ScoringTier2::EfficiencyCallback(const TransformStampedMsg &_tf) {
 
 //////////////////////////////////////////////////
 Tier2Score::CategoryScore ScoringTier2::GetTrajectoryEfficiencyScore(
-    double _minPathLength, const Tier3Score &_tier3) const {
+    double _minPathLength) const {
   using CategoryScore = Tier2Score::CategoryScore;
 
   // Score range and path length bounds (meters).
@@ -588,12 +588,23 @@ Tier3Score ScoringTier2::GetDistanceScore() const {
   //   final distance between plug and port.
   //   Linear interpolation in the interval, clamp to maximum and a bounding
   //   sphere centered in the port tip and with radius between port entrance
-  //   and port entrance + kMaxDistance.
+  //   and port entrance + maxDistance. The maxDistance is set to half of the
+  //   initial plug-port distance.
   //   This score is always lower than a partial insertion score.
 
   // Being as close as possible to the port entrance will award
   // kClosestTaskScore
-  const double kMaxDistance = 0.3;
+  const auto initDist = this->GetPlugPortDistance(tf2::TimePoint(
+      std::chrono::nanoseconds(this->task_start_time.value().nanoseconds())));
+  double radiusFromPort = 0.0;
+  if (initDist.has_value()) {
+    radiusFromPort = initDist.value() * 0.5;
+  } else {
+    RCLCPP_WARN(this->node->get_logger(),
+                "Failed to get initial plug port distance");
+  }
+
+  const double kMaxDistance = radiusFromPort;
   const double kClosestTaskScore = 20.0;
   const double kFurthestTaskScore = 0.0;
 
@@ -840,10 +851,11 @@ Tier2Score::CategoryScore ScoringTier2::GetInsertionForceScore() const {
   // Apply a fixed penalty if excessive force is detected for more than a
   // certain time
   // The sensor reading is tared at startup so its reading is close to 0N.
-  const double kForceThreshold = 5.0;
+  const double kForceThreshold = 20.0;
   const double kDurationThreshold = 1.0;
   const double kPenalty = -10.0;
 
+  double max_force = 0.0;
   double time_above_threshold = 0.0;
   // Start from 1 for easier dt calculation
   for (std::size_t i = 1; i < this->wrenches.size(); ++i) {
@@ -853,6 +865,8 @@ Tier2Score::CategoryScore ScoringTier2::GetInsertionForceScore() const {
       time_above_threshold +=
           this->wrenches[i].first - this->wrenches[i - 1].first;
     }
+    if (force_mag > max_force)
+      max_force = force_mag;
   }
 
   std::string msg;
@@ -866,7 +880,7 @@ Tier2Score::CategoryScore ScoringTier2::GetInsertionForceScore() const {
   sstream.precision(2);
   sstream << "Insertion force above " << kForceThreshold
           << " N, detected for a time of " << time_above_threshold
-          << " seconds.";
+          << " seconds. Max detected force: " << max_force << "N.";
 
   if (time_above_threshold > kDurationThreshold) {
     score = kPenalty;
@@ -911,7 +925,8 @@ Tier2Score::CategoryScore ScoringTier2::GetTaskDurationScore(
 
   if (_tier3.total_score() <= 0) {
     return CategoryScore(
-        0, "Task not completed successfully, not assigning time bonus");
+        0, "Plug is not within max bounding radius from target port, "
+           "not assigning time bonus");
   }
 
   if (!this->task_start_time.has_value()) {
@@ -931,7 +946,7 @@ Tier2Score::CategoryScore ScoringTier2::GetTaskDurationScore(
   std::stringstream sstream;
   sstream.setf(std::ios::fixed);
   sstream.precision(2);
-  sstream << "Task completed in " << task_duration.seconds() << " seconds.";
+  sstream << "Task duration: " << task_duration.seconds() << " seconds.";
   return CategoryScore(score, sstream.str());
 }
 

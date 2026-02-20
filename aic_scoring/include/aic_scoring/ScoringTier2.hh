@@ -271,8 +271,7 @@ namespace aic_scoring
     /// \param[in] _tier3 The result of tier3 scoring.
     /// \return Scoring for the trajectory efficiency category.
     private: Tier2Score::CategoryScore GetTrajectoryEfficiencyScore(
-        double _minPathLength,
-        const Tier3Score& _tier3) const;
+        double _minPathLength) const;
 
     /// \brief Gets the transform for the specified entity at the requested time.
     /// \param[in] _t the time point to get the transform.
@@ -387,7 +386,7 @@ namespace aic_scoring
 
     /// \brief The last tared ft reading rotated to the current pose received.
     private: std::optional<WrenchMsg> lastTaredFt;
-  
+
     /// \brief Total end-effector path length (meters).
     private: double totalPathLength = 0.0;
 
