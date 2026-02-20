@@ -31,7 +31,7 @@ GZ_BUILD_FROM_SOURCE=1 colcon build \
 |------|----------|-------|-------------|
 | 1 | Model validity | 0-1 | Pass/fail: policy responded to `/insert_cable` action within timeout |
 | 2 | Trajectory smoothness | 0-5 | Smoothness of arm motion; inversely proportional to jerk (higher = smoother) |
-| 2 | Task duration | 0-10 | Reward for faster completion; only awarded on successful insertion |
+| 2 | Task duration | 0-10 | Reward for faster completion; only awarded on successful insertion or plug is within close proximity to port |
 | 2 | Trajectory efficiency | 0-5 | Reward for shorter end-effector path length (higher = more direct) |
 | 2 | Insertion force | 0 to -10 | Penalty for force > 5 N sustained for > 1 second |
 | 2 | Off-limit contacts | 0 to -20 | Penalty for collisions with the enclosure or task board |
