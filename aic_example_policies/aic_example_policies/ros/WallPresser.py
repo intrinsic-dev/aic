@@ -16,6 +16,8 @@
 
 import time
 
+from rclpy.duration import Duration
+
 from aic_control_interfaces.msg import JointMotionUpdate
 from aic_control_interfaces.msg import TrajectoryGenerationMode
 from aic_control_interfaces.msg import TargetMode
@@ -48,8 +50,9 @@ class WallPresser(Policy):
         req = ChangeTargetMode.Request()
         req.target_mode.mode = mode
         future = self._parent_node.change_target_mode_client.call_async(req)
-        start = time.time()
-        while not future.done() and (time.time() - start) < 5.0:
+        start = self.time_now()
+        timeout = Duration(seconds=5.0)
+        while not future.done() and (self.time_now() - start) < timeout:
             time.sleep(0.01)
         if future.done():
             result = future.result()
@@ -109,20 +112,20 @@ class WallPresser(Policy):
             self.get_logger().info(f"Cycle {cycle + 1}: retracting")
             for _ in range(30):
                 self._publish_joint_command(retracted)
-                time.sleep(0.1)
+                self.sleep_for(0.1)
 
             # Push into the wall and hold
             self.get_logger().info(f"Cycle {cycle + 1}: pushing into wall")
             for _ in range(50):
                 self._publish_joint_command(extended, stiffness=high_stiffness)
-                time.sleep(0.1)
+                self.sleep_for(0.1)
 
         # Return to home position
         self.get_logger().info("Returning to home position")
         home = [-0.16, -1.35, -1.66, -1.69, 1.57, 1.41]
         for _ in range(50):
             self._publish_joint_command(home)
-            time.sleep(0.1)
+            self.sleep_for(0.1)
 
         # Switch back to Cartesian mode for engine reset
         self.get_logger().info("Switching back to Cartesian mode")

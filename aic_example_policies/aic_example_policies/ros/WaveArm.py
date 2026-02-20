@@ -15,8 +15,6 @@
 #
 
 
-import time
-
 from aic_model.policy import (
     Policy,
     GetObservationCallback,
@@ -42,10 +40,11 @@ class WaveArm(Policy):
         send_feedback: SendFeedbackCallback,
     ):
         self.get_logger().info(f"WaveArm.insert_cable() enter. Task: {task}")
-        start_time = time.clock_gettime(0)
+        start_time = self.time_now()
+        timeout = Duration(seconds=10.0)
         send_feedback("waving the arm around")
-        while time.clock_gettime(0) - start_time < 10.0:
-            time.sleep(0.25)
+        while (self.time_now() - start_time) < timeout:
+            self.sleep_for(0.25)
             observation = get_observation()
             t = (
                 observation.center_image.header.stamp.sec

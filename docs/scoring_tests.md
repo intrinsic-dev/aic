@@ -95,7 +95,7 @@ ros2 run rmw_zenoh_cpp rmw_zenohd
 ### Terminal 1 -- AIC Model (CheatCode)
 
 ```bash
-ros2 run aic_model aic_model --ros-args -p policy:=aic_example_policies.ros.CheatCode
+ros2 run aic_model aic_model --ros-args -p use_sim_time:=true -p policy:=aic_example_policies.ros.CheatCode
 ```
 
 ### Terminal 2 -- Simulation + Engine
@@ -132,7 +132,7 @@ ros2 run rmw_zenoh_cpp rmw_zenohd
 ### Terminal 1 -- AIC Model (WaveArm)
 
 ```bash
-ros2 run aic_model aic_model --ros-args -p policy:=aic_example_policies.ros.WaveArm
+ros2 run aic_model aic_model --ros-args -p use_sim_time:=true -p policy:=aic_example_policies.ros.WaveArm
 ```
 
 ### Terminal 2 -- Simulation + Engine
@@ -180,7 +180,7 @@ ros2 run rmw_zenoh_cpp rmw_zenohd
 ### Terminal 1 -- AIC Model (WallToucher)
 
 ```bash
-ros2 run aic_model aic_model --ros-args -p policy:=aic_example_policies.ros.WallToucher
+ros2 run aic_model aic_model --ros-args -p use_sim_time:=true -p policy:=aic_example_policies.ros.WallToucher
 ```
 
 ### Terminal 2 -- Simulation + Engine
@@ -217,7 +217,7 @@ ros2 run rmw_zenoh_cpp rmw_zenohd
 ### Terminal 1 -- AIC Model (WallPresser)
 
 ```bash
-ros2 run aic_model aic_model --ros-args -p policy:=aic_example_policies.ros.WallPresser
+ros2 run aic_model aic_model --ros-args -p use_sim_time:=true -p policy:=aic_example_policies.ros.WallPresser
 ```
 
 ### Terminal 2 -- Simulation + Engine
@@ -255,7 +255,7 @@ ros2 run rmw_zenoh_cpp rmw_zenohd
 ### Terminal 1 -- AIC Model (GentleGiant)
 
 ```bash
-ros2 run aic_model aic_model --ros-args -p policy:=aic_example_policies.ros.GentleGiant
+ros2 run aic_model aic_model --ros-args -p use_sim_time:=true -p policy:=aic_example_policies.ros.GentleGiant
 ```
 
 ### Terminal 2 -- Simulation + Engine
@@ -293,7 +293,7 @@ ros2 run rmw_zenoh_cpp rmw_zenohd
 ### Terminal 1 -- AIC Model (SpeedDemon)
 
 ```bash
-ros2 run aic_model aic_model --ros-args -p policy:=aic_example_policies.ros.SpeedDemon
+ros2 run aic_model aic_model --ros-args -p use_sim_time:=true -p policy:=aic_example_policies.ros.SpeedDemon
 ```
 
 ### Terminal 2 -- Simulation + Engine

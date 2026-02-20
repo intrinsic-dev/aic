@@ -29,7 +29,7 @@ A minimal example showing how to implement the `insert_cable()` callback and iss
 
 **Run the policy:**
 ```bash
-pixi run ros2 run aic_model aic_model --ros-args -p policy:=aic_example_policies.ros.WaveArm
+pixi run ros2 run aic_model aic_model --ros-args -p use_sim_time:=true -p policy:=aic_example_policies.ros.WaveArm
 ```
 
 **Source:** [`WaveArm.py`](./aic_example_policies/ros/WaveArm.py)
@@ -57,7 +57,7 @@ A "cheating" solution that uses the TF transformation tree provided by the simul
 
 **Run the policy:**
 ```bash
-pixi run ros2 run aic_model aic_model --ros-args -p policy:=aic_example_policies.ros.CheatCode
+pixi run ros2 run aic_model aic_model --ros-args -p use_sim_time:=true -p policy:=aic_example_policies.ros.CheatCode
 ```
 
 **Trigger task execution:**
@@ -82,7 +82,13 @@ An implementation of a [LeRobot ACT](https://huggingface.co/docs/lerobot/en/act)
 
 **Run the policy:**
 ```bash
-pixi run ros2 run aic_model aic_model --ros-args -p policy:=aic_example_policies.ros.RunACT
+pixi run ros2 run aic_model aic_model --ros-args -p use_sim_time:=true -p policy:=aic_example_policies.ros.RunACT
 ```
 
 **Source:** [`RunACT.py`](./aic_example_policies/ros/RunACT.py)
+
+---
+
+## Scoring Examples
+
+For expected scoring results and reproducible test commands for each policy, see the [Scoring Test & Evaluation Guide](../../docs/scoring_tests.md).

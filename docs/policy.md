@@ -68,6 +68,8 @@ We provide several baseline policy implementations in the [`aic_example_policies
 
 For detailed descriptions, usage instructions, and source code, see the [Example Policies README](../aic_example_policies/README.md).
 
+To see expected scoring results for each baseline policy, see the [Scoring Test & Evaluation Guide](./scoring_tests.md).
+
 ## Tutorial: Creating a new policy node
 
 A policy node is essentially a ROS 2 node that subscribes to observations and publishes actions to be executed.
@@ -166,7 +168,7 @@ $ distrobox enter -r aic_eval -- /entrypoint.sh
 Terminal 2:
 ```bash
 $ pixi reinstall ros-kilted-my-policy-node
-$ pixi run ros2 run aic_model aic_model --ros-args -p policy:=my_policy_node.WaveArm
+$ pixi run ros2 run aic_model aic_model --ros-args -p use_sim_time:=true -p policy:=my_policy_node.WaveArm
 ```
 
 > [!Note]
