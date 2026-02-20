@@ -120,7 +120,7 @@ inserts the cable. Exercises Tier 1 (pass) and Tier 2 (smoothness, efficiency).
 - Tier 2 should show high smoothness scores (smooth waving motion), no task
   duration bonus (no successful insertion), no force penalty, and no off-limit
   contacts.
-- Tier 3 should report a low proximity score for all trials (the arm waves but
+- Tier 3 should report 0 score for all trials (the arm waves but
   never approaches the port).
 
 ### Terminal 0 -- Zenoh Router
@@ -157,7 +157,8 @@ scoring output.
 - Tier 1 should **pass** for all trials.
 - Tier 2 should show an off-limit contacts penalty (-20) for all trials where a
   robot link (e.g. `forearm_link`) collided with the enclosure wall.
-- Tier 3 should report a low proximity score for all trials (no insertion).
+- Tier 3 should report 0 score for all trials (no insertion and plug outside of
+  port proximity).
 
 > **Note — Off-limit contacts:** "Off-limit" models are surfaces the robot must
 > not touch during the task. The `OffLimitContactsPlugin` monitors three models:
@@ -206,7 +207,8 @@ insertion force penalty.
 - Tier 1 should **pass** for all trials.
 - Tier 2 should show an insertion force penalty (-10) for all trials. Off-limit
   contacts penalty (-20) may also appear as a side effect of the wall contact.
-- Tier 3 should report a low proximity score for all trials (no insertion).
+- Tier 3 should report 0 score for all trials (no insertion and plug outside of
+  port proximity).
 
 ### Terminal 0 -- Zenoh Router
 
@@ -244,7 +246,8 @@ producing minimal jerk (high Tier 2 jerk score).
   duration bonus (plug not within close proximity to port), no force penalty, and no off-limit
   contacts. Compare with Example 7 (`SpeedDemon`) to see the difference in
   smoothness.
-- Tier 3 should report a low proximity score for all trials (no insertion).
+- Tier 3 should report 0 score for all trials (no insertion and plug outside of
+  port proximity).
 
 ### Terminal 0 -- Zenoh Router
 
@@ -282,7 +285,8 @@ producing aggressive motion that triggers the insertion force penalty.
   aggressive motion, plus an insertion force penalty (-10) for all trials. The arm
   oscillates aggressively due to low damping, generating sustained force at
   the F/T sensor. The arm should visibly snap between positions.
-- Tier 3 should report a low proximity score for all trials (no insertion).
+- Tier 3 should report 0 score for all trials (no insertion and plug outside of
+  port proximity).
 
 ### Terminal 0 -- Zenoh Router
 
