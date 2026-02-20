@@ -8,7 +8,7 @@ Each trial is scored using a tiered scoring system. Scores are cumulated across 
 |------|------|-------------|
 | Tier 1 | Model Validity | Prerequisite check that submission loads and runs |
 | Tier 2 | Performance & Convergence | Quantitative metrics for motion quality |
-| Tier 3 | Task Success | Primary objective - successful cable insertion verified |
+| Tier 3 | Cable Insertion | Primary objective - successful or partial insertion verified |
 
 ## Tier 1: Model Validity (Prerequisite)
 
@@ -40,15 +40,15 @@ Measures the smoothness of the end effector trajectory. Lower jerk values indica
 ### Task duration (0-10 points)
 
 Rewards faster task completion. Only awarded if either
-* the task is completed successfully, or 
-* the final position of the plug is within a bounding radius of the target port (Tier 3 score > 0). The bounding radius is set to half of the distance between the initial position of the plug and the target port.
+* the task is completed successfully, or
+* the final position of the plug is within close proximity to the target port (Tier 3 score > 0). The max acceptable distance is set to half of the distance between the initial position of the plug and the target port.
 
 - **Metric**: Elapsed time from task start to task end
 - **Scoring**: Inversely proportional to duration
   - Duration ≤ 5 seconds → 10 points (maximum)
   - Duration ≥ 60 seconds → 1 point (minimum)
   - Linear interpolation between thresholds
-- **Not awarded**: 0 points if the final position of the plug is outside the bounding radius of the target port (Tier 3 score <= 0).
+- **Not awarded**: 0 points if the final position of the plug is outside the max acceptable distance of the target port (Tier 3 score <= 0).
 
 ### Trajectory efficiency (0-5 points)
 
@@ -99,7 +99,7 @@ When full insertion is not detected, the score is based on how close the plug is
 - **Partial insertion** (30-40 points): If the plug is inside a bounding box between the port entrance and the bottom of the port (within a 5 mm x-y tolerance), the score is proportional to insertion depth. Deeper insertion scores higher.
 - **Proximity** (0-20 points): If the plug is not inside the port, the score is inversely proportional to the max acceptable distance from the port. The max distance is set to half the distance between the initial position of the plug and the port.
   - At the port entrance → 20 points (maximum)
-  - At port entrance distance + 0.3 m or further → 0 points (minimum)
+  - Outside of max distance → 0 points (minimum)
   - Linear interpolation between thresholds
 
 ## Total Score Calculation

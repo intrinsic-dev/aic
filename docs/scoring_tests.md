@@ -35,8 +35,7 @@ GZ_BUILD_FROM_SOURCE=1 colcon build \
 | 2 | Trajectory efficiency | 0-5 | Reward for shorter end-effector path length (higher = more direct) |
 | 2 | Insertion force | 0 to -10 | Penalty for force > 5 N sustained for > 1 second |
 | 2 | Off-limit contacts | 0 to -20 | Penalty for collisions with the enclosure or task board |
-| 3 | Successful insertion | 60 or -10 | Bonus for correct-port insertion; penalty for wrong-port insertion |
-| 3 | Partial insertion | 0-40 | Score based on plug proximity to port or insertion depth |
+| 3 | Cable insertion | -10 or 0 to 60 | -10 penalty for wrong-port insertion; 60 for correct-port insertion; 0-40 for partial insertion or close proximity |
 
 Results are written to `$AIC_RESULTS_DIR/scoring.yaml` when using the engine.
 The default directory is `~/aic_results`. Each engine run **overwrites** the previous
