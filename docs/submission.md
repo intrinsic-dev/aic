@@ -11,7 +11,7 @@ Welcome to the **AI for Industry Challenge**. This document outlines the technic
 
 ## 1. Prepare and Build Your Image
 
-All submissions must be containerized using OCI-compliant image builder like Docker or Podman. Your project structure should place your model logic and requirements within the `aic_model` directory.
+All submissions must be containerized using OCI-compliant image builder like Docker or Podman. Organize your project by placing all model logic and dependency requirements directly within the `aic_model` directory.
 
 ### Customize Your Dockerfile (Optional)
 
@@ -73,7 +73,7 @@ We use Amazon Elastic Container Registry (ECR) to host team OCI images.
 
 ### Authenticate
 
-Follow these steps to configure your local environment using the credentials found in your onboarding email.
+Configure your local environment by following these steps, using the credentials provided in your onboarding email:
 
 #### A. Configure your AWS Profile
 Run the following command, replacing `<team_name>` with the slug provided in your email (e.g., `team123`):
@@ -112,6 +112,9 @@ You must tag your local image to match the remote repository URI provided to you
 ```bash
 docker tag my-solution:v1 123456789.dkr.ecr.us-east-1.amazonaws.com/aic-team-name:v1
 ```
+
+> [!IMPORTANT]
+> Image tags in our ECR registry are immutable. You cannot overwrite an existing tag. For each new submission or build, you must increment your version tag (e.g., :v2, :v3) or use a unique identifier like a Git commit SHA. If you try to push an image with a tag that already exists in the registry, the push will fail.
 
 ### Push Your Image
 

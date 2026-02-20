@@ -27,6 +27,7 @@ from aic_control_interfaces.msg import (
     MotionUpdate,
     JointMotionUpdate,
     TrajectoryGenerationMode,
+    TargetMode,
 )
 from aic_control_interfaces.srv import (
     ChangeTargetMode,
@@ -105,10 +106,7 @@ class TestImpedanceNode(Node):
             force=Vector3(x=0.0, y=0.0, z=0.0),
             torque=Vector3(x=0.0, y=0.0, z=0.0),
         )
-        msg.wrench_feedback_gains_at_tip = Wrench(
-            force=Vector3(x=0.0, y=0.0, z=0.0),
-            torque=Vector3(x=0.0, y=0.0, z=0.0),
-        )
+        msg.wrench_feedback_gains_at_tip = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         msg.trajectory_generation_mode.mode = mode
 
         return msg
@@ -157,7 +155,7 @@ class TestImpedanceNode(Node):
         ChangeTargetMode
 
         req = ChangeTargetMode.Request()
-        req.target_mode = mode
+        req.target_mode.mode = mode
 
         self.get_logger().info(f"Sending request to change control mode to {mode}")
 
@@ -181,9 +179,7 @@ def main(args=None):
             node = TestImpedanceNode()
 
             # Send service request to switch to Cartesian target mode
-            node.send_change_target_mode_req(
-                ChangeTargetMode.Request().TARGET_MODE_CARTESIAN
-            )
+            node.send_change_target_mode_req(TargetMode.MODE_CARTESIAN)
 
             quat_tool_down = [
                 0.7071068,
@@ -227,9 +223,7 @@ def main(args=None):
             time.sleep(3)
 
             # Send service request to switch to joint target mode
-            node.send_change_target_mode_req(
-                ChangeTargetMode.Request().TARGET_MODE_JOINT
-            )
+            node.send_change_target_mode_req(TargetMode.MODE_JOINT)
 
             node.send_joint_target([0.0, -1.57, -1.57, -1.57, 1.57, 0.0])
             time.sleep(3)

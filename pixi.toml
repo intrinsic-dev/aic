@@ -26,7 +26,8 @@ ros-kilted-rclpy = "*"
 ros-kilted-ros-core = "*"
 ros-kilted-sensor-msgs = "*"                                                           # lerobot_robot_ros
 ros-kilted-std-msgs = "*"                                                              # lerobot_robot_ros
-ros-kilted-std-srvs = "*"                                                              # lerobot_robot_ros
+ros-kilted-std-srvs = "*"
+ros-kilted-tf2-ros-py = "*"
 setuptools = ">=71.0.0,<81.0.0"                                                        # required by lerobot==0.4.3
 
 [pypi-dependencies]

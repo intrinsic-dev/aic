@@ -308,8 +308,8 @@ void ScoringTier2::Reset(const std::chrono::seconds &_buffer_size) {
   // Jerk computation variables
   this->tfHistory.clear();
   this->linearJerk = Vector3Msg();
-  this->avgLinearJerk = Vector3Msg();
-  this->accumLinearJerk = Vector3Msg();
+  this->avgLinearJerkMagnitude = 0.0;
+  this->accumLinearJerkMagnitude = 0.0;
   this->totalJerkTime = 0.0;
   // Efficiency computation variables
   this->totalPathLength = 0.0;
@@ -523,22 +523,18 @@ static double CalculateInverseProportionalScore(const double max_score,
 Tier2Score::CategoryScore ScoringTier2::GetTrajectoryJerkScore() const {
   using CategoryScore = Tier2Score::CategoryScore;
 
-  // For now, just have the score be inversely proportional to the magnitude
-  // of the average jerk vector.
   const double kMaxJerkScore = 5.0;
   const double kMinJerkScore = 0.0;
-  const double kMaxJerkValue = 25.0;
+  const double kMaxJerkValue = 25000.0;
   const double kMinJerkValue = 0.0;
 
-  auto jerk_v = this->avgLinearJerk;
-  auto jerk = std::sqrt(jerk_v.x * jerk_v.x + jerk_v.y * jerk_v.y +
-                        jerk_v.z * jerk_v.z);
+  double jerk = this->avgLinearJerkMagnitude;
 
   std::stringstream sstream;
   sstream.setf(std::ios::fixed);
   sstream.precision(2);
-  sstream << "Average linear jerk of the end effector: (" << jerk_v.x << ", "
-          << jerk_v.y << ", " << jerk_v.z << "). Magnitude: " << jerk;
+  sstream << "Average linear jerk magnitude of the end effector: " << jerk
+          << " m/s^3";
 
   const double score = CalculateInverseProportionalScore(
       kMaxJerkScore, kMinJerkScore, kMaxJerkValue, kMinJerkValue, jerk);
@@ -799,26 +795,29 @@ void ScoringTier2::JerkCallback(const TransformStampedMsg &_tf) {
     return (a2 - a1) / (mid_a2 - mid_a1);
   };
 
-  // Compute linear jerk.
-  this->linearJerk.x = computeJerk(px);
-  this->linearJerk.y = computeJerk(py);
-  this->linearJerk.z = computeJerk(pz);
+  // Compute velocity at the central sample (v2) to gate jerk accumulation.
+  // Only accumulate jerk when the arm is actually moving, so that stillness
+  // periods don't dilute the average toward zero.
+  double v2x = (px[2] - px[1]) / (t2 - t1);
+  double v2y = (py[2] - py[1]) / (t2 - t1);
+  double v2z = (pz[2] - pz[1]) / (t2 - t1);
+  double speed = std::sqrt(v2x * v2x + v2y * v2y + v2z * v2z);
 
-  // Update time-weighted average jerk.
-  // Use the time interval from t1 to t2 as the weight for this jerk sample.
-  double dt = t2 - t1;
-  this->totalJerkTime += dt;
+  constexpr double kVelocityThreshold = 0.01;  // m/s
+  if (speed > kVelocityThreshold) {
+    // Compute linear jerk.
+    this->linearJerk.x = computeJerk(px);
+    this->linearJerk.y = computeJerk(py);
+    this->linearJerk.z = computeJerk(pz);
 
-  // Accumulate weighted jerk.
-  this->accumLinearJerk.x += this->linearJerk.x * dt;
-  this->accumLinearJerk.y += this->linearJerk.y * dt;
-  this->accumLinearJerk.z += this->linearJerk.z * dt;
-
-  // Compute averages.
-  if (this->totalJerkTime > 0.0) {
-    this->avgLinearJerk.x = this->accumLinearJerk.x / this->totalJerkTime;
-    this->avgLinearJerk.y = this->accumLinearJerk.y / this->totalJerkTime;
-    this->avgLinearJerk.z = this->accumLinearJerk.z / this->totalJerkTime;
+    double jerkMag = std::sqrt(this->linearJerk.x * this->linearJerk.x +
+                               this->linearJerk.y * this->linearJerk.y +
+                               this->linearJerk.z * this->linearJerk.z);
+    double dt = (t3 - t0) / 3.0;
+    this->totalJerkTime += dt;
+    this->accumLinearJerkMagnitude += jerkMag * dt;
+    this->avgLinearJerkMagnitude =
+        this->accumLinearJerkMagnitude / this->totalJerkTime;
   }
 }
 

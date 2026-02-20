@@ -361,14 +361,14 @@ namespace aic_scoring
     /// \brief Computed linear jerk (x, y, z components in m/s^3).
     private: Vector3Msg linearJerk;
 
-    /// \brief Time-weighted average linear jerk (x, y, z components in m/s^3).
-    private: Vector3Msg avgLinearJerk;
+    /// \brief Time-weighted average linear jerk magnitude (m/s^3).
+    private: double avgLinearJerkMagnitude = 0.0;
 
-    /// \brief Total elapsed time since last reset (seconds).
+    /// \brief Total elapsed time where the arm was moving (seconds).
     private: double totalJerkTime = 0.0;
 
-    /// \brief Accumulated weighted linear jerk (jerk * dt sum).
-    private: Vector3Msg accumLinearJerk;
+    /// \brief Accumulated weighted linear jerk magnitude (jerkMag * dt sum).
+    private: double accumLinearJerkMagnitude = 0.0;
 
     /// \brief Gripper frame name.
     private: std::string gripperFrame;

@@ -384,7 +384,9 @@ environments:
       - conda: https://conda.anaconda.org/robostack-kilted/linux-64/ros-kilted-stereo-msgs-5.5.1-np2py312h2ed9cc7_15.conda
       - conda: https://conda.anaconda.org/robostack-kilted/linux-64/ros-kilted-tf2-0.41.6-np2py312h2ed9cc7_15.conda
       - conda: https://conda.anaconda.org/robostack-kilted/linux-64/ros-kilted-tf2-msgs-0.41.6-np2py312h2ed9cc7_15.conda
+      - conda: https://conda.anaconda.org/robostack-kilted/linux-64/ros-kilted-tf2-py-0.41.6-np2py312h2ed9cc7_15.conda
       - conda: https://conda.anaconda.org/robostack-kilted/linux-64/ros-kilted-tf2-ros-0.41.6-np2py312h2ed9cc7_15.conda
+      - conda: https://conda.anaconda.org/robostack-kilted/linux-64/ros-kilted-tf2-ros-py-0.41.6-np2py312h2ed9cc7_15.conda
       - conda: https://conda.anaconda.org/robostack-kilted/linux-64/ros-kilted-tinyxml2-vendor-0.10.1-np2py312h2ed9cc7_15.conda
       - conda: https://conda.anaconda.org/robostack-kilted/linux-64/ros-kilted-tracetools-8.6.0-np2py312h2ed9cc7_15.conda
       - conda: https://conda.anaconda.org/robostack-kilted/linux-64/ros-kilted-trajectory-msgs-5.5.1-np2py312h2ed9cc7_15.conda
@@ -4975,6 +4977,7 @@ packages:
   - ros-kilted-rclpy
   - ros-kilted-sensor-msgs
   - ros-kilted-std-srvs
+  - ros-kilted-tf2-ros
   - ros-kilted-trajectory-msgs
   - ros2-distro-mutex
   - ros2-distro-mutex >=0.13.0,<0.14.0a0
@@ -8606,6 +8609,28 @@ packages:
   license: BSD-3-Clause
   size: 257119
   timestamp: 1769483520948
+- conda: https://conda.anaconda.org/robostack-kilted/linux-64/ros-kilted-tf2-py-0.41.6-np2py312h2ed9cc7_15.conda
+  sha256: e7024c02667f385a4fafc75217786cab04c54a1b045a09631c11757841f6795c
+  md5: bb5308a0a66ce79c3b0228e68e1adf22
+  depends:
+  - python
+  - ros-kilted-builtin-interfaces
+  - ros-kilted-geometry-msgs
+  - ros-kilted-rclpy
+  - ros-kilted-ros-workspace
+  - ros-kilted-rpyutils
+  - ros-kilted-tf2
+  - ros2-distro-mutex 0.13.* kilted_*
+  - libstdcxx >=14
+  - libgcc >=14
+  - __glibc >=2.17,<3.0.a0
+  - libgcc >=14
+  - ros2-distro-mutex >=0.13.0,<0.14.0a0
+  - numpy >=1.23,<3
+  - python_abi 3.12.* *_cp312
+  license: BSD-3-Clause
+  size: 58183
+  timestamp: 1769485080772
 - conda: https://conda.anaconda.org/robostack-kilted/linux-64/ros-kilted-tf2-ros-0.41.6-np2py312h2ed9cc7_15.conda
   sha256: 7df967525743aa81ceede8ca3094e25903fb1c9b273f4aed81c0bad7e362c16e
   md5: 41520013813a7dd61d019521a2cffda0
@@ -8632,6 +8657,29 @@ packages:
   license: BSD-3-Clause
   size: 467234
   timestamp: 1769485587108
+- conda: https://conda.anaconda.org/robostack-kilted/linux-64/ros-kilted-tf2-ros-py-0.41.6-np2py312h2ed9cc7_15.conda
+  sha256: 06152bb6e22f1cf6300417e08388b475bb2bfed72869bcdfd072e63453c32c19
+  md5: 3ec772c6a3b77ac5ca62a0ca0a9c2a64
+  depends:
+  - python
+  - ros-kilted-builtin-interfaces
+  - ros-kilted-geometry-msgs
+  - ros-kilted-rclpy
+  - ros-kilted-ros-workspace
+  - ros-kilted-sensor-msgs
+  - ros-kilted-std-msgs
+  - ros-kilted-tf2-msgs
+  - ros-kilted-tf2-py
+  - ros2-distro-mutex 0.13.* kilted_*
+  - libstdcxx >=14
+  - libgcc >=14
+  - __glibc >=2.17,<3.0.a0
+  - ros2-distro-mutex >=0.13.0,<0.14.0a0
+  - numpy >=1.23,<3
+  - python_abi 3.12.* *_cp312
+  license: BSD-3-Clause
+  size: 49085
+  timestamp: 1769485272336
 - conda: https://conda.anaconda.org/robostack-kilted/linux-64/ros-kilted-tinyxml2-vendor-0.10.1-np2py312h2ed9cc7_15.conda
   sha256: 9a380496ccb6bcd409ed31aed29d922540edf334da9582ced959ba4dbaf4c056
   md5: 3e60e3276f0e46cdbcf2cdc8af8ba9bb

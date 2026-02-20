@@ -89,7 +89,6 @@ ros2 launch aic_bringup aic_gz_bringup.launch.py [parameters]
 - `activate_joint_controller` (default: `"true"`) - Activate joint controller on startup
 - `initial_joint_controller` (default: `"aic_controller"`) - Initial controller to activate
 - `description_file` (default: `"ur.urdf.xacro"`) - Robot description file
-- `spawn_admittance_controller` (default: `"false"`) - Spawns the Admittance Controller alongside the initial controller defined by the `initial_joint_controller` parameter. This value should be set to `false` if using the impedance control mode on the `aic_controller`.
 
 **Task Board Configuration:**
 - `spawn_task_board` (default: `"false"`) - Whether to spawn the task board

@@ -274,16 +274,11 @@ producing aggressive motion that triggers the insertion force penalty.
 **Expected outcome:**
 - All 3 trials complete.
 - Tier 1 should **pass** for all trials.
-- Tier 2 should show an insertion force penalty for all trials. The arm
+- Tier 2 should show lower jerk scores than GentleGiant (Example 6) due to
+  aggressive motion, plus an insertion force penalty for all trials. The arm
   oscillates aggressively due to low damping, generating sustained force at
   the F/T sensor. The arm should visibly snap between positions.
 - Tier 3 should report failed cable insertion for all trials.
-
-> **Known limitation — jerk score:** The jerk metric averages the jerk
-> **vector** over time, so positive/negative contributions cancel out and
-> stillness dilutes the result. SpeedDemon and GentleGiant produce similar
-> jerk scores (~20) despite different motion profiles. The two policies are
-> differentiated by the **insertion force penalty** instead.
 
 ### Terminal 0 -- Zenoh Router
 

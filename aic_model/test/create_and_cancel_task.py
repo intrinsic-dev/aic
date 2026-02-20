@@ -82,7 +82,7 @@ class CreateAndCancelTaskNode(Node):
         goal_msg.task.port_type = "sfp"
         goal_msg.task.port_name = "sfp_port_0"
         goal_msg.task.target_module_name = "nic_card_mount_0"
-        goal_msg.task.time_limit = 300
+        goal_msg.task.time_limit = 180
         self.get_logger().info("Sending goal request...")
         self.send_goal_future = self.action_client.send_goal_async(
             goal_msg, feedback_callback=self.feedback_callback
