@@ -273,7 +273,7 @@ trials:
             entity_name: "sc_mount_1"
             entity_pose:
               translation: -0.055
-              roll: 0.2
+              roll: 0.0
               pitch: 0.0
               yaw: 0.0
           lc_mount_rail_0:
