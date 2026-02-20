@@ -4,11 +4,15 @@ on:
   push:
     branches:
       - main
-    paths-ignore:
-      - '**.md'
+    paths:
+          - 'aic_interfaces/**'
+          - 'aic_utils/**'
+          - '!**/*.md'
   pull_request:
-    paths-ignore:
-      - '**.md'
+    paths:
+          - 'aic_interfaces/**'
+          - 'aic_utils/**'
+          - '!**/*.md'
   workflow_dispatch:
 
 defaults:
