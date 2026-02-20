@@ -16,7 +16,6 @@
 
 
 import numpy as np
-import time
 
 from aic_model.policy import (
     Policy,
@@ -43,14 +42,6 @@ class CheatCode(Policy):
         self._task = None
         super().__init__(parent_node)
 
-    def _clock_sleep(self, duration_sec):
-        """Sleep for the given duration using the node's clock (sim-time)."""
-        clock = self.get_clock()
-        start = clock.now()
-        target = start + Duration(seconds=duration_sec)
-        while clock.now() < target:
-            time.sleep(0.001)
-
     def _wait_for_tf(
         self, target_frame: str, source_frame: str, timeout_sec: float = 10.0
     ) -> bool:
@@ -73,7 +64,7 @@ class CheatCode(Policy):
                         f"Waiting for transform '{source_frame}' -> '{target_frame}'..."
                     )
                 attempt += 1
-                self._clock_sleep(0.1)
+                self.sleep_for(0.1)
         self.get_logger().error(
             f"Transform '{source_frame}' not available after {timeout_sec}s"
         )
@@ -82,7 +73,7 @@ class CheatCode(Policy):
     def go_to_pose(self, pose: Pose, timeout_sec: float) -> bool:
         self._set_pose_target(pose)
         # todo: smart stuff here to wait for the robot to reach the pose
-        self._clock_sleep(timeout_sec)
+        self.sleep_for(timeout_sec)
         return True
 
     def calc_gripper_pose(
@@ -250,7 +241,7 @@ class CheatCode(Policy):
                 )
             except TransformException as ex:
                 self.get_logger().warn(f"TF lookup failed during interpolation: {ex}")
-                self._clock_sleep(0.05)
+                self.sleep_for(0.05)
 
         # Descend until the cable is inserted into the port.
         while True:
@@ -266,10 +257,10 @@ class CheatCode(Policy):
                 )
             except TransformException as ex:
                 self.get_logger().warn(f"TF lookup failed during insertion: {ex}")
-                self._clock_sleep(0.05)
+                self.sleep_for(0.05)
 
         self.get_logger().info("Waiting for connector to stabilize...")
-        self._clock_sleep(5.0)
+        self.sleep_for(5.0)
 
         self.get_logger().info("CheatCode.insert_cable() exiting...")
         return True

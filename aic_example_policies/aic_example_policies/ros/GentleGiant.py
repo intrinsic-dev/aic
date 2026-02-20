@@ -39,14 +39,6 @@ class GentleGiant(Policy):
         super().__init__(parent_node)
         self.get_logger().info("GentleGiant.__init__()")
 
-    def _clock_sleep(self, duration_sec):
-        """Sleep for the given duration using the node's clock (sim-time)."""
-        clock = self.get_clock()
-        start = clock.now()
-        target = start + Duration(seconds=duration_sec)
-        while clock.now() < target:
-            time.sleep(0.001)
-
     def _switch_target_mode(self, mode):
         """Switch controller between Cartesian (0) and Joint (1) mode."""
         req = ChangeTargetMode.Request()
@@ -93,18 +85,18 @@ class GentleGiant(Policy):
             self.get_logger().info(f"Cycle {cycle + 1}: moving to target")
             for _ in range(50):
                 self._publish_joint_command(target, stiffness, damping)
-                self._clock_sleep(0.1)
+                self.sleep_for(0.1)
 
             self.get_logger().info(f"Cycle {cycle + 1}: returning to home")
             for _ in range(50):
                 self._publish_joint_command(home, stiffness, damping)
-                self._clock_sleep(0.1)
+                self.sleep_for(0.1)
 
         # Return to home
         self.get_logger().info("Settling at home position")
         for _ in range(30):
             self._publish_joint_command(home, stiffness, damping)
-            self._clock_sleep(0.1)
+            self.sleep_for(0.1)
 
         self._switch_target_mode(TargetMode.MODE_CARTESIAN)
 

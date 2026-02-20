@@ -15,8 +15,6 @@
 #
 
 
-import time
-
 from aic_model.policy import (
     Policy,
     GetObservationCallback,
@@ -34,14 +32,6 @@ class WaveArm(Policy):
         super().__init__(parent_node)
         self.get_logger().info("WaveArm.__init__()")
 
-    def _clock_sleep(self, duration_sec):
-        """Sleep for the given duration using the node's clock (sim-time)."""
-        clock = self.get_clock()
-        start = clock.now()
-        target = start + Duration(seconds=duration_sec)
-        while clock.now() < target:
-            time.sleep(0.001)
-
     def insert_cable(
         self,
         task: Task,
@@ -55,7 +45,7 @@ class WaveArm(Policy):
         timeout = Duration(seconds=10.0)
         send_feedback("waving the arm around")
         while (clock.now() - start_time) < timeout:
-            self._clock_sleep(0.25)
+            self.sleep_for(0.25)
             observation = get_observation()
             t = (
                 observation.center_image.header.stamp.sec

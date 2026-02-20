@@ -44,14 +44,6 @@ class WallToucher(Policy):
         super().__init__(parent_node)
         self.get_logger().info("WallToucher.__init__()")
 
-    def _clock_sleep(self, duration_sec):
-        """Sleep for the given duration using the node's clock (sim-time)."""
-        clock = self.get_clock()
-        start = clock.now()
-        target = start + Duration(seconds=duration_sec)
-        while clock.now() < target:
-            time.sleep(0.001)
-
     def _switch_target_mode(self, mode):
         """Switch controller between Cartesian (0) and Joint (1) mode."""
         req = ChangeTargetMode.Request()
@@ -119,20 +111,20 @@ class WallToucher(Policy):
             self.get_logger().info(f"Cycle {cycle + 1}: retracting arm")
             for _ in range(30):
                 self._publish_joint_command(retracted)
-                self._clock_sleep(0.1)
+                self.sleep_for(0.1)
 
             # Extend arm toward the wall
             self.get_logger().info(f"Cycle {cycle + 1}: extending toward wall")
             for _ in range(50):
                 self._publish_joint_command(extended, stiffness=high_stiffness)
-                self._clock_sleep(0.1)
+                self.sleep_for(0.1)
 
         # Return to home position
         self.get_logger().info("Returning to home position")
         home = [-0.16, -1.35, -1.66, -1.69, 1.57, 1.41]
         for _ in range(50):
             self._publish_joint_command(home)
-            self._clock_sleep(0.1)
+            self.sleep_for(0.1)
 
         # Switch back to Cartesian mode for engine reset
         self.get_logger().info("Switching back to Cartesian mode")
