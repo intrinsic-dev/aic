@@ -651,8 +651,8 @@ Tier3Score ScoringTier2::GetDistanceScore() const {
   if (!port_entrance_tf.has_value() || !port_tf.has_value() ||
       !plug_tf.has_value()) {
     return Tier3Score(0,
-                      "Distance computation failed, tf between cable, port and "
-                      "entrance not found");
+                      "Distance computation failed, tf between plug, port and "
+                      "port entrance not found");
   }
 
   const auto port_entrance_trans =
