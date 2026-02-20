@@ -279,15 +279,15 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
                   "Failed to get initial plug port distance");
     }
   }
-  tier2_score.add_category_score(
-      "trajectory efficiency",
-      this->GetTrajectoryEfficiencyScore(minPathLength));
   tier2_score.add_category_score("insertion force",
                                  this->GetInsertionForceScore());
   tier2_score.add_category_score("contacts", this->GetContactsScore());
   tier3_score = this->ComputeTier3Score();
   tier2_score.add_category_score("duration",
                                  this->GetTaskDurationScore(tier3_score));
+  tier2_score.add_category_score(
+      "trajectory efficiency",
+      this->GetTrajectoryEfficiencyScore(minPathLength, tier3_score));
   return {tier2_score, tier3_score};
 }
 
@@ -558,13 +558,18 @@ void ScoringTier2::EfficiencyCallback(const TransformStampedMsg &_tf) {
 
 //////////////////////////////////////////////////
 Tier2Score::CategoryScore ScoringTier2::GetTrajectoryEfficiencyScore(
-    double _minPathLength) const {
+    double _minPathLength, const Tier3Score &_tier3) const {
   using CategoryScore = Tier2Score::CategoryScore;
 
   // Score range and path length bounds (meters).
-  const double kMaxEfficiencyScore = 10.0;             // Shortest path
+  const double kMaxEfficiencyScore = 5.0;              // Shortest path
   const double kMinEfficiencyScore = 0.0;              // Longest path
   const double kMaxPathLength = 1.0 + _minPathLength;  // Path for min score
+
+  if (_tier3.total_score() <= 0) {
+    return CategoryScore(
+        0, "Task not completed successfully, not assigning efficiency bonus");
+  }
 
   std::stringstream ss;
   ss << std::fixed << std::setprecision(2);
@@ -587,18 +592,19 @@ Tier3Score ScoringTier2::GetDistanceScore() const {
   //   inversely proportional to the time it took to execute the task and the
   //   final distance between plug and port.
   //   Linear interpolation in the interval, clamp to maximum and a bounding
-  //   sphere centered in the port tip and with radius until the port entrance.
+  //   sphere centered in the port tip and with radius between port entrance
+  //   and port entrance + kMaxDistance.
   //   This score is always lower than a partial insertion score.
 
-  // Being as close as possible to the plug entrance will award
+  // Being as close as possible to the port entrance will award
   // kClosestTaskScore
   const double kMaxDistance = 0.3;
-  const double kClosestTaskScore = 10.0;
+  const double kClosestTaskScore = 20.0;
   const double kFurthestTaskScore = 0.0;
 
   // Starting partial insertion will award kMinInsertionScore, linear range all
   // the way to the end with kMaxInsertionScore.
-  const double kMinInsertionScore = 20.0;
+  const double kMinInsertionScore = 30.0;
   const double kMaxInsertionScore = 40.0;
   // The tolerance in x-y within the port to validate that the plug is being
   // inserted.
@@ -671,8 +677,8 @@ Tier3Score ScoringTier2::GetDistanceScore() const {
   }
 
   const double score = CalculateInverseProportionalScore(
-      kClosestTaskScore, kFurthestTaskScore, kMaxDistance, distance_threshold,
-      dist.value());
+      kClosestTaskScore, kFurthestTaskScore, distance_threshold + kMaxDistance,
+      distance_threshold, dist.value());
 
   sstream << "No insertion detected. Final plug port distance: " << dist.value()
           << "m.";
