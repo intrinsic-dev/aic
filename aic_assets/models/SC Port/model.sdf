@@ -150,7 +150,7 @@
     </link>
 
     <link name="sc_port_base_link_entrance">
-      <pose relative_to="sc_port_base_link">0 0 -0.00714 0 0 0</pose>
+      <pose relative_to="sc_port_base_link">0 0 -0.01564 0 0 0</pose>
     </link>
 
     <joint name="sc_port_base_entrance_joint" type="fixed">
