@@ -302,6 +302,11 @@ namespace aic_scoring
     /// \return Scoring for the off limit contacts category
     private: Tier2Score::CategoryScore GetContactsScore() const;
 
+    /// \brief Calculates the score for task duration.
+    /// \param[in] _tier3 The score for the tier3 category, to check if task was successful.
+    /// \return Scoring for the task duration category.
+    private: Tier2Score::CategoryScore GetTaskDurationScore(const Tier3Score& _tier3) const;
+
     /// \brief Wait for the cable and gripper TFs to be received.
     /// \return True if the transform were received, false if timeout occurred.
     private: bool WaitForTfs();

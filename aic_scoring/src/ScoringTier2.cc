@@ -101,7 +101,7 @@ bool ScoringTier2::StartRecording(const std::string &_filename,
   // Subscribe to all topics relevant for scoring.
   for (const auto &topic : this->topics) {
     auto qos = topic.latched
-                   ? rclcpp::QoS(rclcpp::KeepLast(1)).transient_local()
+                   ? rclcpp::QoS(rclcpp::KeepLast(100)).transient_local()
                    : rclcpp::QoS(rclcpp::KeepLast(10)).reliable();
     auto sub = this->node->create_generic_subscription(
         topic.name, topic.type, qos,
@@ -139,7 +139,7 @@ bool ScoringTier2::WaitForTfs() {
   const auto timeout = std::chrono::seconds(10);
   while ((!this->cableTfReceived || !this->gripperTfReceived) &&
          this->node->get_clock()->now() - start < timeout) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
   if (!this->cableTfReceived || !this->gripperTfReceived) {
     RCLCPP_ERROR(this->node->get_logger(),
@@ -269,10 +269,14 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
   // The robot must travel at least this distance, so it becomes the minimum
   // path length for a perfect score.
   double minPathLength = 0.0;
-  if (!this->timestamps.empty()) {
-    const auto initDist = this->GetPlugPortDistance(*this->timestamps.begin());
+  if (this->task_start_time.has_value()) {
+    const auto initDist = this->GetPlugPortDistance(tf2::TimePoint(
+        std::chrono::nanoseconds(this->task_start_time.value().nanoseconds())));
     if (initDist.has_value()) {
       minPathLength = initDist.value();
+    } else {
+      RCLCPP_WARN(this->node->get_logger(),
+                  "Failed to get initial plug port distance");
     }
   }
   tier2_score.add_category_score(
@@ -282,6 +286,8 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
                                  this->GetInsertionForceScore());
   tier2_score.add_category_score("contacts", this->GetContactsScore());
   tier3_score = this->ComputeTier3Score();
+  tier2_score.add_category_score("duration",
+                                 this->GetTaskDurationScore(tier3_score));
   return {tier2_score, tier3_score};
 }
 
@@ -560,9 +566,9 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryEfficiencyScore(
   using CategoryScore = Tier2Score::CategoryScore;
 
   // Score range and path length bounds (meters).
-  const double kMaxEfficiencyScore = 10.0;  // Shortest path
-  const double kMinEfficiencyScore = 0.0;   // Longest path
-  const double kMaxPathLength = 10.0;       // Path length for min score
+  const double kMaxEfficiencyScore = 10.0;             // Shortest path
+  const double kMinEfficiencyScore = 0.0;              // Longest path
+  const double kMaxPathLength = 1.0 + _minPathLength;  // Path for min score
 
   std::stringstream ss;
   ss << std::fixed << std::setprecision(2);
@@ -579,36 +585,31 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryEfficiencyScore(
 //////////////////////////////////////////////////
 Tier3Score ScoringTier2::GetDistanceScore() const {
   // A two step approach to compute the score:
-  // * A simple distance metric, inversely proportional to the time
-  //   it took to execute the task and the final distance between plug and port
-  //   Linear interpolation in the interval, clamp to maximum and minimum
-  //   Use distance as a base score, task time as a multiplier.
-  // * A "bonus" for partial insertions, proportional to the distance from the
-  //   plug but only if the plug is partially inserted (i.e. between the
-  //   entrance of the port and its tip).
-  const rclcpp::Duration kMaxTaskTime = rclcpp::Duration::from_seconds(60.0);
-  const rclcpp::Duration kMinTaskTime = rclcpp::Duration::from_seconds(5.0);
-  const double kFastestTaskMultiplier = 3.0;
-  const double kSlowestTaskMultiplier = 1.0;
+  // * If we are in partial insertion, checked through a bounding box between
+  //   the port entrance and its end, interpolate linearly in the range.
+  // * If we are not in partial insertion, A simple distance metric,
+  //   inversely proportional to the time it took to execute the task and the
+  //   final distance between plug and port.
+  //   Linear interpolation in the interval, clamp to maximum and a bounding
+  //   sphere centered in the port tip and with radius until the port entrance.
+  //   This score is always lower than a partial insertion score.
 
-  const double kMaxDistance = 1.0;
-  const double kMinDistance = 0.0;
+  // Being as close as possible to the plug entrance will award
+  // kClosestTaskScore
+  const double kMaxDistance = 0.3;
   const double kClosestTaskScore = 10.0;
-  const double kFurthestTaskScore = 0.5;
+  const double kFurthestTaskScore = 0.0;
 
-  // TODO(anyone) revisit actual scores
-  const double kMinBonus = 5.0;
-  const double kMaxBonus = 20.0;
+  // Starting partial insertion will award kMinInsertionScore, linear range all
+  // the way to the end with kMaxInsertionScore.
+  const double kMinInsertionScore = 20.0;
+  const double kMaxInsertionScore = 40.0;
   // The tolerance in x-y within the port to validate that the plug is being
   // inserted.
   const double kEntranceXYTol = 0.005;
 
   if (this->timestamps.empty()) {
     return Tier3Score(0, "Distance computation failed, no tfs received");
-  }
-
-  if (!this->task_start_time.has_value()) {
-    return Tier3Score(0, "Time computation failed, task start time not set");
   }
 
   if (!this->task_end_time.has_value()) {
@@ -622,23 +623,6 @@ Tier3Score ScoringTier2::GetDistanceScore() const {
     return Tier3Score(
         0, "Distance computation failed, tf between cable and port not found");
   }
-
-  const rclcpp::Duration task_duration =
-      this->task_end_time.value() - this->task_start_time.value();
-  const double duration_multiplier = CalculateInverseProportionalScore(
-      kFastestTaskMultiplier, kSlowestTaskMultiplier, kMaxTaskTime.seconds(),
-      kMinTaskTime.seconds(), task_duration.seconds());
-
-  double score =
-      duration_multiplier * CalculateInverseProportionalScore(
-                                kClosestTaskScore, kFurthestTaskScore,
-                                kMaxDistance, kMinDistance, dist.value());
-
-  std::stringstream sstream;
-  sstream.setf(std::ios::fixed);
-  sstream.precision(2);
-  sstream << "Task duration: " << task_duration.seconds()
-          << " seconds. Distance: " << dist.value() << " meters.";
 
   // Check if we are in partial insertion
   const auto port_entrance_tf = this->GetTransform(
@@ -659,31 +643,53 @@ Tier3Score ScoringTier2::GetDistanceScore() const {
       port_entrance_tf.value().transform.translation;
   const auto port_trans = port_tf.value().transform.translation;
   const auto plug_trans = plug_tf.value().transform.translation;
+
+  // Used to transition smoothly between the distance scoring and the partial
+  // insertion scoring. This is the maximum distance after which no further
+  // bonus is given
+  const auto distance_threshold =
+      std::abs(port_entrance_trans.z - port_trans.z);
+
+  std::stringstream sstream;
+  sstream.setf(std::ios::fixed);
+  sstream.precision(2);
+
+  // A bounding box with a kEntranceXYTol x-z size, up to port_entrance.z,
+  // down until port_trans.z - a small value (for numerical tolerances)
   if (std::abs(plug_trans.x - port_trans.x) < kEntranceXYTol &&
       std::abs(plug_trans.y - port_trans.y) < kEntranceXYTol &&
-      (plug_trans.z - port_trans.z) < port_entrance_trans.z) {
+      plug_trans.z < port_entrance_trans.z &&
+      plug_trans.z - port_trans.z > -0.01) {
     // We are in partial insertion, apply a bonus proportional to how far we
     // are from the actual port
     const double port_to_entrance_dist = port_entrance_trans.z - port_trans.z;
     const double plug_to_port_dist = plug_trans.z - port_trans.z;
 
     // The closest we are the higher we score
-    const double bonus = CalculateInverseProportionalScore(
-        kMaxBonus, kMinBonus, port_to_entrance_dist, 0.0, plug_to_port_dist);
-    score += bonus;
-    sstream << " Partial insertion detected with distance of "
-            << plug_to_port_dist << "m, additional bonus of " << bonus;
+    const double score = CalculateInverseProportionalScore(
+        kMaxInsertionScore, kMinInsertionScore, port_to_entrance_dist, 0.0,
+        plug_to_port_dist);
+    sstream << "Partial insertion detected with distance of "
+            << plug_to_port_dist << "m.";
+    return Tier3Score(score, sstream.str());
   }
+
+  const double score = CalculateInverseProportionalScore(
+      kClosestTaskScore, kFurthestTaskScore, kMaxDistance, distance_threshold,
+      dist.value());
+
+  sstream << "No insertion detected. Final plug port distance: " << dist.value()
+          << "m.";
 
   return Tier3Score(score, sstream.str());
 }
 
 //////////////////////////////////////////////////
 Tier3Score ScoringTier2::ComputeTier3Score() const {
-  constexpr double kInsertionCompletionScore = 100.0;
+  // Binary will award kInsertionCompletionScore, partial insertion computed
+  // in GetDistanceScore (and up to kMaxInsertionScore)
+  constexpr double kInsertionCompletionScore = 60.0;
   constexpr double kInsertionPenalty = -10.0;
-  Tier3Score dist_score = this->GetDistanceScore();
-  double score = dist_score.total_score();
 
   // Check if insertion is completed or not
   std::stringstream sstream;
@@ -706,23 +712,21 @@ Tier3Score ScoringTier2::ComputeTier3Score() const {
       // Verify the plug is inserted into the correct target port
       if (tokens[0] == connections[0].targetModuleName &&
           tokens[1] == connections[0].portName) {
-        score += kInsertionCompletionScore;
-        sstream << "Cable insertion successful. " << dist_score.message;
+        return Tier3Score(kInsertionCompletionScore,
+                          "Cable insertion successful.");
       } else {
-        score += kInsertionPenalty;
-        sstream << "Cable insertion failed. Incorrect Port. "
-                << dist_score.message;
+        return Tier3Score(kInsertionPenalty,
+                          "Cable insertion failed. Incorrect Port.");
       }
     } else {
-      RCLCPP_ERROR(this->node->get_logger(),
-                   "Error parsing insertion port namespace: %s",
-                   this->insertionPortNamespace.c_str());
+      const std::string msg = "Error parsing insertion port namespace: " +
+                              this->insertionPortNamespace;
+      RCLCPP_ERROR(this->node->get_logger(), msg.c_str());
+      return Tier3Score(0.0, msg);
     }
-  } else {
-    sstream << "Cable insertion failed. " << dist_score.message;
   }
-
-  return Tier3Score(score, sstream.str());
+  // Cable insertion was not completed, compute partial insertion
+  return this->GetDistanceScore();
 }
 
 //////////////////////////////////////////////////
@@ -893,6 +897,45 @@ Tier2Score::CategoryScore ScoringTier2::GetContactsScore() const {
           << contact.collision1.name << "] and [" << contact.collision2.name
           << "]. Penalty applied.";
   return CategoryScore(kPenalty, sstream.str());
+}
+
+//////////////////////////////////////////////////
+Tier2Score::CategoryScore ScoringTier2::GetTaskDurationScore(
+    const Tier3Score &_tier3) const {
+  using CategoryScore = Tier2Score::CategoryScore;
+
+  const rclcpp::Duration kMaxTaskTime = rclcpp::Duration::from_seconds(60.0);
+  const rclcpp::Duration kMinTaskTime = rclcpp::Duration::from_seconds(5.0);
+  const double kFastestTaskScore = 10.0;
+  const double kSlowestTaskScore = 1.0;
+
+  if (_tier3.total_score() <= 0) {
+    return CategoryScore(
+        0, "Task not completed successfully, not assigning time bonus");
+  }
+
+  if (!this->task_start_time.has_value()) {
+    return CategoryScore(0, "Time computation failed, task start time not set");
+  }
+
+  if (!this->task_end_time.has_value()) {
+    return CategoryScore(0, "Time computation failed, task end time not set");
+  }
+
+  const auto end_time =
+      std::chrono::nanoseconds(this->task_end_time.value().nanoseconds());
+
+  const rclcpp::Duration task_duration =
+      this->task_end_time.value() - this->task_start_time.value();
+  const double score = CalculateInverseProportionalScore(
+      kFastestTaskScore, kSlowestTaskScore, kMaxTaskTime.seconds(),
+      kMinTaskTime.seconds(), task_duration.seconds());
+
+  std::stringstream sstream;
+  sstream.setf(std::ios::fixed);
+  sstream.precision(2);
+  sstream << "Task completed in " << task_duration.seconds() << " seconds.";
+  return CategoryScore(score, sstream.str());
 }
 
 //////////////////////////////////////////////////
