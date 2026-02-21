@@ -30,8 +30,8 @@ from aic_control_interfaces.msg import (
     ControllerState,
     JointMotionUpdate,
     MotionUpdate,
-    TrajectoryGenerationMode,
     TargetMode,
+    TrajectoryGenerationMode,
 )
 from aic_control_interfaces.srv import ChangeTargetMode
 from geometry_msgs.msg import Twist, Vector3, Wrench
