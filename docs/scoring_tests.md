@@ -81,10 +81,7 @@ and Tier 3 (cable insertion).
 - Tier 1 should **pass** for all trials.
 - Tier 2 should show high smoothness scores (up to 5), a task duration bonus
   (up to 10) for successful trials, and no force penalty or off-limit contacts.
-- Tier 3 should report successful cable insertion (60 points) for Trials 1 and 2.
-- **Known issue:** Trial 3 uses an SC plug. CheatCode cannot resolve the SC
-  cable tip TF frame, so it logs a transform timeout error and returns early.
-  Tier 3 for Trial 3 will show a proximity score instead of an insertion bonus.
+- Tier 3 should report successful cable insertion (60 points) for all trials.
 
 ### Terminal 0 -- Zenoh Router
 
