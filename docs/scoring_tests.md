@@ -33,7 +33,7 @@ GZ_BUILD_FROM_SOURCE=1 colcon build \
 | 2 | Trajectory smoothness | 0-5 | Smoothness of arm motion; inversely proportional to jerk (higher = smoother) |
 | 2 | Task duration | 0-10 | Reward for faster completion; only awarded on successful insertion or plug is within close proximity to port |
 | 2 | Trajectory efficiency | 0-5 | Reward for shorter end-effector path length (higher = more direct) |
-| 2 | Insertion force | 0 to -10 | Penalty for force > 5 N sustained for > 1 second |
+| 2 | Insertion force | 0 to -10 | Penalty for force > 20 N sustained for > 1 second |
 | 2 | Off-limit contacts | 0 to -20 | Penalty for collisions with the enclosure or task board |
 | 3 | Cable insertion | -10 or 0 to 60 | -10 penalty for wrong-port insertion; 60 for correct-port insertion; 0-40 for partial insertion or close proximity |
 
