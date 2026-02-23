@@ -539,11 +539,6 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryJerkScore() const {
   // _tf.transform.translation.y
   //           << " " << _tf.transform.translation.z << ")" << std::endl;
 
-  // Helper to convert ROS time to seconds.
-  auto toSeconds = [](const builtin_interfaces::msg::Time &t) {
-    return static_cast<double>(t.sec) + static_cast<double>(t.nanosec) * 1e-9;
-  };
-
   double totalJerkTime = 0.0;
   double accumLinearJerkMagnitude = 0.0;
 
