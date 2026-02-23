@@ -210,11 +210,18 @@ def launch_setup(context, *args, **kwargs):
     )
 
     tare_fts_service = ExecuteProcess(
-        cmd=['ros2', 'service', 'call', '/aic_controller/tare_force_torque_sensor', 'std_srvs/srv/Trigger', '{}'],
-        output='screen'
+        cmd=[
+            "ros2",
+            "service",
+            "call",
+            "/aic_controller/tare_force_torque_sensor",
+            "std_srvs/srv/Trigger",
+            "{}",
+        ],
+        output="screen",
     )
 
-    # Tare the force torque sensor upon controller activation 
+    # Tare the force torque sensor upon controller activation
     tare_fts_on_controller_activate = RegisterEventHandler(
         OnProcessExit(
             target_action=initial_joint_controller_spawner_started,
