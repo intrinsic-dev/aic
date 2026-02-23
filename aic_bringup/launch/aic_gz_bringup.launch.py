@@ -209,6 +209,19 @@ def launch_setup(context, *args, **kwargs):
         condition=UnlessCondition(activate_joint_controller),
     )
 
+    tare_fts_service = ExecuteProcess(
+        cmd=['ros2', 'service', 'call', '/aic_controller/tare_force_torque_sensor', 'std_srvs/srv/Trigger', '{}'],
+        output='screen'
+    )
+
+    # Tare the force torque sensor upon controller activation 
+    tare_fts_on_controller_activate = RegisterEventHandler(
+        OnProcessExit(
+            target_action=initial_joint_controller_spawner_started,
+            on_exit=[tare_fts_service],
+        )
+    )
+
     fts_broadcaster_spawner = Node(
         package="controller_manager",
         executable="spawner",
@@ -406,6 +419,7 @@ def launch_setup(context, *args, **kwargs):
         delay_rviz_after_joint_state_broadcaster_spawner,
         initial_joint_controller_spawner_stopped,
         initial_joint_controller_spawner_started,
+        tare_fts_on_controller_activate,
         fts_broadcaster_spawner,
         aic_adapter,
         gz_ip_env,
