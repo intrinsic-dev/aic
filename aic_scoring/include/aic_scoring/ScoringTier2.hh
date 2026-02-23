@@ -341,7 +341,7 @@ namespace aic_scoring
     /// and force
     private: std::vector<std::pair<double, Vector3Msg>> wrenches;
 
-    /// \brief End effector poses, pair is timestamp and translation
+    /// \brief End effector pose tf messages.
     private: std::vector<TransformStampedMsg> endEffectorPoses;
 
     /// \brief Non empty contact messages received from the simulator.

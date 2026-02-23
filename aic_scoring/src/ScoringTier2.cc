@@ -391,7 +391,7 @@ void ScoringTier2::TfCallback(const TFMsg &_msg) {
   if (end_effector_pose.has_value()) {
     // It seems we can receive multiple different poses with the same timestamp
     // TODO(luca) consider throttling the robot state publisher
-    if (this->endEffectorPoses.size() > 0 &&
+    if (!this->endEffectorPoses.empty() &&
         this->endEffectorPoses.back().header.stamp ==
             end_effector_pose.value().header.stamp) {
       return;
@@ -611,6 +611,13 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryJerkScore() const {
       totalJerkTime += dt;
       accumLinearJerkMagnitude += jerkMag * dt;
     }
+  }
+
+  if (std::abs(totalJerkTime) < 1e-6) {
+    const std::string msg =
+        "Error computing jerk. Insufficient end-effector pose samples.";
+    RCLCPP_ERROR(this->node->get_logger(), msg.c_str());
+    return CategoryScore(0.0, msg);
   }
 
   double jerk = accumLinearJerkMagnitude / totalJerkTime;
