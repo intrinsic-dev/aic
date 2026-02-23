@@ -344,6 +344,9 @@ namespace aic_scoring
     /// \brief End effector poses, pair is timestamp and translation
     private: std::vector<TransformStampedMsg> endEffectorPoses;
 
+    /// \brief End effector velocities, pair is time and linear twist
+    private: std::vector<std::pair<double, Vector3Msg>> endEffectorVelocities;
+
     /// \brief Non empty contact messages received from the simulator.
     private: std::vector<ContactsMsg> contacts;
 
