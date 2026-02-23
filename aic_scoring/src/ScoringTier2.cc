@@ -265,6 +265,13 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
       this->EfficiencyCallback(*pose);
     }
   }
+  // Compute averages outside loop.
+  if (this->totalJerkTime > 0.0) {
+    double inv_totalJerkTime = 1.0 / this->totalJerkTime;
+    this->avgLinearJerk.x = this->accumLinearJerk.x * inv_totalJerkTime;
+    this->avgLinearJerk.y = this->accumLinearJerk.y * inv_totalJerkTime;
+    this->avgLinearJerk.z = this->accumLinearJerk.z * inv_totalJerkTime;
+  }
   RCLCPP_INFO(this->node->get_logger(), "Finished calculating jerk and efficiency callbacks");
   auto end = std::chrono::steady_clock::now();
   std::chrono::duration<double> elapsed = end - start;
@@ -780,27 +787,15 @@ void ScoringTier2::JerkCallback(const TransformStampedMsg &_tf) {
   double pz2 = this->tfHistory[2].transform.translation.z;
   double pz3 = this->tfHistory[3].transform.translation.z;
 
-  this->linearJerk.x = computeJerk(px0, px1, px2, px3);
-  this->linearJerk.y = computeJerk(py0, py1, py2, py3);
-  this->linearJerk.z = computeJerk(pz0, pz1, pz2, pz3);
-
   // Update time-weighted average jerk.
   // Use the time interval from t1 to t2 as the weight for this jerk sample.
   double dt = dt21;
   this->totalJerkTime += dt;
 
-  // Accumulate weighted jerk (vectorized).
-  this->accumLinearJerk.x += this->linearJerk.x * dt;
-  this->accumLinearJerk.y += this->linearJerk.y * dt;
-  this->accumLinearJerk.z += this->linearJerk.z * dt;
-
-  // Compute averages with check.
-  if (this->totalJerkTime > 0.0) {
-    double inv_totalJerkTime = 1.0 / this->totalJerkTime;
-    this->avgLinearJerk.x = this->accumLinearJerk.x * inv_totalJerkTime;
-    this->avgLinearJerk.y = this->accumLinearJerk.y * inv_totalJerkTime;
-    this->avgLinearJerk.z = this->accumLinearJerk.z * inv_totalJerkTime;
-  }
+  // Accumulate weighted jerk for trajectory jerk score.
+  this->accumLinearJerk.x += computeJerk(px0, px1, px2, px3) * dt;
+  this->accumLinearJerk.y += computeJerk(py0, py1, py2, py3) * dt;
+  this->accumLinearJerk.z += computeJerk(pz0, pz1, pz2, pz3) * dt;
 }
 
 //////////////////////////////////////////////////
