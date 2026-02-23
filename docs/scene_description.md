@@ -123,6 +123,8 @@ To manually control the robot and get familiar with the environment:
 
 Before teleoperating, we recommend reading the [AIC Controller Guide](./aic_controller.md) to understand the controller used in the challenge.
 
+When using teleoperation to collect training data, ensure that the Force/Torque Sensor (F/T Sensor) is tared at the start of each training episode. This is already done upon controller activation via the `tare_fts_on_controller_activate` event in the [aic_gz_bringup.launch.py](../aic_bringup/launch/aic_gz_bringup.launch.py) bringup.
+
 See the [Robot Teleoperation Guide](../aic_utils/aic_teleoperation/README.md) for detailed instructions.
 
 > [!TIP]

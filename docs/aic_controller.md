@@ -94,6 +94,8 @@ The controller provides a service to tare (zero) the force-torque sensor at `/ai
 ros2 service call /aic_controller/tare_ft_sensor std_srvs/srv/Trigger
 ```
 
+Before the start of each training episode, it is important to tare the  Force/Torque Sensor (F/T Sensor). This is already done on controller activation within the `tare_fts_on_controller_activate` event in the [aic_gz_bringup.launch.py](../aic_bringup/launch/aic_gz_bringup.launch.py) bringup.
+
 > **Important:** This service will **not be available** during the evaluation. The force-torque sensor readings are used for scoring, and participants cannot tare the sensor during competition runs.
 
 ## Controller Target Parameters
