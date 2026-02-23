@@ -252,16 +252,6 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
   msg.transforms.push_back(transform_stamped);
   this->TfStaticCallback(msg);
 
-  // Second pass: Compute jerk and path length for each stored timestamp.
-  // Now the TF buffer has the complete transform tree.
-  for (const auto &t : this->timestamps) {
-    auto pose = this->EndEffectorPose(t);
-    if (pose.has_value()) {
-      this->JerkCallback(*pose);
-      this->EfficiencyCallback(*pose);
-    }
-  }
-
   this->state = State::Idle;
   tier2_score.add_category_score("trajectory smoothness",
                                  this->GetTrajectoryJerkScore());
@@ -297,23 +287,14 @@ void ScoringTier2::Reset(const std::chrono::seconds &_buffer_size) {
   this->bagUri.clear();
   this->tf2_buffer = std::make_unique<tf2::BufferCore>(_buffer_size);
   this->state = State::Idle;
-  this->timestamps.clear();
   this->wrenches.clear();
+  this->endEffectorPoses.clear();
   this->task_start_time.reset();
   this->task_end_time.reset();
   this->bagWriter.close();
   this->contacts.clear();
   this->insertionPortNamespace.clear();
   this->lastTaredFt.reset();
-  // Jerk computation variables
-  this->tfHistory.clear();
-  this->linearJerk = Vector3Msg();
-  this->avgLinearJerkMagnitude = 0.0;
-  this->accumLinearJerkMagnitude = 0.0;
-  this->totalJerkTime = 0.0;
-  // Efficiency computation variables
-  this->totalPathLength = 0.0;
-  this->prevPose.reset();
 }
 
 //////////////////////////////////////////////////
@@ -400,9 +381,22 @@ void ScoringTier2::JointStateCallback(const JointStateMsg &_msg) { (void)_msg; }
 void ScoringTier2::TfCallback(const TFMsg &_msg) {
   for (const auto &tf : _msg.transforms) {
     this->tf2_buffer->setTransform(tf, "scoring", false);
-    // A bit redundant since all the messages will likely have the same
-    // timestamp
-    this->timestamps.insert(tf2::getTimestamp(tf));
+  }
+  // TODO(luca) we should find a way to only push poses if the gripper pose
+  // would have changed because of a new TF message, otherwise we might push
+  // poses that are just interpolated by the TF library.
+  // Right now, it seems the vast majority of messages under /tf are from the
+  // robot state publisher so this should be fine.
+  auto end_effector_pose = this->EndEffectorPose(tf2::TimePointZero);
+  if (end_effector_pose.has_value()) {
+    // It seems we can receive multiple different poses with the same timestamp
+    // TODO(luca) consider throttling the robot state publisher
+    if (this->endEffectorPoses.size() > 0 &&
+        this->endEffectorPoses.back().header.stamp ==
+            end_effector_pose.value().header.stamp) {
+      return;
+    }
+    this->endEffectorPoses.push_back(end_effector_pose.value());
   }
 }
 
@@ -459,14 +453,16 @@ void ScoringTier2::ControllerStateCallback(const ControllerStateMsg &_msg) {
 //////////////////////////////////////////////////
 std::optional<ScoringTier2::TransformStampedMsg> ScoringTier2::GetTransform(
     tf2::TimePoint _t, const std::string &_target_frame,
-    const std::string &_reference_frame) const {
+    const std::string &_reference_frame, bool _suppress_error) const {
   std::string error;
   if (!this->tf2_buffer->canTransform(_reference_frame, _target_frame, _t,
                                       &error)) {
-    RCLCPP_ERROR(
-        this->node->get_logger(),
-        "Transform between %s and %s not found in the tf tree, error: %s",
-        _reference_frame.c_str(), _target_frame.c_str(), error.c_str());
+    if (!_suppress_error) {
+      RCLCPP_ERROR(
+          this->node->get_logger(),
+          "Transform between %s and %s not found in the tf tree, error: %s",
+          _reference_frame.c_str(), _target_frame.c_str(), error.c_str());
+    }
     return std::nullopt;
   }
 
@@ -528,7 +524,98 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryJerkScore() const {
   const double kMaxJerkValue = 25000.0;
   const double kMinJerkValue = 0.0;
 
-  double jerk = this->avgLinearJerkMagnitude;
+  // Debug output
+  // std::cout << "(" << _tf.transform.translation.x << " " <<
+  // _tf.transform.translation.y
+  //           << " " << _tf.transform.translation.z << ")" << std::endl;
+
+  // Helper to convert ROS time to seconds.
+  auto toSeconds = [](const builtin_interfaces::msg::Time &t) {
+    return static_cast<double>(t.sec) + static_cast<double>(t.nanosec) * 1e-9;
+  };
+
+  double totalJerkTime = 0.0;
+  double accumLinearJerkMagnitude = 0.0;
+
+  RCLCPP_INFO(this->node->get_logger(), "Got %d samples",
+              this->endEffectorPoses.size());
+  for (std::size_t i = 3; i < this->endEffectorPoses.size(); ++i) {
+    // Extract timestamps.
+    double t0 = toSeconds(this->endEffectorPoses[i - 3].header.stamp);
+    double t1 = toSeconds(this->endEffectorPoses[i - 2].header.stamp);
+    double t2 = toSeconds(this->endEffectorPoses[i - 1].header.stamp);
+    double t3 = toSeconds(this->endEffectorPoses[i].header.stamp);
+    // RCLCPP_INFO(this->node->get_logger(), "First stamp is %.6f", t0);
+
+    if (t0 >= t1 || t1 >= t2 || t2 >= t3) {
+      RCLCPP_WARN(this->node->get_logger(),
+                  "Non monotonic timestamps found, %.6f, %.6f, %.6f, %.6f", t0,
+                  t1, t2, t3);
+      continue;
+    }
+
+    // Extract positions.
+    double px[4], py[4], pz[4];
+    px[0] = this->endEffectorPoses[i - 3].transform.translation.x;
+    px[1] = this->endEffectorPoses[i - 2].transform.translation.x;
+    px[2] = this->endEffectorPoses[i - 1].transform.translation.x;
+    px[3] = this->endEffectorPoses[i].transform.translation.x;
+
+    py[0] = this->endEffectorPoses[i - 3].transform.translation.y;
+    py[1] = this->endEffectorPoses[i - 2].transform.translation.y;
+    py[2] = this->endEffectorPoses[i - 1].transform.translation.y;
+    py[3] = this->endEffectorPoses[i].transform.translation.y;
+
+    pz[0] = this->endEffectorPoses[i - 3].transform.translation.z;
+    pz[1] = this->endEffectorPoses[i - 2].transform.translation.z;
+    pz[2] = this->endEffectorPoses[i - 1].transform.translation.z;
+    pz[3] = this->endEffectorPoses[i].transform.translation.z;
+
+    // Compute finite differences for jerk.
+    // v1 = (p1 - p0) / (t1 - t0), etc.
+    // a1 = (v2 - v1) / (midpoint difference)
+    // jerk = (a2 - a1) / (midpoint difference)
+    auto computeJerk = [&](const double p[4]) {
+      double v1 = (p[1] - p[0]) / (t1 - t0);
+      double v2 = (p[2] - p[1]) / (t2 - t1);
+      double v3 = (p[3] - p[2]) / (t3 - t2);
+
+      double mid_v1 = (t0 + t1) / 2.0;
+      double mid_v2 = (t1 + t2) / 2.0;
+      double mid_v3 = (t2 + t3) / 2.0;
+
+      double a1 = (v2 - v1) / (mid_v2 - mid_v1);
+      double a2 = (v3 - v2) / (mid_v3 - mid_v2);
+
+      double mid_a1 = (mid_v1 + mid_v2) / 2.0;
+      double mid_a2 = (mid_v2 + mid_v3) / 2.0;
+
+      return (a2 - a1) / (mid_a2 - mid_a1);
+    };
+
+    // Compute velocity at the central sample (v2) to gate jerk accumulation.
+    // Only accumulate jerk when the arm is actually moving, so that stillness
+    // periods don't dilute the average toward zero.
+    double v2x = (px[2] - px[1]) / (t2 - t1);
+    double v2y = (py[2] - py[1]) / (t2 - t1);
+    double v2z = (pz[2] - pz[1]) / (t2 - t1);
+    double speed = std::sqrt(v2x * v2x + v2y * v2y + v2z * v2z);
+
+    constexpr double kVelocityThreshold = 0.01;  // m/s
+    if (speed > kVelocityThreshold) {
+      // Compute linear jerk.
+      double jx = computeJerk(px);
+      double jy = computeJerk(py);
+      double jz = computeJerk(pz);
+
+      double jerkMag = std::sqrt(jx * jx + jy * jy + jz * jz);
+      double dt = (t3 - t0) / 3.0;
+      totalJerkTime += dt;
+      accumLinearJerkMagnitude += jerkMag * dt;
+    }
+  }
+
+  double jerk = accumLinearJerkMagnitude / totalJerkTime;
 
   std::stringstream sstream;
   sstream.setf(std::ios::fixed);
@@ -543,23 +630,19 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryJerkScore() const {
 }
 
 //////////////////////////////////////////////////
-void ScoringTier2::EfficiencyCallback(const TransformStampedMsg &_tf) {
-  if (this->prevPose.has_value()) {
-    double dx =
-        _tf.transform.translation.x - this->prevPose->transform.translation.x;
-    double dy =
-        _tf.transform.translation.y - this->prevPose->transform.translation.y;
-    double dz =
-        _tf.transform.translation.z - this->prevPose->transform.translation.z;
-    this->totalPathLength += std::sqrt(dx * dx + dy * dy + dz * dz);
-  }
-  this->prevPose = _tf;
-}
-
-//////////////////////////////////////////////////
 Tier2Score::CategoryScore ScoringTier2::GetTrajectoryEfficiencyScore(
     double _minPathLength) const {
   using CategoryScore = Tier2Score::CategoryScore;
+
+  double totalPathLength = 0.0;
+  for (std::size_t i = 1; i < this->endEffectorPoses.size(); ++i) {
+    const auto &tf0 = this->endEffectorPoses[i - 1].transform.translation;
+    const auto &tf1 = this->endEffectorPoses[i].transform.translation;
+    double dx = tf1.x - tf0.x;
+    double dy = tf1.y - tf0.y;
+    double dz = tf1.z - tf0.z;
+    totalPathLength += std::sqrt(dx * dx + dy * dy + dz * dz);
+  }
 
   // Score range and path length bounds (meters).
   const double kMaxEfficiencyScore = 5.0;              // Shortest path
@@ -568,12 +651,12 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryEfficiencyScore(
 
   std::stringstream ss;
   ss << std::fixed << std::setprecision(2);
-  ss << "Total end-effector path length: " << this->totalPathLength << " m"
+  ss << "Total end-effector path length: " << totalPathLength << " m"
      << ", initial plug-port distance: " << _minPathLength << " m";
 
   const double score = CalculateInverseProportionalScore(
       kMaxEfficiencyScore, kMinEfficiencyScore, kMaxPathLength, _minPathLength,
-      this->totalPathLength);
+      totalPathLength);
 
   return CategoryScore(score, ss.str());
 }
@@ -615,10 +698,6 @@ Tier3Score ScoringTier2::GetDistanceScore() const {
   // The tolerance in x-y within the port to validate that the plug is being
   // inserted.
   const double kEntranceXYTol = 0.005;
-
-  if (this->timestamps.empty()) {
-    return Tier3Score(0, "Distance computation failed, no tfs received");
-  }
 
   if (!this->task_end_time.has_value()) {
     return Tier3Score(0, "Time computation failed, task end time not set");
@@ -738,102 +817,6 @@ Tier3Score ScoringTier2::ComputeTier3Score() const {
 }
 
 //////////////////////////////////////////////////
-void ScoringTier2::JerkCallback(const TransformStampedMsg &_tf) {
-  // Debug output
-  // std::cout << "(" << _tf.transform.translation.x << " " <<
-  // _tf.transform.translation.y
-  //           << " " << _tf.transform.translation.z << ")" << std::endl;
-
-  // Helper to convert ROS time to seconds.
-  auto toSeconds = [](const builtin_interfaces::msg::Time &t) {
-    return static_cast<double>(t.sec) + static_cast<double>(t.nanosec) * 1e-9;
-  };
-
-  // Check timestamp is increasing.
-  if (!this->tfHistory.empty()) {
-    double lastTime = toSeconds(this->tfHistory.back().header.stamp);
-    double newTime = toSeconds(_tf.header.stamp);
-    if (newTime <= lastTime) {
-      return;
-    }
-  }
-
-  // Add tf to history.
-  this->tfHistory.push_back(_tf);
-
-  // Need 4 samples to compute jerk.
-  if (this->tfHistory.size() < 4) {
-    return;
-  }
-
-  // Keep only last 4 samples.
-  if (this->tfHistory.size() > 4) {
-    this->tfHistory.erase(this->tfHistory.begin());
-  }
-
-  // Extract timestamps.
-  double t0 = toSeconds(this->tfHistory[0].header.stamp);
-  double t1 = toSeconds(this->tfHistory[1].header.stamp);
-  double t2 = toSeconds(this->tfHistory[2].header.stamp);
-  double t3 = toSeconds(this->tfHistory[3].header.stamp);
-
-  // Extract positions.
-  double px[4], py[4], pz[4];
-  for (int i = 0; i < 4; ++i) {
-    px[i] = this->tfHistory[i].transform.translation.x;
-    py[i] = this->tfHistory[i].transform.translation.y;
-    pz[i] = this->tfHistory[i].transform.translation.z;
-  }
-
-  // Compute finite differences for jerk.
-  // v1 = (p1 - p0) / (t1 - t0), etc.
-  // a1 = (v2 - v1) / (midpoint difference)
-  // jerk = (a2 - a1) / (midpoint difference)
-  auto computeJerk = [&](const double p[4]) {
-    double v1 = (p[1] - p[0]) / (t1 - t0);
-    double v2 = (p[2] - p[1]) / (t2 - t1);
-    double v3 = (p[3] - p[2]) / (t3 - t2);
-
-    double mid_v1 = (t0 + t1) / 2.0;
-    double mid_v2 = (t1 + t2) / 2.0;
-    double mid_v3 = (t2 + t3) / 2.0;
-
-    double a1 = (v2 - v1) / (mid_v2 - mid_v1);
-    double a2 = (v3 - v2) / (mid_v3 - mid_v2);
-
-    double mid_a1 = (mid_v1 + mid_v2) / 2.0;
-    double mid_a2 = (mid_v2 + mid_v3) / 2.0;
-
-    return (a2 - a1) / (mid_a2 - mid_a1);
-  };
-
-  // Compute velocity at the central sample (v2) to gate jerk accumulation.
-  // Only accumulate jerk when the arm is actually moving, so that stillness
-  // periods don't dilute the average toward zero.
-  double v2x = (px[2] - px[1]) / (t2 - t1);
-  double v2y = (py[2] - py[1]) / (t2 - t1);
-  double v2z = (pz[2] - pz[1]) / (t2 - t1);
-  double speed = std::sqrt(v2x * v2x + v2y * v2y + v2z * v2z);
-
-  constexpr double kVelocityThreshold = 0.01;  // m/s
-  if (speed > kVelocityThreshold) {
-    // Compute linear jerk.
-    this->linearJerk.x = computeJerk(px);
-    this->linearJerk.y = computeJerk(py);
-    this->linearJerk.z = computeJerk(pz);
-
-    double jerkMag = std::sqrt(this->linearJerk.x * this->linearJerk.x +
-                               this->linearJerk.y * this->linearJerk.y +
-                               this->linearJerk.z * this->linearJerk.z);
-    double dt = (t3 - t0) / 3.0;
-    this->totalJerkTime += dt;
-    this->accumLinearJerkMagnitude += jerkMag * dt;
-    this->avgLinearJerkMagnitude =
-        this->accumLinearJerkMagnitude / this->totalJerkTime;
-  }
-}
-
-//////////////////////////////////////////////////
 std::optional<ScoringTier2::TransformStampedMsg> ScoringTier2::EndEffectorPose(
     tf2::TimePoint t) const {
   // Sanity check.
@@ -842,7 +825,7 @@ std::optional<ScoringTier2::TransformStampedMsg> ScoringTier2::EndEffectorPose(
                  "Unable to compute end effector pose, gripper frame not set");
     return std::nullopt;
   }
-  return this->GetTransform(t, this->gripperFrame);
+  return this->GetTransform(t, this->gripperFrame, "aic_world", true);
 }
 
 //////////////////////////////////////////////////

@@ -232,10 +232,6 @@ namespace aic_scoring
     /// \param[in] _msg The received message.
     private: void WrenchCallback(const WrenchMsg& _msg);
 
-    /// \brief Update jerk computation with a new pose sample.
-    /// \param[in] _tf The new timestamped transform.
-    private: void JerkCallback(const TransformStampedMsg &_tf);
-
     /// \brief Compute the end effector position.
     /// \param[in] t Time to check the pose.
     /// \return End effector pose at time t. nullopt if failed
@@ -261,10 +257,6 @@ namespace aic_scoring
     /// \return Scoring for the trajectory jerk score.
     private: Tier2Score::CategoryScore GetTrajectoryJerkScore() const;
 
-    /// \brief Accumulate path length with a new pose sample.
-    /// \param[in] _tf The new timestamped transform.
-    private: void EfficiencyCallback(const TransformStampedMsg &_tf);
-
     /// \brief Calculates score for trajectory efficiency (path length).
     /// \param[in] _minPathLength Minimum path length for max score (meters).
     /// This is typically the initial plug-port distance.
@@ -277,11 +269,13 @@ namespace aic_scoring
     /// \param[in] _t the time point to get the transform.
     /// \param[in] _target_frame the frame to get the transform for.
     /// \param[in] _reference_frame the frame that we should get the transform relative to.
+    /// \param[in] _suppress_error Whether to suppress errors for failed TF lookup.
     /// \return The transform between the two frames, if available.
     private: std::optional<TransformStampedMsg> GetTransform(
                  tf2::TimePoint _t,
                  const std::string& _target_frame,
-                 const std::string& _reference_frame = "aic_world") const;
+                 const std::string& _reference_frame = "aic_world",
+                 const bool _suppress_error = false) const;
 
     /// \brief Calculates the distance between the plug and the port.
     /// \param[in] _timestamp Time to check the distance
@@ -343,33 +337,18 @@ namespace aic_scoring
     /// \brief Buffer to compute tf for scoring.
     private: std::unique_ptr<tf2::BufferCore> tf2_buffer;
 
-    /// \brief Timestamps of received tfs to be used for distance calculation
-    private: std::set<tf2::TimePoint> timestamps;
-
     /// \brief Readings from the force torque sensor, pair is timestamp
     /// and force
     private: std::vector<std::pair<double, Vector3Msg>> wrenches;
+
+    /// \brief End effector poses, pair is timestamp and translation
+    private: std::vector<TransformStampedMsg> endEffectorPoses;
 
     /// \brief Non empty contact messages received from the simulator.
     private: std::vector<ContactsMsg> contacts;
 
     /// \brief Mutex to protect the access to the bag.
     private: std::mutex mutex;
-
-    /// \brief History of transforms for jerk computation (stores last 4 samples).
-    private: std::vector<TransformStampedMsg> tfHistory;
-
-    /// \brief Computed linear jerk (x, y, z components in m/s^3).
-    private: Vector3Msg linearJerk;
-
-    /// \brief Time-weighted average linear jerk magnitude (m/s^3).
-    private: double avgLinearJerkMagnitude = 0.0;
-
-    /// \brief Total elapsed time where the arm was moving (seconds).
-    private: double totalJerkTime = 0.0;
-
-    /// \brief Accumulated weighted linear jerk magnitude (jerkMag * dt sum).
-    private: double accumLinearJerkMagnitude = 0.0;
 
     /// \brief Gripper frame name.
     private: std::string gripperFrame;
@@ -386,12 +365,6 @@ namespace aic_scoring
 
     /// \brief The last tared ft reading rotated to the current pose received.
     private: std::optional<WrenchMsg> lastTaredFt;
-
-    /// \brief Total end-effector path length (meters).
-    private: double totalPathLength = 0.0;
-
-    /// \brief Previous end-effector pose for path length computation.
-    private: std::optional<TransformStampedMsg> prevPose;
   };
 
   // The Tier2 class as a node.
