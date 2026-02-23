@@ -537,8 +537,6 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryJerkScore() const {
   double totalJerkTime = 0.0;
   double accumLinearJerkMagnitude = 0.0;
 
-  RCLCPP_INFO(this->node->get_logger(), "Got %d samples",
-              this->endEffectorPoses.size());
   for (std::size_t i = 3; i < this->endEffectorPoses.size(); ++i) {
     // Extract timestamps.
     double t0 = toSeconds(this->endEffectorPoses[i - 3].header.stamp);
