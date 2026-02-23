@@ -166,7 +166,7 @@ pixi install
 ### Step 3: Run an Example Policy
 
 ```bash
-pixi run ros2 run aic_model aic_model --ros-args -p policy:=aic_example_policies.ros.WaveArm
+pixi run ros2 run aic_model aic_model --ros-args -p use_sim_time:=true -p policy:=aic_example_policies.ros.WaveArm
 ```
 
 Once the `aic_model` node starts, the AIC engine spawns a task board and a gripper-attached cable in the Gazebo window. The eval container terminal will then track three successive trials and display their scores. See [Scoring](./scoring.md) for more details.
@@ -186,6 +186,8 @@ Once the `aic_model` node starts, the AIC engine spawns a task board and a gripp
 ![Wave Arm Policy](../../media/wave_arm_policy.gif)
 
 If the robot doesn't move or you don't see the expected behavior, check the [Troubleshooting](./troubleshooting.md) section.
+
+For more example policies and expected scoring results, see the [Scoring Test & Evaluation Guide](./scoring_tests.md).
 
 ---
 

@@ -27,13 +27,6 @@
         </geometry>
       </collision>
 
-      <collision name="cam_mount_collider_cylinder.001">
-        <origin xyz="0.0 0.0 0.012638" rpy="0.0 0.0 0.0"/>
-        <geometry>
-          <cylinder radius="0.030383" length="0.025275"/>
-        </geometry>
-      </collision>
-
       <!-- TODO(anyone): Update the colliders to match the [-60, 0, +60] cameras. -->
       <collision name="cam_mount003_collider_box">
         <origin xyz="0.000252 -0.068974 0.0193" rpy="0.0 0.0 -1.570796"/>

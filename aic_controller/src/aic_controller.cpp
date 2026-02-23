@@ -25,7 +25,7 @@ Controller::Controller()
     : param_listener_(nullptr),
       num_joints_(0),
       control_mode_(ControlMode::Invalid),
-      target_mode_(TargetMode::Invalid),
+      target_mode_value_(TargetMode::MODE_UNSPECIFIED),
       cartesian_impedance_action_(nullptr),
       feedforward_wrench_at_tip_(Eigen::Matrix<double, 6, 1>::Zero()),
       sensed_wrench_at_tip_(Eigen::Matrix<double, 6, 1>::Zero()),
@@ -156,12 +156,12 @@ controller_interface::CallbackReturn Controller::on_configure(
     RCLCPP_INFO(
         get_node()->get_logger(),
         "Target mode set to Cartesian. Accepting MotionUpdate targets.");
-    target_mode_ = TargetMode::Cartesian;
+    target_mode_value_ = TargetMode::MODE_CARTESIAN;
   } else if (params_.target_mode == "joint") {
     RCLCPP_INFO(
         get_node()->get_logger(),
         "Target mode set to joint. Accepting JointMotionUpdate targets.");
-    target_mode_ = TargetMode::Joint;
+    target_mode_value_ = TargetMode::MODE_JOINT;
   } else {
     RCLCPP_ERROR(get_node()->get_logger(),
                  "Unsupported target mode. Please set control_mode to either "
@@ -194,7 +194,7 @@ controller_interface::CallbackReturn Controller::on_configure(
           return;
         }
 
-        if (target_mode_ != TargetMode::Cartesian) {
+        if (target_mode_value_ != TargetMode::MODE_CARTESIAN) {
           RCLCPP_WARN(get_node()->get_logger(),
                       "Please switch to Cartesian target mode before sending "
                       "MotionUpdate targets. Ignoring "
@@ -244,7 +244,7 @@ controller_interface::CallbackReturn Controller::on_configure(
               return;
             }
 
-            if (target_mode_ != TargetMode::Joint) {
+            if (target_mode_value_ != TargetMode::MODE_JOINT) {
               RCLCPP_WARN(get_node()->get_logger(),
                           "Please switch to Joint target mode before sending "
                           "JointMotionUpdate targets. Ignoring "
@@ -331,9 +331,8 @@ controller_interface::CallbackReturn Controller::on_configure(
         // todo(johntgz) Add check and reject request if there is an on-going
         // execution.
 
-        if (request->target_mode ==
-            ChangeTargetMode::Request::TARGET_MODE_CARTESIAN) {
-          if (target_mode_ == TargetMode::Cartesian) {
+        if (request->target_mode.mode == TargetMode::MODE_CARTESIAN) {
+          if (target_mode_value_ == TargetMode::MODE_CARTESIAN) {
             RCLCPP_INFO(get_node()->get_logger(),
                         "Controller is already in Cartesian target mode.");
             response->success = true;
@@ -343,7 +342,7 @@ controller_interface::CallbackReturn Controller::on_configure(
 
           RCLCPP_INFO(get_node()->get_logger(),
                       "Received request to switch target mode to "
-                      "CARTESIAN_TARGET_MODE.");
+                      "MODE_CARTESIAN.");
 
           // Reset any previously set JointMotionUpdate target
           joint_motion_update_ = aic_controller::JointMotionUpdate();
@@ -352,12 +351,11 @@ controller_interface::CallbackReturn Controller::on_configure(
           joint_target_state_ = std::nullopt;
           last_tool_reference_ = current_tool_state_;
 
-          target_mode_ = TargetMode::Cartesian;
+          target_mode_value_ = TargetMode::MODE_CARTESIAN;
 
           response->success = true;
-        } else if (request->target_mode ==
-                   ChangeTargetMode::Request::TARGET_MODE_JOINT) {
-          if (target_mode_ == TargetMode::Joint) {
+        } else if (request->target_mode.mode == TargetMode::MODE_JOINT) {
+          if (target_mode_value_ == TargetMode::MODE_JOINT) {
             RCLCPP_INFO(get_node()->get_logger(),
                         "Controller is already in Joint target mode.");
             response->success = true;
@@ -365,9 +363,8 @@ controller_interface::CallbackReturn Controller::on_configure(
             return;
           }
 
-          RCLCPP_INFO(
-              get_node()->get_logger(),
-              "Received request to switch target mode to JOINT_TARGET_MODE.");
+          RCLCPP_INFO(get_node()->get_logger(),
+                      "Received request to switch target mode to MODE_JOINT.");
 
           // Reset any previously set MotionUpdate target
           motion_update_ = aic_controller::MotionUpdate();
@@ -376,13 +373,13 @@ controller_interface::CallbackReturn Controller::on_configure(
           target_state_ = std::nullopt;
           last_joint_reference_ = JointState(current_state_, num_joints_);
 
-          target_mode_ = TargetMode::Joint;
+          target_mode_value_ = TargetMode::MODE_JOINT;
 
           response->success = true;
         } else {
           RCLCPP_WARN(get_node()->get_logger(),
                       "Invalid target mode requested. Please choose either "
-                      "CARTESIAN_TARGET_MODE or JOINT_TARGET_MODE");
+                      "MODE_CARTESIAN or MODE_JOINT");
 
           response->success = false;
         }
@@ -797,7 +794,7 @@ controller_interface::return_type Controller::update(
 
   // read user commands
   if (motion_update_received_) {
-    if (target_mode_ == TargetMode::Cartesian) {
+    if (target_mode_value_ == TargetMode::MODE_CARTESIAN) {
       auto command_op = motion_update_rt_.try_get();
       if (command_op.has_value()) {
         motion_update_ = command_op.value();
@@ -852,7 +849,7 @@ controller_interface::return_type Controller::update(
           target_state_ = latest_target_state;
         }
       }
-    } else if (target_mode_ == TargetMode::Joint) {
+    } else if (target_mode_value_ == TargetMode::MODE_JOINT) {
       auto command_op = joint_motion_update_rt_.try_get();
       if (command_op.has_value()) {
         joint_motion_update_ = command_op.value();
@@ -870,7 +867,8 @@ controller_interface::return_type Controller::update(
   CartesianState new_tool_reference = last_tool_reference_;
   JointState new_joint_reference = last_joint_reference_;
 
-  if (target_mode_ == TargetMode::Cartesian && target_state_.has_value()) {
+  if (target_mode_value_ == TargetMode::MODE_CARTESIAN &&
+      target_state_.has_value()) {
     // Clamp the target states to stay within limits
     if (clamp_reference_to_limits(
             cartesian_limits_, motion_update_.trajectory_generation_mode.mode,
@@ -893,7 +891,7 @@ controller_interface::return_type Controller::update(
       return controller_interface::return_type::ERROR;
     }
 
-  } else if (target_mode_ == TargetMode::Joint &&
+  } else if (target_mode_value_ == TargetMode::MODE_JOINT &&
              joint_target_state_.has_value()) {
     // Clamp the target states to stay within limits
     if (clamp_joint_reference_to_limits(
@@ -935,7 +933,7 @@ controller_interface::return_type Controller::update(
       interpolate_impedance_parameters();
     }
 
-    if (target_mode_ == TargetMode::Cartesian) {
+    if (target_mode_value_ == TargetMode::MODE_CARTESIAN) {
       // Compute the tool pose and velocity error between the current and
       // target tool state.
       Eigen::Matrix<double, 7, 1> current_pose_vec =
@@ -1017,7 +1015,7 @@ controller_interface::return_type Controller::update(
         return controller_interface::return_type::ERROR;
       }
 
-    } else if (target_mode_ == TargetMode::Joint) {
+    } else if (target_mode_value_ == TargetMode::MODE_JOINT) {
       // Compute joint position and velocity error between current and target
       // state
       Eigen::VectorXd joint_position_error =
@@ -1271,6 +1269,8 @@ void Controller::populate_controller_state(ControllerState& controller_state) {
   if (last_commanded_state_.has_value()) {
     controller_state.reference_joint_state = last_commanded_state_.value();
   }
+
+  controller_state.target_mode.mode = target_mode_value_;
 
   controller_state.fts_tare_offset.header.frame_id = "ati/tool_link";
   utils::eigen_to_wrench_msg(tare_offset_at_tip_,
@@ -1729,7 +1729,7 @@ bool Controller::update_joint_reference_linear_interpolation(
 
 //==============================================================================
 void Controller::interpolate_impedance_parameters() {
-  if (target_mode_ == TargetMode::Cartesian) {
+  if (target_mode_value_ == TargetMode::MODE_CARTESIAN) {
     // We use exponential smoothing to interpolate the stiffness and damping
     // matrices with the equation:
     //
@@ -1786,9 +1786,9 @@ void Controller::interpolate_impedance_parameters() {
 
     // Compute the total wrench at the tool tip
     // Force control via feedforward_wrench and wrench_feedback_gains.
-    Eigen::Matrix<double, 6, 1> wrench_feedback_gains_at_tip;
-    utils::wrench_msg_to_eigen(motion_update_.wrench_feedback_gains_at_tip,
-                               wrench_feedback_gains_at_tip);
+    Eigen::Matrix<double, 6, 1> wrench_feedback_gains_at_tip =
+        Eigen::Map<const Eigen::Matrix<double, 6, 1>>(
+            motion_update_.wrench_feedback_gains_at_tip.data());
     Eigen::Matrix<double, 6, 1> total_wrench_at_tip =
         feedforward_wrench_at_tip_ +
         wrench_feedback_gains_at_tip.cwiseProduct(feedforward_wrench_at_tip_ -
@@ -1801,7 +1801,7 @@ void Controller::interpolate_impedance_parameters() {
     impedance_params_.feedforward_wrench.tail<3>() =
         current_tool_state_.pose.linear() * total_wrench_at_tip.tail<3>();
 
-  } else if (target_mode_ == TargetMode::Joint) {
+  } else if (target_mode_value_ == TargetMode::MODE_JOINT) {
     // We use exponential smoothing to interpolate the stiffness and damping
     // vectors with the equation:
     //   S_(n+1) = (1-c) * S_n + c * S_target

@@ -13,12 +13,23 @@
         </geometry>
       </visual>
       <collision name="cube_collider_box">
-        <pose>0.011922 0.0 0.0 0.0 0.0 0.0</pose>
+        <pose>0.012047 0.0 0.0 0.0 0.0 0.0</pose>
         <geometry>
           <box>
-            <size>0.001937 0.027432 0.0093</size>
+            <size>0.001687 0.027432 0.0093</size>
           </box>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.5</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.5</friction>
+              <friction2>0.5</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <collision name="cube_collider_box.001">
         <pose>0.0 0.0 0.004225 0.0 0.0 0.0</pose>
@@ -29,44 +40,99 @@
         </geometry>
       </collision>
       <collision name="cube_collider_box_mid">
-        <pose>0.0 0.0 0.004225 0.0 0.0 0.0</pose>
+        <pose>0.0 0.0 0.00435 0.0 0.0 0.0</pose>
         <geometry>
           <box>
-            <size>0.0103 0.027432 0.00085</size>
+            <size>0.0103 0.027432 0.0006</size>
           </box>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.5</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.5</friction>
+              <friction2>0.5</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <collision name="cube_collider_box_mid02">
-        <pose>0.01 0.0 0.004225 0.0 0.0 0.0</pose>
+        <pose>0.01 0.0 0.00435 0.0 0.0 0.0</pose>
         <geometry>
           <box>
-            <size>0.005 0.027432 0.00085</size>
+            <size>0.005 0.027432 0.0006</size>
           </box>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.5</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.5</friction>
+              <friction2>0.5</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <collision name="cube_collider_box_mid03">
-        <pose>-0.01 0.0 0.004225 0.0 0.0 0.0</pose>
+        <pose>-0.01 0.0 0.00435 0.0 0.0 0.0</pose>
         <geometry>
           <box>
-            <size>0.005 0.027432 0.00085</size>
+            <size>0.005 0.027432 0.0006</size>
           </box>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.5</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.5</friction>
+              <friction2>0.5</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <collision name="cube_collider_box.002">
-        <pose>0.0 -0.0 -0.004225 0.0 0.0 0.0</pose>
+        <pose>0.0 -0.0 -0.00435 0.0 0.0 0.0</pose>
         <geometry>
           <box>
-            <size>0.02565 0.027432 0.00085</size>
+            <size>0.02565 0.027432 0.0006</size>
           </box>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.5</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.5</friction>
+              <friction2>0.5</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <collision name="cube_collider_box.003">
-        <pose>-0.011922 -0.0 0.0 0.0 0.0 0.0</pose>
+        <pose>-0.012047 -0.0 0.0 0.0 0.0 0.0</pose>
         <geometry>
           <box>
-            <size>0.001937 0.027432 0.0093</size>
+            <size>0.001687 0.027432 0.0093</size>
           </box>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.5</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.5</friction>
+              <friction2>0.5</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <collision name="cube_collider_box.004">
         <pose>-0.014683 -0.0 0.0 0.0 0.0 0.0</pose>
@@ -88,7 +154,7 @@
         <pose>-0.0 0.0 0.0 0.0 0.0 0.0</pose>
         <geometry>
           <box>
-            <size>0.003492 0.027432 0.0093</size>
+            <size>0.002992 0.027432 0.0093</size>
           </box>
         </geometry>
       </collision>
@@ -148,6 +214,15 @@
     <link name="sc_port_base_link">
       <pose>0 -0.002 0 1.5708 3.14159 0</pose>
     </link>
+
+    <link name="sc_port_base_link_entrance">
+      <pose relative_to="sc_port_base_link">0 0 -0.01564 0 0 0</pose>
+    </link>
+
+    <joint name="sc_port_base_entrance_joint" type="fixed">
+      <parent>sc_port_base_link</parent>
+      <child>sc_port_base_link_entrance</child>
+    </joint>
 
     <joint name="sc_port_base_joint" type="fixed">
       <parent>sc_port_link</parent>

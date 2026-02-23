@@ -27,14 +27,15 @@ GZ_BUILD_FROM_SOURCE=1 colcon build \
 
 ## Scoring Tiers Reference
 
-| Tier | Category | Description |
-|------|----------|-------------|
-| 1 | Model validity | Pass/fail: policy responded to `/insert_cable` action within timeout |
-| 2 | Trajectory jerk | Smoothness of arm motion (higher = smoother) |
-| 2 | Insertion force | Penalty for excessive force at the F/T sensor |
-| 2 | Trajectory efficiency | Reward for shorter end-effector path length (higher = more direct) |
-| 2 | Off-limit contacts | Penalty for collisions with the enclosure or task board |
-| 3 | Cable insertion | Score based on plug-port distance, task duration, and insertion success bonus |
+| Tier | Category | Range | Description |
+|------|----------|-------|-------------|
+| 1 | Model validity | 0-1 | Pass/fail: Prerequisite check that model loads and conforms to expectations |
+| 2 | Trajectory smoothness | 0-5 | Smoothness of arm motion; inversely proportional to jerk (higher = smoother) |
+| 2 | Task duration | 0-10 | Reward for faster completion; only awarded on successful insertion or plug is within close proximity to port |
+| 2 | Trajectory efficiency | 0-5 | Reward for shorter end-effector path length (higher = more direct) |
+| 2 | Insertion force | 0 to -10 | Penalty for force > 20 N sustained for > 1 second |
+| 2 | Off-limit contacts | 0 to -20 | Penalty for collisions with the enclosure or task board |
+| 3 | Cable insertion | -10 or 0 to 60 | -10 penalty for wrong-port insertion; 60 for correct-port insertion; 0-40 for partial insertion or close proximity |
 
 Results are written to `$AIC_RESULTS_DIR/scoring.yaml` when using the engine.
 The default directory is `~/aic_results`. Each engine run **overwrites** the previous
@@ -45,13 +46,12 @@ The default directory is `~/aic_results`. Each engine run **overwrites** the pre
 ## Example 1: Tier 1 Failure -- No Model Running
 
 **Goal:** Start the engine without launching `aic_model`. The engine should
-time out waiting for the policy to accept the `/insert_cable` action, resulting
-in Tier 1 failure.
+time out waiting for the policy to be discovered.
 
 **Expected outcome:**
 - The engine reports a timeout or failure for each trial.
 - Tier 1 should **fail** for all trials.
-- Tier 2 and Tier 3 are skipped (all scores are zero).
+- Tier 2 and Tier 3 will also fail in a similar manner.
 
 ### Terminal 0 -- Zenoh Router
 
@@ -72,17 +72,15 @@ ros2 launch aic_bringup aic_gz_bringup.launch.py \
 ## Example 2: CheatCode Reference Solution
 
 **Goal:** Run the CheatCode policy through the full engine pipeline as the reference
-solution. Exercises Tier 1 (pass), Tier 2 (jerk, force), and Tier 3
-(cable insertion).
+solution. Exercises Tier 1 (pass), Tier 2 (smoothness, duration, efficiency, force),
+and Tier 3 (cable insertion).
 
 **Expected outcome:**
 - All 3 trials complete.
 - Tier 1 should **pass** for all trials.
-- Tier 2 should show high jerk scores, no force penalty, and no off-limit contacts.
-- Tier 3 should report successful cable insertion for Trials 1 and 2.
-- **Known issue:** Trial 3 uses an SC plug. CheatCode cannot resolve the SC
-  cable tip TF frame, so it logs a transform timeout error and returns early.
-  Tier 2 and Tier 3 scores for Trial 3 will be low or zero.
+- Tier 2 should show high smoothness scores (up to 5), a task duration bonus
+  (up to 10) for successful trials, and no force penalty or off-limit contacts.
+- Tier 3 should report successful cable insertion (60 points) for all trials.
 
 ### Terminal 0 -- Zenoh Router
 
@@ -93,7 +91,7 @@ ros2 run rmw_zenoh_cpp rmw_zenohd
 ### Terminal 1 -- AIC Model (CheatCode)
 
 ```bash
-ros2 run aic_model aic_model --ros-args -p policy:=aic_example_policies.ros.CheatCode
+ros2 run aic_model aic_model --ros-args -p use_sim_time:=true -p policy:=aic_example_policies.ros.CheatCode
 ```
 
 ### Terminal 2 -- Simulation + Engine
@@ -110,14 +108,15 @@ ros2 launch aic_bringup aic_gz_bringup.launch.py \
 ## Example 3: WaveArm Baseline
 
 **Goal:** Run the WaveArm policy through the engine. The arm waves but never
-inserts the cable. Exercises Tier 1 (pass) and Tier 2 (smooth jerk, poor distance).
+inserts the cable. Exercises Tier 1 (pass) and Tier 2 (smoothness, efficiency).
 
 **Expected outcome:**
 - All 3 trials complete.
 - Tier 1 should **pass** for all trials.
-- Tier 2 should show high jerk scores (smooth waving motion), no force penalty,
-  and no off-limit contacts.
-- Tier 3 should report failed cable insertion for all trials (the arm waves but
+- Tier 2 should show high smoothness scores (smooth waving motion), no task
+  duration bonus (no successful insertion), no force penalty, and no off-limit
+  contacts.
+- Tier 3 should report 0 score for all trials (the arm waves but
   never approaches the port).
 
 ### Terminal 0 -- Zenoh Router
@@ -129,7 +128,7 @@ ros2 run rmw_zenoh_cpp rmw_zenohd
 ### Terminal 1 -- AIC Model (WaveArm)
 
 ```bash
-ros2 run aic_model aic_model --ros-args -p policy:=aic_example_policies.ros.WaveArm
+ros2 run aic_model aic_model --ros-args -p use_sim_time:=true -p policy:=aic_example_policies.ros.WaveArm
 ```
 
 ### Terminal 2 -- Simulation + Engine
@@ -152,9 +151,10 @@ scoring output.
 **Expected outcome:**
 - All 3 trials complete.
 - Tier 1 should **pass** for all trials.
-- Tier 2 should show an off-limit contacts penalty for all trials where a
+- Tier 2 should show an off-limit contacts penalty (-20) for all trials where a
   robot link (e.g. `forearm_link`) collided with the enclosure wall.
-- Tier 3 should report failed cable insertion for all trials.
+- Tier 3 should report 0 score for all trials (no insertion and plug outside of
+  port proximity).
 
 > **Note — Off-limit contacts:** "Off-limit" models are surfaces the robot must
 > not touch during the task. The `OffLimitContactsPlugin` monitors three models:
@@ -177,7 +177,7 @@ ros2 run rmw_zenoh_cpp rmw_zenohd
 ### Terminal 1 -- AIC Model (WallToucher)
 
 ```bash
-ros2 run aic_model aic_model --ros-args -p policy:=aic_example_policies.ros.WallToucher
+ros2 run aic_model aic_model --ros-args -p use_sim_time:=true -p policy:=aic_example_policies.ros.WallToucher
 ```
 
 ### Terminal 2 -- Simulation + Engine
@@ -201,9 +201,10 @@ insertion force penalty.
 **Expected outcome:**
 - All 3 trials complete.
 - Tier 1 should **pass** for all trials.
-- Tier 2 should show an insertion force penalty for all trials. Off-limit
-  contacts may also appear as a side effect of the wall contact.
-- Tier 3 should report failed cable insertion for all trials.
+- Tier 2 should show an insertion force penalty (-10) for all trials. Off-limit
+  contacts penalty (-20) may also appear as a side effect of the wall contact.
+- Tier 3 should report 0 score for all trials (no insertion and plug outside of
+  port proximity).
 
 ### Terminal 0 -- Zenoh Router
 
@@ -214,7 +215,7 @@ ros2 run rmw_zenoh_cpp rmw_zenohd
 ### Terminal 1 -- AIC Model (WallPresser)
 
 ```bash
-ros2 run aic_model aic_model --ros-args -p policy:=aic_example_policies.ros.WallPresser
+ros2 run aic_model aic_model --ros-args -p use_sim_time:=true -p policy:=aic_example_policies.ros.WallPresser
 ```
 
 ### Terminal 2 -- Simulation + Engine
@@ -237,10 +238,12 @@ producing minimal jerk (high Tier 2 jerk score).
 **Expected outcome:**
 - All 3 trials complete.
 - Tier 1 should **pass** for all trials.
-- Tier 2 should show high jerk scores (slow, smooth motion), no force penalty,
-  and no off-limit contacts. Compare with Example 7 (`SpeedDemon`) to see the
-  difference in jerk.
-- Tier 3 should report failed cable insertion for all trials.
+- Tier 2 should show high smoothness scores (slow, smooth motion), no task
+  duration bonus (plug not within close proximity to port), no force penalty, and no off-limit
+  contacts. Compare with Example 7 (`SpeedDemon`) to see the difference in
+  smoothness.
+- Tier 3 should report 0 score for all trials (no insertion and plug outside of
+  port proximity).
 
 ### Terminal 0 -- Zenoh Router
 
@@ -251,7 +254,7 @@ ros2 run rmw_zenoh_cpp rmw_zenohd
 ### Terminal 1 -- AIC Model (GentleGiant)
 
 ```bash
-ros2 run aic_model aic_model --ros-args -p policy:=aic_example_policies.ros.GentleGiant
+ros2 run aic_model aic_model --ros-args -p use_sim_time:=true -p policy:=aic_example_policies.ros.GentleGiant
 ```
 
 ### Terminal 2 -- Simulation + Engine
@@ -274,16 +277,12 @@ producing aggressive motion that triggers the insertion force penalty.
 **Expected outcome:**
 - All 3 trials complete.
 - Tier 1 should **pass** for all trials.
-- Tier 2 should show an insertion force penalty for all trials. The arm
+- Tier 2 should show lower smoothness scores than GentleGiant (Example 6) due to
+  aggressive motion, plus an insertion force penalty (-10) for all trials. The arm
   oscillates aggressively due to low damping, generating sustained force at
   the F/T sensor. The arm should visibly snap between positions.
-- Tier 3 should report failed cable insertion for all trials.
-
-> **Known limitation — jerk score:** The jerk metric averages the jerk
-> **vector** over time, so positive/negative contributions cancel out and
-> stillness dilutes the result. SpeedDemon and GentleGiant produce similar
-> jerk scores (~20) despite different motion profiles. The two policies are
-> differentiated by the **insertion force penalty** instead.
+- Tier 3 should report 0 score for all trials (no insertion and plug outside of
+  port proximity).
 
 ### Terminal 0 -- Zenoh Router
 
@@ -294,7 +293,7 @@ ros2 run rmw_zenoh_cpp rmw_zenohd
 ### Terminal 1 -- AIC Model (SpeedDemon)
 
 ```bash
-ros2 run aic_model aic_model --ros-args -p policy:=aic_example_policies.ros.SpeedDemon
+ros2 run aic_model aic_model --ros-args -p use_sim_time:=true -p policy:=aic_example_policies.ros.SpeedDemon
 ```
 
 ### Terminal 2 -- Simulation + Engine

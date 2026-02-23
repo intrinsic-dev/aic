@@ -370,18 +370,36 @@
       <pose relative_to="nic_card_link">0.01295 -0.031572 0.00501 4.69895 0 0</pose>
     </link>
 
+    <link name="sfp_port_0_link_entrance">
+      <pose relative_to="sfp_port_0_link">0 0 -0.0458 0 0 0</pose>
+    </link>
+
     <joint name="sfp_port_0_joint" type="fixed">
       <parent>nic_card_link</parent>
       <child>sfp_port_0_link</child>
+    </joint>
+
+    <joint name="sfp_port_0_entrance_joint" type="fixed">
+      <parent>sfp_port_0_link</parent>
+      <child>sfp_port_0_link_entrance</child>
     </joint>
 
     <link name="sfp_port_1_link">
       <pose relative_to="nic_card_link">-0.01025 -0.031572 0.00501 4.69895 0 0</pose>
     </link>
 
+    <link name="sfp_port_1_link_entrance">
+      <pose relative_to="sfp_port_1_link">0 0 -0.0458 0 0 0</pose>
+    </link>
+
     <joint name="sfp_port_1_joint" type="fixed">
       <parent>nic_card_link</parent>
       <child>sfp_port_1_link</child>
+    </joint>
+
+    <joint name="sfp_port_1_entrance_joint" type="fixed">
+      <parent>sfp_port_1_link</parent>
+      <child>sfp_port_1_link_entrance</child>
     </joint>
 
   </model>

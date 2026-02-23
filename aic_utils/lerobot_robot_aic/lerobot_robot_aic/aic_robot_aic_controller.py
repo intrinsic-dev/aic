@@ -14,43 +14,42 @@
 #  limitations under the License.
 #
 
-"""LeRobot driver for AIC robot"""
+"""LeRobot driver for AIC robot: derived from https://github.com/huggingface/lerobot/blob/main/src/lerobot/robots/robot.py"""
 
 import logging
 import time
 from dataclasses import dataclass, field
 from functools import cached_property
 from threading import Thread
-from typing import Any, TypedDict, cast
+from typing import Any, Callable, TypedDict, cast
 
 import cv2
 import numpy as np
 import rclpy
 from aic_control_interfaces.msg import (
     ControllerState,
-    MotionUpdate,
     JointMotionUpdate,
+    MotionUpdate,
+    TargetMode,
     TrajectoryGenerationMode,
 )
-from aic_control_interfaces.srv import (
-    ChangeTargetMode,
-)
+from aic_control_interfaces.srv import ChangeTargetMode
 from geometry_msgs.msg import Twist, Vector3, Wrench
 from lerobot.cameras import CameraConfig, make_cameras_from_configs
 from lerobot.robots import Robot, RobotConfig
 from lerobot.utils.errors import DeviceAlreadyConnectedError, DeviceNotConnectedError
-from rclpy.action.client import ActionClient, ClientGoalHandle
-from rclpy.callback_groups import ReentrantCallbackGroup
+from numpy.typing import NDArray
+from rclpy.client import Client
 from rclpy.executors import SingleThreadedExecutor
+from rclpy.impl.rcutils_logger import RcutilsLogger
 from rclpy.node import Node
 from rclpy.publisher import Publisher
 from rclpy.qos import qos_profile_sensor_data
 from rclpy.subscription import Subscription
-from rclpy.task import Future as RclFuture
 from sensor_msgs.msg import JointState
 
 from .aic_robot import aic_cameras, arm_joint_names
-from .types import MotionUpdateActionDict, JointMotionUpdateActionDict
+from .types import JointMotionUpdateActionDict, MotionUpdateActionDict
 
 logger = logging.getLogger(__name__)
 
@@ -112,6 +111,77 @@ class AICRobotAICControllerConfig(RobotConfig):
     )
 
 
+@dataclass(kw_only=True)
+class AICRos2Interface:
+    node: Node
+    executor: SingleThreadedExecutor
+    executor_thread: Thread
+    change_target_mode_client: Client[
+        ChangeTargetMode.Request, ChangeTargetMode.Response
+    ]
+    motion_update_pub: Publisher[MotionUpdate]
+    joint_motion_update_pub: Publisher[JointMotionUpdate]
+    controller_state_sub: Subscription[ControllerState]
+    joint_states_sub: Subscription[JointState]
+    logger: RcutilsLogger
+
+    @staticmethod
+    def connect(
+        controller_state_cb: Callable[[ControllerState], None],
+        joint_states_cb: Callable[[JointState], None],
+    ) -> "AICRos2Interface":
+        if not rclpy.ok():
+            rclpy.init()
+
+        node = Node("aic_robot_node")
+        logger = node.get_logger()
+        logger.set_level(logging.DEBUG)
+
+        change_target_mode_client = node.create_client(
+            ChangeTargetMode, f"/aic_controller/change_target_mode"
+        )
+
+        while not change_target_mode_client.wait_for_service():
+            node.get_logger().info(
+                f"Waiting for service 'aic_controller/change_target_mode'..."
+            )
+            time.sleep(1.0)
+
+        motion_update_pub = node.create_publisher(
+            MotionUpdate, "/aic_controller/pose_commands", 10
+        )
+
+        joint_motion_update_pub = node.create_publisher(
+            JointMotionUpdate, "/aic_controller/joint_commands", 10
+        )
+
+        controller_state_sub = node.create_subscription(
+            ControllerState, "/aic_controller/controller_state", controller_state_cb, 10
+        )
+
+        joint_states_sub = node.create_subscription(
+            JointState, "/joint_states", joint_states_cb, qos_profile_sensor_data
+        )
+
+        executor = SingleThreadedExecutor()
+        executor.add_node(node)
+        executor_thread = Thread(target=executor.spin, daemon=True)
+        executor_thread.start()
+        time.sleep(3)  # Give some time to connect to services and receive messages
+
+        return AICRos2Interface(
+            node=node,
+            executor=executor,
+            executor_thread=executor_thread,
+            change_target_mode_client=change_target_mode_client,
+            motion_update_pub=motion_update_pub,
+            joint_motion_update_pub=joint_motion_update_pub,
+            controller_state_sub=controller_state_sub,
+            joint_states_sub=joint_states_sub,
+            logger=logger,
+        )
+
+
 class AICRobotAICController(Robot):
     name = "ur5e_aic"
 
@@ -119,13 +189,8 @@ class AICRobotAICController(Robot):
         super().__init__(config)
         self.config = config
         self.cameras = make_cameras_from_configs(config.cameras)
-        self.node: Node | None = None
-        self.executor: SingleThreadedExecutor | None = None
-        self.executor_thread: Thread | None = None
-        self.motion_update_pub: Publisher[MotionUpdate] | None = None
-        self.controller_state_sub: Subscription[ControllerState] | None = None
+        self.ros2_interface: AICRos2Interface | None = None
         self.last_controller_state: ControllerState | None = None
-        self.joint_states_sub: Subscription[JointState] | None = None
         self.last_joint_states: JointState | None = None
 
         self._is_connected = False
@@ -147,23 +212,25 @@ class AICRobotAICController(Robot):
         print(f"Teleop frame id: {self.frame_id}")
         print(f"Teleop target mode: {self.teleop_target_mode}")
 
-    def send_change_control_mode_req(self, mode: ChangeTargetMode.Request):
+    def send_change_control_mode_req(self, mode: int):
+        if not self.ros2_interface:
+            raise DeviceNotConnectedError()
 
         req = ChangeTargetMode.Request()
-        req.target_mode = mode
+        req.target_mode.mode = mode
 
-        self.node.get_logger().info(f"Sending request to change control mode to {mode}")
+        self.ros2_interface.logger.info(
+            f"Sending request to change control mode to {mode}"
+        )
 
-        future = self.node.client.call_async(req)
+        response = self.ros2_interface.change_target_mode_client.call(req)
 
-        rclpy.spin_until_future_complete(self.node, future)
-
-        response = future.result()
-
-        if response.success:
-            self.node.get_logger().info(f"Successfully changed control mode to {mode}")
+        if not response or not response.success:
+            self.ros2_interface.logger.info(f"Failed to change control mode to {mode}")
         else:
-            self.node.get_logger().info(f"Failed to change control mode to {mode}")
+            self.ros2_interface.logger.info(
+                f"Successfully changed control mode to {mode}"
+            )
 
         time.sleep(0.5)
 
@@ -205,64 +272,30 @@ class AICRobotAICController(Robot):
         if self._is_connected:
             raise DeviceAlreadyConnectedError(f"{self} already connected")
 
-        if not rclpy.ok():
-            rclpy.init()
-
         if calibrate is True:
             print(
                 "Warning: Calibration is not supported, ensure the robot is already calibrated before running lerobot."
             )
 
-        self.node = Node("aic_robot_node")
-        self.node.get_logger().set_level(logging.DEBUG)
-
-        self.node.client = self.node.create_client(
-            ChangeTargetMode, f"/aic_controller/change_target_mode"
-        )
-
-        while not self.node.client.wait_for_service():
-            self.node.get_logger().info(
-                f"Waiting for service 'aic_controller/change_target_mode'..."
-            )
-            time.sleep(1.0)
-
-        change_mode_req = (
-            ChangeTargetMode.Request.TARGET_MODE_JOINT
-            if self.teleop_target_mode == "joint"
-            else ChangeTargetMode.Request.TARGET_MODE_CARTESIAN
-        )
-        self.send_change_control_mode_req(change_mode_req)
-
-        self.motion_update_pub = self.node.create_publisher(
-            MotionUpdate, "/aic_controller/pose_commands", 10
-        )
-
-        self.joint_motion_update_pub = self.node.create_publisher(
-            JointMotionUpdate, "/aic_controller/joint_commands", 10
-        )
-
         def controller_state_cb(msg: ControllerState):
             self.last_controller_state = msg
-
-        self.node.create_subscription(
-            ControllerState, "/aic_controller/controller_state", controller_state_cb, 10
-        )
 
         def joint_states_cb(msg: JointState):
             self.last_joint_states = msg
 
-        self.node.create_subscription(
-            JointState, "/joint_states", joint_states_cb, qos_profile_sensor_data
+        self.ros2_interface = AICRos2Interface.connect(
+            controller_state_cb, joint_states_cb
         )
+
+        change_mode_req = (
+            TargetMode.MODE_JOINT
+            if self.teleop_target_mode == "joint"
+            else TargetMode.MODE_CARTESIAN
+        )
+        self.send_change_control_mode_req(change_mode_req)
 
         for cam in self.cameras.values():
             cam.connect()
-
-        self.executor = SingleThreadedExecutor()
-        self.executor.add_node(self.node)
-        self.executor_thread = Thread(target=self.executor.spin, daemon=True)
-        self.executor_thread.start()
-        time.sleep(3)  # Give some time to connect to services and receive messages
 
         self._is_connected = True
 
@@ -317,15 +350,18 @@ class AICRobotAICController(Robot):
         }
 
         # Capture images from cameras
-        cam_obs = {}
+        cam_obs: dict[str, NDArray[Any]] = {}
         for cam_key, cam in self.cameras.items():
             start = time.perf_counter()
             try:
-                cam_obs[cam_key] = cam.async_read(timeout_ms=2000)
+                data = cam.async_read(timeout_ms=2000)
+                if data.size == 0:
+                    logging.debug("camera data is empty, device not ready yet?")
+                    continue  # data not ready yet
                 image_scale = self.config.camera_image_scaling[cam_key]
                 if image_scale != 1:
                     cam_obs[cam_key] = cv2.resize(
-                        cam_obs[cam_key],
+                        data,
                         None,
                         fx=image_scale,
                         fy=image_scale,
@@ -333,15 +369,14 @@ class AICRobotAICController(Robot):
                     )
             except Exception as e:
                 logger.error(f"Failed to read camera {cam_key}: {e}")
-                cam_obs[cam_key] = None
             dt_ms = (time.perf_counter() - start) * 1e3
             logger.debug(f"{self} read {cam_key}: {dt_ms:.1f}ms")
 
         obs = {**cam_obs, **controller_state_obs}
         return obs
 
-    def send_action_cartesian(self, action: dict[str, Any]) -> dict[str, Any]:
-        if not self._is_connected or not self.node:
+    def send_action_cartesian(self, action: dict[str, Any]) -> None:
+        if not self._is_connected or not self.ros2_interface:
             raise DeviceNotConnectedError()
 
         motion_update_action = cast(MotionUpdateActionDict, action)
@@ -361,7 +396,7 @@ class AICRobotAICController(Robot):
         twist_msg.angular.z = float(motion_update_action["angular.z"])
 
         msg = MotionUpdate()
-        msg.header.stamp = self.node.get_clock().now().to_msg()
+        msg.header.stamp = self.ros2_interface.node.get_clock().now().to_msg()
         msg.header.frame_id = self.frame_id
         msg.velocity = twist_msg
         msg.target_stiffness = np.diag([85.0, 85.0, 85.0, 85.0, 85.0, 85.0]).flatten()
@@ -370,16 +405,12 @@ class AICRobotAICController(Robot):
             force=Vector3(x=0.0, y=0.0, z=0.0),
             torque=Vector3(x=0.0, y=0.0, z=0.0),
         )
-        msg.wrench_feedback_gains_at_tip = Wrench(
-            force=Vector3(x=0.0, y=0.0, z=0.0),
-            torque=Vector3(x=0.0, y=0.0, z=0.0),
-        )
+        msg.wrench_feedback_gains_at_tip = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         msg.trajectory_generation_mode.mode = TrajectoryGenerationMode.MODE_VELOCITY
-        if self.motion_update_pub is not None:
-            self.motion_update_pub.publish(msg)
+        self.ros2_interface.motion_update_pub.publish(msg)
 
-    def send_action_joint(self, action: dict[str, Any]) -> dict[str, Any]:
-        if not self._is_connected or not self.node:
+    def send_action_joint(self, action: dict[str, Any]) -> None:
+        if not self._is_connected or not self.ros2_interface:
             raise DeviceNotConnectedError()
 
         joint_motion_update_action = cast(JointMotionUpdateActionDict, action)
@@ -396,14 +427,15 @@ class AICRobotAICController(Robot):
         msg.target_damping = [75.0, 75.0, 75.0, 75.0, 75.0, 75.0]
         msg.trajectory_generation_mode.mode = TrajectoryGenerationMode.MODE_VELOCITY
 
-        if self.joint_motion_update_pub is not None:
-            self.joint_motion_update_pub.publish(msg)
+        self.ros2_interface.joint_motion_update_pub.publish(msg)
 
     def send_action(self, action: dict[str, Any]) -> dict[str, Any]:
         if self.teleop_target_mode == "cartesian":
-            return self.send_action_cartesian(action)
+            self.send_action_cartesian(action)
+            return action
         elif self.teleop_target_mode == "joint":
-            return self.send_action_joint(action)
+            self.send_action_joint(action)
+            return action
         else:
             raise ValueError("Invalid teleop_target_mode")
 
@@ -414,12 +446,10 @@ class AICRobotAICController(Robot):
         for cam in self.cameras.values():
             cam.disconnect()
 
-        if self.node is not None:
-            self.node.destroy_node()
-
-        if self.executor_thread is not None:
-            if self.executor is not None:
-                self.executor.shutdown()
-            self.executor_thread.join()
+        if self.ros2_interface:
+            self.ros2_interface.node.destroy_node()
+            self.ros2_interface.executor.shutdown()
+            self.ros2_interface.executor_thread.join()
+            self.ros2_interface = None
 
         self._is_connected = False

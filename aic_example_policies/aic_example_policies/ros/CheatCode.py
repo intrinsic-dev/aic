@@ -16,7 +16,6 @@
 
 
 import numpy as np
-import time
 
 from aic_model.policy import (
     Policy,
@@ -47,8 +46,10 @@ class CheatCode(Policy):
         self, target_frame: str, source_frame: str, timeout_sec: float = 10.0
     ) -> bool:
         """Wait for a TF frame to become available."""
-        attempts = int(timeout_sec / 0.1)
-        for attempt in range(attempts):
+        start = self.time_now()
+        timeout = Duration(seconds=timeout_sec)
+        attempt = 0
+        while (self.time_now() - start) < timeout:
             try:
                 self._parent_node._tf_buffer.lookup_transform(
                     target_frame,
@@ -61,7 +62,8 @@ class CheatCode(Policy):
                     self.get_logger().info(
                         f"Waiting for transform '{source_frame}' -> '{target_frame}'..."
                     )
-                time.sleep(0.1)
+                attempt += 1
+                self.sleep_for(0.1)
         self.get_logger().error(
             f"Transform '{source_frame}' not available after {timeout_sec}s"
         )
@@ -70,7 +72,7 @@ class CheatCode(Policy):
     def go_to_pose(self, pose: Pose, timeout_sec: float) -> bool:
         self._set_pose_target(pose)
         # todo: smart stuff here to wait for the robot to reach the pose
-        time.sleep(timeout_sec)
+        self.sleep_for(timeout_sec)
         return True
 
     def calc_gripper_pose(
@@ -219,7 +221,7 @@ class CheatCode(Policy):
             return False
         port_transform = port_tf_stamped.transform
 
-        z_offset = 0.1
+        z_offset = 0.2
 
         # Over five seconds, smoothly interpolate from the current position to
         # a position above the port.
@@ -238,7 +240,7 @@ class CheatCode(Policy):
                 )
             except TransformException as ex:
                 self.get_logger().warn(f"TF lookup failed during interpolation: {ex}")
-                time.sleep(0.05)
+                self.sleep_for(0.05)
 
         # Descend until the cable is inserted into the port.
         while True:
@@ -254,10 +256,10 @@ class CheatCode(Policy):
                 )
             except TransformException as ex:
                 self.get_logger().warn(f"TF lookup failed during insertion: {ex}")
-                time.sleep(0.05)
+                self.sleep_for(0.05)
 
         self.get_logger().info("Waiting for connector to stabilize...")
-        time.sleep(5.0)
+        self.sleep_for(5.0)
 
         self.get_logger().info("CheatCode.insert_cable() exiting...")
         return True

@@ -16,8 +16,11 @@
 
 import time
 
+from rclpy.duration import Duration
+
 from aic_control_interfaces.msg import JointMotionUpdate
 from aic_control_interfaces.msg import TrajectoryGenerationMode
+from aic_control_interfaces.msg import TargetMode
 from aic_control_interfaces.srv import ChangeTargetMode
 from aic_model.policy import (
     Policy,
@@ -39,10 +42,11 @@ class GentleGiant(Policy):
     def _switch_target_mode(self, mode):
         """Switch controller between Cartesian (0) and Joint (1) mode."""
         req = ChangeTargetMode.Request()
-        req.target_mode = mode
+        req.target_mode.mode = mode
         future = self._parent_node.change_target_mode_client.call_async(req)
-        start = time.time()
-        while not future.done() and (time.time() - start) < 5.0:
+        start = self.time_now()
+        timeout = Duration(seconds=5.0)
+        while not future.done() and (self.time_now() - start) < timeout:
             time.sleep(0.01)
         if future.done():
             return future.result().success
@@ -67,7 +71,7 @@ class GentleGiant(Policy):
         self.get_logger().info("GentleGiant.insert_cable() enter")
         send_feedback("moving slowly and smoothly")
 
-        self._switch_target_mode(ChangeTargetMode.Request.TARGET_MODE_JOINT)
+        self._switch_target_mode(TargetMode.MODE_JOINT)
 
         # Low stiffness + high damping = slow, smooth motion (low jerk)
         stiffness = [50.0, 50.0, 50.0, 20.0, 20.0, 20.0]
@@ -80,20 +84,20 @@ class GentleGiant(Policy):
             self.get_logger().info(f"Cycle {cycle + 1}: moving to target")
             for _ in range(50):
                 self._publish_joint_command(target, stiffness, damping)
-                time.sleep(0.1)
+                self.sleep_for(0.1)
 
             self.get_logger().info(f"Cycle {cycle + 1}: returning to home")
             for _ in range(50):
                 self._publish_joint_command(home, stiffness, damping)
-                time.sleep(0.1)
+                self.sleep_for(0.1)
 
         # Return to home
         self.get_logger().info("Settling at home position")
         for _ in range(30):
             self._publish_joint_command(home, stiffness, damping)
-            time.sleep(0.1)
+            self.sleep_for(0.1)
 
-        self._switch_target_mode(ChangeTargetMode.Request.TARGET_MODE_CARTESIAN)
+        self._switch_target_mode(TargetMode.MODE_CARTESIAN)
 
         self.get_logger().info("GentleGiant.insert_cable() exiting...")
         return True
