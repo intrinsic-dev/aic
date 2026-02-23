@@ -28,6 +28,14 @@ Building locally may be useful if you:
 
 ## Setup Instructions
 
+If you are working on a machine with ROS 2 Kilted and Gazebo binaries already installed, you will need to remove these packages before proceeding with the source installation. This is because we will be building certain repositories from source, and having pre-installed binaries for the same packages can lead to conflicts.
+
+To purge the relevant binaries, run the following command:
+
+```bash
+sudo apt purge ros-kilted-ros2-control* ros-kilted-control* ros-kilted-kinematics* ros-kilted-joint-state-publisher ros-kilted-realtime-tools ros-kilted-gz*
+```
+
 ### 1. Add Gazebo Repository
 
 ```bash
