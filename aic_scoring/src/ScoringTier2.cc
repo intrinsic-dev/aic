@@ -454,10 +454,12 @@ void ScoringTier2::ControllerStateCallback(const ControllerStateMsg &_msg) {
 
   this->lastTaredFt = _msg.fts_tare_offset;
   // Duplicated timestamp check
-  if (this->endEffectorVelocities.size() > 0 && this->endEffectorVelocities.back().first == _msg.header.stamp) {
+  const auto stamp = toSeconds(_msg.header.stamp);
+  if (this->endEffectorVelocities.size() > 0 &&
+      this->endEffectorVelocities.back().first == stamp) {
     return;
   }
-  this->endEffectorVelocities.push_back({toSeconds(_msg.header.stamp), _msg.tcp_velocity.linear});
+  this->endEffectorVelocities.push_back({stamp, _msg.tcp_velocity.linear});
 }
 
 //////////////////////////////////////////////////
@@ -546,30 +548,31 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryJerkScore() const {
               this->endEffectorPoses.size());
   for (std::size_t i = 2; i < this->endEffectorVelocities.size(); ++i) {
     // Extract timestamps.
-    double t1 = this->endEffectorVelocities[i - 2].first;
+    double t0 = this->endEffectorVelocities[i - 2].first;
     double t1 = this->endEffectorVelocities[i - 1].first;
     double t2 = this->endEffectorVelocities[i].first;
     // RCLCPP_INFO(this->node->get_logger(), "First stamp is %.6f", t0);
 
     if (t0 >= t1 || t1 >= t2) {
       RCLCPP_WARN(this->node->get_logger(),
-                  "Non monotonic timestamps found, %.6f, %.6f, %.6f", t0, t1, t2);
+                  "Non monotonic timestamps found, %.6f, %.6f, %.6f", t0, t1,
+                  t2);
       continue;
     }
 
     // Extract velocities.
     double vx[3], vy[3], vz[3];
-    vx[0] = this->endEffectorVelocities[i - 2].x;
-    vx[1] = this->endEffectorVelocities[i - 1].x;
-    vx[2] = this->endEffectorVelocities[i].x;
+    vx[0] = this->endEffectorVelocities[i - 2].second.x;
+    vx[1] = this->endEffectorVelocities[i - 1].second.x;
+    vx[2] = this->endEffectorVelocities[i].second.x;
 
-    vy[0] = this->endEffectorVelocities[i - 2].y;
-    vy[1] = this->endEffectorVelocities[i - 1].y;
-    vy[2] = this->endEffectorVelocities[i].y;
+    vy[0] = this->endEffectorVelocities[i - 2].second.y;
+    vy[1] = this->endEffectorVelocities[i - 1].second.y;
+    vy[2] = this->endEffectorVelocities[i].second.y;
 
-    vz[0] = this->endEffectorVelocities[i - 2].z;
-    vz[1] = this->endEffectorVelocities[i - 1].z;
-    vz[2] = this->endEffectorVelocities[i].z;
+    vz[0] = this->endEffectorVelocities[i - 2].second.z;
+    vz[1] = this->endEffectorVelocities[i - 1].second.z;
+    vz[2] = this->endEffectorVelocities[i].second.z;
 
     // Compute finite differences for jerk.
     // v1 = (p1 - p0) / (t1 - t0), etc.
@@ -577,10 +580,10 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryJerkScore() const {
     // jerk = (a2 - a1) / (midpoint difference)
     auto computeJerk = [&](const double v[3]) {
       double a1 = (v[1] - v[0]) / (t1 - t0);
-      double a2 = (v[2] - v[1]) / (t2- t1);
+      double a2 = (v[2] - v[1]) / (t2 - t1);
 
-      double mid_a1 = (t[0] + t[1]) / 2.0;
-      double mid_a2 = (t[1] + t[2]) / 2.0;
+      double mid_a1 = (t0 + t1) / 2.0;
+      double mid_a2 = (t1 + t2) / 2.0;
 
       return (a2 - a1) / (mid_a2 - mid_a1);
     };
@@ -598,7 +601,7 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryJerkScore() const {
       double jz = computeJerk(vz);
 
       double jerkMag = std::sqrt(jx * jx + jy * jy + jz * jz);
-      double dt = (t3 - t0) / 3.0;
+      double dt = (t2 - t0) / 2.0;
       totalJerkTime += dt;
       accumLinearJerkMagnitude += jerkMag * dt;
     }
