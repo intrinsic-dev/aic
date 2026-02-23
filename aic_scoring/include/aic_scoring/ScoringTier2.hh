@@ -254,8 +254,10 @@ namespace aic_scoring
     private: void ControllerStateCallback(const ControllerStateMsg& _msg);
 
     /// \brief Calculates score related with the gripper trajectory jerk.
+    /// \param[in] _tier3 The result of tier3 scoring.
     /// \return Scoring for the trajectory jerk score.
-    private: Tier2Score::CategoryScore GetTrajectoryJerkScore() const;
+    private: Tier2Score::CategoryScore GetTrajectoryJerkScore(
+       const Tier3Score &_tier3) const;
 
     /// \brief Calculates score for trajectory efficiency (path length).
     /// \param[in] _minPathLength Minimum path length for max score (meters).
@@ -263,7 +265,8 @@ namespace aic_scoring
     /// \param[in] _tier3 The result of tier3 scoring.
     /// \return Scoring for the trajectory efficiency category.
     private: Tier2Score::CategoryScore GetTrajectoryEfficiencyScore(
-        double _minPathLength) const;
+        double _minPathLength,
+        const Tier3Score &_tier3) const;
 
     /// \brief Gets the transform for the specified entity at the requested time.
     /// \param[in] _t the time point to get the transform.
