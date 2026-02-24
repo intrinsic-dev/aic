@@ -6,24 +6,24 @@ The aic_interfaces folder contains custom message and action definitions that br
 
 ## Interface Overview
 
-The challenge utilizes a combination of standard ROS 2 interfaces and custom interfaces defined in the `aic_interfaces` folder:
+The challenge utilizes a combination of standard ROS 2 interfaces and custom interfaces defined in the [aic_interfaces](../aic_interfaces/) folder:
 
 ### Standard ROS 2 Interfaces
-- `sensor_msgs/msg/Image` - For camera image data
-- `sensor_msgs/msg/CameraInfo` - For camera calibration data
-- `geometry_msgs/msg/WrenchStamped` - For force/torque sensor data
-- `sensor_msgs/msg/JointState` - For joint state information
+- **[sensor_msgs/msg/Image](https://github.com/ros2/common_interfaces/blob/kilted/sensor_msgs/msg/Image.msg)** - For camera image data
+- **[sensor_msgs/msg/CameraInfo](https://github.com/ros2/common_interfaces/blob/kilted/sensor_msgs/msg/CameraInfo.msg)** - For camera calibration data
+- **[geometry_msgs/msg/WrenchStamped](https://github.com/ros2/common_interfaces/blob/kilted/geometry_msgs/msg/WrenchStamped.msg)** - For force/torque sensor data
+- **[sensor_msgs/msg/JointState](https://github.com/ros2/common_interfaces/blob/kilted/sensor_msgs/msg/JointState.msg)** - For joint state information
 
-### Custom Interfaces (Defined in aic_interfaces)
-* **[action/InsertCable.action](../aic_interfaces/aic_task_interfaces/action/InsertCable.action)**
+### Custom Interfaces (defined in [aic_interfaces](../aic_interfaces/))
+* **[aic_task_interfaces/action/InsertCable.action](../aic_interfaces/aic_task_interfaces/action/InsertCable.action)**
     * An Action interface used to trigger the Insertion Policy to perform the cable insertion task.
-* **[msg/Task.msg](../aic_interfaces/aic_task_interfaces/msg/Task.msg)**
+* **[aic_task_interfaces/msg/Task.msg](../aic_interfaces/aic_task_interfaces/msg/Task.msg)**
     * Describes the specific parameters and state of the cable insertion task.
-* **[msg/MotionUpdate.msg](../aic_interfaces/aic_control_interfaces/msg/MotionUpdate.msg)**
+* **[aic_control_interfaces/msg/MotionUpdate.msg](../aic_interfaces/aic_control_interfaces/msg/MotionUpdate.msg)**
     * Describes a target pose and the associated tolerances for Cartesian-space control.
-* **[msg/JointMotionUpdate.msg](../aic_interfaces/aic_control_interfaces/msg/JointMotionUpdate.msg)**
+* **[aic_control_interfaces/msg/JointMotionUpdate.msg](../aic_interfaces/aic_control_interfaces/msg/JointMotionUpdate.msg)**
     * Describes a target joint configuration and the associated tolerances for joint-space control.
-* **[msg/Observation.msg](../aic_interfaces/aic_model_interfaces/msg/Observation.msg)**
+* **[aic_model_interfaces/msg/Observation.msg](../aic_interfaces/aic_model_interfaces/msg/Observation.msg)**
     * A snapshot of the world that the `aic_model` node subscribes to.
 
 ---
