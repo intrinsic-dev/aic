@@ -43,7 +43,7 @@ The following topics provide sensory data and state information to the model.
 | `/center_camera/camera_info` | `sensor_msgs/msg/CameraInfo` | Calibration data for the center wrist camera. |
 | `/right_camera/image` | `sensor_msgs/msg/Image` | Rectified image data from the right wrist camera. |
 | `/right_camera/camera_info` | `sensor_msgs/msg/CameraInfo` | Calibration data for the right wrist camera. |
-| `/axia80_m20/wrench` | `geometry_msgs/msg/WrenchStamped` | Force/Torque sensor data. |
+| `/fts_broadcaster/wrench` | `geometry_msgs/msg/WrenchStamped` | Force/Torque sensor data. |
 | `/joint_states` | `sensor_msgs/msg/JointState` | Current state of the robot joints. |
 | `/gripper_state` | `sensor_msgs/msg/JointState` | Current state of the end-effector/gripper. |
 | `/tf` | `tf2_msgs/msg/TFMessage` | Transform data for dynamic coordinate frames. |
