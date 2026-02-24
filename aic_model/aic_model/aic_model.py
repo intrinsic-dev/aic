@@ -249,7 +249,7 @@ class AicModel(LifecycleNode):
 
     async def insert_cable_execute_callback(self, goal_handle: ServerGoalHandle):
         self.get_logger().info("Entering insert_cable_execute_callback()")
-        await self.set_cartesian_mode()
+        self.set_cartesian_mode()
         self._action_thread_result = None
         self._action_thread = threading.Thread(
             target=self.action_thread_func,
@@ -311,21 +311,20 @@ class AicModel(LifecycleNode):
 
         self.get_logger().info("Exiting insert_cable execute loop")
 
-    async def set_target_mode(self, target_mode):
+    def set_target_mode(self, target_mode):
         target_mode_request = ChangeTargetMode.Request()
         target_mode_request.target_mode.mode = target_mode
-        future = self.change_target_mode_client.call_async(target_mode_request)
-        await future
-        # rclpy.spin_until_future_complete(self, future)
-        response = future.result()
+        response = self._change_target_mode_client.call(target_mode_request)
         if not response.success:
             self.get_logger().error("Unable to set target mode")
+        else:
+            self.get_logger().info("Successfully set target mode")
 
-    async def set_joint_mode(self):
-        await self.set_target_mode(TargetMode.MODE_JOINT)
+    def set_joint_mode(self):
+        self.set_target_mode(TargetMode.MODE_JOINT)
 
-    async def set_cartesian_mode(self):
-        await self.set_target_mode(TargetMode.MODE_CARTESIAN)
+    def set_cartesian_mode(self):
+        self.set_target_mode(TargetMode.MODE_CARTESIAN)
 
 
 def main(args=None):

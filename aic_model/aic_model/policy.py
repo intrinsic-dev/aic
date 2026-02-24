@@ -55,11 +55,7 @@ class Policy(ABC):
 
     def sleep_for(self, duration_sec: float) -> None:
         """Sleep for the given duration using the node's clock (sim-time aware)."""
-        clock = self.get_clock()
-        start = clock.now()
-        target = start + Duration(seconds=duration_sec)
-        while clock.now() < target:
-            time.sleep(0.001)
+        clock = self.get_clock().sleep_for(Duration(seconds=duration_sec))
 
     @abstractmethod
     def insert_cable(
