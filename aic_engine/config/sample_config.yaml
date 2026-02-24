@@ -28,7 +28,7 @@ scoring:
         type: "ros_gz_interfaces/msg/Contacts"
     - topic:
     # Insertion force sensed by the force torque sensor
-        name: "/axia80_m20/wrench"
+        name: "/fts_broadcaster/wrench"
         type: "geometry_msgs/msg/WrenchStamped"
     - topic:
     # Joint commands sent from the model to the robot controller
