@@ -534,7 +534,7 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryJerkScore(
 
   const double kMaxJerkScore = 5.0;
   const double kMinJerkScore = 0.0;
-  const double kMaxJerkValue = 25000.0;
+  const double kMaxJerkValue = 500.0;
   const double kMinJerkValue = 0.0;
 
   if (!this->task_end_time.has_value()) {
