@@ -29,19 +29,25 @@ Quantitative metrics measuring the quality of the robot's motion during task exe
 
 ### Trajectory smoothness (0-5 points)
 
-Measures the smoothness of the end effector trajectory. Lower jerk values indicate smoother, more controlled motion. Jerk is only accumulated when the arm is moving (speed > 0.01 m/s), so stationary periods do not dilute the average.
+Measures the smoothness of the end effector trajectory. Lower jerk values
+indicate smoother, more controlled motion. Jerk is only accumulated when the
+arm is moving (speed > 0.01 m/s), so stationary periods do not dilute the
+average. Only awarded if either the task is completed successfully, or the
+final position of the plug is within close proximity to the target port
+(Tier 3 score > 0).
 
 - **Metric**: Time-weighted average of linear jerk magnitude (m/s³)
 - **Scoring**: Inversely proportional to jerk
   - Jerk = 0 m/s³ → 5 points (maximum)
   - Jerk ≥ 25,000 m/s³ → 0 points (minimum)
   - Linear interpolation between thresholds
+- **Not awarded**: 0 points if the final position of the plug is outside the max acceptable distance of the target port (Tier 3 score <= 0).
 
 ### Task duration (0-10 points)
 
-Rewards faster task completion. Only awarded if either
-* the task is completed successfully, or
-* the final position of the plug is within close proximity to the target port (Tier 3 score > 0). The max acceptable distance is set to half of the distance between the initial position of the plug and the target port.
+Rewards faster task completion. Only awarded if either the task is completed
+successfully, or the final position of the plug is within close proximity to
+the target port (Tier 3 score > 0).
 
 - **Metric**: Elapsed time from task start to task end
 - **Scoring**: Inversely proportional to duration
@@ -53,7 +59,9 @@ Rewards faster task completion. Only awarded if either
 ### Trajectory efficiency (0-5 points)
 
 Measures the total distance traveled by the end effector during task execution.
-Shorter, more direct paths score higher.
+Shorter, more direct paths score higher. Only awarded if either the task is
+completed successfully, or the final position of the plug is within close
+proximity to the target port (Tier 3 score > 0).
 
 - **Metric**: Cumulative Euclidean distance of end-effector positions (meters)
 - **Scoring**: Inversely proportional to total path length
@@ -61,6 +69,7 @@ Shorter, more direct paths score higher.
   - Path length ≥ 1 m + initial plug-port distance → 0 points (minimum)
   - Linear interpolation between thresholds
 - The minimum path length (for a perfect score) is set dynamically to the initial Euclidean distance between the plug and port at the start of the trial
+- **Not awarded**: 0 points if the final position of the plug is outside the max acceptable distance of the target port (Tier 3 score <= 0).
 
 ### Insertion force penalty (0 to -10 points)
 

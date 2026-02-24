@@ -30,9 +30,9 @@ GZ_BUILD_FROM_SOURCE=1 colcon build \
 | Tier | Category | Range | Description |
 |------|----------|-------|-------------|
 | 1 | Model validity | 0-1 | Pass/fail: Prerequisite check that model loads and conforms to expectations |
-| 2 | Trajectory smoothness | 0-5 | Smoothness of arm motion; inversely proportional to jerk (higher = smoother) |
+| 2 | Trajectory smoothness | 0-5 | Smoothness of arm motion; inversely proportional to jerk (higher = smoother); only awarded on successful insertion or plug is within close proximity to port |
 | 2 | Task duration | 0-10 | Reward for faster completion; only awarded on successful insertion or plug is within close proximity to port |
-| 2 | Trajectory efficiency | 0-5 | Reward for shorter end-effector path length (higher = more direct) |
+| 2 | Trajectory efficiency | 0-5 | Reward for shorter end-effector path length (higher = more direct); only awarded on successful insertion or plug is within close proximity to port |
 | 2 | Insertion force | 0 to -10 | Penalty for force > 20 N sustained for > 1 second |
 | 2 | Off-limit contacts | 0 to -20 | Penalty for collisions with the enclosure or task board |
 | 3 | Cable insertion | -10 or 0 to 60 | -10 penalty for wrong-port insertion; 60 for correct-port insertion; 0-40 for partial insertion or close proximity |
@@ -233,15 +233,14 @@ ros2 launch aic_bringup aic_gz_bringup.launch.py \
 
 **Goal:** Run the `GentleGiant` policy through the engine. This policy moves the
 arm slowly between two joint configurations using low stiffness and high damping,
-producing minimal jerk (high Tier 2 jerk score).
+producing minimal jerk.
 
 **Expected outcome:**
 - All 3 trials complete.
 - Tier 1 should **pass** for all trials.
-- Tier 2 should show high smoothness scores (slow, smooth motion), no task
+- Tier 2 should show no smoothness score (plug not within close proximity to port), no task
   duration bonus (plug not within close proximity to port), no force penalty, and no off-limit
-  contacts. Compare with Example 7 (`SpeedDemon`) to see the difference in
-  smoothness.
+  contacts.
 - Tier 3 should report 0 score for all trials (no insertion and plug outside of
   port proximity).
 
@@ -277,8 +276,8 @@ producing aggressive motion that triggers the insertion force penalty.
 **Expected outcome:**
 - All 3 trials complete.
 - Tier 1 should **pass** for all trials.
-- Tier 2 should show lower smoothness scores than GentleGiant (Example 6) due to
-  aggressive motion, plus an insertion force penalty (-10) for all trials. The arm
+- Tier 2 should show no smoothness score (plug not within close proximity to port),
+  plus an insertion force penalty (-10) for all trials. The arm
   oscillates aggressively due to low damping, generating sustained force at
   the F/T sensor. The arm should visibly snap between positions.
 - Tier 3 should report 0 score for all trials (no insertion and plug outside of
