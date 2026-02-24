@@ -610,10 +610,8 @@ EngineState Engine::run() {
   // TODO(luca) refactor cleanup into single function
   this->cleanup_model_node();
   this->shutdown_model_node();
-  this->score_run(score);
-  // Run validation after scoring to allow some time for publisher destruction
-  // propagation
   this->validate_model_shutdown();
+  this->score_run(score);
 
   // Count successful and failed trials
   size_t successful_trials = 0;
@@ -1571,27 +1569,38 @@ bool Engine::validate_model_shutdown() const {
   }
 
   auto node_graph = node_->get_node_graph_interface();
-  const std::size_t pose_command_publishers =
+  const auto start = node_->now();
+  const auto timeout = rclcpp::Duration::from_seconds(2.0);
+
+  while (node_->now() - start < timeout) {
+    const std::size_t pose_pubs =
+        node_graph->count_publishers("/aic_controller/pose_commands");
+    const std::size_t joint_pubs =
+        node_graph->count_publishers("/aic_controller/joint_commands");
+    if (pose_pubs == 0 && joint_pubs == 0) {
+      return true;
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  }
+
+  // Timed out — report all violations
+  const std::size_t pose_pubs =
       node_graph->count_publishers("/aic_controller/pose_commands");
-  if (pose_command_publishers > 0) {
-    RCLCPP_ERROR(node_->get_logger(),
-                 "Detected %lu pose command publishers in shutdown state, this "
-                 "is not allowed and might affect scoring in the future",
-                 pose_command_publishers);
-    return false;
-  }
-
-  const std::size_t joint_command_publishers =
+  const std::size_t joint_pubs =
       node_graph->count_publishers("/aic_controller/joint_commands");
-  if (joint_command_publishers > 0) {
-    RCLCPP_ERROR(node_->get_logger(),
-                 "Detected %lu joint command publishers in shutdown state, "
-                 "this is not allowed and might affect scoring in the future",
-                 joint_command_publishers);
-    return false;
+  if (pose_pubs > 0) {
+    RCLCPP_WARN(node_->get_logger(),
+                "Detected %zu pose command publishers in shutdown state, this "
+                "is not allowed and might affect scoring in the future",
+                pose_pubs);
   }
-
-  return true;
+  if (joint_pubs > 0) {
+    RCLCPP_WARN(node_->get_logger(),
+                "Detected %zu joint command publishers in shutdown state, "
+                "this is not allowed and might affect scoring in the future",
+                joint_pubs);
+  }
+  return false;
 }
 
 //==============================================================================
