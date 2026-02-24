@@ -20,6 +20,7 @@ find_package(std_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(tf2_msgs REQUIRED)
+find_package(Eigen3 REQUIRED)
 find_package(yaml-cpp REQUIRED)
 
 # Create a library that can be linked against
@@ -39,6 +40,7 @@ target_link_libraries(${PROJECT_NAME}
     tf2::tf2
     tf2_geometry_msgs::tf2_geometry_msgs
     ${tf2_msgs_TARGETS}
+    Eigen3::Eigen
     yaml-cpp
     gz-math${GZ_MATH_VER}::gz-math${GZ_MATH_VER})
 

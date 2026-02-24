@@ -553,18 +553,18 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryJerkScore(
         "not assigning jerk bonus");
   }
 
-  // Debug output
-  // std::cout << "(" << _tf.transform.translation.x << " " <<
-  // _tf.transform.translation.y
-  //           << " " << _tf.transform.translation.z << ")" << std::endl;
+  if (this->endEffectorVelocities.size() < kWindowSize) {
+    return CategoryScore(
+        0.0, "Insufficient velocity samples for jerk computation.");
+  }
+
+  Eigen::MatrixXd A(kWindowSize, 3);
+  Eigen::VectorXd y_x(kWindowSize), y_y(kWindowSize), y_z(kWindowSize);
 
   auto computeJerk = [&](const std::size_t index) {
     const auto &data = this->endEffectorVelocities;
-    // Third order polynomial approximation (y = c0 + c1 * dt + c2 * dt^2)
-    Eigen::MatrixXd A(kWindowSize, 3);
-    Eigen::VectorXd y_x(kWindowSize);
-    Eigen::VectorXd y_y(kWindowSize);
-    Eigen::VectorXd y_z(kWindowSize);
+    // Second order (quadratic) polynomial fit to velocity
+    // (y = c0 + c1 * dt + c2 * dt^2)
 
     const double tCenter = data[index].first;
 
@@ -583,9 +583,10 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryJerkScore(
     }
 
     // Solve for the polynomial coefficients
-    Eigen::VectorXd c_x = A.colPivHouseholderQr().solve(y_x);
-    Eigen::VectorXd c_y = A.colPivHouseholderQr().solve(y_y);
-    Eigen::VectorXd c_z = A.colPivHouseholderQr().solve(y_z);
+    auto qr = A.colPivHouseholderQr();
+    Eigen::VectorXd c_x = qr.solve(y_x);
+    Eigen::VectorXd c_y = qr.solve(y_y);
+    Eigen::VectorXd c_z = qr.solve(y_z);
 
     // The jerk is the second derivative of the local polynomial approximation,
     // hence 2 * c2
@@ -601,7 +602,7 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryJerkScore(
 
   for (std::size_t i = k; i < this->endEffectorVelocities.size() - k; ++i) {
     const auto &v = this->endEffectorVelocities[i].second;
-    const double kVelocityThreshold = 0.01;
+    constexpr double kVelocityThreshold = 0.01;
     // Compute velocity at the central sample to gate jerk accumulation.
     // Only accumulate jerk when the arm is actually moving, so that stillness
     // periods don't dilute the average toward zero.
