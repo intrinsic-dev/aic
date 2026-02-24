@@ -29,7 +29,9 @@ Quantitative metrics measuring the quality of the robot's motion during task exe
 
 ### Trajectory smoothness (0-5 points)
 
-Measures the smoothness of the end effector trajectory. Lower jerk values indicate smoother, more controlled motion. Jerk is only accumulated when the arm is moving (speed > 0.01 m/s), so stationary periods do not dilute the average.
+Measures the smoothness of the end effector trajectory. Lower jerk values indicate smoother, more controlled motion. Jerk is only accumulated when the arm is moving (speed > 0.01 m/s), so stationary periods do not dilute the average. Only awarded if either
+* the task is completed successfully, or
+* the final position of the plug is within close proximity to the target port (Tier 3 score > 0).
 
 - **Metric**: Time-weighted average of linear jerk magnitude (m/s³)
 - **Scoring**: Inversely proportional to jerk
@@ -41,7 +43,7 @@ Measures the smoothness of the end effector trajectory. Lower jerk values indica
 
 Rewards faster task completion. Only awarded if either
 * the task is completed successfully, or
-* the final position of the plug is within close proximity to the target port (Tier 3 score > 0). The max acceptable distance is set to half of the distance between the initial position of the plug and the target port.
+* the final position of the plug is within close proximity to the target port (Tier 3 score > 0).
 
 - **Metric**: Elapsed time from task start to task end
 - **Scoring**: Inversely proportional to duration
@@ -53,7 +55,9 @@ Rewards faster task completion. Only awarded if either
 ### Trajectory efficiency (0-5 points)
 
 Measures the total distance traveled by the end effector during task execution.
-Shorter, more direct paths score higher.
+Shorter, more direct paths score higher. Only awarded if either
+* the task is completed successfully, or
+* the final position of the plug is within close proximity to the target port (Tier 3 score > 0).
 
 - **Metric**: Cumulative Euclidean distance of end-effector positions (meters)
 - **Scoring**: Inversely proportional to total path length
