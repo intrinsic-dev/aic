@@ -143,6 +143,8 @@ class AicModel(LifecycleNode):
     def on_shutdown(self, state: LifecycleState) -> TransitionCallbackReturn:
         self.get_logger().info(f"on_shutdown({state})")
         self.is_active = False
+        self.destroy_publisher(self.joint_motion_update_pub)
+        self.joint_motion_update_pub = None
         self.destroy_publisher(self.motion_update_pub)
         self.motion_update_pub = None
         self.destroy_subscription(self.observation_sub)

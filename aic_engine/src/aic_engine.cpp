@@ -611,6 +611,9 @@ EngineState Engine::run() {
   this->cleanup_model_node();
   this->shutdown_model_node();
   this->score_run(score);
+  // Run validation after scoring to allow some time for publisher destruction
+  // propagation
+  this->validate_model_shutdown();
 
   // Count successful and failed trials
   size_t successful_trials = 0;
@@ -1556,6 +1559,42 @@ bool Engine::shutdown_model_node() {
 }
 
 //==============================================================================
+bool Engine::validate_model_shutdown() const {
+  if (skip_model_ready_) {
+    RCLCPP_INFO(node_->get_logger(),
+                "Skipping model shutdown validation as per parameter.");
+    return true;
+  }
+
+  if (!this->model_discovered_) {
+    return true;
+  }
+
+  auto node_graph = node_->get_node_graph_interface();
+  const std::size_t pose_command_publishers =
+      node_graph->count_publishers("/aic_controller/pose_commands");
+  if (pose_command_publishers > 0) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "Detected %lu pose command publishers in shutdown state, this "
+                 "is not allowed and might affect scoring in the future",
+                 pose_command_publishers);
+    return false;
+  }
+
+  const std::size_t joint_command_publishers =
+      node_graph->count_publishers("/aic_controller/joint_commands");
+  if (joint_command_publishers > 0) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "Detected %lu joint command publishers in shutdown state, "
+                 "this is not allowed and might affect scoring in the future",
+                 joint_command_publishers);
+    return false;
+  }
+
+  return true;
+}
+
+//==============================================================================
 void Engine::reset_after_trial(const Trial& trial) {
   RCLCPP_INFO(node_->get_logger(), "Resetting after trial completion...");
 
@@ -1565,7 +1604,6 @@ void Engine::reset_after_trial(const Trial& trial) {
   }
 
   is_first_trial_ = false;
-  model_discovered_ = false;
 
   reset_simulator(trial);  // Homes robot by default
 

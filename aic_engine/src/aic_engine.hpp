@@ -297,6 +297,11 @@ class Engine {
   /// @return True if shutdown succeeded, false otherwise.
   bool shutdown_model_node();
 
+  /// @brief Validate that the model is behaving as expected in shutdown state
+  /// (i.e. it has no robot command publishers).
+  /// @return True if model passed shutdown validation, false otherwise.
+  bool validate_model_shutdown() const;
+
   /// @brief Stop the bag recording and score the current trial
   /// @param[in] A reference to the current trial score to update.
   void score_trial(TrialScore& trial);
