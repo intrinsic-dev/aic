@@ -93,7 +93,7 @@
 - A snapshot of the robot's sensory environment (aic_model_interfaces/msg/Observation) including camera images, joint states, force measurements, and transform frames.
 
 **Force/Torque Sensor (F/T Sensor)**
-- Measures forces and torques applied during manipulation. Data published to `/axia80_m20/wrench` topic, enabling sensitive force feedback control.
+- Measures forces and torques applied during manipulation. Data published to `/axia80_m20/wrench` topic, enabling sensitive force feedback control. The F/T sensor is typically tared before each training episode, see [Taring before Training](../docs/scene_description.md#Taring-before-training) for more details.
 
 **Wrist Cameras**
 - Three RGB cameras mounted on the robot's wrist:

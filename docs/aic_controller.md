@@ -89,12 +89,12 @@ The controller publishes real-time data to `/aic_controller/controller_state` ([
 
 The controller provides a service to tare (zero) the force-torque sensor at `/aic_controller/tare_ft_sensor`. This service resets the current force/torque readings to zero, which is useful for calibrating the sensor or removing sensor bias. The tared offset is published in the [`ControllerState`](../aic_interfaces/aic_control_interfaces/msg/ControllerState.msg) message as `fts_tare_offset`.
 
+> **Note:** Before the start of each training episode (i.e. before teleoperation or spawning cables in the environment), it is important to tare the Force/Torque Sensor (F/T Sensor) for accurate force-torque feedback.
+
 ```bash
 # Tare the FT sensor
 ros2 service call /aic_controller/tare_ft_sensor std_srvs/srv/Trigger
 ```
-
-Before the start of each training episode, it is important to tare the  Force/Torque Sensor (F/T Sensor). This is already done on controller activation within the `tare_fts_on_controller_activate` event in the [aic_gz_bringup.launch.py](../aic_bringup/launch/aic_gz_bringup.launch.py) bringup.
 
 > **Important:** This service will **not be available** during the evaluation. The force-torque sensor readings are used for scoring, and participants cannot tare the sensor during competition runs.
 
