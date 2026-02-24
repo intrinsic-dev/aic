@@ -253,8 +253,6 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
   this->TfStaticCallback(msg);
 
   this->state = State::Idle;
-  tier2_score.add_category_score("trajectory smoothness",
-                                 this->GetTrajectoryJerkScore());
   // Compute initial plug-port distance for trajectory efficiency scoring.
   // The robot must travel at least this distance, so it becomes the minimum
   // path length for a perfect score.
@@ -272,12 +270,14 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
   tier2_score.add_category_score("insertion force",
                                  this->GetInsertionForceScore());
   tier2_score.add_category_score("contacts", this->GetContactsScore());
-  tier2_score.add_category_score(
-      "trajectory efficiency",
-      this->GetTrajectoryEfficiencyScore(minPathLength));
   tier3_score = this->ComputeTier3Score();
   tier2_score.add_category_score("duration",
                                  this->GetTaskDurationScore(tier3_score));
+  tier2_score.add_category_score("trajectory smoothness",
+                                 this->GetTrajectoryJerkScore(tier3_score));
+  tier2_score.add_category_score(
+      "trajectory efficiency",
+      this->GetTrajectoryEfficiencyScore(minPathLength, tier3_score));
   return {tier2_score, tier3_score};
 }
 
@@ -516,13 +516,25 @@ static double CalculateInverseProportionalScore(const double max_score,
 }
 
 //////////////////////////////////////////////////
-Tier2Score::CategoryScore ScoringTier2::GetTrajectoryJerkScore() const {
+Tier2Score::CategoryScore ScoringTier2::GetTrajectoryJerkScore(
+    const Tier3Score &_tier3) const {
   using CategoryScore = Tier2Score::CategoryScore;
 
   const double kMaxJerkScore = 5.0;
   const double kMinJerkScore = 0.0;
   const double kMaxJerkValue = 25000.0;
   const double kMinJerkValue = 0.0;
+
+  if (!this->task_end_time.has_value()) {
+    return CategoryScore(0, "Task not completed.");
+  }
+
+  if (_tier3.total_score() <= 0) {
+    return CategoryScore(
+        0,
+        "Plug is not within max bounding radius from target port, "
+        "not assigning jerk bonus");
+  }
 
   // Debug output
   // std::cout << "(" << _tf.transform.translation.x << " " <<
@@ -636,8 +648,19 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryJerkScore() const {
 
 //////////////////////////////////////////////////
 Tier2Score::CategoryScore ScoringTier2::GetTrajectoryEfficiencyScore(
-    double _minPathLength) const {
+    double _minPathLength, const Tier3Score &_tier3) const {
   using CategoryScore = Tier2Score::CategoryScore;
+
+  if (!this->task_end_time.has_value()) {
+    return CategoryScore(0, "Task not completed.");
+  }
+
+  if (_tier3.total_score() <= 0) {
+    return CategoryScore(
+        0,
+        "Plug is not within max bounding radius from target port, "
+        "not assigning efficiency bonus");
+  }
 
   double totalPathLength = 0.0;
   for (std::size_t i = 1; i < this->endEffectorPoses.size(); ++i) {
@@ -705,7 +728,7 @@ Tier3Score ScoringTier2::GetDistanceScore() const {
   const double kEntranceXYTol = 0.005;
 
   if (!this->task_end_time.has_value()) {
-    return Tier3Score(0, "Time computation failed, task end time not set");
+    return Tier3Score(0, "Task not completed.");
   }
 
   const auto end_time =
@@ -782,6 +805,10 @@ Tier3Score ScoringTier2::ComputeTier3Score() const {
   // in GetDistanceScore (and up to kMaxInsertionScore)
   constexpr double kInsertionCompletionScore = 60.0;
   constexpr double kInsertionPenalty = -10.0;
+
+  if (!this->task_end_time.has_value()) {
+    return Tier3Score(0, "Task not completed.");
+  }
 
   // Check if insertion is completed or not
   std::stringstream sstream;
@@ -922,7 +949,7 @@ Tier2Score::CategoryScore ScoringTier2::GetTaskDurationScore(
   }
 
   if (!this->task_end_time.has_value()) {
-    return CategoryScore(0, "Time computation failed, task end time not set");
+    return CategoryScore(0, "Task not completed.");
   }
 
   const rclcpp::Duration task_duration =
