@@ -21,6 +21,7 @@
 #include <tf2/LinearMath/Quaternion.h>
 #include <yaml-cpp/yaml.h>
 
+#include <Eigen/Dense>
 #include <algorithm>
 #include <chrono>
 #include <cmath>
@@ -534,8 +535,12 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryJerkScore(
 
   const double kMaxJerkScore = 5.0;
   const double kMinJerkScore = 0.0;
-  const double kMaxJerkValue = 500.0;
+  const double kMaxJerkValue = 50.0;
   const double kMinJerkValue = 0.0;
+
+  // Filter parameters, window size in samples. For 500 hz = 30 ms
+  static constexpr std::size_t kWindowSize = 15;
+  static constexpr std::size_t k = kWindowSize / 2;
 
   if (!this->task_end_time.has_value()) {
     return CategoryScore(0, "Task not completed.");
@@ -553,68 +558,64 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryJerkScore(
   // _tf.transform.translation.y
   //           << " " << _tf.transform.translation.z << ")" << std::endl;
 
+  auto computeJerk = [&](const std::size_t index) {
+    const auto &data = this->endEffectorVelocities;
+    // Third order polynomial approximation (y = c0 + c1 * dt + c2 * dt^2)
+    Eigen::MatrixXd A(kWindowSize, 3);
+    Eigen::VectorXd y_x(kWindowSize);
+    Eigen::VectorXd y_y(kWindowSize);
+    Eigen::VectorXd y_z(kWindowSize);
+
+    const double tCenter = data[index].first;
+
+    for (std::size_t j = 0; j < kWindowSize; ++j) {
+      const std::size_t dataIdx = index - k + j;
+      const double dt = data[dataIdx].first - tCenter;
+
+      // Vandermonde matrix
+      A(j, 0) = 1.0;
+      A(j, 1) = dt;
+      A(j, 2) = dt * dt;
+      // Target values of the polynomial function to be found
+      y_x(j) = data[dataIdx].second.x;
+      y_y(j) = data[dataIdx].second.y;
+      y_z(j) = data[dataIdx].second.z;
+    }
+
+    // Solve for the polynomial coefficients
+    Eigen::VectorXd c_x = A.colPivHouseholderQr().solve(y_x);
+    Eigen::VectorXd c_y = A.colPivHouseholderQr().solve(y_y);
+    Eigen::VectorXd c_z = A.colPivHouseholderQr().solve(y_z);
+
+    // The jerk is the second derivative of the local polynomial approximation,
+    // hence 2 * c2
+    Vector3Msg ret;
+    ret.x = 2.0 * c_x(2);
+    ret.y = 2.0 * c_y(2);
+    ret.z = 2.0 * c_z(2);
+    return ret;
+  };
+
   double totalJerkTime = 0.0;
   double accumLinearJerkMagnitude = 0.0;
 
-  for (std::size_t i = 2; i < this->endEffectorVelocities.size(); ++i) {
-    // Extract timestamps.
-    double t0 = this->endEffectorVelocities[i - 2].first;
-    double t1 = this->endEffectorVelocities[i - 1].first;
-    double t2 = this->endEffectorVelocities[i].first;
-    // RCLCPP_INFO(this->node->get_logger(), "First stamp is %.6f", t0);
-
-    if (t0 >= t1 || t1 >= t2) {
-      RCLCPP_WARN(this->node->get_logger(),
-                  "Non monotonic timestamps found, %.6f, %.6f, %.6f", t0, t1,
-                  t2);
-      continue;
-    }
-
-    // Extract velocities.
-    double vx[3], vy[3], vz[3];
-    vx[0] = this->endEffectorVelocities[i - 2].second.x;
-    vx[1] = this->endEffectorVelocities[i - 1].second.x;
-    vx[2] = this->endEffectorVelocities[i].second.x;
-
-    vy[0] = this->endEffectorVelocities[i - 2].second.y;
-    vy[1] = this->endEffectorVelocities[i - 1].second.y;
-    vy[2] = this->endEffectorVelocities[i].second.y;
-
-    vz[0] = this->endEffectorVelocities[i - 2].second.z;
-    vz[1] = this->endEffectorVelocities[i - 1].second.z;
-    vz[2] = this->endEffectorVelocities[i].second.z;
-
-    // Compute finite differences for jerk.
-    // v1 = (p1 - p0) / (t1 - t0), etc.
-    // a1 = (v2 - v1) / (midpoint difference)
-    // jerk = (a2 - a1) / (midpoint difference)
-    auto computeJerk = [&](const double v[3]) {
-      double a1 = (v[1] - v[0]) / (t1 - t0);
-      double a2 = (v[2] - v[1]) / (t2 - t1);
-
-      double mid_a1 = (t0 + t1) / 2.0;
-      double mid_a2 = (t1 + t2) / 2.0;
-
-      return (a2 - a1) / (mid_a2 - mid_a1);
-    };
-
-    // Compute velocity at the central sample (1) to gate jerk accumulation.
+  for (std::size_t i = k; i < this->endEffectorVelocities.size() - k; ++i) {
+    const auto &v = this->endEffectorVelocities[i].second;
+    const double kVelocityThreshold = 0.01;
+    // Compute velocity at the central sample to gate jerk accumulation.
     // Only accumulate jerk when the arm is actually moving, so that stillness
     // periods don't dilute the average toward zero.
-    double speed = std::sqrt(vx[1] * vx[1] + vy[1] * vy[1] + vz[1] * vz[1]);
-
-    constexpr double kVelocityThreshold = 0.01;  // m/s
-    if (speed > kVelocityThreshold) {
-      // Compute linear jerk.
-      double jx = computeJerk(vx);
-      double jy = computeJerk(vy);
-      double jz = computeJerk(vz);
-
-      double jerkMag = std::sqrt(jx * jx + jy * jy + jz * jz);
-      double dt = (t2 - t0) / 2.0;
-      totalJerkTime += dt;
-      accumLinearJerkMagnitude += jerkMag * dt;
+    const double speed = std::sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+    if (speed <= kVelocityThreshold) {
+      continue;
     }
+    const auto j = computeJerk(i);
+    const double jerkMag = std::sqrt(j.x * j.x + j.y * j.y + j.z * j.z);
+    const double t0 = this->endEffectorVelocities[i - k].first;
+    const double t1 = this->endEffectorVelocities[i + k].first;
+    const double dt = (t1 - t0) / kWindowSize;
+    totalJerkTime += dt;
+    accumLinearJerkMagnitude += jerkMag * dt;
   }
 
   if (std::abs(totalJerkTime) < 1e-6) {
@@ -624,7 +625,7 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryJerkScore(
     return CategoryScore(0.0, msg);
   }
 
-  double jerk = accumLinearJerkMagnitude / totalJerkTime;
+  const double jerk = accumLinearJerkMagnitude / totalJerkTime;
 
   std::stringstream sstream;
   sstream.setf(std::ios::fixed);
