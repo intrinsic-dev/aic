@@ -14,6 +14,9 @@
 #  limitations under the License.
 #
 
+import os
+os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "1"
+
 import time
 import json
 import torch
@@ -44,7 +47,7 @@ from geometry_msgs.msg import Wrench
 from lerobot.policies.act.modeling_act import ACTPolicy
 from lerobot.policies.act.configuration_act import ACTConfig
 from safetensors.torch import load_file
-
+from huggingface_hub import snapshot_download
 
 class RunACT(Policy):
     def __init__(self, parent_node: Node):
@@ -54,8 +57,11 @@ class RunACT(Policy):
         # -------------------------------------------------------------------------
         # 1. Configuration & Weights Loading
         # -------------------------------------------------------------------------
+        repo_id = "grkw/10eps_act"
+
         # Path to your checkpoint folder
-        policy_path = Path("/home/aic/ws_aic/outputs/grkw/random_start_poses_10_eps")
+        policy_path = Path(snapshot_download(repo_id=repo_id,
+                                             allow_patterns=["config.json", "model.safetensors", "*.safetensors"]))
 
         # Load Config Manually (Fixes 'Draccus' error by removing unknown 'type' field)
         with open(policy_path / "config.json", "r") as f:
@@ -67,7 +73,8 @@ class RunACT(Policy):
 
         # Load Policy Architecture & Weights
         self.policy = ACTPolicy(config)
-        self.policy.load_state_dict(load_file(policy_path / "model.safetensors"))
+        model_weights_path = policy_path / "model.safetensors"
+        self.policy.load_state_dict(load_file(model_weights_path))
         self.policy.eval()
         self.policy.to(self.device)
 
