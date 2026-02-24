@@ -5,13 +5,6 @@
   gz_type_name: "gz.msgs.Clock"
   direction: GZ_TO_ROS
 
-- ros_topic_name: "/axia80_m20/wrench"
-  gz_topic_name: "/axia80_m20/wrench"
-  ros_type_name: "geometry_msgs/msg/WrenchStamped"
-  gz_type_name: "gz.msgs.Wrench"
-  direction: GZ_TO_ROS
-  lazy: true
-
 - ros_topic_name: "/left_camera/image"
   gz_topic_name: "/left_camera/image"
   ros_type_name: "sensor_msgs/msg/Image"
