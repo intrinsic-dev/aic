@@ -13,6 +13,7 @@ The challenge utilizes a combination of standard ROS 2 interfaces and custom int
 - **[sensor_msgs/msg/CameraInfo](https://github.com/ros2/common_interfaces/blob/kilted/sensor_msgs/msg/CameraInfo.msg)** - For camera calibration data
 - **[geometry_msgs/msg/WrenchStamped](https://github.com/ros2/common_interfaces/blob/kilted/geometry_msgs/msg/WrenchStamped.msg)** - For force/torque sensor data
 - **[sensor_msgs/msg/JointState](https://github.com/ros2/common_interfaces/blob/kilted/sensor_msgs/msg/JointState.msg)** - For joint state information
+- **[tf2_msgs/msg/TFMessage](https://github.com/ros2/geometry2/blob/kilted/tf2_msgs/msg/TFMessage.msg)** - For transformation data
 
 ### Custom Interfaces (defined in [aic_interfaces](../aic_interfaces/))
 * **[aic_task_interfaces/action/InsertCable.action](../aic_interfaces/aic_task_interfaces/action/InsertCable.action)**
@@ -45,6 +46,8 @@ The following topics provide sensory data and state information to the model.
 | `/axia80_m20/wrench` | `geometry_msgs/msg/WrenchStamped` | Force/Torque sensor data. |
 | `/joint_states` | `sensor_msgs/msg/JointState` | Current state of the robot joints. |
 | `/gripper_state` | `sensor_msgs/msg/JointState` | Current state of the end-effector/gripper. |
+| `/tf` | `tf2_msgs/msg/TFMessage` | Transform data for dynamic coordinate frames. |
+| `/tf_static` | `tf2_msgs/msg/TFMessage` | Transform data for static coordinate frames. |
 
 ### Action Servers
 
