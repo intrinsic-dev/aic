@@ -11,8 +11,12 @@ Participants are expected to honor the spirit of the competition by developing s
 
 ### a. Use of Provided Interfaces Only
 Participants must not attempt to bypass or circumvent the provided interfaces to gain an unfair advantage. Prohibited actions include:
-* **Direct State Manipulation:** Directly modifying the state of the robot, task board, or simulation in Gazebo (e.g., teleporting the end-effector, manually inserting cables, or altering component positions).
-* **Backend Interference:** Communicating with the backend ROS or Gazebo systems outside of the defined interfaces.
+* **Direct State Manipulation**: Manually altering the robot, task board, or simulation environment (e.g., teleporting components or forcing cable insertions).
+* **Backend & System Interference**: Bypassing official APIs to communicate with ROS or Gazebo backends. This includes and not limited to unauthorized interactions with:
+	* **Configuration & Lifecycle**: Modifying ROS 2 parameters or changing node lifecycle states for evaluation nodes.
+	* **Simulation Control**: All topics/services in the `/scoring`, `/gazebo`, and `/gz_server` namespaces.
+	* **Entity Management**: Services used to spawn, despawn, or delete models and entities.
+	* **Environment States**: Data related to `/clock`, `/model`, `/world_stats`, physics control (`/pause_physics`), or simulation resets.
 * **Exploitative Hardcoding:** Hardcoding sensor data or environment configurations to exploit knowledge of the specific simulation setup.
 * **Process Manipulation:** Interfering with the AIC Engine, the scoring system, or the logging infrastructure.
 
