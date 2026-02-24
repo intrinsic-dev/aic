@@ -554,8 +554,8 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryJerkScore(
   }
 
   if (this->endEffectorVelocities.size() < kWindowSize) {
-    return CategoryScore(
-        0.0, "Insufficient velocity samples for jerk computation.");
+    return CategoryScore(0.0,
+                         "Insufficient velocity samples for jerk computation.");
   }
 
   Eigen::MatrixXd A(kWindowSize, 3);
