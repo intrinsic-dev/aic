@@ -1,6 +1,6 @@
 # AI Challenge Interfaces
 
-This document defines all the interfaces available for participants to work with in the AI for Industry Challenge. It includes both reused standard ROS 2 interfaces and new interfaces specifically defined for this challenge.
+This document defines all the interfaces available for participants to work with in the AI for Industry Challenge. It includes both standard ROS 2 interfaces and new interfaces specifically defined for this challenge.
 
 The aic_interfaces folder contains custom message and action definitions that bridge the hardware and the Insertion Policy. These interfaces are crucial for developing solutions that interact with the robot and task environment.
 
