@@ -22,8 +22,8 @@ fts_broadcaster:
         name: low_pass_filter
         type: "control_filters/LowPassFilterWrench"
         params:
-          sampling_frequency: 50.0
-          damping_frequency: 10.0
+          sampling_frequency: 50.0 # [Hz]
+          damping_frequency: 10.0 # Cut-off frequency [Hz]
           damping_intensity: 0.707
     update_rate: 50
 
