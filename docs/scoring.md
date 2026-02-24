@@ -92,20 +92,20 @@ Penalizes collisions with restricted areas of the environment (enclosure or task
 
 The primary objective verifying successful cable insertion. Scoring uses a two-step approach that rewards both full insertion and partial progress toward the port.
 
-### Successful insertion (-12.5 to 75 points)
+### Successful insertion (-12 to 75 points)
 
 If the cable connector is fully inserted into the **correct** target port, verified via contact sensors:
 
 | Outcome | Score |
 |---------|-------|
 | Correct port insertion | 75 |
-| Wrong port insertion | -12.5 |
+| Wrong port insertion | -12 |
 
 ### Partial insertion and proximity (0-50 points)
 
 When full insertion is not detected, the score is based on how close the plug is to the port at task completion:
 
-- **Partial insertion** (37.5-50 points): If the plug is inside a bounding box between the port entrance and the bottom of the port (within a 5 mm x-y tolerance), the score is proportional to insertion depth. Deeper insertion scores higher.
+- **Partial insertion** (38-50 points): If the plug is inside a bounding box between the port entrance and the bottom of the port (within a 5 mm x-y tolerance), the score is proportional to insertion depth. Deeper insertion scores higher.
 - **Proximity** (0-25 points): If the plug is not inside the port, the score is inversely proportional to the max acceptable distance from the port. The max distance is set to half the distance between the initial position of the plug and the port.
   - At the port entrance → 25 points (maximum)
   - Outside of max distance → 0 points (minimum)

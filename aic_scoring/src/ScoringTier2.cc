@@ -715,7 +715,7 @@ Tier3Score ScoringTier2::GetDistanceScore() const {
 
   // Starting partial insertion will award kMinInsertionScore, linear range all
   // the way to the end with kMaxInsertionScore.
-  const double kMinInsertionScore = 37.5;
+  const double kMinInsertionScore = 38.0;
   const double kMaxInsertionScore = 50.0;
   // The tolerance in x-y within the port to validate that the plug is being
   // inserted.
@@ -798,7 +798,7 @@ Tier3Score ScoringTier2::ComputeTier3Score() const {
   // Binary will award kInsertionCompletionScore, partial insertion computed
   // in GetDistanceScore (and up to kMaxInsertionScore)
   constexpr double kInsertionCompletionScore = 75.0;
-  constexpr double kInsertionPenalty = -12.5;
+  constexpr double kInsertionPenalty = -12.0;
 
   if (!this->task_end_time.has_value()) {
     return Tier3Score(0, "Task not completed.");
