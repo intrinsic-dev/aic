@@ -36,10 +36,10 @@ average. Only awarded if either the task is completed successfully, or the
 final position of the plug is within close proximity to the target port
 (Tier 3 score > 0).
 
-- **Metric**: Time-weighted average of linear jerk magnitude (m/s³)
+- **Metric**: Time-weighted average of linear jerk magnitude (m/s³), computed via a Savitzky–Golay filter (local quadratic polynomial fit to velocity over a 15-sample window)
 - **Scoring**: Inversely proportional to jerk
   - Jerk = 0 m/s³ → 5 points (maximum)
-  - Jerk ≥ 25,000 m/s³ → 0 points (minimum)
+  - Jerk ≥ 50 m/s³ → 0 points (minimum)
   - Linear interpolation between thresholds
 - **Not awarded**: 0 points if the final position of the plug is outside the max acceptable distance of the target port (Tier 3 score <= 0).
 
@@ -52,7 +52,7 @@ the target port (Tier 3 score > 0).
 - **Metric**: Elapsed time from task start to task end
 - **Scoring**: Inversely proportional to duration
   - Duration ≤ 5 seconds → 10 points (maximum)
-  - Duration ≥ 60 seconds → 1 point (minimum)
+  - Duration ≥ 60 seconds → 0 points (minimum)
   - Linear interpolation between thresholds
 - **Not awarded**: 0 points if the final position of the plug is outside the max acceptable distance of the target port (Tier 3 score <= 0).
 
