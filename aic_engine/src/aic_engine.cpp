@@ -1569,10 +1569,10 @@ bool Engine::validate_model_shutdown() const {
   }
 
   auto node_graph = node_->get_node_graph_interface();
-  const auto start = node_->now();
-  const auto timeout = rclcpp::Duration::from_seconds(2.0);
+  const auto start = std::chrono::steady_clock::now();
+  const auto timeout = std::chrono::seconds(2);
 
-  while (node_->now() - start < timeout) {
+  while (std::chrono::steady_clock::now() - start < timeout) {
     const std::size_t pose_pubs =
         node_graph->count_publishers("/aic_controller/pose_commands");
     const std::size_t joint_pubs =
