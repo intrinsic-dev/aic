@@ -15,6 +15,8 @@
  *
  */
 
+#include <cstdlib>
+
 #include "aic_engine.hpp"
 #include "rclcpp/executor.hpp"
 
@@ -26,5 +28,6 @@ int main(int argc, char** argv) {
   aic::EngineState final_state = engine->start();
 
   rclcpp::shutdown();
-  return (final_state == aic::EngineState::Completed) ? 0 : 1;
+  return (final_state == aic::EngineState::Completed) ? EXIT_SUCCESS
+                                                      : EXIT_FAILURE;
 }
