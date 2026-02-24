@@ -73,8 +73,6 @@ The Insertion Policy controls the robot by publishing to the following topics.
 | `/aic_controller/joint_commands` | `aic_control_interfaces/msg/JointMotionUpdate` | Target configurations for joint-space control. |
 | `/aic_controller/pose_commands` | `aic_control_interfaces/msg/MotionUpdate` | Target poses for Cartesian-space control. |
 
-> **Note:** The model can command the robot using either joint configurations (via `/aic_controller/joint_commands`) or Cartesian poses (via `/aic_controller/pose_commands`). Publishing references to both topics simultaneously is discouraged to avoid control conflicts.
-
 > **Note:** The controller operates in mutually exclusive modes. For example, if the controller is in `Cartesian` target mode, it will process messages from the `/aic_controller/pose_commands` topic and ignore messages from `/aic_controller/joint_commands`. You must set the active target mode via the `/aic_controller/change_target_mode` service before the controller will accept commands of that type.
 
 ---
