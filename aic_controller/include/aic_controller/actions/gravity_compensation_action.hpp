@@ -28,7 +28,8 @@
 
 #include "rclcpp/node_interfaces/node_logging_interface.hpp"
 
-// \note The versions conditioning is added here to support the source-compatibility with ROS 2 Jazzy
+// \note The versions conditioning is added here to support the 
+// source-compatibility with ROS 2 Jazzy
 #include "rclcpp/version.h"
 #if RCLCPP_VERSION_GTE(29, 0, 0)
 #include "urdf/model.hpp"
