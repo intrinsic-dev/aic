@@ -28,7 +28,7 @@ Building locally may be useful if you:
 
 ## Setup Instructions
 
-If you are working on a machine with ROS 2 Kilted and Gazebo binaries already installed, you will need to remove these packages before proceeding with the source installation. This is because we will be building certain repositories from source, and having pre-installed binaries for the same packages can lead to conflicts.
+If your system currently has ROS 2 Kilted and Gazebo binaries installed, you must remove them before starting the source installation. This is necessary because building specific repositories from source while pre-installed binaries exist can cause environment conflicts.
 
 To purge the relevant binaries, run the following command:
 
