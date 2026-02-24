@@ -19,7 +19,7 @@ Participants must not attempt to bypass or circumvent the provided interfaces to
 ### b. Unauthorized Access
 Participants are not permitted to reverse-engineer, exploit, or tamper with the cloud-based evaluation infrastructure. This includes:
 * Using unauthorized tools to access or modify the evaluation environment.
-* Submitting containers or models containing malicious code, backdoors, or unauthorized dependencies.
+* Submitting containers or models containing malicious code, backdoors, or other mechanisms to defeat the competition architecture.
 * Bypassing the submission portal or registry to inject or manipulate data.
 
 ### c. External Data and Information Leaks
