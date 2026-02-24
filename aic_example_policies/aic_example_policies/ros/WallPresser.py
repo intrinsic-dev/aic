@@ -79,10 +79,12 @@ class WallPresser(Policy):
         for cycle in range(3):
             # Retract
             self.get_logger().info(f"Cycle {cycle + 1}: retracting")
+            joint_motion_update.target_state.positions = retracted
             for _ in range(30):
-                joint_motion_update.target_state.positions = retracted
                 move_robot(joint_motion_update=joint_motion_update)
+                self.get_logger().info("about to sleep")
                 self.sleep_for(0.1)
+                self.get_logger().info("slept")
 
             # Push into the wall and hold
             self.get_logger().info(f"Cycle {cycle + 1}: pushing into wall")

@@ -359,7 +359,7 @@ class AicModel(LifecycleNode):
         self._target_mode = target_mode
         target_mode_request = ChangeTargetMode.Request()
         target_mode_request.target_mode.mode = target_mode
-        response = self.change_target_mode_client.call(target_mode_request)
+        response = self._change_target_mode_client.call(target_mode_request)
         if not response.success:
             self.get_logger().error("Unable to set target mode")
         else:
