@@ -132,10 +132,6 @@ namespace aic_scoring
     /// \brief Topic to subscribe for tf.
     public: static constexpr const char* kTfTopic = "/tf";
 
-    /// \brief Topic to subscribe for static /scoring/tf.
-    public: static constexpr const char* kScoringTfStaticTopic =
-       "/scoring/tf_static";
-
     /// \brief Topic to subscribe for /scoring/tf.
     public: static constexpr const char* kScoringTfTopic = "/scoring/tf";
 

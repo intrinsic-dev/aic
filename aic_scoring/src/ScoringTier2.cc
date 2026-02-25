@@ -214,8 +214,7 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
                msg_ptr->topic_name == kScoringTfTopic) {
       const auto msg = deserialize_from_rosbag<TFMsg>(msg_ptr);
       this->TfCallback(msg);
-    } else if (msg_ptr->topic_name == kTfStaticTopic ||
-               msg_ptr->topic_name == kScoringTfStaticTopic) {
+    } else if (msg_ptr->topic_name == kTfStaticTopic) {
       const auto msg = deserialize_from_rosbag<TFMsg>(msg_ptr);
       this->TfStaticCallback(msg);
     } else if (msg_ptr->topic_name == kContactsTopic) {
