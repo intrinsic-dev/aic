@@ -115,13 +115,6 @@ bool ScoringTier2::StartRecording(const std::string &_filename,
             this->bagWriter.write(msg, topic.name, topic.type,
                                   rmw_info.received_timestamp,
                                   rmw_info.source_timestamp);
-            if (topic.name == kScoringTfTopic) {
-              // A new cable transform was received
-              this->cableTfReceived = true;
-            } else if (topic.name == kTfTopic) {
-              // A new gripper transform was received
-              this->gripperTfReceived = true;
-            }
           }
         });
     this->subscriptions.push_back(sub);
@@ -132,18 +125,21 @@ bool ScoringTier2::StartRecording(const std::string &_filename,
 
 //////////////////////////////////////////////////
 bool ScoringTier2::WaitForTfs() {
-  this->cableTfReceived = false;
-  this->gripperTfReceived = false;
+  auto plug_port_dist = this->GetPlugPortDistance(tf2::TimePointZero);
+  auto end_effector_pose = this->EndEffectorPose(tf2::TimePointZero);
   // Simple spinlock to avoid locking, condition variables etc. for a fairly
   // straightforward wait.
   const auto start = this->node->get_clock()->now();
   const auto timeout = std::chrono::seconds(10);
-  while (rclcpp::ok() && (!this->cableTfReceived || !this->gripperTfReceived) &&
+  while (rclcpp::ok() &&
+         (!plug_port_dist.has_value() || !end_effector_pose.has_value()) &&
          this->node->get_clock()->now() - start < timeout) {
+    plug_port_dist = this->GetPlugPortDistance(tf2::TimePointZero);
+    end_effector_pose = this->EndEffectorPose(tf2::TimePointZero);
     this->node->get_clock()->sleep_for(
         rclcpp::Duration(std::chrono::milliseconds(100)));
   }
-  if (!this->cableTfReceived || !this->gripperTfReceived) {
+  if (!plug_port_dist.has_value() || !end_effector_pose.has_value()) {
     RCLCPP_ERROR(this->node->get_logger(),
                  "Timeout while waiting for transforms for scoring.");
     return false;

@@ -363,12 +363,6 @@ namespace aic_scoring
     /// Empty string means no insertion event detected.
     private: std::string insertionPortNamespace;
 
-    /// \brief Whether the tf from a cable was recorded.
-    private: std::atomic<bool> cableTfReceived = false;
-
-    /// \brief Whether the tf from a gripper was recorded.
-    private: std::atomic<bool> gripperTfReceived = false;
-
     /// \brief The last tared ft reading rotated to the current pose received.
     private: std::optional<WrenchMsg> lastTaredFt;
   };
