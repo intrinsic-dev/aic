@@ -25,20 +25,18 @@ body:
       default: Ubuntu 24.04
     validations:
       required: true
-  - type: input
-    id: gpu
+  - type: textarea
+    id: system-specs
     attributes:
-      label: GPU
-      placeholder: "e.g. NVIDIA RTX 3080, or \"None / CPU only\""
+      label: System specs
+      description: CPU, RAM, GPU, and GPU driver version.
+      placeholder: |
+        CPU: e.g. Intel i9-13900K
+        RAM: e.g. 32 GB
+        GPU: e.g. NVIDIA RTX 3080 (or "None / CPU only")
+        GPU driver: e.g. output of `nvidia-smi`
     validations:
       required: true
-  - type: input
-    id: gpu-driver-version
-    attributes:
-      label: GPU driver version
-      placeholder: "output of `nvidia-smi`"
-    validations:
-      required: false
   - type: textarea
     id: steps-to-reproduce
     attributes:
