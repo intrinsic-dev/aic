@@ -37,21 +37,6 @@
 
 namespace aic {
 
-template <typename FutureT>
-std::future_status wait_for_interruptible(rclcpp::Node::SharedPtr node,
-                                          FutureT& future,
-                                          std::chrono::seconds timeout) {
-  const auto start = node->now();
-  const auto timeout_duration = rclcpp::Duration(timeout);
-  while (rclcpp::ok() && (node->now() - start) < timeout_duration) {
-    if (future.wait_for(std::chrono::milliseconds(50)) ==
-        std::future_status::ready) {
-      return std::future_status::ready;
-    }
-  }
-  return std::future_status::timeout;
-}
-
 //==============================================================================
 Trial::Trial(const std::string& _id, YAML::Node _config) : id(std::move(_id)) {
   // Validate config structure
@@ -923,8 +908,7 @@ bool Engine::model_node_is_unconfigured() {
   auto request = std::make_shared<lifecycle_msgs::srv::GetState::Request>();
   auto future = model_get_state_client_->async_send_request(request);
 
-  if (wait_for_interruptible(node_, future, std::chrono::seconds(5)) !=
-      std::future_status::ready) {
+  if (!wait_for_interruptible(future, std::chrono::seconds(5))) {
     RCLCPP_ERROR(node_->get_logger(),
                  "GetState service call timed out for node '%s'",
                  model_node_name_.c_str());
@@ -1202,8 +1186,7 @@ bool Engine::ready_simulator(Trial& trial) {
   // the weight of the end-effector.
   const auto tare_req = std::make_shared<TriggerSrv::Request>();
   auto tare_ft_future = tare_ft_client_->async_send_request(tare_req);
-  if (wait_for_interruptible(node_, tare_ft_future, std::chrono::seconds(10)) !=
-      std::future_status::ready) {
+  if (!wait_for_interruptible(tare_ft_future, std::chrono::seconds(10))) {
     RCLCPP_ERROR(node_->get_logger(),
                  "TareFt service call timed out requesting for taring!");
     return false;
@@ -1407,9 +1390,8 @@ bool Engine::tasks_started(Trial& trial) {
     RCLCPP_INFO(this->node_->get_logger(), "Waiting for result...");
 
     // Cancel goal if time limit exceeded
-    if (wait_for_interruptible(node_, result_future,
-                               std::chrono::seconds(task.time_limit)) !=
-        std::future_status::ready) {
+    if (!wait_for_interruptible(result_future,
+                                std::chrono::seconds(task.time_limit))) {
       RCLCPP_ERROR(this->node_->get_logger(),
                    "Task [%s] timed out after %ld seconds. Cancelling goal.",
                    task.id.c_str(), task.time_limit);
@@ -1521,8 +1503,7 @@ bool Engine::transition_model_lifecycle_node(const uint8_t transition) {
 
   auto future =
       model_change_state_client_->async_send_request(change_state_request);
-  if (wait_for_interruptible(node_, future, std::chrono::seconds(timeout)) !=
-      std::future_status::ready) {
+  if (!wait_for_interruptible(future, std::chrono::seconds(timeout))) {
     RCLCPP_ERROR(
         node_->get_logger(),
         "ChangeState service call timed out for transition '%s' for node '%s'",
@@ -1679,8 +1660,7 @@ bool Engine::home_robot() {
     request->strictness = SwitchControllerSrv::Request::BEST_EFFORT;
 
     auto future = switch_controller_client_->async_send_request(request);
-    if (wait_for_interruptible(node_, future, std::chrono::seconds(10)) !=
-        std::future_status::ready) {
+    if (!wait_for_interruptible(future, std::chrono::seconds(10))) {
       RCLCPP_ERROR(node_->get_logger(),
                    "SwitchController service call timed out");
       return false;
@@ -1705,9 +1685,7 @@ bool Engine::home_robot() {
   // Request for joints reset to home positions using pre-built request.
   auto reset_joints_future =
       reset_joints_client_->async_send_request(home_reset_joints_request_);
-  if (wait_for_interruptible(node_, reset_joints_future,
-                             std::chrono::seconds(10)) !=
-      std::future_status::ready) {
+  if (!wait_for_interruptible(reset_joints_future, std::chrono::seconds(10))) {
     RCLCPP_ERROR(node_->get_logger(),
                  "ResetJoints service call timed out requesting for reset!");
     return false;
@@ -1746,8 +1724,7 @@ void Engine::reset_simulator(const Trial& trial, bool home_robot) {
     request->entity = entity_name;
 
     auto future = delete_entity_client_->async_send_request(request);
-    if (wait_for_interruptible(node_, future, std::chrono::seconds(10)) !=
-        std::future_status::ready) {
+    if (!wait_for_interruptible(future, std::chrono::seconds(10))) {
       RCLCPP_ERROR(node_->get_logger(),
                    "Delete entity service call timed out for entity '%s'",
                    request->entity.c_str());
@@ -1994,8 +1971,7 @@ bool Engine::spawn_entity(Trial& trial, std::string entity_name,
 
   // Call service synchronously with timeout
   auto future = spawn_entity_client_->async_send_request(request);
-  if (wait_for_interruptible(node_, future, std::chrono::seconds(10)) !=
-      std::future_status::ready) {
+  if (!wait_for_interruptible(future, std::chrono::seconds(10))) {
     RCLCPP_ERROR(node_->get_logger(), "Spawn entity service call timed out");
     return false;
   }
