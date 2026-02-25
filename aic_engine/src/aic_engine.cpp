@@ -1381,21 +1381,21 @@ bool Engine::tasks_started(Trial& trial) {
     bool timed_out = false;
     while (result_future.wait_for(std::chrono::milliseconds(0)) !=
            std::future_status::ready) {
-        if ((this->node_->now() - current_attempt.time_started.value()) >
-             timeout_duration) {
-            timed_out = true;
-            break;
-        }
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+      if ((this->node_->now() - current_attempt.time_started.value()) >
+           timeout_duration) {
+          timed_out = true;
+          break;
+      }
+      std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
     if (timed_out) {
-        RCLCPP_ERROR(this->node_->get_logger(),
-                     "Task [%s] timed out after %ld seconds. Cancelling goal.",
-                     task.id.c_str(), task.time_limit);
+      RCLCPP_ERROR(this->node_->get_logger(),
+                   "Task [%s] timed out after %ld seconds. Cancelling goal.",
+                   task.id.c_str(), task.time_limit);
 
-        insert_cable_action_client_->async_cancel_goal(goal_handle);
-        current_attempt.state = TaskState::TimeLimitExceeded;
-        return false;
+      insert_cable_action_client_->async_cancel_goal(goal_handle);
+      current_attempt.state = TaskState::TimeLimitExceeded;
+      return false;
     }
 
     auto result = result_future.get();
