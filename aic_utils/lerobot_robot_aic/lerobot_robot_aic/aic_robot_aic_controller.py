@@ -349,9 +349,9 @@ class AICRobotAICController(Robot):
             "joint_positions.6": joint_positions[6],
         }
 
-    # 1. Initialize with placeholders to ensure all keys exist (prevents KeyError)
+        # 1. Initialize with placeholders to ensure all keys exist (prevents KeyError)
         cam_obs: dict[str, NDArray[Any]] = {
-            cam_key: np.zeros(shape, dtype=np.uint8) 
+            cam_key: np.zeros(shape, dtype=np.uint8)
             for cam_key, shape in self._cameras_ft.items()
         }
 
@@ -372,7 +372,9 @@ class AICRobotAICController(Robot):
                     else:
                         cam_obs[cam_key] = data
                 else:
-                    logger.debug(f"Camera {cam_key} data is empty, using all-black placeholder.")
+                    logger.debug(
+                        f"Camera {cam_key} data is empty, using all-black placeholder."
+                    )
             except Exception as e:
                 logger.error(f"Failed to read camera {cam_key}: {e}")
 
