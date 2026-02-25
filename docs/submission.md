@@ -162,6 +162,33 @@ Simply pushing the image to ECR does not trigger the evaluation. You must notify
 
 ---
 
+### 4. Monitor Your Submission Status
+
+After submitting your image, you can track the evaluation progress from the platform.
+
+In the portal, click **My Submissions**.
+
+Ensure the **Qualification** phase is selected in the filters.
+
+Locate your entry in the submissions table.
+
+Check the Status column to monitor progress:
+
+- Running — evaluation is in progress
+
+- Finished — evaluation completed successfully
+
+- Failed — evaluation encountered an error
+
+![My Submissions page](../../media/aic_my_submissions.png)
+
+When available, use the **Link** entries to inspect the submitted file, result, stdout, or stderr logs for further inspection.
+
+> [!IMPORTANT]
+> The evaluation may take several minutes. Refresh the page periodically to see updates.
+
+---
+
 ## FAQs
 
 **My push failed with "no basic auth credentials"**: Your Docker login session has likely expired. ECR login tokens are valid for 12 hours. Repeat the [Authenticate](#authenticate) step in Section 2.
