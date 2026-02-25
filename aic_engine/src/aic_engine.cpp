@@ -38,10 +38,12 @@
 namespace aic {
 
 template <typename FutureT>
-std::future_status wait_for_interruptible(FutureT& future, std::chrono::seconds timeout) {
+std::future_status wait_for_interruptible(FutureT& future,
+                                          std::chrono::seconds timeout) {
   const auto start = std::chrono::steady_clock::now();
   while (rclcpp::ok() && std::chrono::steady_clock::now() - start < timeout) {
-    if (future.wait_for(std::chrono::milliseconds(50)) == std::future_status::ready) {
+    if (future.wait_for(std::chrono::milliseconds(50)) ==
+        std::future_status::ready) {
       return std::future_status::ready;
     }
   }
@@ -919,7 +921,8 @@ bool Engine::model_node_is_unconfigured() {
   auto request = std::make_shared<lifecycle_msgs::srv::GetState::Request>();
   auto future = model_get_state_client_->async_send_request(request);
 
-  if (wait_for_interruptible(future, std::chrono::seconds(5)) != std::future_status::ready) {
+  if (wait_for_interruptible(future, std::chrono::seconds(5)) !=
+      std::future_status::ready) {
     RCLCPP_ERROR(node_->get_logger(),
                  "GetState service call timed out for node '%s'",
                  model_node_name_.c_str());
@@ -1032,7 +1035,8 @@ bool Engine::check_model() {
   // Check if aic_model node exists in the graph and is a lifecycle node.
   model_discovered_ = false;
 
-  while (rclcpp::ok() && !model_discovered_ && !(this->node_->now() - start_time > timeout)) {
+  while (rclcpp::ok() && !model_discovered_ &&
+         !(this->node_->now() - start_time > timeout)) {
     // First check that only one node with the expected name exists.
     auto node_graph = node_->get_node_graph_interface();
     auto node_names_and_namespaces =
@@ -1113,7 +1117,8 @@ bool Engine::check_endpoints() {
       this->node_->get_parameter("endpoint_ready_timeout_seconds").as_int());
   const auto& node_graph = node_->get_node_graph_interface();
 
-  while (rclcpp::ok() && !unavailable.empty() && !(this->node_->now() - start_time > timeout)) {
+  while (rclcpp::ok() && !unavailable.empty() &&
+         !(this->node_->now() - start_time > timeout)) {
     std::unordered_set<std::string> node_set;
     for (const auto& [name, _] : node_graph->get_node_names_and_namespaces()) {
       node_set.insert(name);
@@ -1138,7 +1143,8 @@ bool Engine::check_endpoints() {
   // TODO(Yadunund): Consider checking for messages received on topics.
   unavailable = this->scoring_tier2_->GetMissingRequiredTopics();
   start_time = this->node_->now();
-  while (rclcpp::ok() && !unavailable.empty() && !(this->node_->now() - start_time > timeout)) {
+  while (rclcpp::ok() && !unavailable.empty() &&
+         !(this->node_->now() - start_time > timeout)) {
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
     unavailable = this->scoring_tier2_->GetMissingRequiredTopics();
   }
@@ -1394,7 +1400,8 @@ bool Engine::tasks_started(Trial& trial) {
     RCLCPP_INFO(this->node_->get_logger(), "Waiting for result...");
 
     // Cancel goal if time limit exceeded
-    if (wait_for_interruptible(result_future, std::chrono::seconds(task.time_limit)) !=
+    if (wait_for_interruptible(result_future,
+                               std::chrono::seconds(task.time_limit)) !=
         std::future_status::ready) {
       RCLCPP_ERROR(this->node_->get_logger(),
                    "Task [%s] timed out after %ld seconds. Cancelling goal.",
@@ -1978,7 +1985,8 @@ bool Engine::spawn_entity(Trial& trial, std::string entity_name,
 
   // Call service synchronously with timeout
   auto future = spawn_entity_client_->async_send_request(request);
-  if (wait_for_interruptible(future, std::chrono::seconds(10)) != std::future_status::ready) {
+  if (wait_for_interruptible(future, std::chrono::seconds(10)) !=
+      std::future_status::ready) {
     RCLCPP_ERROR(node_->get_logger(), "Spawn entity service call timed out");
     return false;
   }
