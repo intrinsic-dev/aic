@@ -22,7 +22,7 @@ For convenience, we provide an `aic_model` framework that handles all ROS 2 life
 2.  **Implement `insert_cable()`:** This method is called when `aic_engine` requests a new task. It receives observation data and callable methods for robot control.
 3.  **Load Your Model:** Initialize your trained policy (e.g., PyTorch checkpoint, ONNX model, or control algorithm) when your class is instantiated.
 4.  **Process Observations:** Use the provided `get_observation()` callback to retrieve sensor data at up to 20 Hz.
-5.  **Output Commands:** Use `set_pose_target()` and other provided methods to command the robot.
+5.  **Output Commands:** Use `move_robot()` and other provided methods to command the robot.
 6.  **Return on Completion:** Your `insert_cable()` method should return when the task is complete.
 
 > **Tutorial:** For a step-by-step guide, see [Creating a New Policy Node](./policy.md#tutorial-creating-a-new-policy-node).

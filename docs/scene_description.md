@@ -125,6 +125,8 @@ Before teleoperating, we recommend reading the [AIC Controller Guide](./aic_cont
 
 See the [Robot Teleoperation Guide](../aic_utils/aic_teleoperation/README.md) for detailed instructions.
 
+When using teleoperation to collect training data, be sure to tare the Force/Torque sensors at the start of each training episode. See [Taring before Training](#Taring-before-training).
+
 > [!TIP]
 > If the robot can't seem to move when it's near an object, it might be in collision with that object even though it's not touching. To view the collision mesh for an object, right-click on it, click `View >`, and then `Collisions`.
 
@@ -144,6 +146,15 @@ The simulation includes a world plugin that automatically exports the complete w
 - **Plugin Configuration:** Defined in [`aic.sdf`](../aic_description/world/aic.sdf) with parameters:
   - `<save_world_path>`: Path where the world file is saved (default: `/tmp/aic.sdf`)
   - `<save_world_delay_s>`: Delay in simulation seconds before exporting (default: `0.0`)
+
+---
+
+## Taring before Training
+
+At the start of each training episode (i.e. before teleoperation and before spawning any cables in the environment), ensure that the Force/Torque Sensor (F/T Sensor) is tared using the following service call:
+```bash
+ros2 service call /aic_controller/tare_ft_sensor std_srvs/srv/Trigger
+```
 
 ---
 

@@ -15,6 +15,8 @@
  *
  */
 
+#include <cstdlib>
+
 #include "aic_engine.hpp"
 #include "rclcpp/executor.hpp"
 
@@ -23,8 +25,9 @@ int main(int argc, char** argv) {
   rclcpp::init(argc, argv);
 
   auto engine = std::make_shared<aic::Engine>();
-  engine->start();
+  aic::EngineState final_state = engine->start();
 
   rclcpp::shutdown();
-  return 0;
+  return (final_state == aic::EngineState::Completed) ? EXIT_SUCCESS
+                                                      : EXIT_FAILURE;
 }

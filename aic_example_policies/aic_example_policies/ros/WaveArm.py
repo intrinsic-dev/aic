@@ -15,15 +15,22 @@
 #
 
 
+import numpy as np
+
+
 from aic_model.policy import (
-    Policy,
     GetObservationCallback,
-    SetPoseTargetCallback,
+    MoveRobotCallback,
+    Policy,
     SendFeedbackCallback,
+)
+from aic_control_interfaces.msg import (
+    MotionUpdate,
+    TrajectoryGenerationMode,
 )
 from aic_model_interfaces.msg import Observation
 from aic_task_interfaces.msg import Task
-from geometry_msgs.msg import Point, Pose, Quaternion
+from geometry_msgs.msg import Point, Pose, Quaternion, Vector3, Wrench
 from rclpy.duration import Duration
 
 
@@ -36,7 +43,7 @@ class WaveArm(Policy):
         self,
         task: Task,
         get_observation: GetObservationCallback,
-        set_pose_target: SetPoseTargetCallback,
+        move_robot: MoveRobotCallback,
         send_feedback: SendFeedbackCallback,
     ):
         self.get_logger().info(f"WaveArm.insert_cable() enter. Task: {task}")
@@ -52,20 +59,20 @@ class WaveArm(Policy):
             )
             self.get_logger().info(f"observation time: {t}")
 
-            # Move the arm along a line, while looking down at the task board.
-            loop_duration = 5.0  # seconds
-            loop_fraction = (t % loop_duration) / loop_duration
+            loop_seconds = 5.0
+            loop_fraction = (t % loop_seconds) / loop_seconds
             y_scale = 2 * loop_fraction
             if y_scale > 1.0:
                 y_scale = 2.0 - y_scale
-            y_scale -= 1.0
+            y_scale -= 1.0  # y_scale will move linearly between [-1..1] and back.
 
-            # create a smooth series of target points that flies over the task board
-            set_pose_target(
-                Pose(
+            # Move the arm along a line, while looking down at the task board.
+            self.set_pose_target(
+                move_robot=move_robot,
+                pose=Pose(
                     position=Point(x=-0.4, y=0.45 + 0.3 * y_scale, z=0.25),
                     orientation=Quaternion(x=1.0, y=0.0, z=0.0, w=0.0),
-                )
+                ),
             )
 
         self.get_logger().info("WaveArm.insert_cable() exiting...")

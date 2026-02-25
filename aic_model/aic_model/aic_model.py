@@ -110,7 +110,8 @@ class AicModel(LifecycleNode):
         self.joint_motion_update_pub = self.create_lifecycle_publisher(
             JointMotionUpdate, "/aic_controller/joint_commands", 2
         )
-        self.change_target_mode_client = self.create_client(
+        self._target_mode = TargetMode.MODE_UNSPECIFIED
+        self._change_target_mode_client = self.create_client(
             ChangeTargetMode, "/aic_controller/change_target_mode"
         )
 
@@ -186,48 +187,46 @@ class AicModel(LifecycleNode):
     def observation_callable(self):
         return self._observation_msg
 
-    def set_pose_target(self, pose: Pose, frame_id: str = "base_link"):
-        """Set a pose target for the robot arm.
+    def handle_motion_update(self, motion_update: MotionUpdate):
+        if self._target_mode != TargetMode.MODE_CARTESIAN:
+            self.get_logger().info("Setting cartesian mode...")
+            self.set_target_mode(TargetMode.MODE_CARTESIAN)
+        self.motion_update_pub.publish(motion_update)
+        return True
 
-        The robot can be controlled in several different ways. This function
-        is intended to be the simplest way to move the arm around, by sending
-        a desired pose (position and orientation) for the gripper's
-        "tool control point" (TCP), which is the "pinch point" between the very
-        end of the gripper fingers. The rest of the control stack will take care
-        of moving all the arm's joints to so that the gripper TCP ends up in
-        the desired position and orientation.
+    def handle_joint_motion_update(self, joint_motion_update: JointMotionUpdate):
+        if self._target_mode != TargetMode.MODE_JOINT:
+            self.get_logger().info("Setting joint mode...")
+            self.set_target_mode(TargetMode.MODE_JOINT)
+        self.joint_motion_update_pub.publish(joint_motion_update)
+        return True
 
-        The constants defined in this function are intended to provide
-        reasonable default behavior if the arm is unable to achieve the
-        requested pose. Different values for stiffness, damping, wrenches, and
-        so on can be used for different types of arm behavior. These values
-        are only intended to provide a starting point, and can be adjusted as
-        desired.
+    def move_robot(
+        self,
+        motion_update: MotionUpdate = None,
+        joint_motion_update: JointMotionUpdate = None,
+    ) -> bool:
+        """Set a motion target for the robot.
+
+        There are two ways to move the robot: via a cartesian commands or via
+        joint-space commands. Within each of those spaces, it is possible to
+        provide either position targets or velocity targets.
         """
+        if motion_update is not None and joint_motion_update is not None:
+            self.get_logger().error(
+                "motion_update and joint_motion_update cannot both be provided simultaneously to move_robot()."
+            )
+            return False
 
-        motion_update_msg = MotionUpdate()
-        motion_update_msg.pose = pose
-        motion_update_msg.header.frame_id = frame_id
-        motion_update_msg.header.stamp = self.get_clock().now().to_msg()
-
-        motion_update_msg.target_stiffness = np.diag(
-            [90.0, 90.0, 90.0, 50.0, 50.0, 50.0]
-        ).flatten()
-        motion_update_msg.target_damping = np.diag(
-            [50.0, 50.0, 50.0, 20.0, 20.0, 20.0]
-        ).flatten()
-
-        motion_update_msg.feedforward_wrench_at_tip = Wrench(
-            force=Vector3(x=0.0, y=0.0, z=0.0), torque=Vector3(x=0.0, y=0.0, z=0.0)
-        )
-
-        motion_update_msg.wrench_feedback_gains_at_tip = [0.5, 0.5, 0.5, 0.0, 0.0, 0.0]
-
-        motion_update_msg.trajectory_generation_mode.mode = (
-            TrajectoryGenerationMode.MODE_POSITION
-        )
-
-        self.motion_update_pub.publish(motion_update_msg)
+        if motion_update is not None:
+            return self.handle_motion_update(motion_update)
+        elif joint_motion_update is not None:
+            return self.handle_joint_motion_update(joint_motion_update)
+        else:
+            self.get_logger().error(
+                "Either motion_update or joint_motion_update must be provided."
+            )
+            return False
 
     def send_feedback(self, goal_handle, feedback):
         feedback_msg = InsertCable.Feedback()
@@ -238,8 +237,8 @@ class AicModel(LifecycleNode):
         self._action_thread_result = self._policy.insert_cable(
             task=goal_handle.request.task,
             get_observation=lambda: self.observation_callable(),
-            set_pose_target=lambda pose, frame_id="base_link": self.set_pose_target(
-                pose, frame_id
+            move_robot=lambda motion_update=None, joint_motion_update=None: self.move_robot(
+                motion_update, joint_motion_update
             ),
             send_feedback=lambda feedback: self.send_feedback(goal_handle, feedback),
         )
@@ -249,7 +248,6 @@ class AicModel(LifecycleNode):
 
     async def insert_cable_execute_callback(self, goal_handle: ServerGoalHandle):
         self.get_logger().info("Entering insert_cable_execute_callback()")
-        await self.set_cartesian_mode()
         self._action_thread_result = None
         self._action_thread = threading.Thread(
             target=self.action_thread_func,
@@ -311,21 +309,15 @@ class AicModel(LifecycleNode):
 
         self.get_logger().info("Exiting insert_cable execute loop")
 
-    async def set_target_mode(self, target_mode):
+    def set_target_mode(self, target_mode):
         target_mode_request = ChangeTargetMode.Request()
         target_mode_request.target_mode.mode = target_mode
-        future = self.change_target_mode_client.call_async(target_mode_request)
-        await future
-        # rclpy.spin_until_future_complete(self, future)
-        response = future.result()
+        response = self._change_target_mode_client.call(target_mode_request)
         if not response.success:
             self.get_logger().error("Unable to set target mode")
-
-    async def set_joint_mode(self):
-        await self.set_target_mode(TargetMode.MODE_JOINT)
-
-    async def set_cartesian_mode(self):
-        await self.set_target_mode(TargetMode.MODE_CARTESIAN)
+        else:
+            self._target_mode = target_mode
+            self.get_logger().info("Successfully set target mode")
 
 
 def main(args=None):

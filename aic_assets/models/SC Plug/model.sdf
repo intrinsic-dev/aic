@@ -13,18 +13,66 @@
         </geometry>
       </visual>
       <collision name="housing blue_predeterminado005_collider_box">
-        <pose>0.002539 0.006344 4e-06 0.0 0.0 0.0</pose>
+        <pose>0.002038 0.006344 4e-06 0.0 0.0 0.0</pose>
         <geometry>
           <box>
-            <size>0.013722 0.009 0.0073</size>
+            <size>0.012721 0.009 0.0073</size>
           </box>
         </geometry>
       </collision>
       <collision name="housing blue_predeterminado005_collider_box.001">
+        <pose>0.002038 -0.006344 4e-06 0.0 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.012721 0.009 0.0073</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="housing blue_predeterminado005_collider_box.002">
+        <pose>0.002539 0.006344 4e-06 0.0 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.013722 0.007 0.0073</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="housing blue_predeterminado005_collider_box.003">
         <pose>0.002539 -0.006344 4e-06 0.0 0.0 0.0</pose>
         <geometry>
           <box>
-            <size>0.013722 0.009 0.0073</size>
+            <size>0.013722 0.007 0.0073</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="housing blue_predeterminado005_collider_box.004">
+        <pose>0.008191 0.003056 4e-06 0.0 -0.0 -0.785398</pose>
+        <geometry>
+          <box>
+            <size>0.002 0.00141 0.0073</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="housing blue_predeterminado005_collider_box.005">
+        <pose>0.008191 0.009636 4e-06 0.0 -0.0 0.785398</pose>
+        <geometry>
+          <box>
+            <size>0.002 0.00141 0.0073</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="housing blue_predeterminado005_collider_box.006">
+        <pose>0.008191 -0.009636 4e-06 0.0 -0.0 -0.785398</pose>
+        <geometry>
+          <box>
+            <size>0.002 0.00141 0.0073</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="housing blue_predeterminado005_collider_box.007">
+        <pose>0.008191 -0.003056 4e-06 0.0 -0.0 0.785398</pose>
+        <geometry>
+          <box>
+            <size>0.002 0.00141 0.0073</size>
           </box>
         </geometry>
       </collision>

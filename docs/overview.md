@@ -1,5 +1,7 @@
 # Challenge Overview
 
+![](../../media/aic_overview.png)
+
 The **AI for Industry Challenge** targets a critical bottleneck in modern manufacturing: electronics assembly. Specifically, it focuses on dexterous cable management and insertion—a task that currently remains largely manual and repetitive.
 
 From a robotics perspective, this task is notoriously difficult due to the complex physics involved in manipulating flexible cables and the extreme precision required to perceive, handle, and insert connectors.
@@ -14,11 +16,11 @@ Finalists will deploy their models from simulation to a physical workcell hosted
 
 ## Phases
 
-The challenge officially begins on **February 11** and runs through **July 2026**. It consists of three distinct phases:
+The challenge officially begins on **March 2** and runs through **September 2026**. It consists of three distinct phases:
 
 * **Qualification (~3 months):** Participants train and test their cable assembly models in simulation.
-* **Phase 1 (~1 month):** Qualified teams advance and gain access to Intrinsic Flowstate to develop a complete cable handling solution.
-* **Phase 2 (~1 month):** Top teams move on to deploy and refine their solutions on a physical workcell provided by Intrinsic for real-world testing and evaluation.
+* **Phase 1 (~1.5 months):** Qualified teams advance and gain access to Intrinsic Flowstate to develop a complete cable handling solution.
+* **Phase 2 (~1.5 months):** Top teams move on to deploy and refine their solutions on a physical workcell provided by Intrinsic for real-world testing and evaluation.
 
 For a detailed breakdown of expectations and deliverables, please refer to [Competition Phases](./phases.md).
 

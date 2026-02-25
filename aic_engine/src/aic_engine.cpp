@@ -345,30 +345,29 @@ Engine::Engine(const rclcpp::NodeOptions& options)
 }
 
 //==============================================================================
-void Engine::start() {
+EngineState Engine::start() {
   switch (engine_state_) {
     case EngineState::Uninitialized:
       if (this->initialize() != EngineState::Initialized) {
         RCLCPP_ERROR(node_->get_logger(), "Engine failed to initialize");
-        return;
+        return engine_state_;
       }
       [[fallthrough]];
     case EngineState::Initialized:
-      this->run();
-      break;
+      return this->run();
     case EngineState::Running:
       RCLCPP_WARN(node_->get_logger(), "Engine is already running");
-      break;
+      return engine_state_;
     case EngineState::Error:
       RCLCPP_ERROR(node_->get_logger(),
                    "Engine is in error state. Cannot start.");
-      break;
+      return engine_state_;
     case EngineState::Completed:
       RCLCPP_INFO(node_->get_logger(), "Engine has already completed.");
-      break;
+      return engine_state_;
     default:
       RCLCPP_ERROR(node_->get_logger(), "Unknown engine state. Cannot start.");
-      break;
+      return engine_state_;
   }
 }
 
@@ -594,6 +593,10 @@ EngineState Engine::run() {
                 "\033[1;33m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m");
     TrialScore trial_score = this->handle_trial(trial);
     score.breakdown[trial_id] = trial_score;
+    if (engine_state_ == EngineState::Error) {
+      break;
+    }
+
     if (trial.state == TrialState::AllTasksCompleted) {
       RCLCPP_INFO(
           node_->get_logger(),
@@ -626,6 +629,7 @@ EngineState Engine::run() {
 
   RCLCPP_INFO(node_->get_logger(), " ");
   if (engine_state_ == EngineState::Running) {
+    engine_state_ = EngineState::Completed;
     RCLCPP_INFO(node_->get_logger(),
                 "\033[1;32m╔════════════════════════════════════════╗\033[0m");
     RCLCPP_INFO(node_->get_logger(),
@@ -687,6 +691,7 @@ TrialScore Engine::handle_trial(Trial& trial) {
         node_->get_logger(),
         "Attempted to start trial while not Uninitialized. Report this bug.");
     reset_after_trial(trial);
+    engine_state_ = EngineState::Error;
     return score;
   }
 
@@ -716,6 +721,7 @@ TrialScore Engine::handle_trial(Trial& trial) {
                    "started?\033[0m",
                    MAX_RETRIES, trial.id.c_str());
       reset_after_trial(trial);
+      engine_state_ = EngineState::Error;
       return score;
     }
   } else {
@@ -754,6 +760,7 @@ TrialScore Engine::handle_trial(Trial& trial) {
                    "started?\033[0m",
                    MAX_RETRIES, trial.id.c_str());
       reset_after_trial(trial);
+      engine_state_ = EngineState::Error;
       return score;
     }
   } else {
@@ -762,6 +769,7 @@ TrialScore Engine::handle_trial(Trial& trial) {
                  "'%s'\033[0m",
                  trial.id.c_str());
     reset_after_trial(trial);
+    engine_state_ = EngineState::Error;
     return score;
   }
 
@@ -790,6 +798,7 @@ TrialScore Engine::handle_trial(Trial& trial) {
                    "started?\033[0m",
                    MAX_RETRIES, trial.id.c_str());
       reset_after_trial(trial);
+      engine_state_ = EngineState::Error;
       return score;
     }
   } else {
@@ -797,6 +806,7 @@ TrialScore Engine::handle_trial(Trial& trial) {
                  "\033[1;31m  ✗ Simulator is not ready for trial '%s'\033[0m",
                  trial.id.c_str());
     reset_after_trial(trial);
+    engine_state_ = EngineState::Error;
     return score;
   }
 
@@ -811,6 +821,7 @@ TrialScore Engine::handle_trial(Trial& trial) {
         "\033[1;31m  ✗ Scoring system is not ready for trial '%s'\033[0m",
         trial.id.c_str());
     reset_after_trial(trial);
+    engine_state_ = EngineState::Error;
     return score;
   }
 
@@ -831,6 +842,7 @@ TrialScore Engine::handle_trial(Trial& trial) {
                  "'%s'\033[0m",
                  trial.id.c_str());
     reset_after_trial(trial);
+    engine_state_ = EngineState::Error;
     return score;
   }
 

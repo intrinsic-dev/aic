@@ -237,9 +237,10 @@ def launch_setup(context, *args, **kwargs):
     shutdown_on_aic_engine_exit_handler = RegisterEventHandler(
         OnProcessExit(
             target_action=aic_engine,
-            on_exit=[
+            on_exit=lambda event: [
                 Shutdown(
                     reason="aic_engine exited",
+                    exit_code=event.returncode,
                 )
             ],
         ),

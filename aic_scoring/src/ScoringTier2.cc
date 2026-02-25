@@ -533,7 +533,7 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryJerkScore(
     const Tier3Score &_tier3) const {
   using CategoryScore = Tier2Score::CategoryScore;
 
-  const double kMaxJerkScore = 5.0;
+  const double kMaxJerkScore = 6.0;
   const double kMinJerkScore = 0.0;
   const double kMaxJerkValue = 50.0;
   const double kMinJerkValue = 0.0;
@@ -667,7 +667,7 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryEfficiencyScore(
   }
 
   // Score range and path length bounds (meters).
-  const double kMaxEfficiencyScore = 5.0;              // Shortest path
+  const double kMaxEfficiencyScore = 6.0;              // Shortest path
   const double kMinEfficiencyScore = 0.0;              // Longest path
   const double kMaxPathLength = 1.0 + _minPathLength;  // Path for min score
 
@@ -710,13 +710,13 @@ Tier3Score ScoringTier2::GetDistanceScore() const {
   }
 
   const double kMaxDistance = radiusFromPort;
-  const double kClosestTaskScore = 20.0;
+  const double kClosestTaskScore = 25.0;
   const double kFurthestTaskScore = 0.0;
 
   // Starting partial insertion will award kMinInsertionScore, linear range all
   // the way to the end with kMaxInsertionScore.
-  const double kMinInsertionScore = 30.0;
-  const double kMaxInsertionScore = 40.0;
+  const double kMinInsertionScore = 38.0;
+  const double kMaxInsertionScore = 50.0;
   // The tolerance in x-y within the port to validate that the plug is being
   // inserted.
   const double kEntranceXYTol = 0.005;
@@ -797,8 +797,8 @@ Tier3Score ScoringTier2::GetDistanceScore() const {
 Tier3Score ScoringTier2::ComputeTier3Score() const {
   // Binary will award kInsertionCompletionScore, partial insertion computed
   // in GetDistanceScore (and up to kMaxInsertionScore)
-  constexpr double kInsertionCompletionScore = 60.0;
-  constexpr double kInsertionPenalty = -10.0;
+  constexpr double kInsertionCompletionScore = 75.0;
+  constexpr double kInsertionPenalty = -12.0;
 
   if (!this->task_end_time.has_value()) {
     return Tier3Score(0, "Task not completed.");
@@ -862,7 +862,7 @@ Tier2Score::CategoryScore ScoringTier2::GetInsertionForceScore() const {
   // The sensor reading is tared at startup so its reading is close to 0N.
   const double kForceThreshold = 20.0;
   const double kDurationThreshold = 1.0;
-  const double kPenalty = -10.0;
+  const double kPenalty = -12.0;
 
   double max_force = 0.0;
   double time_above_threshold = 0.0;
@@ -906,7 +906,7 @@ Tier2Score::CategoryScore ScoringTier2::GetInsertionForceScore() const {
 Tier2Score::CategoryScore ScoringTier2::GetContactsScore() const {
   using CategoryScore = Tier2Score::CategoryScore;
   // Apply a fixed penalty if any contact was detected.
-  const double kPenalty = -20.0;
+  const double kPenalty = -24.0;
   if (this->contacts.empty()) {
     return CategoryScore(0, "No contact detected.");
   }
@@ -928,7 +928,7 @@ Tier2Score::CategoryScore ScoringTier2::GetTaskDurationScore(
 
   const rclcpp::Duration kMaxTaskTime = rclcpp::Duration::from_seconds(60.0);
   const rclcpp::Duration kMinTaskTime = rclcpp::Duration::from_seconds(5.0);
-  const double kFastestTaskScore = 10.0;
+  const double kFastestTaskScore = 12.0;
   const double kSlowestTaskScore = 0.0;
 
   if (_tier3.total_score() <= 0) {

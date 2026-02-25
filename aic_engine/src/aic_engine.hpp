@@ -187,7 +187,7 @@ class Engine {
   ~Engine();
 
   /// \brief Start the engine.
-  void start();
+  EngineState start();
 
  private:
   // Initializes the engine.
