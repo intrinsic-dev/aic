@@ -349,28 +349,32 @@ class AICRobotAICController(Robot):
             "joint_positions.6": joint_positions[6],
         }
 
-        # Capture images from cameras
-        cam_obs: dict[str, NDArray[Any]] = {}
+    # 1. Initialize with placeholders to ensure all keys exist (prevents KeyError)
+        cam_obs: dict[str, NDArray[Any]] = {
+            cam_key: np.zeros(shape, dtype=np.uint8) 
+            for cam_key, shape in self._cameras_ft.items()
+        }
+
+        # 2. Try to fill placeholders with real data
         for cam_key, cam in self.cameras.items():
-            start = time.perf_counter()
             try:
                 data = cam.async_read(timeout_ms=2000)
-                if data.size == 0:
-                    logging.debug("camera data is empty, device not ready yet?")
-                    continue  # data not ready yet
-                image_scale = self.config.camera_image_scaling[cam_key]
-                if image_scale != 1:
-                    cam_obs[cam_key] = cv2.resize(
-                        data,
-                        None,
-                        fx=image_scale,
-                        fy=image_scale,
-                        interpolation=cv2.INTER_AREA,
-                    )
+                if data is not None and data.size > 0:
+                    image_scale = self.config.camera_image_scaling[cam_key]
+                    if image_scale != 1:
+                        cam_obs[cam_key] = cv2.resize(
+                            data,
+                            None,
+                            fx=image_scale,
+                            fy=image_scale,
+                            interpolation=cv2.INTER_AREA,
+                        )
+                    else:
+                        cam_obs[cam_key] = data
+                else:
+                    logger.debug(f"Camera {cam_key} data is empty, using all-black placeholder.")
             except Exception as e:
                 logger.error(f"Failed to read camera {cam_key}: {e}")
-            dt_ms = (time.perf_counter() - start) * 1e3
-            logger.debug(f"{self} read {cam_key}: {dt_ms:.1f}ms")
 
         obs = {**cam_obs, **controller_state_obs}
         return obs
