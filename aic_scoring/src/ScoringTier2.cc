@@ -698,6 +698,11 @@ Tier3Score ScoringTier2::GetDistanceScore() const {
   //   initial plug-port distance.
   //   This score is always lower than a partial insertion score.
 
+  if (!this->task_start_time.has_value()) {
+    return Tier3Score(
+        0, "Distance computation failed, task start time not set");
+  }
+
   // Being as close as possible to the port entrance will award
   // kClosestTaskScore
   const auto initDist = this->GetPlugPortDistance(tf2::TimePoint(
