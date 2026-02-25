@@ -37,6 +37,17 @@
 
 namespace aic {
 
+template <typename FutureT>
+std::future_status wait_for_interruptible(FutureT& future, std::chrono::seconds timeout) {
+  const auto start = std::chrono::steady_clock::now();
+  while (rclcpp::ok() && std::chrono::steady_clock::now() - start < timeout) {
+    if (future.wait_for(std::chrono::milliseconds(50)) == std::future_status::ready) {
+      return std::future_status::ready;
+    }
+  }
+  return std::future_status::timeout;
+}
+
 //==============================================================================
 Trial::Trial(const std::string& _id, YAML::Node _config) : id(std::move(_id)) {
   // Validate config structure
@@ -582,6 +593,10 @@ EngineState Engine::run() {
 
   size_t trial_num = 1;
   for (auto& trial_entry : trials_) {
+    if (!rclcpp::ok()) {
+      engine_state_ = EngineState::Error;
+      break;
+    }
     const std::string& trial_id = trial_entry.first;
     Trial& trial = trial_entry.second;
     RCLCPP_INFO(node_->get_logger(), " ");
@@ -904,7 +919,7 @@ bool Engine::model_node_is_unconfigured() {
   auto request = std::make_shared<lifecycle_msgs::srv::GetState::Request>();
   auto future = model_get_state_client_->async_send_request(request);
 
-  if (future.wait_for(std::chrono::seconds(5)) != std::future_status::ready) {
+  if (wait_for_interruptible(future, std::chrono::seconds(5)) != std::future_status::ready) {
     RCLCPP_ERROR(node_->get_logger(),
                  "GetState service call timed out for node '%s'",
                  model_node_name_.c_str());
@@ -1017,7 +1032,7 @@ bool Engine::check_model() {
   // Check if aic_model node exists in the graph and is a lifecycle node.
   model_discovered_ = false;
 
-  while (!model_discovered_ && !(this->node_->now() - start_time > timeout)) {
+  while (rclcpp::ok() && !model_discovered_ && !(this->node_->now() - start_time > timeout)) {
     // First check that only one node with the expected name exists.
     auto node_graph = node_->get_node_graph_interface();
     auto node_names_and_namespaces =
@@ -1098,7 +1113,7 @@ bool Engine::check_endpoints() {
       this->node_->get_parameter("endpoint_ready_timeout_seconds").as_int());
   const auto& node_graph = node_->get_node_graph_interface();
 
-  while (!unavailable.empty() && !(this->node_->now() - start_time > timeout)) {
+  while (rclcpp::ok() && !unavailable.empty() && !(this->node_->now() - start_time > timeout)) {
     std::unordered_set<std::string> node_set;
     for (const auto& [name, _] : node_graph->get_node_names_and_namespaces()) {
       node_set.insert(name);
@@ -1123,7 +1138,7 @@ bool Engine::check_endpoints() {
   // TODO(Yadunund): Consider checking for messages received on topics.
   unavailable = this->scoring_tier2_->GetMissingRequiredTopics();
   start_time = this->node_->now();
-  while (!unavailable.empty() && !(this->node_->now() - start_time > timeout)) {
+  while (rclcpp::ok() && !unavailable.empty() && !(this->node_->now() - start_time > timeout)) {
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
     unavailable = this->scoring_tier2_->GetMissingRequiredTopics();
   }
@@ -1175,7 +1190,7 @@ bool Engine::ready_simulator(Trial& trial) {
   // the weight of the end-effector.
   const auto tare_req = std::make_shared<TriggerSrv::Request>();
   auto tare_ft_future = tare_ft_client_->async_send_request(tare_req);
-  if (tare_ft_future.wait_for(std::chrono::seconds(10)) !=
+  if (wait_for_interruptible(tare_ft_future, std::chrono::seconds(10)) !=
       std::future_status::ready) {
     RCLCPP_ERROR(node_->get_logger(),
                  "TareFt service call timed out requesting for taring!");
@@ -1263,8 +1278,12 @@ bool Engine::ready_simulator(Trial& trial) {
           });
 
   std::unique_lock<std::mutex> lock(mtx);
-  cv.wait_for(lock, std::chrono::seconds(10),
-              [&joints_settled] { return joints_settled; });
+  const auto start = std::chrono::steady_clock::now();
+  while (rclcpp::ok() && !joints_settled &&
+         std::chrono::steady_clock::now() - start < std::chrono::seconds(10)) {
+    cv.wait_for(lock, std::chrono::milliseconds(100),
+                [&joints_settled] { return joints_settled; });
+  }
 
   // TODO(Yadunund): Implement other simulator readiness checks.
 
@@ -1375,7 +1394,7 @@ bool Engine::tasks_started(Trial& trial) {
     RCLCPP_INFO(this->node_->get_logger(), "Waiting for result...");
 
     // Cancel goal if time limit exceeded
-    if (result_future.wait_for(std::chrono::seconds(task.time_limit)) !=
+    if (wait_for_interruptible(result_future, std::chrono::seconds(task.time_limit)) !=
         std::future_status::ready) {
       RCLCPP_ERROR(this->node_->get_logger(),
                    "Task [%s] timed out after %ld seconds. Cancelling goal.",
@@ -1488,7 +1507,7 @@ bool Engine::transition_model_lifecycle_node(const uint8_t transition) {
 
   auto future =
       model_change_state_client_->async_send_request(change_state_request);
-  if (future.wait_for(std::chrono::seconds(timeout)) !=
+  if (wait_for_interruptible(future, std::chrono::seconds(timeout)) !=
       std::future_status::ready) {
     RCLCPP_ERROR(
         node_->get_logger(),
@@ -1584,7 +1603,7 @@ bool Engine::validate_model_shutdown() const {
   const auto start = std::chrono::steady_clock::now();
   const auto timeout = std::chrono::seconds(2);
 
-  while (std::chrono::steady_clock::now() - start < timeout) {
+  while (rclcpp::ok() && std::chrono::steady_clock::now() - start < timeout) {
     const std::size_t pose_pubs =
         node_graph->count_publishers("/aic_controller/pose_commands");
     const std::size_t joint_pubs =
@@ -1645,7 +1664,7 @@ bool Engine::home_robot() {
     request->strictness = SwitchControllerSrv::Request::BEST_EFFORT;
 
     auto future = switch_controller_client_->async_send_request(request);
-    if (future.wait_for(std::chrono::seconds(10)) !=
+    if (wait_for_interruptible(future, std::chrono::seconds(10)) !=
         std::future_status::ready) {
       RCLCPP_ERROR(node_->get_logger(),
                    "SwitchController service call timed out");
@@ -1671,7 +1690,7 @@ bool Engine::home_robot() {
   // Request for joints reset to home positions using pre-built request.
   auto reset_joints_future =
       reset_joints_client_->async_send_request(home_reset_joints_request_);
-  if (reset_joints_future.wait_for(std::chrono::seconds(10)) !=
+  if (wait_for_interruptible(reset_joints_future, std::chrono::seconds(10)) !=
       std::future_status::ready) {
     RCLCPP_ERROR(node_->get_logger(),
                  "ResetJoints service call timed out requesting for reset!");
@@ -1711,7 +1730,7 @@ void Engine::reset_simulator(const Trial& trial, bool home_robot) {
     request->entity = entity_name;
 
     auto future = delete_entity_client_->async_send_request(request);
-    if (future.wait_for(std::chrono::seconds(10)) !=
+    if (wait_for_interruptible(future, std::chrono::seconds(10)) !=
         std::future_status::ready) {
       RCLCPP_ERROR(node_->get_logger(),
                    "Delete entity service call timed out for entity '%s'",
@@ -1959,7 +1978,7 @@ bool Engine::spawn_entity(Trial& trial, std::string entity_name,
 
   // Call service synchronously with timeout
   auto future = spawn_entity_client_->async_send_request(request);
-  if (future.wait_for(std::chrono::seconds(10)) != std::future_status::ready) {
+  if (wait_for_interruptible(future, std::chrono::seconds(10)) != std::future_status::ready) {
     RCLCPP_ERROR(node_->get_logger(), "Spawn entity service call timed out");
     return false;
   }
