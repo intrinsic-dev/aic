@@ -931,19 +931,19 @@ Tier2Score::CategoryScore ScoringTier2::GetTaskDurationScore(
   const double kFastestTaskScore = 10.0;
   const double kSlowestTaskScore = 0.0;
 
-  if (_tier3.total_score() <= 0) {
-    return CategoryScore(
-        0,
-        "Plug is not within max bounding radius from target port, "
-        "not assigning time bonus");
+  if (!this->task_end_time.has_value()) {
+    return CategoryScore(0, "Task not completed.");
   }
 
   if (!this->task_start_time.has_value()) {
     return CategoryScore(0, "Time computation failed, task start time not set");
   }
 
-  if (!this->task_end_time.has_value()) {
-    return CategoryScore(0, "Task not completed.");
+  if (_tier3.total_score() <= 0) {
+    return CategoryScore(
+        0,
+        "Plug is not within max bounding radius from target port, "
+        "not assigning time bonus");
   }
 
   const rclcpp::Duration task_duration =

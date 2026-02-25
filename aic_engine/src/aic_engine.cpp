@@ -1375,14 +1375,27 @@ bool Engine::tasks_started(Trial& trial) {
     RCLCPP_INFO(this->node_->get_logger(), "Waiting for result...");
 
     // Cancel goal if time limit exceeded
-    if (result_future.wait_for(std::chrono::seconds(task.time_limit)) !=
-        std::future_status::ready) {
-      RCLCPP_ERROR(this->node_->get_logger(),
-                   "Task [%s] timed out after %ld seconds. Cancelling goal.",
-                   task.id.c_str(), task.time_limit);
-      insert_cable_action_client_->async_cancel_goal(goal_handle);
-      current_attempt.state = TaskState::TimeLimitExceeded;
-      return false;
+    // Wait for for task.time_limit by polling node clock so that
+    // use_sim_time is respected.
+    auto timeout_duration = rclcpp::Duration::from_seconds(task.time_limit);
+    bool timed_out = false;
+    while (result_future.wait_for(std::chrono::milliseconds(0)) !=
+           std::future_status::ready) {
+        if ((this->node_->now() - current_attempt.time_started.value()) >
+             timeout_duration) {
+            timed_out = true;
+            break;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+    if (timed_out) {
+        RCLCPP_ERROR(this->node_->get_logger(),
+                     "Task [%s] timed out after %ld seconds. Cancelling goal.",
+                     task.id.c_str(), task.time_limit);
+
+        insert_cable_action_client_->async_cancel_goal(goal_handle);
+        current_attempt.state = TaskState::TimeLimitExceeded;
+        return false;
     }
 
     auto result = result_future.get();
