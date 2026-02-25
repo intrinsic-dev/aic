@@ -67,7 +67,7 @@
 - Low-level control system managing robot motion, force management, and actuator commands. Handles both joint-space and Cartesian-space control.
 
 **End-Effector/Gripper**
-- The robot's attachment point for grasping and manipulating cables and components, also known as the Tool Center Point (TCP) with the corresponding frame being `gripper/tcp`. The gripper state is monitored via the `/gripper_state` topic. 
+- The robot's attachment point for grasping and manipulating cables and components, also known as the **Tool Center Point (TCP)**, with the corresponding frame being `gripper/tcp`. The gripper state is monitored via the `/gripper_state` topic. 
 
 **Joint-Space Control**
 - Robot motion commanded using target joint configurations. Commands published to `/aic_controller/joint_commands`.
