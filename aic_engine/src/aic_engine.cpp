@@ -1382,7 +1382,7 @@ bool Engine::tasks_started(Trial& trial) {
     while (result_future.wait_for(std::chrono::milliseconds(0)) !=
            std::future_status::ready) {
       if ((this->node_->now() - current_attempt.time_started.value()) >
-           timeout_duration) {
+          timeout_duration) {
         timed_out = true;
         break;
       }
