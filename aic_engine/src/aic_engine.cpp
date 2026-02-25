@@ -1383,8 +1383,8 @@ bool Engine::tasks_started(Trial& trial) {
            std::future_status::ready) {
       if ((this->node_->now() - current_attempt.time_started.value()) >
            timeout_duration) {
-          timed_out = true;
-          break;
+        timed_out = true;
+        break;
       }
       std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
