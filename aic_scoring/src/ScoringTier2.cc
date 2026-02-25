@@ -138,9 +138,10 @@ bool ScoringTier2::WaitForTfs() {
   // straightforward wait.
   const auto start = this->node->get_clock()->now();
   const auto timeout = std::chrono::seconds(10);
-  while ((!this->cableTfReceived || !this->gripperTfReceived) &&
+  while (rclcpp::ok() && (!this->cableTfReceived || !this->gripperTfReceived) &&
          this->node->get_clock()->now() - start < timeout) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    this->node->get_clock()->sleep_for(
+        rclcpp::Duration(std::chrono::milliseconds(100)));
   }
   if (!this->cableTfReceived || !this->gripperTfReceived) {
     RCLCPP_ERROR(this->node->get_logger(),
@@ -201,7 +202,7 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
   // First pass: Process all messages to build the complete TF buffer.
   // We need both static TF (robot URDF) and dynamic TF (joint states) to
   // compute the full transform chain to the gripper.
-  while (bagReader.has_next()) {
+  while (rclcpp::ok() && bagReader.has_next()) {
     const auto msg_ptr = bagReader.read_next();
     // Debugging to make sure messages are in the bag
     // RCLCPP_INFO(this->node->get_logger(), "Received message on topic '%s'",

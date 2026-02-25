@@ -310,6 +310,24 @@ class Engine {
   /// \param[in] The score to serialize and write.
   void score_run(const Score& score);
 
+  /// @brief Wait for a future, interrupt if rclcpp Context is shut down.
+  /// \param[in] The future to wait for.
+  /// \param[in] The timeout to wait until.
+  /// @return true if the future resolved, false if it didn't.
+  template <typename FutureT>
+  bool wait_for_interruptible(const FutureT& future,
+                              const std::chrono::seconds timeout) const {
+    const auto start = node_->now();
+    const auto timeout_duration = rclcpp::Duration(timeout);
+    while (rclcpp::ok() && (node_->now() - start) < timeout_duration) {
+      if (future.wait_for(std::chrono::milliseconds(50)) ==
+          std::future_status::ready) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   // Strings.
   // Name of the aic_adapter node for lifecycle transitions.
   std::string adapter_node_name_;
