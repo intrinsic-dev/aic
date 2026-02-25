@@ -180,7 +180,7 @@ Check the Status column to monitor progress:
 
 - Failed — evaluation encountered an error
 
-![My Submissions page](../../media/aic_my_submissions.png)
+![My Submissions page](../../media/aic_portal_my_submissions.png)
 
 When available, use the **Link** entries to inspect the submitted file, result, stdout, or stderr logs for further inspection.
 
