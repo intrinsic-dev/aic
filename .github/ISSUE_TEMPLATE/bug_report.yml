@@ -29,7 +29,9 @@ body:
     id: system-specs
     attributes:
       label: System specs
-      description: CPU, RAM, GPU, and GPU driver version.
+      description: |
+        Please provide your CPU, RAM, and GPU details.
+        You can also paste the output of `neofetch`, `inxi`, or `nvidia-smi` here.
       placeholder: |
         CPU: e.g. Intel i9-13900K
         RAM: e.g. 32 GB
