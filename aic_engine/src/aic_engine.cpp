@@ -1006,7 +1006,7 @@ bool Engine::configure_model_node() {
   };
 
   insert_cable_action_client_->async_send_goal(goal_msg, goal_options);
-  std::this_thread::sleep_for(std::chrono::seconds(1));
+  node_->get_clock()->sleep_for(rclcpp::Duration(std::chrono::seconds(1)));
 
   if (!*goal_was_rejected) {
     return false;
@@ -1059,7 +1059,8 @@ bool Engine::check_model() {
       RCLCPP_INFO(node_->get_logger(),
                   "No node with name '%s' found. Retrying...",
                   model_node_name_.c_str());
-      std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+      node_->get_clock()->sleep_for(
+          rclcpp::Duration(std::chrono::milliseconds(1000)));
       continue;
     }
 
@@ -1072,7 +1073,8 @@ bool Engine::check_model() {
       RCLCPP_INFO(node_->get_logger(),
                   "Service '%s' not available yet. Retrying...",
                   model_get_state_service_name_.c_str());
-      std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+      node_->get_clock()->sleep_for(
+          rclcpp::Duration(std::chrono::milliseconds(1000)));
       continue;
     } else {
       RCLCPP_INFO(node_->get_logger(),
@@ -1133,7 +1135,8 @@ bool Engine::check_endpoints() {
         ++it;
       }
     }
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    node_->get_clock()->sleep_for(
+        rclcpp::Duration(std::chrono::milliseconds(10)));
   }
   if (!unavailable.empty()) {
     RCLCPP_ERROR(node_->get_logger(), "Missing required nodes: %s",
@@ -1147,7 +1150,8 @@ bool Engine::check_endpoints() {
   start_time = this->node_->now();
   while (rclcpp::ok() && !unavailable.empty() &&
          !(this->node_->now() - start_time > timeout)) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    node_->get_clock()->sleep_for(
+        rclcpp::Duration(std::chrono::milliseconds(10)));
     unavailable = this->scoring_tier2_->GetMissingRequiredTopics();
   }
   if (!unavailable.empty()) {
@@ -1621,7 +1625,8 @@ bool Engine::validate_model_shutdown() const {
     if (pose_pubs == 0 && joint_pubs == 0) {
       return true;
     }
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    node_->get_clock()->sleep_for(
+        rclcpp::Duration(std::chrono::milliseconds(100)));
   }
 
   // Timed out — report all violations

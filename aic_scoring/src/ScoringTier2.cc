@@ -140,7 +140,8 @@ bool ScoringTier2::WaitForTfs() {
   const auto timeout = std::chrono::seconds(10);
   while (rclcpp::ok() && (!this->cableTfReceived || !this->gripperTfReceived) &&
          this->node->get_clock()->now() - start < timeout) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    this->node->get_clock()->sleep_for(
+        rclcpp::Duration(std::chrono::milliseconds(100)));
   }
   if (!this->cableTfReceived || !this->gripperTfReceived) {
     RCLCPP_ERROR(this->node->get_logger(),
