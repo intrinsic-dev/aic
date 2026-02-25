@@ -57,7 +57,7 @@ class RunACT(Policy):
         # -------------------------------------------------------------------------
         # 1. Configuration & Weights Loading
         # -------------------------------------------------------------------------
-        repo_id = "grkw/10eps_act"
+        repo_id = "grkw/aic_act_policy"
 
         # Path to your checkpoint folder
         policy_path = Path(snapshot_download(repo_id=repo_id,
