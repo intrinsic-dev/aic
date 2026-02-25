@@ -6,6 +6,3 @@ contact_links:
   - name: Known issues
     url: https://github.com/intrinsic-dev/aic/issues?q=is%3Aissue+state%3Aopen+label%3A%22known+issue%22
     about: Check existing known issues before opening a new ticket.
-  - name: Report a bug
-    url: https://github.com/intrinsic-dev/aic/issues/new?template=bug_report.yml
-    about: Report a bug or technical issue.

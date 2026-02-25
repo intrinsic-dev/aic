@@ -22,7 +22,7 @@ body:
     id: os
     attributes:
       label: OS
-      default: Ubuntu 24.04
+      placeholder: Ubuntu 24.04
     validations:
       required: true
   - type: textarea
