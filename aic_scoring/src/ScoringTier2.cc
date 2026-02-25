@@ -699,8 +699,8 @@ Tier3Score ScoringTier2::GetDistanceScore() const {
   //   This score is always lower than a partial insertion score.
 
   if (!this->task_start_time.has_value()) {
-    return Tier3Score(
-        0, "Distance computation failed, task start time not set");
+    return Tier3Score(0,
+                      "Distance computation failed, task start time not set");
   }
 
   // Being as close as possible to the port entrance will award
