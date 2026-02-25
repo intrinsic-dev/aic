@@ -89,7 +89,7 @@
   direction: GZ_TO_ROS
   lazy: true
 
-- ros_topic_name: "/scoring/tf_static"
+- ros_topic_name: "/scoring/tf"
   gz_topic_name: "/task_board/pose_static"
   ros_type_name: "tf2_msgs/msg/TFMessage"
   gz_type_name: "gz.msgs.Pose_V"
