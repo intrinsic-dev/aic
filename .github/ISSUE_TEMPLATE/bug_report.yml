@@ -1,0 +1,63 @@
+name: Bug Report
+description: Report a bug or technical issue
+labels: ["bug"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What happened and what did you expect instead?
+    validations:
+      required: true
+  - type: dropdown
+    id: setup-method
+    attributes:
+      label: Setup method
+      options:
+        - Docker + Distrobox + Pixi (recommended)
+        - Source build
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: OS
+      default: Ubuntu 24.04
+    validations:
+      required: true
+  - type: input
+    id: gpu
+    attributes:
+      label: GPU
+      placeholder: "e.g. NVIDIA RTX 3080, or \"None / CPU only\""
+    validations:
+      required: true
+  - type: input
+    id: gpu-driver-version
+    attributes:
+      label: GPU driver version
+      placeholder: "output of `nvidia-smi`"
+    validations:
+      required: false
+  - type: textarea
+    id: steps-to-reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Exact commands you ran to trigger the issue.
+    validations:
+      required: true
+  - type: textarea
+    id: log-output
+    attributes:
+      label: Relevant log output
+      description: Paste any error messages or terminal output.
+      render: shell
+    validations:
+      required: false
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+      description: Screenshots, config changes, environment variables, etc.
+    validations:
+      required: false
