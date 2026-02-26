@@ -39,9 +39,9 @@ Follow the sections below to navigate through each phase of the process.
 
 4. **🧪 Test Your Solution**
    - Use the provided simulation environment to test your policy.
-   - Use the example configurations in [`aic_engine/config/`](./aic_engine/config/) to test different scenarios. For more information on running the `aic_engine` with different configs, see the [aic_engine README file](../aic_engine/README.md)
-   - Create your own test scenarios by following the configuration examples in [`aic_engine/config/`](./aic_engine/config/)
-   - Refer to [Troubleshooting](./docs/troubleshooting.md) if you encounter issues
+   - Run `aic_engine` with the `sampole_config` in [`aic_engine/config/`](./aic_engine/config/) to test different scenarios. For more information on running the `aic_engine` with different configs, see the [aic_engine README file](./aic_engine/README.md).
+   - Create your own test scenarios by following the configuration example in [`aic_engine/config/`](./aic_engine/config/) to run with `aic_engine`.
+   - Refer to [Troubleshooting](./docs/troubleshooting.md) if you encounter issues.
 
 5. **📦 Submit Your Entry**
    - Package your solution following the [Submission Guidelines](./docs/submission.md).
