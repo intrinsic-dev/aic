@@ -15,6 +15,7 @@
 #
 
 import os
+
 os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "1"
 
 import time
@@ -49,6 +50,7 @@ from lerobot.policies.act.configuration_act import ACTConfig
 from safetensors.torch import load_file
 from huggingface_hub import snapshot_download
 
+
 class RunACT(Policy):
     def __init__(self, parent_node: Node):
         super().__init__(parent_node)
@@ -60,8 +62,12 @@ class RunACT(Policy):
         repo_id = "grkw/aic_act_policy"
 
         # Path to your checkpoint folder
-        policy_path = Path(snapshot_download(repo_id=repo_id,
-                                             allow_patterns=["config.json", "model.safetensors", "*.safetensors"]))
+        policy_path = Path(
+            snapshot_download(
+                repo_id=repo_id,
+                allow_patterns=["config.json", "model.safetensors", "*.safetensors"],
+            )
+        )
 
         # Load Config Manually (Fixes 'Draccus' error by removing unknown 'type' field)
         with open(policy_path / "config.json", "r") as f:
