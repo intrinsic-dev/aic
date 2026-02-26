@@ -162,30 +162,29 @@ Simply pushing the image to ECR does not trigger the evaluation. You must notify
 
 ---
 
-### 4. Monitor Your Submission Status
+### 4. Monitor Your Evaluation
 
-After submitting your image, you can track the evaluation progress from the platform.
+After registering your OCI Image URI, our orchestration platform spins up your container into a dedicated, isolated evaluation environment. This process is automated, but you can track its lifecycle through the portal's monitoring dashboard.
 
-In the portal, click **My Submissions**.
+#### Accessing the Dashboard
+1. Navigate to the **My Submissions** page in the portal.
+2. Apply the `Qualification` filter to the "Phase" dropdown to see your current entries.
+3. Locate your most recent submission at the top of the table.
 
-Ensure the **Qualification** phase is selected in the filters.
+#### Evaluation Lifecycle
 
-Locate your entry in the submissions table.
+The **Status** column provides a real-time status of your container's journey through our evaluation cluster. Understanding these states is key to managing your daily submission limit.
 
-Check the Status column to monitor progress:
+| Status | Technical Context |
+| :--- | :--- |
+| **Submitted** | The platform has received your Image URI. |
+| **Queued** | Your submission is in the execution buffer. It is waiting for an available evaluation node in the cluster. |
+| **Running** | Your image has been pulled from ECR, and the ROS 2 nodes are currently executing the challenge logic in the simulation environment. |
+| **Finished** | The evaluation reached a natural conclusion. Your success metrics have been calculated and are now visible on the Leaderboard. |
+| **Failed** | The container exited prematurely. This usually indicates a runtime crash (e.g., Python `ImportError`), a missing dependency, or a system timeout. |
 
-- Running — evaluation is in progress
-
-- Finished — evaluation completed successfully
-
-- Failed — evaluation encountered an error
-
-![My Submissions page](../../media/aic_portal_my_submissions.png)
-
-When available, use the **Link** entries to inspect the submitted file, result, stdout, or stderr logs for further inspection.
-
-> [!IMPORTANT]
-> The evaluation may take several minutes. Refresh the page periodically to see updates.
+> [!TIP]
+> **Evaluation duration:** Depending on cluster load and the complexity of your policy, the transition from **Queued** to **Finished** typically takes **5 to 15 minutes**. You do not need to resubmit if the status is "Queued" or "Running"; simply refresh the page to see the latest state.
 
 ---
 
