@@ -141,6 +141,32 @@ Simply pushing the image to ECR does not trigger the evaluation. You must notify
 
 ---
 
+### 4. Monitor Your Evaluation
+
+After registering your OCI Image URI, our orchestration platform spins up your container into a dedicated, isolated evaluation environment. This process is automated, but you can track its lifecycle through the portal's monitoring dashboard.
+
+#### Accessing the Dashboard
+1. Navigate to the **My Submissions** page in the portal.
+2. Apply the `Qualification` filter to the "Phase" dropdown to see your current entries.
+3. Locate your most recent submission at the top of the table.
+
+#### Evaluation Lifecycle
+
+The **Status** column provides a real-time status of your container's journey through our evaluation cluster. Understanding these states is key to managing your daily submission limit.
+
+| Status | Technical Context |
+| :--- | :--- |
+| **Submitted** | The platform has received your Image URI. |
+| **Queued** | Your submission is in the execution buffer. It is waiting for an available evaluation node in the cluster. |
+| **Running** | Your image has been pulled from ECR, and the ROS 2 nodes are currently executing the challenge logic in the simulation environment. |
+| **Finished** | The evaluation reached a natural conclusion. Your success metrics have been calculated and are now visible on the Leaderboard. |
+| **Failed** | The container exited prematurely. This usually indicates a runtime crash (e.g., Python `ImportError`), a missing dependency, or a system timeout. |
+
+> [!TIP]
+> Depending on cluster load and the complexity of your policy, the transition from **Queued** to **Finished** typically takes **5 to 15 minutes**. You do not need to resubmit if the status is "Queued" or "Running"; simply refresh the page to see the latest state.
+
+---
+
 ## FAQs
 
 **I cannot use the example dockerfile**: The example dockerfile assumes that you are using `aic_model` to run your policy. If you are not using `aic_model`, you can [create a custom dockerfile](./custom_dockerfile.md).
