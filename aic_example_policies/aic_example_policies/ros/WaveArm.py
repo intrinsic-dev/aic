@@ -56,7 +56,7 @@ class WaveArm(Policy):
             if observation is None:
                 self.get_logger().info("No observation received.")
                 continue
-            
+
             t = (
                 observation.center_image.header.stamp.sec
                 + observation.center_image.header.stamp.nanosec / 1e9
