@@ -45,8 +45,8 @@ Follow the sections below to navigate through each phase of the process.
 
 5. **📦 Submit Your Entry**
    - Package your solution following the [Submission Guidelines](./docs/submission.md).
-   - Test your container before submitting
-   - Submit through the official portal.
+   - Test your container locally before submitting following [these instructions](./docs/submission.md#verify-locally).
+   - Submit through the official portal following [these instructions](./docs/submission.md#2-upload-your-image-to-our-registry).
 
 ---
 
