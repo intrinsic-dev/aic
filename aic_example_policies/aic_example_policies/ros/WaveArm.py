@@ -53,6 +53,11 @@ class WaveArm(Policy):
         while (self.time_now() - start_time) < timeout:
             self.sleep_for(0.25)
             observation = get_observation()
+
+            if observation is None:
+                self.get_logger().info("No observation received.")
+                continue
+
             t = (
                 observation.center_image.header.stamp.sec
                 + observation.center_image.header.stamp.nanosec / 1e9
