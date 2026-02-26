@@ -42,6 +42,7 @@
   <xacro:arg name="right_camera_tf_prefix" default="right_camera/"/>
   <xacro:arg name="gripper_tf_prefix" default="gripper/"/>
   <xacro:arg name="gripper_initial_pos" default="0.00655"/>
+  <xacro:arg name="gripper_hardware_plugin" default="gz_ros2_control/GazeboSimSystem"/>
   <xacro:arg name="cam_mount_radial_offset" default="0.1" />
   <xacro:arg name="cam_mount_axial_offset" default="0.08" />
   <!-- If true, enable Gazebo camera in sim -->
@@ -173,6 +174,7 @@
     grip_effort_min="20"
     grip_effort_max="130"
     initial_pos="$(arg gripper_initial_pos)"
+    hardware_plugin="$(arg gripper_hardware_plugin)"
     >
   </xacro:robotiq_hande>
 

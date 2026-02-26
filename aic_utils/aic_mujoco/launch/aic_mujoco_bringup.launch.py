@@ -119,6 +119,9 @@ def launch_setup(context, *args, **kwargs):
             "gripper_initial_pos:=",
             gripper_initial_pos,
             " ",
+            "gripper_hardware_plugin:=",
+            "mujoco_ros2_control/MujocoSystem",
+            " ",
             "ros2_control_config:=",
             mujoco_ros2_control_config,
         ]
