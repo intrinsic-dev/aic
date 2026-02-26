@@ -349,13 +349,8 @@ class AICRobotAICController(Robot):
             "joint_positions.6": joint_positions[6],
         }
 
-        # 1. Initialize with placeholders to ensure all keys exist (prevents KeyError)
-        cam_obs: dict[str, NDArray[Any]] = {
-            cam_key: np.zeros(shape, dtype=np.uint8)
-            for cam_key, shape in self._cameras_ft.items()
-        }
-
-        # 2. Try to fill placeholders with real data
+        # Capture images from cameras
+        cam_obs: dict[str, NDArray[Any]] = {}
         for cam_key, cam in self.cameras.items():
             try:
                 data = cam.async_read(timeout_ms=2000)
@@ -373,7 +368,10 @@ class AICRobotAICController(Robot):
                         cam_obs[cam_key] = data
                 else:
                     logger.debug(
-                        f"Camera {cam_key} data is empty, using all-black placeholder."
+                        f"Camera {cam_key} data is empty (camera not ready yet?), using all-black placeholder."
+                    )
+                    cam_obs[cam_key] = np.zeros(
+                        self._cameras_ft[cam_key], dtype=np.uint8
                     )
             except Exception as e:
                 logger.error(f"Failed to read camera {cam_key}: {e}")
