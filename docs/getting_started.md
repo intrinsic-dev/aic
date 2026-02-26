@@ -109,6 +109,7 @@ export DBX_CONTAINER_MANAGER=docker
 
 # Create and enter the eval container
 docker pull ghcr.io/intrinsic-dev/aic/aic_eval:latest
+# If you have an NVIDIA GPU, see tip below on adding the --nvidia flag for GPU support
 distrobox create -r -i ghcr.io/intrinsic-dev/aic/aic_eval:latest aic_eval
 distrobox enter -r aic_eval
 
@@ -165,7 +166,9 @@ pixi install
 
 ### Step 3: Run an Example Policy
 
+With the simulation environment running, run the following policy (Note that `aic_engine` has a timeout period waiting for a policy to connect):
 ```bash
+# Within the pixi workspace in ~/ws_aic/src/aic
 pixi run ros2 run aic_model aic_model --ros-args -p use_sim_time:=true -p policy:=aic_example_policies.ros.WaveArm
 ```
 

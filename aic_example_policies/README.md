@@ -46,25 +46,12 @@ A "cheating" solution that uses the TF transformation tree provided by the simul
 
 **Launch simulation with ground truth:**
 ```bash
-/entrypoint.sh \
-  nic_card_mount_0_present:=true \
-  sc_port_0_present:=true \
-  ground_truth:=true \
-  spawn_task_board:=true \
-  spawn_cable:=true \
-  attach_cable_to_gripper:=true \
-  sfp_mount_rail_0_present:=true \
-  start_aic_engine:=false
+/entrypoint.sh ground_truth:=true start_aic_engine:=true
 ```
 
 **Run the policy:**
 ```bash
 pixi run ros2 run aic_model aic_model --ros-args -p use_sim_time:=true -p policy:=aic_example_policies.ros.CheatCode
-```
-
-**Trigger task execution:**
-```bash
-src/aic/aic_model/test/create_and_cancel_task.py
 ```
 
 **Source:** [`CheatCode.py`](./aic_example_policies/ros/CheatCode.py)
