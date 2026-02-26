@@ -184,7 +184,7 @@ The **Status** column provides a real-time status of your container's journey th
 | **Failed** | The container exited prematurely. This usually indicates a runtime crash (e.g., Python `ImportError`), a missing dependency, or a system timeout. |
 
 > [!TIP]
-> **Evaluation duration:** Depending on cluster load and the complexity of your policy, the transition from **Queued** to **Finished** typically takes **5 to 15 minutes**. You do not need to resubmit if the status is "Queued" or "Running"; simply refresh the page to see the latest state.
+> Depending on cluster load and the complexity of your policy, the transition from **Queued** to **Finished** typically takes **5 to 15 minutes**. You do not need to resubmit if the status is "Queued" or "Running"; simply refresh the page to see the latest state.
 
 ---
 
