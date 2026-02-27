@@ -347,14 +347,6 @@ def launch_setup(context, *args, **kwargs):
         container_name="ros_gz_container",
         create_own_container="False",
         use_composition="True",
-        bridge_params=[
-            {
-                "qos_overrides./scoring/tf_static.publisher.durability": "transient_local",
-                "qos_overrides./scoring/tf_static.publisher.reliability": "reliable",
-                "qos_overrides./scoring/tf_static.publisher.history": "keep_last",
-                "qos_overrides./scoring/tf_static.publisher.depth": 1,
-            }
-        ],
     )
 
     ground_truth_tf_relay = Node(
@@ -366,21 +358,6 @@ def launch_setup(context, *args, **kwargs):
             {
                 "input_topic": "/scoring/tf",
                 "output_topic": "/tf",
-                "lazy": True,
-            }
-        ],
-        condition=IfCondition(ground_truth),
-    )
-
-    ground_truth_tf_static_relay = Node(
-        package="topic_tools",
-        executable="relay",
-        name="tf_static_relay",
-        output="screen",
-        parameters=[
-            {
-                "input_topic": "/scoring/tf_static",
-                "output_topic": "/tf_static",
                 "lazy": True,
             }
         ],
@@ -417,7 +394,6 @@ def launch_setup(context, *args, **kwargs):
         spawn_task_board_launch,
         spawn_cable_launch,
         ground_truth_tf_relay,
-        ground_truth_tf_static_relay,
         ground_truth_static_tf_publisher,
         aic_engine,
         shutdown_on_aic_engine_exit_handler,

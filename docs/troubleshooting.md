@@ -58,3 +58,15 @@ sudo tcpdump -i lo port 7447 -v
 ```
 
 If you see Zenoh files in `/dev/shm` and minimal traffic on port 7447, shared memory is functioning correctly despite the warning.
+
+## Error: no such container aic_eval
+
+when running `distrobox enter -r aic_eval`, you might encounter the following error:
+```bash
+Error: no such container aic_eval
+```
+
+By default, distrobox uses podman but we are using docker in our setup. Make sure to have set the default container manager by exporting the `DBX_CONTAINER_MANAGER` environment variable:
+```bash
+export DBX_CONTAINER_MANAGER=docker
+```

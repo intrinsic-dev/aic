@@ -1,0 +1,63 @@
+name: Bug Report
+description: Report a bug or technical issue
+labels: ["bug"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What happened and what did you expect instead?
+    validations:
+      required: true
+  - type: dropdown
+    id: setup-method
+    attributes:
+      label: Setup method
+      options:
+        - Docker + Distrobox + Pixi (recommended)
+        - Source build
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: OS
+      placeholder: Ubuntu 24.04
+    validations:
+      required: true
+  - type: textarea
+    id: system-specs
+    attributes:
+      label: System specs
+      description: |
+        Please provide your CPU, RAM, and GPU details.
+        You can also paste the output of `neofetch`, `inxi`, or `nvidia-smi` here.
+      placeholder: |
+        CPU: e.g. Intel i9-13900K
+        RAM: e.g. 32 GB
+        GPU: e.g. NVIDIA RTX 3080 (or "None / CPU only")
+        GPU driver: e.g. output of `nvidia-smi`
+    validations:
+      required: true
+  - type: textarea
+    id: steps-to-reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Exact commands you ran to trigger the issue.
+    validations:
+      required: true
+  - type: textarea
+    id: log-output
+    attributes:
+      label: Relevant log output
+      description: Paste any error messages or terminal output.
+      render: shell
+    validations:
+      required: false
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+      description: Screenshots, config changes, environment variables, etc.
+    validations:
+      required: false

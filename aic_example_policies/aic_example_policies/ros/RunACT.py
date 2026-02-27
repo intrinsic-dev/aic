@@ -14,6 +14,10 @@
 #  limitations under the License.
 #
 
+import os
+
+os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "1"
+
 import time
 import json
 import torch
@@ -25,7 +29,12 @@ from typing import Callable, Dict, Any, List
 from rclpy.node import Node
 from geometry_msgs.msg import Twist, Vector3
 
-from aic_model.policy import Policy
+from aic_model.policy import (
+    GetObservationCallback,
+    MoveRobotCallback,
+    Policy,
+    SendFeedbackCallback,
+)
 from aic_model_interfaces.msg import Observation
 from aic_task_interfaces.msg import Task
 
@@ -39,6 +48,7 @@ from geometry_msgs.msg import Wrench
 from lerobot.policies.act.modeling_act import ACTPolicy
 from lerobot.policies.act.configuration_act import ACTConfig
 from safetensors.torch import load_file
+from huggingface_hub import snapshot_download
 
 
 class RunACT(Policy):
@@ -49,8 +59,15 @@ class RunACT(Policy):
         # -------------------------------------------------------------------------
         # 1. Configuration & Weights Loading
         # -------------------------------------------------------------------------
+        repo_id = "grkw/aic_act_policy"
+
         # Path to your checkpoint folder
-        policy_path = Path("/home/aic/ws_aic/outputs/grkw/random_start_poses_10_eps")
+        policy_path = Path(
+            snapshot_download(
+                repo_id=repo_id,
+                allow_patterns=["config.json", "model.safetensors", "*.safetensors"],
+            )
+        )
 
         # Load Config Manually (Fixes 'Draccus' error by removing unknown 'type' field)
         with open(policy_path / "config.json", "r") as f:
@@ -62,7 +79,8 @@ class RunACT(Policy):
 
         # Load Policy Architecture & Weights
         self.policy = ACTPolicy(config)
-        self.policy.load_state_dict(load_file(policy_path / "model.safetensors"))
+        model_weights_path = policy_path / "model.safetensors"
+        self.policy.load_state_dict(load_file(model_weights_path))
         self.policy.eval()
         self.policy.to(self.device)
 
@@ -219,9 +237,9 @@ class RunACT(Policy):
     def insert_cable(
         self,
         task: Task,
-        get_observation: Callable[[], Observation],
-        set_cartesian_twist_target: Callable[[Twist], None],
-        send_feedback: Callable[[str], None],
+        get_observation: GetObservationCallback,
+        move_robot: MoveRobotCallback,
+        send_feedback: SendFeedbackCallback,
         **kwargs,
     ):
         self.policy.reset()
@@ -260,8 +278,8 @@ class RunACT(Policy):
                     x=float(action[3]), y=float(action[4]), z=float(action[5])
                 ),
             )
-            msg = self.set_cartesian_twist_target(twist)
-            self._parent_node.motion_update_pub.publish(msg)
+            motion_update = self.set_cartesian_twist_target(twist)
+            move_robot(motion_update=motion_update)
             send_feedback("in progress...")
 
             # Maintain control rate (approx 4Hz loop = 0.25s sleep)
@@ -288,9 +306,7 @@ class RunACT(Policy):
             force=Vector3(x=0.0, y=0.0, z=0.0), torque=Vector3(x=0.0, y=0.0, z=0.0)
         )
 
-        motion_update_msg.wrench_feedback_gains_at_tip = Wrench(
-            force=Vector3(x=0.5, y=0.5, z=0.5), torque=Vector3(x=0.0, y=0.0, z=0.0)
-        )
+        motion_update_msg.wrench_feedback_gains_at_tip = [0.5, 0.5, 0.5, 0.0, 0.0, 0.0]
 
         motion_update_msg.trajectory_generation_mode.mode = (
             TrajectoryGenerationMode.MODE_VELOCITY

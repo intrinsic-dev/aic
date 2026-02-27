@@ -13,7 +13,7 @@ Welcome to the **AI for Industry Challenge**. This document outlines the technic
 
 All submissions must be containerized using OCI-compliant image builder like Docker or Podman. Organize your project by placing all policy logic and dependency requirements directly within your custom policy package.
 
-If you don't have any additional packages or dependencies, you can keep your policy code in the re-use the `aic_model` directory with its [Dockerfile](../docker/aic_model/Dockerfile). In this case, simply go to the `docker-compose.yaml`, update the `command: --ros-args -p policy:=aic_example_policies.ros.WaveArm` to `command: --ros-args -p policy:=aic_model.MyPolicy`, and skip to the [Build the Image](#build-the-image) section.
+If you don't have any additional packages or dependencies, you can keep your policy code in [policy.py](../aic_model/aic_model/policy.py) and then re-use the `aic_model` directory with its [Dockerfile](../docker/aic_model/Dockerfile). In this case, simply go to the [`docker-compose.yaml`](../docker/docker-compose.yaml), update the `command: --ros-args -p policy:=aic_example_policies.ros.WaveArm` to `command: --ros-args -p policy:=aic_model.MyPolicy`, and skip to the [Build the Image](#build-the-image) section.
 
 ### Customize Your Dockerfile (Optional)
 
@@ -55,7 +55,7 @@ Open `docker/docker-compose.yaml` and update the model service configuration to 
 
 ```yaml
 	model:
-		image: localhost/aic/aic_model
+		image: my-solution:v1
 		build:
 			dockerfile: docker/my_policy_node/Dockerfile # <-- replace this line
 			context: ..
@@ -93,7 +93,7 @@ docker compose -f docker/docker-compose.yaml up
 
 ## 2. Upload Your Image to Our Registry
 
-We use Amazon Elastic Container Registry (ECR) to host team OCI images.
+We use Amazon Elastic Container Registry (ECR) to host team OCI images. You will need to have [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) installed.
 
 ### Authenticate
 
@@ -159,6 +159,32 @@ Simply pushing the image to ECR does not trigger the evaluation. You must notify
 3. Click on the `AI for Industry Challenge` and then go to `Submit`.
 4. Select the `Qualification` phase and paste the URI into the submission `OCI Image` field.
 5. Click `Submit` to proceed.
+
+---
+
+### 4. Monitor Your Evaluation
+
+After registering your OCI Image URI, our orchestration platform spins up your container into a dedicated, isolated evaluation environment. This process is automated, but you can track its lifecycle through the portal's monitoring dashboard.
+
+#### Accessing the Dashboard
+1. Navigate to the **My Submissions** page in the portal.
+2. Apply the `Qualification` filter to the "Phase" dropdown to see your current entries.
+3. Locate your most recent submission at the top of the table.
+
+#### Evaluation Lifecycle
+
+The **Status** column provides a real-time status of your container's journey through our evaluation cluster. Understanding these states is key to managing your daily submission limit.
+
+| Status | Technical Context |
+| :--- | :--- |
+| **Submitted** | The platform has received your Image URI. |
+| **Queued** | Your submission is in the execution buffer. It is waiting for an available evaluation node in the cluster. |
+| **Running** | Your image has been pulled from ECR, and the ROS 2 nodes are currently executing the challenge logic in the simulation environment. |
+| **Finished** | The evaluation reached a natural conclusion. Your success metrics have been calculated and are now visible on the Leaderboard. |
+| **Failed** | The container exited prematurely. This usually indicates a runtime crash (e.g., Python `ImportError`), a missing dependency, or a system timeout. |
+
+> [!TIP]
+> Depending on cluster load and the complexity of your policy, the transition from **Queued** to **Finished** typically takes **5 to 15 minutes**. You do not need to resubmit if the status is "Queued" or "Running"; simply refresh the page to see the latest state.
 
 ---
 

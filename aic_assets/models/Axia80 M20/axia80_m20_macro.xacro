@@ -57,7 +57,7 @@
       <sensor name="AtiForceTorqueSensor" type="force_torque">
         <always_on>1</always_on>
         <visualize>1</visualize>
-        <update_rate>50</update_rate>
+        <update_rate>100</update_rate>
         <topic>/axia80_m20/wrench</topic>
         <force_torque>
           <!-- Set to ensure forces are expressed in `AtiForceTorqueSensor`-->

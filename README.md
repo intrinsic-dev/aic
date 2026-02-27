@@ -23,23 +23,30 @@ Follow the sections below to navigate through each phase of the process.
 1. **📖 Understand the Challenge**
    - Read the [Challenge Overview](./docs/overview.md) to understand the goals.
    - Review the [Qualification Phase](./docs/phases.md#qualification-phase-train-your-model) to understand what you'll be building.
+   - Review the [Scoring Guide](./docs/scoring.md) to understand how you'll be scored.
 
 2. **🔧 Set Up Your Environment**
    - Follow the [Getting Started](./docs/getting_started.md) guide to set up and validate your development environment.
    - Run the evaluation container and set up your local workspace with Pixi.
 
 3. **💻 Develop Your Policy**
-   - Start with the [Policy Integration Guide](./docs/policy.md) to implement your solution.
-   - Review [AIC Interfaces](./docs/aic_interfaces.md) to understand available sensors and actuators.
+   - Explore the [Scene Description](./docs/scene_description.md) to learn how to customize and explore the environment.
+   - Review [AIC Interfaces](./docs/aic_interfaces.md) to understand available interfaces to communicate with sensors and actuators.
+   - Consult [AIC Controller](./docs/aic_controller.md) to learn about controlling the robot.
    - Consult the [Challenge Rules](./docs/challenge_rules.md) to ensure compliance.
+   - Start with the [Policy Integration Guide](./docs/policy.md) to implement your solution.
+   - See [Participant Utilities](./docs/participant_utilities.md) for a list of helpful tools.
 
 4. **🧪 Test Your Solution**
    - Use the provided simulation environment to test your policy.
+   - Run `aic_engine` with the `sampole_config` in [`aic_engine/config/`](./aic_engine/config/) to test different scenarios. For more information on running the `aic_engine` with different configs, see the [aic_engine README file](./aic_engine/README.md).
+   - Create your own test scenarios by following the configuration example in [`aic_engine/config/`](./aic_engine/config/) to run with `aic_engine`.
    - Refer to [Troubleshooting](./docs/troubleshooting.md) if you encounter issues.
 
 5. **📦 Submit Your Entry**
    - Package your solution following the [Submission Guidelines](./docs/submission.md).
-   - Submit through the official portal.
+   - Test your container locally before submitting following [these instructions](./docs/submission.md#verify-locally).
+   - Submit through the official portal following [these instructions](./docs/submission.md#2-upload-your-image-to-our-registry).
 
 ---
 

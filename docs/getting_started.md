@@ -109,6 +109,7 @@ export DBX_CONTAINER_MANAGER=docker
 
 # Create and enter the eval container
 docker pull ghcr.io/intrinsic-dev/aic/aic_eval:latest
+# If you have an NVIDIA GPU, see tip below on adding the --nvidia flag for GPU support
 distrobox create -r -i ghcr.io/intrinsic-dev/aic/aic_eval:latest aic_eval
 distrobox enter -r aic_eval
 
@@ -165,7 +166,9 @@ pixi install
 
 ### Step 3: Run an Example Policy
 
+With the simulation environment running, run the following policy (Note that `aic_engine` has a timeout period waiting for a policy to connect):
 ```bash
+# Within the pixi workspace in ~/ws_aic/src/aic
 pixi run ros2 run aic_model aic_model --ros-args -p use_sim_time:=true -p policy:=aic_example_policies.ros.WaveArm
 ```
 
@@ -204,29 +207,5 @@ You've successfully completed the Quick Start guide! You now have:
 
 ## Next Steps
 
-Now that your environment is set up:
-
-1. **💻 Start Developing**
-   - Explore the [Scene Description](./scene_description.md) to learn how to customize and explore the environment
-   - Read the [Policy Integration Guide](./policy.md) to understand how to create your own policy node
-   - Check out [`aic_example_policies/`](../aic_example_policies/) for reference implementations
-   - Review [AIC Interfaces](./aic_interfaces.md) to understand available sensors and actuators
-   - Consult [AIC Controller](./aic_controller.md) to learn about motion commands
-
-2. **🧪 Test and Iterate**
-   - Use the example configurations in [`aic_engine/config/`](../aic_engine/config/) to test different scenarios
-   - Create your own test scenarios by following the configuration examples in [`aic_engine/config/`](../aic_engine/config/)
-   - Monitor your policy's behavior with ground truth data during development
-   - See [Participant Utilities](./participant_utilities.md) for a list of helpful tools
-   - Refer to [Troubleshooting](./troubleshooting.md) if you encounter issues
-
-3. **📦 Prepare for Submission**
-   - Package your solution following the [Submission Guidelines](./submission.md)
-   - Test your container before submitting
-   - Submit through the official portal
-
-## Need Help?
-
-- **Documentation**: Check the [main README](../README.md) for links to all documentation
-- **Issues**: Report problems via [GitHub Issues](https://github.com/intrinsic-dev/aic/issues)
-- **Community**: Join discussions at [Open Robotics Discourse](https://discourse.openrobotics.org/c/competitions/ai-for-industry-challenge/)
+Now that your environment is set up, run the same evluation container but with different [baseline solutions](../aic_example_policies/README.md).
+Then proceed with the **💻 Develop Your Policy** section in the [Toolkit Guide](../README.md#toolkit-guide).

@@ -19,16 +19,12 @@ scoring:
         name: "/scoring/tf"
         type: "tf2_msgs/msg/TFMessage"
     - topic:
-    # TF that contains the task board poses
-        name: "/scoring/tf_static"
-        type: "tf2_msgs/msg/TFMessage"
-    - topic:
     # Contains the contacts with off limit items
         name: "/aic/gazebo/contacts/off_limit"
         type: "ros_gz_interfaces/msg/Contacts"
     - topic:
     # Insertion force sensed by the force torque sensor
-        name: "/axia80_m20/wrench"
+        name: "/fts_broadcaster/wrench"
         type: "geometry_msgs/msg/WrenchStamped"
     - topic:
     # Joint commands sent from the model to the robot controller

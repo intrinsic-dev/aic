@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: General questions & discussion
+    url: https://discourse.openrobotics.org/c/competitions/ai-for-industry-challenge/
+    about: Ask questions and engage with the community on Discourse. Please do not use Issues for general questions.
+  - name: Known issues
+    url: https://github.com/intrinsic-dev/aic/issues?q=is%3Aissue+state%3Aopen+label%3A%22known+issue%22
+    about: Check existing known issues before opening a new ticket.
