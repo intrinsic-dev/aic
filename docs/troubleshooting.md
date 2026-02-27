@@ -59,7 +59,7 @@ sudo tcpdump -i lo port 7447 -v
 
 If you see Zenoh files in `/dev/shm` and minimal traffic on port 7447, shared memory is functioning correctly despite the warning.
 
-## NVIDIA RTX 50xx cards not supported on PyTorch version locked in pixi
+## NVIDIA RTX 50xx cards not supported by PyTorch version locked in Pixi
 
 ```
 UserWarning:
