@@ -27,6 +27,38 @@
         wrist_3_joint=1.4110)}"
     />
 
+    <!-- Gripper joints -->
+    <joint name="$(arg gripper_tf_prefix)left_finger_joint">
+      <command_interface name="position">
+        <param name="min">0.0</param>
+        <param name="max">0.025</param>
+      </command_interface>
+      <command_interface name="effort">
+        <param name="min">20</param>
+        <param name="max">130</param>
+      </command_interface>
+      <state_interface name="position">
+        <param name="initial_value">$(arg gripper_initial_pos)</param>
+      </state_interface>
+      <state_interface name="velocity">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="effort">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+    </joint>
+
+    <joint name="$(arg gripper_tf_prefix)right_finger_joint">
+      <param name="mimic">$(arg gripper_tf_prefix)left_finger_joint</param>
+      <param name="multiplier">1</param>
+      <state_interface name="position">
+        <param name="initial_value">$(arg gripper_initial_pos)</param>
+      </state_interface>
+      <state_interface name="velocity">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+    </joint>
+
   </ros2_control>
 
 </robot>
