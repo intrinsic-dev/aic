@@ -121,7 +121,7 @@ cp /tmp/aic.sdf ~/training_scenarios/sc_right_rotated.sdf
 
 Before teleoperating, we recommend reading the [AIC Controller Guide](./aic_controller.md) to understand the controller used in the challenge.
 
-See instructions in the [teleoperation](./participant_utilities.md#teleoperation) section of the [Participant Utilities](./participant_utilities.md) guide.
+See teleoperation options and instructions in the [teleoperation](./participant_utilities.md#teleoperation) section of the [Participant Utilities](./participant_utilities.md) guide.
 
 When using teleoperation to collect training data, be sure to tare the Force/Torque sensors at the start of each training episode. See [Taring before Training](#Taring-before-training).
 
