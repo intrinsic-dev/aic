@@ -138,6 +138,9 @@ distrobox enter -r aic_eval
 
 The [`entrypoint.sh`](../docker/aic_eval/Dockerfile) script runs a Zenoh router and the [`aic_gz_bringup.launch.py`](../aic_bringup/README.md#1-aic_gz_bringuplaunchpy) launch file with `aic_engine`.
 
+> [!NOTE]
+> The evaluation container is essentially a pre-built workspace and `/entrypoint.sh` is not the only way to use it. You can enter the container, source the workspace (`source /ws_aic/install/setup.bash`), and run or launch any of the commands described in any of the package READMEs and documentation.
+
 **What you should see:**
 - Two windows open: **Gazebo** (simulation) and **RViz** (visualization)
 - In Gazebo: A workcell with a Universal Robots UR5e manipulator mounted on a table
@@ -148,13 +151,8 @@ The [`entrypoint.sh`](../docker/aic_eval/Dockerfile) script runs a Zenoh router 
 
 See [Scene Description](./scene_description.md) for more details about the simulation environment.
 
-<!-- TODO: Update instruction to disable ACL after https://github.com/intrinsic-dev/aic/pull/190 or https://github.com/intrinsic-dev/aic/pull/171 is merged. -->
-
-
 > [!Note]
 > If the `docker pull` command fails, you may need to [log in to ghcr.io](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-with-a-personal-access-token-classic).
-
-<!-- TODO: Shouldn't need to login after we make it public -->
 
 > [!NOTE]
 > The `aic_engine` node in the evaluation container expects to find the `aic_model` node (see Step 3) within 30 seconds, after which it will time out. However, since the evaluation container starts the Zenoh router, this step (`/entrypoint.sh`) must be run *before* starting the `aic_model` node in Step 3.
