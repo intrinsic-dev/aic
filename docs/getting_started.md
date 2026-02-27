@@ -94,16 +94,33 @@ For other operating systems, refer to the [Alternative Installation Methods](htt
 ## Quick Start
 
 This section will guide you through:
-
-1. **Running the Evaluation Component** - Start the `aic_eval` container to bring up the simulation environment, robot, sensors, and scoring system
-2. **Setting Up Your Workspace** - Clone the challenge repository and install dependencies using Pixi
+1. **Setting Up Your Workspace** - Clone the challenge repository and install dependencies using Pixi
+2. **Running the Evaluation Component** - Start the `aic_eval` container to bring up the simulation environment, robot, sensors, and scoring system
 3. **Running an Example Policy** - Execute a provided example policy from your local workspace against the evaluation container
 
 Once you've completed these steps and want to prepare your submission, see the [Submission Guidelines](./submission.md) to learn how to containerize your participant workspace.
 
 ---
+### Step 1: Set Up Your Workspace
 
-### Step 1: Start the Evaluation Container
+```bash
+# Clone this repo
+mkdir -p ~/ws_aic/src
+cd ~/ws_aic/src
+git clone https://github.com/intrinsic-dev/aic
+
+# Install and build dependencies
+cd ~/ws_aic/src/aic
+pixi install
+```
+
+**What you should see:**
+- Pixi downloading and installing ROS 2 packages and dependencies
+- A successful installation message when complete
+- A `.pixi` directory created in your workspace with all dependencies
+
+---
+### Step 2: Start the Evaluation Container
 
 ```bash
 # Indicate distrobox to use Docker as container manager
@@ -125,12 +142,12 @@ distrobox enter -r aic_eval
 > distrobox create -r --nvidia -i ghcr.io/intrinsic-dev/aic/aic_eval:latest aic_eval
 > ```
 
-The [`entrypoint.sh`](../docker/aic_eval/Dockerfile) script runs a Zenoh router and the [`aic_gz_bringup.launch.py`](../aic_bringup/README.md#1-aic_gz_bringuplaunchpy) launch file.
+The [`entrypoint.sh`](../docker/aic_eval/Dockerfile) script runs a Zenoh router and the [`aic_gz_bringup.launch.py`](../aic_bringup/README.md#1-aic_gz_bringuplaunchpy) launch file with `aic_engine`.
 
 **What you should see:**
 - Two windows open: **Gazebo** (simulation) and **RViz** (visualization)
 - In Gazebo: A workcell with a Universal Robots UR5e manipulator mounted on a table
-- In the terminal: Log messages indicating the AIC engine has initialized and is waiting for the `aic_model` node
+- In the terminal: Log messages indicating the AIC engine has initialized and is waiting for the `aic_model` node (`No node with name 'aic_model' found. Retrying...`)
 - No robot movement yet (the robot is waiting for your policy to connect)
 
 ![Evaluation Environment](../../media/eval_environment_waiting.png)
@@ -145,33 +162,16 @@ See [Scene Description](./scene_description.md) for more details about the simul
 
 <!-- TODO: Shouldn't need to login after we make it public -->
 
----
-
-### Step 2: Set Up Your Workspace
-
-```bash
-# Clone this repo
-mkdir -p ~/ws_aic/src
-cd ~/ws_aic/src
-git clone https://github.com/intrinsic-dev/aic
-
-# Install and build dependencies
-cd ~/ws_aic/src/aic
-pixi install
-```
-
-**What you should see:**
-- Pixi downloading and installing ROS 2 packages and dependencies
-- A successful installation message when complete
-- A `.pixi` directory created in your workspace with all dependencies
+> [!NOTE]
+> The `aic_engine` node in the evaluation container expects to find the `aic_model` node (see Step 3) within 30 seconds, after which it will time out.
 
 ---
 
 ### Step 3: Run an Example Policy
 
-With the simulation environment running, run the following policy (Note that `aic_engine` has a timeout period waiting for a policy to connect):
+With the simulation environment running (Step 2), run the following policy (again, note that `aic_engine` has a timeout period waiting for `aic_model` to connect):
 ```bash
-# Within the pixi workspace in ~/ws_aic/src/aic
+# In ~/ws_aic/src/aic
 pixi run ros2 run aic_model aic_model --ros-args -p use_sim_time:=true -p policy:=aic_example_policies.ros.WaveArm
 ```
 
