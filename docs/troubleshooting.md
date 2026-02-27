@@ -80,3 +80,15 @@ torchvision = ">=0.22.1"
 ```
 
 See this [LeRobot issue](https://github.com/huggingface/lerobot/issues/2217) for details.
+
+## Error: no such container aic_eval
+
+when running `distrobox enter -r aic_eval`, you might encounter the following error:
+```bash
+Error: no such container aic_eval
+```
+
+By default, distrobox uses podman but we are using docker in our setup. Make sure to have set the default container manager by exporting the `DBX_CONTAINER_MANAGER` environment variable:
+```bash
+export DBX_CONTAINER_MANAGER=docker
+```

@@ -88,6 +88,7 @@ For this tutorial, we will be using [aic_model](../aic_model/README.md) to imple
 ### Create a new ROS 2 package
 
 ```bash
+# Run "pixi shell" to enter the pixi environment 
 (aic) $ ros2 pkg create my_policy_node --build-type ament_python
 ```
 
@@ -108,7 +109,7 @@ Add the following to `package.xml`:
 
 ### Create a pixi package
 
-Create a `pixi.toml` file with the following contents:
+Create a `pixi.toml` in the directory of the `my_policy_node` package with the following contents:
 
 ```toml
 [package.build.backend]
@@ -160,6 +161,7 @@ For brevity, we will reuse the code from `aic_example_policies`. See the [ROS Po
 
 Terminal 1:
 ```bash
+# Make sure to run 'export DBX_CONTAINER_MANAGER=docker'
 $ distrobox enter -r aic_eval -- /entrypoint.sh
 ```
 
