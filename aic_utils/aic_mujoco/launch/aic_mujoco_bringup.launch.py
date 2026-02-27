@@ -121,6 +121,9 @@ def launch_setup(context, *args, **kwargs):
             " ",
             "ros2_control_config:=",
             mujoco_ros2_control_config,
+            " ",
+            "hardware_plugin:=",
+            "mujoco_ros2_control/MujocoSystem",
         ]
     )
     robot_description = {
@@ -162,6 +165,11 @@ def launch_setup(context, *args, **kwargs):
             # Preload system tinyxml2 to avoid symbol collision with MuJoCo's bundled tinyxml2
             "LD_PRELOAD": "/usr/lib/x86_64-linux-gnu/libtinyxml2.so.10"
         },
+        remappings=[
+            ("/left_camera/color", "left_camera/image"),
+            ("/right_camera/color", "right_camera/image"),
+            ("/center_camera/color", "center_camera/image"),
+        ],
     )
 
     robot_state_publisher_node = Node(
@@ -246,11 +254,11 @@ def launch_setup(context, *args, **kwargs):
     #     ],
     # )
 
-    # fts_broadcaster_spawner = Node(
-    #     package="controller_manager",
-    #     executable="spawner",
-    #     arguments=["fts_broadcaster", "--controller-manager", "/controller_manager"],
-    # )
+    fts_broadcaster_spawner = Node(
+        package="controller_manager",
+        executable="spawner",
+        arguments=["fts_broadcaster", "--controller-manager", "/controller_manager"],
+    )
 
     # Start mujoco_ros2_control after robot_state_publisher
     delay_mujoco_after_robot_state_publisher = RegisterEventHandler(
@@ -274,7 +282,7 @@ def launch_setup(context, *args, **kwargs):
             on_exit=[
                 initial_joint_controller_spawner_started,
                 initial_joint_controller_spawner_stopped,
-                # fts_broadcaster_spawner,
+                fts_broadcaster_spawner,
                 # gripper_action_controller_spawner,
             ],
         )
@@ -282,14 +290,10 @@ def launch_setup(context, *args, **kwargs):
 
     # Set MuJoCo environment variables for the entire launch file
     set_mujoco_plugin_path = SetEnvironmentVariable(
-        name="MUJOCO_PLUGIN_PATH",
-        value=mujoco_plugin_path
+        name="MUJOCO_PLUGIN_PATH", value=mujoco_plugin_path
     )
 
-    set_mujoco_dir = SetEnvironmentVariable(
-        name="MUJOCO_DIR",
-        value=mujoco_dir
-    )
+    set_mujoco_dir = SetEnvironmentVariable(name="MUJOCO_DIR", value=mujoco_dir)
 
     nodes_to_start = [
         set_mujoco_plugin_path,

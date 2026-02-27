@@ -20,12 +20,6 @@ install(DIRECTORY
   DESTINATION share/${PROJECT_NAME}/
 )
 
-# Install urdf files
-install(DIRECTORY
-  urdf
-  DESTINATION share/${PROJECT_NAME}/
-)
-
 # Install mjcf files (MuJoCo scenes)
 install(DIRECTORY
   mjcf

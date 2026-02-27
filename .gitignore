@@ -7,3 +7,9 @@ files.txt
 # pixi environments
 .pixi/*
 !.pixi/config.toml
+
+# Ignore mesh/texture assets in aic_mujoco mjcf, keep only .xml
+aic_utils/aic_mujoco/mjcf/*.obj
+aic_utils/aic_mujoco/mjcf/*.stl
+aic_utils/aic_mujoco/mjcf/*.png
+

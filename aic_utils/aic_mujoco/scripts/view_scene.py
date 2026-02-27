@@ -80,12 +80,9 @@ Examples:
   python3 view_scene.py scene.xml
   python3 view_scene.py ~/aic_mujoco_world/scene.xml
   python3 view_scene.py ~/ws_aic/aic_world/scene.xml
-        """
+        """,
     )
-    parser.add_argument(
-        "scene",
-        help="Path to the MuJoCo MJCF scene XML file"
-    )
+    parser.add_argument("scene", help="Path to the MuJoCo MJCF scene XML file")
 
     args = parser.parse_args()
     launch_viewer(args.scene)

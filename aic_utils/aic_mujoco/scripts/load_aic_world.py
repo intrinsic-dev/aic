@@ -63,7 +63,7 @@ def apply_post_processing_fixes(output_dir):
     - Fixing material properties
     """
     print("\n⚠ Manual post-processing required:")
-    print("  1. Open the generated MJCF files and add shell=\"0\" to relevant geometries")
+    print('  1. Open the generated MJCF files and add shell="0" to relevant geometries')
     print("  2. Adjust contact/friction parameters if needed")
     print("  3. Verify mesh file paths are correct")
     print("\nSee docs/integration.md for detailed post-processing instructions.")
@@ -79,26 +79,26 @@ def main():
 
   # View the result
   python -m mujoco.viewer ~/aic_mujoco_world/scene.xml
-        """
+        """,
     )
     parser.add_argument(
         "sdf_file",
         type=str,
         help="Path to exported SDF file",
         default="/tmp/aic.sdf",
-        nargs="?"
+        nargs="?",
     )
     parser.add_argument(
         "output_dir",
         type=str,
         help="Output directory for MJCF files",
         default="./aic_mujoco_world",
-        nargs="?"
+        nargs="?",
     )
     parser.add_argument(
         "--skip-post-process",
         action="store_true",
-        help="Skip post-processing instructions"
+        help="Skip post-processing instructions",
     )
 
     args = parser.parse_args()
