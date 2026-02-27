@@ -193,7 +193,7 @@
                   <geom name="wrist_3_link_fixed_joint_lump__basler_cam_visual_visual_5_3" class="robot_unused" pos="0.09326 -0.053843 -0.033688" quat="0.858616 -0.113042 -0.0652626 0.495722" type="mesh" contype="0" conaffinity="0" material="material_479655a6843b0953e26a94d9816615add694660aa31c6c93a9863e851478702a_basler_cam_visual_59871rev000.001_4" mesh="479655a6843b0953e26a94d9816615add694660aa31c6c93a9863e851478702a_basler_cam_visual_59871rev000.001_4"/>
                   <body name="center_camera/sensor_link" pos="2.30133e-08 -0.116079 -0.00893793" quat="0.560986 0.430459 -0.430459 0.560986">
                     <inertial pos="0 0 0" mass="0.001" diaginertia="1e-06 1e-06 1e-06"/>
-                    <camera name="center_camera" class="robot_unused" pos="0 0 0" fovy="44.982" resolution="1152 1024"/>
+                    <camera name="center_camera" class="robot_unused" pos="0 0 0" quat="0.5 0.5 -0.5 -0.5" fovy="44.982" resolution="1152 1024"/>
                     <body name="center_camera/optical" pos="0 0 0" quat="0.499998 -0.5 0.500002 -0.5">
                       <inertial pos="0 0 0" mass="0.001" diaginertia="1e-06 1e-06 1e-06"/>
                     </body>
@@ -232,14 +232,14 @@
                   </body>
                   <body name="left_camera/sensor_link" pos="-0.100517 -0.0580326 -0.00893589" quat="0.766321 0.157559 -0.588018 0.205335">
                     <inertial pos="0 0 0" mass="0.001" diaginertia="1e-06 1e-06 1e-06"/>
-                    <camera name="left_camera" class="robot_unused" pos="0 0 0" fovy="44.982" resolution="1152 1024"/>
+                    <camera name="left_camera" class="robot_unused" pos="0 0 0" quat="0.5 0.5 -0.5 -0.5" fovy="44.982" resolution="1152 1024"/>
                     <body name="left_camera/optical" pos="0 0 0" quat="0.499998 -0.5 0.500002 -0.5">
                       <inertial pos="0 0 0" mass="0.001" diaginertia="1e-06 1e-06 1e-06"/>
                     </body>
                   </body>
                   <body name="right_camera/sensor_link" pos="0.100517 -0.0580326 -0.00893588" quat="0.205335 0.588018 -0.157559 0.766321">
                     <inertial pos="0 0 0" mass="0.001" diaginertia="1e-06 1e-06 1e-06"/>
-                    <camera name="right_camera" class="robot_unused" pos="0 0 0" fovy="44.982" resolution="1152 1024"/>
+                    <camera name="right_camera" class="robot_unused" pos="0 0 0" quat="0.5 0.5 -0.5 -0.5" fovy="44.982" resolution="1152 1024"/>
                     <body name="right_camera/optical" pos="0 0 0" quat="0.499998 -0.5 0.500002 -0.5">
                       <inertial pos="0 0 0" mass="0.001" diaginertia="1e-06 1e-06 1e-06"/>
                     </body>
