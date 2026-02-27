@@ -4,13 +4,9 @@
 
 Welcome to the **AI for Industry Challenge**. This document outlines the technical requirements for packaging, containerizing, and uploading your solutions for evaluation. Following these steps ensures your model runs in our automated evaluation environment exactly as it does on your local machine.
 
-> [!IMPORTANT]
-> To complete the registry upload, you must have the credentials provided in your **onboarding email**. These include your unique AWS access credentials, and the ECR Repository URI assigned to your team.
-
 ```{important}
 To complete the registry upload, you must have the credentials provided in your **onboarding email**. These include your unique AWS access credentials, and the ECR Repository URI assigned to your team.
 ```
-
 
 ---
 

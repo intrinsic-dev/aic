@@ -1,6 +1,10 @@
 AI for Industry Challenge Toolkit
 =================================
 
+.. image:: ./source/_static/assets/aic_banner.png
+   :alt: AIC Banner
+   :align: center
+
 The **AI for Industry Challenge** is an open competition for developers and roboticists aimed at solving some of the hardest,
 high-impact problems in robotics and manufacturing.
 
@@ -11,15 +15,7 @@ Table of Contents
 =================
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Getting Started
-   :titlesonly:
-
-   source/start/quick_start
-
-
-.. toctree::
-   :maxdepth: 2
+   :maxdepth: 2 
    :caption: Challenge
 
    source/challenge/overview
@@ -30,7 +26,30 @@ Table of Contents
 
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
+   :caption: Getting Started
+   :titlesonly:
+
+   source/start/getting_started
+   source/start/quick_start
+
+
+.. toctree::
+   :maxdepth: 2
    :caption: Submission 
 
    source/submission/guidelines
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Technical Documentation
+
+   source/technical/toolkit_arch
+   source/technical/policy
+   source/technical/aic_interfaces
+   source/technical/aic_controller
+   source/technical/scene_desc
+   source/technical/task_board_desc
+   source/technical/troubleshooting
+
+ 
