@@ -227,7 +227,7 @@ ros-kilted-my-local-dep = { path = "my_local_dep" }
 ### Build-Run-Debug Cycle (Python)
 
 > [!IMPORTANT]
-> pixi does not install your package in "editable" mode. Any changes you make will not be reflected until you reinstall the package:
+> Changes to packages within a Pixi environment are not tracked automatically. To apply updates, you must `run pixi reinstall <package_name>`.
 
 ```bash
 $ pixi reinstall <package>

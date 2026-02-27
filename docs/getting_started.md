@@ -128,19 +128,13 @@ export DBX_CONTAINER_MANAGER=docker
 
 # Create and enter the eval container
 docker pull ghcr.io/intrinsic-dev/aic/aic_eval:latest
-# If you have an NVIDIA GPU, see tip below on adding the --nvidia flag for GPU support
-distrobox create -r -i ghcr.io/intrinsic-dev/aic/aic_eval:latest aic_eval
+# If you do *not* have an NVIDIA GPU, remove the --nvidia flag for GPU support
+distrobox create -r --nvidia -i ghcr.io/intrinsic-dev/aic/aic_eval:latest aic_eval
 distrobox enter -r aic_eval
 
 # Inside the container, start the environment
 /entrypoint.sh ground_truth:=false start_aic_engine:=true
 ```
-
-> [!TIP]
-> If you have an NVIDIA GPU, create the distrobox container with GPU support for optimal performance:
-> ```bash
-> distrobox create -r --nvidia -i ghcr.io/intrinsic-dev/aic/aic_eval:latest aic_eval
-> ```
 
 The [`entrypoint.sh`](../docker/aic_eval/Dockerfile) script runs a Zenoh router and the [`aic_gz_bringup.launch.py`](../aic_bringup/README.md#1-aic_gz_bringuplaunchpy) launch file with `aic_engine`.
 
@@ -163,15 +157,15 @@ See [Scene Description](./scene_description.md) for more details about the simul
 <!-- TODO: Shouldn't need to login after we make it public -->
 
 > [!NOTE]
-> The `aic_engine` node in the evaluation container expects to find the `aic_model` node (see Step 3) within 30 seconds, after which it will time out.
+> The `aic_engine` node in the evaluation container expects to find the `aic_model` node (see Step 3) within 30 seconds, after which it will time out. However, since the evaluation container starts the Zenoh router, this step (`/entrypoint.sh`) must be run *before* starting the `aic_model` node in Step 3.
 
 ---
 
 ### Step 3: Run an Example Policy
 
-With the simulation environment running (Step 2), run the following policy (again, note that `aic_engine` has a timeout period waiting for `aic_model` to connect):
+With the simulation environment running (Step 2), run the following policy:
 ```bash
-# In ~/ws_aic/src/aic
+cd ~/ws_aic/src/aic
 pixi run ros2 run aic_model aic_model --ros-args -p use_sim_time:=true -p policy:=aic_example_policies.ros.WaveArm
 ```
 

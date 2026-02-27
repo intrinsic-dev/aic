@@ -58,3 +58,25 @@ sudo tcpdump -i lo port 7447 -v
 ```
 
 If you see Zenoh files in `/dev/shm` and minimal traffic on port 7447, shared memory is functioning correctly despite the warning.
+
+## NVIDIA RTX 50xx cards not supported on PyTorch version locked in pixi
+
+```
+UserWarning:
+NVIDIA GeForce RTX 5090 with CUDA capability sm_120 is not compatible with the current PyTorch installation.
+
+The current PyTorch install supports CUDA capabilities sm_50 sm_60 sm_70 sm_75 sm_80 sm_86 sm_90.
+If you want to use the NVIDIA GeForce RTX 5090 GPU with PyTorch, please check the instructions at https://pytorch.org/get-started/locally/
+```
+
+The `lerobot` version in `pixi.toml` depends on an older version of `pytorch` (built for an older version of cuda). 
+`pixi install` will pull in that older version which does not support the newer sm_120 architecture for NVIDIA RTX 50xx cards.
+
+We were able to run this policy on an Nvidia RTX 5090 by adding the following to `pixi.toml`:
+```
+[pypi-options.dependency-overrides]
+torch = ">=2.7.1"
+torchvision = ">=0.22.1"
+```
+
+See this [LeRobot issue](https://github.com/huggingface/lerobot/issues/2217) for details.
