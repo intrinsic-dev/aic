@@ -121,6 +121,9 @@ def launch_setup(context, *args, **kwargs):
             " ",
             "ros2_control_config:=",
             mujoco_ros2_control_config,
+            " ",
+            "hardware_plugin:=",
+            "mujoco_ros2_control/MujocoSystem",
         ]
     )
     robot_description = {
