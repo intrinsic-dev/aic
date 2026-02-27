@@ -88,6 +88,8 @@ curl -fsSL https://pixi.sh/install.sh | sh
 
 For other operating systems, refer to the [Alternative Installation Methods](https://pixi.prefix.dev/latest/installation/#alternative-installation-methods).
 
+> [!IMPORTANT]
+> Every time you make a change to a package that you're running in a pixi environment, you must run `pixi reinstall <package_name>`. Changes will *not* be reflected automatically.
 
 ## Quick Start
 
@@ -117,6 +119,12 @@ distrobox enter -r aic_eval
 /entrypoint.sh ground_truth:=false start_aic_engine:=true
 ```
 
+> [!TIP]
+> If you have an NVIDIA GPU, create the distrobox container with GPU support for optimal performance:
+> ```bash
+> distrobox create -r --nvidia -i ghcr.io/intrinsic-dev/aic/aic_eval:latest aic_eval
+> ```
+
 The [`entrypoint.sh`](../docker/aic_eval/Dockerfile) script runs a Zenoh router and the [`aic_gz_bringup.launch.py`](../aic_bringup/README.md#1-aic_gz_bringuplaunchpy) launch file.
 
 **What you should see:**
@@ -131,11 +139,6 @@ See [Scene Description](./scene_description.md) for more details about the simul
 
 <!-- TODO: Update instruction to disable ACL after https://github.com/intrinsic-dev/aic/pull/190 or https://github.com/intrinsic-dev/aic/pull/171 is merged. -->
 
-> [!TIP]
-> If you have an NVIDIA GPU, create the distrobox container with GPU support for optimal performance:
-> ```bash
-> distrobox create -r --nvidia -i ghcr.io/intrinsic-dev/aic/aic_eval:latest aic_eval
-> ```
 
 > [!Note]
 > If the `docker pull` command fails, you may need to [log in to ghcr.io](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-with-a-personal-access-token-classic).

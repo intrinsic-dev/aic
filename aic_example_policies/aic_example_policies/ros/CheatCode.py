@@ -60,7 +60,7 @@ class CheatCode(Policy):
             except TransformException:
                 if attempt % 20 == 0:
                     self.get_logger().info(
-                        f"Waiting for transform '{source_frame}' -> '{target_frame}'..."
+                        f"Waiting for transform '{source_frame}' -> '{target_frame}'... -- are you running eval with `ground_truth:=true`?"
                     )
                 attempt += 1
                 self.sleep_for(0.1)

@@ -44,7 +44,7 @@ A "cheating" solution that uses the TF transformation tree provided by the simul
 
 **Purpose:** Useful for training and debugging. Ground truth data will not be available during official evaluation.
 
-**Launch simulation with ground truth:**
+**Launch simulation *with ground truth*:**
 ```bash
 /entrypoint.sh ground_truth:=true start_aic_engine:=true
 ```

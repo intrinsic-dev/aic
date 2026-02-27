@@ -113,8 +113,6 @@ cp /tmp/aic.sdf ~/training_scenarios/sc_right_rotated.sdf
 
 ### Teleoperation
 
-To manually control the robot and get familiar with the environment:
-
 **Teleoperate the robot** in joint-space or Cartesian-space to:
 - Explore the workspace
 - Test cable insertion manually
@@ -123,7 +121,7 @@ To manually control the robot and get familiar with the environment:
 
 Before teleoperating, we recommend reading the [AIC Controller Guide](./aic_controller.md) to understand the controller used in the challenge.
 
-See the [Robot Teleoperation Guide](../aic_utils/aic_teleoperation/README.md) for detailed instructions.
+See instructions in the [teleoperation](./participant_utilities.md#teleoperation) section of the [Participant Utilities](./participant_utilities.md) guide.
 
 When using teleoperation to collect training data, be sure to tare the Force/Torque sensors at the start of each training episode. See [Taring before Training](#Taring-before-training).
 

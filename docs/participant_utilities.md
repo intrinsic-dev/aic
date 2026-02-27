@@ -9,7 +9,7 @@
 ### lerobot_robot_aic
 
 - [lerobot_robot_aic](../aic_utils/lerobot_robot_aic/README.md#teleoperating-with-lerobot): LeRobot-based teleoperation for joint-space and Cartesian-space control (using keyboard or SpaceMouse device)
-- Enables dataset recording for training LeRobot policies
+- Enables dataset recording using `lerobot-record` for training LeRobot policies
 
 ### Additional Examples
 
