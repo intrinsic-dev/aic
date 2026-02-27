@@ -7517,7 +7517,7 @@ packages:
   timestamp: 1769491689568
 - conda: aic_interfaces/aic_control_interfaces
   name: ros-kilted-aic-control-interfaces
-  version: 0.0.1
+  version: 0.0.0
   build: h60d57d3_0
   subdir: osx-arm64
   variants:
@@ -7536,7 +7536,7 @@ packages:
   license: LicenseRef-Apache-2.0
 - conda: aic_interfaces/aic_control_interfaces
   name: ros-kilted-aic-control-interfaces
-  version: 0.0.1
+  version: 0.0.0
   build: hb0f4dca_0
   subdir: linux-64
   variants:
@@ -7557,7 +7557,7 @@ packages:
   license: LicenseRef-Apache-2.0
 - conda: aic_example_policies
   name: ros-kilted-aic-example-policies
-  version: 0.0.1
+  version: 0.0.0
   build: h60d57d3_0
   subdir: osx-arm64
   variants:
@@ -7582,7 +7582,7 @@ packages:
   license: LicenseRef-Apache-2.0
 - conda: aic_example_policies
   name: ros-kilted-aic-example-policies
-  version: 0.0.1
+  version: 0.0.0
   build: hb0f4dca_0
   subdir: linux-64
   variants:
@@ -7609,7 +7609,7 @@ packages:
   license: LicenseRef-Apache-2.0
 - conda: aic_model
   name: ros-kilted-aic-model
-  version: 0.0.1
+  version: 0.0.0
   build: h60d57d3_0
   subdir: osx-arm64
   variants:
@@ -7634,7 +7634,7 @@ packages:
   license: LicenseRef-Apache-2.0
 - conda: aic_model
   name: ros-kilted-aic-model
-  version: 0.0.1
+  version: 0.0.0
   build: hb0f4dca_0
   subdir: linux-64
   variants:
@@ -7661,7 +7661,7 @@ packages:
   license: LicenseRef-Apache-2.0
 - conda: aic_interfaces/aic_model_interfaces
   name: ros-kilted-aic-model-interfaces
-  version: 0.0.1
+  version: 0.0.0
   build: h60d57d3_0
   subdir: osx-arm64
   variants:
@@ -7682,7 +7682,7 @@ packages:
   license: LicenseRef-Apache-2.0
 - conda: aic_interfaces/aic_model_interfaces
   name: ros-kilted-aic-model-interfaces
-  version: 0.0.1
+  version: 0.0.0
   build: hb0f4dca_0
   subdir: linux-64
   variants:
@@ -7705,7 +7705,7 @@ packages:
   license: LicenseRef-Apache-2.0
 - conda: aic_interfaces/aic_task_interfaces
   name: ros-kilted-aic-task-interfaces
-  version: 0.0.1
+  version: 0.0.0
   build: h60d57d3_0
   subdir: osx-arm64
   variants:
@@ -7720,7 +7720,7 @@ packages:
   license: LicenseRef-Apache-2.0
 - conda: aic_interfaces/aic_task_interfaces
   name: ros-kilted-aic-task-interfaces
-  version: 0.0.1
+  version: 0.0.0
   build: hb0f4dca_0
   subdir: linux-64
   variants:
@@ -7737,7 +7737,7 @@ packages:
   license: LicenseRef-Apache-2.0
 - conda: aic_utils/aic_teleoperation
   name: ros-kilted-aic-teleoperation
-  version: 0.0.1
+  version: 0.0.0
   build: h60d57d3_0
   subdir: osx-arm64
   variants:
@@ -7754,7 +7754,7 @@ packages:
   license: LicenseRef-Apache-2.0
 - conda: aic_utils/aic_teleoperation
   name: ros-kilted-aic-teleoperation
-  version: 0.0.1
+  version: 0.0.0
   build: hb0f4dca_0
   subdir: linux-64
   variants:
