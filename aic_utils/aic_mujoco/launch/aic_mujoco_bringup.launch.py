@@ -166,7 +166,6 @@ def launch_setup(context, *args, **kwargs):
             ("/left_camera/color", "left_camera/image"),
             ("/right_camera/color", "right_camera/image"),
             ("/center_camera/color", "center_camera/image"),
-            ("/fts_broadcaster/wrench", "/axia80_m20/wrench"),
         ],
     )
 
