@@ -5,7 +5,7 @@
   <version>0.0.1</version>
   <description>Launch files for the challenge</description>
   <maintainer email="yadunund@intrinsic.ai">Yadunund Vijay</maintainer>
-  <license>Apache License 2.0</license>
+  <license>Apache-2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 

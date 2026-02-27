@@ -2,7 +2,7 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>aic_task_interfaces</name>
-  <version>0.0.0</version>
+  <version>0.0.1</version>
   <description>ROS 2 interfaces to describe the task for the AI Challenge</description>
   <maintainer email="yadunund@intrinsic.ai">Yadunund Vijay</maintainer>
   <license>Apache-2.0</license>

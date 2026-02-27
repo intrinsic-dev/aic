@@ -2,10 +2,10 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>aic_controller</name>
-  <version>0.0.0</version>
-  <description>TODO: Package description</description>
-  <maintainer email="johntangz@todo.todo">johntangz</maintainer>
-  <license>TODO: License declaration</license>
+  <version>0.0.1</version>
+  <description>A cartesian and joint impedance controller for ROS 2</description>
+  <maintainer email="johntangz@intrinsic.ai">johntangz</maintainer>
+  <license>Apache-2.0</license>
 
   <buildtool_depend>ament_cmake_ros</buildtool_depend>
 

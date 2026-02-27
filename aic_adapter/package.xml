@@ -5,7 +5,7 @@
   <version>0.0.1</version>
   <description>An adapter node to streamline AIC model nodes</description>
   <maintainer email="morganquigley@intrinsic.ai">Morgan Quigley</maintainer>
-  <license>Apache License 2.0</license>
+  <license>Apache-2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 

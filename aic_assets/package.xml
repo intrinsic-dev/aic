@@ -5,7 +5,7 @@
   <version>0.0.1</version>
   <description>Assets for the challenge</description>
   <maintainer email="yadunund@intrinsic.ai">Yadunund Vijay</maintainer>
-  <license>TODO: License declaration</license>
+  <license>Apache-2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
