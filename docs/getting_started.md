@@ -89,7 +89,7 @@ curl -fsSL https://pixi.sh/install.sh | sh
 For other operating systems, refer to the [Alternative Installation Methods](https://pixi.prefix.dev/latest/installation/#alternative-installation-methods).
 
 > [!IMPORTANT]
-> Every time you make a change to a package that you're running in a pixi environment, you must run `pixi reinstall <package_name>`. Changes will *not* be reflected automatically.
+> Changes to packages within a Pixi environment are not tracked automatically. To apply updates, you must run `pixi reinstall <package_name>`.
 
 ## Quick Start
 

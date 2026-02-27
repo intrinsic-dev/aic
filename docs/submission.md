@@ -93,7 +93,7 @@ docker compose -f docker/docker-compose.yaml up
 
 ## 2. Upload Your Image to Our Registry
 
-We use Amazon Elastic Container Registry (ECR) to host team OCI images. See how to install the AWS CLI [here](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html).
+We use Amazon Elastic Container Registry (ECR) to host team OCI images. If you haven't already, [install the AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) to interact with the registry.
 
 ### Authenticate
 
