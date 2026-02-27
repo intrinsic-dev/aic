@@ -1,0 +1,5 @@
+<mujoco model="Scene">
+  <option integrator="implicitfast"/>
+  <include file="aic_robot.xml"/>
+  <include file="aic_world.xml"/>
+</mujoco>
