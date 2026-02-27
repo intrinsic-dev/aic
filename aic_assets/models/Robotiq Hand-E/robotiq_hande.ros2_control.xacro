@@ -27,17 +27,6 @@
           <param name="initial_value">0.0</param>
         </state_interface>
       </joint>
-
-      <joint name="${tf_prefix}right_finger_joint">
-        <param name="mimic">${tf_prefix}left_finger_joint</param>
-        <param name="multiplier">1</param>
-        <state_interface name="position">
-          <param name="initial_value">${initial_pos}</param>
-        </state_interface>
-        <state_interface name="velocity">
-          <param name="initial_value">0.0</param>
-        </state_interface>
-      </joint>
     </ros2_control>
 
   </xacro:macro>
