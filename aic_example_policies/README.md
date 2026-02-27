@@ -62,7 +62,15 @@ pixi run ros2 run aic_model aic_model --ros-args -p use_sim_time:=true -p policy
 
 ![Run ACT Policy](../../media/run_act_policy.gif)
 
-An implementation of a [LeRobot ACT](https://huggingface.co/docs/lerobot/en/act) (Action Chunking with Transformers) policy trained with a small dataset available on HuggingFace (TODO add link).
+A proof-of-concept implementation of a [LeRobot ACT](https://huggingface.co/docs/lerobot/en/act) (Action Chunking with Transformers) policy available on [HuggingFace](https://huggingface.co/grkw/aic_act_policy). This policy was trained on an Nvidia RTX A5000 machine using `lerobot-train` with default parameters, on a small dataset collected using `lerobot-record` as explained in [`lerobot_robot_aic`](../aic_utils/lerobot_robot_aic/README.md#recording-training-data).
+
+We were also able to run this policy on an Nvidia RTX 5090 by adding the following to `pixi.toml`:
+```
+[pypi-options.dependency-overrides]
+torch = ">=2.7.1"
+torchvision = ">=0.22.1"
+```
+The version numbers come from this [LeRobot issue](https://github.com/huggingface/lerobot/issues/2217).
 
 **Purpose:** Demonstrates integration of a trained neural network policy for the cable insertion task.
 
