@@ -88,6 +88,7 @@ For this tutorial, we will be using [aic_model](../aic_model/README.md) to imple
 ### Create a new ROS 2 package
 
 ```bash
+# Run "pixi shell" to enter the pixi environment 
 (aic) $ ros2 pkg create my_policy_node --build-type ament_python
 ```
 

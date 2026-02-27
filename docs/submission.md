@@ -13,7 +13,7 @@ Welcome to the **AI for Industry Challenge**. This document outlines the technic
 
 All submissions must be containerized using OCI-compliant image builder like Docker or Podman. Organize your project by placing all policy logic and dependency requirements directly within your custom policy package.
 
-If you don't have any additional packages or dependencies, you can keep your policy code in the re-use the `aic_model` directory with its [Dockerfile](../docker/aic_model/Dockerfile). In this case, simply go to the `docker-compose.yaml`, update the `command: --ros-args -p policy:=aic_example_policies.ros.WaveArm` to `command: --ros-args -p policy:=aic_model.MyPolicy`, and skip to the [Build the Image](#build-the-image) section.
+If you don't have any additional packages or dependencies, you can keep your policy code in [policy.py](../aic_model/aic_model/policy.py) and then re-use the `aic_model` directory with its [Dockerfile](../docker/aic_model/Dockerfile). In this case, simply go to the [`docker-compose.yaml`](../docker/docker-compose.yaml), update the `command: --ros-args -p policy:=aic_example_policies.ros.WaveArm` to `command: --ros-args -p policy:=aic_model.MyPolicy`, and skip to the [Build the Image](#build-the-image) section.
 
 ### Customize Your Dockerfile (Optional)
 
@@ -55,7 +55,7 @@ Open `docker/docker-compose.yaml` and update the model service configuration to 
 
 ```yaml
 	model:
-		image: localhost/aic/aic_model
+		image: my-solution:v1
 		build:
 			dockerfile: docker/my_policy_node/Dockerfile # <-- replace this line
 			context: ..
@@ -93,7 +93,7 @@ docker compose -f docker/docker-compose.yaml up
 
 ## 2. Upload Your Image to Our Registry
 
-We use Amazon Elastic Container Registry (ECR) to host team OCI images.
+We use Amazon Elastic Container Registry (ECR) to host team OCI images. You will need to have [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) installed.
 
 ### Authenticate
 
