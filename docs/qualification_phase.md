@@ -36,9 +36,9 @@ In each trial, the robot spawns at a pre-specified (not random) pose, and the ca
 * **Objective:** Verify policy convergence and the ability to handle randomized NIC poses. The only difference between these two trials is the randomness in 1) the pose of the task board, 2) which `NIC_RAIL` the `NIC_CARD` gets spawned on, and 3) the translation and orientation offset of the `NIC_CARD` on that `NIC_RAIL`.
 
 * **Start State:**
-	* The robot is grasping the `SFP_MODULE` plug end of an [sfp_sc_cable](../aic_assets/models/sfp_sc_cable/).
-	* The task board is spawned with a randomized pose (position and orientation).
-	* One `NIC_CARD` is mounted on a randomly selected `NIC_RAIL` (one of 5 rails: `nic_rail_0` through `nic_rail_4`) with a random translation and orientation offset.
+	* The robot is grasping the `SFP_MODULE` plug end of an [sfp_sc_cable](../aic_assets/models/sfp_sc_cable/). 
+	* The task board is spawned with a randomized pose (position and yaw angle), such that the `NIC_CARD` is within view of the robot cameras.
+	* One `NIC_CARD` is mounted on a randomly selected `NIC_RAIL` (one of 5 rails: `nic_rail_0` through `nic_rail_4`) with a random translation (along the rail) and yaw offset.
 	* The opposite end of the cable (SC plug) remains free and unconnected.
 
 * **Manipulation Task:** Insert the grasped `SFP_MODULE` plug into either `SFP_PORT_0` or `SFP_PORT_1` on the spawned NIC card (the task config from `aic_engine` will specify which).
@@ -51,8 +51,8 @@ In each trial, the robot spawns at a pre-specified (not random) pose, and the ca
 
 * **Start State:**
 	* The robot is grasping the `SC_PLUG` end of the same [sfp_sc_cable](../aic_assets/models/sfp_sc_cable/).
-	* The task board is spawned with a randomized pose (position and orientation).
-	* SC ports are mounted on the task board: `SC_PORT_0` on `SC_RAIL_0` and `SC_PORT_1` on `SC_RAIL_1`, each with random translation and orientation offsets.
+	* The task board is spawned with a randomized pose (position and yaw angle), such that both `SC_PORT_0` and `SC_PORT_1` are within view of the robot cameras.
+	* SC ports are mounted on the task board: `SC_PORT_0` on `SC_RAIL_0` and `SC_PORT_1` on `SC_RAIL_1`, each with random translation (along the rail).
 	* The opposite end of the cable (SFP module) remains free and unconnected.
 
 * **Manipulation Task:** Insert the grasped `SC_PLUG` into one of the SC ports (`SC_PORT_0` or `SC_PORT_1`, as specified by `aic_engine`), ensuring alignment with the task board's SC rails.

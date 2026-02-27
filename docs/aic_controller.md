@@ -21,6 +21,9 @@ A high-level overview of its architecture is provided in the following diagram:
 
 5. **Command Execution**: The impedance and gravity compensation torques are added together and sent to the robot joints.
 
+> [!NOTE]
+> `aic_controller` will reset the controller target if there is a significant error that is not reduced over a timeout duration (configurable in `tracking_error` in [aic_ros2_controllers.yaml](aic_bringup/config/aic_ros2_controllers.yaml)). This is mainly for the sake of teleoperation, to avoid the situation where error *accumulates* when robot is in collision and the user still tries to command the robot; and once the robot is out of collision, all of the commands execute.
+
 ### Cartesian Impedance Control
 
 Cartesian targets are handled by `CartesianImpedanceAction` which calculates joint torques based on the difference between where the end-effector is and where it should be.
