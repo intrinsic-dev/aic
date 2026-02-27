@@ -210,6 +210,7 @@
                     <geom name="ati/tool_link_fixed_joint_lump__hande_base_visual_visual_4" class="robot_unused" type="mesh" contype="0" conaffinity="0" material="material_354908445af88fcf1366e0e4d2bd23726354cdb419dd151b3c01461be6e77331_hande_base_visual_Cylinder.004_5" mesh="354908445af88fcf1366e0e4d2bd23726354cdb419dd151b3c01461be6e77331_hande_base_visual_Cylinder.004_5"/>
                     <geom name="ati/tool_link_fixed_joint_lump__hande_base_visual_visual_5" class="robot_unused" type="mesh" contype="0" conaffinity="0" material="material_354908445af88fcf1366e0e4d2bd23726354cdb419dd151b3c01461be6e77331_hande_base_visual_Cylinder.004_6" mesh="354908445af88fcf1366e0e4d2bd23726354cdb419dd151b3c01461be6e77331_hande_base_visual_Cylinder.004_6"/>
                     <site name="AtiForceTorqueSensor" class="robot_unused" pos="0 0 0"/>
+                    <site name="gripper_tcp" pos="0 0 0.172"/>
                     <body name="gripper/hande_finger_link_l" pos="0 0 0">
                       <inertial pos="0 0 0" mass="0.001" diaginertia="0.0001 9e-05 3e-05"/>
                       <joint name="gripper/left_finger_joint" class="robot_unused" pos="0 0 0" axis="1 0 0" type="slide" limited="true" range="0 0.025"/>
