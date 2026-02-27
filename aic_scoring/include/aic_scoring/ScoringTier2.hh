@@ -132,10 +132,6 @@ namespace aic_scoring
     /// \brief Topic to subscribe for tf.
     public: static constexpr const char* kTfTopic = "/tf";
 
-    /// \brief Topic to subscribe for static /scoring/tf.
-    public: static constexpr const char* kScoringTfStaticTopic =
-       "/scoring/tf_static";
-
     /// \brief Topic to subscribe for /scoring/tf.
     public: static constexpr const char* kScoringTfTopic = "/scoring/tf";
 
@@ -143,7 +139,7 @@ namespace aic_scoring
     public: static constexpr const char* kContactsTopic = "/aic/gazebo/contacts/off_limit";
 
     /// \brief Topic to subscribe for force torque sensor wrench.
-    public: static constexpr const char* kWrenchTopic = "/axia80_m20/wrench";
+    public: static constexpr const char* kWrenchTopic = "/fts_broadcaster/wrench";
 
     /// \brief Topic to subscribe for pose commands sent to the controller.
     public: static constexpr const char* kMotionUpdateTopic = "/aic_controller/pose_commands";

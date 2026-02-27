@@ -7,11 +7,15 @@ on:
     paths:
           - 'aic_interfaces/**'
           - 'aic_utils/**'
+          - 'pixi.toml'
+          - 'pixi.lock'
           - '!**/*.md'
   pull_request:
     paths:
           - 'aic_interfaces/**'
           - 'aic_utils/**'
+          - 'pixi.toml'
+          - 'pixi.lock'
           - '!**/*.md'
   workflow_dispatch:
 

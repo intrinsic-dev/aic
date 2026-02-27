@@ -38,21 +38,15 @@ pixi run ros2 run aic_model aic_model --ros-args -p use_sim_time:=true -p policy
 
 ### 2. CheatCode - Ground Truth Policy
 
+![Cheat Code Policy](../../media/cheat_code_policy.gif)
+
 A "cheating" solution that uses the TF transformation tree provided by the simulation when `ground_truth:=true` is set at launch time. This policy uses the poses of the plug and port to calculate target poses to send to `aic_controller`.
 
 **Purpose:** Useful for training and debugging. Ground truth data will not be available during official evaluation.
 
 **Launch simulation with ground truth:**
 ```bash
-/entrypoint.sh \
-  nic_card_mount_0_present:=true \
-  sc_port_0_present:=true \
-  ground_truth:=true \
-  spawn_task_board:=true \
-  spawn_cable:=true \
-  attach_cable_to_gripper:=true \
-  sfp_mount_rail_0_present:=true \
-  start_aic_engine:=false
+/entrypoint.sh ground_truth:=true start_aic_engine:=true
 ```
 
 **Run the policy:**
@@ -60,16 +54,13 @@ A "cheating" solution that uses the TF transformation tree provided by the simul
 pixi run ros2 run aic_model aic_model --ros-args -p use_sim_time:=true -p policy:=aic_example_policies.ros.CheatCode
 ```
 
-**Trigger task execution:**
-```bash
-src/aic/aic_model/test/create_and_cancel_task.py
-```
-
 **Source:** [`CheatCode.py`](./aic_example_policies/ros/CheatCode.py)
 
 ---
 
 ### 3. RunACT - ACT Policy
+
+![Run ACT Policy](../../media/run_act_policy.gif)
 
 An implementation of a [LeRobot ACT](https://huggingface.co/docs/lerobot/en/act) (Action Chunking with Transformers) policy trained with a small dataset available on HuggingFace (TODO add link).
 

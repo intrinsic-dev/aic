@@ -50,7 +50,7 @@ The `insert_cable()` function receives several `Callable` methods as parameters:
    * [`sensor_msgs/JointState joint_states`](https://github.com/ros2/common_interfaces/blob/kilted/sensor_msgs/msg/JointState.msg)
    * [`geometry_msgs/WrenchStamped wrist_wrench`](https://github.com/ros2/common_interfaces/blob/kilted/geometry_msgs/msg/WrenchStamped.msg)
    * [`aic_control_interfaces/ControllerState controller_state`](https://github.com/intrinsic-dev/aic/blob/main/aic_interfaces/aic_control_interfaces/msg/ControllerState.msg)
- * `set_pose_target()` sends a `Pose` request to the robot arm controller.
+ * `move_robot()` sends a `MotionUpdate` or `JointMotionUpdate` message to the robot arm controller.
  * `send_feedback()` publishes a `string` as a [feedback](https://docs.ros.org/en/kilted/Tutorials/Intermediate/Creating-an-Action.html#defining-an-action) message of the `InsertCable` action, which can be useful for debugging.
 
 The _policy_ can invoke API functions which issue motion commands to the robot.
@@ -88,6 +88,7 @@ For this tutorial, we will be using [aic_model](../aic_model/README.md) to imple
 ### Create a new ROS 2 package
 
 ```bash
+# Run "pixi shell" to enter the pixi environment 
 (aic) $ ros2 pkg create my_policy_node --build-type ament_python
 ```
 
@@ -108,7 +109,7 @@ Add the following to `package.xml`:
 
 ### Create a pixi package
 
-Create a `pixi.toml` file with the following contents:
+Create a `pixi.toml` in the directory of the `my_policy_node` package with the following contents:
 
 ```toml
 [package.build.backend]
@@ -160,6 +161,7 @@ For brevity, we will reuse the code from `aic_example_policies`. See the [ROS Po
 
 Terminal 1:
 ```bash
+# Make sure to run 'export DBX_CONTAINER_MANAGER=docker'
 $ distrobox enter -r aic_eval -- /entrypoint.sh
 ```
 

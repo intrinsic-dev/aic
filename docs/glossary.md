@@ -67,19 +67,19 @@
 - Low-level control system managing robot motion, force management, and actuator commands. Handles both joint-space and Cartesian-space control.
 
 **End-Effector/Gripper**
-- The robot's attachment point for grasping and manipulating cables and components. Its state is monitored via `/gripper_state` topic.
+- The robot's attachment point for grasping and manipulating cables and components, also known as the **Tool Center Point (TCP)**, with the corresponding frame being `gripper/tcp`. The gripper state is monitored via the `/gripper_state` topic. 
 
 **Joint-Space Control**
 - Robot motion commanded using target joint configurations. Commands published to `/aic_controller/joint_commands`.
 
 **Cartesian-Space Control**
-- Robot motion commanded using target poses (position and orientation) in 3D space. Commands published to `/aic_controller/pose_commands`.
+- Robot motion commanded using target poses (position and orientation) or linear/angular velocities in 3D space. Commands published to `/aic_controller/pose_commands`.
 
 **Motion Update**
-- A control command message (aic_control_interfaces/msg/MotionUpdate) specifying target pose and associated tolerances for Cartesian-space control.
+- A control command message (`aic_control_interfaces/msg/MotionUpdate`) specifying target pose and control parameters for Cartesian-space control.
 
 **Joint Motion Update**
-- A control command message (aic_control_interfaces/msg/JointMotionUpdate) specifying target joint configuration and tolerances for joint-space control.
+- A control command message (`aic_control_interfaces/msg/JointMotionUpdate`) specifying target joint configuration and control parameters for joint-space control.
 
 **Impedance Control**
 - Compliance-based robot control that allows force management during manipulation, critical for delicate cable insertion without damage.
@@ -93,7 +93,7 @@
 - A snapshot of the robot's sensory environment (aic_model_interfaces/msg/Observation) including camera images, joint states, force measurements, and transform frames.
 
 **Force/Torque Sensor (F/T Sensor)**
-- Measures forces and torques applied during manipulation. Data published to `/axia80_m20/wrench` topic, enabling sensitive force feedback control. The F/T sensor is typically tared before each training episode, see [Taring before Training](../docs/scene_description.md#Taring-before-training) for more details.
+- Measures forces and torques applied during manipulation. Data published to `/fts_broadcaster/wrench` topic, enabling sensitive force feedback control. The F/T sensor is typically tared before each training episode, see [Taring before Training](../docs/scene_description.md#Taring-before-training) for more details.
 
 **Wrist Cameras**
 - Three RGB cameras mounted on the robot's wrist:
@@ -123,10 +123,10 @@
 - Package defining all custom ROS 2 messages, services, and actions used in the challenge for consistent protocol definitions.
 
 **InsertCable Action**
-- ROS 2 action interface (aic_task_interfaces/action/InsertCable) that triggers the insertion policy to perform the cable insertion task.
+- ROS 2 action interface (`aic_task_interfaces/action/InsertCable`) that triggers the insertion policy to perform the cable insertion task.
 
 **Task Message**
-- ROS 2 message (aic_task_interfaces/msg/Task) describing specific parameters and state of the cable insertion task.
+- ROS 2 message (`aic_task_interfaces/msg/Task`) describing specific parameters and state of the cable insertion task.
 
 ## Development & Submission
 

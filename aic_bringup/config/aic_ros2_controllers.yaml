@@ -17,6 +17,7 @@ fts_broadcaster:
   ros__parameters:
     frame_id: ati/tool_link
     sensor_name: AtiForceTorqueSensor
+    update_rate: 50
 
 aic_controller:
   ros__parameters:

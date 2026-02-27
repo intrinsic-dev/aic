@@ -69,7 +69,7 @@ AicAdapterNode::AicAdapterNode() : Node("aic_adapter_node") {
   wrench_deque_ = std::make_unique<
       std::deque<geometry_msgs::msg::WrenchStamped::UniquePtr>>();
   wrench_sub_ = this->create_subscription<geometry_msgs::msg::WrenchStamped>(
-      "/axia80_m20/wrench", 5,
+      "/fts_broadcaster/wrench", 5,
       [this](geometry_msgs::msg::WrenchStamped::UniquePtr msg) -> void {
         this->wrench_deque_->push_front(std::move(msg));
         while (this->wrench_deque_->size() > kWrenchDequeMaxLength) {

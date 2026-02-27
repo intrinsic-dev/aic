@@ -2,13 +2,15 @@
 name = "aic"
 authors = ["Teo Koon Peng <koonpeng@intrinsic.ai>"]
 channels = ["robostack-kilted", "conda-forge"]
-platforms = ["linux-64"]
+platforms = ["linux-64", "osx-arm64"]
 version = "0.1.0"
 conda-pypi-map = { "robostack-kilted" = "robostack_mapping.json" }
 preview = ["pixi-build"]
 
-[dependencies]
+[target.linux-64.dependencies]
 evdev = ">=1.9.2,<2"
+
+[dependencies]
 isort = "==5.13.2"                                                                     # version bundled by the vscode extension
 opencv = "<4.13.0"
 packaging = ">=24.2,<26.0"                                                             # required by lerobot==0.4.3
@@ -33,6 +35,7 @@ ros-kilted-tf2-ros-py = "*"
 setuptools = ">=71.0.0,<81.0.0"                                                        # required by lerobot==0.4.3
 
 [pypi-dependencies]
+huggingface-hub = { version = "==0.35.3", extras = ["hf-transfer", "cli"] }
 lerobot = "==0.4.3"
 lerobot_robot_ros = { git = "https://github.com/koonpeng/lerobot-ros", rev = "b4a635fc5264266bd1575f07d54be3d4bbd620e0", subdirectory = "lerobot_robot_ros" }
 lerobot_teleoperator_devices = { git = "https://github.com/koonpeng/lerobot-ros", rev = "b4a635fc5264266bd1575f07d54be3d4bbd620e0", subdirectory = "lerobot_teleoperator_devices" }
