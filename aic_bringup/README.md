@@ -69,6 +69,9 @@ This provides:
 
 **Primary launch file** for the complete AIC simulation environment.
 
+> [!NOTE]
+> Although the task board and all components will have fixed roll and pitch during evaluation (all 0.0) and the SC port yaw will be fixed to 0.0, participants may choose to configure any orientation for the sake of domain randomization for policy training.
+
 #### Usage
 ```bash
 ros2 launch aic_bringup aic_gz_bringup.launch.py [parameters]
@@ -137,6 +140,9 @@ ros2 launch aic_bringup aic_gz_bringup.launch.py [parameters]
 ### 2. `spawn_task_board.launch.py`
 
 Standalone launch file for spawning the task board in an existing Gazebo simulation.
+
+> [!NOTE]
+> Although the task board and all components will have fixed roll and pitch during evaluation (all 0.0) and the SC port yaw will be fixed to 0.0, participants may choose to configure any orientation for the sake of domain randomization for policy training.
 
 #### Usage
 ```bash
@@ -304,4 +310,3 @@ ros2 run aic_bringup test_impedance.py
 - Translation ranges for mount rails are limited to prevent collisions: -0.09625 to 0.09625 meters
 - Mount rails are type-specific: LC, SFP, and SC mounts can only be attached to their respective rails
 - Port rails (`sc_port` and `nic_card_mount`) are separate from mount rails
-- Although the task board and component orientations will not vary in roll and pitch during policy evaluation, participants may choose to configure them for the sake of domain randomization for policy training.
