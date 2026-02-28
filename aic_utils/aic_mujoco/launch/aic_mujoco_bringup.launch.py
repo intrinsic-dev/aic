@@ -190,6 +190,11 @@ def launch_setup(context, *args, **kwargs):
         ],
     )
 
+    aic_adapter = Node(
+        package="aic_adapter",
+        executable="aic_adapter",
+    )
+
     # Delay rviz start after `joint_state_broadcaster`
     delay_rviz_after_joint_state_broadcaster_spawner = RegisterEventHandler(
         event_handler=OnProcessExit(
@@ -288,6 +293,7 @@ def launch_setup(context, *args, **kwargs):
         delay_joint_state_broadcaster,
         delay_initial_joint_controller,
         delay_rviz_after_joint_state_broadcaster_spawner,
+        aic_adapter,
     ]
 
     return nodes_to_start
