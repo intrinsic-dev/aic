@@ -14,7 +14,7 @@ Here is how we are addressing physics discrepancies:
 
 ## 1. Phase Setup & Constraints
 
-* **Task Scope:** A single cable insertion is evaluated per trial. Only one plug on the cable is tested for insertion; the other end of the cable remains free and unconnected.
+* **Task Scope:** A single cable insertion is evaluated per trial. Only one plug on the cable is tested for insertion; the other end of the cable remains free and unconnected. During evaluation, the only plug-port insertions and cable involved will be `SFP_MODULE` to `SFP_PORT` and `SC_PLUG` to `SC_PORT`. The same flexible cable is used across trials. However, the general configuration of the task board will vary (e.g., the number and placement of NIC cards and SC ports), and the task definition will clearly specify which port in which component the grasped plug needs to be inserted into. This task definition is described by the [`aic_task_interfaces/msg/Task.msg`](../aic_interfaces/aic_task_interfaces/msg/Task.msg) message and is forwarded to the participant model via a ROS 2 action request. If you are using the provided Python template, this `Task` object is available directly as a parameter to the `Policy.insert_cable` method. 3D assets for all these components can be found in the [`aic_assets/models`](../aic_assets/models/) directory. No unseen plug or port types will be presented.
 * **Environment:** Evaluated in Gazebo without Flowstate.
 * **Robot State:** The robot starts with one plug already in-hand.
 * **Proximity:** The robot starts within a few centimeters of the insertion target.
@@ -36,8 +36,8 @@ In each trial, the robot spawns at a pre-specified (not random) pose, and the ca
 * **Objective:** Verify policy convergence and the ability to handle randomized NIC poses. The only difference between these two trials is the randomness in 1) the pose of the task board, 2) which `NIC_RAIL` the `NIC_CARD` gets spawned on, and 3) the translation and orientation offset of the `NIC_CARD` on that `NIC_RAIL`.
 
 * **Start State:**
-	* The robot is grasping the `SFP_MODULE` plug end of an [sfp_sc_cable](../aic_assets/models/sfp_sc_cable/). 
-	* The task board is spawned with a randomized pose (position and yaw angle), such that the `NIC_CARD` is within view of the robot cameras.
+	* The robot is grasping the `SFP_MODULE` plug end of an [sfp_sc_cable](../aic_assets/models/sfp_sc_cable/).
+	* The task board is spawned with a randomized pose (position and yaw angle). While multiple components and NIC cards may be present on the board, the specific target port of interest will always be within view of the robot cameras.
 	* One or more `NIC_CARD`s are mounted on randomly selected `NIC_RAIL`s (there are 5 rails: `nic_rail_0` through `nic_rail_4`) each with a random translation (along its rail) and a random yaw offset.
 	* The opposite end of the cable (SC plug) remains free and unconnected.
 
@@ -51,7 +51,7 @@ In each trial, the robot spawns at a pre-specified (not random) pose, and the ca
 
 * **Start State:**
 	* The robot is grasping the `SC_PLUG` end of the same [sfp_sc_cable](../aic_assets/models/sfp_sc_cable/).
-	* The task board is spawned with a randomized pose (position and yaw angle), such that both `SC_PORT_0` and `SC_PORT_1` are within view of the robot cameras.
+	* The task board is spawned with a randomized pose (position and yaw angle). While multiple components and SC ports may be present on the board, the specific target port of interest will always be within view of the robot cameras.
 	* One or both SC ports are mounted on the task board: `SC_PORT_0` on `SC_RAIL_0` and `SC_PORT_1` on `SC_RAIL_1`, each with a random translation along its rail. Only one SC port will be the target port.
 	* The opposite end of the cable (SFP module) remains free and unconnected.
 
