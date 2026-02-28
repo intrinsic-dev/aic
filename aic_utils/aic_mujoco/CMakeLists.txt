@@ -16,6 +16,7 @@ install(DIRECTORY
 
 # Install scripts
 install(PROGRAMS
+  scripts/add_cable_plugin.py
   scripts/view_scene.py
   scripts/load_aic_world.py
   DESTINATION lib/${PROJECT_NAME}
