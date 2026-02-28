@@ -22,7 +22,7 @@ A high-level overview of its architecture is provided in the following diagram:
 5. **Command Execution**: The impedance and gravity compensation torques are added together and sent to the robot joints.
 
 > [!NOTE]
-> `aic_controller` will reset the controller target if there is a significant error that is not reduced over a timeout duration (configurable in `tracking_error` in [aic_ros2_controllers.yaml](aic_bringup/config/aic_ros2_controllers.yaml)). This is mainly for the sake of teleoperation, to avoid the situation where the robot is in collision and the user still tries to command the robot so the error *accumulates*; and once the robot is out of collision, all of the accumulated error manifests as unexpected movement.
+> `aic_controller` will reset the controller target if there is a significant error that is not reduced over a timeout duration (configurable in `tracking_error` in [aic_ros2_controllers.yaml](aic_bringup/config/aic_ros2_controllers.yaml)). This is mainly for the sake of teleoperation, to mitigate the situation where the robot is in collision and the user still tries to command the robot so the error *accumulates*; and once the robot is out of collision, all of the accumulated error manifests as unexpected movement.
 
 ### Cartesian Impedance Control
 
