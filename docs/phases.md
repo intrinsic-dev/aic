@@ -59,10 +59,10 @@ For more information, please refer to:
 
 Teams advancing to Phase 1 gain access to **Intrinsic Flowstate** (our development environment) and the **Intrinsic Vision Model**. Using these tools, teams will build a complete robotic cable handling solution incorporating their trained models.
 
-*TODO*
+*Coming Soon*
 
 ## Phase 2: Run on Real Robots
 
 Phase 2 participants deploy their solutions to a physical robotic workcell at Intrinsic’s HQ. This phase validates solutions in the real world and determines prize winners.
 
-*TODO*
+*Coming Soon*
