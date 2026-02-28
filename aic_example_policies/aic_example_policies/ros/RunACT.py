@@ -253,6 +253,11 @@ class RunACT(Policy):
 
             # 1. Get & Process Observation
             observation_msg = get_observation()
+
+            if observation_msg is None:
+                self.get_logger().info("No observation received.")
+                continue
+
             obs_tensors = self.prepare_observations(observation_msg)
 
             # 2. Model Inference
