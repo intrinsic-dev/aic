@@ -247,7 +247,7 @@ trials:
         task_board:
           pose:
             x: 0.17
-            y: -0.18
+            y: 0.0
             z: 1.14
             roll: 0.0
             pitch: 0.0
