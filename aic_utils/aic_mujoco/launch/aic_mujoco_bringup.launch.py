@@ -62,15 +62,6 @@ def launch_setup(context, *args, **kwargs):
 
     gripper_initial_pos = "0.00655"
 
-    # Get the mujoco config path
-    mujoco_ros2_control_config = PathJoinSubstitution(
-        [
-            FindPackageShare("aic_mujoco"),
-            "config",
-            "mujoco_ros2_control.xacro",
-        ]
-    )
-
     robot_description_content = Command(
         [
             PathJoinSubstitution([FindExecutable(name="xacro")]),
@@ -119,9 +110,6 @@ def launch_setup(context, *args, **kwargs):
             "gripper_initial_pos:=",
             gripper_initial_pos,
             " ",
-            "ros2_control_config:=",
-            mujoco_ros2_control_config,
-            " ",
             "hardware_plugin:=",
             "mujoco_ros2_control/MujocoSystem",
         ]
@@ -129,9 +117,6 @@ def launch_setup(context, *args, **kwargs):
     robot_description = {
         "robot_description": ParameterValue(robot_description_content, value_type=str)
     }
-
-    # Debug: print the ros2_control config path
-    print(f"[aic_mujoco_bringup] ros2_control_config: {mujoco_ros2_control_config}")
 
     # Get MuJoCo environment variables from the sourced workspace
     mujoco_plugin_path = os.environ.get("MUJOCO_PLUGIN_PATH", "")

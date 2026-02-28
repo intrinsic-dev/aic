@@ -32,9 +32,6 @@
   <xacro:arg name="simulation_controllers" default="" />
   <xacro:arg name="ros_namespace" default="" />
 
-  <!-- Path to ros2_control configuration file -->
-  <xacro:arg name="ros2_control_config" default="$(find aic_description)/config/gazebo_ros2_control.xacro" />
-
   <xacro:arg name="ati_tf_prefix" default="ati/" />
   <xacro:arg name="cam_mount_tf_prefix" default="cam_mount/" />
   <xacro:arg name="left_camera_tf_prefix" default="left_camera/"/>
@@ -54,6 +51,9 @@
   <xacro:arg name="roll" default="0.0" />
   <xacro:arg name="pitch" default="0.0" />
   <xacro:arg name="yaw" default="0.0" />
+
+  <!-- Configure hardware plugin -->
+  <xacro:arg name="hardware_plugin" default="gz_ros2_control/GazeboSimSystem"/>
 
   <!-- create link fixed to the "world" -->
   <link name="world" />
@@ -225,6 +225,34 @@
   </joint>
 
   <!-- ros2 control instance -->
-  <xacro:include filename="$(arg ros2_control_config)" />
+  <ros2_control name="ControlSystem" type="system">
+    <hardware>
+      <plugin>$(arg hardware_plugin)</plugin>
+    </hardware>
+
+    <sensor name="AtiForceTorqueSensor" type="force_torque">
+      <state_interface name="force.x"/>
+      <state_interface name="force.y"/>
+      <state_interface name="force.z"/>
+      <state_interface name="torque.x"/>
+      <state_interface name="torque.y"/>
+      <state_interface name="torque.z"/>
+      <!-- Needed for MuJoCo -->
+      <param name="type">FTSensor</param>
+      <param name="frame_id">ati/tool_link</param>
+    </sensor>
+
+    <xacro:ur_joint_control_description
+      tf_prefix="$(arg tf_prefix)"
+      initial_positions="${dict(
+        shoulder_pan_joint=-0.1597,
+        shoulder_lift_joint=-1.3542,
+        elbow_joint=-1.6648,
+        wrist_1_joint=-1.6933,
+        wrist_2_joint=1.5710,
+        wrist_3_joint=1.4110)}"
+    />
+
+  </ros2_control>
 
 </robot>

@@ -5,6 +5,7 @@
   <version>0.0.0</version>
   <description>MuJoCo integration for AI for Industry Challenge</description>
   <maintainer email="yadunund@intrinsic.ai">Yadunund Vijay</maintainer>
+  <maintainer email="kbalasundar@intrinsic.ai">Kaushik Balasundar</maintainer>
   <license>Apache-2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
@@ -13,8 +14,8 @@
   <exec_depend>launch_ros</exec_depend>
 	<!-- Commented out so that the package builds with the default workspace setup. -->
 	<!-- Users will clones these packages separately by following the README. -->
-  <!-- <exec_depend>mujoco_ros2_control</exec_depend>
-  <exec_depend>mujoco_vendor</exec_depend> -->
+  <!-- <exec_depend>mujoco_ros2_control</exec_depend> -->
+  <!-- <exec_depend>mujoco_vendor</exec_depend> -->
 
   <export>
     <build_type>ament_cmake</build_type>
