@@ -29,6 +29,9 @@ The same policy submitted by the participant will be used for all three trials.
 
 In each trial, the robot spawns at a pre-specified (not random) pose, and the cable plug is fixed in its gripper.
 
+> [!NOTE]
+> The exact number and sequence of trials during final evaluation may be subject to change. However, they will always consist of some combination of the SFP and SC insertions described below.
+
 ### Trial 1 and 2: Policy validity and convergence
 
 ![TRIAL 1](../../media/aic_board_trial_1_sfp.png)
