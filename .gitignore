@@ -13,6 +13,6 @@ aic_utils/aic_mujoco/mjcf/*.obj
 aic_utils/aic_mujoco/mjcf/*.stl
 aic_utils/aic_mujoco/mjcf/*.png
 
-# Ignore aic_isaaclab usd assets
-aic_utils/aic_isaaclab/source/aic_task/aic_task/tasks/manager_based/aic_task/Intrinsic_assets/
+# Ignore aic_isaac usd assets
+aic_utils/aic_isaac/aic_isaaclab/source/aic_task/aic_task/tasks/manager_based/aic_task/Intrinsic_assets/
 
