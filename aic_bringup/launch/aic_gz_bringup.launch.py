@@ -175,7 +175,6 @@ def launch_setup(context, *args, **kwargs):
         ],
     )
 
-
     # There may be other controllers of the joints, but this is the initially-started one
     initial_joint_controller_spawner_started = Node(
         package="controller_manager",
@@ -380,7 +379,10 @@ def launch_setup(context, *args, **kwargs):
     delay_initial_controller_after_broadcaster = RegisterEventHandler(
         event_handler=OnProcessExit(
             target_action=joint_state_broadcaster_spawner,
-            on_exit=[initial_joint_controller_spawner_started, initial_joint_controller_spawner_stopped],
+            on_exit=[
+                initial_joint_controller_spawner_started,
+                initial_joint_controller_spawner_stopped,
+            ],
         )
     )
 
