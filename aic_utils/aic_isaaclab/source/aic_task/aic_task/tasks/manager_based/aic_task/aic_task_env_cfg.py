@@ -64,9 +64,7 @@ class AICTaskSceneCfg(InteractiveSceneCfg):
     robot: ArticulationCfg = ArticulationCfg(
         prim_path="{ENV_REGEX_NS}/Robot",
         spawn=sim_utils.UsdFileCfg(
-            usd_path=os.path.join(
-                AIC_ASSET_DIR, "jointsTuned_robot_cable_0227.usd"
-            ),
+            usd_path=os.path.join(AIC_ASSET_DIR, "jointsTuned_robot_cable_0227.usd"),
             rigid_props=sim_utils.RigidBodyPropertiesCfg(
                 # disable_gravity=True,
                 max_depenetration_velocity=5.0,

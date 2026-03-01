@@ -22,9 +22,7 @@ class ExampleExtension(omni.ext.IExt):
     def on_startup(self, ext_id):
         print("[aic_task] startup")
 
-        self._window = omni.ui.Window(
-            "AIC Debug", width=300, height=300
-        )
+        self._window = omni.ui.Window("AIC Debug", width=300, height=300)
         with self._window.frame:
             with omni.ui.VStack():
                 # label = omni.ui.Label("AIC Debug")
