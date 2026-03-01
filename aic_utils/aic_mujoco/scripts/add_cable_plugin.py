@@ -30,6 +30,176 @@ import numpy as np
 import mujoco
 
 
+# --- Robot XML Post-Processing ---
+def postprocess_robot_xml(xml_str):
+    """Apply automated corrections to robot XML (replaces manual edits)."""
+
+    # 1. Add visual settings: <global> and <map> around <headlight>
+    xml_str = xml_str.replace(
+        '<headlight ambient="0 0 0" diffuse="0 0 0" specular="0 0 0"/>',
+        '<global offwidth="1152" offheight="1024"/>\n'
+        '    <headlight ambient="0 0 0" diffuse="0 0 0" specular="0 0 0"/>\n'
+        '    <map znear="0.0025"/>',
+    )
+
+    # 2. Replace backslashes with forward slashes in all attribute values
+    xml_str = xml_str.replace("\\", "/")
+
+    # 3. Fix robot body quaternions to clean values
+    #    tabletop: near-(0,0,0,-1) → identity
+    xml_str = re.sub(
+        r'(<body name="tabletop" pos="[^"]*") quat="[^"]*"',
+        r'\1 quat="1 0 0 0"',
+        xml_str,
+    )
+    #    shoulder_link: near-identity → remove quat
+    xml_str = re.sub(
+        r'(<body name="shoulder_link" pos="[^"]*") quat="[^"]*"',
+        r"\1",
+        xml_str,
+    )
+    #    upper_arm_link: normalize to exact 90° rotation
+    xml_str = re.sub(
+        r'(<body name="upper_arm_link" pos="[^"]*") quat="[^"]*"',
+        r'\1 quat="0.70710678 0.70710678 0 0"',
+        xml_str,
+    )
+    #    forearm_link: near-Z-rotation → remove quat
+    xml_str = re.sub(
+        r'(<body name="forearm_link" pos="[^"]*") quat="[^"]*"',
+        r"\1",
+        xml_str,
+    )
+    #    wrist_1_link: near-Z-rotation → remove quat
+    xml_str = re.sub(
+        r'(<body name="wrist_1_link" pos="[^"]*") quat="[^"]*"',
+        r"\1",
+        xml_str,
+    )
+    #    wrist_2_link: normalize to exact 90° rotation
+    xml_str = re.sub(
+        r'(<body name="wrist_2_link" pos="[^"]*") quat="[^"]*"',
+        r'\1 quat="0.70710678 0.70710678 0 0"',
+        xml_str,
+    )
+    #    wrist_3_link: normalize to exact 90° rotation
+    xml_str = re.sub(
+        r'(<body name="wrist_3_link" pos="[^"]*") quat="[^"]*"',
+        r'\1 quat="0.70710678 -0.70710678 0 0"',
+        xml_str,
+    )
+
+    # 4. Add camera attributes (orientation, fov, resolution) to all cameras
+    for cam_name in ["center_camera", "left_camera", "right_camera"]:
+        xml_str = re.sub(
+            rf'<camera name="{cam_name}" class="robot_unused" pos="0 0 0"/>',
+            f'<camera name="{cam_name}" class="robot_unused" pos="0 0 0"'
+            f' quat="0.5 0.5 -0.5 -0.5" fovy="44.982" resolution="1152 1024"/>',
+            xml_str,
+        )
+
+    # 5. Add gripper_tcp site before the left finger body
+    xml_str = re.sub(
+        r'([ \t]*)(<body name="gripper/hande_finger_link_l")',
+        r'\1<site name="gripper_tcp" pos="0 0 0.172"/>\n\1\2',
+        xml_str,
+    )
+
+    # 6. Zero out gripper finger body positions
+    xml_str = re.sub(
+        r'<body name="gripper/hande_finger_link_l" pos="[^"]*"',
+        '<body name="gripper/hande_finger_link_l" pos="0 0 0"',
+        xml_str,
+    )
+    xml_str = re.sub(
+        r'<body name="gripper/hande_finger_link_r" pos="[^"]*"',
+        '<body name="gripper/hande_finger_link_r" pos="0 0 0"',
+        xml_str,
+    )
+
+    # 7. Remove the right finger motor actuator line
+    xml_str = re.sub(
+        r'\n\s*<general name="gripper/right_finger_joint_motor"[^>]*/>', "", xml_str
+    )
+
+    # 8. Add equality constraint (mimic joint) and sensor sections
+    # Note: </mujoco> has 2 leading spaces in the raw XML, so content
+    # placed before it inherits that indent; first line needs no indent.
+    equality_and_sensor = (
+        "<equality>\n"
+        '    <joint joint1="gripper/left_finger_joint"'
+        ' joint2="gripper/right_finger_joint"'
+        ' polycoef="0 1 0 0 0"/>\n'
+        "  </equality>\n"
+        "\n"
+        "  <sensor>\n"
+        '    <force name="AtiForceTorqueSensor_force"'
+        ' site="AtiForceTorqueSensor"/>\n'
+        '    <torque name="AtiForceTorqueSensor_torque"'
+        ' site="AtiForceTorqueSensor"/>\n'
+        "  </sensor>\n"
+    )
+    xml_str = xml_str.replace("</mujoco>", equality_and_sensor + "\n  </mujoco>")
+
+    return xml_str
+
+
+# --- World XML Post-Processing ---
+def postprocess_world_xml(xml_str):
+    """Apply automated corrections to world XML (replaces manual edits)."""
+
+    # 1. Update cable_end_0 pose to tuned values
+    xml_str = re.sub(
+        r'(<body name="cable_end_0" childclass="cable_default") pos="[^"]*" quat="[^"]*"',
+        r'\1 pos="0.171400 0.020606 1.511889"'
+        r' quat="0.712741 0.312130 -0.052173 0.625982"',
+        xml_str,
+    )
+
+    # 2. Replace <joint name="freejoint" type="free"/> with
+    #    <freejoint name="cable_end_0_free"/> and reorder before inertial
+    xml_str = re.sub(
+        r'([ \t]*)(<inertial[^/]*/>) *\n([ \t]*)<joint name="freejoint" type="free"/>',
+        r'\1<freejoint name="cable_end_0_free"/>\n\1\2',
+        xml_str,
+    )
+
+    # 3. Replace all cable body diaginertia from 0.01 to 1e-6
+    xml_str = xml_str.replace(
+        'diaginertia="0.01 0.01 0.01"', 'diaginertia="1e-6 1e-6 1e-6"'
+    )
+
+    # 4. Fix cable_connection_1 (SC plug end) diaginertia to 4e-4
+    #    cable_connection_1 has mass=0.01 and is the SC plug connector
+    xml_str = re.sub(
+        r'(<body name="cable_connection_1"[^>]*>\s*'
+        r'<inertial pos="0 0 0" mass="0.01") diaginertia="1e-6 1e-6 1e-6"',
+        r'\1 diaginertia="4e-4 4e-4 4e-4"',
+        xml_str,
+    )
+
+    # 5. Add damping to joint_connection_end_0 ball joint
+    xml_str = re.sub(
+        r'(<joint name="joint_connection_end_0"[^/]*type="ball")(/>)',
+        r'\1 damping="0.2"\2',
+        xml_str,
+    )
+
+    # 6. Add equality weld constraint for lc_plug attachment
+    weld_section = (
+        "\n"
+        "  <equality>\n"
+        '    <weld body1="ati/tool_link" body2="lc_plug_link"'
+        ' relpose="-0.000711 0.001759 0.168213'
+        ' 0.577301 0.816105 -0.021418 -0.015395"'
+        ' solref="0.002 1" solimp="0.99 0.999 0.001"/>\n'
+        "  </equality>\n"
+    )
+    xml_str = xml_str.replace("</mujoco>", weld_section + "</mujoco>")
+
+    return xml_str
+
+
 def main():
     if "BUILD_WORKSPACE_DIRECTORY" in os.environ:
         os.chdir(os.environ["BUILD_WORKSPACE_DIRECTORY"])
@@ -176,6 +346,8 @@ def main():
             "gripper\\left_finger_joint",
             "gripper\\right_finger_joint",
         ]
+        # Note: right finger motor is removed in postprocess_robot_xml;
+        # it is coupled via an equality constraint instead.
         for jname in robot_joints:
             act = robot_spec.add_actuator()
             act.name = f"{jname}_motor"
@@ -205,6 +377,10 @@ def main():
         # Strip lights from robot (lights live in world XML)
         robot_xml = re.sub(r"<light[^>]*/>\s*", "", robot_xml)
         robot_xml = rename_class(robot_xml, "unused", "robot_unused")
+
+        # Apply automated post-processing (replaces manual edits)
+        print("Post-processing robot XML...")
+        robot_xml = postprocess_robot_xml(robot_xml)
 
         print(f"Saving robot XML to {robot_output_path}...")
         with open(robot_output_path, "w") as f:
@@ -587,6 +763,10 @@ def main():
             return xml
 
         xml_str = strip_class_from_cable_children(xml_str)
+
+        # Apply automated post-processing (replaces manual edits)
+        print("Post-processing world XML...")
+        xml_str = postprocess_world_xml(xml_str)
 
         print(f"Saving world XML to {output_path}...")
         with open(output_path, "w") as f:
