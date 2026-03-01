@@ -64,7 +64,7 @@ git clone git@github.com:isaac-sim/IsaacLab.git
 
 Clone the AIC repository inside `IsaacLab` directory:
 ```bash
-cd ~IsaacLab
+cd ~/IsaacLab
 git clone git@github.com:intrinsic-dev/aic.git
 ```
 
@@ -72,13 +72,13 @@ git clone git@github.com:intrinsic-dev/aic.git
 
 The **NVIDIA team has prepared the assets** needed for the challenge. [Download the provided asset pack](https://developer.nvidia.com/downloads/Omniverse/learning/Events/Hackathons/Intrinsic_assets.zip), extract it, and place the files as follows.
 
-Place the `Intrinsic_assets` directory inside `aic_task`:
+Extract and place `Intrinsic_assets` directory inside `aic_task`:
 
 ```bash
 ~/IsaacLab/aic/aic_utils/aic_isaaclab/source/aic_task/aic_task/tasks/manager_based/aic_task/
 ```
 
-**Files to place there** (from the downloaded pack):
+**Contents of Intrinsic_assets directory** (from the downloaded pack):
 - `nic_card.usd`
 - `sc_port.usd`
 - `robot_cable.usd`
@@ -88,12 +88,19 @@ Place the `Intrinsic_assets` directory inside `aic_task`:
 
 If the asset pack includes world, enclosure, or robot USDs and separate placement instructions, follow those. Otherwise the prepared pack is self-contained.
 
+Isaac Sim Documentation on Tuning and Importing Assets:
+- [Tutorial: Import URDF](https://docs.isaacsim.omniverse.nvidia.com/4.5.0/robot_setup/import_urdf.html)
+- [Tuning Joint Drive Gains](https://docs.isaacsim.omniverse.nvidia.com/4.5.0/robot_setup/joint_tuning.html)
+- [Gain Tuner Extension](https://docs.isaacsim.omniverse.nvidia.com/4.5.0/robot_setup/ext_isaacsim_robot_setup_gain_tuner.html)
+- [Physics Inspector](https://docs.isaacsim.omniverse.nvidia.com/4.5.0/physics/joint_inspector.html)
+- [Simulation Data Visualizer](https://docs.isaacsim.omniverse.nvidia.com/4.5.0/physics/ext_isaacsim_inspect_physics.html)
+
 
 ## Installation
 
 Build the `base` profile (this creates the `isaac-lab-base` Docker image):
 ```bash
-cd ~IsaacLab
+cd ~/IsaacLab
 ./docker/container.py build base
 ```
 
@@ -164,13 +171,6 @@ Other Resources:
 
 
 
-Isaac Sim Documentation on Tuning and Importing Assets:
-- [Tutorial: Import URDF](https://docs.isaacsim.omniverse.nvidia.com/4.5.0/robot_setup/import_urdf.html)
-- [Tuning Joint Drive Gains](https://docs.isaacsim.omniverse.nvidia.com/4.5.0/robot_setup/joint_tuning.html)
-- [Gain Tuner Extension](https://docs.isaacsim.omniverse.nvidia.com/4.5.0/robot_setup/ext_isaacsim_robot_setup_gain_tuner.html)
-- [Physics Inspector](https://docs.isaacsim.omniverse.nvidia.com/4.5.0/physics/joint_inspector.html)
-- [Simulation Data Visualizer](https://docs.isaacsim.omniverse.nvidia.com/4.5.0/physics/ext_isaacsim_inspect_physics.html)
-
 ### Directory Structure
 
 ```bash
@@ -221,7 +221,7 @@ aic_isaaclab/
 ## Future Work
 
 Planned improvements for the workflow:
-- Add support to generate USD of Task Board
+- [ ] Add SDF World to USD asset export pipeline
 
 
 ## Resources
