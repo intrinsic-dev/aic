@@ -14,7 +14,6 @@ This package provides documentation, scripts, and utilities for loading the AI f
 
 
 ## Setting up Mujoco with ROS 2 Control
-
 ![](../../../media/wave_arm_policy_mujoco.gif)
 
 MuJoCo's integration with `ros2_control` allows you to control the UR5e robot using the same `aic_controller` interface as in Gazebo, ensuring your policy code remains simulator-agnostic.
@@ -78,9 +77,7 @@ ls $MUJOCO_DIR
 
 # Check that plugin libraries are installed
 ls $MUJOCO_DIR/lib/*.so
-# Should show: libelasticity.so, lipython3 ~/intrinsic_ws/src/aic/aic_utils/aic_mujoco/scripts/add_cable_plugin.py --input ~/intrinsic_ws/src/aic/aic_utils/aic_mujoco/mjcf/aic_world.xml --output ~/intrinsic_ws/src/aic/aic_utils/aic_mujoco/mjcf/aic_world.xml --robot_output ~/intrinsic_ws/src/aic/aic_utils/aic_mujoco/mjcf/aic_robot.xml --scene_output ~/intrinsic_ws/src/aic/aic_utils/aic_mujoco/mjcf/scene.xml
-
-bactuator.so, libsensor.so, libsdf_plugin.so, libmujoco.so*
+# Should show: libelasticity.so, libactuator.so, libsensor.so, libsdf_plugin.so, libmujoco.so*
 
 # Verify MuJoCo simulate binary works
 which simulate
@@ -199,7 +196,7 @@ sed -i 's|file:///sfp_module_visual.glb|model://SFP Module/sfp_module_visual.glb
 
 ### 6. Generate Final MJCF Files
 
-- To split and refine the MJCF files, use the `add_cable_plugin.py` script. Make sure you run this without sourcing the ROS2 workspace in new terminal:
+- To split and refine the MJCF files, use the `add_cable_plugin.py` script. Make sure you run this without sourcing the ROS2 workspace in new terminal (use a virtual env as necessary)
   ```bash
   cd ~/ws_aic/src/aic/aic_utils/aic_mujoco/
   python3 scripts/add_cable_plugin.py --input mjcf/aic_world.xml --output mjcf/aic_world.xml --robot_output mjcf/aic_robot.xml --scene_output mjcf/scene.xml
