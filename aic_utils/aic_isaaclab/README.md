@@ -79,12 +79,47 @@ Extract and place `Intrinsic_assets` directory inside `aic_task`:
 ```
 
 **Contents of Intrinsic_assets directory** (from the downloaded pack):
-- `nic_card.usd`
-- `sc_port.usd`
-- `robot_cable.usd`
-- `aic.usd`
-- `Task_board_rigid.usd`
-- `cable.usd`
+```
+Intrinsic_assets
+├── assets
+│   ├── NIC Card
+│   │   ├── nic_card.usd
+│   │   ├── nic_card_visual.usd
+│   │   └── textures
+│   │       ├── Image_0.jpg
+│   │       ├── Image_1.jpg
+│   │       ├── Image_2.jpg
+│   │       └── NIC_Albedo.jpg
+│   ├── NIC Card Mount
+│   │   ├── nic_card_mount_visual.usd
+│   │   ├── nic_card_visual.usd
+│   │   └── textures
+│   │       ├── Image_0.jpg
+│   │       ├── Image_1.jpg
+│   │       ├── Image_2.jpg
+│   │       └── NIC_Albedo.jpg
+│   ├── SC Mount
+│   │   └── sc_mount_visual.usd
+│   ├── SC Plug
+│   │   ├── sc_plug_visual.usd
+│   │   └── textures
+│   │       ├── Image_1.png
+│   │       └── sc_plug_visual_image1.png
+│   ├── SC Port
+│   │   ├── sc_port.usd
+│   │   ├── sc_port_visual.usd
+│   │   └── textures
+│   │       ├── Image_0.png
+│   │       └── Image_1.png
+│   └── Task Board Base
+│       ├── base_visual.usd
+│       └── task_board_rigid.usd
+├── cable_0217.usd
+├── jointsTuned_robot_cable_0227.usd
+├── scene
+│   └── aic.usd
+└── scene.usd
+```
 
 If the asset pack includes world, enclosure, or robot USDs and separate placement instructions, follow those. Otherwise the prepared pack is self-contained.
 
@@ -171,7 +206,7 @@ Other Resources:
 
 
 
-### Directory Structure
+### Directory Structure of `aic_isaaclab`
 
 ```bash
 aic_isaaclab/
