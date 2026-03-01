@@ -75,7 +75,7 @@ The **NVIDIA team has prepared the assets** needed for the challenge. [Download 
 Extract and place `Intrinsic_assets` directory inside `aic_task`:
 
 ```bash
-~/IsaacLab/aic/aic_utils/aic_isaaclab/source/aic_task/aic_task/tasks/manager_based/aic_task/
+~/IsaacLab/aic/aic_utils/aic_isaac/aic_isaaclab/source/aic_task/aic_task/tasks/manager_based/aic_task/
 ```
 
 **Contents of Intrinsic_assets directory** (from the downloaded pack):
@@ -148,7 +148,7 @@ cd ~/IsaacLab
 
 Install `aic_task` in the Isaac Lab container with edit mode:
 ```
- python -m pip install -e aic/aic_utils/aic_isaaclab/source/aic_task
+ python -m pip install -e aic/aic_utils/aic_isaac/aic_isaaclab/source/aic_task
  ```
 
 
@@ -160,26 +160,26 @@ Install `aic_task` in the Isaac Lab container with edit mode:
 ### Environment and Sensor Reading
 List available environments (`AIC-Task-v0` RL Environment is provided as reference):
 ```bash
-isaaclab -p aic/aic_utils/aic_isaaclab/scripts/list_envs.py
+isaaclab -p aic/aic_utils/aic_isaac/aic_isaaclab/scripts/list_envs.py
 ```
 
 ### Teleoperation and Imitation Learning
 Teleoperate the robot with keyboard:
 ```bash
-isaaclab -p aic/aic_utils/aic_isaaclab/scripts/teleop.py \
+isaaclab -p aic/aic_utils/aic_isaac/aic_isaaclab/scripts/teleop.py \
     --task AIC-Task-v0 --num_envs 1 --teleop_device keyboard --enable_cameras
 ```
 
 For data collection:
 ```bash
-isaaclab -p aic/aic_utils/aic_isaaclab/scripts/record_demos.py \
+isaaclab -p aic/aic_utils/aic_isaac/aic_isaaclab/scripts/record_demos.py \
     --task AIC-Task-v0 --teleop_device keyboard --enable_cameras \
     --dataset_file ./datasets/dataset.hdf5 --num_demos 10
 ```
 
 To replay collected episodes:
 ```bash
-isaaclab -p aic/aic_utils/aic_isaaclab/scripts/replay_demos.py \
+isaaclab -p aic/aic_utils/aic_isaac/aic_isaaclab/scripts/replay_demos.py \
     --dataset_file ./datasets/dataset.hdf5
 ```
 
@@ -195,7 +195,7 @@ Additional resources:
 ### Reinforcement Learning
 Run the training script from your terminal using the following command:
 ```bash
-isaaclab -p aic/aic_utils/aic_isaaclab/scripts/rsl_rl/train.py \
+isaaclab -p aic/aic_utils/aic_isaac/aic_isaaclab/scripts/rsl_rl/train.py \
     --task AIC-Task-v0 --num_envs 1 --enable_cameras
 ```
 
@@ -209,46 +209,47 @@ Other Resources:
 ### Directory Structure of `aic_isaaclab`
 
 ```bash
-aic_isaaclab/
+aic_isaac/
 ├── README.md
-├── pyproject.toml
-├── scripts
-│   ├── list_envs.py
-│   ├── random_agent.py
-│   ├── record_demos.py
-│   ├── replay_demos.py
-│   ├── rsl_rl
-│   │   ├── cli_args.py
-│   │   ├── play.py
-│   │   └── train.py
-│   ├── teleop.py
-│   └── zero_agent.py
-└── source
-    └── aic_task
-        ├── aic_task
-        │   ├── __init__.py
-        │   ├── extension.py
-        │   └── tasks
-        │       ├── __init__.py
-        │       └── manager_based
-        │           ├── __init__.py
-        │           └── aic_task
-        │               ├── __init__.py
-        │               ├── agents
-        │               │   ├── __init__.py
-        │               │   └── rsl_rl_ppo_cfg.py
-        │               ├── aic_task_env_cfg.py
-        │               └── mdp
-        │                   ├── __init__.py
-        │                   ├── events.py
-        │                   ├── observations.py
-        │                   └── rewards.py
-        ├── config
-        │   └── extension.toml
-        ├── docs
-        │   └── CHANGELOG.rst
-        ├── pyproject.toml
-        └── setup.py
+└── aic_isaaclab
+    ├── pyproject.toml
+    ├── scripts
+    │   ├── list_envs.py
+    │   ├── random_agent.py
+    │   ├── record_demos.py
+    │   ├── replay_demos.py
+    │   ├── rsl_rl
+    │   │   ├── cli_args.py
+    │   │   ├── play.py
+    │   │   └── train.py
+    │   ├── teleop.py
+    │   └── zero_agent.py
+    └── source
+        └── aic_task
+            ├── aic_task
+            │   ├── __init__.py
+            │   ├── extension.py
+            │   └── tasks
+            │       ├── __init__.py
+            │       └── manager_based
+            │           ├── __init__.py
+            │           └── aic_task
+            │               ├── __init__.py
+            │               ├── agents
+            │               │   ├── __init__.py
+            │               │   └── rsl_rl_ppo_cfg.py
+            │               ├── aic_task_env_cfg.py
+            │               └── mdp
+            │                   ├── __init__.py
+            │                   ├── events.py
+            │                   ├── observations.py
+            │                   └── rewards.py
+            ├── config
+            │   └── extension.toml
+            ├── docs
+            │   └── CHANGELOG.rst
+            ├── pyproject.toml
+            └── setup.py
 ```
 
 
