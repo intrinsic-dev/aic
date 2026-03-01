@@ -16,11 +16,11 @@ Finalists will deploy their models from simulation to a physical workcell hosted
 
 ## Phases
 
-The challenge officially begins on **March 2** and runs through **September 2026**. It consists of three distinct phases:
+The challenge officially begins on **March 2** and runs through **September 8, 2026**. It consists of three distinct phases:
 
-* **Qualification (~3 months):** Participants train and test their cable assembly models in simulation.
-* **Phase 1 (~1.5 months):** Qualified teams advance and gain access to Intrinsic Flowstate to develop a complete cable handling solution.
-* **Phase 2 (~1.5 months):** Top teams move on to deploy and refine their solutions on a physical workcell provided by Intrinsic for real-world testing and evaluation.
+* **Qualification (Mar 2 - May 15):** Participants train and test their cable assembly models in simulation. Evaluation Period: May 18 - 27. Top 30 announced May 28.
+* **Phase 1 (May 28 - Jul 14):** Qualified teams advance and gain access to Intrinsic Flowstate to develop a complete cable handling solution. Evaluation Period: Jul 14 - 21. Top 10 announced Jul 22.
+* **Phase 2 (Jul 27 - Aug 25):** Top teams move on to deploy and refine their solutions on a physical workcell provided by Intrinsic for real-world testing and evaluation. Evaluation Period: Aug 26 - Sep 4. Winner announced Sep 8.
 
 For a detailed breakdown of expectations and deliverables, please refer to [Competition Phases](./phases.md).
 
