@@ -19,10 +19,11 @@ Table of Contents
    :caption: Challenge
 
    source/challenge/overview
-   source/challenge/competition
-   source/challenge/qualification
-   source/challenge/rules
+   source/challenge/phases
+   source/challenge/qualification_phase
+   source/challenge/challenge_rules
    source/challenge/scoring
+   source/challenge/score_test
 
 
 .. toctree::
@@ -48,8 +49,8 @@ Table of Contents
    source/technical/policy
    source/technical/aic_interfaces
    source/technical/aic_controller
-   source/technical/scene_desc
-   source/technical/task_board_desc
+   source/technical/scene_description
+   source/technical/task_board_description
    source/technical/troubleshooting
 
  

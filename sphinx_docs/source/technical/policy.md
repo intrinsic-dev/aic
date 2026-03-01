@@ -50,7 +50,7 @@ The `insert_cable()` function receives several `Callable` methods as parameters:
    * [`sensor_msgs/JointState joint_states`](https://github.com/ros2/common_interfaces/blob/kilted/sensor_msgs/msg/JointState.msg)
    * [`geometry_msgs/WrenchStamped wrist_wrench`](https://github.com/ros2/common_interfaces/blob/kilted/geometry_msgs/msg/WrenchStamped.msg)
    * [`aic_control_interfaces/ControllerState controller_state`](https://github.com/intrinsic-dev/aic/blob/main/aic_interfaces/aic_control_interfaces/msg/ControllerState.msg)
- * `set_pose_target()` sends a `Pose` request to the robot arm controller.
+ * `move_robot()` sends a `MotionUpdate` or `JointMotionUpdate` message to the robot arm controller.
  * `send_feedback()` publishes a `string` as a [feedback](https://docs.ros.org/en/kilted/Tutorials/Intermediate/Creating-an-Action.html#defining-an-action) message of the `InsertCable` action, which can be useful for debugging.
 
 The _policy_ can invoke API functions which issue motion commands to the robot.
@@ -68,6 +68,8 @@ We provide several baseline policy implementations in the [`aic_example_policies
 
 For detailed descriptions, usage instructions, and source code, see the [Example Policies README](../aic_example_policies/README.md).
 
+To see expected scoring results for each baseline policy, see the [Scoring Test & Evaluation Guide](./scoring_tests.md).
+
 ## Tutorial: Creating a new policy node
 
 A policy node is essentially a ROS 2 node that subscribes to observations and publishes actions to be executed.
@@ -82,16 +84,6 @@ For this tutorial, we will be using [aic_model](../aic_model/README.md) to imple
 > $ pixi shell # This is outside pixi environment.
 > (aic) $ ros2 pkg list # This is inside the environment.
 > ```
-
-```{important}
-Take note of the prompt in the bash examples. If it starts with `(aic) $`, then it should be run from inside the pixi environment.
-
- Example:
-
-    $ pixi shell # This is outside pixi environment.
-
-    (aic) $ ros2 pkg list # This is inside the environment.
-```
 
 ### Create a new ROS 2 package
 
@@ -177,7 +169,7 @@ $ distrobox enter -r aic_eval -- /entrypoint.sh
 Terminal 2:
 ```bash
 $ pixi reinstall ros-kilted-my-policy-node
-$ pixi run ros2 run aic_model aic_model --ros-args -p policy:=my_policy_node.WaveArm
+$ pixi run ros2 run aic_model aic_model --ros-args -p use_sim_time:=true -p policy:=my_policy_node.WaveArm
 ```
 
 ```{note}
@@ -249,56 +241,7 @@ You may enter the pixi environment with `pixi shell` and force an "editable" ins
 
 ### Preparing for Submission
 
-After you are satisfied with your policy, you will need to prepare a Docker image for submission.
-
-```bash
-$ mkdir -p docker/my_policy_node
-$ cp docker/aic_model/Dockerfile docker/my_policy_node/
-```
-
-Open the Dockerfile and add your policy node to the build instructions:
-
-```dockerfile
-# Add other local dependencies
-COPY my_policy_node /ws_aic/src/aic/my_policy_node # <-- Add this line
-```
-
-Open `docker/docker-compose.yaml` and update the model service configuration to use your Dockerfile and policy:
-
-`docker/docker-compose.yaml`:
-
-```yaml
-	model:
-		image: localhost/aic/aic_model
-		build:
-			dockerfile: docker/my_policy_node/Dockerfile # <-- replace this line
-			context: ..
-		command: --ros-args -p policy:=my_policy_node.WaveArm # <-- and this line
-```
-
-Build the image:
-
-```bash
-$ docker compose build model
-```
-
-Test that everything works:
-
-```bash
-$ docker compose up
-```
-
-This will run your model and the evaluator in an environment that replicates the submission portal:
-
-- External network access is restricted.
-- Zenoh ACLs will be employed to restrict what the policy node can interact with.
-- Shared memory is disabled.
-
-Make sure that your policy works, then export a tarball of your image.
-
-```bash
-$ docker save localhost/aic/my_policy_node | gzip > my_policy_node.tar.gz
-```
+After you are satisfied with your policy, you will need to prepare a Docker image for submission. See [Submission](./submission.md) for details.
 
 ### Conclusion
 

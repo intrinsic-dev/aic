@@ -69,10 +69,10 @@ To switch between joint and Cartesian control, send a ROS 2 service request to `
 Send a service call to switch the controller's target mode using the ROS 2 CLI:
 ```bash
 # Send a service request to switch to Cartesian target mode
-ros2 service call /aic_controller/change_target_mode aic_control_interfaces/srv/ChangeTargetMode "{target_mode: 0}"
+ros2 service call /aic_controller/change_target_mode aic_control_interfaces/srv/ChangeTargetMode "{target_mode: {mode: 1}}"
 
 # Send a service request to switch to joint target mode
-ros2 service call /aic_controller/change_target_mode aic_control_interfaces/srv/ChangeTargetMode "{target_mode: 1}"
+ros2 service call /aic_controller/change_target_mode aic_control_interfaces/srv/ChangeTargetMode "{target_mode: {mode: 2}}"
 ```
 
 ```{note}
@@ -90,6 +90,8 @@ The controller publishes real-time data to `/aic_controller/controller_state` ([
 #### Force-Torque Sensor Tare
 
 The controller provides a service to tare (zero) the force-torque sensor at `/aic_controller/tare_ft_sensor`. This service resets the current force/torque readings to zero, which is useful for calibrating the sensor or removing sensor bias. The tared offset is published in the [`ControllerState`](../aic_interfaces/aic_control_interfaces/msg/ControllerState.msg) message as `fts_tare_offset`.
+
+> **Note:** Before the start of each training episode (i.e. before teleoperation or spawning cables in the environment), it is important to tare the Force/Torque Sensor (F/T Sensor) for accurate force-torque feedback.
 
 ```bash
 # Tare the FT sensor
@@ -114,7 +116,7 @@ The table below shows the main controller parameters that policies typically nee
 | `target_stiffness` | `float64[36]` | The 6x6 stiffness matrix that controls how strongly the robot resists moving away from the target pose. <br /> Higher values = stiffer control, lower values = more compliant control. |
 | `target_damping` | `float64[36]` | The 6x6 damping matrix that reduces oscillations. <br /> Usually tuned relative to `target_stiffness` to prevent wobbling and ensure stable motion.|
 | `feedforward_wrench_at_tip` | `geometry_msgs/Wrench` | Optional external force/torque at the TCP. <br /> Useful for contact tasks like applying constant downward force or dealing with known tool-environment interactions. |
-| `wrench_feedback_gains_at_tip` | `geometry_msgs/Wrench` | Feedback gains on force/torque measured by the sensor. |
+| `wrench_feedback_gains_at_tip` | `float64[6]` | Feedback gains on force/torque measured by the sensor. |
 | `trajectory_generation_mode` | `TrajectoryGenerationMode` | How the target should be interpreted. <br /> `MODE_POSITION` follows the `pose` values. <br /> `MODE_VELOCITY` follows the `velocity` values. |
 
 #### Examples
@@ -122,7 +124,7 @@ The table below shows the main controller parameters that policies typically nee
 To publish a pose target via the [`MotionUpdate`](../aic_interfaces/aic_control_interfaces/msg/MotionUpdate.msg) message using the ROS 2 CLI:
 ```bash
 # Send a service request to switch to Cartesian target mode
-ros2 service call /aic_controller/change_target_mode aic_control_interfaces/srv/ChangeTargetMode "{target_mode: 0}"
+ros2 service call /aic_controller/change_target_mode aic_control_interfaces/srv/ChangeTargetMode "{target_mode: {mode: 1}}"
 
 # Send a Cartesian pose target
 ros2 topic pub --once /aic_controller/pose_commands aic_control_interfaces/msg/MotionUpdate "{
@@ -153,10 +155,9 @@ ros2 topic pub --once /aic_controller/pose_commands aic_control_interfaces/msg/M
     force: {x: 0.0, y: 0.0, z: 0.0},
     torque: {x: 0.0, y: 0.0, z: 0.0}
   },
-  wrench_feedback_gains_at_tip: {
-    force: {x: 0.0, y: 0.0, z: 0.0},
-    torque: {x: 0.0, y: 0.0, z: 0.0}
-  },
+  wrench_feedback_gains_at_tip: [
+    0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+  ],
   trajectory_generation_mode: {mode: 2}
 }"
 ```
@@ -211,7 +212,7 @@ Refer to the `generate_joint_motion_update()` function within [test_impedance.py
 To publish a joint position target via the [`JointMotionUpdate`](../aic_interfaces/aic_control_interfaces/msg/JointMotionUpdate.msg) message using the ROS 2 CLI:
 ```bash
 # Send a service request to switch to joint target mode
-ros2 service call /aic_controller/change_target_mode aic_control_interfaces/srv/ChangeTargetMode "{target_mode: 1}"
+ros2 service call /aic_controller/change_target_mode aic_control_interfaces/srv/ChangeTargetMode "{target_mode: {mode: 2}}"
 
 # Send a joint position target
 ros2 topic pub --once /aic_controller/joint_commands aic_control_interfaces/msg/JointMotionUpdate "{
