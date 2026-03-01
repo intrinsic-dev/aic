@@ -11,13 +11,112 @@ This package provides documentation, scripts, and utilities for loading the AI f
 - Access camera images, joint states, FT sensor data, and command the simulated robot over the same ROS topics
 - Collect data and run policies unchanged between Gazebo and MuJoCo
 
+
+
+## Setting up Mujoco with ROS 2 Control
+
+![](../../../media/wave_arm_policy_mujoco.gif)
+
+MuJoCo's integration with `ros2_control` allows you to control the UR5e robot using the same `aic_controller` interface as in Gazebo, ensuring your policy code remains simulator-agnostic.
+
+### Additional Installation Steps
+
+#### 1. Import MuJoCo Dependencies
+
+From your ROS 2 workspace, import the required repositories:
+
+```bash
+cd ~/ws_aic/src
+vcs import < aic/aic_utils/aic_mujoco/mujoco.repos
+```
+
+This adds:
+- `mujoco_vendor` (v0.0.6) - ROS 2 wrapper for MuJoCo 3.x with plugins (elasticity, actuator, sensor, SDF)
+- `mujoco_ros2_control` - Integration between MuJoCo and ros2_control
+- `gz-mujoco` (with `sdformat_mjcf` tool) - Converts Gazebo SDF files to MuJoCo MJCF format
+
+#### 2. Install Dependencies
+
+Install dependencies for the newly imported MuJoCo packages:
+
+```bash
+cd ~/ws_aic
+rosdep install --from-paths src --ignore-src --rosdistro kilted -yr --skip-keys "gz-cmake3 DART libogre-dev libogre-next-2.3-dev"
+```
+
+#### 3. Build the Workspace
+
+With the package dependencies properly configured, building should work automatically:
+
+```bash
+cd ~/ws_aic
+source /opt/ros/kilted/setup.bash
+
+# Build all packages (including aic_mujoco)
+GZ_BUILD_FROM_SOURCE=1 colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release --merge-install --symlink-install --packages-ignore lerobot_robot_aic
+```
+
+### 4. Verify Installation
+
+```bash
+# Source the workspace (if not already done)
+source ~/ws_aic/install/setup.bash
+
+# Check MUJOCO_DIR is automatically set by the environment hook
+echo $MUJOCO_DIR
+# Should output something like:
+# /home/user/ws_aic/install/opt/mujoco_vendor
+
+# Check MUJOCO_PLUGIN_PATH is set (this is how MuJoCo finds plugins)
+echo $MUJOCO_PLUGIN_PATH
+# Should output something like:
+# /home/user/ws_aic/install/opt/mujoco_vendor/lib
+
+# Check MuJoCo installation directory
+ls $MUJOCO_DIR
+# Should show: bin, include, lib, share, simulate directories
+
+# Check that plugin libraries are installed
+ls $MUJOCO_DIR/lib/*.so
+# Should show: libelasticity.so, lipython3 ~/intrinsic_ws/src/aic/aic_utils/aic_mujoco/scripts/add_cable_plugin.py --input ~/intrinsic_ws/src/aic/aic_utils/aic_mujoco/mjcf/aic_world.xml --output ~/intrinsic_ws/src/aic/aic_utils/aic_mujoco/mjcf/aic_world.xml --robot_output ~/intrinsic_ws/src/aic/aic_utils/aic_mujoco/mjcf/aic_robot.xml --scene_output ~/intrinsic_ws/src/aic/aic_utils/aic_mujoco/mjcf/scene.xml
+
+bactuator.so, libsensor.so, libsdf_plugin.so, libmujoco.so*
+
+# Verify MuJoCo simulate binary works
+which simulate
+# Should output:
+# /home/user/ws_aic/install/opt/mujoco_vendor/bin/simulate
+```
+
+> **⚠️ Important:** If you have a previous MuJoCo installation, it may conflict with `mujoco_vendor`. Check for and remove any existing `MUJOCO_PATH`, `MUJOCO_PLUGIN_PATH`, or `MUJOCO_DIR` environment variables from your shell configuration (`~/.bashrc`, `~/.zshrc`, etc.) before building. After cleaning the environment, restart your shell and rebuild the workspace:
+> ```bash
+> # Check for conflicting environment variables
+> env | grep MUJOCO
+>
+> # If you see MUJOCO_PATH or MUJOCO_PLUGIN_PATH pointing to a different location,
+> # remove those exports from ~/.bashrc (or ~/.zshrc) and restart shell
+>
+> # Then rebuild mujoco_vendor
+> cd ~/ws_aic
+> colcon build --packages-select mujoco_vendor --cmake-clean-cache
+> source install/setup.bash
+>
+> # Verify the correct MUJOCO_PLUGIN_PATH is set
+> echo $MUJOCO_PLUGIN_PATH
+> # Should point to: /home/user/ws_aic/install/opt/mujoco_vendor/lib
+> ```
+
+
 ## Workflow
 
 > **⚠️ Important:** Please ensure you have completed the [Additional Installation Steps](#additional-installation-steps) below before starting this workflow.
 
 ### 1. Export from Gazebo
 
-- Launch `aic_gz_bringup` with your desired domain randomization parameters.
+- Launch `aic_gz_bringup` with your desired domain randomization parameters. For example: 
+```bash
+ros2 launch aic_bringup aic_gz_bringup.launch.py spawn_task_board:=true spawn_cable:=true   cable_type:=sfp_sc_cable   attach_cable_to_gripper:=true   ground_truth:=true
+```
 - Gazebo will export the world to `/tmp/aic.sdf`.
 
 See [Scene Description](../../docs/scene_description.md) for more details.
@@ -100,27 +199,20 @@ sed -i 's|file:///sfp_module_visual.glb|model://SFP Module/sfp_module_visual.glb
 
 ### 6. Generate Final MJCF Files
 
-- To split and refine the MJCF files, use the `add_cable_plugin.py` script. Make sure you run this from the package directory:
+- To split and refine the MJCF files, use the `add_cable_plugin.py` script. Make sure you run this without sourcing the ROS2 workspace in new terminal:
   ```bash
-  cd ~/ws_aic/src/aic/aic_utils/aic_mujoco
-  python scripts/add_cable_plugin.py \
-    --input mjcf/aic_world.xml \
-    --output mjcf/aic_world.xml \
-    --robot_output mjcf/aic_robot.xml \
-    --scene_output mjcf/scene.xml
+  cd ~/ws_aic/src/aic/aic_utils/aic_mujoco/
+  python3 scripts/add_cable_plugin.py --input mjcf/aic_world.xml --output mjcf/aic_world.xml --robot_output mjcf/aic_robot.xml --scene_output mjcf/scene.xml
+  cd ~/ws_aic && colcon build --packages-select aic_mujoco
   ```
   - `--input`: Path to the initial MJCF world file (usually `aic_world.xml`).
   - `--output`: Path for the final world file (`aic_world.xml`).
   - `--robot_output`: Path for the robot-only file (`aic_robot.xml`).
   - `--scene_output`: Path for the scene file (`scene.xml`).
 
-Manually apply joint orientation fixes from the provided `mjcf/aic_robot.xml` reference file into your newly generated version of `aic_robot.xml`. This ensures that the MuJoCo model matches the URDF we load. This will be automated in the future.
 
-### 7. Mesh Assets
 
-- As mentioned above, mesh assets (`.obj`, `.png`) must be present in the `mjcf` folder. Copy or symlink all mesh files generated by `sdformat_mjcf` from `~/aic_mujoco_world` into `aic_mujoco/mjcf`.
-
-### 8. Load in MuJoCo:
+### 7. Load in MuJoCo:
 
 #### Using pixi environment
 
@@ -149,102 +241,10 @@ The `simulate` binary (from `mujoco_vendor`) can load scenes directly from comma
 
 ```bash
 # Load scene (paused by default)
-simulate ~/aic_mujoco_world/scene.xml
+simulate ~/ws_aic/src/aic/aic_utils/aic_mujoco/mjcf/scene.xml
 ```
 
 > **Tip:** Press Space to start/pause simulation in the viewer.
-
-## Controlling the Robot with ROS 2 Control
-
-![](../../../media/wave_arm_policy_mujoco.gif)
-
-MuJoCo's integration with `ros2_control` allows you to control the UR5e robot using the same `aic_controller` interface as in Gazebo, ensuring your policy code remains simulator-agnostic.
-
-### Additional Installation Steps
-
-#### 1. Import MuJoCo Dependencies
-
-From your ROS 2 workspace, import the required repositories:
-
-```bash
-cd ~/ws_aic/src
-vcs import < aic/aic_utils/aic_mujoco/mujoco.repos
-```
-
-This adds:
-- `mujoco_vendor` (v0.0.6) - ROS 2 wrapper for MuJoCo 3.x with plugins (elasticity, actuator, sensor, SDF)
-- `mujoco_ros2_control` - Integration between MuJoCo and ros2_control
-- `gz-mujoco` (with `sdformat_mjcf` tool) - Converts Gazebo SDF files to MuJoCo MJCF format
-
-#### 2. Install Dependencies
-
-Install dependencies for the newly imported MuJoCo packages:
-
-```bash
-cd ~/ws_aic
-rosdep install --from-paths src --ignore-src --rosdistro kilted -yr --skip-keys "gz-cmake3 DART libogre-dev libogre-next-2.3-dev"
-```
-
-#### 3. Build the Workspace
-
-With the package dependencies properly configured, building should work automatically:
-
-```bash
-cd ~/ws_aic
-source /opt/ros/kilted/setup.bash
-
-# Build all packages (including aic_mujoco)
-GZ_BUILD_FROM_SOURCE=1 colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release --merge-install --symlink-install --packages-ignore lerobot_robot_aic
-```
-
-### 4. Verify Installation
-
-```bash
-# Source the workspace (if not already done)
-source ~/ws_aic/install/setup.bash
-
-# Check MUJOCO_DIR is automatically set by the environment hook
-echo $MUJOCO_DIR
-# Should output something like:
-# /home/user/ws_aic/install/opt/mujoco_vendor
-
-# Check MUJOCO_PLUGIN_PATH is set (this is how MuJoCo finds plugins)
-echo $MUJOCO_PLUGIN_PATH
-# Should output something like:
-# /home/user/ws_aic/install/opt/mujoco_vendor/lib
-
-# Check MuJoCo installation directory
-ls $MUJOCO_DIR
-# Should show: bin, include, lib, share, simulate directories
-
-# Check that plugin libraries are installed
-ls $MUJOCO_DIR/lib/*.so
-# Should show: libelasticity.so, libactuator.so, libsensor.so, libsdf_plugin.so, libmujoco.so*
-
-# Verify MuJoCo simulate binary works
-which simulate
-# Should output:
-# /home/user/ws_aic/install/opt/mujoco_vendor/bin/simulate
-```
-
-> **⚠️ Important:** If you have a previous MuJoCo installation, it may conflict with `mujoco_vendor`. Check for and remove any existing `MUJOCO_PATH`, `MUJOCO_PLUGIN_PATH`, or `MUJOCO_DIR` environment variables from your shell configuration (`~/.bashrc`, `~/.zshrc`, etc.) before building. After cleaning the environment, restart your shell and rebuild the workspace:
-> ```bash
-> # Check for conflicting environment variables
-> env | grep MUJOCO
->
-> # If you see MUJOCO_PATH or MUJOCO_PLUGIN_PATH pointing to a different location,
-> # remove those exports from ~/.bashrc (or ~/.zshrc) and restart shell
->
-> # Then rebuild mujoco_vendor
-> cd ~/ws_aic
-> colcon build --packages-select mujoco_vendor --cmake-clean-cache
-> source install/setup.bash
->
-> # Verify the correct MUJOCO_PLUGIN_PATH is set
-> echo $MUJOCO_PLUGIN_PATH
-> # Should point to: /home/user/ws_aic/install/opt/mujoco_vendor/lib
-> ```
-
 
 ### Launching MuJoCo with ros2_control
 
