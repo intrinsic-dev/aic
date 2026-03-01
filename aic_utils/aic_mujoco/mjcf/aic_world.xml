@@ -129,7 +129,7 @@
       <plugin instance="composite"/>
       <body name="cable_connection_0" pos="-2.48032e-08 2.17152e-08 -1.45797e-07" quat="0.922729 -0.0944968 -0.331446 0.172583">
         <inertial pos="0 0 0" mass="0.01" diaginertia="1e-6 1e-6 1e-6"/>
-        <joint name="joint_connection_end_0" class="world_default" pos="0 0 0" type="ball"/>
+        <joint name="joint_connection_end_0" class="world_default" pos="0 0 0" type="ball" damping="0.2"/>
         <geom name="visual_0_0" class="world_default" size="0.001 0.00180278" pos="-0.00180278 0.002 0" quat="0.676768 0.204909 0.676764 -0.204908" type="cylinder" contype="0" conaffinity="0"/>
         <geom name="visual_1_0" class="world_default" size="0.001 0.00180278" pos="-0.00180278 -0.002 0" quat="0.676768 -0.204909 0.676764 0.204908" type="cylinder" contype="0" conaffinity="0"/>
         <plugin instance="composite"/>
@@ -497,6 +497,6 @@
   </contact>
 
   <equality>
-    <weld body1="ati/tool_link" body2="lc_plug_link" relpose="-0.000711 0.001759 0.168213 0.577301 0.816105 -0.021418 -0.015395" solref="0.02 1" solimp="0.9 0.95 0.001"/>
+    <weld body1="ati/tool_link" body2="lc_plug_link" relpose="-0.000711 0.001759 0.168213 0.577301 0.816105 -0.021418 -0.015395" solref="0.002 1" solimp="0.99 0.999 0.001"/>
   </equality>
 </mujoco>
