@@ -148,6 +148,9 @@ The simulation includes a world plugin that automatically exports the complete w
 > [!NOTE]
 > **MuJoCo Integration:** The AIC environment supports exporting and training policies natively in MuJoCo. Exported scenarios can be converted to MJCF format and run with the same ROS 2 control interfaces used in Gazebo. For detailed instructions on simulation setup, converting Gazebo worlds, and using `ros2_control` in MuJoCo, see the [MuJoCo Integration Guide](../aic_utils/aic_mujoco/README.md).
 
+> [!NOTE]
+> **Isaac Lab Integration:** The AIC environment can also be loaded in NVIDIA's Isaac Lab for data collection and training. For details, see the [Isaac Lab Integration Guide](../aic_utils/aic_isaac/README.md).
+
 ---
 
 ## Taring before Training
