@@ -40,11 +40,11 @@ CMD ["--ros-args", "-p", "policy:=my_policy_node.MyPolicy"]
 Open `docker/docker-compose.yaml` and update the model service configuration to use your Dockerfile and policy:
 
 ```yaml
-	model:
-		image: my-solution:v1
-		build:
-			dockerfile: docker/my_policy_node/Dockerfile # <-- replace this line
-			context: ..
+    model:
+        image: my-solution:v1
+        build:
+            dockerfile: docker/my_policy_node/Dockerfile # <-- replace this line
+            context: ..
 ```
 
 ### Build the Image
@@ -68,7 +68,9 @@ docker compose -f docker/docker-compose.yaml up
 > [!WARNING]
 > Do not skip local verification. If your container fails to start or crashes during the local evaluation, it will be automatically rejected by the submission portal, which may count against your daily submission limit.
 
-A description of the Zenoh access controls used to prevent minimal "cheating" solutions that simply subscribe to the simulator's internal data structures are described in the [Access Control](access_control.md) document.
+> [!IMPORTANT]
+> A description of the Zenoh access controls used to prevent minimal "cheating" solutions that simply subscribe to the simulator's internal data structures are described in the [Access Control](access_control.md) document.
+
 ---
 
 ## 2. Upload Your Image to Our Registry
