@@ -5,7 +5,7 @@
 Welcome to the **AI for Industry Challenge**. This document outlines the technical requirements for packaging, containerizing, and uploading your solutions for evaluation. Following these steps ensures your model runs in our automated evaluation environment exactly as it does on your local machine.
 
 > [!IMPORTANT]
-> To complete the registry upload, you must have the credentials provided in your **onboarding email**. These include your unique AWS access credentials, and the ECR Repository URI assigned to your team.
+> To complete the registry upload, you must have the credentials provided in your **onboarding email** sent to team leaders. These include your unique AWS access credentials, and the ECR Repository URI assigned to your team.
 
 ---
 
@@ -79,7 +79,7 @@ We use Amazon Elastic Container Registry (ECR) to host team OCI images. You will
 
 ### Authenticate
 
-Configure your local environment by following these steps, using the credentials provided in your onboarding email:
+Configure your local environment by following these steps, using the credentials provided in your onboarding email sent to team leaders:
 
 #### A. Configure your AWS Profile
 Run the following command, replacing `<team_name>` with the slug provided in your email (e.g., `team123`):
@@ -136,8 +136,11 @@ docker push 973918476471.dkr.ecr.us-east-1.amazonaws.com/aic-team/<team_name>:v1
 
 Simply pushing the image to ECR does not trigger the evaluation. You must notify the platform that a new version is ready for scoring.
 
+> [!NOTE]
+> The submission portal will be open shortly. The login credentials for the submission portal will be emailed to the team leaders by the end of March.
+
 1. Copy the full Image URI you just pushed (e.g., `973918476471.dkr.ecr.us-east-1.amazonaws.com/aic-team/<team_name>:v1`).
-2. Log in to the [aiforindustrychallenge.ai](https://aiforindustrychallenge.ai) portal.
+2. Log in to the submission portal.
 3. Click on the `AI for Industry Challenge` and then go to `Submit`.
 4. Select the `Qualification` phase and paste the URI into the submission `OCI Image` field.
 5. Click `Submit` to proceed.
