@@ -74,7 +74,7 @@ To see expected scoring results for each baseline policy, see the [Scoring Test 
 
 A policy node is essentially a ROS 2 node that subscribes to observations and publishes actions to be executed.
 
-For this tutorial, we will be using [aic_model](../aic_model/README.md) to implement a policy node.
+For this tutorial, we will be using [aic_model](../aic_model/) to implement a policy node.
 
 > [!Important]
 > Take note of the prompt in the bash examples. If it starts with `(aic) $`, then it should be run from inside the pixi environment.

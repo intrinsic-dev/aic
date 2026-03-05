@@ -1,6 +1,9 @@
 # Getting Started
 
-Welcome to the AI for Industry Challenge! Follow this guide to familarize yourself with the toolkit structure, prepare  your environment, and confirm your setup by running a quickstart example before developing your solution.
+Welcome to the AI for Industry Challenge! Follow this guide to familiarize yourself with the toolkit structure, prepare  your environment, and confirm your setup by running a quickstart example before developing your solution.
+
+> [!NOTE]
+> **ROS 2 Distribution:** Official evaluation of all submissions will be conducted using **ROS 2 Kilted Kaiju**. If you choose to develop or test your policy using a different ROS 2 distribution (e.g., Humble or Jazzy), it is entirely your responsibility to ensure compatibility and support. Please note that **inter-distro communication is not guaranteed and not officially supported**. For those new to ROS 2, we strongly encourage completing the [official ROS 2 tutorials](https://docs.ros.org/en/kilted/Tutorials.html).
 
 ## Architecture Overview
 

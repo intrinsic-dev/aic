@@ -33,8 +33,8 @@ GZ_BUILD_FROM_SOURCE=1 colcon build \
 | 2 | Trajectory smoothness | 0-5 | Smoothness of arm motion; inversely proportional to jerk (higher = smoother); only awarded on successful insertion or plug is within close proximity to port |
 | 2 | Task duration | 0-10 | Reward for faster completion; only awarded on successful insertion or plug is within close proximity to port |
 | 2 | Trajectory efficiency | 0-5 | Reward for shorter end-effector path length (higher = more direct); only awarded on successful insertion or plug is within close proximity to port |
-| 2 | Insertion force | 0 to -10 | Penalty for force > 20 N sustained for > 1 second |
-| 2 | Off-limit contacts | 0 to -20 | Penalty for collisions with the enclosure or task board |
+| 2 | Insertion force | 0 to -12 | Penalty for force > 20 N sustained for > 1 second |
+| 2 | Off-limit contacts | 0 to -24 | Penalty for collisions with the enclosure or task board |
 | 3 | Cable insertion | -10 or 0 to 60 | -10 penalty for wrong-port insertion; 60 for correct-port insertion; 0-40 for partial insertion or close proximity |
 
 Results are written to `$AIC_RESULTS_DIR/scoring.yaml` when using the engine.
@@ -151,7 +151,7 @@ scoring output.
 **Expected outcome:**
 - All 3 trials complete.
 - Tier 1 should **pass** for all trials.
-- Tier 2 should show an off-limit contacts penalty (-20) for all trials where a
+- Tier 2 should show an off-limit contacts penalty (-24) for all trials where a
   robot link (e.g. `forearm_link`) collided with the enclosure wall.
 - Tier 3 should report 0 score for all trials (no insertion and plug outside of
   port proximity).
@@ -201,8 +201,8 @@ insertion force penalty.
 **Expected outcome:**
 - All 3 trials complete.
 - Tier 1 should **pass** for all trials.
-- Tier 2 should show an insertion force penalty (-10) for all trials. Off-limit
-  contacts penalty (-20) may also appear as a side effect of the wall contact.
+- Tier 2 should show an insertion force penalty (-12) for all trials. Off-limit
+  contacts penalty (-24) may also appear as a side effect of the wall contact.
 - Tier 3 should report 0 score for all trials (no insertion and plug outside of
   port proximity).
 
@@ -277,7 +277,7 @@ producing aggressive motion that triggers the insertion force penalty.
 - All 3 trials complete.
 - Tier 1 should **pass** for all trials.
 - Tier 2 should show no smoothness score (plug not within close proximity to port),
-  plus an insertion force penalty (-10) for all trials. The arm
+  plus an insertion force penalty (-12) for all trials. The arm
   oscillates aggressively due to low damping, generating sustained force at
   the F/T sensor. The arm should visibly snap between positions.
 - Tier 3 should report 0 score for all trials (no insertion and plug outside of

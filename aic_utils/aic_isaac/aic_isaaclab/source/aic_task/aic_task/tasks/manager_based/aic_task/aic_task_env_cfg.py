@@ -55,7 +55,7 @@ class AICTaskSceneCfg(InteractiveSceneCfg):
     robot: ArticulationCfg = ArticulationCfg(
         prim_path="{ENV_REGEX_NS}/Robot",
         spawn=sim_utils.UsdFileCfg(
-            usd_path=os.path.join(AIC_ASSET_DIR, "aic_unified_robot_cable_sdf.usd"),
+            usd_path=os.path.join(AIC_ASSET_DIR, "aic_unified_robot_cable_SDF.usd"),
             rigid_props=sim_utils.RigidBodyPropertiesCfg(
                 # disable_gravity=True,
                 max_depenetration_velocity=5.0,
@@ -188,8 +188,8 @@ class AICTaskSceneCfg(InteractiveSceneCfg):
     nic_card = RigidObjectCfg(
         prim_path="{ENV_REGEX_NS}/nic_card",
         spawn=sim_utils.UsdFileCfg(
-            usd_path=os.path.join(AIC_PARTS_DIR, "NIC Card", "nic_card.usd"),
-            scale=(1.0, 1.0, 1.0),
+            usd_path=os.path.join(AIC_PARTS_DIR, "NIC Card", "nic_card_sdf.usd"),
+            # scale=(0.009, 0.009, 0.009),
             rigid_props=sim_utils.RigidBodyPropertiesCfg(
                 kinematic_enabled=True,
             ),
@@ -611,7 +611,7 @@ class AICTaskEnvCfg(ManagerBasedRLEnvCfg):
                 ik_method="svd",
                 ik_params={"k_val": 1.0, "min_singular_value": 1e-5},
             ),
-            scale=0.5,
+            scale=0.05,
         )
 
         # Command generator: end-effector body and pitch (wrist_3_link, EE along x)
