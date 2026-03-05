@@ -198,7 +198,9 @@ def randomize_board_and_parts(
     board_world_pos = board_pos + env_origins
     board_pose = torch.cat([board_world_pos, board_rot], dim=-1)
     board_asset.write_root_pose_to_sim(board_pose, env_ids=env_ids)
-    board_asset.write_root_velocity_to_sim(torch.zeros(n, 6, device=device), env_ids=env_ids)
+    board_asset.write_root_velocity_to_sim(
+        torch.zeros(n, 6, device=device), env_ids=env_ids
+    )
 
     for part_cfg in parts:
         pname = part_cfg["scene_name"]
@@ -219,5 +221,6 @@ def randomize_board_and_parts(
 
         part_pose = torch.cat([part_pos, part_rot], dim=-1)
         part_asset.write_root_pose_to_sim(part_pose, env_ids=env_ids)
-        part_asset.write_root_velocity_to_sim(torch.zeros(n, 6, device=device), env_ids=env_ids)
-
+        part_asset.write_root_velocity_to_sim(
+            torch.zeros(n, 6, device=device), env_ids=env_ids
+        )
