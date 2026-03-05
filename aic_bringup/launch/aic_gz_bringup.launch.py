@@ -43,12 +43,16 @@ from launch_ros.substitutions import FindPackageShare
 from ros_gz_bridge.actions import RosGzBridge
 from ros_gz_sim.actions import GzServer
 
+
 def on_aic_engine_exit(event, context):
     if event.returncode != 0:
         raise RuntimeError(f"aic_engine exited with code {event.returncode}")
-    return EmitEvent(event=Shutdown(
-        reason=f"aic_engine exited cleanly with code {event.returncode})"
-    ))
+    return EmitEvent(
+        event=Shutdown(
+            reason=f"aic_engine exited cleanly with code {event.returncode})"
+        )
+    )
+
 
 def launch_setup(context, *args, **kwargs):
     # UR arguments
@@ -241,10 +245,7 @@ def launch_setup(context, *args, **kwargs):
 
     # Event handler to shutdown launch file when aic_engine exits
     shutdown_on_aic_engine_exit_handler = RegisterEventHandler(
-        OnProcessExit(
-            target_action=aic_engine,
-            on_exit=on_aic_engine_exit
-        ),
+        OnProcessExit(target_action=aic_engine, on_exit=on_aic_engine_exit),
         condition=IfCondition(
             PythonExpression(
                 [
