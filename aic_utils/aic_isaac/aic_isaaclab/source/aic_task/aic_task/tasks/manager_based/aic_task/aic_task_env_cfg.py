@@ -622,6 +622,8 @@ class AICTaskEnvCfg(ManagerBasedRLEnvCfg):
         self.teleop_devices = DevicesCfg(
             devices={
                 "keyboard": Se3KeyboardCfg(
+                    pos_sensitivity=0.025,
+                    rot_sensitivity=0.025,
                     gripper_term=False,
                     sim_device=self.sim.device,
                 ),
