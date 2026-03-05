@@ -75,6 +75,9 @@ This is what you develop and submit:
 
 ### Development and Submission Workflow
 
+> [!IMPORTANT]
+> **ROS 2 Distribution:** The official evaluation of all submissions will be conducted using **ROS 2 Kilted Kaiju**. If you choose to develop or test your policy using a different ROS 2 distribution (e.g., Humble or Jazzy), it is entirely your responsibility to ensure compatibility and support. Please note that **inter-distro communication is not guaranteed and not officially supported**.
+
 **Development Options:**
 - Develop inside a container (recommended - matches evaluation environment).
 - OR develop in native Ubuntu 24.04 environment (requires all dependencies).
