@@ -3,9 +3,10 @@ from __future__ import annotations
 import math
 import random
 from typing import TYPE_CHECKING
-from pxr import UsdGeom, Gf
 
+import omni.usd
 import torch
+from pxr import Gf, UsdLux
 
 import isaaclab.utils.math as math_utils
 from isaaclab.managers import SceneEntityCfg
@@ -109,10 +110,6 @@ def randomize_xform_position(
     xform_view.set_world_poses(positions=positions, indices=env_ids.tolist())
 
 
-import omni.usd
-from pxr import UsdLux, Gf
-
-
 def randomize_dome_light(
     env: ManagerBasedEnv,
     env_ids: torch.Tensor,
@@ -147,58 +144,6 @@ def randomize_dome_light(
     light.GetColorAttr().Set(Gf.Vec3f(r, g, b))
 
 
-def reset_asset_base_position(
-    env: ManagerBasedEnv,
-    env_ids: torch.Tensor,
-    prim_path: str = "{ENV_REGEX_NS}/Table",
-    pose_range: dict = {"x": (0.0, 0.0), "y": (0.0, 0.0), "z": (0.0, 0.0)},
-    default_pos: tuple = (0.5, 0.0, 1.05),
-):
-    """Reset a static asset's position via USD APIs."""
-    stage = omni.usd.get_context().get_stage()
-
-    for env_id in env_ids.tolist():
-        # resolve the per-env prim path
-        resolved_path = prim_path.replace("{ENV_REGEX_NS}", f"/World/envs/env_{env_id}")
-        prim = stage.GetPrimAtPath(resolved_path)
-        if not prim.IsValid():
-            continue
-
-        xform = UsdGeom.Xformable(prim)
-        # sample random offsets
-        x = (
-            default_pos[0]
-            + torch.empty(1).uniform_(*pose_range.get("x", (0.0, 0.0))).item()
-        )
-        y = (
-            default_pos[1]
-            + torch.empty(1).uniform_(*pose_range.get("y", (0.0, 0.0))).item()
-        )
-        z = (
-            default_pos[2]
-            + torch.empty(1).uniform_(*pose_range.get("z", (0.0, 0.0))).item()
-        )
-
-        # set the translate op
-        xform_ops = xform.GetOrderedXformOps()
-        for op in xform_ops:
-            if op.GetOpType() == UsdGeom.XformOp.TypeTranslate:
-                op.Set(Gf.Vec3d(x, y, z))
-                break
-
-
-def _set_prim_translate(stage, prim_path: str, pos: tuple[float, float, float]):
-    """Helper: set the translate xform op on a USD prim."""
-    prim = stage.GetPrimAtPath(prim_path)
-    if not prim.IsValid():
-        return
-    xform = UsdGeom.Xformable(prim)
-    for op in xform.GetOrderedXformOps():
-        if op.GetOpType() == UsdGeom.XformOp.TypeTranslate:
-            op.Set(Gf.Vec3d(*pos))
-            return
-
-
 def _sample_axis(pose_range: dict, snap_step: dict, axis: str) -> float:
     """Sample a random offset for an axis. If snap_step has a value for this axis,
     snap to the nearest multiple of that step within the range."""
@@ -212,51 +157,67 @@ def _sample_axis(pose_range: dict, snap_step: dict, axis: str) -> float:
     return torch.empty(1).uniform_(lo, hi).item()
 
 
+_cached_orientations: dict[str, torch.Tensor] = {}
+
+
 def randomize_board_and_parts(
     env: ManagerBasedEnv,
     env_ids: torch.Tensor,
-    board_path: str = "{ENV_REGEX_NS}/task_board",
-    board_default_pos: tuple = (0.16141, -0.041, 0.0),
+    board_scene_name: str = "task_board",
+    board_default_pos: tuple = (0.0, 0.0, 0.0),
     board_range: dict = {"x": (0.0, 0.0), "y": (0.0, 0.0)},
     parts: list[dict] = (),
 ):
-    """Randomize the task board position, then place parts relative to it.
+    """Reset and randomize the task board + parts positions.
 
-    Only changes translation via USD xform ops — rotation is never touched,
-    so each object keeps the rotation from its init_state.
-
-    Each entry in *parts* is a dict with:
-        prim_path      – USD path template (with {ENV_REGEX_NS})
-        offset         – (dx, dy, dz) default offset from the board
-        pose_range     – {"x": (lo, hi), "y": (lo, hi)} local perturbation
-        snap_step      – (optional) {"x": step, "y": step} snap to discrete positions
+    On the first invocation, captures the true orientations from the live
+    PhysX state (which includes composed USD child transforms).  These are
+    cached and reused on every subsequent reset so we never write a wrong
+    orientation.  Only positions are randomized; orientations are preserved.
     """
-    stage = omni.usd.get_context().get_stage()
+    global _cached_orientations
+    device = env.device
+    n = len(env_ids)
+    env_origins = env.scene.env_origins[env_ids]
 
-    for env_id in env_ids.tolist():
-        bx = (
-            board_default_pos[0]
-            + torch.empty(1).uniform_(*board_range.get("x", (0.0, 0.0))).item()
-        )
-        by = (
-            board_default_pos[1]
-            + torch.empty(1).uniform_(*board_range.get("y", (0.0, 0.0))).item()
-        )
-        bz = board_default_pos[2]
+    board_asset = env.scene[board_scene_name]
 
-        resolved_board = board_path.replace(
-            "{ENV_REGEX_NS}", f"/World/envs/env_{env_id}"
-        )
-        _set_prim_translate(stage, resolved_board, (bx, by, bz))
+    all_names = [board_scene_name] + [p["scene_name"] for p in parts]
+    if not _cached_orientations:
+        for name in all_names:
+            asset = env.scene[name]
+            _cached_orientations[name] = asset.data.root_state_w[:, 3:7].clone()
+    board_rot = _cached_orientations[board_scene_name][env_ids]
 
-        for part in parts:
-            ox, oy, oz = part["offset"]
-            pr = part.get("pose_range", {})
-            snap = part.get("snap_step", {})
-            px = bx + ox + _sample_axis(pr, snap, "x")
-            py = by + oy + _sample_axis(pr, snap, "y")
-            pz = bz + oz
-            resolved = part["prim_path"].replace(
-                "{ENV_REGEX_NS}", f"/World/envs/env_{env_id}"
-            )
-            _set_prim_translate(stage, resolved, (px, py, pz))
+    board_pos = torch.tensor([board_default_pos], device=device).expand(n, -1).clone()
+    bx_off = torch.empty(n, device=device).uniform_(*board_range.get("x", (0.0, 0.0)))
+    by_off = torch.empty(n, device=device).uniform_(*board_range.get("y", (0.0, 0.0)))
+    board_pos[:, 0] += bx_off
+    board_pos[:, 1] += by_off
+
+    board_world_pos = board_pos + env_origins
+    board_pose = torch.cat([board_world_pos, board_rot], dim=-1)
+    board_asset.write_root_pose_to_sim(board_pose, env_ids=env_ids)
+    board_asset.write_root_velocity_to_sim(torch.zeros(n, 6, device=device), env_ids=env_ids)
+
+    for part_cfg in parts:
+        pname = part_cfg["scene_name"]
+        part_asset = env.scene[pname]
+        part_rot = _cached_orientations[pname][env_ids]
+
+        ox, oy, oz = part_cfg["offset"]
+        pr = part_cfg.get("pose_range", {})
+        snap = part_cfg.get("snap_step", {})
+
+        part_pos = board_world_pos.clone()
+        for idx in range(n):
+            dx = _sample_axis(pr, snap, "x")
+            dy = _sample_axis(pr, snap, "y")
+            part_pos[idx, 0] += ox + dx
+            part_pos[idx, 1] += oy + dy
+            part_pos[idx, 2] = board_world_pos[idx, 2] + oz
+
+        part_pose = torch.cat([part_pos, part_rot], dim=-1)
+        part_asset.write_root_pose_to_sim(part_pose, env_ids=env_ids)
+        part_asset.write_root_velocity_to_sim(torch.zeros(n, 6, device=device), env_ids=env_ids)
+

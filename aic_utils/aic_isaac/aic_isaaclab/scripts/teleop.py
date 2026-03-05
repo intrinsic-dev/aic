@@ -169,22 +169,22 @@ def main() -> None:
             if args_cli.teleop_device.lower() == "keyboard":
                 teleop_interface = Se3Keyboard(
                     Se3KeyboardCfg(
-                        pos_sensitivity=0.05 * sensitivity,
-                        rot_sensitivity=0.05 * sensitivity,
+                        pos_sensitivity=0.025 * sensitivity,
+                        rot_sensitivity=0.025 * sensitivity,
                     )
                 )
             elif args_cli.teleop_device.lower() == "spacemouse":
                 teleop_interface = Se3SpaceMouse(
                     Se3SpaceMouseCfg(
-                        pos_sensitivity=0.05 * sensitivity,
-                        rot_sensitivity=0.05 * sensitivity,
+                        pos_sensitivity=0.025 * sensitivity,
+                        rot_sensitivity=0.025 * sensitivity,
                     )
                 )
             elif args_cli.teleop_device.lower() == "gamepad":
                 teleop_interface = Se3Gamepad(
                     Se3GamepadCfg(
-                        pos_sensitivity=0.1 * sensitivity,
-                        rot_sensitivity=0.1 * sensitivity,
+                        pos_sensitivity=0.05 * sensitivity,
+                        rot_sensitivity=0.05 * sensitivity,
                     )
                 )
             else:
@@ -226,16 +226,15 @@ def main() -> None:
                 if teleoperation_active:
                     actions = action.repeat(env.num_envs, 1)
                     env.step(actions)
-                    #########Debug prints for sensors
-
-                    step_count += 1
-                    if step_count % 120 == 0:
-                        joint_pos = env.scene["robot"].data.joint_pos[0]
-                        joint_names = env.scene["robot"].joint_names
-                        print(f"\n[step {step_count}] Joint positions:")
-                        for name, pos in zip(joint_names, joint_pos):
-                            print(f"  {name}: {pos.item():.5f}")
-                    ###################################################################
+                    # #########Debug prints for sensors
+                    # step_count += 1
+                    # if step_count % 120 == 0:
+                    #     joint_pos = env.scene["robot"].data.joint_pos[0]
+                    #     joint_names = env.scene["robot"].joint_names
+                    #     print(f"\n[step {step_count}] Joint positions:")
+                    #     for name, pos in zip(joint_names, joint_pos):
+                    #         print(f"  {name}: {pos.item():.5f}")
+                    # ###################################################################
                 else:
                     env.sim.render()
 

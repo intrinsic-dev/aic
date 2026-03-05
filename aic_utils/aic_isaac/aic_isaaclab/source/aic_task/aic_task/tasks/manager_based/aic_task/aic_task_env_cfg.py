@@ -3,14 +3,13 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-from isaaclab.assets import RigidObjectCfg
 import math
 import os
 from dataclasses import MISSING
 
 import isaaclab.sim as sim_utils
 from isaaclab.actuators import ImplicitActuatorCfg
-from isaaclab.assets import ArticulationCfg, AssetBaseCfg
+from isaaclab.assets import ArticulationCfg, AssetBaseCfg, RigidObjectCfg
 from isaaclab.envs import ManagerBasedRLEnvCfg
 from isaaclab.envs.mdp import JointPositionActionCfg
 from isaaclab.envs.mdp import DifferentialInverseKinematicsActionCfg
@@ -31,17 +30,9 @@ from isaaclab.devices import DevicesCfg
 from isaaclab.devices.keyboard import Se3KeyboardCfg
 from isaaclab.devices.spacemouse import Se3SpaceMouseCfg
 from isaaclab.devices.gamepad import Se3GamepadCfg
-from isaaclab.utils import math as math_utils
-from isaaclab.envs import ManagerBasedEnv
-from isaaclab.assets import RigidObjectCfg
 
 from . import mdp
-from .mdp.events import (
-    randomize_dome_light,
-    reset_asset_base_position,
-    randomize_board_and_parts,
-)
-import isaaclab.envs.mdp as isaaclab_mdp
+from .mdp.events import randomize_dome_light, randomize_board_and_parts
 
 # Resolve asset directory relative to this file (portable across machines)
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -64,13 +55,13 @@ class AICTaskSceneCfg(InteractiveSceneCfg):
     robot: ArticulationCfg = ArticulationCfg(
         prim_path="{ENV_REGEX_NS}/Robot",
         spawn=sim_utils.UsdFileCfg(
-            usd_path=os.path.join(AIC_ASSET_DIR, "aic_unified_robot_cable_SDF.usd"),
+            usd_path=os.path.join(AIC_ASSET_DIR, "aic_unified_robot_cable_sdf.usd"),
             rigid_props=sim_utils.RigidBodyPropertiesCfg(
                 # disable_gravity=True,
                 max_depenetration_velocity=5.0,
             ),
             articulation_props=sim_utils.ArticulationRootPropertiesCfg(
-                enabled_self_collisions=False,
+                enabled_self_collisions=True,
                 solver_position_iteration_count=16,
                 solver_velocity_iteration_count=8,
             ),
@@ -102,15 +93,15 @@ class AICTaskSceneCfg(InteractiveSceneCfg):
                 stiffness=2000.0,
                 damping=100.0,
             ),
-            "gripper": ImplicitActuatorCfg(
-                joint_names_expr=[
-                    "gripper_left_finger_joint",
-                    "gripper_right_finger_joint",
-                ],
-                effort_limit_sim=20.0,
-                stiffness=800.0,
-                damping=40.0,
-            ),
+            # "gripper": ImplicitActuatorCfg(
+            #     joint_names_expr=[
+            #         "gripper_left_finger_joint",
+            #         "gripper_right_finger_joint",
+            #     ],
+            #     effort_limit_sim=20.0,
+            #     stiffness=800.0,
+            #     damping=40.0,
+            # ),
         },
     )
 
@@ -156,15 +147,13 @@ class AICTaskSceneCfg(InteractiveSceneCfg):
             usd_path=os.path.join(
                 AIC_PARTS_DIR, "Task Board Base", "task_board_rigid.usd"
             ),
-            # scale=(0.00001, 0.00001, 0.00001),
-            # scale=(0.008, 0.008, 0.008),
             rigid_props=sim_utils.RigidBodyPropertiesCfg(
                 kinematic_enabled=True,
             ),
         ),
         init_state=RigidObjectCfg.InitialStateCfg(
-            pos=(0.05249, 0.32632, 0.0),
-            rot=(0.0, 0.0, 0.0, -1.0),
+            pos=(0.2837, 0.229, 0.0),
+            # rot=(0.70686, -0.01851, 0.70686, 0.01851),
         ),
     )
 
@@ -172,14 +161,13 @@ class AICTaskSceneCfg(InteractiveSceneCfg):
         prim_path="{ENV_REGEX_NS}/sc_port",
         spawn=sim_utils.UsdFileCfg(
             usd_path=os.path.join(AIC_PARTS_DIR, "SC Port", "sc_port.usd"),
-            # scale=(0.005, 0.005, 0.005),
             rigid_props=sim_utils.RigidBodyPropertiesCfg(
                 kinematic_enabled=True,
             ),
         ),
         init_state=RigidObjectCfg.InitialStateCfg(
-            pos=(0.02098, 0.38232, 0.005),
-            rot=(0.70711, 0.0, 0.0, 0.70711),
+            pos=(0.2904, 0.1928, 0.005),
+            rot=(0.73136, 0.0, 0.0, -0.682),
         ),
     )
 
@@ -187,29 +175,27 @@ class AICTaskSceneCfg(InteractiveSceneCfg):
         prim_path="{ENV_REGEX_NS}/sc_port_2",
         spawn=sim_utils.UsdFileCfg(
             usd_path=os.path.join(AIC_PARTS_DIR, "SC Port", "sc_port.usd"),
-            # scale=(0.005, 0.005, 0.005),
             rigid_props=sim_utils.RigidBodyPropertiesCfg(
                 kinematic_enabled=True,
             ),
         ),
         init_state=RigidObjectCfg.InitialStateCfg(
-            pos=(0.02098, 0.44632, 0.005),
-            rot=(0.70711, 0.0, 0.0, 0.70711),
+            pos=(0.2913, 0.1507, 0.005),
+            rot=(0.73136, 0.0, 0.0, -0.682),
         ),
     )
 
     nic_card = RigidObjectCfg(
         prim_path="{ENV_REGEX_NS}/nic_card",
         spawn=sim_utils.UsdFileCfg(
-            usd_path=os.path.join(AIC_PARTS_DIR, "NIC Card", "nic_card_sdf.usd"),
-            # scale=(0.009, 0.009, 0.009),
+            usd_path=os.path.join(AIC_PARTS_DIR, "NIC Card", "nic_card.usd"),
+            scale=(1.0, 1.0, 1.0),
             rigid_props=sim_utils.RigidBodyPropertiesCfg(
                 kinematic_enabled=True,
             ),
         ),
         init_state=RigidObjectCfg.InitialStateCfg(
-            pos=(0.11385, 0.05108, 0.0743),
-            # rot=(0.0, 0.0, 1.0, 0.0),
+            pos=(0.25135, 0.25229, 0.0743),
         ),
     )
 
@@ -237,7 +223,7 @@ class AICTaskSceneCfg(InteractiveSceneCfg):
         )
 
         self.center_camera = TiledCameraCfg(
-            prim_path="{ENV_REGEX_NS}/Robot/aic_unified_robot/center_camera_optical/Camera",
+            prim_path="{ENV_REGEX_NS}/Robot/aic_unified_robot/center_camera_optical/center_camera",
             spawn=_cam_spawn,
             height=224,
             width=224,
@@ -249,7 +235,7 @@ class AICTaskSceneCfg(InteractiveSceneCfg):
             ),
         )
         self.left_camera = TiledCameraCfg(
-            prim_path="{ENV_REGEX_NS}/Robot/aic_unified_robot/left_camera_optical/Camera",
+            prim_path="{ENV_REGEX_NS}/Robot/aic_unified_robot/left_camera_optical/left_camera",
             spawn=_cam_spawn,
             height=224,
             width=224,
@@ -261,7 +247,7 @@ class AICTaskSceneCfg(InteractiveSceneCfg):
             ),
         )
         self.right_camera = TiledCameraCfg(
-            prim_path="{ENV_REGEX_NS}/Robot/aic_unified_robot/right_camera_optical/Camera",
+            prim_path="{ENV_REGEX_NS}/Robot/aic_unified_robot/right_camera_optical/right_camera",
             spawn=_cam_spawn,
             height=224,
             width=224,
@@ -347,25 +333,25 @@ class EventCfg:
         func=randomize_board_and_parts,
         mode="reset",
         params={
-            "board_path": "{ENV_REGEX_NS}/task_board",
-            "board_default_pos": (0.05249, 0.32632, 0.0),
-            "board_range": {"x": (-0.01, 0.01), "y": (-0.01, 0.01)},
+            "board_scene_name": "task_board",
+            "board_default_pos": (0.2837, 0.229, 0.0),
+            "board_range": {"x": (-0.005, 0.005), "y": (-0.005, 0.005)},
             "parts": [
                 {
-                    "prim_path": "{ENV_REGEX_NS}/sc_port",
-                    "offset": (-0.03151, 0.056, 0.005),
-                    "pose_range": {"x": (-0.005, 0.1)},
+                    "scene_name": "sc_port",
+                    "offset": (0.0067, -0.0362, 0.005),
+                    "pose_range": {"x": (-0.005, 0.02)},
                 },
                 {
-                    "prim_path": "{ENV_REGEX_NS}/sc_port_2",
-                    "offset": (-0.03151, 0.12, 0.005),
-                    "pose_range": {"x": (-0.005, 0.1)},
+                    "scene_name": "sc_port_2",
+                    "offset": (0.0076, -0.0783, 0.005),
+                    "pose_range": {"x": (-0.005, 0.02)},
                 },
                 {
-                    "prim_path": "{ENV_REGEX_NS}/nic_card",
-                    "offset": (0.06136, -0.27524, 0.0743),
-                    "pose_range": {"y": (0.0, 0.24)},
-                    "snap_step": {"y": 0.06},
+                    "scene_name": "nic_card",
+                    "offset": (-0.03235, 0.02329, 0.0743),
+                    "pose_range": {"y": (0.0, 0.12)},
+                    "snap_step": {"y": 0.04},
                 },
             ],
         },
@@ -578,7 +564,7 @@ class AICTaskEnvCfg(ManagerBasedRLEnvCfg):
         # General settings
         self.decimation = 4
         self.sim.render_interval = self.decimation
-        self.episode_length_s = 15.0
+        self.episode_length_s = 200.0
         self.sim.dt = 1.0 / 120.0
         # self.sim.gravity = (0.0, 0.0, 3)
         self.viewer.eye = (8.0, 0.0, 5.0)
@@ -625,7 +611,7 @@ class AICTaskEnvCfg(ManagerBasedRLEnvCfg):
                 ik_method="svd",
                 ik_params={"k_val": 1.0, "min_singular_value": 1e-5},
             ),
-            scale=0.05,
+            scale=0.5,
         )
 
         # Command generator: end-effector body and pitch (wrist_3_link, EE along x)
