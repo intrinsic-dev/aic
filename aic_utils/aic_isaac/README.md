@@ -80,7 +80,8 @@ Extract and place `Intrinsic_assets` directory inside `aic_task`:
 
 **Contents of Intrinsic_assets directory** (from the downloaded pack):
 ```
-Intrinsic_assets
+Intrinsic_assets/
+├── aic_unified_robot_cable_sdf.usd
 ├── assets
 │   ├── NIC Card
 │   │   ├── nic_card.usd
@@ -98,8 +99,6 @@ Intrinsic_assets
 │   │       ├── Image_1.jpg
 │   │       ├── Image_2.jpg
 │   │       └── NIC_Albedo.jpg
-│   ├── SC Mount
-│   │   └── sc_mount_visual.usd
 │   ├── SC Plug
 │   │   ├── sc_plug_visual.usd
 │   │   └── textures
@@ -114,8 +113,6 @@ Intrinsic_assets
 │   └── Task Board Base
 │       ├── base_visual.usd
 │       └── task_board_rigid.usd
-├── cable_0217.usd
-├── jointsTuned_robot_cable_0227.usd
 ├── scene
 │   └── aic.usd
 └── scene.usd
@@ -169,6 +166,17 @@ Teleoperate the robot with keyboard:
 isaaclab -p aic/aic_utils/aic_isaac/aic_isaaclab/scripts/teleop.py \
     --task AIC-Task-v0 --num_envs 1 --teleop_device keyboard --enable_cameras
 ```
+
+> [!NOTE]
+> You can tune the keyboard teleop sensitivity by updating `aic_isaaclab/source/aic_task/aic_task/tasks/manager_based/aic_task/aic_task_env_config.py`:
+> ```python
+> "keyboard": Se3KeyboardCfg(
+>     pos_sensitivity=0.025,
+>     rot_sensitivity=0.025,
+>     gripper_term=False,
+>     sim_dev=self.sim.device,
+> ),
+> ```
 
 For data collection:
 ```bash
