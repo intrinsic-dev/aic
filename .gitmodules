@@ -1,0 +1,3 @@
+[submodule "romanelovect"]
+	path = romanelovect
+	url = git@github.com:mbed92/romanelovect.git
