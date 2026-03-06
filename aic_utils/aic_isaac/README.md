@@ -171,8 +171,8 @@ isaaclab -p aic/aic_utils/aic_isaac/aic_isaaclab/scripts/teleop.py \
 > You can tune the keyboard teleop sensitivity by updating `aic_isaaclab/source/aic_task/aic_task/tasks/manager_based/aic_task/aic_task_env_config.py`:
 > ```python
 > "keyboard": Se3KeyboardCfg(
->     pos_sensitivity=0.025,
->     rot_sensitivity=0.025,
+>     pos_sensitivity=0.08,
+>     rot_sensitivity=0.05,
 >     gripper_term=False,
 >     sim_dev=self.sim.device,
 > ),
