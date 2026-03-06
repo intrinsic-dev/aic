@@ -55,7 +55,7 @@ class AICTaskSceneCfg(InteractiveSceneCfg):
     robot: ArticulationCfg = ArticulationCfg(
         prim_path="{ENV_REGEX_NS}/Robot",
         spawn=sim_utils.UsdFileCfg(
-            usd_path=os.path.join(AIC_ASSET_DIR, "aic_unified_robot_cable_SDF.usd"),
+            usd_path=os.path.join(AIC_ASSET_DIR, "aic_unified_robot_cable_sdf.usd"),
             rigid_props=sim_utils.RigidBodyPropertiesCfg(
                 # disable_gravity=True,
                 max_depenetration_velocity=5.0,
@@ -188,7 +188,7 @@ class AICTaskSceneCfg(InteractiveSceneCfg):
     nic_card = RigidObjectCfg(
         prim_path="{ENV_REGEX_NS}/nic_card",
         spawn=sim_utils.UsdFileCfg(
-            usd_path=os.path.join(AIC_PARTS_DIR, "NIC Card", "nic_card_sdf.usd"),
+            usd_path=os.path.join(AIC_PARTS_DIR, "NIC Card", "nic_card.usd"),
             # scale=(0.009, 0.009, 0.009),
             rigid_props=sim_utils.RigidBodyPropertiesCfg(
                 kinematic_enabled=True,
@@ -622,8 +622,8 @@ class AICTaskEnvCfg(ManagerBasedRLEnvCfg):
         self.teleop_devices = DevicesCfg(
             devices={
                 "keyboard": Se3KeyboardCfg(
-                    pos_sensitivity=0.025,
-                    rot_sensitivity=0.025,
+                    pos_sensitivity=0.08,
+                    rot_sensitivity=0.05,
                     gripper_term=False,
                     sim_device=self.sim.device,
                 ),
