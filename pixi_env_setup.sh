@@ -1,5 +1,5 @@
 #!/usr/bin/bash
 set -e
 
-export RMW_IMPLEMENTATION="${RMW_IMPLEMENTATION:-rmw_zenoh_cpp}"
+export RMW_IMPLEMENTATION=rmw_zenoh_cpp
 export ZENOH_CONFIG_OVERRIDE="transport/shared_memory/enabled=false"
