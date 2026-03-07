@@ -261,7 +261,7 @@ class AICSpaceMouseTeleop(Teleoperator):
                 "Calibration not supported, ensure the robot is calibrated before running teleop."
             )
 
-        self._device_open_success = pyspacemouse.open(
+        self._device = pyspacemouse.open(
             dof_callback=None,
             # button_callback_arr=[
             #     pyspacemouse.ButtonCallback([0], self._button_callback),  # Button 1
@@ -269,6 +269,9 @@ class AICSpaceMouseTeleop(Teleoperator):
             # ],
             device=self.config.device,
         )
+
+        if self._device is None:
+            raise RuntimeError("Failed to open SpaceMouse device")
 
         self._executor = SingleThreadedExecutor()
         self._executor.add_node(self._node)
