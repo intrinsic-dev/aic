@@ -1,5 +1,5 @@
 <mujoco model="Scene">
-  <option integrator="implicitfast"/>
+  <option integrator="implicitfast" timestep="0.002"/>
   <include file="aic_robot.xml"/>
   <include file="aic_world.xml"/>
 </mujoco>

@@ -164,7 +164,6 @@ def postprocess_world_xml(xml_str):
         xml_str,
     )
 
-
     # 3. Fix cable_connection_1 (SC plug end) diaginertia to 4e-4
     #    cable_connection_1 has mass=0.01 and is the SC plug connector
     xml_str = re.sub(
