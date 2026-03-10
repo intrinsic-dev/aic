@@ -8,9 +8,9 @@ import os
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'AI for Industry Challenge Toolkit'
-copyright = '2026, Intrinsic'
-author = ''
+project = "AI for Industry Challenge Toolkit"
+copyright = "2026, Intrinsic"
+author = ""
 
 # Read verson from the package
 # with open(os.path.join(os.path.dirname(__file__), "..", "VERSION")) as f:
@@ -40,7 +40,7 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx.ext.viewcode",
     "sphinx_multiversion",
-    "click_extra.sphinx"
+    "click_extra.sphinx",
 ]
 
 myst_enable_extensions = [
@@ -53,14 +53,8 @@ myst_enable_extensions = [
 # mathjax hacks
 mathjax3_config = {
     "tex": {
-        "inlineMath": [
-            ["\\(", "\\)"],
-            ["$", "$"]
-        ],
-        "displayMath": [
-            ["\\[", "\\]"],
-            ["$$", "$$"]
-        ],
+        "inlineMath": [["\\(", "\\)"], ["$", "$"]],
+        "displayMath": [["\\[", "\\]"], ["$$", "$$"]],
     },
 }
 
@@ -71,8 +65,8 @@ panels_add_fontawesome_css = True
 
 # Supported file extensions for source files
 source_suffix = {
-    '.rst': "restructuredtext",
-    '.md': "markdown",
+    ".rst": "restructuredtext",
+    ".md": "markdown",
 }
 
 # put type hints inside the signature instead of the description (easier to maintain)
@@ -97,12 +91,12 @@ autodoc_default_options = {
 }
 
 # Add any paths that contain templates here, realative to this directory.
-templates_path = ['_templates']
+templates_path = ["_templates"]
 
-# List of patterns, relative to source directory, that match file and 
+# List of patterns, relative to source directory, that match file and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_paths.
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', "README.md"]
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "README.md"]
 
 # -- Internationalization ----------------------------------------------------
 
@@ -117,11 +111,11 @@ import sphinx_book_theme
 html_title = "AI for Industry Challenge Toolkit"
 html_theme_path = [sphinx_book_theme.get_html_theme_path()]
 html_theme = "sphinx_book_theme"
-#TODO Add logo of the project
-#html_favicon = "source/_static/favicon.ico"
+# TODO Add logo of the project
+# html_favicon = "source/_static/favicon.ico"
 html_show_copyright = True
 html_show_sphinx = False
-html_last_updated_fmt = "" # To reveal the build data in the pages meta
+html_last_updated_fmt = ""  # To reveal the build data in the pages meta
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are coped after the builtin static files,
@@ -138,9 +132,7 @@ html_theme_options = {
     "use_edit_page_button": True,
     "show_toc_level": 1,
     "use_sidenotes": True,
-    "logo": {
-        "text": "AI for Industry Challenge"
-    },
+    "logo": {"text": "AI for Industry Challenge"},
     # "icon_links": [
     #         {
     #             "name": "GitHub",
@@ -155,9 +147,15 @@ html_theme_options = {
     #             "type": "url",
     #         },
     #     ],
-        "icon_links_label": "Quick Links",
-    }
+    "icon_links_label": "Quick Links",
+}
 
 html_sidebars = {
-    "**": ["navbar-logo.html", "versioning.html", "icon-links.html", "search-field.html", "sbt-sidebar-nav.html"]
+    "**": [
+        "navbar-logo.html",
+        "versioning.html",
+        "icon-links.html",
+        "search-field.html",
+        "sbt-sidebar-nav.html",
+    ]
 }
