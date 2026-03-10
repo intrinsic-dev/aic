@@ -12,11 +12,6 @@ project = "AI for Industry Challenge Toolkit"
 copyright = "2026, Intrinsic"
 author = ""
 
-# Read verson from the package
-# with open(os.path.join(os.path.dirname(__file__), "..", "VERSION")) as f:
-#     full_version = f.read().strip()
-#     version = ".".join(full_version.split(".")[:3])
-
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
@@ -50,7 +45,6 @@ myst_enable_extensions = [
     "html_image",
 ]
 
-
 # mathjax hacks
 mathjax3_config = {
     "tex": {
@@ -62,7 +56,6 @@ mathjax3_config = {
 # panels hacks
 panels_add_bootstrap_css = False
 panels_add_fontawesome_css = True
-
 
 # Supported file extensions for source files
 source_suffix = {
@@ -134,20 +127,26 @@ html_theme_options = {
     "show_toc_level": 1,
     "use_sidenotes": True,
     "logo": {"text": "AI for Industry Challenge"},
-    # "icon_links": [
-    #         {
-    #             "name": "GitHub",
-    #             "url": "https://github.com/intrinsic-dev/aic",
-    #             "icon": "fa-brands fa-square-github",
-    #             "type": "fontawesome",
-    #         },
-    #         {
-    #             "name": "Stars",
-    #             "url": "https://img.shields.io/github/stars/trushant05/sphinx_book_theme_template?color=fedcba",
-    #             "icon": "https://img.shields.io/github/stars/trushant05/sphinx_book_theme_template?color=fedcba",
-    #             "type": "url",
-    #         },
-    #     ],
+    "icon_links": [
+            {
+                "name": "GitHub",
+                "url": "https://github.com/intrinsic-dev/aic",
+                "icon": "fa-brands fa-square-github",
+                "type": "fontawesome",
+            },
+            {
+                "name": "Stars",
+                "url": "https://img.shields.io/github/stars/intrinsic-dev/aic?color=fedcba",
+                "icon": "https://img.shields.io/github/stars/intrinsic-dev/aic?color=fedcba",
+                "type": "url",
+            },
+            {
+                "name": "Forks",
+                "url": "https://img.shields.io/github/forks/intrinsic-dev/aic?color=fedcba",
+                "icon": "https://img.shields.io/github/forks/intrinsic-dev/aic?color=fedcba",
+                "type": "url",
+            },
+        ],
     "icon_links_label": "Quick Links",
 }
 
