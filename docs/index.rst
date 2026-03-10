@@ -1,7 +1,7 @@
 AI for Industry Challenge Toolkit
 =================================
 
-.. image:: ./source/_static/assets/aic_banner.png
+.. image:: ../../media/aic_banner.png
    :alt: AIC Banner
    :align: center
 

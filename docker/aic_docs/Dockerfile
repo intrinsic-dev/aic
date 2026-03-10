@@ -5,7 +5,7 @@ FROM python:3.12-slim
 LABEL maintainer="Trushant Adeshara <trushant@intrinsic.ai>"
 
 # Set working directory
-WORKDIR /src
+WORKDIR /aic
 
 # Install OS dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \

@@ -16,9 +16,9 @@ echo "Fetching origin/${BRANCH}..."
 git fetch origin "$BRANCH"
 
 # No media/ on branch: all files are at branch root; extract root into docs/sphinx/media/
-echo "Extracting root of origin/${BRANCH} into ./docs/source/_static/assets/..."
-rm -rf ${REPO_ROOT}/docs/source/_static/assets
-mkdir -p ${REPO_ROOT}/docs/source/_static/assets
-cd ${REPO_ROOT} && git archive "origin/${BRANCH}" | tar -x -C docs/source/_static/assets
+echo "Extracting root of origin/${BRANCH} into aic/../media ..." 
+rm -rf ${REPO_ROOT}/../media
+mkdir -p ${REPO_ROOT}/../media
+cd ${REPO_ROOT} && git archive "origin/${BRANCH}" | tar -x -C ../media
 
 echo "Done. Run: cd docker && docker compose up docs"

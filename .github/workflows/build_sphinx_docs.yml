@@ -26,10 +26,10 @@ jobs:
         chmod +x docker/aic_docs/fetch_docs_assets.sh
         ./docker/aic_docs/fetch_docs_assets.sh media
 
-    - name: Update image path
-      run: |
-        chmod +x docker/aic_docs/update_image_paths.sh
-        ./docker/aic_docs/update_image_paths.sh
+    # - name: Update image path
+    #   run: |
+    #     chmod +x docker/aic_docs/update_image_paths.sh
+    #     ./docker/aic_docs/update_image_paths.sh
 
     - name: Setup python
       uses: actions/setup-python@v2
