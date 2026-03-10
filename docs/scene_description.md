@@ -157,7 +157,7 @@ The simulation includes a world plugin that automatically exports the complete w
 
 At the start of each training episode (i.e. before teleoperation and before spawning any cables in the environment), ensure that the Force/Torque Sensor (F/T Sensor) is tared using the following service call:
 ```bash
-ros2 service call /aic_controller/tare_ft_sensor std_srvs/srv/Trigger
+ros2 service call /aic_controller/tare_force_torque_sensor std_srvs/srv/Trigger
 ```
 
 ---

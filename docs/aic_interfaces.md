@@ -87,4 +87,4 @@ The Insertion Policy controls the robot by publishing to the following topics.
 | Service Name | Service Type | Description |
 | :--- | :--- | :--- |
 | `/aic_controller/change_target_mode` | `aic_control_interfaces/srv/ChangeTargetMode` | Select the target mode (Cartesian or joint) to define the expected input. The controller will subscribe to either `/aic_controller/pose_commands` or `/aic_controller/joint_commands` accordingly. |
-| `/aic_controller/tare_ft_sensor` | `std_srvs/srv/Trigger` | Service to tare the force/torque sensor. This service will be disabled during evaluation. The evaluation system will automatically call this service before the cable is spawned in the environment. |
+| `/aic_controller/tare_force_torque_sensor` | `std_srvs/srv/Trigger` | Service to tare the force/torque sensor. This service will be disabled during evaluation. The evaluation system will automatically call this service before the cable is spawned in the environment. |
