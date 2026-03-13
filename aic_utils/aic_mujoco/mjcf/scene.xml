@@ -1,5 +1,14 @@
 <mujoco model="Scene">
-  <option integrator="implicitfast"/>
+  <!--
+    Physics tuning for Gazebo (Bullet-Featherstone) behavioral match:
+    - integrator="implicitfast": Implicit Coriolis/centrifugal treatment better
+      matches Bullet-Featherstone's articulated body algorithm which also handles
+      these forces implicitly.
+    - solver="Newton": High-accuracy constraint solver.
+    - iterations/tolerance: Tight solver for accurate force resolution.
+    - timestep="0.002": Matches Gazebo's 2ms step (500 Hz physics).
+  -->
+  <option integrator="implicitfast" timestep="0.002" solver="Newton" iterations="200" tolerance="1e-10"/>
   <include file="aic_robot.xml"/>
   <include file="aic_world.xml"/>
 </mujoco>

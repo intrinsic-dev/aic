@@ -122,7 +122,43 @@ def postprocess_robot_xml(xml_str):
         r'\n\s*<general name="gripper/right_finger_joint_motor"[^>]*/>', "", xml_str
     )
 
-    # 8. Add equality constraint (mimic joint) and sensor sections
+    # 8. Add joint damping to arm joints to match Gazebo's implicit viscous friction.
+    #    Bullet-Featherstone introduces numerical dissipation that MuJoCo's
+    #    explicit articulated body dynamics lacks; these damping values compensate.
+    arm_joint_damping = {
+        "shoulder_pan_joint": "75.0",
+        "shoulder_lift_joint": "128.0",
+        "elbow_joint": "88.0",
+        "wrist_1_joint": "55.0",
+        "wrist_2_joint": "38.0",
+        "wrist_3_joint": "50.0",
+    }
+    for joint_name, damp_val in arm_joint_damping.items():
+        xml_str = re.sub(
+            rf'(<joint name="{joint_name}"[^/]*?)(/\s*>)',
+            rf'\1 damping="{damp_val}"\2',
+            xml_str,
+        )
+
+    # 9. Add armature (rotor inertia) to arm joints.
+    #    Armature adds to the mass-matrix diagonal, slowing joint acceleration
+    #    to match Gazebo's Bullet-Featherstone effective inertia.
+    arm_joint_armature = {
+        "shoulder_pan_joint": "7.5",
+        "shoulder_lift_joint": "12.8",
+        "elbow_joint": "8.8",
+        "wrist_1_joint": "5.0",
+        "wrist_2_joint": "3.5",
+        "wrist_3_joint": "4.8",
+    }
+    for joint_name, arm_val in arm_joint_armature.items():
+        xml_str = re.sub(
+            rf'(<joint name="{joint_name}"[^/]*?)(/\s*>)',
+            rf'\1 armature="{arm_val}"\2',
+            xml_str,
+        )
+
+    # 10. Add equality constraint (mimic joint) and sensor sections
     # Note: </mujoco> has 2 leading spaces in the raw XML, so content
     # placed before it inherits that indent; first line needs no indent.
     equality_and_sensor = (
@@ -164,28 +200,23 @@ def postprocess_world_xml(xml_str):
         xml_str,
     )
 
-    # 3. Replace all cable body diaginertia from 0.01 to 1e-6
-    xml_str = xml_str.replace(
-        'diaginertia="0.01 0.01 0.01"', 'diaginertia="1e-6 1e-6 1e-6"'
-    )
-
-    # 4. Fix cable_connection_1 (SC plug end) diaginertia to 4e-4
+    # 3. Fix cable_connection_1 (SC plug end) diaginertia to 4e-4
     #    cable_connection_1 has mass=0.01 and is the SC plug connector
     xml_str = re.sub(
         r'(<body name="cable_connection_1"[^>]*>\s*'
-        r'<inertial pos="0 0 0" mass="0.01") diaginertia="1e-6 1e-6 1e-6"',
+        r'<inertial pos="0 0 0" mass="0.01") diaginertia="0.01 0.01 0.01"',
         r'\1 diaginertia="4e-4 4e-4 4e-4"',
         xml_str,
     )
 
-    # 5. Add damping to joint_connection_end_0 ball joint
+    # 4. Add damping to joint_connection_end_0 ball joint
     xml_str = re.sub(
         r'(<joint name="joint_connection_end_0"[^/]*type="ball")(/>)',
         r'\1 damping="0.2"\2',
         xml_str,
     )
 
-    # 6. Add equality weld constraint for lc_plug attachment
+    # 5. Add equality weld constraint for lc_plug attachment
     weld_section = (
         "\n"
         "  <equality>\n"
@@ -196,6 +227,19 @@ def postprocess_world_xml(xml_str):
         "  </equality>\n"
     )
     xml_str = xml_str.replace("</mujoco>", weld_section + "</mujoco>")
+
+    # 6. Apply friction childclass to SC Port and NIC Card Mount bodies
+    #    (matching Gazebo SDF friction parameters)
+    xml_str = re.sub(
+        r'(<body name="sc_port_\d+::sc_port_link")',
+        r'\1 childclass="sc_port_default"',
+        xml_str,
+    )
+    xml_str = re.sub(
+        r'(<body name="nic_card_mount_\d+::nic_card_mount_link")',
+        r'\1 childclass="nic_card_default"',
+        xml_str,
+    )
 
     return xml_str
 
@@ -702,8 +746,17 @@ def main():
         # Add cable_default
         root_default = world_spec.default
         cable_default = world_spec.add_default("cable_default", root_default)
-        cable_default.joint.damping = 0.1
-        print("Added 'cable_default' with joint damping 0.1.")
+        cable_default.joint.damping = 0.2
+        print("Added 'cable_default' with joint damping 0.2.")
+
+        # Add friction defaults for task board components (matching Gazebo SDF)
+        sc_port_default = world_spec.add_default("sc_port_default", root_default)
+        sc_port_default.geom.friction = [0.5, 0.5, 0.0001]
+        print("Added 'sc_port_default' with friction [0.5, 0.5, 0.0001].")
+
+        nic_card_default = world_spec.add_default("nic_card_default", root_default)
+        nic_card_default.geom.friction = [0.1, 0.005, 0.1]
+        print("Added 'nic_card_default' with friction [0.1, 0.005, 0.1].")
 
         # Set plugin and childclass on cable bodies
         print("Setting plugin on cable bodies...")
@@ -779,7 +832,16 @@ def main():
         rel_world = os.path.relpath(output_path, scene_dir)
 
         scene_xml = f"""<mujoco model="Scene">
-  <option integrator="implicitfast"/>
+  <!--
+    Physics tuning for Gazebo (Bullet-Featherstone) behavioral match:
+    - integrator="implicitfast": Implicit Coriolis/centrifugal treatment better
+      matches Bullet-Featherstone's articulated body algorithm which also handles
+      these forces implicitly.
+    - solver="Newton": High-accuracy constraint solver.
+    - iterations/tolerance: Tight solver for accurate force resolution.
+    - timestep="0.002": Matches Gazebo's 2ms step (500 Hz physics).
+  -->
+  <option integrator="implicitfast" timestep="0.002" solver="Newton" iterations="200" tolerance="1e-10"/>
   <include file="{rel_robot}"/>
   <include file="{rel_world}"/>
 </mujoco>"""
