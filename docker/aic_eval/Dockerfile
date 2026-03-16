@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1.7-labs
 FROM ros:kilted-ros-base
 
 # Add `packages.osrfoundation.org` to the apt sources list:
