@@ -382,7 +382,18 @@ void ScoringTier2::JointStateCallback(const JointStateMsg &_msg) { (void)_msg; }
 //////////////////////////////////////////////////
 void ScoringTier2::TfCallback(const TFMsg &_msg) {
   for (const auto &tf : _msg.transforms) {
-    this->tf2_buffer->setTransform(tf, "scoring", false);
+    // The task board TFs are bridged to non-static /tf topic so that it
+    // does not flood the /tf_static topic. Added workaround here to ensure
+    // that these task board related TFs are added to the tree as static TFs
+    // otherwise lookup could fail.
+    // \todo(iche033) This is a quick patch to resolve task board TF lookup
+    // failures. Consider implementing a proper fix that avoids checking every
+    // TF.
+    if (tf.child_frame_id.find("task_board") != std::string::npos) {
+      this->tf2_buffer->setTransform(tf, "scoring", true);
+    } else {
+      this->tf2_buffer->setTransform(tf, "scoring", false);
+    }
   }
   // TODO(luca) we should find a way to only push poses if the gripper pose
   // would have changed because of a new TF message, otherwise we might push

@@ -734,6 +734,7 @@ TrialScore Engine::handle_trial(Trial& trial) {
         "\033[1;31m  ✗ Participant model is not ready for trial '%s'\033[0m",
         trial.id.c_str());
     reset_after_trial(trial);
+    engine_state_ = EngineState::Error;
     return score;
   }
 
