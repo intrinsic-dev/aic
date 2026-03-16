@@ -4,7 +4,10 @@
 from pathlib import Path
 import subprocess
 
-from ament_index_python.packages import PackageNotFoundError, get_package_share_directory
+from ament_index_python.packages import (
+    PackageNotFoundError,
+    get_package_share_directory,
+)
 from aic_engine_interfaces.srv import ExpandXacro
 import rclpy
 from rclpy.node import Node
@@ -49,7 +52,9 @@ class XacroExpanderNode(Node):
             candidate.relative_to(package_share)
         except ValueError:
             response.success = False
-            response.message = "relative_path must stay within the package share directory"
+            response.message = (
+                "relative_path must stay within the package share directory"
+            )
             return response
 
         # Verify the xacro source file exists.
@@ -68,7 +73,9 @@ class XacroExpanderNode(Node):
         )
         if result.returncode != 0:
             response.success = False
-            response.message = result.stderr.strip() or f"xacro failed with code {result.returncode}"
+            response.message = (
+                result.stderr.strip() or f"xacro failed with code {result.returncode}"
+            )
             return response
 
         # Guard against xacro producing empty output (e.g. missing template content).
