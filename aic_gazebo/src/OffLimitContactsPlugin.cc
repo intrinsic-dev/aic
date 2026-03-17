@@ -66,8 +66,7 @@ void OffLimitContactsPlugin::PreUpdate(const UpdateInfo &_info,
     this->modelEntity = _ecm.EntityByComponents(
         components::Model(), components::Name(this->modelName));
 
-    if (this->modelEntity == kNullEntity)
-      return;
+    if (this->modelEntity == kNullEntity) return;
 
     // Enable contacts for collisions in this model
     this->CreateCollisionData(_ecm);
@@ -119,7 +118,6 @@ bool OffLimitContactsPlugin::ParseSDF(sdf::ElementPtr _sdf) {
 
   this->topic =
       _sdf->Get<std::string>("topic", "/aic/gazebo/contacts/off_limit").first;
-
 
   if (!_sdf->HasElement("model")) {
     gzerr << "Unable to find <model> element in SDF." << std::endl;
