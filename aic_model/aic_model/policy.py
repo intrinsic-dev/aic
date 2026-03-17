@@ -32,7 +32,6 @@ from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 from typing import Callable, Protocol
 
-
 GetObservationCallback = Callable[[], Observation]
 
 
@@ -88,7 +87,10 @@ class Policy(ABC):
         self.get_clock().sleep_for(Duration(seconds=duration_sec))
 
     def set_pose_target(
-        self, move_robot: MoveRobotCallback, pose: Pose, frame_id: str = "base_link",
+        self,
+        move_robot: MoveRobotCallback,
+        pose: Pose,
+        frame_id: str = "base_link",
         stiffness: list = [90.0, 90.0, 90.0, 50.0, 50.0, 50.0],
         damping: list = [50.0, 50.0, 50.0, 20.0, 20.0, 20.0],
     ) -> None:
