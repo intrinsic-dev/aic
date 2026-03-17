@@ -67,8 +67,11 @@ namespace aic_gazebo
     /// \brief A transport publisher.
     private: gz::transport::Node::Publisher publisher;
 
-    /// \brief The model where this plugin is attached to.
+    /// \brief The model entity which this plugin checks collisions for
     private: gz::sim::Entity modelEntity = gz::sim::kNullEntity;
+
+    /// \brief The name of the model that this plugin checks collisions for
+    private: std::string modelName;
 
     /// \brief Collection of model names considered off-limits.
     private: std::set<std::string> offLimitModelNames;

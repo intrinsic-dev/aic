@@ -117,6 +117,16 @@
         <debug_vis_mode>none</debug_vis_mode>
       </global_illumination>
     </plugin>
+    <plugin filename="OffLimitContactsPlugin" name="aic_gazebo::OffLimitContactsPlugin">
+      <model>ur5e</model>
+      <update_rate>5</update_rate>
+      <topic>/aic/gazebo/contacts/off_limit</topic>
+      <off_limit_models>
+        <model>enclosure</model>
+        <model>enclosure walls</model>
+        <model>task_board</model>
+      </off_limit_models>
+    </plugin>
     <plugin
       filename="ScoringPlugin"
       name="aic_gazebo::ScoringPlugin">

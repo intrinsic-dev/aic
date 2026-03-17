@@ -37,11 +37,9 @@ namespace aic_gazebo {
 //////////////////////////////////////////////////
 void OffLimitContactsPlugin::Configure(
     const Entity &_entity, const std::shared_ptr<const sdf::Element> &_sdf,
-    EntityComponentManager &_ecm, EventManager & /*_eventManager*/) {
+    EntityComponentManager &, EventManager & /*_eventManager*/) {
   gzdbg << "aic_gazebo::OffLimitContactsPlugin::Configure on entity: "
         << _entity << std::endl;
-
-  this->modelEntity = _entity;
 
   if (!this->ParseSDF(_sdf->Clone())) return;
 
@@ -50,8 +48,6 @@ void OffLimitContactsPlugin::Configure(
     gzerr << "Error advertising topic [" << this->topic << "]" << std::endl;
     return;
   }
-
-  this->CreateCollisionData(_ecm);
 }
 
 //////////////////////////////////////////////////
@@ -64,6 +60,18 @@ void OffLimitContactsPlugin::PreUpdate(const UpdateInfo &_info,
     return;
   }
   this->lastUpdateTime = _info.simTime;
+
+  // Find and robot model entity
+  if (this->modelEntity == kNullEntity) {
+    this->modelEntity = _ecm.EntityByComponents(
+        components::Model(), components::Name(this->modelName));
+
+    if (this->modelEntity == kNullEntity)
+      return;
+
+    // Enable contacts for collisions in this model
+    this->CreateCollisionData(_ecm);
+  }
 
   // Try to resolve any remaining off-limit model names to entities.
   // Don't return early, detect contacts with already-resolved entities
@@ -111,6 +119,17 @@ bool OffLimitContactsPlugin::ParseSDF(sdf::ElementPtr _sdf) {
 
   this->topic =
       _sdf->Get<std::string>("topic", "/aic/gazebo/contacts/off_limit").first;
+
+
+  if (!_sdf->HasElement("model")) {
+    gzerr << "Unable to find <model> element in SDF." << std::endl;
+    return false;
+  }
+  this->modelName = _sdf->Get<std::string>("model");
+  if (this->modelName.empty()) {
+    gzerr << "Model name can not be an empty string." << std::endl;
+    return false;
+  }
 
   if (!_sdf->HasElement("off_limit_models")) {
     gzerr << "Unable to find <off_limit_models> element in SDF." << std::endl;
