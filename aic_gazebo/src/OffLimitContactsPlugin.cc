@@ -61,7 +61,7 @@ void OffLimitContactsPlugin::PreUpdate(const UpdateInfo &_info,
   }
   this->lastUpdateTime = _info.simTime;
 
-  // Find and robot model entity
+  // Find the robot model entity
   if (this->modelEntity == kNullEntity) {
     this->modelEntity = _ecm.EntityByComponents(
         components::Model(), components::Name(this->modelName));
