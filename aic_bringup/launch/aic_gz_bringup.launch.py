@@ -233,14 +233,6 @@ def launch_setup(context, *args, **kwargs):
         ],
     )
 
-    xacro_expander = Node(
-        package="aic_bringup",
-        executable="xacro_expander.py",
-        parameters=[
-            {"use_sim_time": True},
-        ],
-    )
-
     aic_engine = Node(
         package="aic_engine",
         executable="aic_engine",
@@ -428,7 +420,6 @@ def launch_setup(context, *args, **kwargs):
         delay_rviz_after_controller_started,
         delay_rviz_after_controller_stopped,
         aic_adapter,
-        xacro_expander,
         gz_ip_env,
         gzserver,
         gzgui,
