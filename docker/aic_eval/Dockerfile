@@ -31,59 +31,81 @@ RUN --mount=type=cache,target=/ws_aic/build,sharing=locked \
   && rm -rf /ws_aic/log /ws_aic/src
 
 COPY --chmod=644 docker/aic_eval/aic_zenoh_config.json5 /aic_zenoh_config.json5
+COPY --chmod=755 <<"EOF" /aic_eval_common.sh
+#!/bin/bash
+set -e
+
+run_aic_launch() {
+  local package="$1"
+  local launch_file="$2"
+  shift 2
+
+  . /ws_aic/install/setup.bash
+  export RMW_IMPLEMENTATION=rmw_zenoh_cpp
+
+  should_enable_acl() {
+    [[ "$AIC_ENABLE_ACL" == "true" || "$AIC_ENABLE_ACL" == "1" ]]
+  }
+
+  # prepare the credentials file
+  if should_enable_acl; then
+    if [[ ! (-n "$AIC_EVAL_PASSWD" && -n "AIC_MODEL_PASSWD") ]]; then
+      echo "AIC_EVAL_PASSWD, AIC_MODEL_PASSWD must be provided"
+      exit 1
+    fi
+    echo "eval:$AIC_EVAL_PASSWD" >> /credentials.txt
+    echo "model:$AIC_MODEL_PASSWD" >> /credentials.txt
+  fi
+
+  # Both the router and peer processes will use the same config, regardless
+  # of whether the ACL is enabled.
+  export ZENOH_ROUTER_CONFIG_URI=/aic_zenoh_config.json5
+
+  # start the model router
+  ZENOH_CONFIG_OVERRIDE='mode="router"'
+  ZENOH_CONFIG_OVERRIDE+=';listen/endpoints=["tcp/[::]:7447"]'
+  ZENOH_CONFIG_OVERRIDE+=';connect/endpoints=[]'
+  ZENOH_CONFIG_OVERRIDE+=';routing/router/peers_failover_brokering=true'
+  ZENOH_CONFIG_OVERRIDE+=';transport/shared_memory/enabled=false'
+  if should_enable_acl; then
+    ZENOH_CONFIG_OVERRIDE+=';transport/auth/usrpwd/user="eval"'
+    ZENOH_CONFIG_OVERRIDE+=';transport/auth/usrpwd/password="'"$AIC_EVAL_PASSWD"'"'
+    ZENOH_CONFIG_OVERRIDE+=';transport/auth/usrpwd/dictionary_file="/credentials.txt"'
+  fi
+  export ZENOH_CONFIG_OVERRIDE
+  echo "ZENOH_CONFIG_OVERRIDE_ROUTER=$ZENOH_CONFIG_OVERRIDE"
+  ros2 run rmw_zenoh_cpp rmw_zenohd &
+  ZENOH_ROUTER_PID=$!
+
+  trap "kill -SIGINT -$ZENOH_EVAL_ROUTER_PID -$ZENOH_ROUTER_PID" EXIT
+
+  # start the evaluator
+  ZENOH_CONFIG_OVERRIDE=';transport/shared_memory/enabled=false'
+  if should_enable_acl; then
+    ZENOH_CONFIG_OVERRIDE+=';transport/auth/usrpwd/user="eval"'
+    ZENOH_CONFIG_OVERRIDE+=';transport/auth/usrpwd/password="'"$AIC_EVAL_PASSWD"'"'
+    ZENOH_CONFIG_OVERRIDE+=';transport/auth/usrpwd/dictionary_file="/credentials.txt"'
+  fi
+  export ZENOH_CONFIG_OVERRIDE
+  echo "ZENOH_CONFIG_OVERRIDE_PEER=$ZENOH_CONFIG_OVERRIDE"
+  exec ros2 launch "$package" "$launch_file" "$@"
+}
+EOF
+
 COPY --chmod=755 <<"EOF" /entrypoint.sh
 #!/bin/bash
 set -e
 
-. /ws_aic/install/setup.bash
-export RMW_IMPLEMENTATION=rmw_zenoh_cpp
+. /aic_eval_common.sh
+run_aic_launch aic_bringup aic_gz_bringup.launch.py "$@"
+EOF
 
-should_enable_acl() {
-  [[ "$AIC_ENABLE_ACL" == "true" || "$AIC_ENABLE_ACL" == "1" ]]
-}
+COPY --chmod=755 <<"EOF" /entrypoint_training.sh
+#!/bin/bash
+set -e
 
-# prepare the credentials file
-if should_enable_acl; then
-  if [[ ! (-n "$AIC_EVAL_PASSWD" && -n "AIC_MODEL_PASSWD") ]]; then
-    echo "AIC_EVAL_PASSWD, AIC_MODEL_PASSWD must be provided"
-    exit 1
-  fi
-  echo "eval:$AIC_EVAL_PASSWD" >> /credentials.txt
-  echo "model:$AIC_MODEL_PASSWD" >> /credentials.txt
-fi
-
-# Both the router and peer processes will use the same config, regardless
-# of whether the ACL is enabled.
-export ZENOH_ROUTER_CONFIG_URI=/aic_zenoh_config.json5
-
-# start the model router
-ZENOH_CONFIG_OVERRIDE='mode="router"'
-ZENOH_CONFIG_OVERRIDE+=';listen/endpoints=["tcp/[::]:7447"]'
-ZENOH_CONFIG_OVERRIDE+=';connect/endpoints=[]'
-ZENOH_CONFIG_OVERRIDE+=';routing/router/peers_failover_brokering=true'
-ZENOH_CONFIG_OVERRIDE+=';transport/shared_memory/enabled=false'
-if should_enable_acl; then
-  ZENOH_CONFIG_OVERRIDE+=';transport/auth/usrpwd/user="eval"'
-  ZENOH_CONFIG_OVERRIDE+=';transport/auth/usrpwd/password="'"$AIC_EVAL_PASSWD"'"'
-  ZENOH_CONFIG_OVERRIDE+=';transport/auth/usrpwd/dictionary_file="/credentials.txt"'
-fi
-export ZENOH_CONFIG_OVERRIDE
-echo "ZENOH_CONFIG_OVERRIDE_ROUTER=$ZENOH_CONFIG_OVERRIDE"
-ros2 run rmw_zenoh_cpp rmw_zenohd &
-ZENOH_ROUTER_PID=$!
-
-trap "kill -SIGINT -$ZENOH_EVAL_ROUTER_PID -$ZENOH_ROUTER_PID" EXIT
-
-# start the evaluator
-ZENOH_CONFIG_OVERRIDE=';transport/shared_memory/enabled=false'
-if should_enable_acl; then
-  ZENOH_CONFIG_OVERRIDE+=';transport/auth/usrpwd/user="eval"'
-  ZENOH_CONFIG_OVERRIDE+=';transport/auth/usrpwd/password="'"$AIC_EVAL_PASSWD"'"'
-  ZENOH_CONFIG_OVERRIDE+=';transport/auth/usrpwd/dictionary_file="/credentials.txt"'
-fi
-export ZENOH_CONFIG_OVERRIDE
-echo "ZENOH_CONFIG_OVERRIDE_PEER=$ZENOH_CONFIG_OVERRIDE"
-exec ros2 launch aic_bringup aic_gz_bringup.launch.py "$@"
+. /aic_eval_common.sh
+run_aic_launch aic_training_utils aic_training_gz_bringup.launch.py "$@"
 EOF
 
 # Contary to the name, `/entrypoint.sh` is not actually the entrypoint.
