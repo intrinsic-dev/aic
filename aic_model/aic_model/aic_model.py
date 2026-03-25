@@ -53,7 +53,7 @@ from trajectory_msgs.msg import JointTrajectoryPoint
 class AicModel(LifecycleNode):
     def __init__(self):
         super().__init__("aic_model")
-        self.declare_parameter("policy", "WaveArm")
+        self.declare_parameter("policy", "aic_example_policies.ros.WaveArm")
         policy_module_name = (
             self.get_parameter("policy").get_parameter_value().string_value
         )
