@@ -1,6 +1,6 @@
 # Flowstate Service: `aic_model`
 
-The `aic_model` package is sideloaded as a service in Flowstate, acting as a **Participant Policy Node**.
+Package and inject the `aic_model` container  as a service in Flowstate.
 
 ---
 
