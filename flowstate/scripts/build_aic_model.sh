@@ -12,7 +12,7 @@ show_help() {
   echo "  -h, --help           Show this help message and exit"
   echo "  --images_dir DIR     Directory to save output images (default: ./images)"
   echo "  --builder_name NAME  Name of the container builder (default: container-builder)"
-  echo "  --dockerfile FILE    Path to the custom Dockerfile to build the base image (required)"
+  echo "  --container_image IMAGE  Name of the base container image (default: aic_model:latest)"
   echo ""
 }
 
@@ -32,8 +32,8 @@ while [[ $# -gt 0 ]]; do
       shift
       shift
       ;;
-    --dockerfile)
-      CUSTOM_DOCKERFILE="$2"
+    --container_image)
+      CONTAINER_IMAGE="$2"
       shift
       shift
       ;;
@@ -49,26 +49,16 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 # Compute absolute path to top-level aic directory (two levels up from flowstate/scripts)
 AIC_TOP_DIR=$(cd "$SCRIPT_DIR/../.." && pwd)
 
-if [[ -n "$CUSTOM_DOCKERFILE" ]]; then
-  DOCKERFILE="$CUSTOM_DOCKERFILE"
-else
-  echo "ERROR: No Dockerfile provided."
+if [[ -z "$CONTAINER_IMAGE" ]]; then
+  CONTAINER_IMAGE="my-solution:v1"
+fi
+
+if ! docker image inspect "$CONTAINER_IMAGE" &> /dev/null; then
+  echo "ERROR: Base image '$CONTAINER_IMAGE' not found. Please build it first or provide a valid --container_image."
   exit 1
 fi
 
-# Use absolute path for Dockerfile to avoid context mismatches
-DOCKERFILE_ABS=$(realpath "$DOCKERFILE")
-
-# 1. Build the base image (loads to host daemon)
-# This step builds the participant aic_model image utilizing the provided custom
-# Dockerfile and the entire aic repository as the build context.
-docker buildx build -t aic_model:latest \
-  --no-cache \
-  --load \
-  --file "$DOCKERFILE_ABS" \
-  "$AIC_TOP_DIR"
-
-# 2. Build the Flowstate service image on top of aic_model:latest
+# 1. Build the Flowstate service image on top of my-solution:v1
 # This step adds the necessary configurations to the base image,
 # allowing the service to communicate with Flowstate Zenoh router.
 SERVICE_DIR="$AIC_TOP_DIR/flowstate/services/aic_model"
@@ -77,10 +67,11 @@ DOCKERFILE_SERVICE="$SERVICE_DIR/Dockerfile.service"
 docker buildx build -t flowstate:aic_model \
   --no-cache \
   --load \
+  --build-arg CONTAINER_IMAGE="$CONTAINER_IMAGE" \
   --file "$DOCKERFILE_SERVICE" \
   "$SERVICE_DIR"
 
-# 3. Export the service image to a .tar bundle
+# 2. Export the service image to a .tar bundle
 # This saves the docker image as a tar archive to the file system, which
 # can be subsequently bundled by the inbuild tool.
 echo "INFO: Exporting image to tar file..."
@@ -92,7 +83,7 @@ mkdir -p "$IMAGES_DIR/aic_model"
 docker save -o "$IMAGES_DIR/aic_model/aic_model.tar" flowstate:aic_model
 chmod 644 "$IMAGES_DIR/aic_model/aic_model.tar"
 
-# 4. Bundle the service using inbuild
+# 3. Bundle the service using inbuild
 # Packages the service using Intrinsic's 'inbuild' tool. It retrieves the
 # corresponding SDK version, downloads the tool if necessary, and generates
 # a .bundle.tar file using the service manifest and exported image.
