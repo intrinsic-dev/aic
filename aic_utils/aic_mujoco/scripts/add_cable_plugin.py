@@ -122,22 +122,23 @@ def postprocess_robot_xml(xml_str):
         r'\n\s*<general name="gripper/right_finger_joint_motor"[^>]*/>', "", xml_str
     )
 
-    # 8. Add small joint damping to approximate Bullet-Featherstone's implicit
-    #    numerical dissipation.  Values are ~7-8 % of the full sim-matching set
-    #    (which was too aggressive for teleop), deliberately kept low so the
-    #    impedance controller retains authority over the robot's motion.
-    arm_joint_damping = {
-        "shoulder_pan_joint": "5.0",
-        "shoulder_lift_joint": "4.0",
-        "elbow_joint": "4.0",
-        "wrist_1_joint": "4.0",
-        "wrist_2_joint": "3.0",
-        "wrist_3_joint": "3.0",
-    }
-    for joint_name, damp_val in arm_joint_damping.items():
+    # 8. Add armature and light damping to arm joints.
+    #    armature=0.1 matches the official MuJoCo UR5e model — provides numerical
+    #    stability for implicitfast without adding perceptible inertia.
+    #    damping=1.0 adds minimal viscous friction to approximate Bullet-
+    #    Featherstone's implicit dissipation without making teleop sluggish.
+    arm_joints = [
+        "shoulder_pan_joint",
+        "shoulder_lift_joint",
+        "elbow_joint",
+        "wrist_1_joint",
+        "wrist_2_joint",
+        "wrist_3_joint",
+    ]
+    for joint_name in arm_joints:
         xml_str = re.sub(
             rf'(<joint name="{joint_name}"[^/]*?)(/\s*>)',
-            rf'\1 damping="{damp_val}"\2',
+            rf'\1 damping="1.0" armature="0.1"\2',
             xml_str,
         )
 
