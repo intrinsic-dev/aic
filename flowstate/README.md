@@ -1,13 +1,12 @@
 # Flowstate Service: `aic_model`
 
 Package and inject the `aic_model` container  as a service in Flowstate.
-
 ---
 
 ## 📂 Directory Structure
 
 *   `services/aic_model/`
-    *   `Dockerfile.service`: Update Zenoh config to talk to Zenoh router in Flowstate.
+    *   `Dockerfile.service`: Update AIC_ROUTER_ADDR which allows talking to Zenoh router in Flowstate.
     *   `aic_model.manifest.textproto`: Manifest for `aic_model` service for Flowstate.
 *   `scripts/`
     *   `build_aic_model.sh`: Automates building the base image, service image, and bundling using `inbuild`.
@@ -17,8 +16,8 @@ Package and inject the `aic_model` container  as a service in Flowstate.
 ## 🔧 Prerequisites
 
 Before components can be built or uploaded:
-1.  **Solution Context ID**: Retrieve this from your Flowstate solution URL.
-    *   *Example*: `https://flowstate.intrinsic.ai/.../vmp-xxxx-xxxxxxx` -> Context ID `vmp-xxxx-xxxxxxx`
+1.  **Solution Cluster ID**: Retrieve this from your Flowstate solution URL.
+    *   *Example*: `https://flowstate.intrinsic.ai/.../vmp-xxxx-xxxxxxx` -> Cluster ID `vmp-xxxx-xxxxxxx`
 2.  **Required Tools**:
     *   `docker buildx` support.
 
@@ -30,16 +29,15 @@ Use the `build_aic_model.sh` script to build and pack the service bundle.
 
 ```bash
 cd ~/ws_aic
-./src/aic/flowstate/scripts/build_aic_model.sh --dockerfile <PATH_TO_AIC_MODEL_DOCKERFILE>
+./src/aic/flowstate/scripts/build_aic_model.sh --container_image <NAME_OF_AIC_MODEL_IMAGE>
 ```
 
 > [!IMPORTANT]
-> Replace `<PATH_TO_AIC_MODEL_DOCKERFILE>` with your actual `aic_model` Dockerfile path (e.g., `./src/aic/docker/aic_model/Dockerfile`).
+> Replace `<NAME_OF_AIC_MODEL_IMAGE>` with your actual your image name (e.g., `my-solution:v1`).
 
 ### Build Stages
-1.  **Base Image**: Builds `aic_model:latest` using the provided Dockerfile.
-2.  **Service Image**: Extends with `Dockerfile.service` to add Zenoh configuration and entrypoint setting.
-3.  **Bundle**: Runs `inbuild` to package layout requirements with manifest files into `aic_model.bundle.tar`.
+1.  **Service Image**: Extends base container image with `Dockerfile.service` to AIC_ROUTER_ADDR.
+2.  **Bundle**: Runs `inbuild` to package layout requirements with manifest files into `aic_model.bundle.tar`.
 
 The final output is saved to: `./images/aic_model/aic_model.bundle.tar`.
 
@@ -56,18 +54,11 @@ export SERVICE_BUNDLE=~/ws_aic/images/aic_model/aic_model.bundle.tar
 # 2. Add Organization
 export INTRINSIC_ORGANIZATION="<ORG_NAME>"
 
-# 3. Add Cluster/Context Endpoint
-export INTRINSIC_CONTEXT="vmp-xxxx-xxxxxxx"
+# 3. Add Cluster Endpoint
+export INTRINSIC_CLUSTER="vmp-xxxx-xxxxxxx"
 
 ./inctl asset install \
   --org $INTRINSIC_ORGANIZATION \
-  --cluster $INTRINSIC_CONTEXT \
+  --cluster $INTRINSIC_CLUSTER \
   $SERVICE_BUNDLE
 ```
-
----
-
-## ⚙️ Configuration & Execution Notes
-
-*   **Startup Default Argument**: Inside `Dockerfile.service`, the entrypoint loads:
-    `pixi run --as-is ros2 run aic_model aic_model --ros-args -p policy:=aic_example_policies.ros.CheatCode`
