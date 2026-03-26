@@ -28,7 +28,7 @@ This zone represents the networking switch or server compute tray where data lin
 * **Components:** Supports up to five dual-port network cards (NIC).
 * **Ports:** Each card features two SFP ports.
 * **Flexibility:** Cards are designed to slide along mounting rails to allow for randomized positional and orientation offsets.
-  * Card translation limits: [0, 0.062] meters,
+  * Card translation limits: [-0.0215, 0.0234] meters,
   * Card orientation limits: [-10, +10] degrees.
 
 ![AIC Task Board](../../media/aic_board_zone_1_legend.png)
@@ -40,7 +40,7 @@ This zone emulates the optical patch panel or backplane of a server rack.
 
 * **Ports:** Supports up to five SC ports, distributed across two rails.
 * **Flexibility:** Ports can slide along their rails to allow for randomized positional offsets.
-  * SC port translation limits: [0, 0.115] meters
+  * SC port translation limits: [-0.06, 0.055] meters
 
 ![AIC Task Board](../../media/aic_board_zone_2_legend.png)
 
@@ -52,7 +52,7 @@ Zones 3 and 4 serve as organized supply areas for components (LC plugs, SC plugs
 
 * **Mounts:** Holds fixtures for LC/SC plugs and SFP modules.
 * **Customization:** Fixtures can be placed on any rail in any order, creating a high-mix environment.
-  * Fixture translation limits: [0, 0.188] meters
+  * Fixture translation limits: [-0.09425, 0.09425] meters
   * Fixture orientation limits: [-60, +60] degrees
 
 
