@@ -70,3 +70,6 @@ export INTRINSIC_CLUSTER="vmp-xxxx-xxxxxxx"
   --cluster $INTRINSIC_CLUSTER \
   $SERVICE_BUNDLE
 ```
+
+> [!NOTE]
+> It is possible that first time you run `inctl` it will fail with error. In that case, please try again.
