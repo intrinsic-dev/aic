@@ -72,4 +72,4 @@ export INTRINSIC_CLUSTER="vmp-xxxx-xxxxxxx"
 ```
 
 > [!NOTE]
-> It is possible that first time you run `inctl` it will fail with error. In that case, please try again.
+> It is possible that first time you run `inctl asset install` it fails with error. In that case, please try again.
