@@ -1,0 +1,28 @@
+metadata {
+  id {
+    package: "ai.intrinsic"
+    name: "aic_adapter"
+  }
+  vendor {
+    display_name: "Intrinsic"
+  }
+  documentation {
+    description: "AIC Adapter."
+  }
+  display_name: "AIC Adapter"
+}
+service_def {
+  real_spec {
+    image {
+      archive_filename: "aic_adapter.tar"
+    }
+  }
+  sim_spec {
+    image {
+      archive_filename: "aic_adapter.tar"
+    }
+  } 
+}
+assets {
+  image_filenames: ["aic_adapter.tar"]
+}
