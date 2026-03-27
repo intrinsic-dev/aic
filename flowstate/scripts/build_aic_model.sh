@@ -104,9 +104,3 @@ echo "INFO: Bundling service using inbuild..."
   --oci_image "$IMAGES_DIR/aic_model/aic_model.tar" \
   --output "$IMAGES_DIR/aic_model/aic_model.bundle.tar"
 
-# Download the 'inctl' tool if it doesn't exist
-if [ ! -f ./inctl ]; then
-  echo "INFO: Downloading inctl tool version ${SDK_VERSION}..."
-  wget "https://github.com/intrinsic-ai/sdk/releases/download/${SDK_VERSION}/inctl-linux-amd64" -O inctl \
-  && chmod +x inctl
-fi
