@@ -170,8 +170,9 @@ def main() -> None:
     env_cfg.recorders.dataset_export_mode = DatasetExportMode.EXPORT_SUCCEEDED_ONLY
 
     if args_cli.xr:
-        from xr_utils import remove_xr_cameras
+        from xr_utils import configure_xr_env, remove_xr_cameras
 
+        env_cfg = configure_xr_env(env_cfg)
         env_cfg = remove_xr_cameras(env_cfg)
         env_cfg.sim.render.antialiasing_mode = "DLSS"
 

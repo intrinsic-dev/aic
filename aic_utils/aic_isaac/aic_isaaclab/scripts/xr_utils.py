@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import queue
 import select
 import sys
@@ -39,6 +40,20 @@ def spawn_stdin_reader(
     thread = threading.Thread(target=_reader, name="xr-stdin-reader", daemon=True)
     thread.start()
     return thread
+
+
+def configure_xr_env(env_cfg):
+    """Apply XR-specific environment overrides.
+
+    The robot base is rotated 180 degrees around Z but the retargeter outputs
+    world-frame deltas.  Fold the rotation into shoulder_pan_joint so the
+    robot root frame aligns with the world frame.
+    """
+    robot_cfg = env_cfg.scene.robot
+    robot_cfg.init_state.rot = (1.0, 0.0, 0.0, 0.0)
+    orig_pan = robot_cfg.init_state.joint_pos.get("shoulder_pan_joint", 0.0)
+    robot_cfg.init_state.joint_pos["shoulder_pan_joint"] = orig_pan + math.pi
+    return env_cfg
 
 
 def remove_xr_cameras(env_cfg):
