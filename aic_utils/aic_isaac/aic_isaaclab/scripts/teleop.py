@@ -107,7 +107,16 @@ def main() -> None:
         )
 
     if args_cli.xr:
-        env_cfg = remove_camera_configs(env_cfg)
+        try:
+            env_cfg = remove_camera_configs(env_cfg)
+        except AttributeError:
+            # AIC observation terms use *_rgb names instead of *_camera
+            for attr in ("center_camera", "left_camera", "right_camera"):
+                if hasattr(env_cfg.scene, attr):
+                    setattr(env_cfg.scene, attr, None)
+            for attr in ("center_rgb", "left_rgb", "right_rgb"):
+                if hasattr(env_cfg.observations.policy, attr):
+                    delattr(env_cfg.observations.policy, attr)
         env_cfg.sim.render.antialiasing_mode = "DLSS"
 
     try:
