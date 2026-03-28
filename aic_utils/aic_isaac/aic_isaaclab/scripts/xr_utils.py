@@ -49,6 +49,8 @@ def configure_xr_env(env_cfg):
     world-frame deltas.  Fold the rotation into shoulder_pan_joint so the
     robot root frame aligns with the world frame.
     """
+    env_cfg.actions.arm_action.scale = 0.5
+
     robot_cfg = env_cfg.scene.robot
     robot_cfg.init_state.rot = (1.0, 0.0, 0.0, 0.0)
     orig_pan = robot_cfg.init_state.joint_pos.get("shoulder_pan_joint", 0.0)
