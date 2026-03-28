@@ -168,6 +168,14 @@ isaaclab -p aic/aic_utils/aic_isaac/aic_isaaclab/scripts/teleop.py \
 ```
 
 Teleoperate the robot with VR hand tracking (requires OpenXR/SteamVR):
+
+> [!NOTE]
+> You must set the `XR_RUNTIME_JSON` environment variable to point to your SteamVR OpenXR runtime JSON before launching.
+> Find the path on your system and export it, e.g.:
+> ```bash
+> export XR_RUNTIME_JSON=/home/user/.steam/debian-installation/steamapps/common/SteamVR/steamxr_linux64.json
+> ```
+
 ```bash
 isaaclab -p aic/aic_utils/aic_isaac/aic_isaaclab/scripts/teleop.py \
     --task AIC-Task-v0 --num_envs 1 --teleop_device handtracking
