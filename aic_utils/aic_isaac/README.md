@@ -167,6 +167,12 @@ isaaclab -p aic/aic_utils/aic_isaac/aic_isaaclab/scripts/teleop.py \
     --task AIC-Task-v0 --num_envs 1 --teleop_device keyboard --enable_cameras
 ```
 
+Teleoperate the robot with VR hand tracking (requires OpenXR/SteamVR):
+```bash
+isaaclab -p aic/aic_utils/aic_isaac/aic_isaaclab/scripts/teleop.py \
+    --task AIC-Task-v0 --num_envs 1 --teleop_device handtracking
+```
+
 > [!NOTE]
 > You can tune the keyboard teleop sensitivity by updating `aic_isaaclab/source/aic_task/aic_task/tasks/manager_based/aic_task/aic_task_env_config.py`:
 > ```python
