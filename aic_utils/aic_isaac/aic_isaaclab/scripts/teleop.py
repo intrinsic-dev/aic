@@ -56,6 +56,8 @@ simulation_app = app_launcher.app
 """Rest everything follows."""
 
 import logging
+import queue
+import threading
 
 import gymnasium as gym
 import torch
@@ -68,7 +70,6 @@ from isaaclab.devices import (
     Se3SpaceMouse,
     Se3SpaceMouseCfg,
 )
-from isaaclab.devices.openxr import remove_camera_configs
 from isaaclab.devices.teleop_device_factory import create_teleop_device
 from isaaclab.envs import ManagerBasedRLEnvCfg
 from isaaclab.managers import TerminationTermCfg as DoneTerm
@@ -107,16 +108,9 @@ def main() -> None:
         )
 
     if args_cli.xr:
-        try:
-            env_cfg = remove_camera_configs(env_cfg)
-        except AttributeError:
-            # AIC observation terms use *_rgb names instead of *_camera
-            for attr in ("center_camera", "left_camera", "right_camera"):
-                if hasattr(env_cfg.scene, attr):
-                    setattr(env_cfg.scene, attr, None)
-            for attr in ("center_rgb", "left_rgb", "right_rgb"):
-                if hasattr(env_cfg.observations.policy, attr):
-                    delattr(env_cfg.observations.policy, attr)
+        from xr_utils import remove_xr_cameras
+
+        env_cfg = remove_xr_cameras(env_cfg)
         env_cfg.sim.render.antialiasing_mode = "DLSS"
 
     try:
@@ -224,10 +218,39 @@ def main() -> None:
     env.reset()
     teleop_interface.reset()
 
-    print("Teleoperation started. Press 'R' to reset the environment.")
+    # For XR sessions, start a background stdin reader for terminal hotkeys
+    # (hand-tracking devices do not emit START/STOP/RESET messages).
+    command_queue: queue.SimpleQueue[str] | None = None
+    stop_event: threading.Event | None = None
+    if args_cli.xr:
+        from xr_utils import spawn_stdin_reader
 
-    step_count = 0
+        command_queue = queue.SimpleQueue()
+        stop_event = threading.Event()
+        spawn_stdin_reader(command_queue, stop_event)
+        print("Teleoperation started. Hotkeys: s=start, p=pause, r=reset, q=quit")
+    else:
+        print("Teleoperation started. Press 'R' to reset the environment.")
+
     while simulation_app.is_running():
+        if stop_event is not None and stop_event.is_set():
+            break
+
+        if command_queue is not None:
+            while True:
+                try:
+                    cmd = command_queue.get_nowait()
+                except queue.Empty:
+                    break
+                if cmd == "s":
+                    start_teleoperation()
+                elif cmd == "p":
+                    stop_teleoperation()
+                elif cmd == "r":
+                    reset_recording_instance()
+                elif cmd == "q":
+                    stop_event.set()
+
         try:
             with torch.inference_mode():
                 action = teleop_interface.advance()
@@ -235,15 +258,6 @@ def main() -> None:
                 if teleoperation_active:
                     actions = action.repeat(env.num_envs, 1)
                     env.step(actions)
-                    # #########Debug prints for sensors
-                    # step_count += 1
-                    # if step_count % 120 == 0:
-                    #     joint_pos = env.scene["robot"].data.joint_pos[0]
-                    #     joint_names = env.scene["robot"].joint_names
-                    #     print(f"\n[step {step_count}] Joint positions:")
-                    #     for name, pos in zip(joint_names, joint_pos):
-                    #         print(f"  {name}: {pos.item():.5f}")
-                    # ###################################################################
                 else:
                     env.sim.render()
 

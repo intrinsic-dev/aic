@@ -167,7 +167,18 @@ isaaclab -p aic/aic_utils/aic_isaac/aic_isaaclab/scripts/teleop.py \
     --task AIC-Task-v0 --num_envs 1 --teleop_device keyboard --enable_cameras
 ```
 
-Teleoperate the robot with VR hand tracking (requires OpenXR/SteamVR):
+> [!NOTE]
+> You can tune the keyboard teleop sensitivity by updating `aic_isaaclab/source/aic_task/aic_task/tasks/manager_based/aic_task/aic_task_env_config.py`:
+> ```python
+> "keyboard": Se3KeyboardCfg(
+>     pos_sensitivity=0.08,
+>     rot_sensitivity=0.05,
+>     gripper_term=False,
+>     sim_dev=self.sim.device,
+> ),
+> ```
+
+Teleoperate the robot with VR hand tracking (with OpenXR/SteamVR):
 
 > [!NOTE]
 > You must set the `XR_RUNTIME_JSON` environment variable to point to your SteamVR OpenXR runtime JSON before launching.
@@ -180,17 +191,6 @@ Teleoperate the robot with VR hand tracking (requires OpenXR/SteamVR):
 isaaclab -p aic/aic_utils/aic_isaac/aic_isaaclab/scripts/teleop.py \
     --task AIC-Task-v0 --num_envs 1 --teleop_device handtracking
 ```
-
-> [!NOTE]
-> You can tune the keyboard teleop sensitivity by updating `aic_isaaclab/source/aic_task/aic_task/tasks/manager_based/aic_task/aic_task_env_config.py`:
-> ```python
-> "keyboard": Se3KeyboardCfg(
->     pos_sensitivity=0.08,
->     rot_sensitivity=0.05,
->     gripper_term=False,
->     sim_dev=self.sim.device,
-> ),
-> ```
 
 For data collection:
 ```bash
