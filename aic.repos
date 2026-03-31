@@ -168,3 +168,7 @@ repositories:
     type: git
     url: https://github.com/ros-controls/ros2_controllers.git
     version: 5.12.0
+  sdk-ros:
+    type: git
+    url: https://github.com/intrinsic-ai/sdk-ros.git
+    version: 5886b1d19ee39c295a10b5364d9a47009aedabde
