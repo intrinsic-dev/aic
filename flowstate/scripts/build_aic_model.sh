@@ -12,7 +12,7 @@ show_help() {
   echo "  -h, --help           Show this help message and exit"
   echo "  --images_dir DIR     Directory to save output images (default: ./images)"
   echo "  --builder_name NAME  Name of the container builder (default: container-builder)"
-  echo "  --container_image IMAGE  Name of the base container image (default: aic_model:latest)"
+  echo "  --container_image IMAGE  Name of the base container image (default: my-solution:v1)"
   echo ""
 }
 
