@@ -13,6 +13,24 @@ Package and inject the `aic_model` container  as a service in Flowstate.
 
 ---
 
+## 🏗️ Workspace Setup (Phase 1)
+
+For Phase 1, you should set up a new workspace to avoid dependency conflicts with the qualification workspace.
+
+```bash
+# Create the workspace directory
+mkdir -p ~/ws_aic_phase1/src
+cd ~/ws_aic_phase1/src
+
+# Clone the aic repository
+git clone https://github.com/intrinsic-dev/aic -b phase_1
+
+# Import Flowstate-specific repositories
+vcs import . < aic/flowstate/flowstate.repos
+```
+
+---
+
 ## 🔧 Prerequisites
 
 Before components can be built or uploaded:
@@ -22,9 +40,9 @@ Before components can be built or uploaded:
     *   `docker buildx` support.
     *   `inctl` tool
 
-- Download the 'inctl' tool if it doesn't exist in `ws_aic`:
+- Download the 'inctl' tool if it doesn't exist in `ws_aic_phase1`:
   ```bash
-  cd ~/ws_aic
+  cd ~/ws_aic_phase1
   wget "https://github.com/intrinsic-ai/sdk/releases/download/v1.28.20260223/inctl-linux-amd64" -O inctl \
   && chmod +x inctl
   ```
@@ -36,7 +54,7 @@ Before components can be built or uploaded:
 Use the `build_aic_model.sh` script to build and pack the service bundle.
 
 ```bash
-cd ~/ws_aic
+cd ~/ws_aic_phase1
 ./src/aic/flowstate/scripts/build_aic_model.sh --container_image <NAME_OF_AIC_MODEL_IMAGE>
 ```
 
@@ -57,7 +75,7 @@ Once built, upload and install the service into your solution context.
 
 ```bash
 # 1. Export path to side-loaded service bundle
-export SERVICE_BUNDLE=~/ws_aic/images/aic_model/aic_model.bundle.tar
+export SERVICE_BUNDLE=~/ws_aic_phase1/images/aic_model/aic_model.bundle.tar
 
 # 2. Add Organization
 export INTRINSIC_ORGANIZATION="<ORG_NAME>"
