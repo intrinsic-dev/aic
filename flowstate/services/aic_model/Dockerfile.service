@@ -1,0 +1,12 @@
+ARG CONTAINER_IMAGE=my-solution:v1
+FROM ${CONTAINER_IMAGE} AS base
+
+# Set ROS 2 Kilted RMW implementation to Zenoh
+ENV RMW_IMPLEMENTATION=rmw_zenoh_cpp
+
+# Skip router check attempts and set router address
+ENV ZENOH_ROUTER_CHECK_ATTEMPTS=-1
+ENV AIC_ROUTER_ADDR='zenoh-router.app-intrinsic-base.svc.cluster.local:7447'
+
+# Enable GPU support
+ENV LD_LIBRARY_PATH="/usr/local/nvidia/lib64:/usr/local/nvidia/bin:${LD_LIBRARY_PATH:-}"

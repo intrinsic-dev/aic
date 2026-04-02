@@ -1,0 +1,44 @@
+metadata {
+  id {
+    package: "ai.intrinsic"
+    name: "aic_model"
+  }
+  vendor {
+    display_name: "Intrinsic"
+  }
+  documentation {
+    description: "Participant Policy Node."
+  }
+  display_name: "Participant Policy Node"
+}
+service_def {
+  real_spec {
+    image {
+      archive_filename: "aic_model.tar"
+      settings {
+        resource_requirements {
+          limits {
+            key: "nvidia.com/gpu"
+            value: "1"
+          }
+        }
+      }
+    }
+  }
+  sim_spec {
+    image {
+      archive_filename: "aic_model.tar"
+      settings {
+        resource_requirements {
+          limits {
+            key: "nvidia.com/gpu"
+            value: "1"
+          }
+        }
+      }
+    }
+  } 
+}
+assets {
+  image_filenames: ["aic_model.tar"]
+}
