@@ -87,9 +87,7 @@ chmod 644 "$IMAGES_DIR/aic_model/aic_model.tar"
 # Packages the service using Intrinsic's 'inbuild' tool. It retrieves the
 # corresponding SDK version, downloads the tool if necessary, and generates
 # a .bundle.tar file using the service manifest and exported image.
-# Parse the SDK_VERSION from sdk_version.json
-SDK_VERSION_FILE="$SCRIPT_DIR/../../../sdk-ros/intrinsic_sdk_cmake/cmake/sdk_version.json"
-SDK_VERSION=$(grep -oP '"sdk_version": "\K[^"]+' "$SDK_VERSION_FILE")
+SDK_VERSION="v1.28.20260223"
 
 # Download the 'inbuild' tool if it doesn't exist
 if [ ! -f ./inbuild ]; then
