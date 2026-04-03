@@ -32,7 +32,6 @@ from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 from typing import Callable, Protocol
 
-
 GetObservationCallback = Callable[[], Observation]
 
 
@@ -88,7 +87,12 @@ class Policy(ABC):
         self.get_clock().sleep_for(Duration(seconds=duration_sec))
 
     def set_pose_target(
-        self, move_robot: MoveRobotCallback, pose: Pose, frame_id: str = "base_link"
+        self,
+        move_robot: MoveRobotCallback,
+        pose: Pose,
+        frame_id: str = "base_link",
+        stiffness: list = [90.0, 90.0, 90.0, 50.0, 50.0, 50.0],
+        damping: list = [50.0, 50.0, 50.0, 20.0, 20.0, 20.0],
     ) -> None:
         """Invoke the move_robot callback to request the supplied Pose.
 
@@ -117,8 +121,8 @@ class Policy(ABC):
                 stamp=self._parent_node.get_clock().now().to_msg(),
             ),
             pose=pose,
-            target_stiffness=np.diag([90.0, 90.0, 90.0, 50.0, 50.0, 50.0]).flatten(),
-            target_damping=np.diag([50.0, 50.0, 50.0, 20.0, 20.0, 20.0]).flatten(),
+            target_stiffness=np.diag(stiffness).flatten(),
+            target_damping=np.diag(damping).flatten(),
             feedforward_wrench_at_tip=Wrench(
                 force=Vector3(x=0.0, y=0.0, z=0.0),
                 torque=Vector3(x=0.0, y=0.0, z=0.0),

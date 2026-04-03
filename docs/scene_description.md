@@ -11,7 +11,10 @@ The simulation environment is defined in the [`aic_description`](./../aic_descri
 
 ### Robot
 
-The challenge utilizes a **Universal Robots UR5e** robotic arm, equipped with a **Robotiq Hand-E gripper** and an **Axia80 force-torque sensor**.
+The challenge utilizes a **Universal Robots UR5e** robotic arm, equipped with the following hardware:
+* **Gripper:** **Robotiq Hand-E**
+* **Force-Torque Sensor:** **ATI AXIA80-M20**
+* **Camera:** **Basler acA2440-20gc** with **Edmunds lens 58-000** (Resolution: 1152x1024, Frame Rate: 20 FPS)
 
 * **Configuration:** The robot's physical properties and setup are defined in the [`ur_gz.urdf.xacro`](../aic_description/urdf/ur_gz.urdf.xacro) file.
 * **Control:** The robot is operated via the `aic_controller`. For detailed interface and usage instructions, please refer to the [AIC Controller documentation](./aic_controller.md).
