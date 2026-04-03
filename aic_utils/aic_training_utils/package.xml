@@ -5,6 +5,7 @@
   <version>0.0.1</version>
   <description>Training-oriented bringup utilities for the AI Challenge</description>
   <maintainer email="yadunund@intrinsic.ai">Yadunund Vijay</maintainer>
+  <author email="jennifer.e.buehler@gmail.com">Jennifer Buehler</author>
   <license>Apache-2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
