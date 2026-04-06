@@ -711,13 +711,15 @@ def main():
         def traverse_find_links(body, target_plugin):
             count = 0
 
-            if body.name == "lc_plug_link":
+            # Skip plug links — they are rigid attachments, not part of the
+            # elastic cable chain.  Including them would create a branch and
+            # violate the cable plugin's single-chain requirement
+            if body.name in ("lc_plug_link", "sc_plug_link"):
                 return 0
 
             is_cable_body = (
                 body.name.startswith("cable_end_")
                 or body.name.startswith("cable_connection_")
-                or body.name == "sc_plug_link"
             )
             if body.name.startswith("link_"):
                 try:
