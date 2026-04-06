@@ -717,9 +717,8 @@ def main():
             if body.name in ("lc_plug_link", "sc_plug_link"):
                 return 0
 
-            is_cable_body = (
-                body.name.startswith("cable_end_")
-                or body.name.startswith("cable_connection_")
+            is_cable_body = body.name.startswith("cable_end_") or body.name.startswith(
+                "cable_connection_"
             )
             if body.name.startswith("link_"):
                 try:
