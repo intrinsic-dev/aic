@@ -131,22 +131,18 @@ namespace aic_gazebo
     /// the entity to a static model
     /// \param[in] _attachEntityAsParentOfJoint True to attach entity as parent of
     /// the detachable joint.
-    /// \param[in] _creator Sdf entity creator for creating a static model
     /// \param[in] _ecm Entity component manager
     private: gz::sim::Entity MakeStatic(gz::sim::Entity _entity,
                              bool _attachEntityAsParentOfJoint,
-                             gz::sim::SdfEntityCreator* _creator,
                              gz::sim::EntityComponentManager& _ecm);
 
     /// \brief Check end effector distance to connection and handle grasping
     /// \param[in] _connectionLinkEntity The connection link to check
     /// \param[in, out] _detachableJointStaticEntity The static joint holding it (removed if grasped)
-    /// \param[in, out] _detachableJointEntity The dynamic joint created for the grasp
     /// \param[in] _ecm Entity Component Manager
     /// \return True if grasped, false otherwise
     private: bool HandleGrasping(gz::sim::Entity _connectionLinkEntity,
                                  gz::sim::Entity& _detachableJointStaticEntity,
-                                 gz::sim::Entity& _detachableJointEntity,
                                  gz::sim::EntityComponentManager& _ecm);
 
     private: bool ToggleActiveCable(const gz::sim::EntityComponentManager& _ecm);
@@ -166,11 +162,8 @@ namespace aic_gazebo
     /// \brief Connection 1 link entity in the cable model
     private: gz::sim::Entity cableConnection1LinkEntity{gz::sim::kNullEntity};
 
-    /// \brief Detachable joint entity for connection 0
-    private: gz::sim::Entity detachableJoint0Entity{gz::sim::kNullEntity};
-
-    /// \brief Detachable joint entity for connection 1
-    private: gz::sim::Entity detachableJoint1Entity{gz::sim::kNullEntity};
+    /// \brief Detachable joint entity for gripper connection
+    private: gz::sim::Entity detachableJointEntity{gz::sim::kNullEntity};
 
     /// \brief Detachable joint entity for making cable connection 0 static
     private: gz::sim::Entity detachableJointStatic0Entity{gz::sim::kNullEntity};
@@ -183,9 +176,6 @@ namespace aic_gazebo
 
     /// \brief The current active cable model.
     private: gz::sim::Model cableModel;
-
-    /// \brief Name of the cable model that is currently active.
-    private: std::string cableModelName;
 
     /// \brief Index of cable model that is currently active.
     private: std::size_t cableIndex{0u};
@@ -202,12 +192,10 @@ namespace aic_gazebo
     /// \brief Name of the end effector link
     private: std::string endEffectorLinkName;
 
-    /// \brief Name of the target model for connection 1
-    private: std::string connection1ModelName;
-
     /// \brief Distance threshold for grasping the cable connection
     private: double graspDistanceThreshold{0.05};
 
+    // TODO(anyone) These 4 delays are effectively unused, check if we need.
     /// \brief Delay in seconds for creating the connection joints.
     private: double createJointDelay{0.0};
 
@@ -239,7 +227,8 @@ namespace aic_gazebo
     private: std::atomic<bool> attachCableConnectionToPort{false};
 
     /// \brief Topic in which the touch event is received
-    private: std::string touchEventCallbackNamespace;
+    /// This is set on cableConnectionPortSub callback
+    private: std::optional<std::string> touchEventCallbackNamespace;
 
     /// \brief Gazebo transport node
     private: gz::transport::Node node;
