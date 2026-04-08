@@ -255,7 +255,6 @@ void CableModeratorPlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
 
     this->detachableJointStatic0Entity = this->MakeStatic(
         this->cableConnection0LinkEntity, true, this->creator.get(), _ecm);
-    this->lockingJoints.push_back(this->detachableJointStatic0Entity);
 
     gzmsg << "Cable transitioning to WAITING_CONN_1 state." << std::endl;
     this->cableState = CableState::WAITING_CONN_1;
@@ -289,7 +288,6 @@ void CableModeratorPlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
 
     this->detachableJointStatic1Entity = this->MakeStatic(
         this->cableConnection1LinkEntity, true, this->creator.get(), _ecm);
-    this->lockingJoints.push_back(this->detachableJointStatic1Entity);
 
     gzmsg << "Cable transitioning to NEXT_CABLE state." << std::endl;
     this->cableState = CableState::NEXT_CABLE;
@@ -358,12 +356,6 @@ void CableModeratorPlugin::Cleanup(gz::sim::EntityComponentManager& _ecm) {
   if (this->detachableJoint1Entity != kNullEntity)
     _ecm.RequestRemoveEntity(this->detachableJoint1Entity);
 
-  for (const auto& ent : this->lockingJoints) {
-    if (ent != kNullEntity) {
-      _ecm.RequestRemoveEntity(ent);
-    }
-  }
-
   for (const auto& ent : this->staticEntities) {
     if (ent != kNullEntity) {
       _ecm.RequestRemoveEntity(ent);
@@ -371,7 +363,6 @@ void CableModeratorPlugin::Cleanup(gz::sim::EntityComponentManager& _ecm) {
   }
 
   this->staticEntities.clear();
-  this->lockingJoints.clear();
 }
 
 //////////////////////////////////////////////////

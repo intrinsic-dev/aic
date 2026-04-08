@@ -238,10 +238,6 @@ namespace aic_gazebo
     /// This is set on cableConnectionPortSub callback
     private: std::atomic<bool> attachCableConnectionToPort{false};
 
-    /// \brief Static entities (detachable joints used for locking) 
-    /// that are added for cleanup.
-    private: std::vector<gz::sim::Entity> lockingJoints;
-
     /// \brief Topic in which the touch event is received
     private: std::string touchEventCallbackNamespace;
 
