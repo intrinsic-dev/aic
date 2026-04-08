@@ -223,12 +223,12 @@ namespace aic_gazebo
     /// \brief Current state of the cable
     private: CableState cableState{CableState::INITIALIZATION};
 
-    /// \brief Name of the cable connection 0 port topic
-    private: std::unordered_set<std::string> cableConnection0PortTopics;
+    /// \brief Name of the cable connection port topic
+    private: std::unordered_set<std::string> cableConnectionPortTopics;
 
-    /// \brief Cable connection 0 port subscribers
+    /// \brief Cable connection port subscribers
     private: std::vector<gz::transport::Node::Subscriber>
-        cableConnection0PortSubs;
+        cableConnectionPortSubs;
 
     /// \brief Task completion event publisher
     private: gz::transport::Node::Publisher taskCompletionPub;
@@ -236,13 +236,6 @@ namespace aic_gazebo
     /// \brief Whether to attach cable connection 0 to port
     /// This is set on cableConnection0PortSub callback
     private: std::atomic<bool> attachCableConnection0ToPort{false};
-
-    /// \brief Name of the cable connection 1 port topic
-    private: std::unordered_set<std::string> cableConnection1PortTopics;
-
-    /// \brief Cable connection 1 port subscribers
-    private: std::vector<gz::transport::Node::Subscriber>
-        cableConnection1PortSubs;
 
     /// \brief Whether to attach cable connection 1 to port
     /// This is set on cableConnection1PortSub callback

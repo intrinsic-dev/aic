@@ -235,17 +235,17 @@ void CableModeratorPlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
   }
 
   if (this->cableState == CableState::ATTACHED_TO_GRIPPER_CONN_0) {
-    if (this->cableConnection0PortTopics.empty()) {
+    if (this->cableConnectionPortTopics.empty()) {
       std::vector<std::string> allTopics;
       this->node.TopicList(allTopics);
 
       for (const auto& topic : allTopics) {
         if (topic.find(this->cableConfigs[this->cableIndex - 1].connection0PortName) != std::string::npos && topic.find("touched") != std::string::npos) {
-          this->cableConnection0PortTopics.insert(topic);
+          this->cableConnectionPortTopics.insert(topic);
         }
       }
 
-      if (this->cableConnection0PortTopics.empty()) return;
+      if (this->cableConnectionPortTopics.empty()) return;
 
       std::function<void(const msgs::Boolean&, const transport::MessageInfo&)>
           callback = [this](const msgs::Boolean& _msg,
@@ -257,8 +257,8 @@ void CableModeratorPlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
               << ". Topic: " << _info.Topic() << std::endl;
       };
 
-      for (const auto& topic : this->cableConnection0PortTopics) {
-        this->cableConnection0PortSubs.emplace_back(
+      for (const auto& topic : this->cableConnectionPortTopics) {
+        this->cableConnectionPortSubs.emplace_back(
             this->node.CreateSubscriber(topic, callback));
       }
     }
@@ -270,6 +270,8 @@ void CableModeratorPlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
   }
 
   if (this->cableState == CableState::ATTACH_TO_PORT_CONN_0) {
+    this->cableConnectionPortTopics.clear();
+    this->cableConnectionPortSubs.clear();
     if (this->detachableJoint0Entity != kNullEntity) {
       _ecm.RequestRemoveEntity(this->detachableJoint0Entity);
       this->detachableJoint0Entity = kNullEntity;
@@ -293,17 +295,17 @@ void CableModeratorPlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
   }
 
   if (this->cableState == CableState::ATTACHED_TO_GRIPPER_CONN_1) {
-    if (this->cableConnection1PortTopics.empty()) {
+    if (this->cableConnectionPortTopics.empty()) {
       std::vector<std::string> allTopics;
       this->node.TopicList(allTopics);
 
       for (const auto& topic : allTopics) {
         if (topic.find(this->cableConfigs[this->cableIndex - 1].connection1PortName) != std::string::npos && topic.find("touched") != std::string::npos) {
-          this->cableConnection1PortTopics.insert(topic);
+          this->cableConnectionPortTopics.insert(topic);
         }
       }
 
-      if (this->cableConnection1PortTopics.empty()) return;
+      if (this->cableConnectionPortTopics.empty()) return;
 
       std::function<void(const msgs::Boolean&, const transport::MessageInfo&)>
           callback = [this](const msgs::Boolean& _msg,
@@ -315,8 +317,8 @@ void CableModeratorPlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
               << ". Topic: " << _info.Topic() << std::endl;
       };
 
-      for (const auto& topic : this->cableConnection1PortTopics) {
-        this->cableConnection1PortSubs.emplace_back(
+      for (const auto& topic : this->cableConnectionPortTopics) {
+        this->cableConnectionPortSubs.emplace_back(
             this->node.CreateSubscriber(topic, callback));
       }
     }
@@ -342,12 +344,10 @@ void CableModeratorPlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
   }
 
   if (this->cableState == CableState::NEXT_CABLE) {
-    this->cableConnection0PortTopics.clear();
-    this->cableConnection0PortSubs.clear();
+    this->cableConnectionPortTopics.clear();
+    this->cableConnectionPortSubs.clear();
     this->attachCableConnection0ToPort = false;
 
-    this->cableConnection1PortTopics.clear();
-    this->cableConnection1PortSubs.clear();
     this->attachCableConnection1ToPort = false;
 
     if (this->cableIndex < this->cableModels.size()) {
