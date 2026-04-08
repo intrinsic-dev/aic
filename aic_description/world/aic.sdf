@@ -32,7 +32,7 @@
         <camera_pose>0.95 -0.1 1.3 0.0 0.0 3.14</camera_pose>
       </plugin>
 
-<!--      <plugin filename="GlobalIlluminationVct" name="GI">
+      <plugin filename="GlobalIlluminationVct" name="GI">
         <gz-gui>
           <property type="string" key="state">docked_collapsed</property>
         </gz-gui>
@@ -45,7 +45,6 @@
         <anisotropic>true</anisotropic>
         <bounceCount>3</bounceCount>
       </plugin>
--->
 
       <!-- Inspector -->
       <plugin filename="ComponentInspector" name="Component inspector">
@@ -102,7 +101,6 @@
       name="gz::sim::systems::Physics">
       <engine><filename>gz-physics-bullet-featherstone-plugin</filename></engine>
     </plugin>
-<!--
     <plugin
       filename="gz-sim-sensors-system"
       name="gz::sim::systems::Sensors">
@@ -119,7 +117,6 @@
         <debug_vis_mode>none</debug_vis_mode>
       </global_illumination>
     </plugin>
--->
     <plugin
       filename="ScoringPlugin"
       name="aic_gazebo::ScoringPlugin">
