@@ -55,7 +55,7 @@
   lazy: true
 
 - ros_topic_name: "/scoring/tf"
-  gz_topic_name: "/cable_0/pose"
+  gz_topic_name: "/model/cable_0/pose"
   ros_type_name: "tf2_msgs/msg/TFMessage"
   gz_type_name: "gz.msgs.Pose_V"
   direction: GZ_TO_ROS

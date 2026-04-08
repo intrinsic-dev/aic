@@ -239,8 +239,10 @@ void CableModeratorPlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
       std::vector<std::string> allTopics;
       this->node.TopicList(allTopics);
 
+      gzerr << "Looking for topics" << std::endl;
       for (const auto& topic : allTopics) {
-        if (topic.find(this->cableConfigs[this->cableIndex - 1].connection0PortName) != std::string::npos) {
+        if (topic.find(this->cableConfigs[this->cableIndex - 1].connection0PortName) != std::string::npos && topic.find("touched") != std::string::npos) {
+          gzerr << "Subscribing to touch topic " << topic << std::endl;
           this->cableConnection0PortTopics.insert(topic);
         }
       }
