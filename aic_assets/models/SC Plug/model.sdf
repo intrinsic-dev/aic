@@ -19,17 +19,6 @@
             <size>0.012721 0.009 0.0073</size>
           </box>
         </geometry>
-        <surface>
-          <friction>
-            <torsional>
-              <coefficient>0.1</coefficient>
-            </torsional>
-            <bullet>
-              <friction>0.1</friction>
-              <friction2>0.1</friction2>
-            </bullet>
-          </friction>
-        </surface>
       </collision>
       <collision name="housing blue_predeterminado005_collider_box.001">
         <pose>0.002038 -0.006344 4e-06 0.0 0.0 0.0</pose>
@@ -38,17 +27,6 @@
             <size>0.012721 0.009 0.0073</size>
           </box>
         </geometry>
-        <surface>
-          <friction>
-            <torsional>
-              <coefficient>0.1</coefficient>
-            </torsional>
-            <bullet>
-              <friction>0.1</friction>
-              <friction2>0.1</friction2>
-            </bullet>
-          </friction>
-        </surface>
       </collision>
       <collision name="housing blue_predeterminado005_collider_box.002">
         <pose>0.002539 0.006344 4e-06 0.0 0.0 0.0</pose>
@@ -57,17 +35,6 @@
             <size>0.013722 0.007 0.0073</size>
           </box>
         </geometry>
-        <surface>
-          <friction>
-            <torsional>
-              <coefficient>0.1</coefficient>
-            </torsional>
-            <bullet>
-              <friction>0.1</friction>
-              <friction2>0.1</friction2>
-            </bullet>
-          </friction>
-        </surface>
       </collision>
       <collision name="housing blue_predeterminado005_collider_box.003">
         <pose>0.002539 -0.006344 4e-06 0.0 0.0 0.0</pose>
@@ -76,17 +43,6 @@
             <size>0.013722 0.007 0.0073</size>
           </box>
         </geometry>
-        <surface>
-          <friction>
-            <torsional>
-              <coefficient>0.1</coefficient>
-            </torsional>
-            <bullet>
-              <friction>0.1</friction>
-              <friction2>0.1</friction2>
-            </bullet>
-          </friction>
-        </surface>
       </collision>
       <collision name="housing blue_predeterminado005_collider_box.004">
         <pose>0.008191 0.003056 4e-06 0.0 -0.0 -0.785398</pose>
@@ -95,17 +51,6 @@
             <size>0.002 0.00141 0.0073</size>
           </box>
         </geometry>
-        <surface>
-          <friction>
-            <torsional>
-              <coefficient>0.1</coefficient>
-            </torsional>
-            <bullet>
-              <friction>0.1</friction>
-              <friction2>0.1</friction2>
-            </bullet>
-          </friction>
-        </surface>
       </collision>
       <collision name="housing blue_predeterminado005_collider_box.005">
         <pose>0.008191 0.009636 4e-06 0.0 -0.0 0.785398</pose>
@@ -114,17 +59,6 @@
             <size>0.002 0.00141 0.0073</size>
           </box>
         </geometry>
-        <surface>
-          <friction>
-            <torsional>
-              <coefficient>0.1</coefficient>
-            </torsional>
-            <bullet>
-              <friction>0.1</friction>
-              <friction2>0.1</friction2>
-            </bullet>
-          </friction>
-        </surface>
       </collision>
       <collision name="housing blue_predeterminado005_collider_box.006">
         <pose>0.008191 -0.009636 4e-06 0.0 -0.0 -0.785398</pose>
@@ -133,17 +67,6 @@
             <size>0.002 0.00141 0.0073</size>
           </box>
         </geometry>
-        <surface>
-          <friction>
-            <torsional>
-              <coefficient>0.1</coefficient>
-            </torsional>
-            <bullet>
-              <friction>0.1</friction>
-              <friction2>0.1</friction2>
-            </bullet>
-          </friction>
-        </surface>
       </collision>
       <collision name="housing blue_predeterminado005_collider_box.007">
         <pose>0.008191 -0.003056 4e-06 0.0 -0.0 0.785398</pose>
@@ -152,17 +75,6 @@
             <size>0.002 0.00141 0.0073</size>
           </box>
         </geometry>
-        <surface>
-          <friction>
-            <torsional>
-              <coefficient>0.1</coefficient>
-            </torsional>
-            <bullet>
-              <friction>0.1</friction>
-              <friction2>0.1</friction2>
-            </bullet>
-          </friction>
-        </surface>
       </collision>
       <collision name="cube002_collider_box">
         <pose>-0.010291 0.0 0.0 0.0 0.0 0.0</pose>
@@ -171,17 +83,6 @@
             <size>0.01255 0.025 0.0101</size>
           </box>
         </geometry>
-        <surface>
-          <friction>
-            <torsional>
-              <coefficient>0.1</coefficient>
-            </torsional>
-            <bullet>
-              <friction>0.1</friction>
-              <friction2>0.1</friction2>
-            </bullet>
-          </friction>
-        </surface>
       </collision>
       <collision name="cylinder011_collider_cylinder">
         <pose>-0.031147 -0.00635 -0.0 -0.0 1.570796 0.0</pose>
@@ -191,17 +92,6 @@
             <length>0.02921</length>
           </cylinder>
         </geometry>
-        <surface>
-          <friction>
-            <torsional>
-              <coefficient>0.1</coefficient>
-            </torsional>
-            <bullet>
-              <friction>0.1</friction>
-              <friction2>0.1</friction2>
-            </bullet>
-          </friction>
-        </surface>
       </collision>
       <collision name="cylinder005_collider_cylinder">
         <pose>-0.029953 0.00635 -0.0 -0.0 1.570796 0.0</pose>
@@ -211,17 +101,6 @@
             <length>0.031598</length>
           </cylinder>
         </geometry>
-        <surface>
-          <friction>
-            <torsional>
-              <coefficient>0.1</coefficient>
-            </torsional>
-            <bullet>
-              <friction>0.1</friction>
-              <friction2>0.1</friction2>
-            </bullet>
-          </friction>
-        </surface>
       </collision>
       <collision name="ferula_predeterminado005_collider_cylinder">
         <pose>0.00465 -0.00635 0.0 -0.0 1.570796 0.0</pose>
@@ -231,17 +110,6 @@
             <length>0.014</length>
           </cylinder>
         </geometry>
-        <surface>
-          <friction>
-            <torsional>
-              <coefficient>0.1</coefficient>
-            </torsional>
-            <bullet>
-              <friction>0.1</friction>
-              <friction2>0.1</friction2>
-            </bullet>
-          </friction>
-        </surface>
       </collision>
       <collision name="ferula_predeterminado003_collider_cylinder">
         <pose>0.00465 0.00635 0.0 -0.0 1.570796 0.0</pose>
@@ -251,17 +119,6 @@
             <length>0.014</length>
           </cylinder>
         </geometry>
-        <surface>
-          <friction>
-            <torsional>
-              <coefficient>0.1</coefficient>
-            </torsional>
-            <bullet>
-              <friction>0.1</friction>
-              <friction2>0.1</friction2>
-            </bullet>
-          </friction>
-        </surface>
       </collision>
       <collision name="side_box_collision">
         <pose>0.00146 -0.00632 0.0042 0.0 0.0 0.0</pose>
@@ -270,17 +127,6 @@
             <size>0.00425 0.00162 0.001</size>
           </box>
         </geometry>
-        <surface>
-          <friction>
-            <torsional>
-              <coefficient>0.1</coefficient>
-            </torsional>
-            <bullet>
-              <friction>0.1</friction>
-              <friction2>0.1</friction2>
-            </bullet>
-          </friction>
-        </surface>
       </collision>
       <collision name="side_box_collision_2">
         <pose>0.00146 0.00632 0.0042 0.0 0.0 0.0</pose>
@@ -289,17 +135,6 @@
             <size>0.00425 0.00162 0.001</size>
           </box>
         </geometry>
-        <surface>
-          <friction>
-            <torsional>
-              <coefficient>0.1</coefficient>
-            </torsional>
-            <bullet>
-              <friction>0.1</friction>
-              <friction2>0.1</friction2>
-            </bullet>
-          </friction>
-        </surface>
       </collision>
     </link>
 

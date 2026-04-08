@@ -15,6 +15,17 @@
               <radius>0.002</radius>
             </cylinder>
           </geometry>
+          <surface>
+            <friction>
+              <torsional>
+                <coefficient>0.05</coefficient>
+              </torsional>
+              <bullet>
+                <friction>0.05</friction>
+                <friction2>0.05</friction2>
+              </bullet>
+            </friction>
+          </surface>
         </collision>
         <collision element_id="cable_end_0::base_collision" action="remove"/>
         <collision element_id="cable_connection_0::collision_0" action="remove"/>
