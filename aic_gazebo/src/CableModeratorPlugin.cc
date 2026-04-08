@@ -235,43 +235,19 @@ void CableModeratorPlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
   }
 
   if (this->cableState == CableState::ATTACHED_TO_GRIPPER_CONN_0) {
-    if (this->cableConnectionPortTopics.empty()) {
-      std::vector<std::string> allTopics;
-      this->node.TopicList(allTopics);
-
-      for (const auto& topic : allTopics) {
-        if (topic.find(this->cableConfigs[this->cableIndex - 1].connection0PortName) != std::string::npos && topic.find("touched") != std::string::npos) {
-          this->cableConnectionPortTopics.insert(topic);
-        }
-      }
-
-      if (this->cableConnectionPortTopics.empty()) return;
-
-      std::function<void(const msgs::Boolean&, const transport::MessageInfo&)>
-          callback = [this](const msgs::Boolean& _msg,
-                            const transport::MessageInfo& _info) {
-        size_t pos = _info.Topic().rfind("/");
-        this->touchEventCallbackNamespace = _info.Topic().substr(0, pos);
-        this->attachCableConnection0ToPort = _msg.data();
-        gzdbg << "Cable connection 0 touched: " << _msg.data()
-              << ". Topic: " << _info.Topic() << std::endl;
-      };
-
-      for (const auto& topic : this->cableConnectionPortTopics) {
-        this->cableConnectionPortSubs.emplace_back(
-            this->node.CreateSubscriber(topic, callback));
-      }
+    if (this->cableConnectionPortSubs.empty()) {
+      this->CreatePortSubscribers(this->cableConfigs[this->cableIndex - 1].connection0PortName);
     }
 
-    if (this->attachCableConnection0ToPort) {
+    if (this->attachCableConnectionToPort) {
       gzmsg << "Cable transitioning to ATTACH_TO_PORT_CONN_0 state." << std::endl;
       this->cableState = CableState::ATTACH_TO_PORT_CONN_0;
     }
   }
 
   if (this->cableState == CableState::ATTACH_TO_PORT_CONN_0) {
-    this->cableConnectionPortTopics.clear();
     this->cableConnectionPortSubs.clear();
+    this->attachCableConnectionToPort = false;
     if (this->detachableJoint0Entity != kNullEntity) {
       _ecm.RequestRemoveEntity(this->detachableJoint0Entity);
       this->detachableJoint0Entity = kNullEntity;
@@ -295,35 +271,11 @@ void CableModeratorPlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
   }
 
   if (this->cableState == CableState::ATTACHED_TO_GRIPPER_CONN_1) {
-    if (this->cableConnectionPortTopics.empty()) {
-      std::vector<std::string> allTopics;
-      this->node.TopicList(allTopics);
-
-      for (const auto& topic : allTopics) {
-        if (topic.find(this->cableConfigs[this->cableIndex - 1].connection1PortName) != std::string::npos && topic.find("touched") != std::string::npos) {
-          this->cableConnectionPortTopics.insert(topic);
-        }
-      }
-
-      if (this->cableConnectionPortTopics.empty()) return;
-
-      std::function<void(const msgs::Boolean&, const transport::MessageInfo&)>
-          callback = [this](const msgs::Boolean& _msg,
-                            const transport::MessageInfo& _info) {
-        size_t pos = _info.Topic().rfind("/");
-        this->touchEventCallbackNamespace = _info.Topic().substr(0, pos);
-        this->attachCableConnection1ToPort = _msg.data();
-        gzdbg << "Cable connection 1 touched: " << _msg.data()
-              << ". Topic: " << _info.Topic() << std::endl;
-      };
-
-      for (const auto& topic : this->cableConnectionPortTopics) {
-        this->cableConnectionPortSubs.emplace_back(
-            this->node.CreateSubscriber(topic, callback));
-      }
+    if (this->cableConnectionPortSubs.empty()) {
+      this->CreatePortSubscribers(this->cableConfigs[this->cableIndex - 1].connection1PortName);
     }
 
-    if (this->attachCableConnection1ToPort) {
+    if (this->attachCableConnectionToPort) {
       gzmsg << "Cable transitioning to ATTACH_TO_PORT_CONN_1 state." << std::endl;
       this->cableState = CableState::ATTACH_TO_PORT_CONN_1;
     }
@@ -344,11 +296,8 @@ void CableModeratorPlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
   }
 
   if (this->cableState == CableState::NEXT_CABLE) {
-    this->cableConnectionPortTopics.clear();
     this->cableConnectionPortSubs.clear();
-    this->attachCableConnection0ToPort = false;
-
-    this->attachCableConnection1ToPort = false;
+    this->attachCableConnectionToPort = false;
 
     if (this->cableIndex < this->cableModels.size()) {
       if (this->ToggleActiveCable(_ecm)) {
@@ -527,6 +476,28 @@ bool CableModeratorPlugin::FindCableModels(
   return true;
 }
 
+//////////////////////////////////////////////////
+void CableModeratorPlugin::CreatePortSubscribers(const std::string& _portName) {
+  std::vector<std::string> allTopics;
+  this->node.TopicList(allTopics);
+
+  std::function<void(const msgs::Boolean&, const transport::MessageInfo&)>
+      callback = [this](const msgs::Boolean& _msg,
+                        const transport::MessageInfo& _info) {
+    size_t pos = _info.Topic().rfind("/");
+    this->touchEventCallbackNamespace = _info.Topic().substr(0, pos);
+    this->attachCableConnectionToPort = _msg.data();
+    gzdbg << "Cable connection 0 touched: " << _msg.data()
+          << ". Topic: " << _info.Topic() << std::endl;
+  };
+
+  for (const auto& topic : allTopics) {
+    if (topic.find(_portName) != std::string::npos && topic.find("touched") != std::string::npos) {
+      this->cableConnectionPortSubs.emplace_back(
+          this->node.CreateSubscriber(topic, callback));
+    }
+  }
+}
 
 //////////////////////////////////////////////////
 bool CableModeratorPlugin::ToggleActiveCable(

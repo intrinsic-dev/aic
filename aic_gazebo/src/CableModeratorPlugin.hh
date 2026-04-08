@@ -153,6 +153,10 @@ namespace aic_gazebo
 
     private: bool FindCableModels(const gz::sim::EntityComponentManager& _ecm);
 
+    /// \brief Initialize port contact subscribers for the given port
+    /// \param[in] _portName The name of the port to subscribe to for contacts
+    private: void CreatePortSubscribers(const std::string& _portName);
+
     /// \brief Entity of attachment link in the end effector model
     private: gz::sim::Entity endEffectorLinkEntity{gz::sim::kNullEntity};
 
@@ -223,9 +227,6 @@ namespace aic_gazebo
     /// \brief Current state of the cable
     private: CableState cableState{CableState::INITIALIZATION};
 
-    /// \brief Name of the cable connection port topic
-    private: std::unordered_set<std::string> cableConnectionPortTopics;
-
     /// \brief Cable connection port subscribers
     private: std::vector<gz::transport::Node::Subscriber>
         cableConnectionPortSubs;
@@ -233,13 +234,9 @@ namespace aic_gazebo
     /// \brief Task completion event publisher
     private: gz::transport::Node::Publisher taskCompletionPub;
 
-    /// \brief Whether to attach cable connection 0 to port
-    /// This is set on cableConnection0PortSub callback
-    private: std::atomic<bool> attachCableConnection0ToPort{false};
-
-    /// \brief Whether to attach cable connection 1 to port
-    /// This is set on cableConnection1PortSub callback
-    private: std::atomic<bool> attachCableConnection1ToPort{false};
+    /// \brief Whether to attach cable connection to the port
+    /// This is set on cableConnectionPortSub callback
+    private: std::atomic<bool> attachCableConnectionToPort{false};
 
     /// \brief Static entities (detachable joints used for locking) 
     /// that are added for cleanup.
