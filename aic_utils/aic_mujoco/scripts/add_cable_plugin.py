@@ -145,14 +145,23 @@ def postprocess_robot_xml(xml_str):
 
 
 # --- World XML Post-Processing ---
-def postprocess_world_xml(xml_str, gripper_plug_name="lc_plug_link", weld_relpose=None):
+def postprocess_world_xml(
+    xml_str,
+    gripper_plug_name="lc_plug_link",
+    weld_relpose=None,
+    cable_end_pos=None,
+    cable_end_quat=None,
+):
     """Apply automated corrections to world XML (replaces manual edits)."""
 
     # 1. Update cable_end_0 pose to tuned values
+    if cable_end_pos is None:
+        cable_end_pos = "0.171400 0.020606 1.511889"
+    if cable_end_quat is None:
+        cable_end_quat = "0.712741 0.312130 -0.052173 0.625982"
     xml_str = re.sub(
         r'(<body name="cable_end_0" childclass="cable_default") pos="[^"]*" quat="[^"]*"',
-        r'\1 pos="0.171400 0.020606 1.511889"'
-        r' quat="0.712741 0.312130 -0.052173 0.625982"',
+        rf'\1 pos="{cable_end_pos}" quat="{cable_end_quat}"',
         xml_str,
     )
 
@@ -164,10 +173,12 @@ def postprocess_world_xml(xml_str, gripper_plug_name="lc_plug_link", weld_relpos
         xml_str,
     )
 
-    # 3. Replace all cable body diaginertia from 0.01 to 1e-6
-    xml_str = xml_str.replace(
-        'diaginertia="0.01 0.01 0.01"', 'diaginertia="1e-6 1e-6 1e-6"'
-    )
+    # 3. Replace all cable body diaginertia to 1e-6
+    #    Normal cable raw export uses 0.01; reversed cable uses 0.001
+    for old_diag in ("0.01 0.01 0.01", "0.001 0.001 0.001"):
+        xml_str = xml_str.replace(
+            f'diaginertia="{old_diag}"', 'diaginertia="1e-6 1e-6 1e-6"'
+        )
 
     # 4. Fix cable_connection_1 (SC plug end) diaginertia to 4e-4
     #    cable_connection_1 has mass=0.01 and is the SC plug connector
@@ -417,35 +428,18 @@ def main():
 
         if is_reversed:
             gripper_plug_name = "sc_plug_link"
-            print("Detected reversed cable (sc_plug at cable_connection_0).")
-
-            # Compute weld relpose for sc_plug_link w.r.t. ati/tool_link
-            id_tool = mujoco.mj_name2id(
-                orig_model, mujoco.mjtObj.mjOBJ_BODY, "ati/tool_link"
-            )  # pytype: disable=wrong-arg-types
-            pos_tool = orig_data.xpos[id_tool].copy()
-            quat_tool = orig_data.xquat[id_tool].copy()
-            pos_plug = orig_data.xpos[id_sc_plug].copy()
-            quat_plug = orig_data.xquat[id_sc_plug].copy()
-
-            quat_tool_inv = np.zeros(4)
-            mujoco.mju_negQuat(quat_tool_inv, quat_tool)
-            diff_pos = pos_plug - pos_tool
-            weld_rel_pos = np.zeros(3)
-            mujoco.mju_rotVecQuat(weld_rel_pos, diff_pos, quat_tool_inv)
-            weld_rel_quat = np.zeros(4)
-            mujoco.mju_mulQuat(weld_rel_quat, quat_tool_inv, quat_plug)
-
+            # Tuned values for reversed cable (sc_plug at gripper end)
+            cable_end_pos = "0.172124 0.029369 1.507828"
+            cable_end_quat = "0.713143 0.312161 -0.049352 0.625737"
             weld_relpose = (
-                f"{weld_rel_pos[0]:.6f} {weld_rel_pos[1]:.6f}"
-                f" {weld_rel_pos[2]:.6f}"
-                f" {weld_rel_quat[0]:.6f} {weld_rel_quat[1]:.6f}"
-                f" {weld_rel_quat[2]:.6f} {weld_rel_quat[3]:.6f}"
+                "-0.000980 0.000693 0.180020" " 0.170140 -0.684594 0.157796 -0.691002"
             )
-            print(f"Computed weld relpose: {weld_relpose}")
+            print("Detected reversed cable (sc_plug at cable_connection_0).")
         else:
             gripper_plug_name = "lc_plug_link"
             weld_relpose = None  # Use default hardcoded value
+            cable_end_pos = None  # Use default hardcoded value
+            cable_end_quat = None
             print("Detected normal cable orientation.")
 
         # Get body IDs for relative pose calculation
@@ -818,7 +812,9 @@ def main():
 
         # Apply automated post-processing (replaces manual edits)
         print("Post-processing world XML...")
-        xml_str = postprocess_world_xml(xml_str, gripper_plug_name, weld_relpose)
+        xml_str = postprocess_world_xml(
+            xml_str, gripper_plug_name, weld_relpose, cable_end_pos, cable_end_quat
+        )
 
         print(f"Saving world XML to {output_path}...")
         with open(output_path, "w") as f:
