@@ -63,9 +63,6 @@ namespace aic_gazebo
 
     /// \brief Task complete - cable connections are completed
     COMPLETED,
-
-    /// \brief Cable model is removed.
-    CABLE_REMOVED,
   };
 
   /// \brief Configuration for a cable
@@ -129,8 +126,8 @@ namespace aic_gazebo
 
     /// \brief Make an entity static by spawning a static model and attaching
     /// the entity to a static model
-    /// \param[in] _attachEntityAsParentOfJoint True to attach entity as parent of
-    /// the detachable joint.
+    /// \param[in] _attachEntityAsParentOfJoint True to attach entity as parent
+    /// of the detachable joint.
     /// \param[in] _ecm Entity component manager
     private: gz::sim::Entity MakeStatic(gz::sim::Entity _entity,
                              bool _attachEntityAsParentOfJoint,
@@ -138,15 +135,22 @@ namespace aic_gazebo
 
     /// \brief Check end effector distance to connection and handle grasping
     /// \param[in] _connectionLinkEntity The connection link to check
-    /// \param[in, out] _detachableJointStaticEntity The static joint holding it (removed if grasped)
+    /// \param[in, out] _detachableJointStaticEntity The static joint holding
+    ///  it (removed if grasped)
     /// \param[in] _ecm Entity Component Manager
     /// \return True if grasped, false otherwise
     private: bool HandleGrasping(gz::sim::Entity _connectionLinkEntity,
                                  gz::sim::Entity& _detachableJointStaticEntity,
                                  gz::sim::EntityComponentManager& _ecm);
 
-    private: bool ToggleActiveCable(const gz::sim::EntityComponentManager& _ecm);
+    /// \brief Toggle active cable. Done by setting internal vairables to keep
+    /// track of the connection link entities of the next cable in the queue
+    /// \param[in] _ecm Entity Component Manager
+    private: bool ToggleActiveCable(
+        const gz::sim::EntityComponentManager& _ecm);
 
+    /// \brief Find Cable model entities based on their names
+    /// \param[in] _ecm Entity Component Manager
     private: bool FindCableModels(const gz::sim::EntityComponentManager& _ecm);
 
     /// \brief Initialize port contact subscribers for the given port
@@ -163,7 +167,8 @@ namespace aic_gazebo
     private: gz::sim::Entity cableConnection1LinkEntity{gz::sim::kNullEntity};
 
     /// \brief Detachable joint entity for gripper connection
-    private: gz::sim::Entity detachableJointEntity{gz::sim::kNullEntity};
+    private: gz::sim::Entity detachableJointGripperConnEntity{
+        gz::sim::kNullEntity};
 
     /// \brief Detachable joint entity for making cable connection 0 static
     private: gz::sim::Entity detachableJointStatic0Entity{gz::sim::kNullEntity};
@@ -194,19 +199,6 @@ namespace aic_gazebo
 
     /// \brief Distance threshold for grasping the cable connection
     private: double graspDistanceThreshold{0.05};
-
-    // TODO(anyone) These 4 delays are effectively unused, check if we need.
-    /// \brief Delay in seconds for creating the connection joints.
-    private: double createJointDelay{0.0};
-
-    /// \brief Delay in seconds for locking end-effector after insertion.
-    private: double lockEndEffectorDelay{0.0};
-
-    /// \brief Start time for delay in creating connection joints.
-    private: double createJointDelayStartTime{0.0};
-
-    /// \brief Start time for delay in locking end effector after insertion.
-    private: double lockEndEffectorDelayStartTime{0.0};
 
     /// \brief Sdf entity creator for spawning static entities
     /// Used for holding cable connections in place

@@ -78,13 +78,12 @@ Entity findLinkInModel(const std::string& _modelName,
 namespace aic_gazebo {
 
 //////////////////////////////////////////////////
-void CableModeratorPlugin::Configure(const gz::sim::Entity& /*_entity*/,
-                            const std::shared_ptr<const sdf::Element>& _sdf,
-                            gz::sim::EntityComponentManager& _ecm,
-                            gz::sim::EventManager& _eventManager) {
-
-  gzdbg << "aic_gazebo::CableModeratorPlugin::Configure "
-        << std::endl;
+void CableModeratorPlugin::Configure(
+    const gz::sim::Entity& /*_entity*/,
+    const std::shared_ptr<const sdf::Element>& _sdf,
+    gz::sim::EntityComponentManager& _ecm,
+    gz::sim::EventManager& _eventManager) {
+  gzdbg << "aic_gazebo::CableModeratorPlugin::Configure " << std::endl;
 
   auto cableElem = _sdf->FindElement("cable");
   while (cableElem) {
@@ -102,7 +101,8 @@ void CableModeratorPlugin::Configure(const gz::sim::Entity& /*_entity*/,
     }
 
     if (cableElem->HasElement("cable_connection_0_link")) {
-      config.connection0LinkName = cableElem->Get<std::string>("cable_connection_0_link");
+      config.connection0LinkName =
+          cableElem->Get<std::string>("cable_connection_0_link");
     } else {
       gzerr << "Missing <cable_connection_0_link> parameter." << std::endl;
       cableElem = cableElem->GetNextElement("cable");
@@ -110,7 +110,8 @@ void CableModeratorPlugin::Configure(const gz::sim::Entity& /*_entity*/,
     }
 
     if (cableElem->HasElement("cable_connection_0_port")) {
-      config.connection0PortName = cableElem->Get<std::string>("cable_connection_0_port");
+      config.connection0PortName =
+          cableElem->Get<std::string>("cable_connection_0_port");
     } else {
       gzerr << "Missing <cable_connection_0_port> parameter." << std::endl;
       cableElem = cableElem->GetNextElement("cable");
@@ -118,7 +119,8 @@ void CableModeratorPlugin::Configure(const gz::sim::Entity& /*_entity*/,
     }
 
     if (cableElem->HasElement("cable_connection_1_link")) {
-      config.connection1LinkName = cableElem->Get<std::string>("cable_connection_1_link");
+      config.connection1LinkName =
+          cableElem->Get<std::string>("cable_connection_1_link");
     } else {
       gzerr << "Missing <cable_connection_1_link> parameter." << std::endl;
       cableElem = cableElem->GetNextElement("cable");
@@ -126,7 +128,8 @@ void CableModeratorPlugin::Configure(const gz::sim::Entity& /*_entity*/,
     }
 
     if (cableElem->HasElement("cable_connection_1_port")) {
-      config.connection1PortName = cableElem->Get<std::string>("cable_connection_1_port");
+      config.connection1PortName =
+          cableElem->Get<std::string>("cable_connection_1_port");
     } else {
       gzerr << "Missing <cable_connection_1_port> parameter." << std::endl;
       cableElem = cableElem->GetNextElement("cable");
@@ -159,11 +162,11 @@ void CableModeratorPlugin::Configure(const gz::sim::Entity& /*_entity*/,
   this->endEffectorOffset =
       _sdf->Get<math::Pose3d>("end_effector_offset", kEndEffectorOffset).first;
 
-  double delay = _sdf->Get<double>("create_connection_delay_s", 0.0).first;
-  this->createJointDelay = delay;
-
   if (_sdf->HasElement("grasp_distance_threshold")) {
-    this->graspDistanceThreshold = _sdf->Get<double>("grasp_distance_threshold", 0.006).first;
+    this->graspDistanceThreshold =
+        _sdf->Get<double>("grasp_distance_threshold",
+                          this->graspDistanceThreshold)
+            .first;
   }
 
   this->creator = std::make_unique<SdfEntityCreator>(_ecm, _eventManager);
@@ -176,32 +179,26 @@ void CableModeratorPlugin::Configure(const gz::sim::Entity& /*_entity*/,
 }
 
 //////////////////////////////////////////////////
-void CableModeratorPlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
-                            gz::sim::EntityComponentManager& _ecm) {
-  if (this->cableState == CableState::CABLE_REMOVED || this->cableState == CableState::COMPLETED)
-    return;
+void CableModeratorPlugin::PreUpdate(const gz::sim::UpdateInfo& /*_info*/,
+                                     gz::sim::EntityComponentManager& _ecm) {
+  if (this->cableState == CableState::COMPLETED) return;
 
   if (this->cableModels.empty()) {
-    if (!this->FindCableModels(_ecm))
-      return;
+    if (!this->FindCableModels(_ecm)) return;
   }
 
   if (this->endEffectorLinkEntity == kNullEntity) {
     this->endEffectorLinkEntity =
         findLinkInModel(this->endEffectorModelName, endEffectorLinkName, _ecm);
   }
-  if (this->endEffectorLinkEntity == kNullEntity)
-    return;
+  if (this->endEffectorLinkEntity == kNullEntity) return;
 
   if (this->cableState == CableState::HARNESS) {
     // Hold both connections of the cable in place
-    this->detachableJointStatic0Entity = this->MakeStatic(
-        this->cableConnection0LinkEntity, true, _ecm);
-    this->detachableJointStatic1Entity = this->MakeStatic(
-        this->cableConnection1LinkEntity, true, _ecm);
-
-    this->createJointDelayStartTime =
-        std::chrono::duration_cast<std::chrono::seconds>(_info.simTime).count();
+    this->detachableJointStatic0Entity =
+        this->MakeStatic(this->cableConnection0LinkEntity, true, _ecm);
+    this->detachableJointStatic1Entity =
+        this->MakeStatic(this->cableConnection1LinkEntity, true, _ecm);
 
     gzmsg << "Cable transitioning to WAITING_CONN_0 state." << std::endl;
     this->cableState = CableState::WAITING_CONN_0;
@@ -210,18 +207,21 @@ void CableModeratorPlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
   if (this->cableState == CableState::WAITING_CONN_0) {
     if (this->HandleGrasping(this->cableConnection0LinkEntity,
                              this->detachableJointStatic0Entity, _ecm)) {
-      gzmsg << "Cable transitioning to ATTACHED_TO_GRIPPER_CONN_0 state." << std::endl;
+      gzmsg << "Cable transitioning to ATTACHED_TO_GRIPPER_CONN_0 state."
+            << std::endl;
       this->cableState = CableState::ATTACHED_TO_GRIPPER_CONN_0;
     }
   }
 
   if (this->cableState == CableState::ATTACHED_TO_GRIPPER_CONN_0) {
     if (this->cableConnectionPortSubs.empty()) {
-      this->CreatePortSubscribers(this->cableConfigs[this->cableIndex - 1].connection0PortName);
+      this->CreatePortSubscribers(
+          this->cableConfigs[this->cableIndex - 1].connection0PortName);
     }
 
     if (this->attachCableConnectionToPort) {
-      gzmsg << "Cable transitioning to ATTACH_TO_PORT_CONN_0 state." << std::endl;
+      gzmsg << "Cable transitioning to ATTACH_TO_PORT_CONN_0 state."
+            << std::endl;
       this->cableState = CableState::ATTACH_TO_PORT_CONN_0;
     }
   }
@@ -230,13 +230,13 @@ void CableModeratorPlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
     this->cableConnectionPortSubs.clear();
     this->attachCableConnectionToPort = false;
     this->touchEventCallbackNamespace = std::nullopt;
-    if (this->detachableJointEntity != kNullEntity) {
-      _ecm.RequestRemoveEntity(this->detachableJointEntity);
-      this->detachableJointEntity = kNullEntity;
+    if (this->detachableJointGripperConnEntity != kNullEntity) {
+      _ecm.RequestRemoveEntity(this->detachableJointGripperConnEntity);
+      this->detachableJointGripperConnEntity = kNullEntity;
     }
 
-    this->detachableJointStatic0Entity = this->MakeStatic(
-        this->cableConnection0LinkEntity, true, _ecm);
+    this->detachableJointStatic0Entity =
+        this->MakeStatic(this->cableConnection0LinkEntity, true, _ecm);
 
     gzmsg << "Cable transitioning to WAITING_CONN_1 state." << std::endl;
     this->cableState = CableState::WAITING_CONN_1;
@@ -245,30 +245,33 @@ void CableModeratorPlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
   if (this->cableState == CableState::WAITING_CONN_1) {
     if (this->HandleGrasping(this->cableConnection1LinkEntity,
                              this->detachableJointStatic1Entity, _ecm)) {
-      gzmsg << "Cable transitioning to ATTACHED_TO_GRIPPER_CONN_1 state." << std::endl;
+      gzmsg << "Cable transitioning to ATTACHED_TO_GRIPPER_CONN_1 state."
+            << std::endl;
       this->cableState = CableState::ATTACHED_TO_GRIPPER_CONN_1;
     }
   }
 
   if (this->cableState == CableState::ATTACHED_TO_GRIPPER_CONN_1) {
     if (this->cableConnectionPortSubs.empty()) {
-      this->CreatePortSubscribers(this->cableConfigs[this->cableIndex - 1].connection1PortName);
+      this->CreatePortSubscribers(
+          this->cableConfigs[this->cableIndex - 1].connection1PortName);
     }
 
     if (this->attachCableConnectionToPort) {
-      gzmsg << "Cable transitioning to ATTACH_TO_PORT_CONN_1 state." << std::endl;
+      gzmsg << "Cable transitioning to ATTACH_TO_PORT_CONN_1 state."
+            << std::endl;
       this->cableState = CableState::ATTACH_TO_PORT_CONN_1;
     }
   }
 
   if (this->cableState == CableState::ATTACH_TO_PORT_CONN_1) {
-    if (this->detachableJointEntity != kNullEntity) {
-      _ecm.RequestRemoveEntity(this->detachableJointEntity);
-      this->detachableJointEntity = kNullEntity;
+    if (this->detachableJointGripperConnEntity != kNullEntity) {
+      _ecm.RequestRemoveEntity(this->detachableJointGripperConnEntity);
+      this->detachableJointGripperConnEntity = kNullEntity;
     }
 
-    this->detachableJointStatic1Entity = this->MakeStatic(
-        this->cableConnection1LinkEntity, true, _ecm);
+    this->detachableJointStatic1Entity =
+        this->MakeStatic(this->cableConnection1LinkEntity, true, _ecm);
 
     gzmsg << "Cable transitioning to NEXT_CABLE state." << std::endl;
     this->cableState = CableState::NEXT_CABLE;
@@ -281,10 +284,13 @@ void CableModeratorPlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
 
     if (this->cableIndex < this->cableModels.size()) {
       if (this->ToggleActiveCable(_ecm)) {
-        gzmsg << "Cable transitioning to HARNESS state for next cable." << std::endl;
+        gzmsg << "Cable transitioning to HARNESS state for next cable."
+              << std::endl;
         this->cableState = CableState::HARNESS;
       } else {
-        gzmsg << "Failed to toggle active cable. Transitioning to COMPLETED state." << std::endl;
+        gzmsg << "Failed to toggle active cable. Transitioning to COMPLETED "
+                 "state."
+              << std::endl;
         this->cableState = CableState::COMPLETED;
       }
     } else {
@@ -292,7 +298,8 @@ void CableModeratorPlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
       msg.set_data("all_cables_completed");
       this->taskCompletionPub.Publish(msg);
 
-      gzmsg << "All cables processed. Transitioning to COMPLETED state." << std::endl;
+      gzmsg << "All cables processed. Transitioning to COMPLETED state."
+            << std::endl;
       this->cableState = CableState::COMPLETED;
     }
   }
@@ -300,32 +307,17 @@ void CableModeratorPlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
 
 //////////////////////////////////////////////////
 void CableModeratorPlugin::Update(const gz::sim::UpdateInfo& /*_info*/,
-                         gz::sim::EntityComponentManager& /*_ecm*/) {}
+                                  gz::sim::EntityComponentManager& /*_ecm*/) {}
 
 //////////////////////////////////////////////////
-void CableModeratorPlugin::PostUpdate(const gz::sim::UpdateInfo& /*_info*/,
-                             const gz::sim::EntityComponentManager& /*_ecm*/) {}
+void CableModeratorPlugin::PostUpdate(
+    const gz::sim::UpdateInfo& /*_info*/,
+    const gz::sim::EntityComponentManager& /*_ecm*/) {}
 
 //////////////////////////////////////////////////
 void CableModeratorPlugin::Reset(const gz::sim::UpdateInfo& /*_info*/,
-                        gz::sim::EntityComponentManager& /*_ecm*/) {
+                                 gz::sim::EntityComponentManager& /*_ecm*/) {
   gzdbg << "aic_gazebo::CableModeratorPlugin::Reset" << std::endl;
-}
-
-//////////////////////////////////////////////////
-bool CableModeratorPlugin::IsModelValid(const gz::sim::EntityComponentManager& _ecm) {
-  // TODO(anyone) This function is currently unused, remove or use
-  bool modelValid = true;
-  _ecm.EachRemoved<components::Model>(
-      [&](const Entity& _entity, const components::Model*) -> bool {
-        if (_entity == this->cableModel.Entity()) {
-          modelValid = false;
-          return false;
-        }
-        return true;
-      });
-
-  return modelValid;
 }
 
 //////////////////////////////////////////////////
@@ -334,8 +326,8 @@ void CableModeratorPlugin::Cleanup(gz::sim::EntityComponentManager& _ecm) {
     _ecm.RequestRemoveEntity(this->detachableJointStatic0Entity);
   if (this->detachableJointStatic1Entity != kNullEntity)
     _ecm.RequestRemoveEntity(this->detachableJointStatic1Entity);
-  if (this->detachableJointEntity != kNullEntity)
-    _ecm.RequestRemoveEntity(this->detachableJointEntity);
+  if (this->detachableJointGripperConnEntity != kNullEntity)
+    _ecm.RequestRemoveEntity(this->detachableJointGripperConnEntity);
 
   for (const auto& ent : this->staticEntities) {
     if (ent != kNullEntity) {
@@ -348,8 +340,8 @@ void CableModeratorPlugin::Cleanup(gz::sim::EntityComponentManager& _ecm) {
 
 //////////////////////////////////////////////////
 Entity CableModeratorPlugin::MakeStatic(Entity _entity,
-                               bool _attachEntityAsParentOfJoint,
-                               EntityComponentManager& _ecm) {
+                                        bool _attachEntityAsParentOfJoint,
+                                        EntityComponentManager& _ecm) {
   Entity detachableJointEntity = kNullEntity;
 
   static sdf::Model staticModelToSpawn;
@@ -372,7 +364,7 @@ Entity CableModeratorPlugin::MakeStatic(Entity _entity,
     staticEntity = this->creator->CreateEntities(&staticModelToSpawn);
     this->staticEntities.insert(staticEntity);
     this->creator->SetParent(staticEntity,
-                        _ecm.EntityByComponents(components::World()));
+                             _ecm.EntityByComponents(components::World()));
   }
 
   Entity staticLinkEntity = _ecm.EntityByComponents(
@@ -402,26 +394,27 @@ Entity CableModeratorPlugin::MakeStatic(Entity _entity,
 }
 
 //////////////////////////////////////////////////
-bool CableModeratorPlugin::HandleGrasping(gz::sim::Entity _connectionLinkEntity,
-                                          gz::sim::Entity& _detachableJointStaticEntity,
-                                          gz::sim::EntityComponentManager& _ecm) {
+bool CableModeratorPlugin::HandleGrasping(
+    gz::sim::Entity _connectionLinkEntity,
+    gz::sim::Entity& _detachableJointStaticEntity,
+    gz::sim::EntityComponentManager& _ecm) {
   auto eeLinkWorldPose = gz::sim::worldPose(this->endEffectorLinkEntity, _ecm);
   auto eeLinkOffsetWorldPose = eeLinkWorldPose * this->endEffectorOffset;
   auto connPose = gz::sim::worldPose(_connectionLinkEntity, _ecm);
 
-  std::cerr <<  "====== grasp dis " << eeLinkOffsetWorldPose.Pos().Distance(connPose.Pos())  << std::endl;
-  if (eeLinkOffsetWorldPose.Pos().Distance(connPose.Pos()) < this->graspDistanceThreshold) {
+  if (eeLinkOffsetWorldPose.Pos().Distance(connPose.Pos()) <
+      this->graspDistanceThreshold) {
     // TODO(anyone) Add check for gripper joint state to make sure it is closed.
     if (_detachableJointStaticEntity != kNullEntity) {
       _ecm.RequestRemoveEntity(_detachableJointStaticEntity);
       _detachableJointStaticEntity = kNullEntity;
     }
 
-    this->detachableJointEntity = _ecm.CreateEntity();
-    _ecm.CreateComponent(this->detachableJointEntity,
-                         components::DetachableJoint(
-                             {this->endEffectorLinkEntity,
-                              _connectionLinkEntity, "fixed"}));
+    this->detachableJointGripperConnEntity = _ecm.CreateEntity();
+    _ecm.CreateComponent(
+        this->detachableJointGripperConnEntity,
+        components::DetachableJoint(
+            {this->endEffectorLinkEntity, _connectionLinkEntity, "fixed"}));
     return true;
   }
   return false;
@@ -430,22 +423,18 @@ bool CableModeratorPlugin::HandleGrasping(gz::sim::Entity _connectionLinkEntity,
 //////////////////////////////////////////////////
 bool CableModeratorPlugin::FindCableModels(
     const gz::sim::EntityComponentManager& _ecm) {
-
   for (const auto& config : this->cableConfigs) {
     auto entitiesMatchingName = entitiesFromScopedName(config.modelName, _ecm);
     Entity modelEntity{kNullEntity};
     if (entitiesMatchingName.size() == 1) {
       modelEntity = *entitiesMatchingName.begin();
       this->cableModels.push_back(modelEntity);
-      gzmsg << " ============================================ Found cable model: " << config.modelName << std::endl;
-    }
-     else {
+    } else {
       gzwarn << "Cable model " << config.modelName << " could not be found.\n";
     }
   }
 
-  if (this->cableModels.size() != this->cableConfigs.size())
-  {
+  if (this->cableModels.size() != this->cableConfigs.size()) {
     this->cableModels.clear();
     return false;
   }
@@ -460,21 +449,24 @@ void CableModeratorPlugin::CreatePortSubscribers(const std::string& _portName) {
   std::function<void(const msgs::Boolean&, const transport::MessageInfo&)>
       callback = [this](const msgs::Boolean& _msg,
                         const transport::MessageInfo& _info) {
-    size_t pos = _info.Topic().rfind("/");
-    // TODO(luca) If we only ever receive true boolean messages consider
-    // removing the atomic bool and only having the namespace as a std::optional
-    // TODO(luca) Protect the namespace with a mutex since it can't be atomic
-    // and it is set in a separate thread.
-    // TODO(luca) Check if we need the namespace at all, it is used to check if we
-    // plugged into the right port but this might be done by another plugin (scoring)
-    this->touchEventCallbackNamespace = _info.Topic().substr(0, pos);
-    this->attachCableConnectionToPort = _msg.data();
-    gzdbg << "Cable connection touched: " << _msg.data()
-          << ". Topic: " << _info.Topic() << std::endl;
-  };
+        size_t pos = _info.Topic().rfind("/");
+        // TODO(luca) If we only ever receive true boolean messages consider
+        // removing the atomic bool and only having the namespace as a
+        // std::optional
+        // TODO(luca) Protect the namespace with a mutex since it can't be
+        // atomic and it is set in a separate thread.
+        // TODO(luca) Check if we need the namespace at all, it is used to check
+        // if we plugged into the right port but this might be done by another
+        // plugin (scoring)
+        this->touchEventCallbackNamespace = _info.Topic().substr(0, pos);
+        this->attachCableConnectionToPort = _msg.data();
+        gzdbg << "Cable connection touched: " << _msg.data()
+              << ". Topic: " << _info.Topic() << std::endl;
+      };
 
   for (const auto& topic : allTopics) {
-    if (topic.find(_portName) != std::string::npos && topic.find("touched") != std::string::npos) {
+    if (topic.find(_portName) != std::string::npos &&
+        topic.find("touched") != std::string::npos) {
       this->cableConnectionPortSubs.emplace_back(
           this->node.CreateSubscriber(topic, callback));
     }
@@ -484,14 +476,11 @@ void CableModeratorPlugin::CreatePortSubscribers(const std::string& _portName) {
 //////////////////////////////////////////////////
 bool CableModeratorPlugin::ToggleActiveCable(
     const gz::sim::EntityComponentManager& _ecm) {
-
-  // TODO make prev cable static?
-
+  // TODO(anyone) make previous cable (including all links) static?
   this->cableModel = Model(this->cableModels[this->cableIndex]);
   const auto cableModelName = this->cableModel.Name(_ecm);
 
-  if (!this->cableModel.Valid(_ecm))
-    return false;
+  if (!this->cableModel.Valid(_ecm)) return false;
 
   const auto& config = this->cableConfigs[this->cableIndex];
 
@@ -509,6 +498,5 @@ bool CableModeratorPlugin::ToggleActiveCable(
 
   return true;
 }
-
 
 }  // namespace aic_gazebo
