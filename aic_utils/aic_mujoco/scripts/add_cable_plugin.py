@@ -416,9 +416,6 @@ def main():
         id_sc_plug = mujoco.mj_name2id(
             orig_model, mujoco.mjtObj.mjOBJ_BODY, "sc_plug_link"
         )  # pytype: disable=wrong-arg-types
-        id_lc_plug = mujoco.mj_name2id(
-            orig_model, mujoco.mjtObj.mjOBJ_BODY, "lc_plug_link"
-        )  # pytype: disable=wrong-arg-types
 
         is_reversed = (
             id_sc_plug != -1
