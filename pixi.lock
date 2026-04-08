@@ -300,7 +300,6 @@ environments:
       - conda: https://conda.anaconda.org/robostack-kilted/linux-64/ros-kilted-launch-yaml-3.8.7-np2py312h2ed9cc7_17.conda
       - conda: https://conda.anaconda.org/robostack-kilted/linux-64/ros-kilted-libstatistics-collector-2.0.1-np2py312h2ed9cc7_17.conda
       - conda: https://conda.anaconda.org/robostack-kilted/linux-64/ros-kilted-libyaml-vendor-1.7.1-np2py312h2ed9cc7_17.conda
-      - conda: https://conda.anaconda.org/robostack-kilted/linux-64/ros-kilted-lifecycle-0.36.4-np2py312h2ed9cc7_17.conda
       - conda: https://conda.anaconda.org/robostack-kilted/linux-64/ros-kilted-lifecycle-msgs-2.3.1-np2py312h2ed9cc7_17.conda
       - conda: https://conda.anaconda.org/robostack-kilted/linux-64/ros-kilted-message-filters-7.1.6-np2py312h2ed9cc7_17.conda
       - conda: https://conda.anaconda.org/robostack-kilted/linux-64/ros-kilted-moveit-msgs-2.7.1-np2py312h2ed9cc7_17.conda
@@ -823,7 +822,6 @@ environments:
       - conda: https://conda.anaconda.org/robostack-kilted/osx-arm64/ros-kilted-launch-yaml-3.8.7-np2py312h50b1e4c_17.conda
       - conda: https://conda.anaconda.org/robostack-kilted/osx-arm64/ros-kilted-libstatistics-collector-2.0.1-np2py312h50b1e4c_17.conda
       - conda: https://conda.anaconda.org/robostack-kilted/osx-arm64/ros-kilted-libyaml-vendor-1.7.1-np2py312h50b1e4c_17.conda
-      - conda: https://conda.anaconda.org/robostack-kilted/osx-arm64/ros-kilted-lifecycle-0.36.4-np2py312h50b1e4c_17.conda
       - conda: https://conda.anaconda.org/robostack-kilted/osx-arm64/ros-kilted-lifecycle-msgs-2.3.1-np2py312h50b1e4c_17.conda
       - conda: https://conda.anaconda.org/robostack-kilted/osx-arm64/ros-kilted-message-filters-7.1.6-np2py312h50b1e4c_17.conda
       - conda: https://conda.anaconda.org/robostack-kilted/osx-arm64/ros-kilted-moveit-msgs-2.7.1-np2py312h50b1e4c_17.conda
@@ -8043,7 +8041,6 @@ packages:
   - ros-kilted-aic-model-interfaces
   - ros-kilted-aic-task-interfaces
   - ros-kilted-geometry-msgs
-  - ros-kilted-lifecycle
   - ros-kilted-lifecycle-msgs
   - ros-kilted-rclpy
   - ros-kilted-sensor-msgs
@@ -8068,7 +8065,6 @@ packages:
   - ros-kilted-aic-model-interfaces
   - ros-kilted-aic-task-interfaces
   - ros-kilted-geometry-msgs
-  - ros-kilted-lifecycle
   - ros-kilted-lifecycle-msgs
   - ros-kilted-rclpy
   - ros-kilted-sensor-msgs
@@ -10797,45 +10793,6 @@ packages:
   license: Apache-2.0 OR MIT
   size: 30262
   timestamp: 1775549586919
-- conda: https://conda.anaconda.org/robostack-kilted/linux-64/ros-kilted-lifecycle-0.36.4-np2py312h2ed9cc7_17.conda
-  sha256: 872c9bbde16df09911f8e6abc8e3a9e43218074a04fff099b5ad3fe301f2b6b0
-  md5: 6f307eb947719e83edfaeb1509954abf
-  depends:
-  - python
-  - ros-kilted-lifecycle-msgs
-  - ros-kilted-rclcpp
-  - ros-kilted-rclcpp-lifecycle
-  - ros-kilted-ros-workspace
-  - ros-kilted-std-msgs
-  - ros2-distro-mutex 0.14.* kilted_*
-  - libstdcxx >=14
-  - libgcc >=14
-  - __glibc >=2.17,<3.0.a0
-  - ros2-distro-mutex >=0.14.0,<0.15.0a0
-  - python_abi 3.12.* *_cp312
-  - numpy >=1.23,<3
-  license: Apache-2.0
-  size: 265480
-  timestamp: 1775602790653
-- conda: https://conda.anaconda.org/robostack-kilted/osx-arm64/ros-kilted-lifecycle-0.36.4-np2py312h50b1e4c_17.conda
-  sha256: fce05aeca191f61aeb0e744ac5fc8b08a74ce70a3f39bd95338f899868e68af3
-  md5: f970340c1c83d6677fd5e23407e9d189
-  depends:
-  - python
-  - ros-kilted-lifecycle-msgs
-  - ros-kilted-rclcpp
-  - ros-kilted-rclcpp-lifecycle
-  - ros-kilted-ros-workspace
-  - ros-kilted-std-msgs
-  - ros2-distro-mutex 0.14.* kilted_*
-  - __osx >=11.0
-  - libcxx >=18
-  - ros2-distro-mutex >=0.14.0,<0.15.0a0
-  - numpy >=1.23,<3
-  - python_abi 3.12.* *_cp312
-  license: Apache-2.0
-  size: 197450
-  timestamp: 1775558615623
 - conda: https://conda.anaconda.org/robostack-kilted/linux-64/ros-kilted-lifecycle-msgs-2.3.1-np2py312h2ed9cc7_17.conda
   sha256: 7a4582125f61223c5e21ee609007c715c4c7d7a9df4c21ba83394ca53f1b6557
   md5: d3d5b0255c46ffc6e82b2b55e6a1d252
