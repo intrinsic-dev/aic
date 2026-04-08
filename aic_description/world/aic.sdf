@@ -107,7 +107,7 @@
       name="gz::sim::systems::Sensors">
       <render_engine>ogre2</render_engine>
       <global_illumination type="vct">
-        <enabled>false</enabled>
+        <enabled>true</enabled>
         <resolution>256 256 256</resolution>
         <octant_count>1 1 1</octant_count>
         <bounce_count>3</bounce_count>
@@ -232,19 +232,6 @@
       <pose>0.172 0.024 1.518 0.4432 -0.48 1.3303</pose>
       <static>false</static>
       <self_collide>true</self_collide>
-      <plugin filename="libgz-sim-pose-publisher-system.so"
-        name="gz::sim::systems::PosePublisher">
-        <publish_link_pose>true</publish_link_pose>
-        <publish_sensor_pose>false</publish_sensor_pose>
-        <publish_collision_pose>false</publish_collision_pose>
-        <publish_visual_pose>false</publish_visual_pose>
-        <publish_nested_model_pose>true</publish_nested_model_pose>
-        <publish_model_pose>true</publish_model_pose>
-        <use_pose_vector_msg>true</use_pose_vector_msg>
-        <static_publisher>false</static_publisher>
-        <update_frequency>0</update_frequency>
-        <static_update_frequency>0</static_update_frequency>
-      </plugin>
       <include merge="true">
         <uri>model://sfp_sc_cable</uri>
       </include>
