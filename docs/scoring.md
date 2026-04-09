@@ -1,6 +1,8 @@
 # Scoring
 
-Each trial is scored using a tiered scoring system. Scores are cumulated across all trials.
+Each trial is scored using a tiered scoring system that sums up to 100 points.
+There are 3 trials in the Qualification phase so the maximum score for a
+submission is 300 points.
 
 ## Scoring Tiers Overview
 
