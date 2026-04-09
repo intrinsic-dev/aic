@@ -6,7 +6,7 @@ services:
     build:
       dockerfile: docker/aic_eval/Dockerfile
       context: ..
-    command: gazebo_gui:=false launch_rviz:=false ground_truth:=false start_aic_engine:=true shutdown_on_aic_engine_exit:=true
+    command: gazebo_gui:=false launch_rviz:=false ground_truth:=false start_aic_engine:=true shutdown_on_aic_engine_exit:=true model_discovery_timeout_seconds:=600
     gpus: all
     networks:
       - default

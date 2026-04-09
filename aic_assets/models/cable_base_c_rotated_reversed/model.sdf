@@ -7,12 +7,12 @@
         <pose>0 0 0 0 0 0</pose>
         <mass>0.0025000000000000001</mass>
         <inertia>
-          <ixx>0.01</ixx>
+          <ixx>1e-03</ixx>
           <ixy>0</ixy>
           <ixz>0</ixz>
-          <iyy>0.01</iyy>
+          <iyy>1e-03</iyy>
           <iyz>0</iyz>
-          <izz>0.01</izz>
+          <izz>1e-03</izz>
         </inertia>
       </inertial>
       <collision name='base_collision'>
@@ -22,6 +22,17 @@
             <radius>0.002</radius>
           </sphere>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.05</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.05</friction>
+              <friction2>0.05</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <visual name='base_vis'>
         <pose>0 0 0 0 0 0</pose>
@@ -71,12 +82,12 @@
         <pose>0 0 0 0 0 0</pose>
         <mass>0.0025000000000000001</mass>
         <inertia>
-          <ixx>0.01</ixx>
+          <ixx>1e-03</ixx>
           <ixy>0</ixy>
           <ixz>0</ixz>
-          <iyy>0.01</iyy>
+          <iyy>1e-03</iyy>
           <iyz>0</iyz>
-          <izz>0.01</izz>
+          <izz>1e-03</izz>
         </inertia>
       </inertial>
       <collision name='link_1_collision'>
@@ -87,6 +98,17 @@
             <radius>0.002</radius>
           </cylinder>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.05</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.05</friction>
+              <friction2>0.05</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <visual name='link_1_vis'>
         <pose>0 0 0 0 0 0</pose>
@@ -114,6 +136,17 @@
             <radius>0.002</radius>
           </sphere>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.05</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.05</friction>
+              <friction2>0.05</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <visual name='sphere_1_vis'>
         <pose>0 0 0.024 0 0 0</pose>
@@ -141,12 +174,12 @@
         <pose>0 0 0 0 0 0</pose>
         <mass>0.0025000000000000001</mass>
         <inertia>
-          <ixx>0.01</ixx>
+          <ixx>1e-03</ixx>
           <ixy>0</ixy>
           <ixz>0</ixz>
-          <iyy>0.01</iyy>
+          <iyy>1e-03</iyy>
           <iyz>0</iyz>
-          <izz>0.01</izz>
+          <izz>1e-03</izz>
         </inertia>
       </inertial>
       <collision name='link_2_collision'>
@@ -157,6 +190,17 @@
             <radius>0.002</radius>
           </cylinder>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.05</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.05</friction>
+              <friction2>0.05</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <visual name='link_2_vis'>
         <pose>0 0 0 0 0 0</pose>
@@ -184,6 +228,17 @@
             <radius>0.002</radius>
           </sphere>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.05</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.05</friction>
+              <friction2>0.05</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <visual name='sphere_2_vis'>
         <pose>0 0 0.024 0 0 0</pose>
@@ -211,12 +266,12 @@
         <pose>0 0 0 0 0 0</pose>
         <mass>0.0025000000000000001</mass>
         <inertia>
-          <ixx>0.01</ixx>
+          <ixx>1e-03</ixx>
           <ixy>0</ixy>
           <ixz>0</ixz>
-          <iyy>0.01</iyy>
+          <iyy>1e-03</iyy>
           <iyz>0</iyz>
-          <izz>0.01</izz>
+          <izz>1e-03</izz>
         </inertia>
       </inertial>
       <collision name='link_3_collision'>
@@ -227,6 +282,17 @@
             <radius>0.002</radius>
           </cylinder>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.05</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.05</friction>
+              <friction2>0.05</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <visual name='link_3_vis'>
         <pose>0 0 0 0 0 0</pose>
@@ -254,6 +320,17 @@
             <radius>0.002</radius>
           </sphere>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.05</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.05</friction>
+              <friction2>0.05</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <visual name='sphere_3_vis'>
         <pose>0 0 0.024 0 0 0</pose>
@@ -281,12 +358,12 @@
         <pose>0 0 0 0 0 0</pose>
         <mass>0.0025000000000000001</mass>
         <inertia>
-          <ixx>0.01</ixx>
+          <ixx>1e-03</ixx>
           <ixy>0</ixy>
           <ixz>0</ixz>
-          <iyy>0.01</iyy>
+          <iyy>1e-03</iyy>
           <iyz>0</iyz>
-          <izz>0.01</izz>
+          <izz>1e-03</izz>
         </inertia>
       </inertial>
       <collision name='link_4_collision'>
@@ -297,6 +374,17 @@
             <radius>0.002</radius>
           </cylinder>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.05</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.05</friction>
+              <friction2>0.05</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <visual name='link_4_vis'>
         <pose>0 0 0 0 0 0</pose>
@@ -324,6 +412,17 @@
             <radius>0.002</radius>
           </sphere>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.05</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.05</friction>
+              <friction2>0.05</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <visual name='sphere_4_vis'>
         <pose>0 0 0.024 0 0 0</pose>
@@ -351,12 +450,12 @@
         <pose>0 0 0 0 0 0</pose>
         <mass>0.0025000000000000001</mass>
         <inertia>
-          <ixx>0.01</ixx>
+          <ixx>1e-03</ixx>
           <ixy>0</ixy>
           <ixz>0</ixz>
-          <iyy>0.01</iyy>
+          <iyy>1e-03</iyy>
           <iyz>0</iyz>
-          <izz>0.01</izz>
+          <izz>1e-03</izz>
         </inertia>
       </inertial>
       <collision name='link_5_collision'>
@@ -367,6 +466,17 @@
             <radius>0.002</radius>
           </cylinder>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.05</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.05</friction>
+              <friction2>0.05</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <visual name='link_5_vis'>
         <pose>0 0 0 0 0 0</pose>
@@ -394,6 +504,17 @@
             <radius>0.002</radius>
           </sphere>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.05</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.05</friction>
+              <friction2>0.05</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <visual name='sphere_5_vis'>
         <pose>0 0 0.024 0 0 0</pose>
@@ -421,12 +542,12 @@
         <pose>0 0 0 0 0 0</pose>
         <mass>0.0025000000000000001</mass>
         <inertia>
-          <ixx>0.01</ixx>
+          <ixx>1e-03</ixx>
           <ixy>0</ixy>
           <ixz>0</ixz>
-          <iyy>0.01</iyy>
+          <iyy>1e-03</iyy>
           <iyz>0</iyz>
-          <izz>0.01</izz>
+          <izz>1e-03</izz>
         </inertia>
       </inertial>
       <collision name='link_6_collision'>
@@ -437,6 +558,17 @@
             <radius>0.002</radius>
           </cylinder>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.05</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.05</friction>
+              <friction2>0.05</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <visual name='link_6_vis'>
         <pose>0 0 0 0 0 0</pose>
@@ -464,6 +596,17 @@
             <radius>0.002</radius>
           </sphere>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.05</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.05</friction>
+              <friction2>0.05</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <visual name='sphere_6_vis'>
         <pose>0 0 0.024 0 0 0</pose>
@@ -491,12 +634,12 @@
         <pose>0 0 0 0 0 0</pose>
         <mass>0.0025000000000000001</mass>
         <inertia>
-          <ixx>0.01</ixx>
+          <ixx>1e-03</ixx>
           <ixy>0</ixy>
           <ixz>0</ixz>
-          <iyy>0.01</iyy>
+          <iyy>1e-03</iyy>
           <iyz>0</iyz>
-          <izz>0.01</izz>
+          <izz>1e-03</izz>
         </inertia>
       </inertial>
       <collision name='link_7_collision'>
@@ -507,6 +650,17 @@
             <radius>0.002</radius>
           </cylinder>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.05</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.05</friction>
+              <friction2>0.05</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <visual name='link_7_vis'>
         <pose>0 0 0 0 0 0</pose>
@@ -534,6 +688,17 @@
             <radius>0.002</radius>
           </sphere>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.05</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.05</friction>
+              <friction2>0.05</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <visual name='sphere_7_vis'>
         <pose>0 0 0.024 0 0 0</pose>
@@ -561,12 +726,12 @@
         <pose>0 0 0 0 0 0</pose>
         <mass>0.0025000000000000001</mass>
         <inertia>
-          <ixx>0.01</ixx>
+          <ixx>1e-03</ixx>
           <ixy>0</ixy>
           <ixz>0</ixz>
-          <iyy>0.01</iyy>
+          <iyy>1e-03</iyy>
           <iyz>0</iyz>
-          <izz>0.01</izz>
+          <izz>1e-03</izz>
         </inertia>
       </inertial>
       <collision name='link_8_collision'>
@@ -577,6 +742,17 @@
             <radius>0.002</radius>
           </cylinder>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.05</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.05</friction>
+              <friction2>0.05</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <visual name='link_8_vis'>
         <pose>0 0 0 0 0 0</pose>
@@ -604,6 +780,17 @@
             <radius>0.002</radius>
           </sphere>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.05</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.05</friction>
+              <friction2>0.05</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <visual name='sphere_8_vis'>
         <pose>0 0 0.024 0 0 0</pose>
@@ -631,12 +818,12 @@
         <pose>0 0 0 0 0 0</pose>
         <mass>0.0025000000000000001</mass>
         <inertia>
-          <ixx>0.01</ixx>
+          <ixx>1e-03</ixx>
           <ixy>0</ixy>
           <ixz>0</ixz>
-          <iyy>0.01</iyy>
+          <iyy>1e-03</iyy>
           <iyz>0</iyz>
-          <izz>0.01</izz>
+          <izz>1e-03</izz>
         </inertia>
       </inertial>
       <collision name='link_9_collision'>
@@ -647,6 +834,17 @@
             <radius>0.002</radius>
           </cylinder>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.05</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.05</friction>
+              <friction2>0.05</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <visual name='link_9_vis'>
         <pose>0 0 0 0 0 0</pose>
@@ -674,6 +872,17 @@
             <radius>0.002</radius>
           </sphere>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.05</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.05</friction>
+              <friction2>0.05</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <visual name='sphere_9_vis'>
         <pose>0 0 0.024 0 0 0</pose>
@@ -701,12 +910,12 @@
         <pose>0 0 0 0 0 0</pose>
         <mass>0.0025000000000000001</mass>
         <inertia>
-          <ixx>0.01</ixx>
+          <ixx>1e-03</ixx>
           <ixy>0</ixy>
           <ixz>0</ixz>
-          <iyy>0.01</iyy>
+          <iyy>1e-03</iyy>
           <iyz>0</iyz>
-          <izz>0.01</izz>
+          <izz>1e-03</izz>
         </inertia>
       </inertial>
       <collision name='link_10_collision'>
@@ -717,6 +926,17 @@
             <radius>0.002</radius>
           </cylinder>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.05</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.05</friction>
+              <friction2>0.05</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <visual name='link_10_vis'>
         <pose>0 0 0 0 0 0</pose>
@@ -744,6 +964,17 @@
             <radius>0.002</radius>
           </sphere>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.05</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.05</friction>
+              <friction2>0.05</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <visual name='sphere_10_vis'>
         <pose>0 0 0.024 0 0 0</pose>
@@ -771,12 +1002,12 @@
         <pose>0 0 0 0 0 0</pose>
         <mass>0.0025000000000000001</mass>
         <inertia>
-          <ixx>0.01</ixx>
+          <ixx>1e-03</ixx>
           <ixy>0</ixy>
           <ixz>0</ixz>
-          <iyy>0.01</iyy>
+          <iyy>1e-03</iyy>
           <iyz>0</iyz>
-          <izz>0.01</izz>
+          <izz>1e-03</izz>
         </inertia>
       </inertial>
       <collision name='link_11_collision'>
@@ -787,6 +1018,17 @@
             <radius>0.002</radius>
           </cylinder>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.05</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.05</friction>
+              <friction2>0.05</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <visual name='link_11_vis'>
         <pose>0 0 0 0 0 0</pose>
@@ -814,6 +1056,17 @@
             <radius>0.002</radius>
           </sphere>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.05</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.05</friction>
+              <friction2>0.05</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <visual name='sphere_11_vis'>
         <pose>0 0 0.024 0 0 0</pose>
@@ -841,12 +1094,12 @@
         <pose>0 0 0 0 0 0</pose>
         <mass>0.0025000000000000001</mass>
         <inertia>
-          <ixx>0.01</ixx>
+          <ixx>1e-03</ixx>
           <ixy>0</ixy>
           <ixz>0</ixz>
-          <iyy>0.01</iyy>
+          <iyy>1e-03</iyy>
           <iyz>0</iyz>
-          <izz>0.01</izz>
+          <izz>1e-03</izz>
         </inertia>
       </inertial>
       <collision name='link_12_collision'>
@@ -857,6 +1110,17 @@
             <radius>0.002</radius>
           </cylinder>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.05</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.05</friction>
+              <friction2>0.05</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <visual name='link_12_vis'>
         <pose>0 0 0 0 0 0</pose>
@@ -884,6 +1148,17 @@
             <radius>0.002</radius>
           </sphere>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.05</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.05</friction>
+              <friction2>0.05</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <visual name='sphere_12_vis'>
         <pose>0 0 0.024 0 0 0</pose>
@@ -911,12 +1186,12 @@
         <pose>0 0 0 0 0 0</pose>
         <mass>0.0025000000000000001</mass>
         <inertia>
-          <ixx>0.01</ixx>
+          <ixx>1e-03</ixx>
           <ixy>0</ixy>
           <ixz>0</ixz>
-          <iyy>0.01</iyy>
+          <iyy>1e-03</iyy>
           <iyz>0</iyz>
-          <izz>0.01</izz>
+          <izz>1e-03</izz>
         </inertia>
       </inertial>
       <collision name='link_13_collision'>
@@ -927,6 +1202,17 @@
             <radius>0.002</radius>
           </cylinder>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.05</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.05</friction>
+              <friction2>0.05</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <visual name='link_13_vis'>
         <pose>0 0 0 0 0 0</pose>
@@ -954,6 +1240,17 @@
             <radius>0.002</radius>
           </sphere>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.05</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.05</friction>
+              <friction2>0.05</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <visual name='sphere_13_vis'>
         <pose>0 0 0.024 0 0 0</pose>
@@ -981,12 +1278,12 @@
         <pose>0 0 0 0 0 0</pose>
         <mass>0.0025000000000000001</mass>
         <inertia>
-          <ixx>0.01</ixx>
+          <ixx>1e-03</ixx>
           <ixy>0</ixy>
           <ixz>0</ixz>
-          <iyy>0.01</iyy>
+          <iyy>1e-03</iyy>
           <iyz>0</iyz>
-          <izz>0.01</izz>
+          <izz>1e-03</izz>
         </inertia>
       </inertial>
       <collision name='link_14_collision'>
@@ -997,6 +1294,17 @@
             <radius>0.002</radius>
           </cylinder>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.05</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.05</friction>
+              <friction2>0.05</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <visual name='link_14_vis'>
         <pose>0 0 0 0 0 0</pose>
@@ -1024,6 +1332,17 @@
             <radius>0.002</radius>
           </sphere>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.05</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.05</friction>
+              <friction2>0.05</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <visual name='sphere_14_vis'>
         <pose>0 0 0.024 0 0 0</pose>
@@ -1051,12 +1370,12 @@
         <pose>0 0 0 0 0 0</pose>
         <mass>0.0025000000000000001</mass>
         <inertia>
-          <ixx>0.01</ixx>
+          <ixx>1e-03</ixx>
           <ixy>0</ixy>
           <ixz>0</ixz>
-          <iyy>0.01</iyy>
+          <iyy>1e-03</iyy>
           <iyz>0</iyz>
-          <izz>0.01</izz>
+          <izz>1e-03</izz>
         </inertia>
       </inertial>
       <collision name='link_15_collision'>
@@ -1067,6 +1386,17 @@
             <radius>0.002</radius>
           </cylinder>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.05</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.05</friction>
+              <friction2>0.05</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <visual name='link_15_vis'>
         <pose>0 0 0 0 0 0</pose>
@@ -1094,6 +1424,17 @@
             <radius>0.002</radius>
           </sphere>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.05</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.05</friction>
+              <friction2>0.05</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <visual name='sphere_15_vis'>
         <pose>0 0 0.024 0 0 0</pose>
@@ -1121,12 +1462,12 @@
         <pose>0 0 0 0 0 0</pose>
         <mass>0.0025000000000000001</mass>
         <inertia>
-          <ixx>0.01</ixx>
+          <ixx>1e-03</ixx>
           <ixy>0</ixy>
           <ixz>0</ixz>
-          <iyy>0.01</iyy>
+          <iyy>1e-03</iyy>
           <iyz>0</iyz>
-          <izz>0.01</izz>
+          <izz>1e-03</izz>
         </inertia>
       </inertial>
       <collision name='link_16_collision'>
@@ -1137,6 +1478,17 @@
             <radius>0.002</radius>
           </cylinder>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.05</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.05</friction>
+              <friction2>0.05</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <visual name='link_16_vis'>
         <pose>0 0 0 0 0 0</pose>
@@ -1164,6 +1516,17 @@
             <radius>0.002</radius>
           </sphere>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.05</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.05</friction>
+              <friction2>0.05</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <visual name='sphere_16_vis'>
         <pose>0 0 0.024 0 0 0</pose>
@@ -1191,12 +1554,12 @@
         <pose>0 0 0 0 0 0</pose>
         <mass>0.0025000000000000001</mass>
         <inertia>
-          <ixx>0.01</ixx>
+          <ixx>1e-03</ixx>
           <ixy>0</ixy>
           <ixz>0</ixz>
-          <iyy>0.01</iyy>
+          <iyy>1e-03</iyy>
           <iyz>0</iyz>
-          <izz>0.01</izz>
+          <izz>1e-03</izz>
         </inertia>
       </inertial>
       <collision name='link_17_collision'>
@@ -1207,6 +1570,17 @@
             <radius>0.002</radius>
           </cylinder>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.05</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.05</friction>
+              <friction2>0.05</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <visual name='link_17_vis'>
         <pose>0 0 0 0 0 0</pose>
@@ -1234,6 +1608,17 @@
             <radius>0.002</radius>
           </sphere>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.05</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.05</friction>
+              <friction2>0.05</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <visual name='sphere_17_vis'>
         <pose>0 0 0.024 0 0 0</pose>
@@ -1261,12 +1646,12 @@
         <pose>0 0 0 0 0 0</pose>
         <mass>0.0025000000000000001</mass>
         <inertia>
-          <ixx>0.01</ixx>
+          <ixx>1e-03</ixx>
           <ixy>0</ixy>
           <ixz>0</ixz>
-          <iyy>0.01</iyy>
+          <iyy>1e-03</iyy>
           <iyz>0</iyz>
-          <izz>0.01</izz>
+          <izz>1e-03</izz>
         </inertia>
       </inertial>
       <collision name='link_18_collision'>
@@ -1277,6 +1662,17 @@
             <radius>0.002</radius>
           </cylinder>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.05</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.05</friction>
+              <friction2>0.05</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <visual name='link_18_vis'>
         <pose>0 0 0 0 0 0</pose>
@@ -1304,6 +1700,17 @@
             <radius>0.002</radius>
           </sphere>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.05</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.05</friction>
+              <friction2>0.05</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <visual name='sphere_18_vis'>
         <pose>0 0 0.024 0 0 0</pose>
@@ -1331,12 +1738,12 @@
         <pose>0 0 0 0 0 0</pose>
         <mass>0.0025000000000000001</mass>
         <inertia>
-          <ixx>0.01</ixx>
+          <ixx>1e-03</ixx>
           <ixy>0</ixy>
           <ixz>0</ixz>
-          <iyy>0.01</iyy>
+          <iyy>1e-03</iyy>
           <iyz>0</iyz>
-          <izz>0.01</izz>
+          <izz>1e-03</izz>
         </inertia>
       </inertial>
       <collision name='link_19_collision'>
@@ -1347,6 +1754,17 @@
             <radius>0.002</radius>
           </cylinder>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.05</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.05</friction>
+              <friction2>0.05</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <visual name='link_19_vis'>
         <pose>0 0 0 0 0 0</pose>
@@ -1374,6 +1792,17 @@
             <radius>0.002</radius>
           </sphere>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.05</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.05</friction>
+              <friction2>0.05</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <visual name='sphere_19_vis'>
         <pose>0 0 0.024 0 0 0</pose>
@@ -1401,12 +1830,12 @@
         <pose>0 0 0 0 0 0</pose>
         <mass>0.0025000000000000001</mass>
         <inertia>
-          <ixx>0.01</ixx>
+          <ixx>1e-03</ixx>
           <ixy>0</ixy>
           <ixz>0</ixz>
-          <iyy>0.01</iyy>
+          <iyy>1e-03</iyy>
           <iyz>0</iyz>
-          <izz>0.01</izz>
+          <izz>1e-03</izz>
         </inertia>
       </inertial>
       <collision name='link_20_collision'>
@@ -1417,6 +1846,17 @@
             <radius>0.002</radius>
           </cylinder>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.05</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.05</friction>
+              <friction2>0.05</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <visual name='link_20_vis'>
         <pose>0 0 0 0 0 0</pose>
@@ -1444,6 +1884,17 @@
             <radius>0.002</radius>
           </sphere>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.05</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.05</friction>
+              <friction2>0.05</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <visual name='sphere_20_vis'>
         <pose>0 0 0.024 0 0 0</pose>
@@ -1905,6 +2356,17 @@
             <length>0.007352720584926371</length>
           </cylinder>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.05</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.05</friction>
+              <friction2>0.05</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <visual name='visual_0'>
         <pose>-0.0036763602924631857 0.00425 0 0.6162969373960713 1.57079 0</pose>
@@ -1933,6 +2395,17 @@
             <length>0.007352720584926371</length>
           </cylinder>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.05</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.05</friction>
+              <friction2>0.05</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <visual name='visual_1'>
         <pose>-0.0036763602924631857 -0.00425 0 -0.6162969373960713 1.57079 0</pose>
@@ -1977,6 +2450,17 @@
             <length>0.0036055512754639895</length>
           </cylinder>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.05</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.05</friction>
+              <friction2>0.05</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <visual name='visual_0'>
         <pose>0.0018027756377319948 -0.002 0 0.5880026035475675 1.57079 0</pose>
@@ -2005,6 +2489,17 @@
             <length>0.0036055512754639895</length>
           </cylinder>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.05</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.05</friction>
+              <friction2>0.05</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <visual name='visual_1'>
         <pose>0.0018027756377319948 0.002 0 -0.5880026035475675 1.57079 0</pose>

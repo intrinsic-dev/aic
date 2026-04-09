@@ -13,7 +13,7 @@ evdev = ">=1.9.2,<2"
 [dependencies]
 isort = "==5.13.2"                                                                     # version bundled by the vscode extension
 json5 = ">=0.13.0,<0.14"                                                               # version bundled by the vscode extension
-opencv = "<4.13.0"
+numpy = "<2.3.0"
 packaging = ">=24.2,<26.0"                                                             # required by lerobot==0.4.3
 pyright = "==1.1.408"
 ros-kilted-aic-control-interfaces = { path = "aic_interfaces/aic_control_interfaces" }
@@ -36,10 +36,10 @@ ros-kilted-tf2-ros-py = "*"
 setuptools = ">=71.0.0,<81.0.0"                                                        # required by lerobot==0.4.3
 
 [pypi-dependencies]
-huggingface-hub = { version = "==0.35.3", extras = ["hf-transfer", "cli"] }
-lerobot = "==0.4.3"
-lerobot_robot_ros = { git = "https://github.com/koonpeng/lerobot-ros", rev = "b4a635fc5264266bd1575f07d54be3d4bbd620e0", subdirectory = "lerobot_robot_ros" }
-lerobot_teleoperator_devices = { git = "https://github.com/koonpeng/lerobot-ros", rev = "b4a635fc5264266bd1575f07d54be3d4bbd620e0", subdirectory = "lerobot_teleoperator_devices" }
+huggingface-hub = { version = "~=1.7" }
+lerobot = "==0.5.1"
+lerobot_robot_ros = { git = "https://github.com/koonpeng/lerobot-ros", rev = "87708d0ae14a724bca78f8ae9d55448332509a57", subdirectory = "lerobot_robot_ros" }
+lerobot_teleoperator_devices = { git = "https://github.com/koonpeng/lerobot-ros", rev = "87708d0ae14a724bca78f8ae9d55448332509a57", subdirectory = "lerobot_teleoperator_devices" }
 mujoco = "==3.5.0"
 pynput = ">=1.7.6,<2"
 pyspacemouse = ">=2.0.0, <3"

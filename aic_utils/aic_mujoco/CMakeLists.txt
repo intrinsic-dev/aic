@@ -8,7 +8,7 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 
-# Install launch files
+# Install launch files and MJCF models
 install(DIRECTORY
   launch mjcf
   DESTINATION share/${PROJECT_NAME}/
@@ -19,6 +19,7 @@ install(PROGRAMS
   scripts/add_cable_plugin.py
   scripts/view_scene.py
   scripts/load_aic_world.py
+  scripts/sim_comparison_test.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

@@ -58,8 +58,8 @@ sudo apt install -y python3-sdformat16 python3-gz-math9
 Verify the bindings are importable:
 
 ```bash
-python3 -c "import sdformat16; print('sdformat OK')"
-python3 -c "from gz.math9 import Vector3d; print('gz.math OK')"
+python3 -c "import sdformat; print('sdformat OK')"
+python3 -c "from gz.math import Vector3d; print('gz.math OK')"
 ```
 
 #### 2. Build the Converter
