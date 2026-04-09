@@ -312,7 +312,7 @@ Engine::Engine(const rclcpp::NodeOptions& options)
   skip_ready_simulator_ =
       node_->declare_parameter("skip_ready_simulator", false);
   node_->declare_parameter("model_discovery_timeout_seconds", 30);
-  node_->declare_parameter("model_configure_timeout_seconds", 60);
+  node_->declare_parameter("model_configure_timeout_seconds", 90);
   node_->declare_parameter("model_activate_timeout_seconds", 60);
   node_->declare_parameter("model_deactivate_timeout_seconds", 60);
   node_->declare_parameter("model_cleanup_timeout_seconds", 60);

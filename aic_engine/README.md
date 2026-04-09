@@ -59,7 +59,7 @@ ros2 run aic_engine aic_engine --ros-args \
   -p ground_truth:=false \
   -p endpoint_ready_timeout_seconds:=10 \
   -p model_discovery_timeout_seconds:=30 \
-  -p model_configuration_timeout_seconds:=60
+  -p model_configure_timeout_seconds:=90
   -p use_sim_time:=true
 ```
 
@@ -76,7 +76,7 @@ ros2 run aic_engine aic_engine --ros-args \
 | `skip_ready_simulator` | bool | false | Skip simulator readiness and entity spawning/deletion (for testing only) |
 | `endpoint_ready_timeout_seconds` | int | 10 | Timeout for waiting for required endpoints |
 | `model_discovery_timeout_seconds` | int | 30 | Timeout for discovering the participant model |
-| `model_configure_timeout_seconds` | int | 60 | Timeout for model configuration checks |
+| `model_configure_timeout_seconds` | int | 90 | Timeout for model configuration checks |
 | `model_activate_timeout_seconds` | int | 60 | Timeout for model activation |
 | `model_deactivate_timeout_seconds` | int | 60 | Timeout for model deactivation |
 | `model_cleanup_timeout_seconds` | int | 60 | Timeout for model cleanup |
