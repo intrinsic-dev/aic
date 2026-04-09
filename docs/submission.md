@@ -182,8 +182,6 @@ The **Status** column provides a real-time status of your container's journey th
 
 **Where can I see my results?** All your past results and logs can be consulted in the "My submissions" section of the portal. You can also visit the Leaderboard to compare your results against the rest of the teams.
 
-**Who can submit?** Any team member can submit on behalf of the team. Note that the daily submission limit applies to the team as a whole, not per individual.
-
 **Can I submit multiple times?** Yes. However, you are limited to 1 submission per day. There is no limit on the total number of submissions you can make throughout the duration of the competition.
 
 ---
