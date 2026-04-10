@@ -72,6 +72,24 @@ install(
   DESTINATION lib/${PROJECT_NAME}
 )
 
+add_library(CableModeratorPlugin
+  SHARED
+  src/CableModeratorPlugin.cc
+)
+
+target_link_libraries(CableModeratorPlugin PRIVATE
+  gz-sim${GZ_SIM_VER}::gz-sim${GZ_SIM_VER})
+
+install(
+  TARGETS CableModeratorPlugin
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+install(
+  TARGETS CableModeratorPlugin
+  DESTINATION lib/${PROJECT_NAME}
+)
+
 add_library(OffLimitContactsPlugin
   SHARED
   src/OffLimitContactsPlugin.cc

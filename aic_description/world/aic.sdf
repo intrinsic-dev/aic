@@ -101,6 +101,7 @@
       name="gz::sim::systems::Physics">
       <engine><filename>gz-physics-bullet-featherstone-plugin</filename></engine>
     </plugin>
+
     <plugin
       filename="gz-sim-sensors-system"
       name="gz::sim::systems::Sensors">
@@ -117,6 +118,7 @@
         <debug_vis_mode>none</debug_vis_mode>
       </global_illumination>
     </plugin>
+
     <plugin filename="OffLimitContactsPlugin" name="aic_gazebo::OffLimitContactsPlugin">
       <model>ur5e</model>
       <update_rate>5</update_rate>
@@ -142,6 +144,19 @@
       filename="gz-sim-contact-system"
       name="gz::sim::systems::Contact">
     </plugin>
+
+    <plugin filename="CableModeratorPlugin" name="aic_gazebo::CableModeratorPlugin">
+      <cable>
+        <name>cable_0</name>
+        <cable_connection_0_link>lc_plug_link</cable_connection_0_link>
+        <cable_connection_0_port>nic_card_mount</cable_connection_0_port>
+        <cable_connection_1_link>sc_plug_link</cable_connection_1_link>
+        <cable_connection_1_port>sc_port_base</cable_connection_1_port>
+      </cable>
+      <end_effector_model>ur5e</end_effector_model>
+      <end_effector_link>ati/tool_link</end_effector_link>
+    </plugin>
+
 
     <gravity>0 0 -9.8</gravity>
 
