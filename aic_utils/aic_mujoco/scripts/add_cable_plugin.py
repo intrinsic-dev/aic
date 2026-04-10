@@ -200,8 +200,8 @@ def postprocess_world_xml(
             f'diaginertia="{old_diag}"', 'diaginertia="1e-6 1e-6 1e-6"'
         )
 
-    # 4. Fix cable_connection_1 (SC plug end) diaginertia to 4e-4
-    #    cable_connection_1 has mass=0.01 and is the SC plug connector
+    # 4. Fix cable_connection_1 plug-end diaginertia to 4e-4
+    #    cable_connection_1 has mass=0.01 and holds SC plug end (normal) or LC plug end (reversed)
     xml_str = re.sub(
         r'(<body name="cable_connection_1"[^>]*>\s*'
         r'<inertial pos="0 0 0" mass="0.01") diaginertia="0.01 0.01 0.01"',
