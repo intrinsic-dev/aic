@@ -43,7 +43,7 @@ should_enable_acl() {
 
 # prepare the credentials file
 if should_enable_acl; then
-  if [[ ! (-n "$AIC_EVAL_PASSWD" && -n "AIC_MODEL_PASSWD") ]]; then
+  if [[ ! (-n "$AIC_EVAL_PASSWD" && -n "$AIC_MODEL_PASSWD") ]]; then
     echo "AIC_EVAL_PASSWD, AIC_MODEL_PASSWD must be provided"
     exit 1
   fi
