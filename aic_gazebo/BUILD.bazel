@@ -5,43 +5,6 @@ load("@gz-sim//bazel:gz_sim_system_libraries.bzl", "gz_sim_system_libraries")
 
 package(default_visibility = ["//visibility:public"])
 
-# proto_library(
-#     name = "scoring_proto",
-#     srcs = ["proto/scoring.proto"],
-#     deps = [
-#         "@gz-msgs//:gzmsgs_proto",
-#     ],
-# )
-# 
-# gz_proto_library(
-#     name = "scoring_cc_proto",
-#     proto_deps = [":scoring_proto"],
-#     deps = [
-#         "@com_google_protobuf//:protobuf",
-#         "@gz-msgs//:gzmsgs_cc_proto",
-#     ],
-# )
-# 
-# cc_library(
-#     name = "ScoringPlugin",
-#     srcs = ["src/ScoringPlugin.cc"],
-#     hdrs = ["include/aic_gazebo/ScoringPlugin.hh"],
-#     includes = ["include"],
-#     deps = [
-#         ":scoring_cc_proto",
-#         "@gz-sim",
-#     ],
-# )
-
-gz_sim_system_libraries(
-    srcs = ["src/CablePlugin.cc", "src/CablePlugin.hh"],
-    so_lib_name = "libCablePlugin.so",
-    static_lib_name = "CablePluginLib",
-    deps = [
-        "@gz-sim",
-    ],
-)
-
 gz_sim_system_libraries(
     srcs = ["src/CableModeratorPlugin.cc", "src/CableModeratorPlugin.hh"],
     so_lib_name = "libCableModeratorPlugin.so",
@@ -59,14 +22,3 @@ gz_sim_system_libraries(
         "@gz-sim",
     ],
 )
-
-gz_sim_system_libraries(
-    srcs = ["src/WorldSdfGeneratorPlugin.cc", "src/WorldSdfGeneratorPlugin.hh"],
-    so_lib_name = "libWorldSdfGeneratorPlugin.so",
-    static_lib_name = "WorldSdfGeneratorPluginLib",
-    deps = [
-        "@gz-sim",
-    ],
-)
-
-# ResetJointsPlugin requires rclcpp and aic_engine_interfaces which are not yet available in Bazel

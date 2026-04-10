@@ -85,11 +85,6 @@ install(
   DESTINATION lib/${PROJECT_NAME}
 )
 
-install(
-  TARGETS CableModeratorPlugin
-  DESTINATION lib/${PROJECT_NAME}
-)
-
 add_library(OffLimitContactsPlugin
   SHARED
   src/OffLimitContactsPlugin.cc
