@@ -11,7 +11,6 @@
   <depend>aic_model_interfaces</depend>
   <depend>aic_task_interfaces</depend>
   <depend>geometry_msgs</depend>
-  <depend>lifecycle</depend>
   <depend>lifecycle_msgs</depend>
   <depend>rclpy</depend>
   <depend>sensor_msgs</depend>

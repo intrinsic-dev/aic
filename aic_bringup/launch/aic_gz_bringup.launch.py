@@ -95,6 +95,12 @@ def launch_setup(context, *args, **kwargs):
     start_aic_engine = LaunchConfiguration("start_aic_engine")
     shutdown_on_aic_engine_exit = LaunchConfiguration("shutdown_on_aic_engine_exit")
     aic_engine_config_file = LaunchConfiguration("aic_engine_config_file")
+    model_discovery_timeout_seconds = LaunchConfiguration(
+        "model_discovery_timeout_seconds"
+    )
+    model_configure_timeout_seconds = LaunchConfiguration(
+        "model_configure_timeout_seconds"
+    )
 
     gripper_initial_pos = "0.00655"
     cable_type_str = LaunchConfiguration("cable_type").perform(context)
@@ -238,7 +244,12 @@ def launch_setup(context, *args, **kwargs):
         executable="aic_engine",
         output="screen",
         parameters=[
-            {"config_file_path": aic_engine_config_file, "use_sim_time": True},
+            {
+                "config_file_path": aic_engine_config_file,
+                "use_sim_time": True,
+                "model_discovery_timeout_seconds": model_discovery_timeout_seconds,
+                "model_configure_timeout_seconds": model_configure_timeout_seconds,
+            },
         ],
         condition=IfCondition(start_aic_engine),
     )
@@ -760,7 +771,21 @@ def generate_launch_description():
             description="Absolute path to YAML file with the AIC engine configuration.",
         )
     )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "model_configure_timeout_seconds",
+            default_value="60",
+            description="Timeout for model configuration checks.",
+        )
+    )
 
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "model_discovery_timeout_seconds",
+            default_value="30",
+            description="Timeout for discovering the participant model.",
+        )
+    )
     return LaunchDescription(
         declared_arguments + [OpaqueFunction(function=launch_setup)]
     )

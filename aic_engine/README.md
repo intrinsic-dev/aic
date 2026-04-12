@@ -59,7 +59,7 @@ ros2 run aic_engine aic_engine --ros-args \
   -p ground_truth:=false \
   -p endpoint_ready_timeout_seconds:=10 \
   -p model_discovery_timeout_seconds:=30 \
-  -p model_configuration_timeout_seconds:=60
+  -p model_configure_timeout_seconds:=60 \
   -p use_sim_time:=true
 ```
 

@@ -13,7 +13,7 @@ Welcome to the **AI for Industry Challenge**. This document outlines the technic
 
 All submissions must be containerized using OCI-compliant image builder like Docker or Podman. Organize your project by placing all policy logic and dependency requirements directly within your custom policy package.
 
-If you don't have any additional packages or dependencies, you can keep your policy code in [policy.py](../aic_model/aic_model/policy.py) and then re-use the `aic_model` directory with its [Dockerfile](../docker/aic_model/Dockerfile). In this case, simply go to the [`docker-compose.yaml`](../docker/docker-compose.yaml), update the `command: --ros-args -p policy:=aic_example_policies.ros.WaveArm` to `command: --ros-args -p policy:=aic_model.MyPolicy`, and skip to the [Build the Image](#build-the-image) section.
+If you don't have any additional packages or dependencies, you can keep your policy code in [policy.py](../aic_model/aic_model/policy.py) and then re-use the `aic_model` directory with its [Dockerfile](../docker/aic_model/Dockerfile). In this case, update the Dockerfile and change `CMD ["--ros-args", "-p", "policy:=aic_example_policies.ros.CheatCode", "-p", "use_sim_time:=true"]` to `CMD ["--ros-args", "-p", "policy:=aic_model.MyPolicy", "-p", "use_sim_time:=true"]`, and skip to the [Build the Image](#build-the-image) section.
 
 It is highly recommended to use the example aic_model Dockerfile as a starting point.
 
@@ -33,6 +33,7 @@ Edit the `CMD` to run your policy:
 
 ```dockerfile
 CMD ["--ros-args", "-p", "policy:=my_policy_node.MyPolicy"]
+CMD ["--ros-args", "-p", "policy:=my_policy_node.MyPolicy", "-p", "use_sim_time:=true"]
 ```
 
 ### Update `docker-compose.yaml`
@@ -180,8 +181,6 @@ The **Status** column provides a real-time status of your container's journey th
 **My push failed with "no basic auth credentials"**: Your Docker login session has likely expired. ECR login tokens are valid for 12 hours. Repeat the [Authenticate](#authenticate) step in Section 2.
 
 **Where can I see my results?** All your past results and logs can be consulted in the "My submissions" section of the portal. You can also visit the Leaderboard to compare your results against the rest of the teams.
-
-**Who can submit?** Any team member can submit on behalf of the team. Note that the daily submission limit applies to the team as a whole, not per individual.
 
 **Can I submit multiple times?** Yes. However, you are limited to 1 submission per day. There is no limit on the total number of submissions you can make throughout the duration of the competition.
 

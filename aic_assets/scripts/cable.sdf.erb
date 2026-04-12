@@ -91,6 +91,17 @@
             <radius><%= radius %></radius>
           </sphere>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.05</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.05</friction>
+              <friction2>0.05</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <visual name="base_vis">
         <pose>0.000000 0.000000 0.000000 0.000000 0.000000 0.000000</pose>
@@ -147,6 +158,17 @@
             <radius><%= radius %></radius>
           </cylinder>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.05</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.05</friction>
+              <friction2>0.05</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <visual name="link_<%= i %>_vis">
         <pose>0.00000 0.000000 0.000000 0.000000 0 0.000000</pose>
@@ -174,6 +196,17 @@
             <radius><%= radius %></radius>
           </sphere>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.05</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.05</friction>
+              <friction2>0.05</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <visual name="sphere_<%= i %>_vis">
         <pose>0.000000 0.000000 <%= segment_len / 2 %> 0.000000 -0.000000 0.000000</pose>
@@ -245,6 +278,17 @@
             <length><%= connection_len_0 %></length>
           </cylinder>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.05</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.05</friction>
+              <friction2>0.05</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <visual name="visual_0">
         <pose>-<%= connection_len_0 * 0.5 %> <%= connection_baseline_0*0.5 %> 0 <%= connection_split_angle_0 %> 1.57079 0</pose>
@@ -273,6 +317,17 @@
             <length><%= connection_len_0 %></length>
           </cylinder>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.05</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.05</friction>
+              <friction2>0.05</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <visual name="visual_1">
         <pose>-<%= connection_len_0 * 0.5 %> <%= -connection_baseline_0*0.5 %> 0 <%= -connection_split_angle_0 %> 1.57079 0</pose>
@@ -316,6 +371,17 @@
             <length><%= connection_len_1 %></length>
           </cylinder>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.05</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.05</friction>
+              <friction2>0.05</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <visual name="visual_0">
         <pose><%= connection_len_1 * 0.5 %> <%= -connection_baseline_1*0.5 %> 0 <%= connection_split_angle_1 %> 1.57079 0</pose>
@@ -344,6 +410,17 @@
             <length><%= connection_len_1 %></length>
           </cylinder>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.05</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.05</friction>
+              <friction2>0.05</friction2>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
       <visual name="visual_1">
         <pose><%= connection_len_1 * 0.5 %> <%= connection_baseline_1*0.5 %> 0 <%= -connection_split_angle_1 %> 1.57079 0</pose>
