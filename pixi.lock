@@ -473,6 +473,8 @@ environments:
         build: hb0f4dca_0
       - conda: aic_utils/aic_teleoperation
         build: hb0f4dca_0
+      - conda: aic_utils/aic_training_interfaces
+        build: hb0f4dca_0
       - conda: aic_utils/lerobot_robot_aic
         build: hb0f4dca_0
       - pypi: https://files.pythonhosted.org/packages/18/a6/907a406bb7d359e6a63f99c313846d9eec4f7e6f7437809e03aa00fa3074/absl_py-2.4.0-py3-none-any.whl
@@ -968,6 +970,8 @@ environments:
       - conda: aic_model
         build: h60d57d3_0
       - conda: aic_utils/aic_teleoperation
+        build: h60d57d3_0
+      - conda: aic_utils/aic_training_interfaces
         build: h60d57d3_0
       - conda: aic_utils/lerobot_robot_aic
         build: h60d57d3_0
@@ -8183,6 +8187,38 @@ packages:
   - ros-kilted-aic-control-interfaces
   - ros-kilted-geometry-msgs
   - ros-kilted-rclpy
+  - ros2-distro-mutex
+  - ros2-distro-mutex >=0.14.0,<0.15.0a0
+  - libgcc >=15
+  - libgcc >=15
+  - libstdcxx >=15
+  - python_abi 3.12.* *_cp312
+  - numpy >=1.23,<3
+  license: LicenseRef-Apache-2.0
+- conda: aic_utils/aic_training_interfaces
+  name: ros-kilted-aic-training-interfaces
+  version: 0.0.1
+  build: h60d57d3_0
+  subdir: osx-arm64
+  variants:
+    target_platform: osx-arm64
+  depends:
+  - ros-kilted-rosidl-default-runtime
+  - ros2-distro-mutex
+  - ros2-distro-mutex >=0.14.0,<0.15.0a0
+  - libcxx >=22
+  - python_abi 3.12.* *_cp312
+  - numpy >=1.23,<3
+  license: LicenseRef-Apache-2.0
+- conda: aic_utils/aic_training_interfaces
+  name: ros-kilted-aic-training-interfaces
+  version: 0.0.1
+  build: hb0f4dca_0
+  subdir: linux-64
+  variants:
+    target_platform: linux-64
+  depends:
+  - ros-kilted-rosidl-default-runtime
   - ros2-distro-mutex
   - ros2-distro-mutex >=0.14.0,<0.15.0a0
   - libgcc >=15
