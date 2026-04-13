@@ -51,6 +51,7 @@ If you suspect another participant of violating these rules, please report it to
 ## 4. Technical Specification: `aic_model`
 
 - The submission container must start a process with a ROS 2 Lifecycle node with name `aic_model`.
+- The `aic_model` node must be discoverable by the evaluation system within 30 seconds of starting the participant's container.
 - The `aic_model` node must exhibit the following behavior:
   - Start in `unconfigured` lifecycle state.
 	  - In `unconfigured` state, no topics should be published by node, especially to command the robot.
