@@ -111,6 +111,33 @@ cp /tmp/aic.sdf ~/training_scenarios/nic_slot_2.sdf
 cp /tmp/aic.sdf ~/training_scenarios/sc_right_rotated.sdf
 ```
 
+### Programmatic Entity Spawning
+
+For training workflows that need to spawn or respawn entities (task boards, cables), the `/expand_xacro` service lets you expand xacro templates from model-side code without direct filesystem access to the eval environment.
+The following launch file includes the standard `aic_bringup` Gazebo stack along with the training utils:
+
+```bash
+ros2 launch aic_training_utils aic_training_gz_bringup.launch.py
+
+# spawn the task board
+ros2 service call /expand_xacro aic_training_interfaces/srv/ExpandXacro \
+  "{package_name: 'aic_description', relative_path: 'urdf/task_board.urdf.xacro', \
+    xacro_arguments: ['ground_truth:=true', 'nic_card_mount_0_present:=true']}"
+```
+
+The returned XML can then be passed to `/gz_server/spawn_entity` to spawn entities at arbitrary poses. Combined with `/gz_server/delete_entity`, this enables per-episode scene randomization (varying task board poses, rail positions, cable types, etc.) entirely from your training code.
+
+Inside the eval container, this can be started with `distrobox enter`:
+```bash
+distrobox enter aic_eval -- bash -lc '
+  source /ws_aic/install/setup.bash &&
+  ros2 launch aic_training_utils aic_training_gz_bringup.launch.py \
+    spawn_task_board:=true \
+    spawn_cable:=true \
+    nic_card_mount_2_present:=true
+'
+```
+
 ### Teleoperation
 
 **Teleoperate the robot** in joint-space or Cartesian-space to:

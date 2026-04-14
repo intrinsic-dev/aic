@@ -1,0 +1,7 @@
+string package_name
+string relative_path
+string[] xacro_arguments
+---
+bool success
+string xml
+string message
