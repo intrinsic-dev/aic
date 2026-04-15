@@ -234,9 +234,9 @@ void AicAdapterNode::ReorderJointState(
     sensor_msgs::msg::JointState& reordered) {
   reordered.header = original.header;
   const size_t n_joints = original.name.size();
-  if (n_joints != joint_sort_order_.size()) {
-    RCLCPP_ERROR(get_logger(), "Expected %zu joints. Received %zu",
-                 joint_sort_order_.size(), n_joints);
+  if (n_joints != joint_sort_order_.size() && n_joints != 6) {
+    RCLCPP_ERROR(get_logger(), "Expected 6 or 7 joints. Received %zu",
+                 n_joints);
     return;
   }
 
@@ -278,13 +278,15 @@ void AicAdapterNode::ReorderJointState(
     reordered.effort[reordered_idx] = original.effort[original_joint_idx];
   }
 
-  // Rename the last joint "gripper", and change it to the distance between
-  // the fingers, rather than the prismatic joint motion, just by dividing
-  // the value by 2.
-  reordered.name[n_joints - 1] = "gripper";
-  reordered.position[n_joints - 1] /= 2.0;
-  reordered.velocity[n_joints - 1] /= 2.0;
-  reordered.effort[n_joints - 1] /= 2.0;
+  if (n_joints == joint_sort_order_.size()) {
+    // Rename the last joint "gripper", and change it to the distance between
+    // the fingers, rather than the prismatic joint motion, just by dividing
+    // the value by 2.
+    reordered.name[n_joints - 1] = "gripper";
+    reordered.position[n_joints - 1] /= 2.0;
+    reordered.velocity[n_joints - 1] /= 2.0;
+    reordered.effort[n_joints - 1] /= 2.0;
+  }
 }
 
 }  // namespace aic
