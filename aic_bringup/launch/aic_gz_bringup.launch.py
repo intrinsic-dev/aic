@@ -101,6 +101,7 @@ def launch_setup(context, *args, **kwargs):
     model_configure_timeout_seconds = LaunchConfiguration(
         "model_configure_timeout_seconds"
     )
+    gz_verbosity_level = LaunchConfiguration("gz_verbosity_level")
 
     gripper_initial_pos = "0.00655"
     cable_type_str = LaunchConfiguration("cable_type").perform(context)
@@ -346,6 +347,7 @@ def launch_setup(context, *args, **kwargs):
         container_name="ros_gz_container",
         create_own_container="True",
         use_composition="True",
+        verbosity_level=gz_verbosity_level,
     )
 
     gzgui = ExecuteProcess(
@@ -784,6 +786,13 @@ def generate_launch_description():
             "model_discovery_timeout_seconds",
             default_value="30",
             description="Timeout for discovering the participant model.",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "gz_verbosity_level",
+            default_value="4",
+            description="Verbosity level of the Gazebo server (0=critical, 4=debug).",
         )
     )
     return LaunchDescription(
