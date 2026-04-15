@@ -111,7 +111,8 @@ repositories:
   gazebo/gz-physics:
     type: git
     url: https://github.com/kaushikbalasundar/gz-physics.git
-    version: bc3a74a79e351770b66cf67102081228c2a4b90f
+    url: https://github.com/gazebosim/gz-physics
+    version: 26d8e66ad113b4da6d21dc9dcedd40c509f75749
   gazebo/gz-plugin:
     type: git
     url: https://github.com/gazebosim/gz-plugin
