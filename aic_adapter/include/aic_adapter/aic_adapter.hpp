@@ -89,6 +89,7 @@ class AicAdapterNode : public rclcpp::Node {
       observation_pub_;
 
   std::unordered_map<std::string, size_t> joint_sort_order_;
+  bool include_gripper_in_joint_state_;
 };
 
 }  // namespace aic

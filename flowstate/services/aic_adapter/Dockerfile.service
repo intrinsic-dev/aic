@@ -34,7 +34,7 @@ ZENOH_CONFIG_OVERRIDE='connect/endpoints=["tcp/'"$AIC_ROUTER_ADDR"'"]'
 ZENOH_CONFIG_OVERRIDE+=';transport/shared_memory/enabled=false'
 export ZENOH_CONFIG_OVERRIDE
 
-exec ros2 run aic_adapter aic_adapter
+exec ros2 run aic_adapter aic_adapter --ros-args -p include_gripper_in_joint_state:=false
 EOF
 
 ENTRYPOINT ["/entrypoint.sh"]
