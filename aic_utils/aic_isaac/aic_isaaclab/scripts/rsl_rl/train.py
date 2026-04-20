@@ -228,7 +228,9 @@ def main(
 
     # Skip USD xform mirroring during training; no visual, per-env USD writes
     # add overhead at scale. Teleop/play/record keep the default (True).
-    if hasattr(env_cfg, "events") and hasattr(env_cfg.events, "randomize_board_and_parts"):
+    if hasattr(env_cfg, "events") and hasattr(
+        env_cfg.events, "randomize_board_and_parts"
+    ):
         env_cfg.events.randomize_board_and_parts.params["sync_usd_xforms"] = False
 
     # create isaac environment

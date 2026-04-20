@@ -130,14 +130,20 @@ def randomize_board_and_parts(
     all_names = [board_scene_name] + [p["scene_name"] for p in parts]
     if not _cached_orientations:
         for name in all_names:
-            _cached_orientations[name] = env.scene[name].data.root_state_w[:, 3:7].clone()
+            _cached_orientations[name] = (
+                env.scene[name].data.root_state_w[:, 3:7].clone()
+            )
 
     # Board pose.
     board_asset = env.scene[board_scene_name]
     board_rot = _cached_orientations[board_scene_name][env_ids]
     board_pos = torch.tensor([board_default_pos], device=device).expand(n, -1).clone()
-    board_pos[:, 0] += torch.empty(n, device=device).uniform_(*board_range.get("x", (0.0, 0.0)))
-    board_pos[:, 1] += torch.empty(n, device=device).uniform_(*board_range.get("y", (0.0, 0.0)))
+    board_pos[:, 0] += torch.empty(n, device=device).uniform_(
+        *board_range.get("x", (0.0, 0.0))
+    )
+    board_pos[:, 1] += torch.empty(n, device=device).uniform_(
+        *board_range.get("y", (0.0, 0.0))
+    )
     board_world_pos = board_pos + env_origins
 
     board_asset.write_root_pose_to_sim(
@@ -148,7 +154,12 @@ def randomize_board_and_parts(
     )
     if sync_usd_xforms:
         _write_usd_xform_pose(
-            stage, board_asset.cfg.prim_path, env_ids, env_origins, board_world_pos, board_rot
+            stage,
+            board_asset.cfg.prim_path,
+            env_ids,
+            env_origins,
+            board_world_pos,
+            board_rot,
         )
 
     # Part poses, anchored to the board.
@@ -175,5 +186,10 @@ def randomize_board_and_parts(
         )
         if sync_usd_xforms:
             _write_usd_xform_pose(
-                stage, part_asset.cfg.prim_path, env_ids, env_origins, part_pos, part_rot
+                stage,
+                part_asset.cfg.prim_path,
+                env_ids,
+                env_origins,
+                part_pos,
+                part_rot,
             )
