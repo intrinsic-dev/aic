@@ -49,11 +49,14 @@ task_board_limits:
     max_translation: 0.0234   # Maximum translation from center along the rail (in meters)
   sc_rail:
     min_translation: -0.06  # Minimum translation from center along the rail (in meters)
-    max_translation: 0.055   # Maximum translation from center along the rail (in meters)
+    max_translation: 0.055  # Maximum translation from center along the rail (in meters)
   mount_rail:
     min_translation: -0.09425  # Minimum translation from center along the rail (in meters)
     max_translation: 0.09425   # Maximum translation from center along the rail (in meters)
+
 trials:
+  # ── Trial 1: 2 SC ports ────────────────────────────────────────────────────
+  # SC_PORT_0 and SC_PORT_1 both on SC_RAIL_0, gap = 40 mm (> 30 mm minimum)
   trial_1:
     scene:
         task_board:
@@ -65,13 +68,7 @@ trials:
             pitch: 0.0
             yaw: 3.1415
           nic_rail_0:
-            entity_present: True # True if a NIC card is present on this rail.
-            entity_name: "nic_card_0" # Name of the NIC card entity to spawn.
-            entity_pose:
-              translation: 0.036
-              roll: 0.0 # roll orientation for the NIC card.
-              pitch: 0.0 # pitch orientation for the NIC card.
-              yaw: 0.0 # yaw orientation for the NIC card.
+            entity_present: False
           nic_rail_1:
             entity_present: False
           nic_rail_2:
@@ -81,47 +78,39 @@ trials:
           nic_rail_4:
             entity_present: False
           sc_rail_0:
-            entity_present: True
-            entity_name: "sc_mount_0" # Name of the SC port entity to spawn.
-            entity_pose:
-              translation: 0.042
-              roll: 0.0 # roll orientation for the SC port.
-              pitch: 0.0 # pitch orientation for the SC port.
-              yaw: 0.1 # yaw orientation for the SC port.
+            sc_port_0:
+              entity_present: True
+              entity_name: "sc_port_0"
+              entity_pose:
+                translation: -0.030
+                roll: 0.0
+                pitch: 0.0
+                yaw: 0.0
+            sc_port_1:
+              entity_present: True
+              entity_name: "sc_port_1"
+              entity_pose:
+                translation: 0.010  # 40 mm from sc_port_0
+                roll: 0.0
+                pitch: 0.0
+                yaw: 0.0
+            sc_port_2:
+              entity_present: False
           sc_rail_1:
-            entity_present: False
+            sc_port_3:
+              entity_present: False
+            sc_port_4:
+              entity_present: False
+            sc_port_5:
+              entity_present: False
           lc_mount_rail_0:
-            entity_present: True
-            entity_name: "lc_mount_0"  # Name of the LC mount entity
-            entity_pose:
-              translation: 0.02  # Translation along Y axis
-              roll: 0.0
-              pitch: 0.0
-              yaw: 0.0
+            entity_present: False
           sfp_mount_rail_0:
-            entity_present: True
-            entity_name: "sfp_mount_0"
-            entity_pose:
-              translation: 0.03
-              roll: 0.0
-              pitch: 0.0
-              yaw: 0.0
+            entity_present: False
           sc_mount_rail_0:
-            entity_present: True
-            entity_name: "sc_mount_0"
-            entity_pose:
-              translation: -0.02
-              roll: 0.0
-              pitch: 0.0
-              yaw: 0.0
+            entity_present: False
           lc_mount_rail_1:
-            entity_present: True
-            entity_name: "lc_mount_1"
-            entity_pose:
-              translation: -0.01
-              roll: 0.0
-              pitch: 0.0
-              yaw: 0.0
+            entity_present: False
           sfp_mount_rail_1:
             entity_present: False
           sc_mount_rail_1:
@@ -132,22 +121,27 @@ trials:
               gripper_offset:
                 x: 0.0
                 y: 0.015385
-                z: 0.04245
+                z: 0.04045
               roll: 0.4432
               pitch: -0.4838
               yaw: 1.3303
-            attach_cable_to_gripper: True
-            cable_type: "sfp_sc_cable" # [sfp_sc_cable, sfp_sc_cable_reversed]
+            attach_cable_to_gripper: False
+            cable_type: "sfp_sc_cable_reversed"
     tasks:
       task_1:
         cable_type: "sfp_sc"
         cable_name: "cable_0"
-        plug_type: "sfp"
-        plug_name: "sfp_tip"
-        port_type: "sfp"
-        port_name: "sfp_port_0"
-        target_module_name: "nic_card_mount_0"
+        plug_type: "sc"
+        plug_name: "sc_tip"
+        port_type: "sc"
+        port_name: "sc_port_base"
+        target_module_name: "sc_port_0"
         time_limit: 180
+
+  # ── Trial 2: 3 SC ports (non-contiguous) ──────────────────────────────────
+  # SC_PORT_0 on SC_RAIL_0; SC_PORT_3 and SC_PORT_5 on SC_RAIL_1
+  # SC_PORT_1, SC_PORT_2, SC_PORT_4 absent
+  # SC_RAIL_1 gap: PORT_3 at -0.025, PORT_5 at 0.020 → gap = 45 mm (> 30 mm)
   trial_2:
     scene:
         task_board:
@@ -161,13 +155,7 @@ trials:
           nic_rail_0:
             entity_present: False
           nic_rail_1:
-            entity_present: True # True if a NIC card is present on this rail.
-            entity_name: "nic_card_1" # Name of the NIC card entity to spawn.
-            entity_pose:
-              translation: 0.036
-              roll: 0.0 # roll orientation for the NIC card.
-              pitch: 0.0 # pitch orientation for the NIC card.
-              yaw: 0.0 # yaw orientation for the NIC card.
+            entity_present: False
           nic_rail_2:
             entity_present: False
           nic_rail_3:
@@ -175,47 +163,45 @@ trials:
           nic_rail_4:
             entity_present: False
           sc_rail_0:
-            entity_present: True
-            entity_name: "sc_mount_0" # Name of the SC port entity to spawn.
-            entity_pose:
-              translation: 0.042
-              roll: 0.0 # roll orientation for the SC port.
-              pitch: 0.0 # pitch orientation for the SC port.
-              yaw: 0.1 # yaw orientation for the SC port.
+            sc_port_0:
+              entity_present: True
+              entity_name: "sc_port_0"
+              entity_pose:
+                translation: 0.0
+                roll: 0.0
+                pitch: 0.0
+                yaw: 0.0
+            sc_port_1:
+              entity_present: False
+            sc_port_2:
+              entity_present: False
           sc_rail_1:
-            entity_present: False
+            sc_port_3:
+              entity_present: True
+              entity_name: "sc_port_3"
+              entity_pose:
+                translation: -0.025
+                roll: 0.0
+                pitch: 0.0
+                yaw: 0.0
+            sc_port_4:
+              entity_present: False
+            sc_port_5:
+              entity_present: True
+              entity_name: "sc_port_5"
+              entity_pose:
+                translation: 0.020  # 45 mm from sc_port_3
+                roll: 0.0
+                pitch: 0.0
+                yaw: 0.0
           lc_mount_rail_0:
-            entity_present: True
-            entity_name: "lc_mount_0"  # Name of the LC mount entity
-            entity_pose:
-              translation: 0.02  # Translation along Y axis
-              roll: 0.0
-              pitch: 0.0
-              yaw: 0.0
+            entity_present: False
           sfp_mount_rail_0:
-            entity_present: True
-            entity_name: "sfp_mount_0"
-            entity_pose:
-              translation: 0.03
-              roll: 0.0
-              pitch: 0.0
-              yaw: 0.0
+            entity_present: False
           sc_mount_rail_0:
-            entity_present: True
-            entity_name: "sc_mount_0"
-            entity_pose:
-              translation: -0.02
-              roll: 0.0
-              pitch: 0.0
-              yaw: 0.0
+            entity_present: False
           lc_mount_rail_1:
-            entity_present: True
-            entity_name: "lc_mount_1"
-            entity_pose:
-              translation: -0.01
-              roll: 0.0
-              pitch: 0.0
-              yaw: 0.0
+            entity_present: False
           sfp_mount_rail_1:
             entity_present: False
           sc_mount_rail_1:
@@ -226,32 +212,37 @@ trials:
               gripper_offset:
                 x: 0.0
                 y: 0.015385
-                z: 0.04545
+                z: 0.04045
               roll: 0.4432
               pitch: -0.4838
               yaw: 1.3303
-            attach_cable_to_gripper: True
-            cable_type: "sfp_sc_cable" # [sfp_sc_cable, sfp_sc_cable_reversed]
+            attach_cable_to_gripper: False
+            cable_type: "sfp_sc_cable_reversed"
     tasks:
       task_1:
         cable_type: "sfp_sc"
         cable_name: "cable_0"
-        plug_type: "sfp"
-        plug_name: "sfp_tip"
-        port_type: "sfp"
-        port_name: "sfp_port_0"
-        target_module_name: "nic_card_mount_1"
+        plug_type: "sc"
+        plug_name: "sc_tip"
+        port_type: "sc"
+        port_name: "sc_port_base"
+        target_module_name: "sc_port_5"
         time_limit: 180
+
+  # ── Trial 3: 5 SC ports ────────────────────────────────────────────────────
+  # SC_PORT_0, SC_PORT_1, SC_PORT_2 on SC_RAIL_0 (gaps exactly 30 mm each)
+  # SC_PORT_3, SC_PORT_4 on SC_RAIL_1 (gap exactly 30 mm)
+  # SC_PORT_5 absent
   trial_3:
     scene:
         task_board:
           pose:
-            x: 0.17
-            y: 0.0
+            x: 0.15
+            y: -0.2
             z: 1.14
             roll: 0.0
             pitch: 0.0
-            yaw: 3.0
+            yaw: 3.1415
           nic_rail_0:
             entity_present: False
           nic_rail_1:
@@ -263,47 +254,63 @@ trials:
           nic_rail_4:
             entity_present: False
           sc_rail_0:
-            entity_present: False
+            sc_port_0:
+              entity_present: True
+              entity_name: "sc_port_0"
+              entity_pose:
+                translation: -0.050
+                roll: 0.0
+                pitch: 0.0
+                yaw: 0.0
+            sc_port_1:
+              entity_present: True
+              entity_name: "sc_port_1"
+              entity_pose:
+                translation: -0.020  # 30 mm from sc_port_0
+                roll: 0.0
+                pitch: 0.0
+                yaw: 0.0
+            sc_port_2:
+              entity_present: True
+              entity_name: "sc_port_2"
+              entity_pose:
+                translation: 0.010  # 30 mm from sc_port_1
+                roll: 0.0
+                pitch: 0.0
+                yaw: 0.0
           sc_rail_1:
-            entity_present: True
-            entity_name: "sc_mount_1"
-            entity_pose:
-              translation: -0.055
-              roll: 0.0
-              pitch: 0.0
-              yaw: 0.0
+            sc_port_3:
+              entity_present: True
+              entity_name: "sc_port_3"
+              entity_pose:
+                translation: -0.015
+                roll: 0.0
+                pitch: 0.0
+                yaw: 0.0
+            sc_port_4:
+              entity_present: True
+              entity_name: "sc_port_4"
+              entity_pose:
+                translation: 0.015  # 30 mm from sc_port_3
+                roll: 0.0
+                pitch: 0.0
+                yaw: 0.0
+            sc_port_5:
+              entity_present: False
           lc_mount_rail_0:
             entity_present: False
           sfp_mount_rail_0:
-            entity_present: True
-            entity_name: "sfp_mount_0"
-            entity_pose:
-              translation: 0.05
-              roll: 0.0
-              pitch: 0.0
-              yaw: 0.0
+            entity_present: False
           sc_mount_rail_0:
-            entity_present: True
-            entity_name: "sc_mount_2"
-            entity_pose:
-              translation: -0.03
-              roll: 0.0
-              pitch: 0.0
-              yaw: 0.0
+            entity_present: False
           lc_mount_rail_1:
-            entity_present: True
-            entity_name: "lc_mount_1"
-            entity_pose:
-              translation: 0.04
-              roll: 0.0
-              pitch: 0.0
-              yaw: 0.0
+            entity_present: False
           sfp_mount_rail_1:
             entity_present: False
           sc_mount_rail_1:
             entity_present: False
         cables:
-          cable_1:
+          cable_0:
             pose:
               gripper_offset:
                 x: 0.0
@@ -312,18 +319,19 @@ trials:
               roll: 0.4432
               pitch: -0.4838
               yaw: 1.3303
-            attach_cable_to_gripper: True
-            cable_type: "sfp_sc_cable_reversed" # [sfp_sc_cable, sfp_sc_cable_reversed]
+            attach_cable_to_gripper: False
+            cable_type: "sfp_sc_cable_reversed"
     tasks:
       task_1:
         cable_type: "sfp_sc"
-        cable_name: "cable_1"
+        cable_name: "cable_0"
         plug_type: "sc"
-        plug_name:  "sc_tip"
+        plug_name: "sc_tip"
         port_type: "sc"
         port_name: "sc_port_base"
-        target_module_name: "sc_port_1"
+        target_module_name: "sc_port_2"
         time_limit: 180
+
 robot:
   home_joint_positions:
     shoulder_pan_joint: -0.1597

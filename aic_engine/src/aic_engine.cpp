@@ -102,36 +102,45 @@ Trial::Trial(const std::string& _id, YAML::Node _config) : id(std::move(_id)) {
     }
   }
 
-  // Validate SC rails (sc_rail_0 and sc_rail_1)
-  for (int i = 0; i < 2; ++i) {
-    std::string rail_key = "sc_rail_" + std::to_string(i);
+  // Validate SC rails (sc_rail_0 and sc_rail_1), each with up to MAX_SC_PORTS_PER_RAIL ports
+  constexpr int MAX_SC_PORTS_PER_RAIL = 3;
+  for (int rail_idx = 0; rail_idx < 2; ++rail_idx) {
+    std::string rail_key = "sc_rail_" + std::to_string(rail_idx);
     if (!task_board[rail_key]) {
       throw std::runtime_error(
           "Config missing required key: 'scene.task_board." + rail_key + "'");
     }
     const auto& rail = task_board[rail_key];
-    if (!rail["entity_present"]) {
-      throw std::runtime_error(
-          "Config missing required key: 'scene.task_board." + rail_key +
-          ".entity_present'");
-    }
-    if (rail["entity_present"].as<bool>()) {
-      if (!rail["entity_name"]) {
+    int port_start = rail_idx * MAX_SC_PORTS_PER_RAIL;
+    for (int port_idx = port_start; port_idx < port_start + MAX_SC_PORTS_PER_RAIL; ++port_idx) {
+      std::string port_key = "sc_port_" + std::to_string(port_idx);
+      if (!rail[port_key]) {
         throw std::runtime_error(
-            "Config missing required key: 'scene.task_board." + rail_key +
-            ".entity_name'");
+            "Config missing required key: 'scene.task_board." + rail_key + "." + port_key + "'");
       }
-      if (!rail["entity_pose"]) {
+      if (!rail[port_key]["entity_present"]) {
         throw std::runtime_error(
-            "Config missing required key: 'scene.task_board." + rail_key +
-            ".entity_pose'");
+            "Config missing required key: 'scene.task_board." + rail_key + "." + port_key +
+            ".entity_present'");
       }
-      const auto& entity_pose = rail["entity_pose"];
-      for (const auto& key : {"translation", "roll", "pitch", "yaw"}) {
-        if (!entity_pose[key]) {
+      if (rail[port_key]["entity_present"].as<bool>()) {
+        if (!rail[port_key]["entity_name"]) {
           throw std::runtime_error(
-              "Config missing required key: 'scene.task_board." + rail_key +
-              ".entity_pose." + key + "'");
+              "Config missing required key: 'scene.task_board." + rail_key + "." + port_key +
+              ".entity_name'");
+        }
+        if (!rail[port_key]["entity_pose"]) {
+          throw std::runtime_error(
+              "Config missing required key: 'scene.task_board." + rail_key + "." + port_key +
+              ".entity_pose'");
+        }
+        const auto& entity_pose = rail[port_key]["entity_pose"];
+        for (const auto& key : {"translation", "roll", "pitch", "yaw"}) {
+          if (!entity_pose[key]) {
+            throw std::runtime_error(
+                "Config missing required key: 'scene.task_board." + rail_key + "." + port_key +
+                ".entity_pose." + key + "'");
+          }
         }
       }
     }
@@ -1842,33 +1851,95 @@ bool Engine::spawn_entity(Trial& trial, std::string entity_name,
       }
     }
 
-    // Add SC rail parameters (sc_rail_0 and sc_rail_1)
-    for (int i = 0; i < 2; ++i) {
-      std::string rail_key = "sc_rail_" + std::to_string(i);
-      std::string port_prefix = "sc_port_" + std::to_string(i);
+    // Add SC rail parameters (sc_rail_0 and sc_rail_1, up to MAX_SC_PORTS_PER_RAIL ports each)
+    constexpr double SC_PORT_MIN_BUFFER = 0.030;
+    constexpr int MAX_SC_PORTS_PER_RAIL = 3;
+    for (int rail_idx = 0; rail_idx < 2; ++rail_idx) {
+      std::string rail_key = "sc_rail_" + std::to_string(rail_idx);
+      int port_start = rail_idx * MAX_SC_PORTS_PER_RAIL;
 
-      if (config[rail_key] && config[rail_key]["entity_present"] &&
-          config[rail_key]["entity_present"].as<bool>()) {
-        cmd << " " << port_prefix << "_present:=true";
-
-        if (config[rail_key]["entity_pose"]) {
-          const auto& pose = config[rail_key]["entity_pose"];
-
-          double translation = pose["translation"].as<double>();
-          // Clamp translation to SC rail limits
-          translation = std::clamp(translation, sc_rail_min, sc_rail_max);
-          cmd << " " << port_prefix << "_translation:=" << translation;
-
-          // Add orientation parameters
-          double roll = pose["roll"].as<double>();
-          double pitch = pose["pitch"].as<double>();
-          double yaw = pose["yaw"].as<double>();
-          cmd << " " << port_prefix << "_roll:=" << roll;
-          cmd << " " << port_prefix << "_pitch:=" << pitch;
-          cmd << " " << port_prefix << "_yaw:=" << yaw;
+      // Collect present ports and clamp translations to rail limits
+      std::vector<std::pair<int, double>> present_ports;
+      for (int port_idx = port_start; port_idx < port_start + MAX_SC_PORTS_PER_RAIL; ++port_idx) {
+        std::string port_key = "sc_port_" + std::to_string(port_idx);
+        if (config[rail_key] && config[rail_key][port_key] &&
+            config[rail_key][port_key]["entity_present"] &&
+            config[rail_key][port_key]["entity_present"].as<bool>()) {
+          double t = config[rail_key][port_key]["entity_pose"]["translation"].as<double>();
+          t = std::clamp(t, sc_rail_min, sc_rail_max);
+          present_ports.push_back({port_idx, t});
         }
-      } else {
-        cmd << " " << port_prefix << "_present:=false";
+      }
+
+      // Sort by translation so buffer enforcement is applied in order
+      std::sort(present_ports.begin(), present_ports.end(),
+                [](const auto& a, const auto& b) { return a.second < b.second; });
+
+      // Forward-pass: push ports forward to enforce minimum buffer
+      bool adjusted_positions = false;
+      for (size_t j = 1; j < present_ports.size(); ++j) {
+        if (present_ports[j].second - present_ports[j - 1].second < SC_PORT_MIN_BUFFER) {
+          present_ports[j].second = present_ports[j - 1].second + SC_PORT_MIN_BUFFER;
+          adjusted_positions = true;
+        }
+      }
+
+      // Backward-pass: if last port exceeds rail max, pull all back while maintaining gaps
+      if (!present_ports.empty() && present_ports.back().second > sc_rail_max) {
+        adjusted_positions = true;
+        RCLCPP_WARN(node_->get_logger(),
+                    "SC %s: port translations exceed rail max (%.3f m); port positions have been "
+                    "adjusted to fit within rail limits.",
+                    rail_key.c_str(), sc_rail_max);
+        present_ports.back().second = sc_rail_max;
+        for (int j = static_cast<int>(present_ports.size()) - 2; j >= 0; --j) {
+          double required = present_ports[j + 1].second - SC_PORT_MIN_BUFFER;
+          if (present_ports[j].second > required)
+            present_ports[j].second = required;
+        }
+      }
+
+      // Final validation: if first port fell below rail min, ports cannot all fit
+      if (!present_ports.empty() && present_ports.front().second < sc_rail_min) {
+        throw std::runtime_error(
+            rail_key + ": present ports cannot all fit within rail limits [" +
+            std::to_string(sc_rail_min) + ", " + std::to_string(sc_rail_max) +
+            "] with minimum buffer " + std::to_string(SC_PORT_MIN_BUFFER) + " m.");
+      }
+
+      // Defensive check: assert no overlap remains after adjustment
+      for (size_t j = 1; j < present_ports.size(); ++j) {
+        if (present_ports[j].second - present_ports[j - 1].second < SC_PORT_MIN_BUFFER - 1e-9) {
+          throw std::runtime_error(
+              rail_key + ": buffer enforcement failed — ports still overlap after adjustment.");
+        }
+      }
+
+      if (adjusted_positions) {
+        RCLCPP_WARN(node_->get_logger(),
+                    "SC %s: one or more port translations were adjusted to enforce %.3f m minimum "
+                    "buffer and stay within rail limits [%.3f, %.3f] m.",
+                    rail_key.c_str(), SC_PORT_MIN_BUFFER, sc_rail_min, sc_rail_max);
+      }
+
+      // Build port-index to adjusted translation map
+      std::map<int, double> adjusted;
+      for (const auto& [idx, t] : present_ports) adjusted[idx] = t;
+
+      // Emit xacro params for all ports on this rail
+      for (int port_idx = port_start; port_idx < port_start + MAX_SC_PORTS_PER_RAIL; ++port_idx) {
+        std::string port_key = "sc_port_" + std::to_string(port_idx);
+        std::string prefix = "sc_port_" + std::to_string(port_idx);
+        if (adjusted.count(port_idx)) {
+          cmd << " " << prefix << "_present:=true";
+          cmd << " " << prefix << "_translation:=" << adjusted[port_idx];
+          const auto& pose = config[rail_key][port_key]["entity_pose"];
+          cmd << " " << prefix << "_roll:=" << pose["roll"].as<double>();
+          cmd << " " << prefix << "_pitch:=" << pose["pitch"].as<double>();
+          cmd << " " << prefix << "_yaw:=" << pose["yaw"].as<double>();
+        } else {
+          cmd << " " << prefix << "_present:=false";
+        }
       }
     }
 
