@@ -1952,11 +1952,11 @@ bool Engine::spawn_entity(Trial& trial, std::string entity_name,
         const std::string port_key = "sc_port_" + std::to_string(port_idx);
         if (adjusted.count(port_idx)) {
           const auto& pose = config[rail_key][port_key]["entity_pose"];
-          cmd << " " << port_key << "_present:=true"
-              << " " << port_key << "_translation:=" << adjusted[port_idx]
-              << " " << port_key << "_roll:=" << pose["roll"].as<double>()
-              << " " << port_key << "_pitch:=" << pose["pitch"].as<double>()
-              << " " << port_key << "_yaw:=" << pose["yaw"].as<double>();
+          cmd << " " << port_key << "_present:=true" << " " << port_key
+              << "_translation:=" << adjusted[port_idx] << " " << port_key
+              << "_roll:=" << pose["roll"].as<double>() << " " << port_key
+              << "_pitch:=" << pose["pitch"].as<double>() << " " << port_key
+              << "_yaw:=" << pose["yaw"].as<double>();
         } else {
           cmd << " " << port_key << "_present:=false";
         }
