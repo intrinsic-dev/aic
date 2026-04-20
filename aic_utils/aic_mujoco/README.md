@@ -172,7 +172,7 @@ At this point you can view the generated scene in MuJoCo **without** any ROS 2 c
  ```
 
 
-The weld constraint is forces the robot end effector ati/tool_link to mate with the lc_plug_link. When we start the mujoco viewer as a standalone application, the ROS2 controller that enforces the initial condition of the robot is not present. The robot is spawned much farther away and you will observe flickering caused by the weld constraint. You should see both the wire and the robot collapse under gravity. ** Make sure you uncomment this line after testing this step. **
+The weld constraint forces the robot end effector ati/tool_link to mate with the lc_plug_link. When we start the mujoco viewer as a standalone application, the ROS2 controller that enforces the initial condition of the robot is not present. The robot is spawned much farther away and you will observe flickering caused by the weld constraint. You should see both the wire and the robot collapse under gravity. ** Make sure you uncomment this line after testing this step. **
 
 
 ##### Using pixi environment
