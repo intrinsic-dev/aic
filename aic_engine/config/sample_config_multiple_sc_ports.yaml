@@ -1,0 +1,350 @@
+# Sample config exercising multiple SC ports per rail.
+#
+# Naming convention:
+#   SC_RAIL_0 → sc_port_0, sc_port_1, sc_port_2  (Y = 0.0295 in task board frame)
+#   SC_RAIL_1 → sc_port_3, sc_port_4, sc_port_5  (Y = 0.0705 in task board frame)
+#
+# Port presence is independent — any subset may be present.
+# The engine enforces a 30 mm minimum center-to-center gap between ports on
+# the same rail, clamping translations to the rail limits [-0.06, 0.055] m.
+
+scoring:
+  topics:
+    # Joint states for the robot arm
+    - topic:
+        name: "/joint_states"
+        type: "sensor_msgs/msg/JointState"
+    - topic:
+    # TF that contains the robot and gripper poses
+        name: "/tf"
+        type: "tf2_msgs/msg/TFMessage"
+    - topic:
+    # TF that contains the robot and gripper static poses
+        name: "/tf_static"
+        type: "tf2_msgs/msg/TFMessage"
+        latched: true
+    - topic:
+    # TF that contains the cable link poses
+        name: "/scoring/tf"
+        type: "tf2_msgs/msg/TFMessage"
+    - topic:
+    # Contains the contacts with off limit items
+        name: "/aic/gazebo/contacts/off_limit"
+        type: "ros_gz_interfaces/msg/Contacts"
+    - topic:
+    # Insertion force sensed by the force torque sensor
+        name: "/fts_broadcaster/wrench"
+        type: "geometry_msgs/msg/WrenchStamped"
+    - topic:
+    # Joint commands sent from the model to the robot controller
+        name: "/aic_controller/joint_commands"
+        type: "aic_control_interfaces/msg/JointMotionUpdate"
+    - topic:
+    # Pose commands sent from the model to the robot controller
+        name: "/aic_controller/pose_commands"
+        type: "aic_control_interfaces/msg/MotionUpdate"
+    - topic:
+    # Cable plug-port insertion task completion event
+        name: "/scoring/insertion_event"
+        type: "std_msgs/msg/String"
+    - topic:
+    # Controller state for force torque tare
+        name: "/aic_controller/controller_state"
+        type: "aic_control_interfaces/msg/ControllerState"
+
+task_board_limits:
+  nic_rail:
+    min_translation: -0.0215
+    max_translation: 0.0234
+  sc_rail:
+    min_translation: -0.06
+    max_translation: 0.055
+  mount_rail:
+    min_translation: -0.09425
+    max_translation: 0.09425
+
+trials:
+  # ── Trial 1: 2 SC ports ────────────────────────────────────────────────────
+  # SC_PORT_0 and SC_PORT_1 both on SC_RAIL_0, gap = 40 mm (> 30 mm minimum)
+  trial_1:
+    scene:
+        task_board:
+          pose:
+            x: 0.15
+            y: -0.2
+            z: 1.14
+            roll: 0.0
+            pitch: 0.0
+            yaw: 3.1415
+          nic_rail_0:
+            entity_present: False
+          nic_rail_1:
+            entity_present: False
+          nic_rail_2:
+            entity_present: False
+          nic_rail_3:
+            entity_present: False
+          nic_rail_4:
+            entity_present: False
+          sc_rail_0:
+            sc_port_0:
+              entity_present: True
+              entity_name: "sc_port_0"
+              entity_pose:
+                translation: -0.030
+                roll: 0.0
+                pitch: 0.0
+                yaw: 0.0
+            sc_port_1:
+              entity_present: True
+              entity_name: "sc_port_1"
+              entity_pose:
+                translation: 0.010  # 40 mm from sc_port_0
+                roll: 0.0
+                pitch: 0.0
+                yaw: 0.0
+            sc_port_2:
+              entity_present: False
+          sc_rail_1:
+            sc_port_3:
+              entity_present: False
+            sc_port_4:
+              entity_present: False
+            sc_port_5:
+              entity_present: False
+          lc_mount_rail_0:
+            entity_present: False
+          sfp_mount_rail_0:
+            entity_present: False
+          sc_mount_rail_0:
+            entity_present: False
+          lc_mount_rail_1:
+            entity_present: False
+          sfp_mount_rail_1:
+            entity_present: False
+          sc_mount_rail_1:
+            entity_present: False
+        cables:
+          cable_0:
+            pose:
+              gripper_offset:
+                x: 0.0
+                y: 0.015385
+                z: 0.04045
+              roll: 0.4432
+              pitch: -0.4838
+              yaw: 1.3303
+            attach_cable_to_gripper: False
+            cable_type: "sfp_sc_cable_reversed"
+    tasks:
+      task_1:
+        cable_type: "sfp_sc"
+        cable_name: "cable_0"
+        plug_type: "sc"
+        plug_name: "sc_tip"
+        port_type: "sc"
+        port_name: "sc_port_base"
+        target_module_name: "sc_port_0"
+        time_limit: 180
+
+  # ── Trial 2: 3 SC ports (non-contiguous, across both rails) ───────────────
+  # SC_PORT_0 on SC_RAIL_0; SC_PORT_3 and SC_PORT_5 on SC_RAIL_1
+  # SC_RAIL_1 gap: PORT_3 at -0.025, PORT_5 at 0.020 → gap = 45 mm (> 30 mm)
+  trial_2:
+    scene:
+        task_board:
+          pose:
+            x: 0.15
+            y: -0.2
+            z: 1.14
+            roll: 0.0
+            pitch: 0.0
+            yaw: 3.1415
+          nic_rail_0:
+            entity_present: False
+          nic_rail_1:
+            entity_present: False
+          nic_rail_2:
+            entity_present: False
+          nic_rail_3:
+            entity_present: False
+          nic_rail_4:
+            entity_present: False
+          sc_rail_0:
+            sc_port_0:
+              entity_present: True
+              entity_name: "sc_port_0"
+              entity_pose:
+                translation: 0.0
+                roll: 0.0
+                pitch: 0.0
+                yaw: 0.0
+            sc_port_1:
+              entity_present: False
+            sc_port_2:
+              entity_present: False
+          sc_rail_1:
+            sc_port_3:
+              entity_present: True
+              entity_name: "sc_port_3"
+              entity_pose:
+                translation: -0.025
+                roll: 0.0
+                pitch: 0.0
+                yaw: 0.0
+            sc_port_4:
+              entity_present: False
+            sc_port_5:
+              entity_present: True
+              entity_name: "sc_port_5"
+              entity_pose:
+                translation: 0.020  # 45 mm from sc_port_3
+                roll: 0.0
+                pitch: 0.0
+                yaw: 0.0
+          lc_mount_rail_0:
+            entity_present: False
+          sfp_mount_rail_0:
+            entity_present: False
+          sc_mount_rail_0:
+            entity_present: False
+          lc_mount_rail_1:
+            entity_present: False
+          sfp_mount_rail_1:
+            entity_present: False
+          sc_mount_rail_1:
+            entity_present: False
+        cables:
+          cable_0:
+            pose:
+              gripper_offset:
+                x: 0.0
+                y: 0.015385
+                z: 0.04045
+              roll: 0.4432
+              pitch: -0.4838
+              yaw: 1.3303
+            attach_cable_to_gripper: False
+            cable_type: "sfp_sc_cable_reversed"
+    tasks:
+      task_1:
+        cable_type: "sfp_sc"
+        cable_name: "cable_0"
+        plug_type: "sc"
+        plug_name: "sc_tip"
+        port_type: "sc"
+        port_name: "sc_port_base"
+        target_module_name: "sc_port_5"
+        time_limit: 180
+
+  # ── Trial 3: 5 SC ports ────────────────────────────────────────────────────
+  # SC_PORT_0, SC_PORT_1, SC_PORT_2 on SC_RAIL_0 (gaps exactly 30 mm each)
+  # SC_PORT_3, SC_PORT_4 on SC_RAIL_1 (gap exactly 30 mm)
+  # SC_PORT_5 absent
+  trial_3:
+    scene:
+        task_board:
+          pose:
+            x: 0.15
+            y: -0.2
+            z: 1.14
+            roll: 0.0
+            pitch: 0.0
+            yaw: 3.1415
+          nic_rail_0:
+            entity_present: False
+          nic_rail_1:
+            entity_present: False
+          nic_rail_2:
+            entity_present: False
+          nic_rail_3:
+            entity_present: False
+          nic_rail_4:
+            entity_present: False
+          sc_rail_0:
+            sc_port_0:
+              entity_present: True
+              entity_name: "sc_port_0"
+              entity_pose:
+                translation: -0.050
+                roll: 0.0
+                pitch: 0.0
+                yaw: 0.0
+            sc_port_1:
+              entity_present: True
+              entity_name: "sc_port_1"
+              entity_pose:
+                translation: -0.020  # 30 mm from sc_port_0
+                roll: 0.0
+                pitch: 0.0
+                yaw: 0.0
+            sc_port_2:
+              entity_present: True
+              entity_name: "sc_port_2"
+              entity_pose:
+                translation: 0.010  # 30 mm from sc_port_1
+                roll: 0.0
+                pitch: 0.0
+                yaw: 0.0
+          sc_rail_1:
+            sc_port_3:
+              entity_present: True
+              entity_name: "sc_port_3"
+              entity_pose:
+                translation: -0.015
+                roll: 0.0
+                pitch: 0.0
+                yaw: 0.0
+            sc_port_4:
+              entity_present: True
+              entity_name: "sc_port_4"
+              entity_pose:
+                translation: 0.015  # 30 mm from sc_port_3
+                roll: 0.0
+                pitch: 0.0
+                yaw: 0.0
+            sc_port_5:
+              entity_present: False
+          lc_mount_rail_0:
+            entity_present: False
+          sfp_mount_rail_0:
+            entity_present: False
+          sc_mount_rail_0:
+            entity_present: False
+          lc_mount_rail_1:
+            entity_present: False
+          sfp_mount_rail_1:
+            entity_present: False
+          sc_mount_rail_1:
+            entity_present: False
+        cables:
+          cable_0:
+            pose:
+              gripper_offset:
+                x: 0.0
+                y: 0.015385
+                z: 0.04045
+              roll: 0.4432
+              pitch: -0.4838
+              yaw: 1.3303
+            attach_cable_to_gripper: False
+            cable_type: "sfp_sc_cable_reversed"
+    tasks:
+      task_1:
+        cable_type: "sfp_sc"
+        cable_name: "cable_0"
+        plug_type: "sc"
+        plug_name: "sc_tip"
+        port_type: "sc"
+        port_name: "sc_port_base"
+        target_module_name: "sc_port_2"
+        time_limit: 180
+
+robot:
+  home_joint_positions:
+    shoulder_pan_joint: -0.1597
+    shoulder_lift_joint: -1.3542
+    elbow_joint: -1.6648
+    wrist_1_joint: -1.6933
+    wrist_2_joint: 1.5710
+    wrist_3_joint: 1.4110
