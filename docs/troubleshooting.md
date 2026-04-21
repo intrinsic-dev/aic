@@ -92,3 +92,17 @@ By default, distrobox uses podman but we are using docker in our setup. Make sur
 ```bash
 export DBX_CONTAINER_MANAGER=docker
 ```
+
+## Policy runs locally but fails silently on the portal
+
+If a policy passes the local verification test but fails on the portal with no error or stdout logs, the cause is often one of the following:
+
+### `task.time_limit` is enforced on the simulation clock
+
+The task time limit is measured against simulation time (the ROS clock), not wall-clock time. A policy that relies on `time.time()` or `time.sleep()` may work locally (where sim time closely tracks wall time at ~1.0 RTF) but misbehave on the portal if sim and wall time diverge. Use the ROS clock for any time-based logic inside the policy.
+
+### Heavy top-level imports count against the 30-second discovery budget
+
+When the policy module is loaded, all top-level code, including imports, runs within a 30-second model discovery budget (`model_discovery_timeout_seconds`). Importing large libraries such as `torch` at the top of the module can exceed this budget and cause the policy to be killed before it reports an error.
+
+Move heavy imports into the policy class `__init__` instead. The policy class is instantiated inside `on_configure`, which has its own 60-second budget (`model_configure_timeout_seconds`), giving imports more headroom and keeping discovery fast.
