@@ -19,6 +19,10 @@ import argparse
 import sys
 from pathlib import Path
 
+import matplotlib
+matplotlib.use("Agg")  # headless backend — no display required
+import matplotlib.pyplot as plt
+
 _aic_utils = str(Path(__file__).resolve().parent.parent)
 if _aic_utils not in sys.path:
     sys.path.insert(0, _aic_utils)
@@ -369,6 +373,7 @@ def train(args):
         n_layers=args.n_layers,
         ffn_dim=args.ffn_dim,
         dropout=args.dropout,
+        cfg_dropout_prob=0.1,
     ).to(device)
 
     # --- Freeze image encoder ---
@@ -405,6 +410,8 @@ def train(args):
 
     policy.train()
     global_step = 0
+    step_losses: list[float] = []   # loss at every optimizer step
+    epoch_losses: list[float] = []  # average loss per epoch
 
     for epoch in range(args.num_epochs):
         epoch_loss = 0.0
@@ -416,6 +423,7 @@ def train(args):
             nn.utils.clip_grad_norm_(policy.parameters(), max_norm=1.0)
             optimizer.step()
 
+            step_losses.append(loss.item())
             epoch_loss += loss.item()
             global_step += 1
 
@@ -423,6 +431,7 @@ def train(args):
                 print(f"  step {global_step:6d}  loss={loss.item():.4f}")
 
         avg_loss = epoch_loss / max(len(loader), 1)
+        epoch_losses.append(avg_loss)
         print(f"Epoch {epoch + 1}/{args.num_epochs}  avg_loss={avg_loss:.4f}")
 
         # Save checkpoint
@@ -438,6 +447,27 @@ def train(args):
             print(f"  Saved checkpoint: {ckpt_path}")
 
     print("Training complete.")
+
+    # --- Loss curves ---
+    fig, axes = plt.subplots(2, 1, figsize=(10, 8))
+
+    axes[0].plot(step_losses, linewidth=0.8, alpha=0.8)
+    axes[0].set_xlabel("Step")
+    axes[0].set_ylabel("Loss")
+    axes[0].set_title("Training loss (per step)")
+    axes[0].grid(True, linewidth=0.5)
+
+    axes[1].plot(range(1, len(epoch_losses) + 1), epoch_losses, marker="o", markersize=3)
+    axes[1].set_xlabel("Epoch")
+    axes[1].set_ylabel("Avg loss")
+    axes[1].set_title("Training loss (per epoch average)")
+    axes[1].grid(True, linewidth=0.5)
+
+    fig.tight_layout()
+    plot_path = output_dir / "loss_curve.png"
+    fig.savefig(plot_path, dpi=150)
+    plt.close(fig)
+    print(f"Loss curve saved to {plot_path}")
 
 
 def debug_dataset(args):
@@ -470,7 +500,7 @@ def parse_args():
 
     # Sequence lengths
     p.add_argument("--obs_horizon",  type=int, default=2)
-    p.add_argument("--pred_horizon", type=int, default=4)
+    p.add_argument("--pred_horizon", type=int, default=8)
     p.add_argument("--action_dim",   type=int, default=7)
 
     # Diffusion

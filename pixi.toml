@@ -21,6 +21,7 @@ evdev = ">=1.9.2,<2"
 py-opencv = { version = "*", build = "*headless*" }  # force headless build to avoid Qt6 dependency
 isort = "==5.13.2"                                                                     # version bundled by the vscode extension
 json5 = ">=0.13.0,<0.14"                                                               # version bundled by the vscode extension
+matplotlib = ">=3.9.0"
 numpy = "<2.3.0"
 packaging = ">=24.2,<26.0"                                                             # required by lerobot==0.4.3
 pyright = "==1.1.408"

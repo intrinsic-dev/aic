@@ -21,6 +21,17 @@ Architecture overview:
 All tokens share a unified dimension TOKEN_DIM = 128.  No projection layers are
 needed inside DiffusionTransformer — each encoder outputs directly at that dim.
 
+Classifier-Free Guidance (CFG) on task identity:
+  Training: with probability cfg_dropout_prob, replace the task token with a
+  learnable null token (TaskEncoder.null_token).  The model learns to denoise
+  both conditionally and unconditionally from the same weights.
+
+  Inference (sample): run two forward passes per denoising step —
+    eps_uncond = forward(..., use_uncond_task=True)
+    eps_cond   = forward(..., use_uncond_task=False)
+    eps        = eps_uncond + guidance_scale * (eps_cond - eps_uncond)
+  guidance_scale=1.0 disables CFG (single conditional pass).
+
   ImageEncoder:   ResNet18 feature (512-d) split into 4 × 128-d tokens per view
   StateEncoder:   MLP  20 → 256 → 128
   TaskEncoder:    nn.Embedding(12, 128)
@@ -299,7 +310,15 @@ class TaskEncoder(nn.Module):
         super().__init__()
         self.task_embed_dim = task_embed_dim
         self.embedding = nn.Embedding(self.NUM_TASKS, task_embed_dim)
+        # Learnable unconditional token used for CFG (replaces the task token
+        # with probability cfg_dropout_prob during training, and is used for the
+        # unconditional forward pass during CFG inference).
+        self.null_token = nn.Parameter(torch.zeros(task_embed_dim))
         self.register_buffer("lookup", self._LOOKUP.clone())
+
+    def uncond_token(self, batch_size: int, device: torch.device) -> torch.Tensor:
+        """Return the learnable null token expanded to (batch_size, 1, TOKEN_DIM)."""
+        return self.null_token.view(1, 1, -1).expand(batch_size, 1, -1)
 
     def forward(
         self,
@@ -498,10 +517,13 @@ class DiffusionPolicy(nn.Module):
         # Vision backbone
         resnet_name: str = "resnet18",
         resnet_weights="IMAGENET1K_V1",
+        # Classifier-Free Guidance
+        cfg_dropout_prob: float = 0.0,
     ):
         super().__init__()
         self.obs_horizon = obs_horizon
         self.action_dim  = action_dim
+        self.cfg_dropout_prob = cfg_dropout_prob
 
         # --- Image encoder (single shared ResNet18 for all three cameras) ---
         self.image_encoder = ImageEncoder(
@@ -551,16 +573,19 @@ class DiffusionPolicy(nn.Module):
         port_name: torch.Tensor,
         noisy_action: torch.Tensor,
         timestep: torch.Tensor,
+        use_uncond_task: bool = False,
     ) -> torch.Tensor:
         """Predict noise given noisy action and all conditioning inputs.
 
         Args:
-            images:        {camera_key: (B, obs_horizon, C, H, W)} — normalised to [0, 1]
-            robot_state:   (B, obs_horizon, ROBOT_STATE_DIM)
-            target_module: (B,) int64
-            port_name:     (B,) int64
-            noisy_action:  (B, pred_horizon, action_dim)
-            timestep:      (B,) int64 diffusion step
+            images:          {camera_key: (B, obs_horizon, C, H, W)} — normalised to [0, 1]
+            robot_state:     (B, obs_horizon, ROBOT_STATE_DIM)
+            target_module:   (B,) int64
+            port_name:       (B,) int64
+            noisy_action:    (B, pred_horizon, action_dim)
+            timestep:        (B,) int64 diffusion step
+            use_uncond_task: if True, replace task token with the learnable null token
+                             (used for the unconditional pass during CFG inference)
 
         Returns:
             noise_pred: (B, pred_horizon, action_dim)
@@ -575,8 +600,20 @@ class DiffusionPolicy(nn.Module):
             robot_state.flatten(end_dim=1)                    # (B*obs_horizon, ROBOT_STATE_DIM)
         ).reshape(B, self.obs_horizon, -1)                    # (B, obs_horizon, TOKEN_DIM)
 
-        # --- Task token: single embedding for the combined task identity ---
-        task_token = self.task_encoder(target_module, port_name)  # (B, 1, TOKEN_DIM)
+        # --- Task token: conditional or unconditional ---
+        if use_uncond_task:
+            # CFG inference: unconditional pass uses the learnable null token
+            task_token = self.task_encoder.uncond_token(B, noisy_action.device)
+        else:
+            task_token = self.task_encoder(target_module, port_name)  # (B, 1, TOKEN_DIM)
+
+            # CFG training dropout: randomly replace task token with null token
+            if self.cfg_dropout_prob > 0.0 and self.training:
+                null_token = self.task_encoder.uncond_token(B, noisy_action.device)
+                drop_mask = (
+                    torch.rand(B, device=noisy_action.device) < self.cfg_dropout_prob
+                ).view(B, 1, 1)
+                task_token = torch.where(drop_mask, null_token, task_token)
 
         # --- Diffusion timestep embedding ---
         timestep_emb = self.timestep_encoder(timestep)        # (B, TOKEN_DIM)
@@ -604,21 +641,28 @@ class DiffusionPolicy(nn.Module):
         beta_start: float = 1e-4,
         beta_end: float = 0.02,
         pred_horizon: int = 16,
+        guidance_scale: float = 1.0,
     ) -> torch.Tensor:
         """Run DDPM reverse diffusion to generate an action sequence.
 
         Starts from pure Gaussian noise and iteratively denoises over
         num_timesteps steps using the trained noise prediction network.
 
+        When guidance_scale > 1.0, Classifier-Free Guidance is applied at each
+        step: two forward passes are run (conditional and unconditional), and
+        the noise estimates are combined as:
+            eps = eps_uncond + guidance_scale * (eps_cond - eps_uncond)
+
         Args:
-            images:        {camera_key: (B, obs_horizon, C, H, W)} — normalised to [0, 1]
-            robot_state:   (B, obs_horizon, ROBOT_STATE_DIM)
-            target_module: (B,) int64
-            port_name:     (B,) int64
-            num_timesteps: number of denoising steps (should match training)
-            beta_start:    start of linear beta schedule (should match training)
-            beta_end:      end of linear beta schedule (should match training)
-            pred_horizon:  number of action steps to generate
+            images:         {camera_key: (B, obs_horizon, C, H, W)} — normalised to [0, 1]
+            robot_state:    (B, obs_horizon, ROBOT_STATE_DIM)
+            target_module:  (B,) int64
+            port_name:      (B,) int64
+            num_timesteps:  number of denoising steps (should match training)
+            beta_start:     start of linear beta schedule (should match training)
+            beta_end:       end of linear beta schedule (should match training)
+            pred_horizon:   number of action steps to generate
+            guidance_scale: CFG scale (1.0 = no CFG, >1.0 strengthens task conditioning)
 
         Returns:
             action: (B, pred_horizon, action_dim) — denoised tcp_pose sequence
@@ -634,26 +678,45 @@ class DiffusionPolicy(nn.Module):
         # x_T ~ N(0, I)
         x = torch.randn(B, pred_horizon, self.action_dim, device=device)
 
+        use_cfg = guidance_scale != 1.0
+
         # Reverse diffusion: t = T-1 → 0
         for t_int in reversed(range(num_timesteps)):
             t = torch.full((B,), t_int, dtype=torch.long, device=device)
 
-            # Predict noise
-            eps = self(
+            # Conditional noise prediction
+            eps_cond = self(
                 images=images,
                 robot_state=robot_state,
                 target_module=target_module,
                 port_name=port_name,
                 noisy_action=x,
                 timestep=t,
+                use_uncond_task=False,
             )
+
+            if use_cfg:
+                # Unconditional noise prediction (null task token)
+                eps_uncond = self(
+                    images=images,
+                    robot_state=robot_state,
+                    target_module=target_module,
+                    port_name=port_name,
+                    noisy_action=x,
+                    timestep=t,
+                    use_uncond_task=True,
+                )
+                # CFG combination: steer noise prediction toward the task condition
+                eps = eps_uncond + guidance_scale * (eps_cond - eps_uncond)
+            else:
+                eps = eps_cond
 
             # DDPM reverse step:
             #   x_{t-1} = 1/sqrt(alpha_t) * (x_t - beta_t/sqrt(1-alpha_bar_t) * eps)
             #             + sigma_t * z   (z=0 at t=0)
-            alpha_t    = alphas[t_int]
+            alpha_t     = alphas[t_int]
             alpha_bar_t = alpha_bar[t_int]
-            beta_t     = betas[t_int]
+            beta_t      = betas[t_int]
 
             mean = (x - beta_t / (1.0 - alpha_bar_t).sqrt() * eps) / alpha_t.sqrt()
 
