@@ -1,18 +1,25 @@
 #!/usr/bin/env python3
 """
-Training scaffold for DiffusionPolicy on AIC cable-insertion datasets.
+Training scaffold for DiffusionPolicy — 6D rotation action representation.
 
-High-level flow:
-  1. Load one or more LeRobot datasets from disk.
-  2. Build a DataLoader that yields observation/action batches.
-  3. Train the noise prediction network with the DDPM objective:
-       loss = MSE(noise_pred, noise)
-     where noisy_action = sqrt(alpha_bar) * action + sqrt(1 - alpha_bar) * noise.
+Identical to train_diffusion.py except:
+  - tcp_pose.orientation quaternion (4D) is converted to the 6D continuous
+    rotation representation (Zhou et al., 2019).
+  - action_dim is therefore 9  (3 position + 6D rotation) instead of 7.
+  - Quaternion validity is checked at dataset load time.
+
+The quaternion_to_matrix and matrix_to_rotation_6d functions are ported
+directly from pytorch3d/transforms/rotation_conversions.py (no pytorch3d
+dependency required).
+
+6D rotation reference:
+    "On the Continuity of Rotation Representations in Neural Networks"
+    Zhou et al., CVPR 2019.  https://arxiv.org/abs/1812.07035
 
 Usage:
-    pixi run python3 aic_training/train_diffusion.py \
+    pixi run python3 aic_training/train_diffusion_rot6d.py \
         --dataset_dirs /path/to/dataset1 /path/to/dataset2 \
-        --output_dir outputs/diffusion
+        --output_dir outputs/diffusion_rot6d
 """
 
 import argparse
@@ -32,6 +39,64 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, ConcatDataset
 
+
+# ---------------------------------------------------------------------------
+# Rotation conversion utilities
+# (ported from pytorch3d/transforms/rotation_conversions.py, no dependency)
+# ---------------------------------------------------------------------------
+
+def quaternion_to_matrix(quaternions: torch.Tensor) -> torch.Tensor:
+    """Convert quaternions to rotation matrices.
+
+    Matches pytorch3d.transforms.quaternion_to_matrix exactly.
+
+    Args:
+        quaternions: (..., 4) — real part first, i.e. (w, x, y, z)
+
+    Returns:
+        rotation matrices: (..., 3, 3)
+    """
+    if quaternions.shape[-1] != 4:
+        raise ValueError("quaternions must have last dimension 4")
+
+    r, i, j, k = torch.unbind(quaternions, dim=-1)   # w, x, y, z
+
+    # two_s = 2 / |q|²  (= 2 for unit quaternions)
+    two_s = torch.div(2.0, (quaternions * quaternions).sum(dim=-1))
+
+    o = torch.stack([
+        1 - two_s * (j * j + k * k),
+        two_s * (i * j - k * r),
+        two_s * (i * k + j * r),
+        two_s * (i * j + k * r),
+        1 - two_s * (i * i + k * k),
+        two_s * (j * k - i * r),
+        two_s * (i * k - j * r),
+        two_s * (j * k + i * r),
+        1 - two_s * (i * i + j * j),
+    ], dim=-1)
+
+    return o.reshape(quaternions.shape[:-1] + (3, 3))
+
+
+def matrix_to_rotation_6d(matrix: torch.Tensor) -> torch.Tensor:
+    """Convert rotation matrices to the 6D continuous representation.
+
+    Takes the first two columns of each rotation matrix and flattens them.
+    Matches pytorch3d.transforms.matrix_to_rotation_6d exactly.
+
+    Reference: Zhou et al. "On the Continuity of Rotation Representations
+    in Neural Networks", CVPR 2019. https://arxiv.org/abs/1812.07035
+
+    Args:
+        matrix: (..., 3, 3)
+
+    Returns:
+        6D vectors: (..., 6) — [R[:,0], R[:,1]] flattened row-major
+    """
+    batch_dim = matrix.shape[:-2]
+    return matrix[..., :2, :].clone().reshape(batch_dim + (6,))
+
 from aic_training.diffusion_policy import (
     DiffusionPolicy,
     TOKEN_DIM,
@@ -40,7 +105,7 @@ from aic_training.diffusion_policy import (
 
 
 # ---------------------------------------------------------------------------
-# DDPM noise schedule
+# DDPM noise schedule  (unchanged)
 # ---------------------------------------------------------------------------
 
 class DDPMSchedule:
@@ -62,7 +127,6 @@ class DDPMSchedule:
         alphas = 1.0 - betas
         alpha_bar = torch.cumprod(alphas, dim=0)          # ᾱ_t
 
-        # Register as plain tensors (not nn.Parameters) — move to device manually
         self.betas     = betas
         self.alpha_bar = alpha_bar                        # (T,)
 
@@ -77,16 +141,7 @@ class DDPMSchedule:
         noise: torch.Tensor,
         t: torch.Tensor,
     ) -> torch.Tensor:
-        """Sample q(x_t | x_0) = sqrt(ᾱ_t) * x0 + sqrt(1 - ᾱ_t) * noise.
-
-        Args:
-            x0:    (B, pred_horizon, action_dim) — clean action
-            noise: (B, pred_horizon, action_dim) — standard Gaussian noise
-            t:     (B,) int64 — diffusion timestep indices
-
-        Returns:
-            noisy_action: (B, pred_horizon, action_dim)
-        """
+        """Sample q(x_t | x_0) = sqrt(ᾱ_t) * x0 + sqrt(1 - ᾱ_t) * noise."""
         ab = self.alpha_bar[t]                            # (B,)
         ab = ab[:, None, None]                            # broadcast over horizon & dim
         return ab.sqrt() * x0 + (1.0 - ab).sqrt() * noise
@@ -118,30 +173,56 @@ _SIDX = {name: i for i, name in enumerate(_STATE_NAMES)}
 #   tcp_pose(7) + joint_positions(7) + wrench.force(3) + wrench.torque(3)
 _ROBOT_STATE_COLS = list(range(0, 7)) + list(range(19, 26)) + list(range(26, 32))
 
-_COL_EPISODE_NUMBER  = _SIDX["episode_number"]    # 42
-_COL_INSERTION_EVENT = _SIDX["insertion_event"]   # 39
-_COL_PORT_NAME       = _SIDX["task.port_name"]    # 41
+_COL_EPISODE_NUMBER  = _SIDX["episode_number"]     # 42
+_COL_INSERTION_EVENT = _SIDX["insertion_event"]    # 39
+_COL_PORT_NAME       = _SIDX["task.port_name"]     # 41
 _COL_TARGET_MODULE   = _SIDX["task.target_module"] # 40
 
+# Quaternion columns in the state vector: (qx, qy, qz, qw)
+_COL_QUAT_XYZW = slice(3, 7)
+
+QUAT_NORM_TOL = 1e-3   # frames whose quaternion norm deviates more than this are flagged
+
 CAMERA_KEYS = ("left_camera", "center_camera", "right_camera")
+
+
+def _quat_xyzw_to_rot6d(quat_xyzw: np.ndarray) -> torch.Tensor:
+    """Convert an array of (qx, qy, qz, qw) quaternions to 6D rotation vectors.
+
+    Args:
+        quat_xyzw: (N, 4) float32 — quaternions in (x, y, z, w) order
+    Returns:
+        rot6d: (N, 6) float32 — first two columns of the rotation matrix, flattened
+    """
+    # pytorch3d uses (w, x, y, z) convention
+    quat_wxyz = np.concatenate([quat_xyzw[:, 3:4], quat_xyzw[:, :3]], axis=1)
+    quat_t = torch.from_numpy(quat_wxyz.astype(np.float32))  # (N, 4)
+    R = quaternion_to_matrix(quat_t)                          # (N, 3, 3)
+    return matrix_to_rotation_6d(R)                           # (N, 6)
 
 
 class AICLeRobotDataset(torch.utils.data.Dataset):
     """Wraps a single LeRobot dataset directory for diffusion policy training.
 
-    Chunking logic:
-      - Rows are grouped into episode chunks by changes in observation.state.episode_number.
-      - The last chunk is always discarded (may be incomplete).
-      - Chunks where task.port_name != 2 (SFP task) and insertion_event never reaches 2
-        (no successful insertion) are discarded as failed episodes.
-      - Valid chunks are sliced into sliding windows of length obs_horizon + pred_horizon.
+    Identical to AICLeRobotDataset in train_diffusion.py except the action
+    representation uses 6D rotations instead of quaternions:
 
-    Each sample contains:
-        images:        dict {camera_key: (obs_horizon, C, H, W)}  float32 [0, 1]
-        robot_state:   (obs_horizon, ROBOT_STATE_DIM)              float32
-        target_module: ()  int64
-        port_name:     ()  int64
-        action:        (pred_horizon, 7)                           float32  tcp_pose [x,y,z,qx,qy,qz,qw]
+        action: (pred_horizon, 9)  — tcp_pose [x, y, z, r6d_0..r6d_5]
+
+    The 6D rotation is the first two columns of the SO(3) rotation matrix
+    (Zhou et al. 2019), converted from the recorded quaternion via pytorch3d.
+
+    Quaternion validity is checked at load time: frames whose orientation
+    quaternion has norm outside [1 − QUAT_NORM_TOL, 1 + QUAT_NORM_TOL] are
+    flagged with a warning.
+
+    Chunking logic (unchanged):
+      - Rows are grouped into episode chunks by changes in episode_number.
+      - The last chunk is always discarded (may be incomplete).
+      - Chunks where task.port_name != 2 and insertion_event never reaches 2
+        are discarded as failed episodes.
+      - Valid chunks are sliced into sliding windows of length
+        obs_horizon + pred_horizon.
     """
 
     def __init__(
@@ -149,7 +230,7 @@ class AICLeRobotDataset(torch.utils.data.Dataset):
         dataset_dir: str | Path,
         obs_horizon: int = 2,
         pred_horizon: int = 16,
-        action_dim: int = 7,
+        action_dim: int = 9,   # 3 position + 6D rotation
     ):
         from lerobot.datasets.lerobot_dataset import LeRobotDataset
 
@@ -158,15 +239,12 @@ class AICLeRobotDataset(torch.utils.data.Dataset):
         self.action_dim   = action_dim
         self._window_len  = obs_horizon + pred_horizon
 
-        # LeRobot dataset handles image/video decoding; indexed by global frame index.
         self._lerobot = LeRobotDataset(str(dataset_dir))
 
-        # Load all state arrays and global indices from parquet for fast chunking.
         state_arr, global_indices = self._load_state()
-        self._global_indices = global_indices    # shape (N,) — maps local row → global frame idx
-        self._state_arr      = state_arr         # shape (N, 43)
+        self._global_indices = global_indices    # (N,) — maps local row → global frame idx
+        self._state_arr      = state_arr         # (N, 43)
 
-        # Build list of valid window start positions (local indices into state_arr).
         self._windows = self._build_windows(state_arr)
         print(
             f"[AICLeRobotDataset] {Path(dataset_dir).name}: "
@@ -178,42 +256,59 @@ class AICLeRobotDataset(torch.utils.data.Dataset):
     # ------------------------------------------------------------------
 
     def _load_state(self):
-        """Read state array and global indices from the already-loaded lerobot dataset."""
+        """Read state array and global indices; validate orientation quaternions."""
         hf = self._lerobot.hf_dataset
         state_arr      = np.stack(hf["observation.state"]).astype(np.float32)
         global_indices = np.array(hf["index"], dtype=np.int64)
+
+        # Check tcp_pose.orientation is a valid unit quaternion for every frame.
+        # Columns 3:7 are (qx, qy, qz, qw).
+        quats = state_arr[:, _COL_QUAT_XYZW]           # (N, 4)
+        norms = np.linalg.norm(quats, axis=1)           # (N,)
+        bad   = np.abs(norms - 1.0) > QUAT_NORM_TOL
+        n_bad = int(bad.sum())
+        if n_bad > 0:
+            bad_indices = np.where(bad)[0]
+            print(
+                f"[AICLeRobotDataset] WARNING: {n_bad}/{len(state_arr)} frames have "
+                f"non-unit tcp_pose.orientation (|norm-1| > {QUAT_NORM_TOL}). "
+                f"First 5 bad local indices: {bad_indices[:5].tolist()}, "
+                f"norms: {norms[bad_indices[:5]].tolist()}"
+            )
+        else:
+            print(
+                f"[AICLeRobotDataset] All {len(state_arr)} quaternions are valid "
+                f"(norm within {QUAT_NORM_TOL} of 1.0)."
+            )
+
         return state_arr, global_indices
 
     def _build_windows(self, state_arr: np.ndarray) -> list[int]:
         """Return list of valid window start positions (local indices).
 
         Rules:
-          1. Split rows into chunks wherever episode_number increases.
+          1. Split rows into chunks wherever episode_number changes.
           2. Always discard the last chunk (may be incomplete).
           3. Discard chunks where port_name != 2 and insertion_event never reaches 2.
           4. Slide a window of length obs_horizon + pred_horizon over each kept chunk.
         """
         ep_num = state_arr[:, _COL_EPISODE_NUMBER]
 
-        # Episode boundaries: row indices where episode_number changes
         changes   = np.where(np.diff(ep_num) != 0)[0] + 1
         ep_starts = np.concatenate([[0], changes])
         ep_ends   = np.concatenate([changes, [len(ep_num)]])
         num_episodes = len(ep_starts)
 
         windows: list[int] = []
-        # Discard last chunk → iterate only up to num_episodes - 1
         for i in range(num_episodes - 1):
             s, e = int(ep_starts[i]), int(ep_ends[i])
             chunk = state_arr[s:e]
 
-            # Filter: discard failed SFP episodes (port_name != 2 and no insertion)
             port_name     = int(round(chunk[0, _COL_PORT_NAME]))
             max_insertion = float(chunk[:, _COL_INSERTION_EVENT].max())
             if port_name != 2 and max_insertion < 2:
                 continue
 
-            # Slide window over the kept chunk
             chunk_len = e - s
             for w in range(chunk_len - self._window_len + 1):
                 windows.append(s + w)
@@ -231,14 +326,12 @@ class AICLeRobotDataset(torch.utils.data.Dataset):
         local_start = self._windows[idx]
         local_end   = local_start + self._window_len
 
-        # Global frame indices for this window
         gidx = self._global_indices[local_start:local_end]  # (window_len,)
 
         # --- Robot state: first obs_horizon frames ---
-        obs_state = self._state_arr[local_start : local_start + self.obs_horizon]
+        obs_state   = self._state_arr[local_start : local_start + self.obs_horizon]
         robot_state = torch.from_numpy(obs_state[:, _ROBOT_STATE_COLS])  # (obs_horizon, 20)
 
-        # Task identity (constant within episode; read from first obs frame)
         target_module = torch.tensor(
             int(round(obs_state[0, _COL_TARGET_MODULE])), dtype=torch.int64
         )
@@ -247,18 +340,24 @@ class AICLeRobotDataset(torch.utils.data.Dataset):
         )
 
         # --- Actions: tcp_pose for pred_horizon frames after the obs window ---
-        # Cols 0:7 = tcp_pose.position(3) + tcp_pose.orientation(4)
         pred_state = self._state_arr[
             local_start + self.obs_horizon : local_start + self.obs_horizon + self.pred_horizon
-        ]
-        action = torch.from_numpy(pred_state[:, :7])  # (pred_horizon, 7)
+        ]                                                   # (pred_horizon, 43)
+
+        # Position: cols 0:3  →  (pred_horizon, 3)
+        pos = torch.from_numpy(pred_state[:, :3].astype(np.float32))
+
+        # Orientation: cols 3:7 are (qx, qy, qz, qw) → 6D rotation (pred_horizon, 6)
+        rot6d = _quat_xyzw_to_rot6d(pred_state[:, 3:7])    # (pred_horizon, 6)
+
+        action = torch.cat([pos, rot6d], dim=-1)            # (pred_horizon, 9)
 
         # --- Images: obs_horizon frames ---
         images: dict[str, torch.Tensor] = {k: [] for k in CAMERA_KEYS}
         for gi in gidx[: self.obs_horizon]:
             frame = self._lerobot[int(gi)]
             for k in CAMERA_KEYS:
-                img = frame[f"observation.images.{k}"]   # (C, H, W) float32 [0, 1]
+                img = frame[f"observation.images.{k}"]
                 images[k].append(img)
         images = {k: torch.stack(v) for k, v in images.items()}  # (obs_horizon, C, H, W)
 
@@ -271,7 +370,7 @@ class AICLeRobotDataset(torch.utils.data.Dataset):
             "robot_state":    robot_state,
             "target_module":  target_module,
             "port_name":      port_name,
-            "action":         action,
+            "action":         action,           # (pred_horizon, 9)
             "episode_number": episode_number,
         }
 
@@ -301,7 +400,7 @@ def build_dataloader(
 
 
 # ---------------------------------------------------------------------------
-# Training step
+# Training step  (unchanged)
 # ---------------------------------------------------------------------------
 
 def ddpm_loss(
@@ -310,39 +409,19 @@ def ddpm_loss(
     batch: dict,
     device: torch.device,
 ) -> torch.Tensor:
-    """Single DDPM training step: sample t and noise, compute MSE loss.
-
-    DDPM objective:
-        L = E_{t, x0, ε} [ || ε - ε_θ(sqrt(ᾱ_t)*x0 + sqrt(1-ᾱ_t)*ε, t) ||² ]
-
-    Args:
-        policy:   DiffusionPolicy model
-        schedule: DDPMSchedule with noise schedule tensors
-        batch:    dict of tensors from the DataLoader
-        device:   torch device
-
-    Returns:
-        loss: scalar tensor
-    """
+    """Single DDPM training step: sample t and noise, compute MSE loss."""
     action = batch["action"].to(device)               # (B, pred_horizon, action_dim)
     B = action.shape[0]
 
-    # Sample random diffusion timesteps for each item in the batch
-    t = torch.randint(0, schedule.num_timesteps, (B,), device=device)
-
-    # Sample Gaussian noise
-    noise = torch.randn_like(action)                  # (B, pred_horizon, action_dim)
-
-    # Forward diffusion: corrupt the clean action
+    t     = torch.randint(0, schedule.num_timesteps, (B,), device=device)
+    noise = torch.randn_like(action)
     noisy_action = schedule.add_noise(action, noise, t)
 
-    # Move all conditioning inputs to device
-    images = {k: v.to(device) for k, v in batch["images"].items()}
-    robot_state   = batch["robot_state"].to(device)   # (B, obs_horizon, ROBOT_STATE_DIM)
+    images        = {k: v.to(device) for k, v in batch["images"].items()}
+    robot_state   = batch["robot_state"].to(device)
     target_module = batch["target_module"].to(device)
     port_name     = batch["port_name"].to(device)
 
-    # Predict noise
     noise_pred = policy(
         images=images,
         robot_state=robot_state,
@@ -350,20 +429,19 @@ def ddpm_loss(
         port_name=port_name,
         noisy_action=noisy_action,
         timestep=t,
-    )                                                 # (B, pred_horizon, action_dim)
+    )
 
     return nn.functional.mse_loss(noise_pred, noise)
 
 
 # ---------------------------------------------------------------------------
-# Main training loop
+# Main training loop  (unchanged except action_dim default)
 # ---------------------------------------------------------------------------
 
 def train(args):
     device = torch.device(args.device if torch.cuda.is_available() else "cpu")
     print(f"Training on {device}")
 
-    # --- Model ---
     policy = DiffusionPolicy(
         obs_horizon=args.obs_horizon,
         action_dim=args.action_dim,
@@ -376,25 +454,19 @@ def train(args):
         cfg_dropout_prob=args.cfg_dropout_prob,
     ).to(device)
 
-    # --- Freeze image encoder ---
     for p in policy.image_encoder.parameters():
         p.requires_grad = False
 
-    # --- Model summary (temporary) ---
-    total = sum(p.numel() for p in policy.parameters())
+    total     = sum(p.numel() for p in policy.parameters())
     trainable = sum(p.numel() for p in policy.parameters() if p.requires_grad)
     print(f"\nModel parameters: {total:,} total, {trainable:,} trainable")
     for name, mod in policy.named_children():
         n = sum(p.numel() for p in mod.parameters())
         print(f"  {name:<30} {n:>12,}")
 
-    # --- Noise schedule ---
-    schedule = DDPMSchedule(num_timesteps=args.num_timesteps, device=device)
-
-    # --- Optimizer ---
+    schedule  = DDPMSchedule(num_timesteps=args.num_timesteps, device=device)
     optimizer = torch.optim.AdamW(policy.parameters(), lr=args.lr, weight_decay=1e-4)
 
-    # --- Data ---
     loader = build_dataloader(
         dataset_dirs=args.dataset_dirs,
         obs_horizon=args.obs_horizon,
@@ -404,14 +476,13 @@ def train(args):
         num_workers=args.num_workers,
     )
 
-    # --- Training loop ---
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
     policy.train()
     global_step = 0
-    step_losses: list[float] = []   # loss at every optimizer step
-    epoch_losses: list[float] = []  # average loss per epoch
+    step_losses: list[float] = []
+    epoch_losses: list[float] = []
 
     for epoch in range(args.num_epochs):
         epoch_loss = 0.0
@@ -434,7 +505,6 @@ def train(args):
         epoch_losses.append(avg_loss)
         print(f"Epoch {epoch + 1}/{args.num_epochs}  avg_loss={avg_loss:.4f}")
 
-        # Save checkpoint
         if (epoch + 1) % args.save_every == 0:
             ckpt_path = output_dir / f"checkpoint_epoch{epoch + 1:04d}.pt"
             torch.save({
@@ -448,21 +518,17 @@ def train(args):
 
     print("Training complete.")
 
-    # --- Loss curves ---
     fig, axes = plt.subplots(2, 1, figsize=(10, 8))
-
     axes[0].plot(step_losses, linewidth=0.8, alpha=0.8)
     axes[0].set_xlabel("Step")
     axes[0].set_ylabel("Loss")
     axes[0].set_title("Training loss (per step)")
     axes[0].grid(True, linewidth=0.5)
-
     axes[1].plot(range(1, len(epoch_losses) + 1), epoch_losses, marker="o", markersize=3)
     axes[1].set_xlabel("Epoch")
     axes[1].set_ylabel("Avg loss")
     axes[1].set_title("Training loss (per epoch average)")
     axes[1].grid(True, linewidth=0.5)
-
     fig.tight_layout()
     plot_path = output_dir / "loss_curve.png"
     fig.savefig(plot_path, dpi=150)
@@ -471,7 +537,6 @@ def train(args):
 
 
 def debug_dataset(args):
-    # --- Data ---
     loader = build_dataloader(
         dataset_dirs=args.dataset_dirs,
         obs_horizon=args.obs_horizon,
@@ -490,18 +555,21 @@ def debug_dataset(args):
 # ---------------------------------------------------------------------------
 
 def parse_args():
-    p = argparse.ArgumentParser(description="Train DiffusionPolicy on AIC datasets")
+    p = argparse.ArgumentParser(
+        description="Train DiffusionPolicy with 6D rotation action representation"
+    )
 
     # Data
     p.add_argument("--dataset_dirs", nargs="+", required=True,
                    help="Paths to one or more LeRobot dataset directories")
-    p.add_argument("--output_dir", default="outputs/diffusion",
+    p.add_argument("--output_dir", default="outputs/diffusion_rot6d",
                    help="Directory for checkpoints and logs")
 
     # Sequence lengths
     p.add_argument("--obs_horizon",  type=int, default=2)
     p.add_argument("--pred_horizon", type=int, default=8)
-    p.add_argument("--action_dim",   type=int, default=7)
+    p.add_argument("--action_dim",   type=int, default=9,
+                   help="Action dimension: 3 position + 6D rotation = 9")
 
     # Diffusion
     p.add_argument("--num_timesteps", type=int, default=50)

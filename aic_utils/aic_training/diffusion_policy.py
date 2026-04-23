@@ -50,6 +50,8 @@ Task integer encodings (from aic_robot_aic_controller.py):
         "sfp_port_0" → 0,  "sfp_port_1" → 1,  "sc_port_base" → 2
 """
 
+import time
+
 import torch
 import torch.nn as nn
 import torchvision
@@ -525,6 +527,12 @@ class DiffusionPolicy(nn.Module):
         self.action_dim  = action_dim
         self.cfg_dropout_prob = cfg_dropout_prob
 
+        # --- Profiling (disabled by default; set policy.profiling = True to enable) ---
+        self.profiling = False
+        self._prof_log_every = 50   # log average timings every N forward calls
+        self._prof_n   = 0
+        self._prof_acc: dict[str, float] = {}
+
         # --- Image encoder (single shared ResNet18 for all three cameras) ---
         self.image_encoder = ImageEncoder(
             resnet_name=resnet_name,
@@ -565,6 +573,35 @@ class DiffusionPolicy(nn.Module):
             dropout=dropout,
         )
 
+    # ------------------------------------------------------------------
+    # Profiling helpers
+    # ------------------------------------------------------------------
+
+    def _tock(self, t0: float, name: str, device: torch.device) -> float:
+        """Sync CUDA (if needed), record elapsed ms since t0, return new t0."""
+        if device.type == "cuda":
+            torch.cuda.synchronize(device)
+        t1 = time.perf_counter()
+        self._prof_acc[name] = self._prof_acc.get(name, 0.0) + (t1 - t0) * 1e3
+        return t1
+
+    def _prof_report(self) -> None:
+        """Log average per-component timings and reset accumulators."""
+        n = max(self._prof_n, 1)
+        lines = ["DiffusionPolicy forward profile (avg over last "
+                 f"{n} calls):"]
+        total = 0.0
+        for name, acc in self._prof_acc.items():
+            avg = acc / n
+            total += avg
+            lines.append(f"  {name:<20} {avg:6.2f} ms")
+        lines.append(f"  {'TOTAL':<20} {total:6.2f} ms")
+        print("\n".join(lines), flush=True)
+        self._prof_n   = 0
+        self._prof_acc = {}
+
+    # ------------------------------------------------------------------
+
     def forward(
         self,
         images: dict,
@@ -574,44 +611,68 @@ class DiffusionPolicy(nn.Module):
         noisy_action: torch.Tensor,
         timestep: torch.Tensor,
         use_uncond_task: bool = False,
+        img_tokens_cache: torch.Tensor | None = None,
     ) -> torch.Tensor:
         """Predict noise given noisy action and all conditioning inputs.
 
         Args:
-            images:          {camera_key: (B, obs_horizon, C, H, W)} — normalised to [0, 1]
-            robot_state:     (B, obs_horizon, ROBOT_STATE_DIM)
-            target_module:   (B,) int64
-            port_name:       (B,) int64
-            noisy_action:    (B, pred_horizon, action_dim)
-            timestep:        (B,) int64 diffusion step
-            use_uncond_task: if True, replace task token with the learnable null token
-                             (used for the unconditional pass during CFG inference)
+            images:           {camera_key: (B, obs_horizon, C, H, W)} — normalised to [0, 1]
+            robot_state:      (B, obs_horizon, ROBOT_STATE_DIM)
+            target_module:    (B,) int64
+            port_name:        (B,) int64
+            noisy_action:     (B, pred_horizon, action_dim)
+            timestep:         (B,) int64 diffusion step
+            use_uncond_task:  if True, replace task token with the learnable null token
+                              (used for the unconditional pass during CFG inference)
+            img_tokens_cache: pre-computed image tokens (B, img_seq_len, TOKEN_DIM).
+                              When provided, the image encoder is skipped entirely.
+                              Use sample() which pre-encodes images once per call.
 
         Returns:
             noise_pred: (B, pred_horizon, action_dim)
         """
-        B = noisy_action.shape[0]
+        B   = noisy_action.shape[0]
+        dev = noisy_action.device
 
-        # --- Image tokens: (B, obs_horizon * num_cameras * 4, 128) ---
-        img_tokens = self.image_encoder(images)
+        if self.profiling:
+            if dev.type == "cuda":
+                torch.cuda.synchronize(dev)
+            _t = time.perf_counter()
+
+        # --- Image tokens: encode once, or reuse pre-computed cache ---
+        if img_tokens_cache is not None:
+            img_tokens = img_tokens_cache
+        else:
+            img_tokens = self.image_encoder(images)
+
+        if self.profiling and img_tokens_cache is None:
+            _t = self._tock(_t, "image_encoder", dev)
+        elif self.profiling:
+            # cache hit: reset timer without recording (encoding happened outside)
+            if dev.type == "cuda":
+                torch.cuda.synchronize(dev)
+            _t = time.perf_counter()
 
         # --- State tokens: one per obs step ---
         state_tokens = self.state_encoder(
             robot_state.flatten(end_dim=1)                    # (B*obs_horizon, ROBOT_STATE_DIM)
         ).reshape(B, self.obs_horizon, -1)                    # (B, obs_horizon, TOKEN_DIM)
 
+        if self.profiling:
+            _t = self._tock(_t, "state_encoder", dev)
+
         # --- Task token: conditional or unconditional ---
         if use_uncond_task:
             # CFG inference: unconditional pass uses the learnable null token
-            task_token = self.task_encoder.uncond_token(B, noisy_action.device)
+            task_token = self.task_encoder.uncond_token(B, dev)
         else:
             task_token = self.task_encoder(target_module, port_name)  # (B, 1, TOKEN_DIM)
 
             # CFG training dropout: randomly replace task token with null token
             if self.cfg_dropout_prob > 0.0 and self.training:
-                null_token = self.task_encoder.uncond_token(B, noisy_action.device)
+                null_token = self.task_encoder.uncond_token(B, dev)
                 drop_mask = (
-                    torch.rand(B, device=noisy_action.device) < self.cfg_dropout_prob
+                    torch.rand(B, device=dev) < self.cfg_dropout_prob
                 ).view(B, 1, 1)
                 task_token = torch.where(drop_mask, null_token, task_token)
 
@@ -621,14 +682,25 @@ class DiffusionPolicy(nn.Module):
         # --- Project noisy action to token dim ---
         action_tokens = self.action_in_proj(noisy_action)     # (B, pred_horizon, TOKEN_DIM)
 
+        if self.profiling:
+            _t = self._tock(_t, "cond_encoders", dev)
+
         # --- Predict noise via Diffusion Transformer ---
-        return self.noise_pred_net(
+        noise_pred = self.noise_pred_net(
             action_tokens=action_tokens,
             timestep_emb=timestep_emb,
             img_tokens=img_tokens,
             state_tokens=state_tokens,
             task_token=task_token,
         )                                                     # (B, pred_horizon, action_dim)
+
+        if self.profiling:
+            self._tock(_t, "noise_pred_net", dev)
+            self._prof_n += 1
+            if self._prof_n >= self._prof_log_every:
+                self._prof_report()
+
+        return noise_pred
 
     @torch.no_grad()
     def sample(
@@ -642,15 +714,26 @@ class DiffusionPolicy(nn.Module):
         beta_end: float = 0.02,
         pred_horizon: int = 16,
         guidance_scale: float = 1.0,
+        solver: str = "dpm_solver_pp_2m",
     ) -> torch.Tensor:
-        """Run DDPM reverse diffusion to generate an action sequence.
+        """Run reverse diffusion to generate an action sequence.
 
-        Starts from pure Gaussian noise and iteratively denoises over
-        num_timesteps steps using the trained noise prediction network.
+        Supports two solvers:
 
-        When guidance_scale > 1.0, Classifier-Free Guidance is applied at each
-        step: two forward passes are run (conditional and unconditional), and
-        the noise estimates are combined as:
+        "dpm_solver_pp_2m" (default) — DPM-Solver++ 2M
+            Deterministic 2nd-order multistep ODE solver in log-SNR space.
+            Reference: Lu et al. "DPM-Solver++: Fast Solver for Guided Sampling
+            of Diffusion Probabilistic Models" (NeurIPS 2022).
+            Works well with as few as 10–20 steps; recommended for inference.
+            Algorithm: maintains a rolling x̂₀ estimate and applies a 2nd-order
+            linear multistep correction once the first step is complete.
+
+        "ddpm" — stochastic DDPM ancestral sampling
+            Original Ho et al. DDPM reverse process with posterior variance noise.
+            Requires ~50–1000 steps; kept for training-time compatibility checks.
+
+        CFG is supported for both solvers: when guidance_scale != 1.0, two
+        forward passes are run per step and the noise estimates are combined as
             eps = eps_uncond + guidance_scale * (eps_cond - eps_uncond)
 
         Args:
@@ -658,74 +741,136 @@ class DiffusionPolicy(nn.Module):
             robot_state:    (B, obs_horizon, ROBOT_STATE_DIM)
             target_module:  (B,) int64
             port_name:      (B,) int64
-            num_timesteps:  number of denoising steps (should match training)
+            num_timesteps:  number of denoising steps (should match training schedule)
             beta_start:     start of linear beta schedule (should match training)
             beta_end:       end of linear beta schedule (should match training)
             pred_horizon:   number of action steps to generate
-            guidance_scale: CFG scale (1.0 = no CFG, >1.0 strengthens task conditioning)
+            guidance_scale: CFG scale — 1.0 disables CFG, >1.0 strengthens task conditioning
+            solver:         "dpm_solver_pp_2m" or "ddpm"
 
         Returns:
             action: (B, pred_horizon, action_dim) — denoised tcp_pose sequence
         """
         device = robot_state.device
         B = robot_state.shape[0]
+        use_cfg = guidance_scale != 1.0
 
-        # Build noise schedule on the fly (must match training schedule)
+        # --- Noise schedule (must match training) ---
         betas     = torch.linspace(beta_start, beta_end, num_timesteps, device=device)
         alphas    = 1.0 - betas
-        alpha_bar = torch.cumprod(alphas, dim=0)
+        alpha_bar = torch.cumprod(alphas, dim=0)   # ᾱ_t,  shape (T,)
+
+        # --- Pre-encode images once (they don't change across denoising steps) ---
+        if self.profiling:
+            if device.type == "cuda":
+                torch.cuda.synchronize(device)
+            _t_img = time.perf_counter()
+        img_tokens_cache = self.image_encoder(images)
+        if self.profiling:
+            if device.type == "cuda":
+                torch.cuda.synchronize(device)
+            _img_enc_ms = (time.perf_counter() - _t_img) * 1e3
+            print(f"[profile] image_encoder (once per sample): {_img_enc_ms:.2f} ms", flush=True)
+
+        # --- Helper: predict noise with optional CFG ---
+        def predict_eps(xt: torch.Tensor, t_tensor: torch.Tensor) -> torch.Tensor:
+            eps_cond = self(
+                images=images, robot_state=robot_state,
+                target_module=target_module, port_name=port_name,
+                noisy_action=xt, timestep=t_tensor, use_uncond_task=False,
+                img_tokens_cache=img_tokens_cache,
+            )
+            if use_cfg:
+                eps_uncond = self(
+                    images=images, robot_state=robot_state,
+                    target_module=target_module, port_name=port_name,
+                    noisy_action=xt, timestep=t_tensor, use_uncond_task=True,
+                    img_tokens_cache=img_tokens_cache,
+                )
+                return eps_uncond + guidance_scale * (eps_cond - eps_uncond)
+            return eps_cond
 
         # x_T ~ N(0, I)
         x = torch.randn(B, pred_horizon, self.action_dim, device=device)
 
-        use_cfg = guidance_scale != 1.0
+        # ------------------------------------------------------------------ #
+        # Solver: DPM-Solver++ 2M                                             #
+        # ------------------------------------------------------------------ #
+        if solver == "dpm_solver_pp_2m":
+            # α_t = sqrt(ᾱ_t),  σ_t = sqrt(1 - ᾱ_t)
+            alpha_t_all = alpha_bar.sqrt()
+            sigma_t_all = (1.0 - alpha_bar).sqrt()
+            # Half log-SNR: λ_t = log(α_t / σ_t).
+            # λ increases as t decreases (cleaner), so h = λ_{t-1} - λ_t > 0.
+            lambda_t_all = torch.log(alpha_t_all / sigma_t_all)
 
-        # Reverse diffusion: t = T-1 → 0
-        for t_int in reversed(range(num_timesteps)):
-            t = torch.full((B,), t_int, dtype=torch.long, device=device)
+            x0_pred_prev: torch.Tensor | None = None
+            h_prev: torch.Tensor | None = None
 
-            # Conditional noise prediction
-            eps_cond = self(
-                images=images,
-                robot_state=robot_state,
-                target_module=target_module,
-                port_name=port_name,
-                noisy_action=x,
-                timestep=t,
-                use_uncond_task=False,
-            )
+            for t_int in reversed(range(num_timesteps)):
+                t = torch.full((B,), t_int, dtype=torch.long, device=device)
 
-            if use_cfg:
-                # Unconditional noise prediction (null task token)
-                eps_uncond = self(
-                    images=images,
-                    robot_state=robot_state,
-                    target_module=target_module,
-                    port_name=port_name,
-                    noisy_action=x,
-                    timestep=t,
-                    use_uncond_task=True,
-                )
-                # CFG combination: steer noise prediction toward the task condition
-                eps = eps_uncond + guidance_scale * (eps_cond - eps_uncond)
-            else:
-                eps = eps_cond
+                alpha_t = alpha_t_all[t_int]
+                sigma_t = sigma_t_all[t_int]
 
-            # DDPM reverse step:
-            #   x_{t-1} = 1/sqrt(alpha_t) * (x_t - beta_t/sqrt(1-alpha_bar_t) * eps)
-            #             + sigma_t * z   (z=0 at t=0)
-            alpha_t     = alphas[t_int]
-            alpha_bar_t = alpha_bar[t_int]
-            beta_t      = betas[t_int]
+                # Noise → x̂₀ (data prediction):  x̂₀ = (x_t - σ_t · ε) / α_t
+                eps    = predict_eps(x, t)
+                x0_pred = (x - sigma_t * eps) / alpha_t
 
-            mean = (x - beta_t / (1.0 - alpha_bar_t).sqrt() * eps) / alpha_t.sqrt()
+                if t_int == 0:
+                    # Final denoising step: return x̂₀ directly (no stochastic noise)
+                    x = x0_pred
+                    break
 
-            if t_int > 0:
-                # Posterior variance: beta_t * (1 - alpha_bar_{t-1}) / (1 - alpha_bar_t)
-                alpha_bar_prev = alpha_bar[t_int - 1]
-                variance = beta_t * (1.0 - alpha_bar_prev) / (1.0 - alpha_bar_t)
-                x = mean + variance.sqrt() * torch.randn_like(x)
-            else:
-                x = mean
+                # Move one step toward t_int - 1 (cleaner)
+                t_next     = t_int - 1
+                alpha_next = alpha_t_all[t_next]
+                sigma_next = sigma_t_all[t_next]
+                h = lambda_t_all[t_next] - lambda_t_all[t_int]   # > 0
+
+                # Coefficient shared by both orders:
+                #   (σ_next/σ_t) · x_t  −  α_next · (e^{-h} − 1) · D
+                # Note: (e^{-h} − 1) < 0, so the D term is added (moves toward x̂₀).
+                coeff = -alpha_next * (torch.exp(-h) - 1.0)
+
+                if x0_pred_prev is None:
+                    # 1st step → 1st-order update (DPM-Solver++ 1)
+                    D = x0_pred
+                else:
+                    # Subsequent steps → 2nd-order multistep correction (Eq. 17, Algorithm 2)
+                    #   r  = h_{i-1} / h_i   (ratio of consecutive λ-step sizes)
+                    #   D  = (1 + 1/2r) · x̂₀^{(i)} − (1/2r) · x̂₀^{(i-1)}
+                    r = h_prev / h
+                    D = (1.0 + 0.5 / r) * x0_pred - (0.5 / r) * x0_pred_prev
+
+                x = (sigma_next / sigma_t) * x + coeff * D
+
+                x0_pred_prev = x0_pred
+                h_prev = h
+
+        # ------------------------------------------------------------------ #
+        # Solver: DDPM (stochastic ancestral sampling)                        #
+        # ------------------------------------------------------------------ #
+        elif solver == "ddpm":
+            for t_int in reversed(range(num_timesteps)):
+                t = torch.full((B,), t_int, dtype=torch.long, device=device)
+                eps = predict_eps(x, t)
+
+                alpha_t     = alphas[t_int]
+                alpha_bar_t = alpha_bar[t_int]
+                beta_t      = betas[t_int]
+
+                # x̂_{t-1} mean = 1/√α_t · (x_t − β_t/√(1−ᾱ_t) · ε)
+                mean = (x - beta_t / (1.0 - alpha_bar_t).sqrt() * eps) / alpha_t.sqrt()
+
+                if t_int > 0:
+                    # Posterior variance: β_t · (1 − ᾱ_{t-1}) / (1 − ᾱ_t)
+                    variance = beta_t * (1.0 - alpha_bar[t_int - 1]) / (1.0 - alpha_bar_t)
+                    x = mean + variance.sqrt() * torch.randn_like(x)
+                else:
+                    x = mean
+
+        else:
+            raise ValueError(f"Unknown solver {solver!r}. Choose 'dpm_solver_pp_2m' or 'ddpm'.")
 
         return x  # (B, pred_horizon, action_dim)
