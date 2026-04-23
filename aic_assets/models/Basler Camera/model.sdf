@@ -35,5 +35,42 @@
         </geometry>
       </collision>
     </link>
+
+    <!-- 1. Required sensor link with offset translation relative to mesh -->
+    <link name="sensor_link">
+      <!-- Position at lens tip, rotate YAW to align screen display to horizon -->
+      <pose>0.0 -0.014507 0.04833 0.0 0.0 0</pose> 
+      <sensor name="camera_sensor" type="camera">
+        <!-- Standard coordinate look aligned directly out lens tip -->
+        <pose>0 0 0 1.57079632679 -1.57079632679 0</pose>
+        <update_rate>20.0</update_rate>
+        <horizontal_fov>0.8718</horizontal_fov> 
+        <camera name="camera">
+          <image>
+             <width>1152</width>
+             <height>1024</height>
+             <format>R8G8B8</format> 
+          </image>
+          <clip>
+            <near>0.0</near>
+            <far>20.0</far>
+          </clip>
+          <lens>
+            <intrinsics>
+              <fx>1236.63</fx>
+              <fy>1236.63</fy>
+              <cx>576.0</cx>
+              <cy>512.0</cy>
+            </intrinsics>
+          </lens>
+        </camera>
+      </sensor>
+    </link>
+
+    <!-- 2. Attach sensor_link to the chassis link -->
+    <joint name="camera_joint" type="fixed">
+      <parent>basler_cam_link</parent>
+      <child>sensor_link</child>
+    </joint>
   </model>
 </sdf>
