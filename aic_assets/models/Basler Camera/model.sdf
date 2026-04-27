@@ -52,7 +52,7 @@
              <format>R8G8B8</format> 
           </image>
           <clip>
-            <near>0.0</near>
+            <near>0.07</near>
             <far>20.0</far>
           </clip>
           <lens>
