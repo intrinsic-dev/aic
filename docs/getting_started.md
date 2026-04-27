@@ -38,6 +38,8 @@ For cloud evaluation, all participant submissions will be evaluated on the same 
 - **vCPU:** 64 cores
 - **RAM:** 256 GiB
 - **GPU:** 1 x NVIDIA L4 Tensor Core
+  - Driver Version: 580.126.09
+  - CUDA Version: 13.0 
 - **VRAM:** 24 GiB
 
 ---
