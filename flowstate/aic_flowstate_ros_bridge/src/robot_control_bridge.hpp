@@ -22,6 +22,7 @@
 #include <mutex>
 
 #include "flowstate_ros_bridge/bridge_interface.hpp"
+#include "intrinsic/icon/actions/tare_force_torque_sensor_info.h"
 #include "intrinsic/icon/cc_client/client.h"
 #include "intrinsic/icon/cc_client/session.h"
 #include "intrinsic/icon/cc_client/stream.h"
@@ -52,6 +53,7 @@ using ::intrinsic::icon::Session;
 //==============================================================================
 constexpr intrinsic::icon::ActionInstanceId kAgentBridgeId(1);
 constexpr intrinsic::icon::ActionInstanceId kAgentBridgeJointId(2);
+constexpr intrinsic::icon::ActionInstanceId kTareForceTorqueSensorId(3);
 
 ///=============================================================================
 class RobotControlBridge : public BridgeInterface {
@@ -79,6 +81,10 @@ class RobotControlBridge : public BridgeInterface {
           response);
 
   void RestartBridgeCallback(
+      const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
+      std::shared_ptr<std_srvs::srv::Trigger::Response> response);
+
+  void TareForceTorqueSensorCallback(
       const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
       std::shared_ptr<std_srvs::srv::Trigger::Response> response);
 
@@ -156,8 +162,11 @@ class RobotControlBridge : public BridgeInterface {
     intrinsic::icon::AgentBridgeInfo::FixedParams agent_bridge_fixed_params_;
     intrinsic::icon::AgentBridgeJointInfo::FixedParams
         agent_bridge_joint_fixed_params_;
+    intrinsic::icon::TareForceTorqueSensorInfo::FixedParams
+        tare_ft_sensor_fixed_params_;
     std::optional<Action> agent_bridge_action_;
     std::optional<Action> agent_bridge_joint_action_;
+    std::optional<Action> tare_action_;
     std::unique_ptr<intrinsic::icon::StreamWriterInterface<
         intrinsic_proto::icon::actions::proto::MotionUpdate>>
         agent_bridge_writer_;
@@ -183,11 +192,13 @@ class RobotControlBridge : public BridgeInterface {
     rclcpp::Service<aic_control_interfaces::srv::ChangeTargetMode>::SharedPtr
         change_target_mode_srv_;
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr restart_bridge_srv_;
+    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr tare_ft_sensor_srv_;
 
     rclcpp::TimerBase::SharedPtr controller_state_timer_;
 
     bool connected_to_controller_;
     std::string part_name_;
+    std::string ft_sensor_part_name_;
     std::string instance_;
     std::string server_address_;
     std::size_t num_joints_;
