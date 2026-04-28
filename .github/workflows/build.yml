@@ -52,7 +52,8 @@ jobs:
             {
               "build": {
                 "packages-skip": [
-                  "aic_flowstate_skills"
+                  "aic_flowstate_skills",
+                  "aic_flowstate_ros_bridge"
                   ],
                 "cmake-args": [
                   "-DCMAKE_BUILD_TYPE=Release"
