@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package ai.flowstate;
+
+message InsertCableSkillParams {
+  // A unique ID for the cable insertion task.
+  string id = 1;
+
+  // The type of cable which should be inserted.
+  string cable_type = 2;
+
+  // The name of the cable which should be inserted.
+  string cable_name = 3;
+
+  // The type of plug at the end of the cable.
+  string plug_type = 4;
+
+  // The name of plug at the end of the cable.
+  string plug_name = 5;
+
+  // The type of port on the module side.
+  string port_type = 6;
+
+  // The name of the port on the module side.
+  string port_name = 7;
+
+  // The name of the component or module on which the port exists.
+  string target_module_name = 8;
+
+  // The number of seconds from the moment this request is received by when the task must complete.
+  uint64 time_limit = 9;
+}
+
+message InsertCableSkillResult {
+  // True if the task succeeded.
+  bool success = 1;
+  
+  // A message if the task succeeded or failed.
+  string message = 2;
+}

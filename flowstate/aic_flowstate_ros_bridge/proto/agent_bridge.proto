@@ -1,0 +1,527 @@
+
+syntax = "proto3";
+
+package intrinsic_proto.icon.actions.proto;
+
+import "intrinsic/icon/proto/cart_space.proto";
+import "intrinsic/icon/proto/joint_space.proto";
+import "intrinsic/icon/proto/matrix.proto";
+import "intrinsic/kinematics/types/joint_limits.proto";
+import "intrinsic/kinematics/types/rotational_limits.proto";
+
+option go_package = "intrinsic/icon/actions/agent_bridge_go_proto";
+
+enum TrajectoryGenerationMode {
+  TRAJECTORY_GENERATION_MODE_UNSPECIFIED = 0;
+  POSITION = 1;
+  VELOCITY = 2;
+  POSITION_AND_VELOCITY = 3;
+}
+
+enum ControlMode {
+  CONTROL_MODE_UNSPECIFIED = 0;
+  IMPEDANCE = 1;
+  ADMITTANCE = 2;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Messages for Cartesian Agent Bridge
+////////////////////////////////////////////////////////////////////////////////
+
+message AgentBridgeCommand {
+  MotionUpdate motion_update = 7;
+  TaskSettings task_settings = 4;
+
+  reserved 1, 3, 5, 6;
+}
+
+message MotionUpdate {
+  // pose and twist
+  intrinsic_proto.icon.CartState target_state = 1;
+  // Impedance matrices for Cartesian impedance control.
+  intrinsic_proto.icon.Matrix6d target_stiffness = 2;
+  intrinsic_proto.icon.Matrix6d target_damping = 3;
+  intrinsic_proto.icon.Matrix6d target_mass = 6;
+  intrinsic_proto.icon.Wrench feedforward_wrench_at_tip = 4;
+  // Feedback gains of force feedback control. These gains must be in [0, 0.95]
+  // to minimize risk of instability.
+  optional intrinsic_proto.icon.CartVec6 wrench_feedback_gains_at_tip = 8;
+
+  // There are three ways that input targets can be provided.
+  //   1. trajectory_generation_mode = VELOCITY
+  //      In this case, a target velocity must be provided. The target position
+  //      will be ignored.
+  //   2. trajectory_generation_mode = POSITION
+  //      In this case, a target position must be provided. The target velocity
+  //      will be ignored.
+  //   3. trajectory_generation_mode = POSITION_AND_VELOCITY
+  //      In this case, both target position and velocity will be used.
+  // Note, that UNSPECIFIED defaults to VELOCITY.
+  //
+  // The details of the trajectory generation are further determined by the
+  // config in TaskSettings.
+  TrajectoryGenerationMode trajectory_generation_mode = 5;
+
+  // When provided, gives this action a SUGGESTED time to reach the given target
+  // at. It is not guaranteed that the target will be reached at this time as it
+  // may be infeasible given the pos/vel/acc/jerk limits. This value may also be
+  // ignored depending on the interpolation algorithm used, though this will be
+  // documented below in the descriptions of TaskSettings::InterpolationMode.
+  //
+  // When not provided, the behavior is determined by the interpolation
+  // algorithm and may pick a default or error out.
+  optional double time_to_target_seconds = 7;
+
+  // Deadband applied to the ft sensor readings.
+  intrinsic_proto.icon.Wrench sensed_wrench_deadband = 9;
+}
+
+// We could use more specific types in here (e.g. Pose3d). But since these will
+// usually go straight into plotting, flat repeated doubles are easiest.
+//
+// There is some duplication in values between this message and other fields in
+// AgentBridgeStatus. We will keep these separate for now as this message is
+// meant only to be used for logging and we want to keep it flexible for
+// diagnosising problems.
+message LastControlUpdate {
+  //Poses have the fields [x, y, z, q_x, q_y, q_z, q_w]
+  //Velocity have the fields [v_x, v_y, v_z, r_x, r_y, r_z]
+  repeated double target_pose = 1;
+  repeated double target_vel = 2;
+  repeated double reference_pose = 3;
+  repeated double reference_vel = 4;
+  repeated double reference_acc = 5;
+  repeated double sensed_pose = 6;
+  repeated double sensed_vel = 7;
+  repeated double sensed_acc = 8;
+  // time_to_target
+  double time_to_target_seconds = 9;
+  double remaining_time_to_target_seconds = 11;
+  // Note that the control_wrench and the control_torque (below) may not
+  // precisely match. The control_torque is computed from the control_wrench but
+  // is later modified element-wise which could result in a different "net"
+  // control_wrench being applied.
+  repeated double control_wrench = 15;
+  // control_torque for all degrees-of-freedom
+  repeated double control_torque = 10;
+  // reflexxes variables
+  double reflexxes_sync_time = 12;
+  double reflexxes_time_counter = 13;
+  double reflexxes_status = 14;
+}
+
+message AgentBridgeStatus {
+  // Last motion update considered by the agent bridge.
+  MotionUpdate last_motion_update = 8;
+  int64 num_updates = 12;
+  int64 num_rejected_updates = 13;
+  double seconds_since_last_command = 2;
+  // current interpolated setpoint and impedance
+  intrinsic_proto.icon.CartState current_setpoint = 3;
+  intrinsic_proto.icon.Matrix6d current_stiffness = 4;
+  intrinsic_proto.icon.Matrix6d current_damping = 9;
+  intrinsic_proto.icon.Matrix6d current_mass = 11;
+  // Pose error between two Pose3 objects. Expressed in [m] for positions and
+  // [rad] for orientation.
+  repeated double pose_error_integrated = 23;
+
+  // The wrench from feedforward and feedback force control at the tip of the
+  // robot expressed in the base coordinate system of the robot.
+  intrinsic_proto.icon.Wrench current_feedforward_feedback_wrench = 7;
+
+  // Wrench at the tip frame of the robot and statistics since last command.
+  intrinsic_proto.icon.Wrench wrench_at_tip = 10;
+  intrinsic_proto.icon.Wrench max_wrench_at_tip_since_last_command = 20;
+  intrinsic_proto.icon.Wrench min_wrench_at_tip_since_last_command = 21;
+  intrinsic_proto.icon.Wrench mean_wrench_at_tip_since_last_command = 22;
+
+  // Note that because of the order of Sense and Control, the values in here
+  // will be off by one timestep from last_motion_update and last_task_settings.
+  LastControlUpdate last_control_update = 14;
+
+  // Reference scaling factor activated by a large tracking error.
+  double reference_scaling_factor_translation = 15;
+  double reference_scaling_factor_rotation = 17;
+
+  // Boolean variables about limit breaches.
+  bool limit_breached = 18;
+  bool limit_breached_since_last_motion_update = 19;
+
+  // Array of debugging values that can be used to log arbitrary values.
+  repeated double debug_log_values = 16;
+
+  reserved 1, 5, 6;
+}
+
+message ReferenceLimitSettings {
+  // Absolute maximum distance between reference pose and sensed pose
+  // translation (in m).
+  float max_translation = 1;
+  // Absolute maximum distance between reference pose and sensed pose
+  // rotation (in rad).
+  float max_rotation = 2;
+  // Must be in [0, 1]. When the distance between sensed and reference pose
+  // translation crosses activation_ratio * max_translation, the reference
+  // translation is smoothly adjusted to remain within max_translation distance
+  // from the sensed pose. Velocities and accelerations are smoothly adjusted
+  // towards zero when max_translation is approached.
+  float activation_ratio = 3;
+}
+
+message TaskSettings {
+  reserved 2;
+  intrinsic_proto.icon.CartesianLimits cartesian_limits = 1;
+  // When specified, the rotational limits enforce a min/max rotation
+  // relative to a reference quaternion.
+  optional intrinsic_proto.RotationalLimits rotational_limits = 21;
+
+  // If provided, the pose position limits are enforced with a soft
+  // margin. This means that if the position is within the soft margin of
+  // the limit, and if the corresponding velocity pushes towards the limit, the
+  // velocity and acceleration are smoothly scaled towards zero, such that at
+  // the limit the velocity and acceleration are zero. This is to avoid
+  // exceeding the position limits.
+  optional double limits_soft_margin_meters = 19;
+  optional double limits_soft_margin_radians = 20;
+
+  intrinsic_proto.icon.JointVec nullspace_target_configuration = 3;
+  intrinsic_proto.icon.JointVec nullspace_stiffness = 4;
+  intrinsic_proto.icon.JointVec nullspace_damping = 5;
+  // Specifies the percentage (0,1) of the range
+  // [min joint position, max joint position]
+  // where the joint limit activation potential is active.
+  double activation_percentage = 6;
+  // Maximum wrench resulting from feedback control law after the addition of
+  // the feedforward/feedback wrench terms.
+  intrinsic_proto.icon.Wrench maximum_wrench = 7;
+  FeedforwardWrenchInterpolatorSettings
+      feedforward_wrench_interpolator_settings = 8;
+  ReferenceLimitSettings reference_limit_settings = 9;
+
+  // Constants for exponential smoothing of varying
+  // stiffness, damping and mass matrices. Should be in [0, 1]
+  // where 1 means no smoothing and 0 means no change.
+  // new_stiffness =
+  // (1 - stiffness_smoothing_constant) * old_stiffness +
+  // stiffness_smoothing_constant * target_stiffness
+  double stiffness_smoothing_constant = 10;
+  double damping_smoothing_constant = 11;
+  double mass_smoothing_constant = 12;
+
+  // Different strategies for interpolating from the low(er) frequency commands
+  // to the commands issued by the realtime control loop.
+  //
+  // This is surfaced for the purpose of testing and comparison to find a method
+  // that reduces instability in the reference signal generated from the lower
+  // frequency target signal.
+  enum InterpolationMode {
+    // Currently defaults to REFLEXXES.
+    INTERPOLATION_MODE_UNSPECIFIED = 0;
+    // Use the Reflexxes trajectory generation library to interpolate the
+    // target signal. Reference scaling is applied to limit how far away the
+    // reference can be from the current position. If `time_to_target_seconds`
+    // is set to zero, Reflexxes creates a minimum-time optimal trajectory to
+    // reach the target, within the kinematic constraints specified in
+    // task settings. time_to_target_seconds > 0 allows to specify a preferred
+    // time to reach the target, and reflexxes will not violate this lower
+    // bound, but may take longer depending on other constraints on the motion.
+    // 1/(lower_frequency) is a good candidate for time_to_target_seconds and
+    // creates much smoother motion than the rather aggressive minimum time
+    // option of reflexxes.
+    REFLEXXES = 1;
+    // For linear interpolation, the reference is simply linearly interpolated
+    // between the current reference and target states, using
+    // time_to_target_seconds as the interpolation window. If
+    // time_to_target_seconds is not specified, the reference is immediately set
+    // to the target state, which corresponds to no interpolation. This mode can
+    // be used as a baseline for comparison with Reflexxes and other
+    // interpolation strategies. One should expect some "jerkiness" since the
+    // lower frequency signal is minimally interpolated, but this mode is the
+    // easiest to reason about as a baseline. Limits in velocity, acceleration,
+    // and jerk are not incorporated and can easily be violated. There is also
+    // no reference acceleration, such that model-based control is not very
+    // effictive. Note that when the user is streaming target velocities only,
+    // the reference pose will be integrated with reference scaling limits.
+    // trajectory_generation_mode in the MotionUpdate proto is what determines
+    // the user's intention for the target state (e.g. position only,
+    // velocity only, or both).
+    LINEAR_INTERPOLATION = 2;
+    // Interpolation is done via a minimal spline, i.e., a spline that has the
+    // minimal degree to exactly satisfy all boundary conditions between start
+    // and target state. The resulting trajectories are smoother in acceleration
+    // than reflexxes and have better tracking properties for torque controlled
+    // robots with impedance and/or model-based control. The resulting
+    // trajectories are also easier to reason about in comparison to reflexxes
+    // as there is only one single spline between the current and target state
+    // (while reflexxes uses multiple splines).
+    //
+    // When using this mode, time_to_target_seconds must be specified in the
+    // motion update.
+    //
+    // This mode finds analytical spline solutions in the following way:
+    //   * When position and velocity targets are provided, we use a quartic
+    //     spline with position, velocity, and acceleration boundary conditions
+    //     at the start state, and position and velocity boundary conditions at
+    //     the target state.
+    //   * When only position is specified, we use a cubic spline with only
+    //     position boundary conditions at the target state.
+    //   * When only velocity is specified, we use a cubic spline with only
+    //     velocity boundary conditions at the target state.
+    // This mode always tries to reach the target at the time specified in the
+    // motion update.
+    MINIMAL_SPLINES = 3;
+  }
+  // Note that this mode changes how other settings in this message are used.
+  InterpolationMode interpolation_mode = 13;
+
+  // Pose error integral gain for steady state error reduction. Must be greater
+  // than or equal to zero. Defaults to zero.
+  optional intrinsic_proto.icon.CartVec6 pose_error_integrator_gain = 14;
+
+  // Pose error integrator upper bound, used to saturate the error integrator.
+  // The integrated pose error is expressed in [m] for positions (first three
+  // elements) and [rad] for orientation (last three elements). Must be greater
+  // than or equal to zero. Defaults to zero.
+  optional intrinsic_proto.icon.CartVec6 pose_error_integrator_bound = 15;
+
+  // The max gains for impedance control. These parameters can also be generated
+  // with intrinsic/icon/python/action_utils/impedance_utils.py
+  // The mass_for_critical_damping allows computing damping as a function of
+  // stiffness, or stiffness as a function of damping for critically damped 2nd
+  // order control systems. These gains need robot/endeffector and application
+  // specific tuning.
+
+  // The diagonal of the stiffness matrix as 6DOF vector: [x, y, z, rx, ry, rz].
+  optional intrinsic_proto.icon.CartVec6 max_stiffness = 16;
+
+  // The diagonal of the damping matrix as 6DOF vector: [x, y, z, rx, ry, rz].
+  optional intrinsic_proto.icon.CartVec6 max_damping = 17;
+
+  // The diagonal of the mass/inertia matrix for critical damping as
+  // 6DOF vector: [x, y, z, rx, ry, rz].
+  optional intrinsic_proto.icon.CartVec6 mass_for_critical_damping = 18;
+
+  // The control mode allows switching between impedance and admittance control,
+  // and defaults to impedance control when not specified.
+  ControlMode control_mode = 22;
+
+  // Deadband applied to the ft sensor readings.
+  intrinsic_proto.icon.Wrench sensed_wrench_deadband = 23;
+}
+
+message FeedforwardWrenchInterpolatorSettings {
+  intrinsic_proto.icon.Wrench min_wrench = 1;
+  intrinsic_proto.icon.Wrench max_wrench = 2;
+
+  // for each dof, how fast can the wrench change
+  intrinsic_proto.icon.CartVec6 max_wrench_dot = 3;
+
+  reserved 4;
+}
+
+message AgentBridgeJointCommand {
+  JointMotionUpdate motion_update = 1;
+  JointTaskSettings task_settings = 2;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Messages for Joint Agent Bridge
+////////////////////////////////////////////////////////////////////////////////
+
+message ReferenceJointLimitSettings {
+  // Absolute maximum distance between reference joint angles and sensed joint
+  // angles (in radians).
+  float max_distance = 1;
+  // Must be in [0, 1]. When the distance between sensed and reference position
+  // crosses activation_ratio * max_distance, the reference position is smoothly
+  // adjusted to remain within max_distance from the sensed position. Velocities
+  // and accelerations are smoothly adjusted towards zero when max_distance is
+  // approached.
+  float activation_ratio = 2;
+}
+
+message JointTaskSettings {
+  // Different strategies for interpolating from the low(er) frequency commands
+  // to the commands issued by the realtime control loop.
+  //
+  // This is surfaced for the purpose of testing and comparison to find a method
+  // that produces the smoothest and most predictable signal generated from the
+  // lower frequency target signal.
+  enum InterpolationMode {
+    // Currently defaults to REFLEXXES.
+    INTERPOLATION_MODE_UNSPECIFIED = 0;
+    // Use the Reflexxes trajectory generation library to interpolate the
+    // target signal. Reference scaling is applied to limit how far away the
+    // reference can be from the current position. If `time_to_target_seconds`
+    // is set to zero, Reflexxes creates a minimum-time optimal trajectory to
+    // reach the target, within the kinematic constraints specified in
+    // task settings. time_to_target_seconds > 0 allows to specify a preferred
+    // time to reach the target, and reflexxes will not violate this lower
+    // bound, but may take longer depending on other constraints on the motion.
+    // 1/(lower_frequency) is a good candidate for time_to_target_seconds and
+    // creates much smoother motion than the rather aggressive minimum time
+    // option of reflexxes.
+    REFLEXXES = 1;
+    // For linear interpolation, the reference is simply linearly interpolated
+    // between the current reference and target states, using
+    // time_to_target_seconds as the interpolation window. If
+    // time_to_target_seconds is not specified, the reference is immediately set
+    // to the target state, which corresponds to no interpolation. This mode can
+    // be used as a baseline for comparison with Reflexxes and other
+    // interpolation strategies. One should expect some "jerkiness" since the
+    // lower frequency signal is minimally interpolated, but this mode is the
+    // easiest to reason about as a baseline. Limits in velocity, acceleration,
+    // and jerk are not incorporated and can easily be violated. There is also
+    // no reference acceleration, such that model-based control is not very
+    // effictive. Note that when the user is streaming target velocities only,
+    // the reference pose will be integrated with reference scaling limits.
+    // trajectory_generation_mode in the MotionUpdate proto is what determines
+    // the user's intention for the target state (e.g. position only,
+    // velocity only, or both).
+    LINEAR_INTERPOLATION = 2;
+    // Interpolation is done via a minimal spline, i.e., a spline that has the
+    // minimal degree to exactly satisfy all boundary conditions between start
+    // and target state. The resulting trajectories are smoother in acceleration
+    // than reflexxes and have better tracking properties for torque controlled
+    // robots with impedance and/or model-based control. The resulting
+    // trajectories are also easier to reason about in comparison to reflexxes
+    // as there is only one single spline between the current and target state
+    // (while reflexxes uses multiple splines).
+    //
+    // When using this mode, time_to_target_seconds must be specified in the
+    // motion update.
+    //
+    // This mode finds analytical spline solutions in the following way:
+    //   * When position and velocity targets are provided, we use a quartic
+    //     spline with position, velocity, and acceleration boundary conditions
+    //     at the start state, and position and velocity boundary conditions at
+    //     the target state.
+    //   * When only position is specified, we use a cubic spline with only
+    //     position boundary conditions at the target state.
+    //   * When only velocity is specified, we use a cubic spline with only
+    //     velocity boundary conditions at the target state.
+    // This mode always tries to reach the target at the time specified in the
+    // motion update.
+    MINIMAL_SPLINES = 3;
+  }
+
+  // Note that this mode changes how other settings in this message are used.
+  InterpolationMode interpolation_mode = 1;
+
+  // Constants for exponential smoothing of varying stiffness, damping and mass
+  // matrices. Should be in [0, 1] where 1 means no smoothing and 0 means no
+  // change. Example:
+  //   new_stiffness =
+  //       (1 - stiffness_smoothing_constant) * old_stiffness +
+  //       stiffness_smoothing_constant * target_stiffness
+  double stiffness_smoothing_constant = 2;
+  double damping_smoothing_constant = 3;
+
+  BoundedLinearInterpolatorSettings feedforward_torque_interpolator_settings =
+      4;
+
+  // [Optional] If provided, these limits are used in place of those obtained
+  // from the part config. This allows users to customize the behavior of the
+  // action from call to call without needing to restart the ICON service with a new config.
+  //
+  // Any new limits set within this proto must be within the application limits
+  // specified by the part config. Thus, this field is only useful in reducing
+  // the limits.
+  intrinsic_proto.JointLimitsUpdate joint_limits_update = 5;
+
+  // If provided, the joint position limits are enforced with a soft
+  // margin. This means that if the joint position is within the soft margin of
+  // the limit, and if the joint velocity pushes towards the limit, the joint
+  // velocity and acceleration are smoothly scaled towards zero, such that at
+  // the limit the velocity and acceleration are zero. This is to avoid
+  // exceeding the position limits.
+  optional double limits_soft_margin_radians = 9;
+
+  // Joint stiffness and damping settings (kp and kv gains) which govern
+  // the compliance behavior in joint space.
+  optional intrinsic_proto.icon.JointVec stiffness = 6;
+  optional intrinsic_proto.icon.JointVec damping = 7;
+
+  // Settings for reference joint limit scaling.
+  optional ReferenceJointLimitSettings reference_joint_limit_settings = 8;
+}
+
+message JointMotionUpdate {
+  intrinsic_proto.icon.JointStatePV target_state = 1;
+
+  // Stiffness and damping both evolve from a current value toward these target
+  // ones. This avoids sudden jumps when the values are changed.
+  // See stiffness_smoothing_constant in JointTaskSettings.
+  intrinsic_proto.icon.JointVec target_stiffness = 2;
+  intrinsic_proto.icon.JointVec target_damping = 3;
+
+  // There are three ways that input targets can be provided.
+  //   1. trajectory_generation_mode = VELOCITY
+  //      In this case, a target velocity must be provided. The target position
+  //      will be ignored.
+  //   2. trajectory_generation_mode = POSITION
+  //      In this case, a target position must be provided. The target velocity
+  //      will be ignored.
+  //   3. trajectory_generation_mode = POSITION_AND_VELOCITY
+  //      In this case, both target position and velocity will be used.
+  // Note, that UNSPECIFIED defaults to VELOCITY.
+  //
+  // The details of the trajectory generation are further determined by the
+  // config in TaskSettings.
+  optional TrajectoryGenerationMode trajectory_generation_mode = 5;
+
+  intrinsic_proto.icon.JointVec target_feedforward_torque = 4;
+
+  // When provided, gives this action a SUGGESTED time to reach the given target
+  // at. It is not guaranteed that the target will be reached at this time as it
+  // may be infeasible given the pos/vel/acc/jerk limits. This value may also be
+  // ignored depending on the interpolation algorithm used, though this will be
+  // documented below in the descriptions of TaskSettings::InterpolationMode.
+  //
+  // When not provided, the behavior is determined by the interpolation
+  // algorithm and may pick a default or error out.
+  optional double time_to_target_seconds = 7;
+}
+
+message AgentBridgeJointStatus {
+  // State at the time that Control was called (from the previous timestep).
+  intrinsic_proto.icon.JointStatePVA current_state = 1;
+  JointMotionUpdate last_motion_update = 2;
+  intrinsic_proto.icon.JointVec joint_torque = 3;
+
+  // Interpolated target.
+  intrinsic_proto.icon.JointStatePVA reference_state = 8;
+
+  // Internal variables for monitoring agent bridge functionality.
+  int64 num_updates = 9;
+  int64 num_rejected_updates = 10;
+  double seconds_since_last_command = 11;
+  double remaining_time_to_target_seconds = 5;
+
+  // Reflexxes internal variables.
+  int32 reflexxes_status = 4;
+  double reflexxes_sync_time = 6;
+  double reflexxes_time_counter = 7;
+
+  // Reference scaling factor activated by large tracking error.
+  double reference_scaling_factor = 12;
+
+  // Boolean variables about limit breaches.
+  bool limit_breached = 18;
+  bool limit_breached_since_last_motion_update = 19;
+
+  // Array of debugging values that can be used to log arbitrary values.
+  repeated double debug_log_values = 13;
+}
+
+// Settings that specify an interpolator that steps the current state linearly
+// toward a target with a max step size.
+message BoundedLinearInterpolatorSettings {
+  // Bounds for the target values themselves.
+  intrinsic_proto.icon.JointVec min_value = 1;
+  intrinsic_proto.icon.JointVec max_value = 2;
+
+  // Bound the maximum step. We assume the bound is symmetric, i.e., the maximum
+  // step size that can be taken in either direction.
+  intrinsic_proto.icon.JointVec max_step_size = 3;
+}

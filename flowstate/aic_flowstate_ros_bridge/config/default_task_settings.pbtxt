@@ -1,0 +1,105 @@
+# proto-file: proto/agent_bridge.proto
+# proto-message: intrinsic_proto.icon.actions.proto.TaskSettings
+
+# Impedance control parameters need to be tuned for every robot and endeffector.
+# The values below correspond to a robotiq-2f gripper with Axia80 F/T cell.
+# with critical damping under the assume mass.
+max_stiffness: { x: 800 y: 800 z: 800 rx: 40 ry: 40 rz: 40 }
+max_damping: { x: 76 y: 76 z: 76 rx: 10 ry: 10 rz: 10 }
+mass_for_critical_damping: { x: 1.8 y: 1.8 z: 1.8 rx: 0.12 ry: 0.12 rz: 0.12 }
+
+# Limits of a reasonable retangular volume in front the the robot. This should
+# be adjusted for different workcells and even different applications.
+cartesian_limits {
+  min_translational_position: -1.0  # x
+  min_translational_position: -1.0  # y
+  min_translational_position: 0.0   # z
+  max_translational_position: 1.0   # x
+  max_translational_position: 1.0   # y
+  max_translational_position: 1.5   # z
+
+  min_translational_velocity: -0.3
+  min_translational_velocity: -0.3
+  min_translational_velocity: -0.3
+  max_translational_velocity: 0.3
+  max_translational_velocity: 0.3
+  max_translational_velocity: 0.3
+
+  min_translational_acceleration: -10
+  min_translational_acceleration: -10
+  min_translational_acceleration: -10
+  max_translational_acceleration: 10
+  max_translational_acceleration: 10
+  max_translational_acceleration: 10
+
+  min_translational_jerk: -3000.0
+  min_translational_jerk: -3000.0
+  min_translational_jerk: -3000.0
+  max_translational_jerk: 3000.0
+  max_translational_jerk: 3000.0
+  max_translational_jerk: 3000.0
+
+  max_rotational_velocity: 1
+  max_rotational_acceleration: 10
+  max_rotational_jerk: 3000.0
+}
+
+# These optional rotational limits keep the endeffector within a reasonable
+# min/max rotation relative to the reference quaternion, which needs to be
+# chosen correctly from the relevant endeffector quaternion. If not specified,
+# no limits are checked.
+rotational_limits {
+  min_rotation_angle: { x: -3.14 y: -3.14 z: -3.14 }
+  max_rotation_angle: { x: 3.14 y: 3.14 z: 3.14 }
+  reference_quaternion_for_min_max: { w: 1.0 x: 0.0 y: 0.0 z: 0.0 }
+}
+
+# Within the soft margin of the limits, velocity and acceleration are scaled
+# towards zero if the motion would push towards the limit.
+limits_soft_margin_meters: 0.01
+limits_soft_margin_radians: 0.02
+
+stiffness_smoothing_constant: 0.1
+damping_smoothing_constant: 0.1
+mass_smoothing_constant: 0.1
+
+# Note: for a robot with DOF < 7, the nullspace torque is not computed and hence
+# the parameers below are not used.
+#
+# For a non model-based impedance controller, the nullspace regularization
+# DOES interfere with endeffector motion. Thus, the nullspace_target_configuration
+# should be close to where the robot is manipulating to minimize this effect.
+nullspace_stiffness { joints: [50, 40, 30, 15, 15, 5] }
+nullspace_damping { joints: [10, 10, 7, 1.2, 1.2, 1.5] }
+nullspace_target_configuration { joints: [0.0, 0.0, 0.0, 0.0, 1.57, 0.0] }
+
+activation_percentage: -1
+
+interpolation_mode: LINEAR_INTERPOLATION
+
+# Parameters for limiting the distance between reference pose and sensed pose.
+#
+# These are still pretty loose, do tune for your application!
+reference_limit_settings {
+  max_translation: 0.4  # meters
+  max_rotation: 0.35  # radians. roughly 20deg
+  # Start activating at 75% of the maximum, in this case at 3cm distance
+  # between reference and sensed pose, or 15 degrees rotation.
+  activation_ratio: 0.75
+}
+
+maximum_wrench { x: 50 y: 50 z: 50 rx: 10 ry: 10 rz: 10 }
+feedforward_wrench_interpolator_settings {
+  max_wrench { x: 40 y: 40 z: 40 rx: 5 ry: 5 rz: 5 }
+  min_wrench { x: -40 y: -40 z: -40 rx: -5 ry: -5 rz: -5 }
+  max_wrench_dot { x: 500 y: 500 z: 500 rx: 25 ry: 25 rz: 25 }
+}
+
+# Only turn on the integrator gains if there is real need for it.
+pose_error_integrator_gain: { x: 0 y: 0 z: 0 rx: 0 ry: 0 rz: 0 }
+# Integrator bounds in N for translation and Nm in rotation.
+pose_error_integrator_bound: { x: 10 y: 10 z: 10 rx: 2 ry: 2 rz: 2 }
+
+# The control mode allows switching between impedance and admittance control,
+# and defaults to impedance control when not specified.
+control_mode: IMPEDANCE

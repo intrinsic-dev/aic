@@ -26,7 +26,7 @@ SHELL ["/bin/bash", "-c"]
 RUN --mount=type=cache,target=/ws_aic/build,sharing=locked \
   cd /ws_aic \
   && . /opt/ros/kilted/setup.bash \
-  && GZ_BUILD_FROM_SOURCE=1 colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release --merge-install --executor sequential \
+  && GZ_BUILD_FROM_SOURCE=1 colcon build --packages-ignore aic_flowstate_skills --cmake-args -DCMAKE_BUILD_TYPE=Release --merge-install --executor sequential \
   && rm -rf /ws_aic/log /ws_aic/src
 
 COPY --chmod=644 docker/aic_eval/aic_zenoh_config.json5 /aic_zenoh_config.json5

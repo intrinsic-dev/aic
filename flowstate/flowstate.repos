@@ -1,5 +1,5 @@
 repositories:
-  intrinsic-ai/sdk-ros:
+  sdk-ros:
     type: git
     url: https://github.com/intrinsic-ai/sdk-ros.git
-    version: df4abd6fdb9edf6e7af4a4b85f85e7f7f4d2c614
+    version: 4e6c8ae2a51c5d36e2fe4f7f6fa0a5db8b008581

@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package intrinsic;
+
+// Configuration for robot control bridge
+message RobotControlBridgeConfig {
+  string server_address = 1;
+  string instance = 2;
+  string part_name = 3;
+  string task_settings_file = 4;
+  string joint_task_settings_file = 5;
+}
+
+// Configuration to control which sensors are enabled to publish ROS 2 messages.
+// Robot state (joints) and force/torque sensor data.
+message SensorPublisherConfig {
+  bool enable_robot_joint_state_topic = 1;
+  bool enable_force_torque_topic = 2;
+  string robot_joint_state_topic = 3;
+  string force_torque_topic = 4;
+  string robot_base_frame_id = 5;
+  string force_torque_sensor_frame_id = 6;
+  string robot_controller_instance = 7;
+  bool throttle_robot_state_topic = 8;
+  repeated string override_joint_names = 9;
+}
+
+message FlowstateRosBridgeConfig {
+  string workcell_id = 1;
+  string executive_service_address = 2;
+  string skill_registry_address = 3;
+  string solution_service_address = 4;
+  string world_service_address = 5;
+  string geometry_service_address = 6;
+  string flowstate_zenoh_router_address = 7;
+  optional string external_zenoh_router_address = 8;
+  repeated string bridge_plugins = 9;
+  int64 executive_deadline_seconds = 10;
+  int64 executive_update_rate_millis = 11;
+  SensorPublisherConfig sensors = 12;
+  RobotControlBridgeConfig robot_control_bridge_config = 13;
+}

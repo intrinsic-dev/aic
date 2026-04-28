@@ -1,0 +1,30 @@
+metadata {
+  id {
+    package: "ai.intrinsic"
+    name: "aic_flowstate_ros_bridge"
+  }
+  vendor {
+    display_name: "Intrinsic"
+  }
+  documentation {
+    description: "Flowstate ROS bridge with robot_control_bridge plugin."
+  }
+  display_name: "Flowstate ROS Bridge"
+}
+service_def {
+  real_spec {
+    image {
+      archive_filename: "aic_flowstate_ros_bridge.tar"
+    }
+  }
+  sim_spec {
+    image {
+      archive_filename: "aic_flowstate_ros_bridge.tar"
+    }
+  }
+}
+assets {
+  default_configuration_filename: "default_config.binarypb",
+  parameter_descriptor_filename: "parameter-descriptor-set.proto.bin",
+  image_filenames: ["aic_flowstate_ros_bridge.tar"]
+}

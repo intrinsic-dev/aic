@@ -1,0 +1,47 @@
+# proto-file: proto/agent_bridge.proto
+# proto-message: intrinsic_proto.icon.actions.proto.JointTaskSettings
+
+stiffness_smoothing_constant: 0.1
+damping_smoothing_constant: 0.1
+
+# These limits cannot exceed the application limits.
+joint_limits_update: {
+  min_position: { values: [-6.22, -4.059, -2.77, -6.22, -6.22, -6.22] }
+  max_position: { values: [6.22, 0.95, 2.77, 6.22, 6.22, 6.22] }
+  # For safety/testing, reducing velocity limits is usually the most intuitive
+  # and all that matters for conservative motion. Reducting acceleration and
+  # jerk limits can have counter-intuitive behavior.
+  max_velocity: { values: [0.8, 0.8, 0.8, 0.8, 0.8, 0.8] }
+  max_acceleration: { values: [10, 10, 10, 10, 10, 10] }
+  max_jerk: { values: [8001, 8001, 8001, 8001, 8001, 8001] }
+  max_effort: { values: [100.0, 100.0, 100.0, 28.0, 28.0, 28.0] }
+}
+
+# Within the soft margin of the limits, velocity and acceleration are scaled
+# towards zero if the motion would push towards the limit.
+limits_soft_margin_radians: 0.02
+
+interpolation_mode: LINEAR_INTERPOLATION
+
+# Stiffness and damping cannot exceed the application limits.
+stiffness: {
+  joints: [100., 100., 100., 50., 50., 50.]
+}
+damping: {
+  joints: [40.0, 40.0, 40.0, 15.0, 15.0, 15.0]
+}
+
+# Using ~50% of max_effort -- and this is could be more conservative.
+feedforward_torque_interpolator_settings: {
+  min_value: { joints: [-40, -40, -40, -6, -6, -6] }
+  max_value: { joints: [40, 40, 40, 6, 6, 6] }
+  max_step_size: { joints: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0] }
+}
+
+# These limits prevent that the reference joint position gets too far away from
+# the current joint position. An adjustment of the reference position starts
+# at max_distance*activation_ratio.
+reference_joint_limit_settings: {
+  max_distance: 0.75
+  activation_ratio: 0.75
+}

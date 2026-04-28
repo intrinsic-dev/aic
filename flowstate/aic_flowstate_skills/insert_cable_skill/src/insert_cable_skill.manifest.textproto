@@ -1,0 +1,28 @@
+id {
+  package: "ai.flowstate"
+  name: "insert_cable_skill"
+}
+display_name: "Insert Cable Skill"
+vendor {
+  display_name: "Intrinsic"
+}
+documentation {
+  description: "Skill that dispatches InsertCable action requests to sideloaded participant policy."
+}
+options {
+  supports_cancellation: true
+  cc_config {
+    create_skill: "::InsertCableSkill::CreateSkill"
+  }
+}
+dependencies {
+}
+parameter {
+  message_full_name: "ai.flowstate.InsertCableSkillParams"
+  default_value: {
+    type_url: "type.googleapis.com/ai.flowstate.InsertCableSkillParams"
+  }
+}
+return_type {
+  message_full_name: "ai.flowstate.InsertCableSkillResult"
+}

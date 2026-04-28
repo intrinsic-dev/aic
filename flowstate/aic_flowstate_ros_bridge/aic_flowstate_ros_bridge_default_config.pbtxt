@@ -1,0 +1,45 @@
+# proto-file: flowstate_ros_bridge.proto
+# proto-message: FlowstateRosBridgeConfig
+# Corresponds to the message definition in flowstate_ros_bridge.proto
+[type.googleapis.com/intrinsic.FlowstateRosBridgeConfig] {
+  workcell_id: ""
+  executive_service_address: "istio-ingressgateway.app-ingress.svc.cluster.local:80"
+  skill_registry_address: "istio-ingressgateway.app-ingress.svc.cluster.local:80"
+  solution_service_address: "istio-ingressgateway.app-ingress.svc.cluster.local:80"
+  world_service_address: "istio-ingressgateway.app-ingress.svc.cluster.local:80"
+  geometry_service_address: "istio-ingressgateway.app-ingress.svc.cluster.local:80"
+  flowstate_zenoh_router_address: "tcp/zenoh-router.app-intrinsic-base.svc.cluster.local:7447"
+  external_zenoh_router_address: "tcp/zenoh-router.app-intrinsic-base.svc.cluster.local:7447"
+  bridge_plugins: [
+    "flowstate_ros_bridge::WorldBridge",
+    "flowstate_ros_bridge::ExecutiveBridge",
+    "flowstate_ros_bridge::RobotControlBridge"
+  ]
+  executive_deadline_seconds: 5
+  executive_update_rate_millis: 1000
+  sensors: {
+    enable_robot_joint_state_topic: true
+    enable_force_torque_topic: true
+    robot_joint_state_topic: "/joint_states"
+    force_torque_topic: "/fts_broadcaster/wrench"
+    robot_base_frame_id: "robot/robot/base_link"
+    force_torque_sensor_frame_id: "force_torque_sensor/force_torque_sensor/AtiForceTorqueSensor"
+    robot_controller_instance: "robot_controller"
+    throttle_robot_state_topic: false
+    override_joint_names: [
+      "shoulder_pan_joint",
+      "shoulder_lift_joint",
+      "elbow_joint",
+      "wrist_1_joint",
+      "wrist_2_joint",
+      "wrist_3_joint"
+    ]
+  },
+  robot_control_bridge_config: {
+    server_address: "istio-ingressgateway.app-ingress.svc.cluster.local:80"
+    instance: "robot_controller"
+    part_name: "arm"
+    task_settings_file: "config/default_task_settings.pbtxt"
+    joint_task_settings_file: "config/default_joint_task_settings.pbtxt"
+  },
+}
