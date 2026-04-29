@@ -56,7 +56,8 @@ if str(_AIC_UTILS) not in sys.path:
 
 import rclpy  # noqa: F401 — triggers rclpy context init when imported
 
-from geometry_msgs.msg import Point, Pose, Quaternion
+from geometry_msgs.msg import Point, Pose, Quaternion, Vector3
+from geometry_msgs.msg import Wrench
 from sensor_msgs.msg import Image as ROSImage
 from aic_control_interfaces.msg import (
     MotionUpdate,
@@ -93,6 +94,66 @@ NUM_TASKS = 12  # must match FlowMatchingPolicy / TaskEncoder
 
 
 # ---------------------------------------------------------------------------
+# 6D rotation → quaternion  (mirrors RunFlowMatching.py)
+# Training: quat(x,y,z,w) → R → rot6d = R[:2, :].  Invert at step time.
+# ---------------------------------------------------------------------------
+
+def _rot6d_to_quat_xyzw(rot6d: np.ndarray) -> np.ndarray:
+    """Convert 6D rotation (first two rows of R, flattened) to quaternion (x,y,z,w)."""
+    r1 = rot6d[:3].astype(np.float64)
+    r2 = rot6d[3:6].astype(np.float64)
+    r1 = r1 / (np.linalg.norm(r1) + 1e-8)
+    r2 = r2 - np.dot(r1, r2) * r1
+    r2 = r2 / (np.linalg.norm(r2) + 1e-8)
+    r3 = np.cross(r1, r2)
+    R  = np.stack([r1, r2, r3], axis=0)
+
+    trace = R[0, 0] + R[1, 1] + R[2, 2]
+    if trace > 0.0:
+        s = 0.5 / np.sqrt(trace + 1.0)
+        w = 0.25 / s
+        x = (R[2, 1] - R[1, 2]) * s
+        y = (R[0, 2] - R[2, 0]) * s
+        z = (R[1, 0] - R[0, 1]) * s
+    elif R[0, 0] > R[1, 1] and R[0, 0] > R[2, 2]:
+        s = 2.0 * np.sqrt(1.0 + R[0, 0] - R[1, 1] - R[2, 2])
+        w = (R[2, 1] - R[1, 2]) / s
+        x = 0.25 * s
+        y = (R[0, 1] + R[1, 0]) / s
+        z = (R[0, 2] + R[2, 0]) / s
+    elif R[1, 1] > R[2, 2]:
+        s = 2.0 * np.sqrt(1.0 + R[1, 1] - R[0, 0] - R[2, 2])
+        w = (R[0, 2] - R[2, 0]) / s
+        x = (R[0, 1] + R[1, 0]) / s
+        y = 0.25 * s
+        z = (R[1, 2] + R[2, 1]) / s
+    else:
+        s = 2.0 * np.sqrt(1.0 + R[2, 2] - R[0, 0] - R[1, 1])
+        w = (R[1, 0] - R[0, 1]) / s
+        x = (R[0, 2] + R[2, 0]) / s
+        y = (R[1, 2] + R[2, 1]) / s
+        z = 0.25 * s
+
+    q = np.array([x, y, z, w], dtype=np.float32)
+    return q / (np.linalg.norm(q) + 1e-8)
+
+
+def _action9_to_pose7(action9: np.ndarray) -> np.ndarray:
+    """Convert (9,) action [pos(3) | rot6d(6)] → (7,) [pos(3) | quat(x,y,z,w)]."""
+    return np.concatenate([action9[:3], _rot6d_to_quat_xyzw(action9[3:9])]).astype(np.float32)
+
+
+def _quat_xyzw_to_rot6d(quat: np.ndarray) -> np.ndarray:
+    """Convert quaternion (x,y,z,w) → 6D rotation (first two rows of R, flattened)."""
+    x, y, z, w = quat.astype(np.float64)
+    R = np.array([
+        [1 - 2*(y*y + z*z),  2*(x*y - w*z),      2*(x*z + w*y)],
+        [2*(x*y + w*z),      1 - 2*(x*x + z*z),  2*(y*z - w*x)],
+    ], dtype=np.float32)
+    return R.flatten()  # (6,)
+
+
+# ---------------------------------------------------------------------------
 # AICRLEnv — extends AICGymEnv with camera observations + pose action mode
 # ---------------------------------------------------------------------------
 
@@ -103,7 +164,7 @@ class AICRLEnv(AICGymEnv):
       1. Subscriptions to the three camera topics — access via ``get_images()``.
       2. ``send_pose_action(pos, quat)`` — sends an absolute TCP-pose target
          using TrajectoryGenerationMode.MODE_POSITION.
-      3. ``step_pose(action_7d)`` — gym-compatible step for 7-D pose actions.
+      3. ``step_pose(action_9d)`` — gym-compatible step for 9-D pose actions (pos+rot6d).
     """
 
     def __init__(self, config: AICGymEnvConfig | None = None):
@@ -111,6 +172,7 @@ class AICRLEnv(AICGymEnv):
         self._img_lock = Lock()
         self._latest_images: dict[str, ROSImage | None] = {k: None for k in CAMERA_TOPICS}
 
+        # ref code: aic_utils/lerobot_robot_aic/lerobot_robot_aic/aic_robot.py
         for cam_key, topic in CAMERA_TOPICS.items():
             # Capture cam_key in closure
             def _make_cb(key: str):
@@ -146,7 +208,8 @@ class AICRLEnv(AICGymEnv):
 
     def send_pose_action(self, pos: np.ndarray, quat: np.ndarray) -> None:
         """Send an absolute TCP-pose target (MODE_POSITION).
-
+           No move_robot callback is needed here — AICGymEnv publishes 
+           directly to the controller topic, which is the correct equivalent in the gym env context.  
         Args:
             pos:  (3,) xyz position in gripper/tcp frame
             quat: (4,) quaternion (x, y, z, w)
@@ -163,27 +226,31 @@ class AICRLEnv(AICGymEnv):
         )
         msg.target_stiffness = np.diag(self.config.cartesian_stiffness).flatten()
         msg.target_damping   = np.diag(self.config.cartesian_damping).flatten()
+        msg.feedforward_wrench_at_tip = Wrench(
+            force=Vector3(x=0.0, y=0.0, z=0.0),
+            torque=Vector3(x=0.0, y=0.0, z=0.0),
+        )
+        msg.wrench_feedback_gains_at_tip = [0.5, 0.5, 0.5, 0.0, 0.0, 0.0]
         msg.trajectory_generation_mode.mode = TrajectoryGenerationMode.MODE_POSITION
         self._motion_update_pub.publish(msg)
 
-    def step_pose(self, action_7d: np.ndarray):
+    def step_pose(self, action_9d: np.ndarray):
         """Execute one absolute-pose control step.
 
         Args:
-            action_7d: (7,) array — [x, y, z, qx, qy, qz, qw]
+            action_9d: (9,) array — [x, y, z, rot6d(6)]
 
         Returns:
             Same (obs, reward, terminated, truncated, info) as step().
         """
         self._step_count += 1
-        pos  = action_7d[:3]
-        quat = action_7d[3:7]
-        self.send_pose_action(pos, quat)
+        pose7 = _action9_to_pose7(action_9d)
+        self.send_pose_action(pose7[:3], pose7[3:7])
         time.sleep(self._step_period)
 
         obs        = self._get_observation()
         info       = self._get_info()
-        reward     = self._compute_reward(obs, action_7d, info)
+        reward     = self._compute_reward(obs, action_9d, info)
         terminated = self._check_terminated(obs, info)
         truncated  = self._check_truncated(obs, info)
         return obs, reward, terminated, truncated, info
@@ -194,12 +261,7 @@ class AICRLEnv(AICGymEnv):
 # ---------------------------------------------------------------------------
 
 class QFunction(nn.Module):
-    """Critic that estimates expected return for a (state, action-sequence) pair.
-
-    Does NOT use images — the robot-state vector and task embedding carry
-    enough information for value estimation during early training.  Images
-    can be added later by replacing the state encoder with a shared visual
-    backbone.
+    """Double-Q critic: two independent MLPs, forward() returns (q1, q2).
 
     Input dimensions:
       robot_state:  (B, obs_horizon, ROBOT_STATE_DIM)
@@ -208,43 +270,49 @@ class QFunction(nn.Module):
       actions:      (B, pred_horizon, action_dim)
 
     Output:
-      q: (B,) scalar Q-values
+      q1, q2: each (B,) — take min(q1, q2) for actor updates to reduce overestimation.
+
+    Design notes:
+      - LayerNorm on the concatenated input before the first linear layer stabilises
+        training when input scales vary (positions in metres, angles in radians, etc.)
+      - Two completely independent heads share no weights, so their errors are
+        uncorrelated — the min prevents the actor from exploiting overestimated Q.
+      - No activation on the output layer; Q-values are unbounded scalars.
+      - the robot state + task embedding likely carries most of the value signal 
+        (insertion success correlates strongly with TCP proximity to port). A state-only critic is a        
+        reasonable starting point and is what the current QFunction in train_qsm_flow_matching.py uses.  
     """
 
     def __init__(
         self,
         obs_horizon:     int = 2,
         pred_horizon:    int = 16,
-        action_dim:      int = 7,
+        action_dim:      int = 9,
         robot_state_dim: int = ROBOT_STATE_DIM,
         hidden_dim:      int = 256,
+        task_dim:        int = 64,
     ):
         super().__init__()
         self.obs_horizon  = obs_horizon
         self.pred_horizon = pred_horizon
         self.action_dim   = action_dim
 
-        state_in  = obs_horizon * robot_state_dim
-        action_in = pred_horizon * action_dim
-        task_dim  = 64
+        in_dim = obs_horizon * robot_state_dim + pred_horizon * action_dim + task_dim
 
         self.task_embedding = nn.Embedding(NUM_TASKS, task_dim)
 
-        self.state_enc = nn.Sequential(
-            nn.Linear(state_in, hidden_dim),
-            nn.ReLU(),
-            nn.Linear(hidden_dim, hidden_dim),
-        )
-        self.action_enc = nn.Sequential(
-            nn.Linear(action_in, hidden_dim),
-            nn.ReLU(),
-            nn.Linear(hidden_dim, hidden_dim),
-        )
-        self.q_head = nn.Sequential(
-            nn.Linear(hidden_dim * 2 + task_dim, hidden_dim),
-            nn.ReLU(),
-            nn.Linear(hidden_dim, 1),
-        )
+        def _make_mlp() -> nn.Sequential:
+            return nn.Sequential(
+                nn.LayerNorm(in_dim),
+                nn.Linear(in_dim, hidden_dim),
+                nn.ReLU(),
+                nn.Linear(hidden_dim, hidden_dim),
+                nn.ReLU(),
+                nn.Linear(hidden_dim, 1),
+            )
+
+        self.q1 = _make_mlp()
+        self.q2 = _make_mlp()
 
     def forward(
         self,
@@ -252,16 +320,11 @@ class QFunction(nn.Module):
         target_module: torch.Tensor,   # (B,) int64
         port_name:     torch.Tensor,   # (B,) int64
         actions:       torch.Tensor,   # (B, pred_horizon, action_dim)
-    ) -> torch.Tensor:                 # (B,)
-        B = robot_state.shape[0]
-        s = self.state_enc(robot_state.flatten(1))             # (B, hidden)
-        a = self.action_enc(actions.flatten(1))                # (B, hidden)
-        # Task: combine target_module + port_name into one embedding
-        # Use a simple lookup on their sum (they cover disjoint integer spaces)
+    ) -> tuple[torch.Tensor, torch.Tensor]:   # (B,), (B,)
         task_idx = target_module.clamp(0, NUM_TASKS - 1)
         t = self.task_embedding(task_idx)                      # (B, task_dim)
-        q = self.q_head(torch.cat([s, a, t], dim=-1))         # (B, 1)
-        return q.squeeze(-1)                                   # (B,)
+        x = torch.cat([robot_state.flatten(1), actions.flatten(1), t], dim=-1)
+        return self.q1(x).squeeze(-1), self.q2(x).squeeze(-1)
 
 
 # ---------------------------------------------------------------------------
@@ -351,8 +414,8 @@ def update_critic(
     actions       = batch["actions"].to(device)
     returns       = batch["returns"].to(device)
 
-    q_pred = q_func(robot_state, target_module, port_name, actions)
-    loss   = F.mse_loss(q_pred, returns)
+    q1, q2 = q_func(robot_state, target_module, port_name, actions)
+    loss   = F.mse_loss(q1, returns) + F.mse_loss(q2, returns)
 
     opt.zero_grad()
     loss.backward()
@@ -385,10 +448,11 @@ def update_actor(
     port_name     = batch["port_name"].to(device)
     actions       = batch["actions"].to(device)  # (B, pred_horizon, action_dim)
 
-    # --- Compute Q-gradient w.r.t. buffered actions ---
-    actions_g = actions.detach().requires_grad_(True)
-    q_val     = q_func(robot_state, target_module, port_name, actions_g)
-    q_grad    = torch.autograd.grad(q_val.sum(), actions_g)[0]  # (B, pred_horizon, action_dim)
+    # --- Compute Q-gradient w.r.t. buffered actions (min of double-Q) ---
+    actions_g  = actions.detach().requires_grad_(True)
+    q1, q2     = q_func(robot_state, target_module, port_name, actions_g)
+    q_val      = torch.min(q1, q2)
+    q_grad     = torch.autograd.grad(q_val.sum(), actions_g)[0]  # (B, pred_horizon, action_dim)
 
     # Normalize Q-gradient so its scale is ~1 (prevents instability if Q is large)
     grad_norm = q_grad.norm(dim=[-1, -2], keepdim=True).clamp(min=1e-8)
@@ -469,7 +533,7 @@ def main() -> None:
     parser.add_argument("--checkpoint",    type=str, default="",
                         help="Path to a pretrained FlowMatchingPolicy checkpoint (.pt). "
                              "Leave empty to train from scratch.")
-    parser.add_argument("--action_dim",    type=int, default=7,
+    parser.add_argument("--action_dim",    type=int, default=9,
                         help="Action dimension: 7 for pos+quat, 9 for pos+rot6d.")
     parser.add_argument("--obs_horizon",   type=int, default=2)
     parser.add_argument("--pred_horizon",  type=int, default=16)
@@ -555,6 +619,7 @@ def main() -> None:
         control_freq_hz=args.control_freq_hz,
         max_episode_steps=args.max_episode_steps,
         random_reset=args.random_reset,
+        frame_id="base_link",
     )
     env = AICRLEnv(config=env_cfg)
     print("[QSM] Environment ready.")
@@ -600,15 +665,14 @@ def main() -> None:
         # ----------------------------------------------------------------
         if not action_queue:
             if total_steps < args.start_training:
-                # Warm-up: random Gaussian actions (crude approximation of TCP poses)
-                # Use the current TCP pose + small Gaussian noise
-                cur_pos  = flat_obs[0:3]
-                cur_quat = flat_obs[3:7]
+                # Warm-up: current TCP pose (converted to rot6d) + small position noise
+                cur_pos   = flat_obs[0:3]
+                cur_rot6d = _quat_xyzw_to_rot6d(flat_obs[3:7])
                 seq = np.tile(
-                    np.concatenate([cur_pos, cur_quat]), (args.pred_horizon, 1)
+                    np.concatenate([cur_pos, cur_rot6d]), (args.pred_horizon, 1)
                 ).astype(np.float32)
                 seq[:, :3] += np.random.randn(args.pred_horizon, 3) * 0.01  # 1 cm noise
-                action_seq = seq  # (pred_horizon, action_dim)
+                action_seq = seq  # (pred_horizon, 9)
             else:
                 # Policy inference
                 robot_state_t = torch.from_numpy(
@@ -660,8 +724,8 @@ def main() -> None:
         # ----------------------------------------------------------------
         # Execute one step from the action queue
         # ----------------------------------------------------------------
-        action_7d = action_queue.pop(0)
-        flat_obs_new, reward, terminated, truncated, info = env.step_pose(action_7d)
+        action_9d = action_queue.pop(0)
+        flat_obs_new, reward, terminated, truncated, info = env.step_pose(action_9d)
 
         # Update last transition's reward
         if episode_transitions:

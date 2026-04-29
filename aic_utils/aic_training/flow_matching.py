@@ -57,6 +57,8 @@ def get_resnet(name: str, weights=None, **kwargs) -> nn.Module:
     func = getattr(torchvision.models, name)
     resnet = func(weights=weights, **kwargs)
     resnet.fc = nn.Identity()
+    #debug_weights = torchvision.models.ResNet18_Weights.IMAGENET1K_V1
+    #print("LXH:", debug_weights.transforms())
     return resnet
 
 
@@ -112,19 +114,30 @@ def replace_bn_with_gn(root_module: nn.Module, features_per_group: int = 16) -> 
 class ImageEncoder(nn.Module):
     CAMERA_KEYS = ("left_camera", "center_camera", "right_camera")
 
+    # ImageNet normalization — matches ResNet18_Weights.IMAGENET1K_V1.transforms()
+    _IMAGENET_MEAN = [0.485, 0.456, 0.406]
+    _IMAGENET_STD  = [0.229, 0.224, 0.225]
+
     def __init__(self, resnet_name: str = "resnet18", weights="IMAGENET1K_V1",
                  features_per_group: int = 16):
         super().__init__()
         backbone = get_resnet(resnet_name, weights=weights)
         self.backbone = replace_bn_with_gn(backbone, features_per_group=features_per_group)
         self.num_cameras = len(self.CAMERA_KEYS)
+        self.register_buffer(
+            "img_mean", torch.tensor(self._IMAGENET_MEAN, dtype=torch.float32).view(1, 3, 1, 1)
+        )
+        self.register_buffer(
+            "img_std",  torch.tensor(self._IMAGENET_STD,  dtype=torch.float32).view(1, 3, 1, 1)
+        )
 
     def forward(self, images: dict) -> torch.Tensor:
         B, T = next(iter(images.values())).shape[:2]
         per_camera = []
         for key in self.CAMERA_KEYS:
             img = images[key]
-            img_flat = img.flatten(end_dim=1)
+            img_flat = img.flatten(end_dim=1)                        # (B*T, C, H, W)
+            img_flat = (img_flat - self.img_mean) / self.img_std     # ImageNet normalize
             feat = self.backbone(img_flat)
             feat = feat.reshape(B, T, RESNET_FEATURE_DIM)
             per_camera.append(feat)
@@ -374,7 +387,7 @@ class FlowMatchingPolicy(nn.Module):
         port_name: torch.Tensor,
         x_t: torch.Tensor,
         t: torch.Tensor,
-        use_uncond_task: bool = False,
+        use_uncond: bool = False,
         img_tokens_cache: torch.Tensor | None = None,
     ) -> torch.Tensor:
         """Predict velocity field v_θ(x_t, t).
@@ -386,7 +399,8 @@ class FlowMatchingPolicy(nn.Module):
             port_name:        (B,) int64
             x_t:              (B, pred_horizon, action_dim) — interpolated action at time t
             t:                (B,) float32 in [0, 1] — flow matching time
-            use_uncond_task:  if True, use learnable null token (CFG unconditional pass)
+            use_uncond:       if True, zero all conditions (img, state, task) for the CFG
+                              unconditional pass.
             img_tokens_cache: pre-computed image tokens; skips image encoder if provided
 
         Returns:
@@ -419,14 +433,20 @@ class FlowMatchingPolicy(nn.Module):
         if self.profiling:
             _t = self._tock(_t, "state_encoder", dev)
 
-        if use_uncond_task:
-            task_token = self.task_encoder.uncond_token(B, dev)
+        if use_uncond:
+            # Unconditional pass: zero image and state tokens, use learnable null task token.
+            img_tokens   = torch.zeros_like(img_tokens)
+            state_tokens = torch.zeros_like(state_tokens)
+            task_token   = self.task_encoder.uncond_token(B, dev)
         else:
             task_token = self.task_encoder(target_module, port_name)
             if self.cfg_dropout_prob > 0.0 and self.training:
-                null_token = self.task_encoder.uncond_token(B, dev)
-                drop_mask  = (torch.rand(B, device=dev) < self.cfg_dropout_prob).view(B, 1, 1)
-                task_token = torch.where(drop_mask, null_token, task_token)
+                # Drop all conditions jointly with the same mask.
+                drop_mask    = (torch.rand(B, device=dev) < self.cfg_dropout_prob).view(B, 1, 1)
+                img_tokens   = torch.where(drop_mask, torch.zeros_like(img_tokens),   img_tokens)
+                state_tokens = torch.where(drop_mask, torch.zeros_like(state_tokens), state_tokens)
+                null_token   = self.task_encoder.uncond_token(B, dev)
+                task_token   = torch.where(drop_mask, null_token, task_token)
 
         timestep_emb  = self.timestep_encoder(t)
         action_tokens = self.action_in_proj(x_t)
@@ -480,6 +500,19 @@ class FlowMatchingPolicy(nn.Module):
         """
         B      = actions.shape[0]
         device = actions.device
+
+        ## Log image size and value range (first call only, gated by a counter)
+        #if not hasattr(self, '_img_log_count'):
+        #    self._img_log_count = 0
+        #if self._img_log_count < 3:
+        #    for key, img in images.items():
+        #        print(
+        #            f"[compute_loss] images[{key!r}] shape={tuple(img.shape)}  "
+        #            f"dtype={img.dtype}  min={img.min().item():.4f}  "
+        #            f"max={img.max().item():.4f}  mean={img.mean().item():.4f}",
+        #            flush=True,
+        #        )
+        #    self._img_log_count += 1
 
         # Sample t ~ Uniform(0, 1) per batch element
         t = torch.rand(B, device=device)                          # (B,)
@@ -563,21 +596,27 @@ class FlowMatchingPolicy(nn.Module):
             print(f"[profile] image_encoder (once per sample): "
                   f"{(time.perf_counter() - _t_img)*1e3:.2f} ms", flush=True)
 
+        # Pre-compute zero image cache for the unconditional CFG pass so we
+        # don't allocate it inside the hot ODE loop.
+        img_tokens_cache_zeros = (
+            torch.zeros_like(img_tokens_cache) if use_cfg else None
+        )
+
         def eval_v(xt: torch.Tensor, t_val: float) -> torch.Tensor:
             """Evaluate velocity field (with optional CFG) at a given t."""
             t_tensor = torch.full((B,), t_val, dtype=torch.float32, device=device)
             v_cond = self(
                 images=images, robot_state=robot_state,
                 target_module=target_module, port_name=port_name,
-                x_t=xt, t=t_tensor, use_uncond_task=False,
+                x_t=xt, t=t_tensor, use_uncond=False,
                 img_tokens_cache=img_tokens_cache,
             )
             if use_cfg:
                 v_uncond = self(
                     images=images, robot_state=robot_state,
                     target_module=target_module, port_name=port_name,
-                    x_t=xt, t=t_tensor, use_uncond_task=True,
-                    img_tokens_cache=img_tokens_cache,
+                    x_t=xt, t=t_tensor, use_uncond=True,
+                    img_tokens_cache=img_tokens_cache_zeros,
                 )
                 return v_uncond + guidance_scale * (v_cond - v_uncond)
             return v_cond
