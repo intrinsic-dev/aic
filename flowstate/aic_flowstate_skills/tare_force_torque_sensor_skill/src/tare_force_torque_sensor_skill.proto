@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package ai.flowstate;
+
+message TareForceTorqueSensorSkillParams {
+  // The number of seconds from the moment this request is received by when the task must complete.
+  uint64 time_limit = 1;
+}
+
+message TareForceTorqueSensorSkillResult {
+  // True if the task succeeded.
+  bool success = 1;
+  
+  // A message if the task succeeded or failed.
+  string message = 2;
+}

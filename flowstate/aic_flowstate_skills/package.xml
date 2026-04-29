@@ -13,6 +13,7 @@
   <depend>intrinsic_sdk_cmake</depend>
   <depend>rclcpp</depend>
   <depend>rclcpp_action</depend>
+  <depend>std_srvs</depend>
 
   <export>
     <build_type>ament_cmake</build_type>
