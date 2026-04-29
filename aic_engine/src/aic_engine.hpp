@@ -19,7 +19,6 @@
 #define AIC_ENGINE_HPP_
 
 #include <aic_engine_interfaces/srv/start_engine.hpp>
-#include <aic_engine_interfaces/srv/reset_joints.hpp>
 #include <functional>
 #include <memory>
 #include <optional>
@@ -33,24 +32,15 @@
 #include "aic_scoring/ScoringTier2.hh"
 #include "aic_scoring/TierScore.hh"
 #include "aic_task_interfaces/action/insert_cable.hpp"
-#include "controller_manager_msgs/srv/switch_controller.hpp"
-#include "geometry_msgs/msg/wrench_stamped.hpp"
 #include "lifecycle_msgs/msg/state.hpp"
 #include "lifecycle_msgs/srv/change_state.hpp"
 #include "lifecycle_msgs/srv/get_state.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
-#include "simulation_interfaces/srv/delete_entity.hpp"
-#include "simulation_interfaces/srv/spawn_entity.hpp"
 #include "std_srvs/srv/trigger.hpp"
-#include "tf2/exceptions.hpp"
-#include "tf2_ros/buffer.h"
-#include "tf2_ros/transform_listener.h"
-#include "trajectory_msgs/msg/joint_trajectory_point.hpp"
 #include "yaml-cpp/yaml.h"
 
 #include <grpcpp/grpcpp.h>
-#include "google/longrunning/operations.pb.h"
 #include "intrinsic/executive/proto/executive_service.grpc.pb.h"
 
 //==============================================================================
@@ -61,9 +51,7 @@ using InsertCableAction = aic_task_interfaces::action::InsertCable;
 using JointMotionUpdateMsg = aic_control_interfaces::msg::JointMotionUpdate;
 using MotionUpdateMsg = aic_control_interfaces::msg::MotionUpdate;
 using StartEngineSrv = aic_engine_interfaces::srv::StartEngine;
-using Task = aic_task_interfaces::msg::Task;
 using TriggerSrv = std_srvs::srv::Trigger;
-using WrenchStampedMsg = geometry_msgs::msg::WrenchStamped;
 
 //==============================================================================
 struct Score {
@@ -259,10 +247,6 @@ class Engine {
 
   // Callback group for concurrent execution.
   rclcpp::CallbackGroup::SharedPtr callback_group_;
-
-  // TF
-  std::unique_ptr<tf2_ros::TransformListener> tf_listener_;
-  std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
 
   // Set to true when a run is requested, will be processed by main thread.
   // Set to false when a run is finished and the engine is idle.

@@ -1,0 +1,28 @@
+metadata {
+  id {
+    package: "ai.intrinsic"
+    name: "aic_engine"
+  }
+  vendor {
+    display_name: "Intrinsic"
+  }
+  documentation {
+    description: "AIC Engine."
+  }
+  display_name: "AIC Engine"
+}
+service_def {
+  real_spec {
+    image {
+      archive_filename: "aic_engine.tar"
+    }
+  }
+  sim_spec {
+    image {
+      archive_filename: "aic_engine.tar"
+    }
+  } 
+}
+assets {
+  image_filenames: ["aic_engine.tar"]
+}

@@ -24,12 +24,11 @@
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
-#include <mutex>
 #include <sstream>
 #include <unordered_set>
 
 #include "aic_task_interfaces/msg/task.hpp"
-#include "ament_index_cpp/get_package_share_directory.hpp"
+#include "google/longrunning/operations.pb.h"
 #include "lifecycle_msgs/msg/state.hpp"
 #include "lifecycle_msgs/srv/get_state.hpp"
 #include "rclcpp/subscription_options.hpp"
@@ -210,8 +209,6 @@ std::optional<std::string> Engine::initialize(const std::string& yaml_config) {
           model_change_state_service_name_, rclcpp::ServicesQoS(), callback_group_);
   tare_ft_client_ = node_->create_client<TriggerSrv>(
       "/aic_controller/tare_force_torque_sensor", rclcpp::ServicesQoS(), callback_group_);
-  tf_buffer_ = std::make_unique<tf2_ros::Buffer>(node_->get_clock());
-  tf_listener_ = std::make_unique<tf2_ros::TransformListener>(*tf_buffer_);
 
   scoring_tier2_ = std::make_unique<aic_scoring::ScoringTier2>(node_.get());
   // TODO(luca) Change initialization to static topic names / types?
