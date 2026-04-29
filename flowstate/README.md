@@ -91,3 +91,55 @@ export INTRINSIC_CLUSTER="vmp-xxxx-xxxxxxx"
 
 > [!NOTE]
 > It is possible that first time you run `inctl asset install` it fails with error. In that case, please try again.
+
+---
+
+## 🛠️ Building the Skill
+
+We can use the `build_container.sh` and `build_bundle.sh` script from the intrinsic-ai/sdk-ros repository to build and package the skill bundle. The instructions below build and bundle the `insert_cable_skill`.
+
+---
+
+```bash
+cd ~/ws_aic_phase1
+
+# This command builds the insert_cable_skill, the Intrinsic SDK, and the necessary ROS dependencies into a tar image.
+./src/sdk-ros/scripts/build_container.sh \
+  --ros_distro "kilted" \
+  --skill_package aic_flowstate_skills \
+  --skill_name insert_cable_skill
+
+# This command bundles the skill into a deployable tarball
+./src/sdk-ros/scripts/build_bundle.sh \
+  --skill_package aic_flowstate_skills \
+  --skill_name insert_cable_skill \
+  --manifest_path src/aic/flowstate/aic_flowstate_skills/insert_cable_skill/src/insert_cable_skill.manifest.textproto
+```
+
+---
+
+## 📥 Installing skills to Flowstate
+
+After building, upload and install the skill into your solution context.
+
+---
+
+```bash
+
+# 1. Export path to side-loaded service bundle
+export SKILL_BUNDLE=~/ws_aic_phase1/images/insert_cable_skill/insert_cable_skill.bundle.tar
+
+# 2. Add Organization
+export INTRINSIC_ORGANIZATION="<ORG_NAME>"
+
+# 3. Add Cluster Endpoint
+export INTRINSIC_CLUSTER="vmp-xxxx-xxxxxxx"
+
+./inctl asset install \
+  --org $INTRINSIC_ORGANIZATION \
+  --cluster $INTRINSIC_CLUSTER \
+  $SKILL_BUNDLE
+
+```
+
+---
