@@ -320,7 +320,8 @@ bool RobotControlBridge::initialize(
             << ", instance: " << data_->instance_
             << ", part: " << data_->part_name_;
 
-  if (!restartControllerBridge()) {
+  data_->connected_to_controller_ = restartControllerBridge();
+  if (!data_->connected_to_controller_) {
     LOG(ERROR) << "Failed to connect to controller bridge.";
     // todo(johntgz) add retry mechanism
   }
@@ -542,9 +543,16 @@ void RobotControlBridge::TareForceTorqueSensorCallback(
     std::shared_ptr<std_srvs::srv::Trigger::Response> response) {
   LOG(INFO) << "Received request to tare force torque sensor";
 
-  if (!data_->session_ || !data_->tare_action_.has_value()) {
+  if (!data_->connected_to_controller_) {
+    LOG(INFO) << "Restarting connection to controller server";
+    data_->connected_to_controller_ = restartControllerBridge();
+  }
+
+  if (!data_->connected_to_controller_ || !data_->session_ ||
+      !data_->tare_action_.has_value()) {
     response->success = false;
-    response->message = "No active session or tare action not initialized";
+    response->message =
+        "No active controller session or tare action not initialized";
     return;
   }
 
