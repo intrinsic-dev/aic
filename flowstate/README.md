@@ -104,16 +104,19 @@ We can use the `build_container.sh` and `build_bundle.sh` script from the intrin
 cd ~/ws_aic_phase1
 
 # This command builds the insert_cable_skill, the Intrinsic SDK, and the necessary ROS dependencies into a tar image.
-./src/sdk-ros/scripts/build_container.sh \
-  --ros_distro "kilted" \
+./src/aic/flowstate/scripts/build_container.sh \
+  --skill_name insert_cable_skill \
   --skill_package aic_flowstate_skills \
-  --skill_name insert_cable_skill
+  --manifest_path src/aic/flowstate/aic_flowstate_skills/insert_cable_skill/src/insert_cable_skill.manifest.textproto \
+  --dockerfile ./src/aic/flowstate/resources/Dockerfile.skill \
+  --ros_distro kilted
 
 # This command bundles the skill into a deployable tarball
-./src/sdk-ros/scripts/build_bundle.sh \
-  --skill_package aic_flowstate_skills \
-  --skill_name insert_cable_skill \
-  --manifest_path src/aic/flowstate/aic_flowstate_skills/insert_cable_skill/src/insert_cable_skill.manifest.textproto
+inbuild skill bundle \
+  --file_descriptor_set images/insert_cable_skill/insert_cable_skill.desc \
+  --manifest src/aic/flowstate/aic_flowstate_skills/insert_cable_skill/src/insert_cable_skill.manifest.textproto \
+  --oci_image images/insert_cable_skill/insert_cable_skill.tar \
+  --output images/insert_cable_skill/insert_cable_skill.bundle.tar
 ```
 
 ---

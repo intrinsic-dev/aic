@@ -1,0 +1,114 @@
+# Build up the skill with these stages:
+#   - base (ros:jazzy + settings) ->
+#   - underlay (dependencies) ->
+#   - overlay (user code) ->
+#   - result (base + copied install folder of underlay and overlay)
+
+ARG ROS_DISTRO=jazzy
+
+# base stage: ros:jazzy + configs
+FROM ros:${ROS_DISTRO} AS base
+
+WORKDIR /opt/ros/underlay
+
+ENV ROS_HOME=/tmp
+ENV RMW_IMPLEMENTATION=rmw_zenoh_cpp
+
+# underlay stage: base + dependencies built
+FROM base AS underlay
+
+ADD src/sdk-ros /opt/ros/underlay/src/sdk-ros
+
+RUN . /opt/ros/${ROS_DISTRO}/setup.sh \
+    && apt-get update \
+    && rosdep update \
+    && rosdep install --from-paths src --ignore-src -r -y \
+    && apt install -y ros-${ROS_DISTRO}-ament-cmake-vendor-package \
+    && colcon build \
+        --continue-on-error \
+        --cmake-args -DCMAKE_BUILD_TYPE=Release \
+        --event-handlers=console_direct+ \
+        --merge-install \
+        --packages-up-to intrinsic_sdk
+
+# overlay stage: underlay + skill code built
+FROM underlay AS overlay
+
+ARG SKILL_PACKAGE
+ARG DEPENDENCIES
+
+ARG ROS_DISTRO=jazzy
+RUN apt-get update \
+    && apt install -y ros-${ROS_DISTRO}-rmw-zenoh-cpp python3-protobuf ${DEPENDENCIES} \
+    && rm -rf /var/lib/apt/lists/*
+
+ADD src /opt/ros/overlay/src
+
+RUN . /opt/ros/${ROS_DISTRO}/setup.sh \
+    && . /opt/ros/underlay/install/setup.sh \
+    && cd /opt/ros/overlay \
+    && colcon build \
+      --cmake-args -DCMAKE_BUILD_TYPE=Release \
+      --event-handlers=console_direct+ \
+      --merge-install \
+      --packages-up-to=${SKILL_PACKAGE} \
+      --packages-skip intrinsic_sdk grpc_vendor
+
+# result stage: base + copied install folders from the overlay + skill setup
+FROM base
+
+ARG SKILL_PACKAGE
+ARG SKILL_NAME
+ARG SKILL_EXECUTABLE_NAME
+ARG DEPENDENCIES
+
+ARG ROS_DISTRO=jazzy
+RUN apt-get update \
+    && apt-get install -y ros-${ROS_DISTRO}-rmw-zenoh-cpp \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=overlay /opt/ros/underlay/install /opt/ros/underlay/install
+COPY --from=overlay /opt/ros/overlay/install /opt/ros/overlay/install
+
+# The reverse domain name for the organization in the asset-id label.
+ARG SKILL_ASSET_ID_ORG="ai.intrinsic"
+ENV ENTRYPOINT="ros2 run ${SKILL_PACKAGE} ${SKILL_EXECUTABLE_NAME}"
+ENV SKILL_CONFIG=share/${SKILL_PACKAGE}/${SKILL_NAME}_config.pbbin
+
+# Create linkable bash script to run the ENTRYPOINT executable
+RUN echo -e "#!/bin/bash\nexec $ENTRYPOINT \"\$@\"" > /run_skill.sh \
+    && chmod +x /run_skill.sh
+
+RUN set -x \
+    && mkdir -p /skills \
+    && ln -sf /run_skill.sh /skills/skill_service \
+    && ln -sf /opt/ros/overlay/install/$SKILL_CONFIG /skills/skill_service_config.proto.bin \
+    && sed --in-place \
+        --expression '$isource "/opt/ros/overlay/install/setup.bash"' \
+        /ros_entrypoint.sh \
+    && sed --in-place \
+        --expression '$iexport RMW_IMPLEMENTATION=rmw_zenoh_cpp' \
+        /ros_entrypoint.sh \
+    && sed --in-place \
+        --expression '$iexport ROS_HOME=/tmp' \
+        /ros_entrypoint.sh \
+    && sed --in-place \
+        --expression '$iexport ZENOH_CONFIG_OVERRIDE='\'connect/endpoints=[\"tcp/zenoh-router.app-intrinsic-base.svc.cluster.local:7447\"]\''' \
+        /ros_entrypoint.sh
+
+# Set some labels used by Flowstate.
+LABEL "ai.intrinsic.asset-id"="${SKILL_ASSET_ID_ORG}.${SKILL_PACKAGE}"
+LABEL "ai.intrinsic.skill-image-name"="${SKILL_PACKAGE}"
+
+# Build arguments are not substituted in the CMD command and hence we set environemnt variables
+# which can be substituted instead.
+ENV SKILL_PACKAGE=${SKILL_PACKAGE}
+ENV SKILL_NAME=${SKILL_NAME}
+ENV SKILL_EXECUTABLE_NAME=${SKILL_EXECUTABLE_NAME}
+ENV ENTRYPOINT=${ENTRYPOINT}
+ENV ZENOH_ROUTER_CHECK_ATTEMPTS=-1
+
+# Execute the skill main by default, but note that Flowstate will likely override this statement.
+CMD [ \
+    "/skills/skill_service", \
+    "--skill_service_config_filename=/skills/skill_service_config.proto.bin"]
