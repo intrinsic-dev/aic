@@ -187,11 +187,7 @@ class RunFlowMatching(Policy):
         policy.profiling = True
 
         # Compile the transformer (the repeated inner loop of sample()).
-        # "reduce-overhead" enables CUDA graph capture, eliminating kernel-launch
-        # overhead for the fixed-shape batches used at inference (B=1).
-        policy.vector_field_net = torch.compile(
-            policy.vector_field_net, mode="reduce-overhead"
-        )
+        policy.vector_field_net = torch.compile(policy.vector_field_net)
         self.get_logger().info(
             "RunFlowMatching: vector_field_net compiled with torch.compile"
         )

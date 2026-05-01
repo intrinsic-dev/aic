@@ -9,7 +9,7 @@ expected return for each (state, action-sequence) pair.
 Actor update — Q-Score Matching:
   The standard rectified-flow velocity target u_t = (x_1 - x_noise) is augmented
   with the gradient of the Q-function at the buffered action x_1:
-      u_guided = (x_1 - x_noise) + α * ∇_{x_1} Q(s, x_1)
+      u_guided = α * ∇_{x_t} Q(s, x_t)
   The actor is trained to match this Q-guided velocity field, pushing the
   generative model toward regions of higher expected return.
 
@@ -59,10 +59,13 @@ import rclpy  # noqa: F401 — triggers rclpy context init when imported
 from geometry_msgs.msg import Point, Pose, Quaternion, Vector3
 from geometry_msgs.msg import Wrench
 from sensor_msgs.msg import Image as ROSImage
+from std_msgs.msg import String
 from aic_control_interfaces.msg import (
     MotionUpdate,
     TrajectoryGenerationMode,
 )
+from rclpy.time import Time
+from tf2_ros import Buffer, TransformException, TransformListener
 from aic_training.aic_gym_env import AICGymEnv, AICGymEnvConfig
 from aic_training.flow_matching import FlowMatchingPolicy, ROBOT_STATE_DIM
 
@@ -172,6 +175,16 @@ class AICRLEnv(AICGymEnv):
         self._img_lock = Lock()
         self._latest_images: dict[str, ROSImage | None] = {k: None for k in CAMERA_TOPICS}
 
+        # TF buffer for ground-truth port positions (same pattern as CheatCode.py)
+        self._tf_buffer   = Buffer()
+        self._tf_listener = TransformListener(self._tf_buffer, self._node)
+
+        # Raw insertion event string — base class only stores 0.0/1.0, we need the content
+        self._last_insertion_event_data: str = ""
+
+        # Timestamp (time.monotonic) when force first exceeded 20 N; None if below threshold
+        self._high_force_since: float | None = None
+
         # ref code: aic_utils/lerobot_robot_aic/lerobot_robot_aic/aic_robot.py
         for cam_key, topic in CAMERA_TOPICS.items():
             # Capture cam_key in closure
@@ -201,6 +214,72 @@ class AICRLEnv(AICGymEnv):
             if any(v is None for v in self._latest_images.values()):
                 return None
             return {k: self._ros_image_to_tensor(v) for k, v in self._latest_images.items()}
+
+    def reset(self, **kwargs):
+        self._last_insertion_event_data = ""
+        self._high_force_since = None
+        return super().reset(**kwargs)
+
+    # ------------------------------------------------------------------
+    # Insertion event — keep raw string for task-match checking
+    # ------------------------------------------------------------------
+
+    def _insertion_event_cb(self, msg: String) -> None:
+        self._last_insertion_event_data = msg.data
+        self._last_insertion_event = 1.0 if msg.data else 0.0
+
+    # ------------------------------------------------------------------
+    # Reward
+    # ------------------------------------------------------------------
+
+    def _compute_reward(self, obs: np.ndarray, action: np.ndarray, info: dict) -> float:
+        reward = 0.0
+
+        # 1. Step penalty
+        reward -= 0.02
+
+        # 2. Distance to target port (ground-truth TF)
+        task = info.get("task", {})
+        target_module_name = task.get("target_module_name", "")
+        port_name          = task.get("port_name", "")
+        if target_module_name and port_name:
+            port_frame = f"task_board/{target_module_name}/{port_name}_link"
+            try:
+                tf_stamped = self._tf_buffer.lookup_transform(
+                    "base_link", port_frame, Time()
+                )
+                port_pos = tf_stamped.transform.translation
+                tcp_pos  = obs[0:3]
+                dist = float(np.linalg.norm(
+                    tcp_pos - np.array([port_pos.x, port_pos.y, port_pos.z])
+                ))
+                if dist < 0.10:  # within 100 mm
+                    reward += 2.0
+            except TransformException:
+                pass  # TF not yet available — skip distance reward this step
+
+        # 3. Insertion event
+        event_data = self._last_insertion_event_data
+        if event_data:
+            if target_module_name and port_name \
+                    and target_module_name in event_data and port_name in event_data:
+                reward += 3.0   # correct insertion
+            else:
+                reward -= 3.0   # wrong port
+
+        # 4. Force penalties  (tare-corrected force at obs[20:23])
+        force = obs[20:23]
+        if np.any(np.abs(force) > 20.0):
+            if self._high_force_since is None:
+                self._high_force_since = time.monotonic()
+            elif time.monotonic() - self._high_force_since >= 1.0:
+                reward -= 2.5
+        else:
+            self._high_force_since = None
+            if np.any(np.abs(force) > 15.0):
+                reward -= 1.0
+
+        return reward
 
     # ------------------------------------------------------------------
     # Pose action mode
@@ -286,18 +365,16 @@ class QFunction(nn.Module):
     def __init__(
         self,
         obs_horizon:     int = 2,
-        pred_horizon:    int = 16,
         action_dim:      int = 9,
         robot_state_dim: int = ROBOT_STATE_DIM,
         hidden_dim:      int = 256,
         task_dim:        int = 64,
     ):
         super().__init__()
-        self.obs_horizon  = obs_horizon
-        self.pred_horizon = pred_horizon
-        self.action_dim   = action_dim
+        self.obs_horizon = obs_horizon
+        self.action_dim  = action_dim
 
-        in_dim = obs_horizon * robot_state_dim + pred_horizon * action_dim + task_dim
+        in_dim = obs_horizon * robot_state_dim + action_dim + task_dim
 
         self.task_embedding = nn.Embedding(NUM_TASKS, task_dim)
 
@@ -319,11 +396,11 @@ class QFunction(nn.Module):
         robot_state:   torch.Tensor,   # (B, obs_horizon, robot_state_dim)
         target_module: torch.Tensor,   # (B,) int64
         port_name:     torch.Tensor,   # (B,) int64
-        actions:       torch.Tensor,   # (B, pred_horizon, action_dim)
+        action:        torch.Tensor,   # (B, action_dim)
     ) -> tuple[torch.Tensor, torch.Tensor]:   # (B,), (B,)
         task_idx = target_module.clamp(0, NUM_TASKS - 1)
         t = self.task_embedding(task_idx)                      # (B, task_dim)
-        x = torch.cat([robot_state.flatten(1), actions.flatten(1), t], dim=-1)
+        x = torch.cat([robot_state.flatten(1), action, t], dim=-1)
         return self.q1(x).squeeze(-1), self.q2(x).squeeze(-1)
 
 
@@ -332,7 +409,7 @@ class QFunction(nn.Module):
 # ---------------------------------------------------------------------------
 
 class ReplayBuffer:
-    """Circular replay buffer storing (obs, actions, returns) tuples.
+    """Circular replay buffer storing one transition per environment step.
 
     Each stored observation is a dict with:
       "images"       : {cam_key: (obs_horizon, C, H, W)} float32 tensors on CPU
@@ -340,9 +417,9 @@ class ReplayBuffer:
       "target_module": int
       "port_name"    : int
 
-    The "actions" are the full (pred_horizon, action_dim) sequence generated
-    by the policy at the current step.  The "returns" are the discounted
-    Monte-Carlo returns from this step.
+    "action" is the single (action_dim,) vector executed at that step.
+    "reward" is the immediate per-step reward.
+    "done"   is True when the episode ended after this step.
     """
 
     def __init__(self, capacity: int = 10_000):
@@ -353,14 +430,18 @@ class ReplayBuffer:
 
     def push(
         self,
-        obs:           dict,
-        actions:       np.ndarray,
-        returns:       float,
+        obs:      dict,
+        action:   np.ndarray,   # (action_dim,)
+        reward:   float,
+        next_obs: dict,
+        done:     bool,
     ) -> None:
         self._buf.append({
-            "obs":     obs,
-            "actions": actions.astype(np.float32),
-            "returns": float(returns),
+            "obs":      obs,
+            "action":   action.astype(np.float32),
+            "reward":   float(reward),
+            "next_obs": next_obs,
+            "done":     bool(done),
         })
 
     def sample(self, batch_size: int) -> dict:
@@ -382,18 +463,32 @@ class ReplayBuffer:
             [it["obs"]["port_name"] for it in items], dtype=torch.long
         )
         actions = torch.tensor(
-            np.stack([it["actions"] for it in items]), dtype=torch.float32
+            np.stack([it["action"] for it in items]), dtype=torch.float32
+        )  # (B, action_dim)
+        rewards = torch.tensor(
+            [it["reward"] for it in items], dtype=torch.float32
         )
-        returns = torch.tensor(
-            [it["returns"] for it in items], dtype=torch.float32
+        dones = torch.tensor(
+            [it["done"] for it in items], dtype=torch.float32
         )
+        # Next observation
+        next_images = {
+            k: torch.stack([torch.as_tensor(it["next_obs"]["images"][k]) for it in items])
+            for k in cam_keys
+        }
+        next_robot_state = torch.stack([
+            torch.as_tensor(it["next_obs"]["robot_state"]) for it in items
+        ])
         return {
-            "images":        images,
-            "robot_state":   robot_state,
-            "target_module": target_module,
-            "port_name":     port_name,
-            "actions":       actions,
-            "returns":       returns,
+            "images":           images,
+            "robot_state":      robot_state,
+            "target_module":    target_module,
+            "port_name":        port_name,
+            "actions":          actions,
+            "rewards":          rewards,
+            "next_images":      next_images,
+            "next_robot_state": next_robot_state,
+            "dones":            dones,
         }
 
 
@@ -401,44 +496,103 @@ class ReplayBuffer:
 # Actor / critic update functions
 # ---------------------------------------------------------------------------
 
+@torch.no_grad()
+def soft_update(target: nn.Module, source: nn.Module, tau: float) -> None:
+    """Polyak-average source parameters into target: θ_tgt ← τ·θ + (1-τ)·θ_tgt."""
+    for tp, sp in zip(target.parameters(), source.parameters()):
+        tp.data.copy_(tau * sp.data + (1.0 - tau) * tp.data)
+
+
 def update_critic(
-    q_func:    QFunction,
-    opt:       torch.optim.Optimizer,
-    batch:     dict,
-    device:    torch.device,
+    q_func:               QFunction,
+    target_q_func:        QFunction,
+    policy:               "FlowMatchingPolicy",
+    opt:                  torch.optim.Optimizer,
+    batch:                dict,
+    device:               torch.device,
+    gamma:                float = 0.99,
+    tau:                  float = 0.005,
+    target_num_flow_steps: int  = 3,
 ) -> float:
-    """Minimize MSE between Q(s, a) and Monte-Carlo returns G_t."""
+    """TD critic update with target networks.
+
+    TD target = r + γ · (1 − done) · min(Q1_tgt, Q2_tgt)(s', a')
+    where a' ~ π(s') is sampled from the current policy with a fast ODE solve.
+    Both critics are updated with MSE vs the shared (stop-gradient) TD target,
+    then the target networks are soft-updated via Polyak averaging.
+    """
     robot_state   = batch["robot_state"].to(device)
     target_module = batch["target_module"].to(device)
     port_name     = batch["port_name"].to(device)
-    actions       = batch["actions"].to(device)
-    returns       = batch["returns"].to(device)
+    actions       = batch["actions"].to(device)          # (B, action_dim)
+    rewards       = batch["rewards"].to(device)          # (B,)
+    dones         = batch["dones"].to(device)            # (B,)
+    next_images      = {k: v.to(device) for k, v in batch["next_images"].items()}
+    next_robot_state = batch["next_robot_state"].to(device)
 
+    # --- Sample next action a' ~ π(s') using target-quality fast ODE ---
+    with torch.no_grad():
+        next_actions_raw = policy.sample(
+            images=next_images,
+            robot_state=next_robot_state,
+            target_module=target_module,
+            port_name=port_name,
+            pred_horizon=1,
+            num_steps=target_num_flow_steps,
+            guidance_scale=1.0,
+            solver="euler",
+        )                                                # (B, 1, action_dim)
+        a_next = next_actions_raw[:, 0, :]              # (B, action_dim)
+
+        # --- TD target using frozen target critics ---
+        q1_tgt, q2_tgt = target_q_func(next_robot_state, target_module, port_name, a_next)
+        next_v    = torch.min(q1_tgt, q2_tgt)           # (B,)
+        td_target = rewards + gamma * (1.0 - dones) * next_v   # (B,)
+
+    # --- Online critic loss ---
     q1, q2 = q_func(robot_state, target_module, port_name, actions)
-    loss   = F.mse_loss(q1, returns) + F.mse_loss(q2, returns)
+    loss   = F.mse_loss(q1, td_target) + F.mse_loss(q2, td_target)
 
     opt.zero_grad()
     loss.backward()
     torch.nn.utils.clip_grad_norm_(q_func.parameters(), 1.0)
     opt.step()
+
+    # --- Polyak update of target networks ---
+    soft_update(target_q_func, q_func, tau)
+
     return loss.item()
 
 
 def update_actor(
-    policy:    FlowMatchingPolicy,
-    q_func:    QFunction,
-    opt:       torch.optim.Optimizer,
-    batch:     dict,
-    device:    torch.device,
-    q_alpha:   float = 0.1,
+    policy:       FlowMatchingPolicy,
+    q_func:       QFunction,
+    opt:          torch.optim.Optimizer,
+    batch:        dict,
+    device:       torch.device,
+    q_alpha:      float = 0.1,
+    pred_horizon: int   = 16,
 ) -> float:
     """Q-Score Matching actor update.
 
-    Augments the rectified-flow velocity target with the Q-gradient:
-        u_guided = (x_1 - x_noise) + α * ∇_{x_1} Q(s, x_1)
+    The buffer stores single per-step actions (action_dim,).  We expand them
+    to a full sequence (pred_horizon, action_dim) for the flow-matching loss,
+    then evaluate Q at each noisy interpolant x_t along the trajectory and
+    average the gradients — matching the reference (score_matching_learner.py).
+
+    Target velocity is purely the Q-gradient at x_t (mirrors reference):
+        u_guided = α * ∇_{x_t} Q(s, x_t)
+
+    Two design choices that mirror the reference:
+      - Gradient w.r.t. x_t (noisy point), not x_1 (clean action): guides the
+        velocity field at wherever we are on the trajectory, not just the endpoint.
+      - Mean of the two critics (not min): min is for critic bootstrapping to
+        prevent overestimation; for the actor gradient signal, mean is less
+        pessimistic and gives a more balanced direction.
 
     Args:
-        q_alpha: Scale of the Q-gradient term.  Start small (0.01–0.1).
+        q_alpha:      Scale of the Q-gradient term.  Start small (0.01–0.1).
+        pred_horizon: Length of the action sequence the policy generates.
     """
     B = batch["actions"].shape[0]
 
@@ -446,27 +600,38 @@ def update_actor(
     robot_state   = batch["robot_state"].to(device)
     target_module = batch["target_module"].to(device)
     port_name     = batch["port_name"].to(device)
-    actions       = batch["actions"].to(device)  # (B, pred_horizon, action_dim)
+    # Expand single buffered action → sequence used as flow-matching target
+    action_single = batch["actions"].to(device)                  # (B, action_dim)
+    actions = action_single.unsqueeze(1).expand(-1, pred_horizon, -1).contiguous()
+    #                                                              (B, T, action_dim)
 
-    # --- Compute Q-gradient w.r.t. buffered actions (min of double-Q) ---
-    actions_g  = actions.detach().requires_grad_(True)
-    q1, q2     = q_func(robot_state, target_module, port_name, actions_g)
-    q_val      = torch.min(q1, q2)
-    q_grad     = torch.autograd.grad(q_val.sum(), actions_g)[0]  # (B, pred_horizon, action_dim)
+    T, D = pred_horizon, actions.shape[-1]
 
-    # Normalize Q-gradient so its scale is ~1 (prevents instability if Q is large)
-    grad_norm = q_grad.norm(dim=[-1, -2], keepdim=True).clamp(min=1e-8)
-    q_grad_n  = q_grad / grad_norm                              # unit-norm per sample
-
-    # --- Rectified-flow interpolation ---
-    t      = torch.rand(B, device=device)                       # (B,)
-    t_bc   = t[:, None, None]
-    x_noise = torch.randn_like(actions)                         # (B, pred_horizon, action_dim)
+    # --- Rectified-flow interpolation (x_t first — gradient is taken here) ---
+    t_flow  = torch.rand(B, device=device)                       # (B,)
+    t_bc    = t_flow[:, None, None]
+    x_noise = torch.randn_like(actions)                          # (B, T, D)
     x_t     = (1.0 - t_bc) * x_noise + t_bc * actions.detach()
 
-    # Guided target velocity: standard flow target + Q-gradient push
-    u_t      = actions.detach() - x_noise                       # unguided velocity
-    u_guided = u_t + q_alpha * q_grad_n.detach()                # Q-guided velocity
+    # --- Q-gradient w.r.t. x_t, mean of two critics, averaged over horizon ---
+    x_t_g = x_t.detach().requires_grad_(True)                   # (B, T, D)
+
+    # Flatten B×T → per-step Q evaluations
+    rs_flat = robot_state.unsqueeze(1).expand(-1, T, -1, -1).reshape(B * T, *robot_state.shape[1:])
+    tm_flat = target_module.unsqueeze(1).expand(-1, T).reshape(B * T)
+    pn_flat = port_name.unsqueeze(1).expand(-1, T).reshape(B * T)
+    xt_flat = x_t_g.reshape(B * T, D)
+
+    q1, q2  = q_func(rs_flat, tm_flat, pn_flat, xt_flat)        # (B*T,) each
+    q_val   = ((q1 + q2) / 2).view(B, T).mean(dim=1)            # (B,) mean critics, avg horizon
+    q_grad  = torch.autograd.grad(q_val.sum(), x_t_g)[0]        # (B, T, D)
+
+    # Normalize so gradient scale is ~1 regardless of Q magnitude
+    grad_norm = q_grad.norm(dim=[-1, -2], keepdim=True).clamp(min=1e-8)
+    q_grad_n  = q_grad / grad_norm                               # unit-norm per sample
+
+    # Target velocity is purely the Q-gradient direction (matches reference)
+    u_guided = q_alpha * q_grad_n.detach()
 
     # --- Policy forward + actor loss ---
     v_pred = policy(
@@ -475,7 +640,7 @@ def update_actor(
         target_module=target_module,
         port_name=port_name,
         x_t=x_t,
-        t=t,
+        t=t_flow,
     )
     loss = F.mse_loss(v_pred, u_guided)
 
@@ -536,8 +701,9 @@ def main() -> None:
     parser.add_argument("--action_dim",    type=int, default=9,
                         help="Action dimension: 7 for pos+quat, 9 for pos+rot6d.")
     parser.add_argument("--obs_horizon",   type=int, default=2)
-    parser.add_argument("--pred_horizon",  type=int, default=16)
-    parser.add_argument("--exec_steps",    type=int, default=8,
+    # make this consistent with the imitation training
+    parser.add_argument("--pred_horizon",  type=int, default=8)
+    parser.add_argument("--exec_steps",    type=int, default=4,
                         help="How many actions from the predicted sequence to execute "
                              "before re-querying the policy.")
     parser.add_argument("--num_flow_steps", type=int, default=10,
@@ -547,6 +713,11 @@ def main() -> None:
 
     # RL hyperparameters
     parser.add_argument("--gamma",           type=float, default=0.99)
+    parser.add_argument("--tau",             type=float, default=0.005,
+                        help="Polyak averaging coefficient for target critic EMA.")
+    parser.add_argument("--target_num_flow_steps", type=int, default=3,
+                        help="ODE steps used when sampling a' for the TD target "
+                             "(fewer = faster, 3 Euler steps is usually sufficient).")
     parser.add_argument("--q_alpha",         type=float, default=0.05,
                         help="Q-gradient scale in actor loss.")
     parser.add_argument("--actor_lr",        type=float, default=1e-5)
@@ -601,10 +772,19 @@ def main() -> None:
     # ---- Build Q-function ----
     q_func = QFunction(
         obs_horizon=args.obs_horizon,
-        pred_horizon=args.pred_horizon,
         action_dim=args.action_dim,
         robot_state_dim=ROBOT_STATE_DIM,
     ).to(device)
+
+    # Target critics — same architecture, initialized from q_func, never directly optimized
+    target_q_func = QFunction(
+        obs_horizon=args.obs_horizon,
+        action_dim=args.action_dim,
+        robot_state_dim=ROBOT_STATE_DIM,
+    ).to(device)
+    target_q_func.load_state_dict(q_func.state_dict())
+    for p in target_q_func.parameters():
+        p.requires_grad_(False)
 
     # ---- Optimizers ----
     actor_opt  = torch.optim.AdamW(policy.parameters(),  lr=args.actor_lr)
@@ -649,9 +829,6 @@ def main() -> None:
 
     episode_reward = 0.0
     episode_len    = 0
-
-    # Per-episode storage for MC return computation
-    episode_transitions: list[dict] = []   # {obs, action_seq, reward}
 
     # ---- Action queue ----
     action_queue: list[np.ndarray] = []    # buffered policy actions to execute
@@ -701,35 +878,26 @@ def main() -> None:
 
                 action_seq = actions_out[0].cpu().numpy()  # (pred_horizon, action_dim)
 
-            # Snapshot the current observation for replay buffer storage
-            current_obs_snap = {
-                "images": {
-                    k: torch.stack([f[k] for f in img_buffer]).clone()
-                    for k in img_buffer[0].keys()
-                },
-                "robot_state":   np.stack([build_robot_state(o) for o in obs_buffer]),
-                "target_module": tm_idx,
-                "port_name":     pn_idx,
-            }
+            action_queue = [action_seq[i] for i in range(args.exec_steps)]
 
-            action_queue = [action_seq[i] for i in range(args.pred_horizon)]
-
-            # Store the (obs, action_seq) — reward is filled later from episode
-            episode_transitions.append({
-                "obs":        current_obs_snap,
-                "action_seq": action_seq.copy(),
-                "reward":     0.0,
-            })
+        # ----------------------------------------------------------------
+        # Snapshot obs BEFORE executing (for replay buffer)
+        # ----------------------------------------------------------------
+        step_obs_snap = {
+            "images": {
+                k: torch.stack([f[k] for f in img_buffer]).clone()
+                for k in img_buffer[0].keys()
+            },
+            "robot_state":   np.stack([build_robot_state(o) for o in obs_buffer]),
+            "target_module": tm_idx,
+            "port_name":     pn_idx,
+        }
 
         # ----------------------------------------------------------------
         # Execute one step from the action queue
         # ----------------------------------------------------------------
         action_9d = action_queue.pop(0)
         flat_obs_new, reward, terminated, truncated, info = env.step_pose(action_9d)
-
-        # Update last transition's reward
-        if episode_transitions:
-            episode_transitions[-1]["reward"] += reward
 
         # Update rolling buffers
         obs_buffer.append(flat_obs_new)
@@ -745,20 +913,32 @@ def main() -> None:
 
         done = terminated or truncated
 
+        # Snapshot next state (updated buffers after execution)
+        next_obs_snap = {
+            "images": {
+                k: torch.stack([f[k] for f in img_buffer]).clone()
+                for k in img_buffer[0].keys()
+            },
+            "robot_state":   np.stack([build_robot_state(o) for o in obs_buffer]),
+            "target_module": tm_idx,
+            "port_name":     pn_idx,
+        }
+
         # ----------------------------------------------------------------
-        # Episode end — compute returns and push to buffer
+        # Push per-step transition immediately
+        # ----------------------------------------------------------------
+        replay_buffer.push(
+            obs=step_obs_snap,
+            action=action_9d,
+            reward=reward,
+            next_obs=next_obs_snap,
+            done=done,
+        )
+
+        # ----------------------------------------------------------------
+        # Episode end — log and reset
         # ----------------------------------------------------------------
         if done:
-            # Compute discounted Monte-Carlo returns
-            G = 0.0
-            for trans in reversed(episode_transitions):
-                G = trans["reward"] + args.gamma * G
-                replay_buffer.push(
-                    obs=trans["obs"],
-                    actions=trans["action_seq"],
-                    returns=G,
-                )
-
             episode_rewards.append(episode_reward)
             episode_lengths.append(episode_len)
             print(
@@ -767,8 +947,6 @@ def main() -> None:
                 f"buffer={len(replay_buffer)}"
             )
 
-            # Reset episode state
-            episode_transitions.clear()
             action_queue.clear()
             episode_reward = 0.0
             episode_len    = 0
@@ -796,14 +974,20 @@ def main() -> None:
                 batch = replay_buffer.sample(args.batch_size)
 
                 # Critic update
-                c_loss = update_critic(q_func, critic_opt, batch, device)
+                c_loss = update_critic(
+                    q_func, target_q_func, policy, critic_opt, batch, device,
+                    gamma=args.gamma,
+                    tau=args.tau,
+                    target_num_flow_steps=args.target_num_flow_steps,
+                )
                 critic_losses.append(c_loss)
                 update_count += 1
 
                 # Actor update (less frequent)
                 if update_count % args.actor_update_every == 0:
                     a_loss = update_actor(
-                        policy, q_func, actor_opt, batch, device, args.q_alpha
+                        policy, q_func, actor_opt, batch, device, args.q_alpha,
+                        pred_horizon=args.pred_horizon,
                     )
                     actor_losses.append(a_loss)
 
