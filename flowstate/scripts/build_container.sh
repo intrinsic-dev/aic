@@ -134,11 +134,5 @@ elif [[ -n "$SKILL_NAME" && -n "$SKILL_PACKAGE" ]]; then
      "images/${SKILL_NAME}/${SKILL_NAME}_protos.desc"
     docker rm -f temp_container
 
-    echo "INFO: Building the skill bundle..."
-    ./inbuild skill bundle \
-      --file_descriptor_set "images/${SKILL_NAME}/${SKILL_NAME}_protos.desc" \
-      --manifest "${MANIFEST_PATH}" \
-      --oci_image "images/${SKILL_NAME}/${SKILL_NAME}.tar" \
-      --output "images/${SKILL_NAME}/${SKILL_NAME}.bundle.tar"
   fi
 fi
