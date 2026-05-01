@@ -113,7 +113,7 @@ cd ~/ws_aic_phase1
 
 # This command bundles the skill into a deployable tarball
 inbuild skill bundle \
-  --file_descriptor_set images/insert_cable_skill/insert_cable_skill.desc \
+  --file_descriptor_set images/insert_cable_skill/insert_cable_skill_protos.desc \
   --manifest src/aic/flowstate/aic_flowstate_skills/insert_cable_skill/src/insert_cable_skill.manifest.textproto \
   --oci_image images/insert_cable_skill/insert_cable_skill.tar \
   --output images/insert_cable_skill/insert_cable_skill.bundle.tar
