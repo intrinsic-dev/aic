@@ -71,11 +71,11 @@ def generate_launch_description():
                 default_value="force_torque_sensor/force_torque_sensor/AtiForceTorqueSensor",
                 description="Frame ID of F/T sensor to be used in force_torque_topic",
             ),
-            # DeclareLaunchArgument(
-            #     "override_joint_names",
-            #     default_value="",
-            #     description="",
-            # ),
+            DeclareLaunchArgument(
+                "ft_sensor_part_name",
+                default_value="ft_sensor",
+                description="F/T sensor part name",
+            ),
             LifecycleNode(
                 package="flowstate_ros_bridge",
                 executable="flowstate_ros_bridge",
@@ -98,6 +98,9 @@ def generate_launch_description():
                         "server_address": LaunchConfiguration("server_address"),
                         "instance": LaunchConfiguration("instance"),
                         "part_name": LaunchConfiguration("part_name"),
+                        "ft_sensor_part_name": LaunchConfiguration(
+                            "ft_sensor_part_name"
+                        ),
                         "robot_joint_state_topic": LaunchConfiguration(
                             "robot_joint_state_topic"
                         ),
