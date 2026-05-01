@@ -19,6 +19,7 @@ install(
   FILES
     src/tare_force_torque_sensor_skill.manifest.textproto
     "${CMAKE_CURRENT_BINARY_DIR}/tare_force_torque_sensor_skill_config.pbbin"
+    "${CMAKE_CURRENT_BINARY_DIR}/tare_force_torque_sensor_skill_protos.desc"
   DESTINATION share/${PROJECT_NAME}
 )
 
