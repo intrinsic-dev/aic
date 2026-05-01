@@ -19,6 +19,7 @@ install(
   FILES
     src/insert_cable_skill.manifest.textproto
     "${CMAKE_CURRENT_BINARY_DIR}/insert_cable_skill_config.pbbin"
+    "${CMAKE_CURRENT_BINARY_DIR}/insert_cable_skill_protos.desc"
   DESTINATION share/${PROJECT_NAME}
 )
 
