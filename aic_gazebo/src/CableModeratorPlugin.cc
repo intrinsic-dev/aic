@@ -217,70 +217,15 @@ void CableModeratorPlugin::MakeCableStatic(
     return;
   }
 
-  const auto& config = this->cableConfigs[_cableIndex];
-  const auto cableModelName =
-      Model(this->cableTrackers[_cableIndex].modelEntity).Name(_ecm);
-
-  Entity connection0 =
-      findLinkInModel(cableModelName, config.connection0LinkName, _ecm);
-  Entity connection1 =
-      findLinkInModel(cableModelName, config.connection1LinkName, _ecm);
-
-  if (connection0 != kNullEntity) {
-    Entity jointEntity = this->MakeStatic(connection0, true, _ecm);
-    if (jointEntity != kNullEntity) {
-      this->cableTrackers[_cableIndex].frozenJoints.push_back(jointEntity);
-    }
-  }
-
-  if (connection1 != kNullEntity) {
-    Entity jointEntity = this->MakeStatic(connection1, true, _ecm);
-    if (jointEntity != kNullEntity) {
-      this->cableTrackers[_cableIndex].frozenJoints.push_back(jointEntity);
-    }
-  }
+  Model(this->cableTrackers[_cableIndex].modelEntity)
+      .SetStaticStateCmd(_ecm, true);
 }
 
 //////////////////////////////////////////////////
 void CableModeratorPlugin::MakeCableDynamic(
     size_t _cableIndex, gz::sim::EntityComponentManager& _ecm) {
-  // Remove the joints
-  for (const Entity& jointEntity :
-       this->cableTrackers[_cableIndex].frozenJoints) {
-    if (jointEntity != kNullEntity) {
-      _ecm.RequestRemoveEntity(jointEntity);
-    }
-  }
-  this->cableTrackers[_cableIndex].frozenJoints.clear();
-
-  // Remove the static models
-  const auto& config = this->cableConfigs[_cableIndex];
-  const auto cableModelName =
-      Model(this->cableTrackers[_cableIndex].modelEntity).Name(_ecm);
-
-  Entity connection0 =
-      findLinkInModel(cableModelName, config.connection0LinkName, _ecm);
-  Entity connection1 =
-      findLinkInModel(cableModelName, config.connection1LinkName, _ecm);
-
-  auto removeStaticModel = [&](Entity _link) {
-    if (_link != kNullEntity) {
-      auto nameComp = _ecm.Component<components::Name>(_link);
-      auto parentComp = _ecm.Component<components::ParentEntity>(_link);
-      auto parentNameComp =
-          _ecm.Component<components::Name>(parentComp->Data());
-      std::string staticEntName =
-          nameComp->Data() + "_" + parentNameComp->Data() + "__static__";
-      Entity staticEntity =
-          _ecm.EntityByComponents(components::Name(staticEntName));
-      if (staticEntity != kNullEntity) {
-        _ecm.RequestRemoveEntity(staticEntity);
-      }
-    }
-  };
-
-  removeStaticModel(connection0);
-  removeStaticModel(connection1);
+  Model(this->cableTrackers[_cableIndex].modelEntity)
+      .SetStaticStateCmd(_ecm, false);
 }
 
 //////////////////////////////////////////////////
