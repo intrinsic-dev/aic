@@ -85,6 +85,7 @@ IMG_H = 256
 IMG_W = 288
 
 # Task encoding (must match aic_robot_aic_controller.py)
+# the TaskEncoder in aic_utils/aic_training/flow_matching.py might also be relevant
 TASK_TARGET_MODULE_ENCODING: dict[str, int] = {
     "nic_card_mount_0": 0, "nic_card_mount_1": 1, "nic_card_mount_2": 2,
     "nic_card_mount_3": 3, "nic_card_mount_4": 4,
@@ -249,14 +250,18 @@ class AICRLEnv(AICGymEnv):
                     "base_link", port_frame, Time()
                 )
                 port_pos = tf_stamped.transform.translation
-                tcp_pos  = obs[0:3]
+                tcp_pos  = obs[0:2]                               # x, y only
                 dist = float(np.linalg.norm(
-                    tcp_pos - np.array([port_pos.x, port_pos.y, port_pos.z])
+                    tcp_pos - np.array([port_pos.x, port_pos.y])
                 ))
-                if dist < 0.10:  # within 100 mm
-                    reward += 2.0
+                if dist > 0.3:
+                    reward -= 1.0
+                else:
+                    t = dist / 0.3                # 0 (close) → 1 (at boundary)
+                    reward += 2.0 * (1.0 - t) + 0.05 * t
             except TransformException:
                 pass  # TF not yet available — skip distance reward this step
+        #print("LXH Debug reward:", info)
 
         # 3. Insertion event
         event_data = self._last_insertion_event_data
@@ -405,15 +410,52 @@ class QFunction(nn.Module):
 
 
 # ---------------------------------------------------------------------------
+# ImageStore — shared circular buffer for raw image frames
+# ---------------------------------------------------------------------------
+
+class ImageStore:
+    """Circular buffer of single-frame image dicts {cam_key: (C, H, W) float32}.
+
+    Frames are stored once and referenced by index from the ReplayBuffer.
+    Consecutive transitions share obs_horizon-1 frames (step t's next_obs
+    equals step t+1's obs), so this reduces image memory from
+    2 * obs_horizon * capacity frames down to ~capacity + obs_horizon unique frames.
+
+    Capacity should be at least replay_buffer_capacity + obs_horizon to ensure
+    all frames referenced by live transitions are still present.
+    """
+
+    def __init__(self, capacity: int):
+        self._capacity = capacity
+        self._frames: list[dict | None] = [None] * capacity
+        self._write_idx = 0
+
+    def push(self, frame: dict[str, torch.Tensor]) -> int:
+        """Store one frame dict and return its index."""
+        idx = self._write_idx
+        self._frames[idx] = {k: v.clone() for k, v in frame.items()}
+        self._write_idx = (self._write_idx + 1) % self._capacity
+        return idx
+
+    def get(self, idx: int) -> dict[str, torch.Tensor]:
+        """Retrieve a previously stored frame by index."""
+        return self._frames[idx]
+
+
+# ---------------------------------------------------------------------------
 # ReplayBuffer
 # ---------------------------------------------------------------------------
 
 class ReplayBuffer:
     """Circular replay buffer storing one transition per environment step.
 
+    Images are NOT copied into the buffer — each observation stores a list of
+    obs_horizon integer indices into a shared ImageStore.  Full image tensors
+    are reconstructed only at sample time.
+
     Each stored observation is a dict with:
-      "images"       : {cam_key: (obs_horizon, C, H, W)} float32 tensors on CPU
-      "robot_state"  : (obs_horizon, ROBOT_STATE_DIM) float32 tensor
+      "image_indices": list[int] of length obs_horizon — indices into ImageStore
+      "robot_state"  : (obs_horizon, ROBOT_STATE_DIM) float32 array
       "target_module": int
       "port_name"    : int
 
@@ -422,8 +464,9 @@ class ReplayBuffer:
     "done"   is True when the episode ended after this step.
     """
 
-    def __init__(self, capacity: int = 10_000):
+    def __init__(self, capacity: int, image_store: ImageStore):
         self._buf: deque[dict] = deque(maxlen=capacity)
+        self._image_store = image_store
 
     def __len__(self) -> int:
         return len(self._buf)
@@ -446,11 +489,16 @@ class ReplayBuffer:
 
     def sample(self, batch_size: int) -> dict:
         items = random.sample(self._buf, min(batch_size, len(self._buf)))
+        store = self._image_store
 
-        # Stack images: {cam_key: (B, obs_horizon, C, H, W)}
-        cam_keys = list(items[0]["obs"]["images"].keys())
+        # Reconstruct stacked images from indices: {cam_key: (B, obs_horizon, C, H, W)}
+        cam_keys = list(store.get(items[0]["obs"]["image_indices"][0]).keys())
+
+        def _stack(image_indices: list[int]) -> dict[str, torch.Tensor]:
+            return {k: torch.stack([store.get(i)[k] for i in image_indices]) for k in cam_keys}
+
         images = {
-            k: torch.stack([torch.as_tensor(it["obs"]["images"][k]) for it in items])
+            k: torch.stack([_stack(it["obs"]["image_indices"])[k] for it in items])
             for k in cam_keys
         }
         robot_state = torch.stack([
@@ -471,9 +519,8 @@ class ReplayBuffer:
         dones = torch.tensor(
             [it["done"] for it in items], dtype=torch.float32
         )
-        # Next observation
         next_images = {
-            k: torch.stack([torch.as_tensor(it["next_obs"]["images"][k]) for it in items])
+            k: torch.stack([_stack(it["next_obs"]["image_indices"])[k] for it in items])
             for k in cam_keys
         }
         next_robot_state = torch.stack([
@@ -512,7 +559,7 @@ def update_critic(
     device:               torch.device,
     gamma:                float = 0.99,
     tau:                  float = 0.005,
-    target_num_flow_steps: int  = 3,
+    target_num_flow_steps: int  = 5,
 ) -> float:
     """TD critic update with target networks.
 
@@ -520,6 +567,9 @@ def update_critic(
     where a' ~ π(s') is sampled from the current policy with a fast ODE solve.
     Both critics are updated with MSE vs the shared (stop-gradient) TD target,
     then the target networks are soft-updated via Polyak averaging.
+
+    Args:
+      target_num_flow_steps - typically, we do 10 steps for flow matching generation, here we use 5 to save time
     """
     robot_state   = batch["robot_state"].to(device)
     target_module = batch["target_module"].to(device)
@@ -684,6 +734,9 @@ def encode_task(task_info: dict) -> tuple[int, int]:
     pn = TASK_PORT_NAME_ENCODING.get(
         task_info.get("port_name", ""), -1
     )
+
+    print("LXH Debug:", task_info)
+    print("LXH Debug:", tm, pn)
     return max(tm, 0), max(pn, 0)  # clamp to 0 so embedding doesn't crash
 
 
@@ -790,8 +843,11 @@ def main() -> None:
     actor_opt  = torch.optim.AdamW(policy.parameters(),  lr=args.actor_lr)
     critic_opt = torch.optim.AdamW(q_func.parameters(), lr=args.critic_lr)
 
-    # ---- Replay buffer ----
-    replay_buffer = ReplayBuffer(capacity=args.buffer_capacity)
+    # ---- Image store + replay buffer ----
+    # ImageStore holds one frame per env step; capacity = buffer + obs_horizon guards
+    # against the oldest transitions referencing frames that have been overwritten.
+    image_store   = ImageStore(capacity=args.buffer_capacity + args.obs_horizon + 10)
+    replay_buffer = ReplayBuffer(capacity=args.buffer_capacity, image_store=image_store)
 
     # ---- Environment ----
     env_cfg = AICGymEnvConfig(
@@ -809,6 +865,8 @@ def main() -> None:
     episode_lengths: list[int] = []
     critic_losses:   list[float] = []
     actor_losses:    list[float] = []
+    recent_rewards:  deque[float] = deque(maxlen=100)  # per-step rewards, last 100 steps
+    step_reward_log: list[float] = []   # mean step reward snapshot at each log interval
     total_steps = 0
     update_count = 0
 
@@ -819,13 +877,15 @@ def main() -> None:
 
     obs_buffer   = deque([flat_obs] * args.obs_horizon, maxlen=args.obs_horizon)
 
-    # Seed the image buffer
+    # Seed the image buffer (deque of ImageStore indices, one per timestep slot)
     while True:
         imgs = env.get_images()
         if imgs is not None:
             break
         time.sleep(0.05)
-    img_buffer = deque([imgs] * args.obs_horizon, maxlen=args.obs_horizon)
+    cam_keys = list(imgs.keys())
+    init_idx = image_store.push(imgs)
+    img_buffer = deque([init_idx] * args.obs_horizon, maxlen=args.obs_horizon)
 
     episode_reward = 0.0
     episode_len    = 0
@@ -848,7 +908,9 @@ def main() -> None:
                 seq = np.tile(
                     np.concatenate([cur_pos, cur_rot6d]), (args.pred_horizon, 1)
                 ).astype(np.float32)
-                seq[:, :3] += np.random.randn(args.pred_horizon, 3) * 0.01  # 1 cm noise
+                xy_noise = np.random.randn(args.pred_horizon, 2) * 0.01   # 1 cm on x, y
+                z_noise  = np.random.randn(args.pred_horizon, 1) * 0.002  # 2 mm on z
+                seq[:, :3] += np.concatenate([xy_noise, z_noise], axis=1)
                 action_seq = seq  # (pred_horizon, 9)
             else:
                 # Policy inference
@@ -857,8 +919,8 @@ def main() -> None:
                 ).unsqueeze(0).to(device)   # (1, obs_horizon, ROBOT_STATE_DIM)
 
                 images_t = {
-                    k: torch.stack([f[k] for f in img_buffer]).unsqueeze(0).to(device)
-                    for k in imgs.keys()
+                    k: torch.stack([image_store.get(i)[k] for i in img_buffer]).unsqueeze(0).to(device)
+                    for k in cam_keys
                 }  # {cam: (1, obs_horizon, C, H, W)}
 
                 tm_t  = torch.tensor([tm_idx], dtype=torch.long, device=device)
@@ -873,7 +935,7 @@ def main() -> None:
                         pred_horizon=args.pred_horizon,
                         num_steps=args.num_flow_steps,
                         guidance_scale=args.guidance_scale,
-                        solver="midpoint",
+                        solver="euler",
                     )  # (1, pred_horizon, action_dim)
 
                 action_seq = actions_out[0].cpu().numpy()  # (pred_horizon, action_dim)
@@ -884,10 +946,7 @@ def main() -> None:
         # Snapshot obs BEFORE executing (for replay buffer)
         # ----------------------------------------------------------------
         step_obs_snap = {
-            "images": {
-                k: torch.stack([f[k] for f in img_buffer]).clone()
-                for k in img_buffer[0].keys()
-            },
+            "image_indices": list(img_buffer),
             "robot_state":   np.stack([build_robot_state(o) for o in obs_buffer]),
             "target_module": tm_idx,
             "port_name":     pn_idx,
@@ -903,11 +962,11 @@ def main() -> None:
         obs_buffer.append(flat_obs_new)
         new_imgs = env.get_images()
         if new_imgs is not None:
-            img_buffer.append(new_imgs)
-            imgs = new_imgs
+            img_buffer.append(image_store.push(new_imgs))
 
         flat_obs = flat_obs_new
         episode_reward += reward
+        recent_rewards.append(reward)
         episode_len    += 1
         total_steps    += 1
 
@@ -915,10 +974,7 @@ def main() -> None:
 
         # Snapshot next state (updated buffers after execution)
         next_obs_snap = {
-            "images": {
-                k: torch.stack([f[k] for f in img_buffer]).clone()
-                for k in img_buffer[0].keys()
-            },
+            "image_indices": list(img_buffer),
             "robot_state":   np.stack([build_robot_state(o) for o in obs_buffer]),
             "target_module": tm_idx,
             "port_name":     pn_idx,
@@ -963,8 +1019,9 @@ def main() -> None:
                 if imgs is not None:
                     break
                 time.sleep(0.05)
+            init_idx = image_store.push(imgs)
             img_buffer.clear()
-            img_buffer.extend([imgs] * args.obs_horizon)
+            img_buffer.extend([init_idx] * args.obs_horizon)
 
         # ----------------------------------------------------------------
         # Gradient updates
@@ -998,11 +1055,14 @@ def main() -> None:
             c_avg = np.mean(critic_losses[-50:]) if critic_losses else float("nan")
             a_avg = np.mean(actor_losses[-50:])  if actor_losses  else float("nan")
             r_avg = np.mean(episode_rewards[-10:]) if episode_rewards else float("nan")
+            r_step_avg = np.mean(recent_rewards) if recent_rewards else float("nan")
+            step_reward_log.append(r_step_avg)
             print(
                 f"[QSM] step={total_steps:6d}  "
                 f"critic_loss={c_avg:.4f}  "
                 f"actor_loss={a_avg:.4f}  "
                 f"ep_return(10)={r_avg:.3f}  "
+                f"step_reward(100)={r_step_avg:.4f}  "
                 f"buffer={len(replay_buffer)}"
             )
 
@@ -1037,23 +1097,53 @@ def main() -> None:
     )
     print(f"[QSM] Training done.  Final checkpoint: {final_path}")
 
-    # ---- Save loss curve ----
+    # ---- Save metrics ----
+    metrics_path = output_dir / "metrics.npz"
+    np.savez(
+        metrics_path,
+        critic_losses   = np.array(critic_losses,   dtype=np.float32),
+        actor_losses    = np.array(actor_losses,     dtype=np.float32),
+        episode_rewards = np.array(episode_rewards,  dtype=np.float32),
+        step_reward_log = np.array(step_reward_log,  dtype=np.float32),
+    )
+    print(f"[QSM] Metrics saved to {metrics_path}")
+
+    # ---- Plot training curves ----
     try:
         import matplotlib
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
-        ax1.plot(critic_losses, alpha=0.7)
-        ax1.set_title("Critic loss")
-        ax1.set_xlabel("Update step")
-        ax2.plot(episode_rewards)
-        ax2.set_title("Episode returns")
-        ax2.set_xlabel("Episode")
+
+        fig, axes = plt.subplots(2, 2, figsize=(14, 8))
+        fig.suptitle("QSM Training Curves", fontsize=14)
+
+        axes[0, 0].plot(critic_losses, alpha=0.7, linewidth=0.8)
+        axes[0, 0].set_title("Critic loss (per update)")
+        axes[0, 0].set_xlabel("Update step")
+
+        axes[0, 1].plot(actor_losses, alpha=0.7, linewidth=0.8, color="orange")
+        axes[0, 1].set_title("Actor loss (per update)")
+        axes[0, 1].set_xlabel("Update step")
+
+        axes[1, 0].plot(episode_rewards, marker=".", markersize=3, linewidth=0.8, color="green")
+        axes[1, 0].set_title("Episode return")
+        axes[1, 0].set_xlabel("Episode")
+
+        log_steps = np.arange(len(step_reward_log)) * args.log_every
+        axes[1, 1].plot(log_steps, step_reward_log, linewidth=0.8, color="red")
+        axes[1, 1].set_title("Step reward (100-step avg)")
+        axes[1, 1].set_xlabel("Environment step")
+
+        for ax in axes.flat:
+            ax.grid(True, alpha=0.3)
+
         plt.tight_layout()
-        fig.savefig(output_dir / "training_curves.png", dpi=150)
-        print(f"[QSM] Training curves saved to {output_dir}/training_curves.png")
+        plot_path = output_dir / "training_curves.png"
+        fig.savefig(plot_path, dpi=150)
+        plt.close(fig)
+        print(f"[QSM] Training curves saved to {plot_path}")
     except ImportError:
-        pass
+        print("[QSM] matplotlib not available — skipping plot")
 
     env.close()
 
