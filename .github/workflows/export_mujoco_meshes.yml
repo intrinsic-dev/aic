@@ -1,0 +1,124 @@
+name: Export MuJoCo Mesh Assets
+
+# Run manually from the Actions tab whenever you need fresh mesh assets.
+# Downloads a zip of all .stl / .obj / .png files into aic_utils/aic_mujoco/mjcf/.
+
+on:
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  export-meshes:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # ── Disk space ────────────────────────────────────────────────────────
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc \
+                      /usr/local/share/boost /usr/share/swift
+          df -h
+
+      # ── Pull eval image ───────────────────────────────────────────────────
+      - name: Pull aic_eval Docker image
+        run: docker pull ghcr.io/intrinsic-dev/aic/aic_eval:latest
+
+      # ── Start Gazebo (headless, no GUI, no engine) ────────────────────────
+      - name: Start Gazebo
+        run: |
+          docker run -d --name aic_eval \
+            ghcr.io/intrinsic-dev/aic/aic_eval:latest \
+            "spawn_task_board:=true" \
+            "nic_card_mount_0_present:=true" \
+            "spawn_cable:=true" \
+            "cable_type:=sfp_sc_cable" \
+            "attach_cable_to_gripper:=true" \
+            "ground_truth:=true" \
+            "start_aic_engine:=false" \
+            "launch_rviz:=false" \
+            "gazebo_gui:=false"
+
+      # ── Install sdformat_mjcf inside the container ────────────────────────
+      # The container already has python3-sdformat16 (part of gz-sim9 deps).
+      # We only need to install the sdformat_mjcf Python package on top.
+      - name: Install sdformat_mjcf in container
+        run: |
+          git clone --depth 1 -b aic \
+            https://github.com/gazebosim/gz-mujoco.git /tmp/gz-mujoco
+          docker cp /tmp/gz-mujoco/sdformat_mjcf aic_eval:/tmp/sdformat_mjcf
+          docker exec aic_eval bash -c "
+            pip3 install /tmp/sdformat_mjcf --break-system-packages 2>/dev/null || \
+            pip3 install /tmp/sdformat_mjcf
+          "
+
+      # ── Wait for the world to finish loading ──────────────────────────────
+      - name: Wait for Gazebo world to load
+        run: |
+          GZ=/opt/ros/kilted/opt/gz_tools_vendor/bin/gz
+          echo "Polling until Gazebo world 'aic' is visible..."
+          timeout 180 bash -c "
+            until docker exec aic_eval \$GZ world --list 2>/dev/null | grep -q aic; do
+              sleep 5
+              echo 'still waiting...'
+            done
+          "
+          echo "World loaded — waiting 10s for full init"
+          sleep 10
+
+      # ── Export SDF ────────────────────────────────────────────────────────
+      - name: Export world SDF from Gazebo
+        run: |
+          GZ=/opt/ros/kilted/opt/gz_tools_vendor/bin/gz
+          docker exec aic_eval $GZ world --world-name aic --export /tmp/aic.sdf
+          docker exec aic_eval ls -lh /tmp/aic.sdf
+
+      # ── Fix known SDF URI issues (documented in aic_utils/aic_mujoco/README) ─
+      - name: Fix SDF URI issues
+        run: |
+          ASSETS=/ws_aic/install/share/aic_assets/models
+          docker exec aic_eval bash -c "
+            # Fix 1: <urdf-string> leaking into mesh file URIs
+            sed -i 's|file://<urdf-string>/model://|file:///|g' /tmp/aic.sdf
+
+            # Fix 2: broken relative URIs for models spawned from URDF strings
+            sed -i \"s|file:///sc_plug_visual|file://${ASSETS}/SC Plug/sc_plug_visual|g\"    /tmp/aic.sdf
+            sed -i \"s|file:///lc_plug_visual|file://${ASSETS}/LC Plug/lc_plug_visual|g\"    /tmp/aic.sdf
+            sed -i \"s|file:///sfp_module_visual|file://${ASSETS}/SFP Module/sfp_module_visual|g\" /tmp/aic.sdf
+          "
+
+      # ── Convert SDF → MJCF + mesh assets ─────────────────────────────────
+      - name: Convert SDF to MJCF
+        run: |
+          docker exec aic_eval bash -c "
+            mkdir -p /tmp/aic_mujoco_world
+            source /ws_aic/install/setup.bash
+            sdf2mjcf /tmp/aic.sdf /tmp/aic_mujoco_world/aic_world.xml
+          "
+          docker exec aic_eval bash -c "
+            echo 'Files generated:'
+            ls /tmp/aic_mujoco_world/ | wc -l
+            ls /tmp/aic_mujoco_world/ | head -20
+          "
+
+      # ── Copy assets out and package ───────────────────────────────────────
+      - name: Package mesh assets
+        run: |
+          docker cp aic_eval:/tmp/aic_mujoco_world /tmp/aic_mujoco_world
+          cd /tmp/aic_mujoco_world
+          # Exclude XML — we already have the processed versions in the repo
+          zip -r /tmp/mujoco_mesh_assets.zip . --exclude "*.xml"
+          ls -lh /tmp/mujoco_mesh_assets.zip
+          echo "Asset count: $(unzip -l /tmp/mujoco_mesh_assets.zip | tail -1)"
+
+      # ── Upload artifact ───────────────────────────────────────────────────
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mujoco-mesh-assets
+          path: /tmp/mujoco_mesh_assets.zip
+          retention-days: 30
