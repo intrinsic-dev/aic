@@ -58,22 +58,24 @@ _DEFAULT_P2_CKPT = os.environ.get(
 # Derived from CheatCode gripper offsets: TCP pointing downward, plug facing port.
 # Adjust these if your training used a different nominal pose.
 _NOMINAL_QUAT = {
-    "sfp": np.array([0.6533, 0.2706, 0.6533, 0.2706], dtype=np.float64),  # approx downward
-    "sc":  np.array([0.6533, 0.2706, 0.6533, 0.2706], dtype=np.float64),
+    "sfp": np.array(
+        [0.6533, 0.2706, 0.6533, 0.2706], dtype=np.float64
+    ),  # approx downward
+    "sc": np.array([0.6533, 0.2706, 0.6533, 0.2706], dtype=np.float64),
 }
 
 # ── Tunable thresholds ───────────────────────────────────────────────────────
-_P1_XY_THRESHOLD = 0.004    # m — Phase 1 done when FT-based XY estimate < this
-_P1_MAX_STEPS = 200         # steps at 20 Hz = 10 s
-_P2_FORCE_LIMIT = 25.0      # N — abort insertion
-_P2_MAX_STEPS = 300         # steps at 20 Hz = 15 s
-_STEP_DT = 0.05             # seconds (20 Hz loop)
-_ORIENT_STEPS = 60          # 3 s for orientation pre-step
+_P1_XY_THRESHOLD = 0.004  # m — Phase 1 done when FT-based XY estimate < this
+_P1_MAX_STEPS = 200  # steps at 20 Hz = 10 s
+_P2_FORCE_LIMIT = 25.0  # N — abort insertion
+_P2_MAX_STEPS = 300  # steps at 20 Hz = 15 s
+_STEP_DT = 0.05  # seconds (20 Hz loop)
+_ORIENT_STEPS = 60  # 3 s for orientation pre-step
 
 # ── Scales (must match training) ─────────────────────────────────────────────
-_XY_SCALE      = 0.005
-_XY_INS_SCALE  = 0.001
-_Z_INS_SCALE   = 0.002
+_XY_SCALE = 0.005
+_XY_INS_SCALE = 0.001
+_Z_INS_SCALE = 0.002
 
 _DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -122,7 +124,9 @@ class LocalPrecisionPolicy(Policy):
         port_type_enc: np.ndarray,
         step_norm: float,
     ) -> torch.Tensor:
-        arr = np.concatenate([tcp_rel, [ft_z], port_type_enc, [step_norm]]).astype(np.float32)
+        arr = np.concatenate([tcp_rel, [ft_z], port_type_enc, [step_norm]]).astype(
+            np.float32
+        )
         return torch.from_numpy(arr).unsqueeze(0).to(_DEVICE)
 
     @staticmethod
@@ -133,13 +137,17 @@ class LocalPrecisionPolicy(Policy):
         step_norm: float,
         depth: float,
     ) -> torch.Tensor:
-        arr = np.concatenate([tcp_rel, ft6, port_type_enc, [step_norm], [depth]]).astype(np.float32)
+        arr = np.concatenate(
+            [tcp_rel, ft6, port_type_enc, [step_norm], [depth]]
+        ).astype(np.float32)
         return torch.from_numpy(arr).unsqueeze(0).to(_DEVICE)
 
     # ── Pose helpers ──────────────────────────────────────────────────────────
 
     @staticmethod
-    def _pose_from_tcp(tcp_pose, dx: float = 0.0, dy: float = 0.0, dz: float = 0.0) -> Pose:
+    def _pose_from_tcp(
+        tcp_pose, dx: float = 0.0, dy: float = 0.0, dz: float = 0.0
+    ) -> Pose:
         """Return an absolute pose = current TCP + world-frame delta."""
         return Pose(
             position=Point(
@@ -157,10 +165,17 @@ class LocalPrecisionPolicy(Policy):
     @staticmethod
     def _get_ft6(obs) -> np.ndarray:
         w = obs.wrist_wrench.wrench
-        return np.array([
-            w.force.x, w.force.y, w.force.z,
-            w.torque.x, w.torque.y, w.torque.z,
-        ], dtype=np.float32)
+        return np.array(
+            [
+                w.force.x,
+                w.force.y,
+                w.force.z,
+                w.torque.x,
+                w.torque.y,
+                w.torque.z,
+            ],
+            dtype=np.float32,
+        )
 
     # ── Phase 0: orientation alignment ───────────────────────────────────────
 
@@ -175,12 +190,15 @@ class LocalPrecisionPolicy(Policy):
 
         obs = get_observation()
         tcp = self._get_tcp_pose(obs)
-        q_now = np.array([
-            tcp.orientation.w,
-            tcp.orientation.x,
-            tcp.orientation.y,
-            tcp.orientation.z,
-        ], dtype=np.float64)
+        q_now = np.array(
+            [
+                tcp.orientation.w,
+                tcp.orientation.x,
+                tcp.orientation.y,
+                tcp.orientation.z,
+            ],
+            dtype=np.float64,
+        )
 
         self.get_logger().info(f"Phase 0: orienting for port_type={port_type}")
         for i in range(1, _ORIENT_STEPS + 1):
@@ -249,7 +267,9 @@ class LocalPrecisionPolicy(Policy):
 
             send_feedback(f"P1 step={step} xy_err={xy_err:.4f}m")
             if xy_err < _P1_XY_THRESHOLD:
-                self.get_logger().info(f"Phase 1 converged at step {step}, xy_err={xy_err:.4f}")
+                self.get_logger().info(
+                    f"Phase 1 converged at step {step}, xy_err={xy_err:.4f}"
+                )
                 return True
 
             self.sleep_for(_STEP_DT)
@@ -277,7 +297,7 @@ class LocalPrecisionPolicy(Policy):
         ft_tare = self._get_ft6(obs).copy()
         # Switch to compliance stiffness: low Z for insertion
         _low_z_stiffness = [90.0, 90.0, 20.0, 30.0, 30.0, 30.0]
-        _low_z_damping   = [50.0, 50.0, 15.0, 15.0, 15.0, 15.0]
+        _low_z_damping = [50.0, 50.0, 15.0, 15.0, 15.0, 15.0]
 
         for step in range(_P2_MAX_STEPS):
             obs = get_observation()
@@ -290,15 +310,17 @@ class LocalPrecisionPolicy(Policy):
             f_mag = float(np.linalg.norm(ft6[:3]))
 
             if f_mag > _P2_FORCE_LIMIT:
-                self.get_logger().warn(f"Force limit exceeded ({f_mag:.1f} N) — aborting insertion")
+                self.get_logger().warn(
+                    f"Force limit exceeded ({f_mag:.1f} N) — aborting insertion"
+                )
                 return False
 
             step_norm = float(step / _P2_MAX_STEPS)
             half_crop = NARROW_CROP_PX if depth > 0.005 else WIDE_CROP_PX
 
             img_c = self._prep_image(obs.center_image, half_crop)
-            img_l = self._prep_image(obs.left_image,   half_crop)
-            img_r = self._prep_image(obs.right_image,  half_crop)
+            img_l = self._prep_image(obs.left_image, half_crop)
+            img_r = self._prep_image(obs.right_image, half_crop)
             prop_t = self._proprio_p2(xyz_rel, ft6, port_type_enc, step_norm, depth)
             obs_t = {"center": img_c, "left": img_l, "right": img_r, "proprio": prop_t}
 
@@ -307,7 +329,7 @@ class LocalPrecisionPolicy(Policy):
 
             dx = float(action[0]) * _XY_INS_SCALE
             dy = float(action[1]) * _XY_INS_SCALE
-            dz = -float(action[2]) * _Z_INS_SCALE   # positive action → descend
+            dz = -float(action[2]) * _Z_INS_SCALE  # positive action → descend
 
             target_pose = self._pose_from_tcp(tcp, dx=dx, dy=dy, dz=dz)
             self.set_pose_target(
@@ -352,7 +374,9 @@ class LocalPrecisionPolicy(Policy):
 
         # Phase 2: insert
         send_feedback("Phase 2: inserting")
-        success = self._insertion_phase(get_observation, move_robot, send_feedback, port_type_enc)
+        success = self._insertion_phase(
+            get_observation, move_robot, send_feedback, port_type_enc
+        )
 
         if success:
             self.get_logger().info("Insertion complete. Waiting for stabilization.")
