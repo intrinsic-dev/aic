@@ -40,28 +40,28 @@ _SFP_TCP_TO_TIP = np.array([0.0, 0.015385, -0.04245])
 _SC_TCP_TO_TIP = np.array([0.0, 0.015385, -0.04045])
 
 # Approximate insertion depth (how far below port surface success is)
-_INSERTION_DEPTH = 0.015   # 15 mm
+_INSERTION_DEPTH = 0.015  # 15 mm
 
 # Force limits
-_FORCE_PENALTY_THRESHOLD = 10.0   # N — start penalizing above this
-_FORCE_LIMIT = 30.0               # N — terminate episode (too dangerous)
+_FORCE_PENALTY_THRESHOLD = 10.0  # N — start penalizing above this
+_FORCE_LIMIT = 30.0  # N — terminate episode (too dangerous)
 
 
 @dataclass
 class InsertionConfig:
     scene_path: str
     port_type: str = "sfp"
-    sfp_port_body: str = "sfp_port_0"      # verify!
-    sc_port_body: str = "sc_port_0"         # verify!
+    sfp_port_body: str = "sfp_port_0"  # verify!
+    sc_port_body: str = "sc_port_0"  # verify!
     tcp_site: str = "gripper_tcp"
     center_camera: str = "center_camera"
     left_camera: str = "left_camera"
     right_camera: str = "right_camera"
-    ft_sensor_name: str = "force_torque"   # sensor name in scene.xml — verify!
+    ft_sensor_name: str = "force_torque"  # sensor name in scene.xml — verify!
     max_steps: int = 300
-    xy_offset_range: tuple = (-0.003, 0.003)   # small residual offset at start
-    z_start_offset: float = 0.005              # start just above port surface
-    substeps: int = 5                          # physics steps per policy step
+    xy_offset_range: tuple = (-0.003, 0.003)  # small residual offset at start
+    z_start_offset: float = 0.005  # start just above port surface
+    substeps: int = 5  # physics steps per policy step
     arm_joint_names: list = field(default_factory=lambda: list(_ARM_JOINT_NAMES))
     render_width: int = 320
     render_height: int = 240
@@ -78,35 +78,53 @@ class InsertionEnv(gym.Env):
 
         self.model = mujoco.MjModel.from_xml_path(config.scene_path)
         self.data = mujoco.MjData(self.model)
-        self.renderer = mujoco.Renderer(self.model, height=config.render_height, width=config.render_width)
+        self.renderer = mujoco.Renderer(
+            self.model, height=config.render_height, width=config.render_width
+        )
 
         self._tcp_site_id = self.model.site(config.tcp_site).id
-        self._port_body_name = config.sfp_port_body if config.port_type == "sfp" else config.sc_port_body
+        self._port_body_name = (
+            config.sfp_port_body if config.port_type == "sfp" else config.sc_port_body
+        )
 
         try:
             self._port_body_id = self.model.body(self._port_body_name).id
         except Exception:
-            raise ValueError(f"Port body '{self._port_body_name}' not found in {config.scene_path}.")
+            raise ValueError(
+                f"Port body '{self._port_body_name}' not found in {config.scene_path}."
+            )
 
         self._cam_ids = {
-            "center": mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_CAMERA, config.center_camera),
-            "left":   mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_CAMERA, config.left_camera),
-            "right":  mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_CAMERA, config.right_camera),
+            "center": mujoco.mj_name2id(
+                self.model, mujoco.mjtObj.mjOBJ_CAMERA, config.center_camera
+            ),
+            "left": mujoco.mj_name2id(
+                self.model, mujoco.mjtObj.mjOBJ_CAMERA, config.left_camera
+            ),
+            "right": mujoco.mj_name2id(
+                self.model, mujoco.mjtObj.mjOBJ_CAMERA, config.right_camera
+            ),
         }
 
         self._ft_sensor_adr = self._find_sensor_adr(config.ft_sensor_name)
         self._arm_joint_ids = self._resolve_joint_ids(config.arm_joint_names)
 
-        port_type_enc = np.array([1.0, 0.0] if config.port_type == "sfp" else [0.0, 1.0], dtype=np.float32)
+        port_type_enc = np.array(
+            [1.0, 0.0] if config.port_type == "sfp" else [0.0, 1.0], dtype=np.float32
+        )
         self._port_type_enc = port_type_enc
-        self._tcp_to_tip = _SFP_TCP_TO_TIP if config.port_type == "sfp" else _SC_TCP_TO_TIP
+        self._tcp_to_tip = (
+            _SFP_TCP_TO_TIP if config.port_type == "sfp" else _SC_TCP_TO_TIP
+        )
 
-        self.observation_space = spaces.Dict({
-            "center":  spaces.Box(0, 255, (IMG_SIZE, IMG_SIZE, 4), dtype=np.uint8),
-            "left":    spaces.Box(0, 255, (IMG_SIZE, IMG_SIZE, 4), dtype=np.uint8),
-            "right":   spaces.Box(0, 255, (IMG_SIZE, IMG_SIZE, 4), dtype=np.uint8),
-            "proprio": spaces.Box(-np.inf, np.inf, (13,), dtype=np.float32),
-        })
+        self.observation_space = spaces.Dict(
+            {
+                "center": spaces.Box(0, 255, (IMG_SIZE, IMG_SIZE, 4), dtype=np.uint8),
+                "left": spaces.Box(0, 255, (IMG_SIZE, IMG_SIZE, 4), dtype=np.uint8),
+                "right": spaces.Box(0, 255, (IMG_SIZE, IMG_SIZE, 4), dtype=np.uint8),
+                "proprio": spaces.Box(-np.inf, np.inf, (13,), dtype=np.float32),
+            }
+        )
         self.action_space = spaces.Box(-1.0, 1.0, (3,), dtype=np.float32)
 
         self._step = 0
@@ -143,7 +161,7 @@ class InsertionEnv(gym.Env):
     def _get_ft(self) -> np.ndarray:
         if self._ft_sensor_adr < 0 or self.model.nsensor == 0:
             return np.zeros(6, dtype=np.float32)
-        raw = self.data.sensordata[self._ft_sensor_adr:self._ft_sensor_adr + 6].copy()
+        raw = self.data.sensordata[self._ft_sensor_adr : self._ft_sensor_adr + 6].copy()
         if self._tare_ft is not None:
             raw -= self._tare_ft
         return raw.astype(np.float32)
@@ -168,11 +186,11 @@ class InsertionEnv(gym.Env):
         tcp_pos = self._get_tcp_pos()
         xyz_rel = (tcp_pos - self._start_tcp_pos).astype(np.float32)
         ft = self._get_ft()
-        depth = float(self._start_tcp_pos[2] - tcp_pos[2])   # positive = descended
+        depth = float(self._start_tcp_pos[2] - tcp_pos[2])  # positive = descended
         step_norm = np.float32(self._step / self.cfg.max_steps)
-        proprio = np.concatenate([
-            xyz_rel, ft, self._port_type_enc, [step_norm], [depth]
-        ]).astype(np.float32)
+        proprio = np.concatenate(
+            [xyz_rel, ft, self._port_type_enc, [step_norm], [depth]]
+        ).astype(np.float32)
         imgs["proprio"] = proprio
         return imgs
 
@@ -191,8 +209,9 @@ class InsertionEnv(gym.Env):
         rng = self.np_random
         dx = rng.uniform(*self.cfg.xy_offset_range)
         dy = rng.uniform(*self.cfg.xy_offset_range)
-        target = np.array([port_pos[0] + dx, port_pos[1] + dy,
-                           port_pos[2] + self.cfg.z_start_offset])
+        target = np.array(
+            [port_pos[0] + dx, port_pos[1] + dy, port_pos[2] + self.cfg.z_start_offset]
+        )
         self._move_tcp_to(target)
         mujoco.mj_forward(self.model, self.data)
 
@@ -212,11 +231,14 @@ class InsertionEnv(gym.Env):
     def step(self, action: np.ndarray):
         action = np.clip(action, -1.0, 1.0)
         from .networks import XY_INS_SCALE, Z_INS_SCALE
-        delta = np.array([
-            float(action[0]) * XY_INS_SCALE,
-            float(action[1]) * XY_INS_SCALE,
-            -float(action[2]) * Z_INS_SCALE,   # positive action → descend
-        ])
+
+        delta = np.array(
+            [
+                float(action[0]) * XY_INS_SCALE,
+                float(action[1]) * XY_INS_SCALE,
+                -float(action[2]) * Z_INS_SCALE,  # positive action → descend
+            ]
+        )
         self._apply_delta_ik(delta)
         for _ in range(self.cfg.substeps):
             mujoco.mj_step(self.model, self.data)
@@ -233,8 +255,8 @@ class InsertionEnv(gym.Env):
 
         # Reward shaping
         reward = 0.0
-        reward += 5.0 * max(0.0, depth)         # depth progress
-        reward -= 2.0 * xy_err                  # stay centered
+        reward += 5.0 * max(0.0, depth)  # depth progress
+        reward -= 2.0 * xy_err  # stay centered
         if f_mag > _FORCE_PENALTY_THRESHOLD:
             reward -= 0.5 * (f_mag - _FORCE_PENALTY_THRESHOLD)
 

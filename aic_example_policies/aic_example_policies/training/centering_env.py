@@ -26,7 +26,9 @@ try:
     import gymnasium as gym
     from gymnasium import spaces
 except ImportError as e:
-    raise ImportError(f"Training dependencies missing ({e}). Run: pip install mujoco gymnasium") from e
+    raise ImportError(
+        f"Training dependencies missing ({e}). Run: pip install mujoco gymnasium"
+    ) from e
 
 from .image_utils import (
     IMG_SIZE,
@@ -48,17 +50,17 @@ _ARM_JOINT_NAMES = [
 _HOME_QPOS = np.array([-0.1597, -1.3542, -1.6648, -1.6933, 1.5710, 1.4110])
 
 # Gripper offset from TCP to plug tip (approximate; from sample_config.yaml)
-_SFP_TCP_TO_TIP = np.array([0.0, 0.015385, -0.04245])   # in TCP frame
+_SFP_TCP_TO_TIP = np.array([0.0, 0.015385, -0.04245])  # in TCP frame
 _SC_TCP_TO_TIP = np.array([0.0, 0.015385, -0.04045])
 
 
 @dataclass
 class CenteringConfig:
     scene_path: str
-    port_type: str = "sfp"                 # "sfp" or "sc"
-    sfp_port_body: str = "sfp_port_0"      # body name in scene.xml — verify!
-    sc_port_body: str = "sc_port_0"        # body name in scene.xml — verify!
-    tcp_site: str = "gripper_tcp"          # site name in scene.xml
+    port_type: str = "sfp"  # "sfp" or "sc"
+    sfp_port_body: str = "sfp_port_0"  # body name in scene.xml — verify!
+    sc_port_body: str = "sc_port_0"  # body name in scene.xml — verify!
+    tcp_site: str = "gripper_tcp"  # site name in scene.xml
     center_camera: str = "center_camera"
     max_steps: int = 200
     # Starting XY offset range (meters)
@@ -83,12 +85,18 @@ class CenteringEnv(gym.Env):
 
         self.model = mujoco.MjModel.from_xml_path(config.scene_path)
         self.data = mujoco.MjData(self.model)
-        self.renderer = mujoco.Renderer(self.model, height=config.render_height, width=config.render_width)
+        self.renderer = mujoco.Renderer(
+            self.model, height=config.render_height, width=config.render_width
+        )
 
         # Cache IDs
         self._tcp_site_id = self.model.site(config.tcp_site).id
-        self._cam_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_CAMERA, config.center_camera)
-        self._port_body_name = config.sfp_port_body if config.port_type == "sfp" else config.sc_port_body
+        self._cam_id = mujoco.mj_name2id(
+            self.model, mujoco.mjtObj.mjOBJ_CAMERA, config.center_camera
+        )
+        self._port_body_name = (
+            config.sfp_port_body if config.port_type == "sfp" else config.sc_port_body
+        )
 
         try:
             self._port_body_id = self.model.body(self._port_body_name).id
@@ -100,15 +108,21 @@ class CenteringEnv(gym.Env):
 
         self._arm_joint_ids = self._resolve_joint_ids(config.arm_joint_names)
 
-        port_type_enc = np.array([1.0, 0.0] if config.port_type == "sfp" else [0.0, 1.0], dtype=np.float32)
+        port_type_enc = np.array(
+            [1.0, 0.0] if config.port_type == "sfp" else [0.0, 1.0], dtype=np.float32
+        )
         self._port_type_enc = port_type_enc
-        self._tcp_to_tip = _SFP_TCP_TO_TIP if config.port_type == "sfp" else _SC_TCP_TO_TIP
+        self._tcp_to_tip = (
+            _SFP_TCP_TO_TIP if config.port_type == "sfp" else _SC_TCP_TO_TIP
+        )
 
         # Spaces
-        self.observation_space = spaces.Dict({
-            "image":  spaces.Box(0, 255, (IMG_SIZE, IMG_SIZE, 4), dtype=np.uint8),
-            "proprio": spaces.Box(-np.inf, np.inf, (7,), dtype=np.float32),
-        })
+        self.observation_space = spaces.Dict(
+            {
+                "image": spaces.Box(0, 255, (IMG_SIZE, IMG_SIZE, 4), dtype=np.uint8),
+                "proprio": spaces.Box(-np.inf, np.inf, (7,), dtype=np.float32),
+            }
+        )
         self.action_space = spaces.Box(-1.0, 1.0, (2,), dtype=np.float32)
 
         self._step = 0
@@ -145,7 +159,7 @@ class CenteringEnv(gym.Env):
         jacr = np.zeros((3, self.model.nv))
         mujoco.mj_jacSite(self.model, self.data, jacp, jacr, self._tcp_site_id)
 
-        J = jacp[:, self._arm_joint_ids]   # 3×6
+        J = jacp[:, self._arm_joint_ids]  # 3×6
         dp = np.array([dx_world, dy_world, 0.0])
 
         # Damped least-squares
@@ -169,9 +183,15 @@ class CenteringEnv(gym.Env):
         tcp_pos = self._get_tcp_pos()
         xyz_rel = (tcp_pos - self._start_tcp_pos).astype(np.float32)
         # FT z-force (tared to zero at episode start → not available in pure kinematics sim)
-        ft_z = np.float32(self.data.sensordata[2]) if self.model.nsensor > 0 else np.float32(0.0)
+        ft_z = (
+            np.float32(self.data.sensordata[2])
+            if self.model.nsensor > 0
+            else np.float32(0.0)
+        )
         step_norm = np.float32(self._step / self.cfg.max_steps)
-        proprio = np.concatenate([xyz_rel, [ft_z], self._port_type_enc, [step_norm]]).astype(np.float32)
+        proprio = np.concatenate(
+            [xyz_rel, [ft_z], self._port_type_enc, [step_norm]]
+        ).astype(np.float32)
         return {"image": image, "proprio": proprio}
 
     # ── Gymnasium API ───────────────────────────────────────────────────────
@@ -191,11 +211,13 @@ class CenteringEnv(gym.Env):
         dx = rng.uniform(*self.cfg.xy_offset_range)
         dy = rng.uniform(*self.cfg.xy_offset_range)
 
-        target_tcp = np.array([
-            port_pos[0] + dx,
-            port_pos[1] + dy,
-            port_pos[2] + self.cfg.z_hover,
-        ])
+        target_tcp = np.array(
+            [
+                port_pos[0] + dx,
+                port_pos[1] + dy,
+                port_pos[2] + self.cfg.z_hover,
+            ]
+        )
         self._move_tcp_to(target_tcp)
         mujoco.mj_forward(self.model, self.data)
 
@@ -214,6 +236,7 @@ class CenteringEnv(gym.Env):
     def step(self, action: np.ndarray):
         action = np.clip(action, -1.0, 1.0)
         from .networks import XY_SCALE
+
         dx = float(action[0]) * XY_SCALE
         dy = float(action[1]) * XY_SCALE
         self._apply_delta_ik(dx, dy)

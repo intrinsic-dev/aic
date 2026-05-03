@@ -29,25 +29,26 @@ from .sac_trainer import ReplayBuffer, SACTrainer, DEVICE
 
 def parse_args():
     p = argparse.ArgumentParser()
-    p.add_argument("--scene",         required=True, help="Path to scene.xml")
-    p.add_argument("--port_type",     default="sfp", choices=["sfp", "sc"])
-    p.add_argument("--total_steps",   type=int, default=500_000)
-    p.add_argument("--buffer_size",   type=int, default=50_000)
-    p.add_argument("--batch_size",    type=int, default=256)
-    p.add_argument("--warmup_steps",  type=int, default=1_000)
-    p.add_argument("--save_dir",      default="checkpoints/phase1")
+    p.add_argument("--scene", required=True, help="Path to scene.xml")
+    p.add_argument("--port_type", default="sfp", choices=["sfp", "sc"])
+    p.add_argument("--total_steps", type=int, default=500_000)
+    p.add_argument("--buffer_size", type=int, default=50_000)
+    p.add_argument("--batch_size", type=int, default=256)
+    p.add_argument("--warmup_steps", type=int, default=1_000)
+    p.add_argument("--save_dir", default="checkpoints/phase1")
     p.add_argument("--save_interval", type=int, default=50_000)
-    p.add_argument("--log_interval",  type=int, default=1_000)
+    p.add_argument("--log_interval", type=int, default=1_000)
     p.add_argument("--det_loss_weight", type=float, default=0.1)
-    p.add_argument("--load",          default=None, help="Resume from checkpoint")
-    p.add_argument("--render_w",      type=int, default=320)
-    p.add_argument("--render_h",      type=int, default=240)
+    p.add_argument("--load", default=None, help="Resume from checkpoint")
+    p.add_argument("--render_w", type=int, default=320)
+    p.add_argument("--render_h", type=int, default=240)
     return p.parse_args()
 
 
 def compute_gt_uv(env: CenteringEnv) -> np.ndarray:
     """Project port center to center camera (u,v) in [-1,1] using MuJoCo ground truth."""
     import mujoco
+
     port_pos = env._get_port_pos()
     cam_id = env._cam_id
     cam_xpos = env.data.cam_xpos[cam_id]
@@ -102,9 +103,15 @@ def main():
         if total_steps < args.warmup_steps:
             action = env.action_space.sample()
         else:
-            img_t  = torch.from_numpy(obs["image"].transpose(2, 0, 1)).unsqueeze(0).float().to(DEVICE) / 255.0
+            img_t = (
+                torch.from_numpy(obs["image"].transpose(2, 0, 1))
+                .unsqueeze(0)
+                .float()
+                .to(DEVICE)
+                / 255.0
+            )
             prop_t = torch.from_numpy(obs["proprio"]).unsqueeze(0).to(DEVICE)
-            obs_t  = {"image": img_t, "proprio": prop_t}
+            obs_t = {"image": img_t, "proprio": prop_t}
             action = trainer.actor.get_action(obs_t).squeeze(0).cpu().numpy()
 
         next_obs, reward, terminated, truncated, info = env.step(action)

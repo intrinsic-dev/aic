@@ -4,9 +4,9 @@ import cv2
 import numpy as np
 import torch
 
-IMG_SIZE = 84          # output image size after crop+resize
-WIDE_CROP_PX = 400     # half-side of the initial wide crop (pixels in source image)
-NARROW_CROP_PX = 150   # half-side used once xy_error is small
+IMG_SIZE = 84  # output image size after crop+resize
+WIDE_CROP_PX = 400  # half-side of the initial wide crop (pixels in source image)
+NARROW_CROP_PX = 150  # half-side used once xy_error is small
 
 
 def ros_image_to_rgb(msg) -> np.ndarray:
@@ -50,7 +50,9 @@ def crop_and_resize(
     return cv2.resize(crop, (out_size, out_size), interpolation=cv2.INTER_AREA)
 
 
-def center_crop_and_resize(img: np.ndarray, half_size: int, out_size: int = IMG_SIZE) -> np.ndarray:
+def center_crop_and_resize(
+    img: np.ndarray, half_size: int, out_size: int = IMG_SIZE
+) -> np.ndarray:
     """Crop around the image center."""
     h, w = img.shape[:2]
     return crop_and_resize(img, w // 2, h // 2, half_size, out_size)

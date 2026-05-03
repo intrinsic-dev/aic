@@ -24,6 +24,7 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # ── Replay Buffer ────────────────────────────────────────────────────────────
 
+
 class ReplayBuffer:
     """Circular replay buffer that stores images as uint8 to save memory.
 
@@ -31,7 +32,9 @@ class ReplayBuffer:
     Phase 2: images have keys 'center', 'left', 'right' (3 cameras).
     """
 
-    def __init__(self, capacity: int, phase: int, img_shape=(84, 84, 4), proprio_dim: int = 7):
+    def __init__(
+        self, capacity: int, phase: int, img_shape=(84, 84, 4), proprio_dim: int = 7
+    ):
         self.capacity = capacity
         self.phase = phase
         self.proprio_dim = proprio_dim
@@ -41,15 +44,19 @@ class ReplayBuffer:
         self._cam_keys = cam_keys
 
         # Pre-allocate numpy arrays (uint8 for images)
-        self._images  = {k: np.zeros((capacity, *img_shape), dtype=np.uint8) for k in cam_keys}
-        self._images_next = {k: np.zeros((capacity, *img_shape), dtype=np.uint8) for k in cam_keys}
-        self._proprios      = np.zeros((capacity, proprio_dim), dtype=np.float32)
+        self._images = {
+            k: np.zeros((capacity, *img_shape), dtype=np.uint8) for k in cam_keys
+        }
+        self._images_next = {
+            k: np.zeros((capacity, *img_shape), dtype=np.uint8) for k in cam_keys
+        }
+        self._proprios = np.zeros((capacity, proprio_dim), dtype=np.float32)
         self._proprios_next = np.zeros((capacity, proprio_dim), dtype=np.float32)
-        self._actions  = np.zeros((capacity, self.action_dim), dtype=np.float32)
-        self._rewards  = np.zeros((capacity, 1), dtype=np.float32)
-        self._dones    = np.zeros((capacity, 1), dtype=np.float32)
+        self._actions = np.zeros((capacity, self.action_dim), dtype=np.float32)
+        self._rewards = np.zeros((capacity, 1), dtype=np.float32)
+        self._dones = np.zeros((capacity, 1), dtype=np.float32)
         # Per-transition GT detection labels (u,v) in [-1,1]; NaN if unavailable
-        self._gt_uvs   = np.full((capacity, 2), np.nan, dtype=np.float32)
+        self._gt_uvs = np.full((capacity, 2), np.nan, dtype=np.float32)
 
         self._ptr = 0
         self._size = 0
@@ -65,14 +72,14 @@ class ReplayBuffer:
     ) -> None:
         i = self._ptr
         for k in self._cam_keys:
-            self._images[k][i]      = obs[k]
+            self._images[k][i] = obs[k]
             self._images_next[k][i] = next_obs[k]
-        self._proprios[i]      = obs["proprio"]
+        self._proprios[i] = obs["proprio"]
         self._proprios_next[i] = next_obs["proprio"]
-        self._actions[i]  = action
-        self._rewards[i]  = reward
-        self._dones[i]    = float(done)
-        self._gt_uvs[i]   = gt_uv if gt_uv is not None else np.array([np.nan, np.nan])
+        self._actions[i] = action
+        self._rewards[i] = reward
+        self._dones[i] = float(done)
+        self._gt_uvs[i] = gt_uv if gt_uv is not None else np.array([np.nan, np.nan])
         self._ptr = (i + 1) % self.capacity
         self._size = min(self._size + 1, self.capacity)
 
@@ -83,11 +90,14 @@ class ReplayBuffer:
             return {k: _to_tensor(store[k][idx], device) for k in self._cam_keys}
 
         obs = {**_imgs(self._images), "proprio": _f(self._proprios[idx], device)}
-        nxt = {**_imgs(self._images_next), "proprio": _f(self._proprios_next[idx], device)}
+        nxt = {
+            **_imgs(self._images_next),
+            "proprio": _f(self._proprios_next[idx], device),
+        }
         actions = _f(self._actions[idx], device)
         rewards = _f(self._rewards[idx], device)
-        dones   = _f(self._dones[idx], device)
-        gt_uvs  = _f(self._gt_uvs[idx], device)   # (B, 2); rows may contain NaN
+        dones = _f(self._dones[idx], device)
+        gt_uvs = _f(self._gt_uvs[idx], device)  # (B, 2); rows may contain NaN
         return obs, actions, rewards, nxt, dones, gt_uvs
 
     def __len__(self) -> int:
@@ -105,6 +115,7 @@ def _f(arr: np.ndarray, device: torch.device) -> torch.Tensor:
 
 
 # ── SAC Trainer ─────────────────────────────────────────────────────────────
+
 
 class SACTrainer:
     """Soft Actor-Critic with auxiliary port detection loss.
@@ -142,12 +153,14 @@ class SACTrainer:
         for p in self.critic_target.parameters():
             p.requires_grad_(False)
 
-        self.actor_opt  = optim.Adam(self.actor.parameters(), lr=actor_lr)
+        self.actor_opt = optim.Adam(self.actor.parameters(), lr=actor_lr)
         self.critic_opt = optim.Adam(self.critic.parameters(), lr=critic_lr)
 
         action_dim = P1_ACTION_DIM if phase == 1 else P2_ACTION_DIM
         target_entropy = -float(action_dim)
-        self.log_alpha = torch.tensor(np.log(alpha_init), requires_grad=True, device=device)
+        self.log_alpha = torch.tensor(
+            np.log(alpha_init), requires_grad=True, device=device
+        )
         self.alpha_opt = optim.Adam([self.log_alpha], lr=alpha_lr)
         self.target_entropy = target_entropy
 
@@ -171,7 +184,9 @@ class SACTrainer:
         GT detection labels are pulled from the per-transition buffer entries.
         Transitions without GT (NaN) are masked out of the detection loss.
         """
-        obs, actions, rewards, next_obs, dones, gt_uvs_batch = buffer.sample(batch_size, self.device)
+        obs, actions, rewards, next_obs, dones, gt_uvs_batch = buffer.sample(
+            batch_size, self.device
+        )
 
         # ── Critic update ──────────────────────────────────────────────────
         with torch.no_grad():
@@ -223,22 +238,25 @@ class SACTrainer:
         self._train_steps += 1
         return {
             "critic_loss": float(critic_loss),
-            "actor_loss":  float(actor_loss),
-            "det_loss":    float(det_loss),
-            "alpha":       float(self.alpha),
-            "alpha_loss":  float(alpha_loss),
+            "actor_loss": float(actor_loss),
+            "det_loss": float(det_loss),
+            "alpha": float(self.alpha),
+            "alpha_loss": float(alpha_loss),
         }
 
     # ── Checkpointing ──────────────────────────────────────────────────────
 
     def save(self, path: str) -> None:
         os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
-        torch.save({
-            "actor":  self.actor.state_dict(),
-            "critic": self.critic.state_dict(),
-            "log_alpha": self.log_alpha,
-            "train_steps": self._train_steps,
-        }, path)
+        torch.save(
+            {
+                "actor": self.actor.state_dict(),
+                "critic": self.critic.state_dict(),
+                "log_alpha": self.log_alpha,
+                "train_steps": self._train_steps,
+            },
+            path,
+        )
 
     def load(self, path: str) -> None:
         ckpt = torch.load(path, map_location=self.device)

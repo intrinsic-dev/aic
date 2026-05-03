@@ -25,19 +25,19 @@ from .sac_trainer import ReplayBuffer, SACTrainer, DEVICE
 
 def parse_args():
     p = argparse.ArgumentParser()
-    p.add_argument("--scene",         required=True, help="Path to scene.xml")
-    p.add_argument("--port_type",     default="sfp", choices=["sfp", "sc"])
-    p.add_argument("--total_steps",   type=int, default=500_000)
-    p.add_argument("--buffer_size",   type=int, default=20_000)
-    p.add_argument("--batch_size",    type=int, default=256)
-    p.add_argument("--warmup_steps",  type=int, default=1_000)
-    p.add_argument("--save_dir",      default="checkpoints/phase2")
+    p.add_argument("--scene", required=True, help="Path to scene.xml")
+    p.add_argument("--port_type", default="sfp", choices=["sfp", "sc"])
+    p.add_argument("--total_steps", type=int, default=500_000)
+    p.add_argument("--buffer_size", type=int, default=20_000)
+    p.add_argument("--batch_size", type=int, default=256)
+    p.add_argument("--warmup_steps", type=int, default=1_000)
+    p.add_argument("--save_dir", default="checkpoints/phase2")
     p.add_argument("--save_interval", type=int, default=50_000)
-    p.add_argument("--log_interval",  type=int, default=1_000)
+    p.add_argument("--log_interval", type=int, default=1_000)
     p.add_argument("--det_loss_weight", type=float, default=0.1)
-    p.add_argument("--load",          default=None, help="Resume from checkpoint")
-    p.add_argument("--render_w",      type=int, default=320)
-    p.add_argument("--render_h",      type=int, default=240)
+    p.add_argument("--load", default=None, help="Resume from checkpoint")
+    p.add_argument("--render_w", type=int, default=320)
+    p.add_argument("--render_h", type=int, default=240)
     return p.parse_args()
 
 
@@ -61,7 +61,10 @@ def _to_device_obs(obs: dict, device: torch.device) -> dict:
             out[k] = torch.from_numpy(v).unsqueeze(0).float().to(device)
         else:
             # image: H×W×C → 1×C×H×W float [0,1]
-            t = torch.from_numpy(v.transpose(2, 0, 1)).unsqueeze(0).float().to(device) / 255.0
+            t = (
+                torch.from_numpy(v.transpose(2, 0, 1)).unsqueeze(0).float().to(device)
+                / 255.0
+            )
             out[k] = t
     return out
 

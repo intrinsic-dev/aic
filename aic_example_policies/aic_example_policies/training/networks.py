@@ -9,23 +9,24 @@ from torch.distributions import Normal
 # Phase 1 (centering): center camera CNN (128) + xyz_rel (3) + ft_z (1)
 #                      + port_type_onehot (2) + step_norm (1) = 135
 P1_OBS_DIM = 135
-P1_ACTION_DIM = 2   # (dx, dy)
+P1_ACTION_DIM = 2  # (dx, dy)
 
 # Phase 2 (insertion): 3-camera CNN (3×128=384) + xyz_rel (3) + ft (6)
 #                      + port_type_onehot (2) + step_norm (1) + depth (1) = 397
 P2_OBS_DIM = 397
-P2_ACTION_DIM = 3   # (dx, dy, dz)
+P2_ACTION_DIM = 3  # (dx, dy, dz)
 
 # ── Action scales (meters per normalized unit) ──────────────────────────────
-XY_SCALE = 0.005       # Phase 1 lateral
-XY_INS_SCALE = 0.001   # Phase 2 lateral fine-tune
-Z_INS_SCALE = 0.002    # Phase 2 descent
+XY_SCALE = 0.005  # Phase 1 lateral
+XY_INS_SCALE = 0.001  # Phase 2 lateral fine-tune
+Z_INS_SCALE = 0.002  # Phase 2 descent
 
 LOG_STD_MIN = -5
 LOG_STD_MAX = 2
 
 
 # ── Building blocks ─────────────────────────────────────────────────────────
+
 
 class SpatialSoftmax(nn.Module):
     """Learnable expected position pooling: (B, C, H, W) → (B, 2*C).
@@ -35,17 +36,25 @@ class SpatialSoftmax(nn.Module):
     forces the CNN to represent spatial positions explicitly.
     """
 
-    def __init__(self, channels: int, height: int, width: int, temperature: float = 1.0):
+    def __init__(
+        self, channels: int, height: int, width: int, temperature: float = 1.0
+    ):
         super().__init__()
         self.channels = channels
         self.height = height
         self.width = width
-        self.temperature = nn.Parameter(
-            torch.ones(1) * temperature, requires_grad=True
-        )
+        self.temperature = nn.Parameter(torch.ones(1) * temperature, requires_grad=True)
         # Pre-compute normalized grid coordinates in [-1, 1]
-        xs = torch.linspace(-1, 1, width).view(1, 1, 1, width).expand(1, channels, height, width)
-        ys = torch.linspace(-1, 1, height).view(1, 1, height, 1).expand(1, channels, height, width)
+        xs = (
+            torch.linspace(-1, 1, width)
+            .view(1, 1, 1, width)
+            .expand(1, channels, height, width)
+        )
+        ys = (
+            torch.linspace(-1, 1, height)
+            .view(1, 1, height, 1)
+            .expand(1, channels, height, width)
+        )
         self.register_buffer("xs", xs)
         self.register_buffer("ys", ys)
 
@@ -55,7 +64,7 @@ class SpatialSoftmax(nn.Module):
         weights = F.softmax(flat, dim=2).view(B, C, H, W)
         ex = (weights * self.xs).sum(dim=(2, 3))  # (B, C)
         ey = (weights * self.ys).sum(dim=(2, 3))  # (B, C)
-        return torch.cat([ex, ey], dim=1)          # (B, 2*C)
+        return torch.cat([ex, ey], dim=1)  # (B, 2*C)
 
 
 class CNNBackbone(nn.Module):
@@ -104,6 +113,7 @@ class DetectionHead(nn.Module):
 
 # ── SAC Actor ───────────────────────────────────────────────────────────────
 
+
 class SACActor(nn.Module):
     """Actor for Phase 1 or Phase 2.
 
@@ -117,7 +127,11 @@ class SACActor(nn.Module):
         self.phase = phase
         self.n_cameras = 1 if phase == 1 else 3
         action_dim = P1_ACTION_DIM if phase == 1 else P2_ACTION_DIM
-        proprio_dim = P1_OBS_DIM - CNNBackbone.FEATURE_DIM if phase == 1 else P2_OBS_DIM - 3 * CNNBackbone.FEATURE_DIM
+        proprio_dim = (
+            P1_OBS_DIM - CNNBackbone.FEATURE_DIM
+            if phase == 1
+            else P2_OBS_DIM - 3 * CNNBackbone.FEATURE_DIM
+        )
 
         self.encoders = nn.ModuleList([CNNBackbone() for _ in range(self.n_cameras)])
         self.detection_head = DetectionHead()  # auxiliary; only used during training
@@ -144,8 +158,8 @@ class SACActor(nn.Module):
             feat = center_feat
         else:
             center_feat = self.encoders[0](obs["center"])  # (B, 128) — run once
-            left_feat   = self.encoders[1](obs["left"])
-            right_feat  = self.encoders[2](obs["right"])
+            left_feat = self.encoders[1](obs["left"])
+            right_feat = self.encoders[2](obs["right"])
             feat = torch.cat([center_feat, left_feat, right_feat], dim=1)  # (B, 384)
         det = self.detection_head(center_feat)
         return feat, det
@@ -177,6 +191,7 @@ class SACActor(nn.Module):
 
 # ── SAC Critic ──────────────────────────────────────────────────────────────
 
+
 class _QNet(nn.Module):
     """Single Q-network with its own CNN encoder."""
 
@@ -185,7 +200,11 @@ class _QNet(nn.Module):
         self.phase = phase
         self.n_cameras = 1 if phase == 1 else 3
         action_dim = P1_ACTION_DIM if phase == 1 else P2_ACTION_DIM
-        proprio_dim = P1_OBS_DIM - CNNBackbone.FEATURE_DIM if phase == 1 else P2_OBS_DIM - 3 * CNNBackbone.FEATURE_DIM
+        proprio_dim = (
+            P1_OBS_DIM - CNNBackbone.FEATURE_DIM
+            if phase == 1
+            else P2_OBS_DIM - 3 * CNNBackbone.FEATURE_DIM
+        )
         cnn_out = self.n_cameras * CNNBackbone.FEATURE_DIM
 
         self.encoders = nn.ModuleList([CNNBackbone() for _ in range(self.n_cameras)])
@@ -202,7 +221,10 @@ class _QNet(nn.Module):
         if self.phase == 1:
             feat = self.encoders[0](obs["image"])
         else:
-            feats = [enc(obs[k]) for enc, k in zip(self.encoders, ("center", "left", "right"))]
+            feats = [
+                enc(obs[k])
+                for enc, k in zip(self.encoders, ("center", "left", "right"))
+            ]
             feat = torch.cat(feats, dim=1)
         x = torch.cat([feat, obs["proprio"], action], dim=1)
         return self.net(x)
@@ -216,5 +238,7 @@ class SACCritic(nn.Module):
         self.q1 = _QNet(phase, hidden_dim)
         self.q2 = _QNet(phase, hidden_dim)
 
-    def forward(self, obs: dict, action: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+    def forward(
+        self, obs: dict, action: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         return self.q1(obs, action), self.q2(obs, action)
