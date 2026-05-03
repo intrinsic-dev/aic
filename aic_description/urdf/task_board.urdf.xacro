@@ -93,13 +93,6 @@
   <xacro:arg name="sc_port_4_pitch" default="0.0"/>
   <xacro:arg name="sc_port_4_yaw" default="0.0"/>
 
-  <!-- SC Port 5 (SC_RAIL_1) -->
-  <xacro:arg name="sc_port_5_present" default="false"/>
-  <xacro:arg name="sc_port_5_translation" default="0.0"/>
-  <xacro:arg name="sc_port_5_roll" default="0.0"/>
-  <xacro:arg name="sc_port_5_pitch" default="0.0"/>
-  <xacro:arg name="sc_port_5_yaw" default="0.0"/>
-
   <!-- NIC Card Mount 0 -->
   <xacro:arg name="nic_card_mount_0_present" default="false"/>
   <xacro:arg name="nic_card_mount_0_translation" default="0.0"/>
@@ -204,7 +197,7 @@
     </joint>
   </xacro:if>
 
-  <!-- SC Port 0 -->
+  <!-- SC Port 0 (SC_RAIL_0, Y=0.0295) -->
   <xacro:if value="$(arg sc_port_0_present)">
     <xacro:sc_port prefix="sc_port_0" pose="${-0.075 + $(arg sc_port_0_translation)} 0.0295 0.0165 ${1.57 + $(arg sc_port_0_roll)} $(arg sc_port_0_pitch) ${1.57 + $(arg sc_port_0_yaw)}"/>
     <gazebo>
@@ -255,17 +248,6 @@
       <joint name="sc_port_4_joint" type="fixed">
         <parent>task_board_base_link</parent>
         <child>sc_port_4::sc_port_link</child>
-      </joint>
-    </gazebo>
-  </xacro:if>
-
-  <!-- SC Port 5 (SC_RAIL_1, Y=0.0705) -->
-  <xacro:if value="$(arg sc_port_5_present)">
-    <xacro:sc_port prefix="sc_port_5" pose="${-0.075 + $(arg sc_port_5_translation)} 0.0705 0.0165 ${1.57 + $(arg sc_port_5_roll)} $(arg sc_port_5_pitch) ${1.57 + $(arg sc_port_5_yaw)}"/>
-    <gazebo>
-      <joint name="sc_port_5_joint" type="fixed">
-        <parent>task_board_base_link</parent>
-        <child>sc_port_5::sc_port_link</child>
       </joint>
     </gazebo>
   </xacro:if>
