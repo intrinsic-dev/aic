@@ -202,6 +202,7 @@ class RobotControlBridge : public BridgeInterface {
     std::string instance_;
     std::string server_address_;
     std::size_t num_joints_;
+    int restart_connection_retries_;
     uint8_t target_mode_value_;
     std::optional<int64_t> last_part_status_timestamp_ns_;
 

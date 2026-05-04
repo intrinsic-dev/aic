@@ -53,6 +53,8 @@ constexpr const char* kAgentBridgeJointTaskSettingsFileParamName =
     "joint_task_settings_file";
 constexpr const char* kFlowstateZenohRouterParamName =
     "flowstate_zenoh_router_address";
+constexpr const char* kRestartConnectionRetriesParamName =
+    "restart_connection_retries";
 
 ///=============================================================================
 void RobotControlBridge::declare_ros_parameters(
@@ -73,6 +75,8 @@ void RobotControlBridge::declare_ros_parameters(
                                      rclcpp::ParameterValue{""});
   param_interface->declare_parameter(kAgentBridgeJointTaskSettingsFileParamName,
                                      rclcpp::ParameterValue{""});
+  param_interface->declare_parameter(kRestartConnectionRetriesParamName,
+                                     rclcpp::ParameterValue{3});
 }
 
 ///=============================================================================
@@ -98,6 +102,9 @@ bool RobotControlBridge::initialize(
   data_->ft_sensor_part_name_ =
       param_interface->get_parameter(kFTPartNameParamName)
           .get_value<std::string>();
+  data_->restart_connection_retries_ =
+      param_interface->get_parameter(kRestartConnectionRetriesParamName)
+          .get_value<int>();
   std::filesystem::path task_settings_file =
       param_interface->get_parameter(kAgentBridgeTaskSettingsFileParamName)
           .get_value<std::string>();
@@ -544,8 +551,17 @@ void RobotControlBridge::TareForceTorqueSensorCallback(
   LOG(INFO) << "Received request to tare force torque sensor";
 
   if (!data_->connected_to_controller_) {
-    LOG(INFO) << "Restarting connection to controller server";
-    data_->connected_to_controller_ = restartControllerBridge();
+    for (int i = 0; i < data_->restart_connection_retries_; ++i) {
+      data_->connected_to_controller_ = restartControllerBridge();
+      if (data_->connected_to_controller_) {
+        break;
+      }
+      if (i < data_->restart_connection_retries_ - 1) {
+        LOG(INFO)
+            << "Failed to restart controller bridge. Retrying in 500ms...";
+        rclcpp::sleep_for(std::chrono::milliseconds(500));
+      }
+    }
   }
 
   if (!data_->connected_to_controller_ || !data_->session_ ||
@@ -556,8 +572,6 @@ void RobotControlBridge::TareForceTorqueSensorCallback(
     return;
   }
 
-  // todo(johntgz) should we Start the tare action in parallel with existing
-  // motion plans, we by setting stop_active_actions = false
   auto status =
       data_->session_->StartAction(data_->tare_action_.value(), false);
   if (!status.ok()) {
