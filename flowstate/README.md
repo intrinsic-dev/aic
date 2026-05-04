@@ -96,7 +96,7 @@ export INTRINSIC_CLUSTER="vmp-xxxx-xxxxxxx"
 
 ## 🛠️ Building the Skill
 
-We can use the `build_container.sh` and `build_bundle.sh` script from the intrinsic-ai/sdk-ros repository to build and package the skill bundle. The instructions below build and bundle the `insert_cable_skill`.
+We can use the `build_container.sh` script to build the skill and the `inbuild` tool to bundle the skill into a package that can be side-loaded. The instructions below build and bundle the `insert_cable_skill`.
 
 ---
 
