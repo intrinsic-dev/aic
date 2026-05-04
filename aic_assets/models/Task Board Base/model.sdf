@@ -39,6 +39,7 @@
       <static_publisher>true</static_publisher>
       <update_frequency>0</update_frequency>
       <static_update_frequency>1</static_update_frequency>
+      <topic>/model/task_board/pose</topic>
     </plugin>
   </model>
 </sdf>
