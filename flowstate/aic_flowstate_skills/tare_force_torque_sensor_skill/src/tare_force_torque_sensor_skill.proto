@@ -10,7 +10,7 @@ message TareForceTorqueSensorSkillParams {
 message TareForceTorqueSensorSkillResult {
   // True if the task succeeded.
   bool success = 1;
-  
+
   // A message if the task succeeded or failed.
   string message = 2;
 }

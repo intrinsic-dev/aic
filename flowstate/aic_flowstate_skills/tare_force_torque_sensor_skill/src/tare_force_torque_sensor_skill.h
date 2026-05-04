@@ -25,7 +25,8 @@
 #include "intrinsic/skills/cc/skill_interface.h"
 #include "intrinsic/skills/proto/skill_service.pb.h"
 
-class TareForceTorqueSensorSkill final : public intrinsic::skills::SkillInterface {
+class TareForceTorqueSensorSkill final
+    : public intrinsic::skills::SkillInterface {
  public:
   /**
    * @copydoc intrinsic::skills::SkillInterface:: CreateSkill
