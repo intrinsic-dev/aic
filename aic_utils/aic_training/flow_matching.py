@@ -1,23 +1,29 @@
 """
 Flow Matching policy for the AIC cable-insertion task.
 
-Architecture is identical to diffusion_policy.py — all condition encoders,
-the Diffusion Transformer, and CFG are unchanged.  The two differences are:
+Architecture uses a π0-style transformer (Black et al. 2024):
+  - Conditioning tokens (image, robot state, task) are prepended as prefix tokens.
+  - Noisy action tokens (with timestep embedding added) are appended.
+  - A single transformer with full bidirectional self-attention processes the
+    entire [prefix | action] sequence jointly — no separate cross-attention.
+  - Only the action positions are read out and projected to the velocity field.
 
-  1. Loss  — Rectified Flow (conditional flow matching with straight paths):
-       x_t  = (1 - t) * x_0  +  t * x_1        t ~ Uniform(0, 1)
-       u_t  = x_1 - x_0                         constant velocity field
-       L    = E[ ||v_θ(x_t, t) - u_t||² ]
-     where x_0 ~ N(0, I) is noise and x_1 is the clean action.
+Loss  — Rectified Flow (conditional flow matching with straight paths):
+    x_t  = (1 - t) * x_0  +  t * x_1        t ~ Uniform(0, 1)
+    u_t  = x_1 - x_0                         constant velocity field
+    L    = E[ ||v_θ(x_t, t) - u_t||² ]
+  where x_0 ~ N(0, I) is noise and x_1 is the clean action.
 
-  2. Sampling  — ODE integration from t=0 (noise) to t=1 (action):
-       "euler"    : x_{t+h} = x_t + h * v_θ(x_t, t)
-       "midpoint" : 2nd-order midpoint, same NFE×2 as Euler but much more accurate
+Sampling  — ODE integration from t=0 (noise) to t=1 (action):
+    "euler"    : x_{t+h} = x_t + h * v_θ(x_t, t)
+    "midpoint" : 2nd-order midpoint, same NFE×2 as Euler but much more accurate
 
-  Reference: Lipman et al. "Flow Matching for Generative Modeling" (ICLR 2023).
-             Liu et al.    "Flow Straight and Fast: Rectified Flow" (ICLR 2023).
+References:
+  Black et al.  "π0: A Vision-Language-Action Flow Model" (2024).
+  Lipman et al. "Flow Matching for Generative Modeling" (ICLR 2023).
+  Liu et al.    "Flow Straight and Fast: Rectified Flow" (ICLR 2023).
 
-All tokens share TOKEN_DIM = 128; no projection layers inside the transformer.
+All tokens share TOKEN_DIM = 128.
 CFG is supported: train with cfg_dropout_prob > 0, sample with guidance_scale > 1.
 """
 
@@ -217,14 +223,19 @@ class TaskEncoder(nn.Module):
 
 
 # ---------------------------------------------------------------------------
-# Transformer  (identical to diffusion_policy.py)
+# Transformer  (π0-style: full self-attention over concatenated tokens)
 # ---------------------------------------------------------------------------
 
-class DiTLayer(nn.Module):
+class TransformerLayer(nn.Module):
+    """Pre-norm transformer layer: full self-attention + FFN.
+
+    Operates on the entire [prefix | action] sequence. No cross-attention —
+    conditioning tokens are part of the sequence and attended to directly.
+    """
+
     def __init__(self, d_model: int, n_heads: int, ffn_dim: int, dropout: float = 0.0):
         super().__init__()
-        self.self_attn  = nn.MultiheadAttention(d_model, n_heads, dropout=dropout, batch_first=True)
-        self.cross_attn = nn.MultiheadAttention(d_model, n_heads, dropout=dropout, batch_first=True)
+        self.self_attn = nn.MultiheadAttention(d_model, n_heads, dropout=dropout, batch_first=True)
         self.ffn = nn.Sequential(
             nn.Linear(d_model, ffn_dim),
             nn.GELU(),
@@ -233,10 +244,9 @@ class DiTLayer(nn.Module):
         )
         self.norm1 = nn.LayerNorm(d_model)
         self.norm2 = nn.LayerNorm(d_model)
-        self.norm3 = nn.LayerNorm(d_model)
         self.drop  = nn.Dropout(dropout)
 
-    def forward(self, x: torch.Tensor, cond: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         residual = x
         x = self.norm1(x)
         x, _ = self.self_attn(x, x, x)
@@ -244,21 +254,24 @@ class DiTLayer(nn.Module):
 
         residual = x
         x = self.norm2(x)
-        x, _ = self.cross_attn(query=x, key=cond, value=cond)
-        x = residual + self.drop(x)
-
-        residual = x
-        x = self.norm3(x)
         x = self.ffn(x)
         x = residual + self.drop(x)
         return x
 
 
 class VectorFieldTransformer(nn.Module):
-    """Transformer that predicts the velocity field v_θ(x_t, t).
+    """π0-style transformer predicting the velocity field v_θ(x_t, t).
 
-    Architecture identical to DiffusionTransformer in diffusion_policy.py.
-    Renamed to reflect that the output is a velocity field rather than noise.
+    Conditioning tokens (image, state, task) are prepended as a prefix and
+    attended to jointly with action tokens via full bidirectional self-attention.
+    Only the action positions are read out and projected to the output.
+
+    Sequence layout per forward call:
+        [ img_tokens   (B, T*cams*4, d) |
+          state_tokens (B, T, d)        |
+          task_token   (B, 1, d)        |
+          timestep_emb (B, 1, d)        |
+          action_tokens (B, H, d)       ]   ← only these are projected to output
     """
 
     def __init__(self, action_dim: int, d_model: int = TOKEN_DIM, n_heads: int = 8,
@@ -268,23 +281,46 @@ class VectorFieldTransformer(nn.Module):
         self.norm_state = nn.LayerNorm(d_model)
         self.norm_task  = nn.LayerNorm(d_model)
         self.layers = nn.ModuleList([
-            DiTLayer(d_model=d_model, n_heads=n_heads, ffn_dim=ffn_dim, dropout=dropout)
+            TransformerLayer(d_model=d_model, n_heads=n_heads, ffn_dim=ffn_dim, dropout=dropout)
             for _ in range(n_layers)
         ])
         self.norm_out = nn.LayerNorm(d_model)
         self.out_proj = nn.Linear(d_model, action_dim)
 
+    @staticmethod
+    def _sinusoidal_pos_emb(length: int, dim: int, device: torch.device) -> torch.Tensor:
+        """Sinusoidal positional encoding for positions 0 .. length-1, shape (1, length, dim)."""
+        pos = torch.arange(length, device=device).unsqueeze(1)       # (L, 1)
+        i   = torch.arange(dim // 2, device=device).unsqueeze(0)     # (1, d/2)
+        angles = pos / (10000.0 ** (2.0 * i / dim))                  # (L, d/2)
+        emb = torch.cat([angles.sin(), angles.cos()], dim=-1)        # (L, d)
+        return emb.unsqueeze(0)                                       # (1, L, d)
+
     def forward(self, action_tokens, timestep_emb, img_tokens, state_tokens, task_token):
-        cond = torch.cat([
+        # Build prefix: all conditioning tokens including timestep
+        prefix = torch.cat([
             self.norm_img(img_tokens),
             self.norm_state(state_tokens),
             self.norm_task(task_token),
-        ], dim=1)
-        x = action_tokens + timestep_emb.unsqueeze(1)
+            timestep_emb.unsqueeze(1),                        # (B, 1, d_model)
+        ], dim=1)                                              # (B, n_prefix, d_model)
+        n_prefix = prefix.shape[1]
+
+        # Add sinusoidal positional encoding to action tokens so the transformer
+        # knows their temporal order within the prediction horizon
+        L, d = action_tokens.shape[1], action_tokens.shape[2]
+        pos_emb = self._sinusoidal_pos_emb(L, d, action_tokens.device)  # (1, L, d)
+        action_tokens = action_tokens + pos_emb
+
+        # Full sequence: prefix tokens + action tokens attend to everything jointly
+        x = torch.cat([prefix, action_tokens], dim=1)         # (B, n_prefix + pred_horizon, d_model)
+
         for layer in self.layers:
-            x = layer(x, cond)
-        x = self.norm_out(x)
-        return self.out_proj(x)
+            x = layer(x)
+
+        # Read out only the action positions
+        x = x[:, n_prefix:]                                   # (B, pred_horizon, d_model)
+        return self.out_proj(self.norm_out(x))
 
 
 # ---------------------------------------------------------------------------
@@ -294,18 +330,20 @@ class VectorFieldTransformer(nn.Module):
 class FlowMatchingPolicy(nn.Module):
     """Flow matching policy for the AIC cable-insertion task.
 
-    Condition encoding is identical to DiffusionPolicy.  The differences:
+    Uses a π0-style transformer: all conditioning tokens (images, robot state,
+    task) are prepended as a prefix and processed jointly with the noisy action
+    tokens via full bidirectional self-attention — no separate cross-attention.
 
-    Training loss  — compute_loss() implements the rectified flow objective:
+    Training loss  — rectified flow objective:
         x_t  = (1 - t) * x_0  +  t * x_1     (straight interpolation)
         u_t  = x_1 - x_0                       (target velocity, constant)
         L    = MSE(v_θ(x_t, t), u_t)
 
-    Sampling  — sample() integrates the learned ODE from t=0 to t=1:
+    Sampling  — ODE integration from t=0 (noise) to t=1 (action):
         "euler"    : first-order,   1 NFE per step
         "midpoint" : second-order,  2 NFE per step, much better accuracy
 
-    CFG is supported identically to DiffusionPolicy.
+    CFG is supported: train with cfg_dropout_prob > 0, sample with guidance_scale > 1.
     """
 
     def __init__(
