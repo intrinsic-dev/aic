@@ -30,6 +30,7 @@ from launch_ros.substitutions import FindPackageShare
 def launch_setup(context, *args, **kwargs):
     # Cable arguments
     cable_description_file = LaunchConfiguration("cable_description_file")
+    cable_name = LaunchConfiguration("cable_name")
     cable_x = LaunchConfiguration("cable_x")
     cable_y = LaunchConfiguration("cable_y")
     cable_z = LaunchConfiguration("cable_z")
@@ -63,7 +64,7 @@ def launch_setup(context, *args, **kwargs):
             "-string",
             cable_description_content,
             "-name",
-            "cable_0",
+            cable_name,
             "-allow_renaming",
             "true",
             "-x",
@@ -94,6 +95,13 @@ def generate_launch_description():
                 [FindPackageShare("aic_description"), "urdf", "cable.sdf.xacro"]
             ),
             description="URDF/XACRO description file (absolute path) with the cable.",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "cable_name",
+            default_value="cable_0",
+            description="Name of the cable",
         )
     )
     declared_arguments.append(
