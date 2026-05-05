@@ -167,6 +167,8 @@ void CableModeratorPlugin::Configure(
 //////////////////////////////////////////////////
 void CableModeratorPlugin::ProcessManualGraspRequests(
     gz::sim::EntityComponentManager& _ecm) {
+  if (this->cableIndex < 0) return;
+
   const auto& tracker = this->cableTrackers[this->cableIndex];
   if (this->attachEnd0Requested.exchange(false)) {
     if (this->FindGripperJoint(tracker.connection0LinkEntity, _ecm) ==
@@ -223,12 +225,12 @@ void CableModeratorPlugin::MakeCableStatic(
 
   if (connection0 != kNullEntity) {
     this->cableTrackers[_cableIndex].detachableJointStatic0Entity =
-      this->MakeStatic(connection0, true, _ecm);
+        this->MakeStatic(connection0, true, _ecm);
   }
 
   if (connection1 != kNullEntity) {
     this->cableTrackers[_cableIndex].detachableJointStatic1Entity =
-      this->MakeStatic(connection1, true, _ecm);
+        this->MakeStatic(connection1, true, _ecm);
   }
 }
 
@@ -267,7 +269,8 @@ void CableModeratorPlugin::PreUpdate(const gz::sim::UpdateInfo& /*_info*/,
     this->activeGraspJoint = this->FindExternalGraspJoint(_ecm);
     if (this->activeGraspJoint != kNullEntity) {
       // External skill has grasped the cable - remove the static hold
-      auto& joint0 = this->cableTrackers[this->cableIndex].detachableJointStatic0Entity;
+      auto& joint0 =
+          this->cableTrackers[this->cableIndex].detachableJointStatic0Entity;
       if (joint0 != kNullEntity) {
         _ecm.RequestRemoveEntity(joint0);
         joint0 = kNullEntity;
@@ -312,7 +315,8 @@ void CableModeratorPlugin::PreUpdate(const gz::sim::UpdateInfo& /*_info*/,
     this->activeGraspJoint = this->FindExternalGraspJoint(_ecm);
     if (this->activeGraspJoint != kNullEntity) {
       // External skill has grasped the cable - remove the static hold
-      auto& joint1 = this->cableTrackers[this->cableIndex].detachableJointStatic1Entity;
+      auto& joint1 =
+          this->cableTrackers[this->cableIndex].detachableJointStatic1Entity;
       if (joint1 != kNullEntity) {
         _ecm.RequestRemoveEntity(joint1);
         joint1 = kNullEntity;
@@ -358,7 +362,7 @@ void CableModeratorPlugin::PreUpdate(const gz::sim::UpdateInfo& /*_info*/,
     this->attachCableConnectionToPort = false;
     this->touchEventCallbackNamespace = std::nullopt;
 
-    if (this->cableIndex + 1 < this->cableTrackers.size()) {
+    if (this->cableIndex + 1 < static_cast<int>(this->cableTrackers.size())) {
       // There are more cables to be processed
       if (this->ToggleActiveCable(_ecm)) {
         gzmsg << "Cable transitioning to WAITING_CONN_0 state for next cable."
@@ -642,7 +646,6 @@ bool CableModeratorPlugin::ToggleActiveCable(
       "/" + cableModelName + "/attach_end_1", cbAttach1));
   this->manualGraspSubs.emplace_back(this->node.CreateSubscriber(
       "/" + cableModelName + "/detach_end_1", cbDetach1));
-
 
   return true;
 }
