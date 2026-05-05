@@ -48,6 +48,22 @@ logger = logging.getLogger(__name__)
 # actions while the environment is being reset.
 reset_in_progress: Event = Event()
 
+@dataclass
+class ApproachState:
+    """Written by AICCheatCodeApproachOnlyTeleop each step; read by the controller."""
+    done: bool = False
+    dist_x: float = 0.0
+    dist_y: float = 0.0
+    dist_z: float = 0.0
+
+    def reset(self) -> None:
+        self.done = False
+        self.dist_x = 0.0
+        self.dist_y = 0.0
+        self.dist_z = 0.0
+
+approach_state = ApproachState()
+
 
 @TeleoperatorConfig.register_subclass("aic_keyboard_joint")
 @dataclass
@@ -670,6 +686,350 @@ class AICCheatCodeTeleop(Teleoperator):
 
         # 4. Proportional-Integral (PI) Velocity Controller (World Frame → TCP Frame)
         lin_err = target_pos - gripper_pos
+        self._lin_err_integrator = np.clip(
+            self._lin_err_integrator + lin_err,
+            -self.config.max_integrator_windup,
+            self.config.max_integrator_windup,
+        )
+
+        v_linear_world = (self.config.kp_linear * lin_err) + (self.config.ki_linear * self._lin_err_integrator)
+        v_linear_world = np.clip(v_linear_world, -self.config.max_linear_vel, self.config.max_linear_vel)
+
+        r_current = R.from_quat([q_gripper[1], q_gripper[2], q_gripper[3], q_gripper[0]])
+        r_target = R.from_quat([q_gripper_target[1], q_gripper_target[2], q_gripper_target[3], q_gripper_target[0]])
+
+        r_error = r_target * r_current.inv()
+        v_angular_world = np.clip(self.config.kp_angular * r_error.as_rotvec(), -self.config.max_angular_vel, self.config.max_angular_vel)
+
+        v_linear_tcp = r_current.inv().apply(v_linear_world)
+        v_angular_tcp = r_current.inv().apply(v_angular_world)
+
+        # 5. Map to LeRobot action dict using the TCP-Frame velocities
+        self._current_actions = {
+            "linear.x": float(v_linear_tcp[0]),
+            "linear.y": float(v_linear_tcp[1]),
+            "linear.z": float(v_linear_tcp[2]),
+            "angular.x": float(v_angular_tcp[0]),
+            "angular.y": float(v_angular_tcp[1]),
+            "angular.z": float(v_angular_tcp[2]),
+        }
+
+        return cast(dict, self._current_actions)
+
+    def send_feedback(self, feedback: dict[str, Any]) -> None:
+        pass
+
+    def disconnect(self) -> None:
+        logger.info("LXH teleop disconnected")
+        self._is_connected = False
+        if hasattr(self, '_node'):
+            self._node.destroy_node()
+
+
+@TeleoperatorConfig.register_subclass("aic_cheatcode_approach")
+@dataclass(kw_only=True)
+class AICCheatCodeApproachOnlyTeleopConfig(TeleoperatorConfig):
+    # Proportional-Integral gains for the velocity controller
+    kp_linear: float = 1.0
+    ki_linear: float = 0.15
+    max_integrator_windup: float = 0.05
+    kp_angular: float = 1.5
+
+    # Max velocity clamping to keep demonstrations smooth and safe
+    max_linear_vel: float = 0.1
+    max_angular_vel: float = 0.5
+
+    # --- Task Variables (Override via command line) ---
+    task_cable_name: str = "cable_0"
+    task_plug_name: str = "sfp_tip"
+    task_module_name: str = "nic_card_mount_0"
+    task_port_name: str = "sfp_port_0"
+
+
+class AICCheatCodeApproachOnlyTeleop(Teleoperator):
+    def __init__(self, config: AICCheatCodeApproachOnlyTeleopConfig):
+        """
+          Same as AICCheatCodeTeleop but with no insert
+        """
+        super().__init__(config)
+        self.config = config
+        self._is_connected = False
+        
+        # State machine variables
+        self.phase = "INIT"  # INIT -> APPROACH -> DONE
+        # 20 cm of clearance above the port. It's an empirical hover height chosen to be far enough above the port 
+        # that the gripper can safely approach from any position without hitting anything, before descending.
+        self.z_offset = 0.2
+        self.start_time = 0.0  # Must be 0.0 here, _node doesn't exist yet!
+        
+        # Integrator for the PI velocity controller
+        self._lin_err_integrator = np.zeros(3)
+        
+        self._current_actions: MotionUpdateActionDict = {
+            "linear.x": 0.0, "linear.y": 0.0, "linear.z": 0.0,
+            "angular.x": 0.0, "angular.y": 0.0, "angular.z": 0.0,
+        }
+
+    @property
+    def name(self) -> str:
+        return "aic_cheatcode_approach"
+
+    @property
+    def action_features(self) -> dict:
+        return MotionUpdateActionDict.__annotations__
+
+    @property
+    def feedback_features(self) -> dict:
+        return {}
+
+    @property
+    def is_connected(self) -> bool:
+        return self._is_connected
+
+    def connect(self, calibrate: bool = True) -> None:
+        logger.info("LXH teleop connect")
+        if self.is_connected:
+            raise DeviceAlreadyConnectedError()
+
+        if not rclpy.ok():
+            rclpy.init()
+
+        # Spin up a background ROS 2 node to listen to Transform ground truth
+        self._node = rclpy.create_node("cheatcode_approach_only_teleop")
+        self._tf_buffer = Buffer()
+        self._tf_listener = TransformListener(self._tf_buffer, self._node)
+
+        # Subscribe to task_info published by the robot after each env reset.
+        # This lets the teleop update its targets without needing a robot reference.
+        self._node.create_subscription(
+            String, "/env/task_info", self._task_info_cb, 10
+        )
+
+        self._executor = SingleThreadedExecutor()
+        self._executor.add_node(self._node)
+        self._executor_thread = Thread(target=self._executor.spin, daemon=True)
+        self._executor_thread.start()
+
+        self._is_connected = True
+        print("This is approach only v1!!!")
+        print(f"CheatCode Teleop connected. Target: {self.config.task_port_name} on {self.config.task_module_name}")
+    
+    @property
+    def is_calibrated(self) -> bool:
+        return True
+
+    def calibrate(self) -> None:
+        pass
+
+    def configure(self) -> None:
+        pass
+
+    def _task_info_cb(self, msg: String) -> None:
+        """Handle task_info published by the robot after each env reset."""
+        try:
+            task_info = json.loads(msg.data)
+            self.update_task(task_info)
+        except (json.JSONDecodeError, TypeError) as e:
+            logger.warning(f"Failed to parse /env/task_info message: {e}")
+
+    def update_task(self, task_info: dict) -> None:
+        """Update insertion targets from a task_info dict returned by robot.reset().
+
+        Updates the relevant config fields so get_action() targets the correct
+        port/module for the new episode, then resets the state machine and PI
+        integrator so the episode starts clean.
+
+        Keys consumed from task_info:
+            target_module_name → config.task_module_name
+            port_name          → config.task_port_name
+            cable_name         → config.task_cable_name
+            plug_name          → config.task_plug_name
+        """
+        if "target_module_name" in task_info:
+            self.config.task_module_name = task_info["target_module_name"]
+        if "port_name" in task_info:
+            self.config.task_port_name = task_info["port_name"]
+        if "cable_name" in task_info:
+            self.config.task_cable_name = task_info["cable_name"]
+        if "plug_name" in task_info:
+            self.config.task_plug_name = task_info["plug_name"]
+
+        # Reset state machine, z_offset, and integrator for the fresh episode
+        self.phase = "INIT"
+        self.z_offset = 0.2
+        self._lin_err_integrator = np.zeros(3)
+
+        approach_state.reset()
+        logger.info(
+            f"CheatCode task updated: "
+            f"{self.config.task_module_name}/{self.config.task_port_name} | "
+            f"cable={self.config.task_cable_name} plug={self.config.task_plug_name}"
+        )
+
+    def _get_transform(self, target_frame: str, source_frame: str):
+        """Helper to get transforms without throwing exceptions in the main loop."""
+        try:
+            return self._tf_buffer.lookup_transform(target_frame, source_frame, rclpy.time.Time())
+        except Exception:
+            return None
+
+    def calc_gripper_pose(
+        self,
+        port_tf,
+        plug_tf,
+        gripper_tf,
+        z_offset: float = 0.0,
+    ) -> tuple[np.ndarray, tuple[float, float, float, float]]:
+        """Compute target gripper position and orientation for plug alignment.
+
+        Mirrors CheatCode.calc_gripper_pose() adapted for velocity control.
+        Takes pre-looked-up TransformStamped values so the caller can handle
+        lookup failures before invoking this method.
+
+        Args:
+            port_tf:    TransformStamped of the target port in base_link frame.
+            plug_tf:    TransformStamped of the cable plug tip in base_link frame.
+            gripper_tf: TransformStamped of the gripper TCP in base_link frame.
+            z_offset:   Extra height above the port to target (metres).
+
+        Returns:
+            (target_pos, q_gripper_target): world-frame target position as a
+            (3,) array and target gripper quaternion as (w, x, y, z).
+        """
+        q_port = (
+            port_tf.transform.rotation.w, port_tf.transform.rotation.x,
+            port_tf.transform.rotation.y, port_tf.transform.rotation.z,
+        )
+        q_plug = (
+            plug_tf.transform.rotation.w, plug_tf.transform.rotation.x,
+            plug_tf.transform.rotation.y, plug_tf.transform.rotation.z,
+        )
+        q_plug_inv = (-q_plug[0], q_plug[1], q_plug[2], q_plug[3])
+        q_diff = quaternion_multiply(q_port, q_plug_inv)
+
+        q_gripper = (
+            gripper_tf.transform.rotation.w, gripper_tf.transform.rotation.x,
+            gripper_tf.transform.rotation.y, gripper_tf.transform.rotation.z,
+        )
+        q_gripper_target = quaternion_multiply(q_diff, q_gripper)
+
+        gripper_pos = np.array([
+            gripper_tf.transform.translation.x,
+            gripper_tf.transform.translation.y,
+            gripper_tf.transform.translation.z,
+        ])
+        plug_pos = np.array([
+            plug_tf.transform.translation.x,
+            plug_tf.transform.translation.y,
+            plug_tf.transform.translation.z,
+        ])
+        plug_offset = gripper_pos - plug_pos
+
+        target_pos = np.array([
+            port_tf.transform.translation.x + plug_offset[0],
+            port_tf.transform.translation.y + plug_offset[1],
+            port_tf.transform.translation.z + plug_offset[2] + z_offset,
+        ])
+
+        return target_pos, q_gripper_target
+
+    def get_action(self) -> dict[str, Any]:
+        if not self.is_connected:
+            raise DeviceNotConnectedError()
+
+        # Pause actions during env reset to avoid destabilizing the robot.
+        if reset_in_progress.is_set():
+            for key in self._current_actions:
+                self._current_actions[key] = 0.0
+            return cast(dict, self._current_actions)
+
+        # 1. Look up current transforms
+        port_frame = f"task_board/{self.config.task_module_name}/{self.config.task_port_name}_link"
+        cable_tip_frame = f"{self.config.task_cable_name}/{self.config.task_plug_name}_link"
+        gripper_frame = "gripper/tcp"
+
+        port_tf = self._get_transform("base_link", port_frame)
+        plug_tf = self._get_transform("base_link", cable_tip_frame)
+        gripper_tf = self._get_transform("base_link", gripper_frame)
+
+        # If we are missing TFs, output 0 velocity (Runaway robot fix)
+        if not port_tf or not plug_tf or not gripper_tf:
+            if self.phase == "INIT":
+                missing = [
+                    name for name, tf in [
+                        (port_frame, port_tf),
+                        (cable_tip_frame, plug_tf),
+                        (gripper_frame, gripper_tf),
+                    ] if tf is None
+                ]
+                print(f"Waiting for TFs: {missing}", end="\r")
+            else:
+                missing = [
+                    name for name, tf in [
+                        (port_frame, port_tf),
+                        (cable_tip_frame, plug_tf),
+                        (gripper_frame, gripper_tf),
+                    ] if tf is None
+                ]
+                logger.warning(f"TF lookup failed during {self.phase}: {missing}")
+                for key in self._current_actions:
+                    self._current_actions[key] = 0.0
+            return cast(dict, self._current_actions)
+
+        # Transition out of INIT once TFs are found
+        if self.phase == "INIT":
+            logger.info(
+                f"TFs found! Starting APPROACH phase.\n"
+                f"  port_frame    : {port_frame}\n"
+                f"  cable_tip_frame: {cable_tip_frame}\n"
+                f"  task_module   : {self.config.task_module_name}\n"
+                f"  task_port     : {self.config.task_port_name}\n"
+                f"  cable_name    : {self.config.task_cable_name}\n"
+                f"  plug_name     : {self.config.task_plug_name}"
+            )
+            self.phase = "APPROACH"
+            self.start_time = self._node.get_clock().now().nanoseconds / 1e9
+
+        # 2. Compute target pose (position + orientation)
+        target_pos, q_gripper_target = self.calc_gripper_pose(
+            port_tf, plug_tf, gripper_tf, z_offset=self.z_offset,
+        )
+
+        gripper_pos = np.array([
+            gripper_tf.transform.translation.x,
+            gripper_tf.transform.translation.y,
+            gripper_tf.transform.translation.z,
+        ])
+        q_gripper = (
+            gripper_tf.transform.rotation.w, gripper_tf.transform.rotation.x,
+            gripper_tf.transform.rotation.y, gripper_tf.transform.rotation.z,
+        )
+
+        # 3. State Machine Logic
+        current_time = self._node.get_clock().now().nanoseconds / 1e9
+        elapsed = current_time - self.start_time
+        lin_err = target_pos - gripper_pos
+        dist_to_target = np.linalg.norm(lin_err)
+
+        # Update shared state every step so the controller always has fresh distances.
+        approach_state.dist_x = float(lin_err[0])
+        approach_state.dist_y = float(lin_err[1])
+        approach_state.dist_z = float(lin_err[2])
+
+        if self.phase == "APPROACH":
+            if dist_to_target < 0.01 and elapsed > 2.0:
+                logger.info("Hover position reached. Approach complete.")
+                self.phase = "DONE"
+                self.start_time = current_time
+                self._lin_err_integrator = np.zeros(3)
+                approach_state.done = True
+
+        elif self.phase == "DONE":
+            for key in self._current_actions:
+                self._current_actions[key] = 0.0
+            return cast(dict, self._current_actions)
+
+        # 4. Proportional-Integral (PI) Velocity Controller (World Frame → TCP Frame)
         self._lin_err_integrator = np.clip(
             self._lin_err_integrator + lin_err,
             -self.config.max_integrator_windup,

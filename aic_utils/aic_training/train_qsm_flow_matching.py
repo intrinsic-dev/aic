@@ -67,7 +67,7 @@ from aic_control_interfaces.msg import (
 from rclpy.time import Time
 from tf2_ros import Buffer, TransformException, TransformListener
 from aic_training.aic_gym_env import AICGymEnv, AICGymEnvConfig
-from aic_training.flow_matching import FlowMatchingPolicy, ROBOT_STATE_DIM
+from aic_training.flow_matching import FlowMatchingPolicy, TaskEncoder, ROBOT_STATE_DIM
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -94,7 +94,6 @@ TASK_TARGET_MODULE_ENCODING: dict[str, int] = {
 TASK_PORT_NAME_ENCODING: dict[str, int] = {
     "sfp_port_0": 0, "sfp_port_1": 1, "sc_port_base": 2,
 }
-NUM_TASKS = 12  # must match FlowMatchingPolicy / TaskEncoder
 
 
 # ---------------------------------------------------------------------------
@@ -202,12 +201,16 @@ class AICRLEnv(AICGymEnv):
 
     @staticmethod
     def _ros_image_to_tensor(msg: ROSImage) -> torch.Tensor:
-        """Convert a ROS2 Image to a (C, H, W) float32 tensor in [0, 1]."""
+        """Convert a ROS2 Image to a (C, H, W) uint8 tensor.
+
+        Kept as uint8 so ImageStore can store it directly without a float round-trip.
+        ImageStore.get() performs the /255 conversion on demand.
+        """
         img = np.frombuffer(msg.data, dtype=np.uint8).reshape(msg.height, msg.width, -1)
         if msg.encoding in ("bgr8", "bgra8"):
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         img = cv2.resize(img, (IMG_W, IMG_H), interpolation=cv2.INTER_AREA)
-        return torch.from_numpy(img).permute(2, 0, 1).float().div(255.0)
+        return torch.from_numpy(img).permute(2, 0, 1)
 
     def get_images(self) -> dict[str, torch.Tensor] | None:
         """Return a dict of (C, H, W) image tensors, or None if cameras not ready."""
@@ -381,7 +384,8 @@ class QFunction(nn.Module):
 
         in_dim = obs_horizon * robot_state_dim + action_dim + task_dim
 
-        self.task_embedding = nn.Embedding(NUM_TASKS, task_dim)
+        self.task_embedding = nn.Embedding(TaskEncoder.NUM_TASKS, task_dim)
+        self.register_buffer("task_lookup", TaskEncoder._LOOKUP.clone())
 
         def _make_mlp() -> nn.Sequential:
             return nn.Sequential(
@@ -403,7 +407,7 @@ class QFunction(nn.Module):
         port_name:     torch.Tensor,   # (B,) int64
         action:        torch.Tensor,   # (B, action_dim)
     ) -> tuple[torch.Tensor, torch.Tensor]:   # (B,), (B,)
-        task_idx = target_module.clamp(0, NUM_TASKS - 1)
+        task_idx = self.task_lookup[target_module, port_name]  # same logic as TaskEncoder.forward()
         t = self.task_embedding(task_idx)                      # (B, task_dim)
         x = torch.cat([robot_state.flatten(1), action, t], dim=-1)
         return self.q1(x).squeeze(-1), self.q2(x).squeeze(-1)
@@ -431,15 +435,15 @@ class ImageStore:
         self._write_idx = 0
 
     def push(self, frame: dict[str, torch.Tensor]) -> int:
-        """Store one frame dict and return its index."""
+        """Store one uint8 frame dict and return its index."""
         idx = self._write_idx
         self._frames[idx] = {k: v.clone() for k, v in frame.items()}
         self._write_idx = (self._write_idx + 1) % self._capacity
         return idx
 
     def get(self, idx: int) -> dict[str, torch.Tensor]:
-        """Retrieve a previously stored frame by index."""
-        return self._frames[idx]
+        """Retrieve a frame as float32 in [0, 1]."""
+        return {k: v.float() / 255.0 for k, v in self._frames[idx].items()}
 
 
 # ---------------------------------------------------------------------------
@@ -473,18 +477,20 @@ class ReplayBuffer:
 
     def push(
         self,
-        obs:      dict,
-        action:   np.ndarray,   # (action_dim,)
-        reward:   float,
-        next_obs: dict,
-        done:     bool,
+        obs:        dict,
+        action:     np.ndarray,   # (action_dim,)
+        reward:     float,
+        next_obs:   dict,
+        terminated: bool,         # true terminal (insertion/force failure) — no bootstrap
+        truncated:  bool,         # time-limit cutoff — bootstrap should continue
     ) -> None:
         self._buf.append({
-            "obs":      obs,
-            "action":   action.astype(np.float32),
-            "reward":   float(reward),
-            "next_obs": next_obs,
-            "done":     bool(done),
+            "obs":        obs,
+            "action":     action.astype(np.float32),
+            "reward":     float(reward),
+            "next_obs":   next_obs,
+            "terminated": bool(terminated),
+            "truncated":  bool(truncated),
         })
 
     def sample(self, batch_size: int) -> dict:
@@ -516,8 +522,9 @@ class ReplayBuffer:
         rewards = torch.tensor(
             [it["reward"] for it in items], dtype=torch.float32
         )
+        # Only true terminations zero out the bootstrap; truncated episodes continue.
         dones = torch.tensor(
-            [it["done"] for it in items], dtype=torch.float32
+            [it["terminated"] for it in items], dtype=torch.float32
         )
         next_images = {
             k: torch.stack([_stack(it["next_obs"]["image_indices"])[k] for it in items])
@@ -560,6 +567,7 @@ def update_critic(
     gamma:                float = 0.99,
     tau:                  float = 0.005,
     target_num_flow_steps: int  = 5,
+    pred_horizon:          int  = 8,
 ) -> float:
     """TD critic update with target networks.
 
@@ -587,17 +595,21 @@ def update_critic(
             robot_state=next_robot_state,
             target_module=target_module,
             port_name=port_name,
-            pred_horizon=1,
+            pred_horizon=pred_horizon,
             num_steps=target_num_flow_steps,
             guidance_scale=1.0,
             solver="euler",
-        )                                                # (B, 1, action_dim)
-        a_next = next_actions_raw[:, 0, :]              # (B, action_dim)
+        )                                                # (B, pred_horizon, action_dim)
+        a_next = next_actions_raw[:, 0, :]              # (B, action_dim) — first step of sequence
+        # Target policy smoothing (TD3): small noise prevents the critic from
+        # overcommitting to narrow Q peaks around the next action.
+        a_next = a_next + 0.1 * torch.randn_like(a_next)
 
         # --- TD target using frozen target critics ---
         q1_tgt, q2_tgt = target_q_func(next_robot_state, target_module, port_name, a_next)
-        next_v    = torch.min(q1_tgt, q2_tgt)           # (B,)
-        td_target = rewards + gamma * (1.0 - dones) * next_v   # (B,)
+        next_v    = torch.min(q1_tgt, q2_tgt)                        # (B,)
+        td_target = rewards + gamma * (1.0 - dones) * next_v         # (B,)
+        td_target = td_target.clamp(-300.0, 300.0)                   # prevent bootstrap divergence
 
     # --- Online critic loss ---
     q1, q2 = q_func(robot_state, target_module, port_name, actions)
@@ -735,8 +747,8 @@ def encode_task(task_info: dict) -> tuple[int, int]:
         task_info.get("port_name", ""), -1
     )
 
-    print("LXH Debug:", task_info)
-    print("LXH Debug:", tm, pn)
+    #print("LXH Debug:", task_info)
+    #print("LXH Debug:", tm, pn)
     return max(tm, 0), max(pn, 0)  # clamp to 0 so embedding doesn't crash
 
 
@@ -750,7 +762,11 @@ def main() -> None:
     # Policy
     parser.add_argument("--checkpoint",    type=str, default="",
                         help="Path to a pretrained FlowMatchingPolicy checkpoint (.pt). "
-                             "Leave empty to train from scratch.")
+                             "Leave empty to train from scratch.  Ignored if --resume is set.")
+    parser.add_argument("--resume",        type=str, default="",
+                        help="Path to a previous RL training checkpoint to resume from. "
+                             "Restores policy, Q-function, both optimizers, and the step/update "
+                             "counters so training continues seamlessly.  Overrides --checkpoint.")
     parser.add_argument("--action_dim",    type=int, default=9,
                         help="Action dimension: 7 for pos+quat, 9 for pos+rot6d.")
     parser.add_argument("--obs_horizon",   type=int, default=2)
@@ -771,8 +787,8 @@ def main() -> None:
     parser.add_argument("--target_num_flow_steps", type=int, default=3,
                         help="ODE steps used when sampling a' for the TD target "
                              "(fewer = faster, 3 Euler steps is usually sufficient).")
-    parser.add_argument("--q_alpha",         type=float, default=0.05,
-                        help="Q-gradient scale in actor loss.")
+    parser.add_argument("--q_alpha",         type=float, default=5.0,
+                        help="Q-gradient scale in actor loss. See original paper Figure 2. for more details")
     parser.add_argument("--actor_lr",        type=float, default=1e-5)
     parser.add_argument("--critic_lr",       type=float, default=1e-4)
     parser.add_argument("--batch_size",      type=int,   default=32)
@@ -814,7 +830,7 @@ def main() -> None:
         cfg_dropout_prob=0.0,          # no CFG dropout during RL fine-tuning
     ).to(device)
 
-    if args.checkpoint:
+    if args.checkpoint and not args.resume:
         ckpt = torch.load(args.checkpoint, map_location=device)
         state = ckpt.get("model_state", ckpt)
         policy.load_state_dict(state, strict=False)
@@ -836,6 +852,7 @@ def main() -> None:
         robot_state_dim=ROBOT_STATE_DIM,
     ).to(device)
     target_q_func.load_state_dict(q_func.state_dict())
+    target_q_func.eval()
     for p in target_q_func.parameters():
         p.requires_grad_(False)
 
@@ -870,6 +887,23 @@ def main() -> None:
     total_steps = 0
     update_count = 0
 
+    # ---- Resume from RL checkpoint ----
+    if args.resume:
+        rl_ckpt = torch.load(args.resume, map_location=device)
+        policy.load_state_dict(rl_ckpt["policy_state"])
+        q_func.load_state_dict(rl_ckpt["q_func_state"])
+        target_q_func.load_state_dict(rl_ckpt["q_func_state"])
+        actor_opt.load_state_dict(rl_ckpt["actor_opt"])
+        critic_opt.load_state_dict(rl_ckpt["critic_opt"])
+        total_steps  = rl_ckpt.get("step", 0)
+        update_count = rl_ckpt.get("update_count", 0)
+        print(
+            f"[QSM] Resumed from RL checkpoint: {args.resume}  "
+            f"step={total_steps}  update_count={update_count}"
+        )
+
+    last_log_time = time.monotonic()
+
     # ---- Initial reset ----
     flat_obs, info = env.reset()
     task_info    = info.get("task", {})
@@ -896,7 +930,7 @@ def main() -> None:
     print(f"[QSM] Starting training.  start_training={args.start_training}  "
           f"max_steps={args.max_steps}")
 
-    for step in range(1, args.max_steps + 1):
+    for _ in range(args.max_steps - total_steps):
         # ----------------------------------------------------------------
         # Query policy when action queue is empty
         # ----------------------------------------------------------------
@@ -988,7 +1022,8 @@ def main() -> None:
             action=action_9d,
             reward=reward,
             next_obs=next_obs_snap,
-            done=done,
+            terminated=terminated,
+            truncated=truncated,
         )
 
         # ----------------------------------------------------------------
@@ -1036,6 +1071,7 @@ def main() -> None:
                     gamma=args.gamma,
                     tau=args.tau,
                     target_num_flow_steps=args.target_num_flow_steps,
+                    pred_horizon=args.pred_horizon,
                 )
                 critic_losses.append(c_loss)
                 update_count += 1
@@ -1052,6 +1088,11 @@ def main() -> None:
         # Logging
         # ----------------------------------------------------------------
         if total_steps % args.log_every == 0:
+            now = time.monotonic()
+            elapsed = now - last_log_time
+            last_log_time = now
+            steps_per_sec = args.log_every / elapsed if elapsed > 0 else float("nan")
+
             c_avg = np.mean(critic_losses[-50:]) if critic_losses else float("nan")
             a_avg = np.mean(actor_losses[-50:])  if actor_losses  else float("nan")
             r_avg = np.mean(episode_rewards[-10:]) if episode_rewards else float("nan")
@@ -1063,7 +1104,8 @@ def main() -> None:
                 f"actor_loss={a_avg:.4f}  "
                 f"ep_return(10)={r_avg:.3f}  "
                 f"step_reward(100)={r_step_avg:.4f}  "
-                f"buffer={len(replay_buffer)}"
+                f"buffer={len(replay_buffer)}  "
+                f"elapsed={elapsed:.1f}s  steps/s={steps_per_sec:.2f}"
             )
 
         # ----------------------------------------------------------------
@@ -1074,6 +1116,7 @@ def main() -> None:
             torch.save(
                 {
                     "step":         total_steps,
+                    "update_count": update_count,
                     "args":         vars(args),
                     "policy_state": policy.state_dict(),
                     "q_func_state": q_func.state_dict(),

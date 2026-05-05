@@ -16,7 +16,9 @@
 
 from .aic_robot_aic_controller import AICRobotAICController, AICRobotAICControllerConfig
 from .aic_teleop import (
-    AICCheatCodeTeleop,                                                                                         AICCheatCodeTeleopConfig, 
+    AICCheatCodeTeleop,
+    AICCheatCodeApproachOnlyTeleop,
+    AICCheatCodeTeleopConfig, 
     AICKeyboardEETeleop,
     AICKeyboardEETeleopConfig,
     AICKeyboardJointTeleop,

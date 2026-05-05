@@ -56,7 +56,7 @@ from sensor_msgs.msg import JointState
 from std_msgs.msg import String
 
 from .aic_robot import aic_cameras, arm_joint_names
-from .aic_teleop import AICCheatCodeTeleopConfig, reset_in_progress
+from .aic_teleop import AICCheatCodeTeleopConfig, approach_state, reset_in_progress
 from .types import JointMotionUpdateActionDict, MotionUpdateActionDict
 
 logger = logging.getLogger(__name__)
@@ -125,6 +125,10 @@ ObservationState = TypedDict(
         "fts_tare_offset.torque.z": float,
         "max_force_magnitude": float,
         "insertion_event": float,
+        "teleop.approach_done": float,  # 1.0 when AICCheatCodeApproachOnlyTeleop reaches DONE
+        "teleop.approach_dist_x": float,
+        "teleop.approach_dist_y": float,
+        "teleop.approach_dist_z": float,
         "task.target_module": float,  # see TASK_TARGET_MODULE_ENCODING
         "task.port_name": float,      # see TASK_PORT_NAME_ENCODING
         "episode_number": float,
@@ -277,12 +281,13 @@ class AICRobotAICController(Robot):
         }
         self.episode_number: int = 0
 
-        # Auto-reset on insertion event or episode timeout
+        # Auto-reset on insertion event, approach done, or episode timeout
         self._auto_reset_enabled: bool = False
         self._auto_reset_pending: bool = False
         self._last_reset_time: float = 0.0
         self._watchdog_stop: Event = Event()
         self._watchdog_thread: Thread | None = None
+        self._last_approach_done: bool = False
 
         if config.teleop_frame_id not in ["gripper/tcp", "base_link"]:
             raise ValueError(
@@ -492,6 +497,10 @@ class AICRobotAICController(Robot):
             "fts_tare_offset.torque.z": self.fts_tare_offset.wrench.torque.z,
             "max_force_magnitude": self.max_force_magnitude,
             "insertion_event": self.last_insertion_event,
+            "teleop.approach_done": float(approach_state.done),
+            "teleop.approach_dist_x": approach_state.dist_x,
+            "teleop.approach_dist_y": approach_state.dist_y,
+            "teleop.approach_dist_z": approach_state.dist_z,
             "episode_number": float(self.episode_number),
             "task.target_module": float(
                 TASK_TARGET_MODULE_ENCODING.get(
@@ -532,6 +541,15 @@ class AICRobotAICController(Robot):
             for future in as_completed(futures):
                 key, frame = future.result()
                 cam_obs[key] = frame
+
+        # Rising edge: approach_state.done just became True → trigger reset
+        approach_done_now = approach_state.done
+        if approach_done_now and not self._last_approach_done:
+            logger.info("Approach phase done detected in get_observation — triggering reset.")
+            if not self._auto_reset_pending:
+                self._auto_reset_pending = True
+                Thread(target=self._auto_reset_after_delay, daemon=True).start()
+        self._last_approach_done = approach_done_now
 
         obs = {**cam_obs, **controller_state_obs}
         return obs

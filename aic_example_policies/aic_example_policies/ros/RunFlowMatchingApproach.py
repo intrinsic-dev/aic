@@ -53,7 +53,7 @@ TASK_PORT_NAME_ENCODING: dict[str, int] = {
 }
 
 CHECKPOINT_PATH = Path(
-    "/home/lhphanto/ws_aic/src/aic/outputs/05_04_cfg_fm_6d/checkpoint_epoch0025.pt"
+    "/home/lhphanto/ws_aic/src/aic/outputs/04_27_cfg_fm_6d/checkpoint_epoch0020.pt"
 )
 
 # Image size expected by the policy (must match training dataset resolution)
@@ -63,7 +63,7 @@ IMG_W = 288
 # Flow matching sampling hyperparameters
 NUM_FLOW_STEPS = 10   # midpoint solver needs far fewer steps than DDPM
 FLOW_SOLVER     = "euler"   # "euler" or "midpoint"
-GUIDANCE_SCALE  = 5.0          # > 1.0 enables CFG (requires cfg_dropout_prob > 0 at training)
+GUIDANCE_SCALE  = 1.0          # > 1.0 enables CFG (requires cfg_dropout_prob > 0 at training)
 
 # Observation / prediction horizon (must match training)
 OBS_HORIZON      = 2
@@ -144,9 +144,9 @@ def _action9_to_pose7(action9: np.ndarray) -> np.ndarray:
 class RunFlowMatching(Policy):
     """Flow Matching policy inference node for the AIC cable-insertion task.
 
-    Supports action_dim=9 (pos+rot6d) or action_dim=10 (pos+rot6d+dist_to_target).
-    When action_dim=10, dim[9] is the predicted distance-to-target and is logged
-    but not sent to the robot.
+    Loads a trained FlowMatchingPolicy checkpoint (action_dim=9, 6D rotation)
+    and runs ODE integration at each inference step to generate a sequence of
+    tcp_pose targets.
 
     The action representation uses the 6D continuous rotation (Zhou et al. 2019)
     internally; actions are converted back to quaternions before being sent to
@@ -175,7 +175,7 @@ class RunFlowMatching(Policy):
 
         policy = FlowMatchingPolicy(
             obs_horizon=args.get("obs_horizon", OBS_HORIZON),
-            action_dim=args.get("action_dim", 9),  # 9 = pos+rot6d, 10 = +dist_to_target
+            action_dim=args.get("action_dim", 9),
             robot_state_dim=ROBOT_STATE_DIM,
             n_heads=args.get("n_heads", 8),
             n_layers=args.get("n_layers", 4),
@@ -298,22 +298,10 @@ class RunFlowMatching(Policy):
             f"{elapsed_ms / NUM_FLOW_STEPS:.2f} ms/step)"
         )
 
-        actions_np = actions[0].cpu().numpy()  # (pred_horizon, action_dim)
-        action_dim = actions_np.shape[-1]
+        actions_np = actions[0].cpu().numpy()  # (pred_horizon, 9)
 
-        # If model predicts dist_to_target as dim 10, log it
-        if action_dim >= 10:
-            dist_steps = actions_np[:, 9]  # (pred_horizon,)
-            self.get_logger().info(
-                f"RunFlowMatching: dist_to_target  "
-                f"mean={dist_steps.mean():.4f}  "
-                f"min={dist_steps.min():.4f}  "
-                f"max={dist_steps.max():.4f}  "
-                f"steps={dist_steps.tolist()}"
-            )
-
-        # Convert rot6d → quaternion for each action step (first 9 dims only)
-        pose_actions = [_action9_to_pose7(actions_np[i, :9]) for i in range(PRED_HORIZON)]
+        # Convert rot6d → quaternion for each action step
+        pose_actions = [_action9_to_pose7(actions_np[i]) for i in range(PRED_HORIZON)]
         return pose_actions
 
     # ------------------------------------------------------------------
