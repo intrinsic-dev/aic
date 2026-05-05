@@ -32,13 +32,8 @@ namespace aic_gazebo
 {
   /// \brief State of the cable
   enum class CableState {
-    /// \brief Harnessed to the world, i.e. made static
-    /// before creating connections
+    /// \brief Being initialized
     INITIALIZATION,
-
-    /// \brief Harnessed to the world, i.e. made static
-    /// before creating connections
-    HARNESS,
 
     /// \brief Waiting for end effector to approach connection 0
     WAITING_CONN_0,
@@ -89,12 +84,14 @@ namespace aic_gazebo
     gz::sim::Entity modelEntity{gz::sim::kNullEntity};
     /// \brief Whether the cable has been found in simulation
     bool found{false};
-    /// \brief Simulation time when the cable was found
-    std::chrono::steady_clock::duration foundTime{0};
-    /// \brief Whether the cable has been frozen
-    bool frozen{false};
-    /// \brief Entities of the static joints used to freeze this cable
-    std::vector<gz::sim::Entity> frozenJoints;
+    /// \brief Detachable joint entity for making cable connection 0 static
+    gz::sim::Entity detachableJointStatic0Entity{gz::sim::kNullEntity};
+    /// \brief Detachable joint entity for making cable connection 1 static
+    gz::sim::Entity detachableJointStatic1Entity{gz::sim::kNullEntity};
+    /// \brief Connection 0 link entity in the cable model
+    gz::sim::Entity connection0LinkEntity{gz::sim::kNullEntity};
+    /// \brief Connection 1 link entity in the cable model
+    gz::sim::Entity connection1LinkEntity{gz::sim::kNullEntity};
   };
 
   /// \brief Plugin for initializing the cable
@@ -171,7 +168,7 @@ namespace aic_gazebo
     /// \brief Freezes all links in the given cable in place by making them static
     /// \param[in] _cableIndex The index of the cable to freeze
     /// \param[in] _ecm Entity Component Manager
-    private: void MakeCableStatic(size_t _cableIndex,
+    private: void MakeCableStatic(int _cableIndex,
         gz::sim::EntityComponentManager& _ecm);
 
     /// \brief Unfreezes all links in the given cable by removing static joints
@@ -187,10 +184,8 @@ namespace aic_gazebo
         gz::sim::EntityComponentManager& _ecm);
 
     /// \brief Find Cable model entities based on their names
-    /// \param[in] _info Simulation update info
     /// \param[in] _ecm Entity Component Manager
-    private: bool FindCableModels(const gz::sim::UpdateInfo &_info,
-        const gz::sim::EntityComponentManager& _ecm);
+    private: bool FindCableModels(const gz::sim::EntityComponentManager& _ecm);
 
     /// \brief Initialize port contact subscribers for the given port
     /// \param[in] _portName The name of the port to subscribe to for contacts
@@ -199,20 +194,8 @@ namespace aic_gazebo
     /// \brief Entity of attachment link in the end effector model
     private: gz::sim::Entity endEffectorLinkEntity{gz::sim::kNullEntity};
 
-    /// \brief Connection 0 link entity in the cable model
-    private: gz::sim::Entity cableConnection0LinkEntity{gz::sim::kNullEntity};
-
-    /// \brief Connection 1 link entity in the cable model
-    private: gz::sim::Entity cableConnection1LinkEntity{gz::sim::kNullEntity};
-
     /// \brief Entity of the detachable joint found while waiting for grasp
     private: gz::sim::Entity activeGraspJoint{gz::sim::kNullEntity};
-
-    /// \brief Detachable joint entity for making cable connection 0 static
-    private: gz::sim::Entity detachableJointStatic0Entity{gz::sim::kNullEntity};
-
-    /// \brief Detachable joint entity for making cable connection 1 static
-    private: gz::sim::Entity detachableJointStatic1Entity{gz::sim::kNullEntity};
 
     /// \brief A list of cable configurations
     private: std::vector<CableConfig> cableConfigs;
@@ -220,8 +203,8 @@ namespace aic_gazebo
     /// \brief The current active cable model.
     private: gz::sim::Model cableModel;
 
-    /// \brief Index of the active cable model to be activated.
-    private: std::size_t nextCableIndex{0u};
+    /// \brief Index of the active cable model.
+    private: int cableIndex{-1};
 
     /// \brief State trackers for the cable models
     private: std::vector<CableTracker> cableTrackers;
