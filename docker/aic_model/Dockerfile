@@ -18,15 +18,15 @@ SHELL ["/bin/bash", "-c"]
 RUN --mount=type=cache,target=/root/.cache/rattler/cache --mount=type=cache,target=/ws_aic/src/aic/.pixi/build \
     cd /ws_aic/src/aic && pixi install --locked
 
-# Pre-download model artifacts. The competition network has internal=true,
-# so HuggingFace and torch.hub are unreachable at runtime.
-RUN cd /ws_aic/src/aic && pixi run --as-is python -c "\
-import os; os.environ['HF_HUB_ENABLE_HF_TRANSFER']='1';\
-from huggingface_hub import snapshot_download;\
-snapshot_download(repo_id='grkw/aic_act_policy', allow_patterns=['config.json', 'model.safetensors', '*.safetensors']);\
-import torchvision.models as m;\
-m.resnet18(weights=m.ResNet18_Weights.IMAGENET1K_V1);\
-print('model artifacts baked')"
+# Bake the locally-trained ACT checkpoint into the image at /opt/policy.
+# The competition network has internal=true so HuggingFace is unreachable at
+# runtime; the model must already be on disk inside the container.
+# (This requires ../outputs symlinking to the aic-train worktree; see
+# `ln -sfn /home/saivemu/code/aic-train/outputs ./outputs` in the repo root.)
+COPY outputs/train/act_aic_v1/checkpoints/last/pretrained_model /opt/policy
+
+# resnet18 backbone weights are also unreachable at runtime, so cache them.
+RUN cd /ws_aic/src/aic && pixi run --as-is python -c "import torchvision.models as m; m.resnet18(weights=m.ResNet18_Weights.IMAGENET1K_V1); print('resnet18 backbone cached')"
 
 WORKDIR /ws_aic/src/aic
 COPY --chmod=755 <<"EOF" /entrypoint.sh

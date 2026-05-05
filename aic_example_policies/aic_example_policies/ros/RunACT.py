@@ -53,7 +53,9 @@ from huggingface_hub import snapshot_download
 
 class RunACT(Policy):
     # Scale velocity-action before integrating into a position target.
-    ACTION_SCALE = 6.0
+    # 1.0 for our locally-trained model (actions are in real m/s and rad/s).
+    # The 6.0 hack was for the OOD published grkw/aic_act_policy.
+    ACTION_SCALE = 1.0
 
     # When True, integrate the velocity action into a position target and publish
     # via MODE_POSITION (set_pose_target). When False, publish raw scaled velocity.
@@ -70,18 +72,18 @@ class RunACT(Policy):
     # Don't let target z drift more than this far below the TCP's initial z.
     WORKSPACE_Z_BELOW_START = 0.30
 
-    # Force-aware backoff: if |wrist force| exceeds threshold for trigger duration,
-    # override the policy with an upward velocity for recovery_ticks. Resets the
-    # integration anchor at backoff end. Total backoff time per trial capped.
-    # NOTE: 10 N is BELOW the gripper+cable static-load baseline (~20 N), so this
-    # backoff fires nearly every tick once contact happens. Acts as a brake on
-    # the otherwise direction-stuck published model — surprisingly helpful in
-    # compose vs. the calibrated version (see experimental/runact-architectural-fix).
-    BACKOFF_FORCE_THRESHOLD_N = 10.0
+    # Force-aware backoff: threshold is calibrated at trial start as
+    # (baseline_force + BACKOFF_FORCE_DELTA_N). The wrist FT sensor reads ~20 N
+    # at trial start due to gripper + cable + plug static weight (the controller's
+    # gravity_compensation covers the robot but not the payload). An absolute
+    # threshold false-fires on tick 0; calibrating to baseline+delta only
+    # triggers on actual contact above static load.
+    BACKOFF_FORCE_DELTA_N = 15.0
     BACKOFF_TRIGGER_DURATION_S = 0.1
     BACKOFF_RECOVERY_TICKS = 5
     BACKOFF_TOTAL_BUDGET_S = 2.0
     BACKOFF_RECOVERY_VZ = 0.10  # m/s upward in base frame
+    FORCE_BASELINE_SAMPLES = 6  # 6 ticks * 0.05 s = 0.3 s of baseline averaging
 
     def __init__(self, parent_node: Node):
         super().__init__(parent_node)
@@ -90,15 +92,14 @@ class RunACT(Policy):
         # -------------------------------------------------------------------------
         # 1. Configuration & Weights Loading
         # -------------------------------------------------------------------------
-        repo_id = "grkw/aic_act_policy"
-
-        # Path to your checkpoint folder
-        policy_path = Path(
-            snapshot_download(
-                repo_id=repo_id,
-                allow_patterns=["config.json", "model.safetensors", "*.safetensors"],
+        # Local checkpoint trained on saivemu/aic_act_v1 (100 CheatCode rollouts).
+        # Baked into the docker image via Dockerfile COPY at /opt/policy.
+        # Falls back to a workspace-relative path for non-docker testing.
+        policy_path = Path("/opt/policy")
+        if not policy_path.exists():
+            policy_path = Path(
+                "/home/saivemu/code/aic-train/outputs/train/act_aic_v1/checkpoints/last/pretrained_model"
             )
-        )
 
         # Load Config Manually (Fixes 'Draccus' error by removing unknown 'type' field)
         with open(policy_path / "config.json", "r") as f:
@@ -306,6 +307,28 @@ class RunACT(Policy):
         start_z = last_target_pose.position.z
         z_floor = start_z - self.WORKSPACE_Z_BELOW_START
 
+        # Calibrate backoff force threshold to (baseline + delta). The wrist FT
+        # sensor reads ~20 N at trial start due to gripper + cable + plug static
+        # weight; an absolute threshold below that false-fires every tick.
+        baseline_samples = []
+        for _ in range(self.FORCE_BASELINE_SAMPLES):
+            obs = get_observation()
+            if obs is not None:
+                w = obs.wrist_wrench.wrench
+                fmag = float(
+                    np.sqrt(
+                        w.force.x * w.force.x
+                        + w.force.y * w.force.y
+                        + w.force.z * w.force.z
+                    )
+                )
+                baseline_samples.append(fmag)
+            self.sleep_for(self.LOOP_DT)
+        baseline_force = (
+            float(np.mean(baseline_samples)) if baseline_samples else 0.0
+        )
+        backoff_threshold_n = baseline_force + self.BACKOFF_FORCE_DELTA_N
+
         # Backoff state.
         force_above_since = None  # Time.now value or None
         backoff_remaining_ticks = 0
@@ -315,7 +338,8 @@ class RunACT(Policy):
         self.get_logger().info(
             f"start_z={start_z:.4f} z_floor={z_floor:.4f} "
             f"loop_dt={self.LOOP_DT} action_scale={self.ACTION_SCALE} "
-            f"backoff_threshold={self.BACKOFF_FORCE_THRESHOLD_N:.1f}N"
+            f"baseline_force={baseline_force:.1f}N "
+            f"backoff_threshold={backoff_threshold_n:.1f}N"
         )
 
         trial_start = self.time_now()
@@ -373,7 +397,7 @@ class RunACT(Policy):
             else:
                 # Default: use the policy action. Override below if backoff fires.
                 action_used = action[:6].copy()
-                if force_mag > self.BACKOFF_FORCE_THRESHOLD_N:
+                if force_mag > backoff_threshold_n:
                     if force_above_since is None:
                         force_above_since = sim_now
                     else:
