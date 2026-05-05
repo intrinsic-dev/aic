@@ -223,17 +223,60 @@ class TaskEncoder(nn.Module):
 
 
 # ---------------------------------------------------------------------------
-# Transformer  (π0-style: full self-attention over concatenated tokens)
+# AdaLN-Zero  (DiT: Peebles & Xie 2023)
+# ---------------------------------------------------------------------------
+
+class AdaLNZero(nn.Module):
+    """Adaptive LayerNorm-Zero conditioning for one transformer layer.
+
+    A single conditioning vector c (timestep + task) is projected to
+    shift / scale / gate parameters for both the self-attention and FFN
+    sub-layers.  The output linear is zero-initialized so the model starts
+    as an identity mapping (training-stability trick from DiT).
+    """
+
+    def __init__(self, d_model: int, cond_dim: int | None = None):
+        super().__init__()
+        if cond_dim is None:
+            cond_dim = d_model
+        self.silu   = nn.SiLU()
+        self.linear = nn.Linear(cond_dim, 6 * d_model)
+        self.norm   = nn.LayerNorm(d_model, elementwise_affine=False)
+        nn.init.zeros_(self.linear.weight)
+        nn.init.zeros_(self.linear.bias)
+
+    def forward(self, x: torch.Tensor, c: torch.Tensor):
+        """
+        Args:
+            x: (B, L, d)    — token sequence
+            c: (B, cond_dim) — conditioning embedding (e.g. cat([timestep, task]))
+        Returns:
+            x_norm:   (B, L, d) — adaptively normalized x for self-attention
+            gate_sa:  (B, 1, d) — residual gate for self-attention
+            shift_ff: (B, 1, d) — shift for FFN pre-norm
+            scale_ff: (B, 1, d) — scale for FFN pre-norm
+            gate_ff:  (B, 1, d) — residual gate for FFN
+        """
+        p = self.linear(self.silu(c)).unsqueeze(1)            # (B, 1, 6*d)
+        shift_sa, scale_sa, gate_sa, shift_ff, scale_ff, gate_ff = p.chunk(6, dim=-1)
+        x_norm = self.norm(x) * (1 + scale_sa) + shift_sa
+        return x_norm, gate_sa, shift_ff, scale_ff, gate_ff
+
+
+# ---------------------------------------------------------------------------
+# Transformer  (π0-style prefix attention + AdaLN-Zero conditioning)
 # ---------------------------------------------------------------------------
 
 class TransformerLayer(nn.Module):
-    """Pre-norm transformer layer: full self-attention + FFN.
+    """Transformer layer with AdaLN-Zero conditioning.
 
-    Operates on the entire [prefix | action] sequence. No cross-attention —
-    conditioning tokens are part of the sequence and attended to directly.
+    Self-attention and FFN norms are both driven by a combined
+    (timestep + task) conditioning vector via AdaLN-Zero.
+    No cross-attention — image/state tokens are part of the sequence.
     """
 
-    def __init__(self, d_model: int, n_heads: int, ffn_dim: int, dropout: float = 0.0):
+    def __init__(self, d_model: int, n_heads: int, ffn_dim: int, dropout: float = 0.0,
+                 cond_dim: int | None = None):
         super().__init__()
         self.self_attn = nn.MultiheadAttention(d_model, n_heads, dropout=dropout, batch_first=True)
         self.ffn = nn.Sequential(
@@ -242,36 +285,44 @@ class TransformerLayer(nn.Module):
             nn.Dropout(dropout),
             nn.Linear(ffn_dim, d_model),
         )
-        self.norm1 = nn.LayerNorm(d_model)
-        self.norm2 = nn.LayerNorm(d_model)
+        self.adaLN = AdaLNZero(d_model, cond_dim=cond_dim)
         self.drop  = nn.Dropout(dropout)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        residual = x
-        x = self.norm1(x)
-        x, _ = self.self_attn(x, x, x)
-        x = residual + self.drop(x)
+    def forward(self, x: torch.Tensor, cond: torch.Tensor) -> torch.Tensor:
+        """
+        Args:
+            x:    (B, L, d) — full [prefix | action] token sequence
+            cond: (B, d)    — conditioning embedding (timestep + task)
+        """
+        x_norm, gate_sa, shift_ff, scale_ff, gate_ff = self.adaLN(x, cond)
 
-        residual = x
-        x = self.norm2(x)
-        x = self.ffn(x)
-        x = residual + self.drop(x)
+        # Self-attention with gated residual
+        attn_out, _ = self.self_attn(x_norm, x_norm, x_norm)
+        x = x + gate_sa * self.drop(attn_out)
+
+        # FFN with adaptive pre-norm and gated residual
+        x_ff = self.adaLN.norm(x) * (1 + scale_ff) + shift_ff
+        x = x + gate_ff * self.drop(self.ffn(x_ff))
         return x
 
 
 class VectorFieldTransformer(nn.Module):
     """π0-style transformer predicting the velocity field v_θ(x_t, t).
 
-    Conditioning tokens (image, state, task) are prepended as a prefix and
-    attended to jointly with action tokens via full bidirectional self-attention.
-    Only the action positions are read out and projected to the output.
+    Image and robot-state tokens are prepended as a prefix and attended to
+    jointly with action tokens via full bidirectional self-attention.
+
+    Timestep and task identity condition every layer via AdaLN-Zero: their
+    embeddings are summed into a single vector c that drives the adaptive
+    LayerNorm scale / shift / gate in each TransformerLayer.
 
     Sequence layout per forward call:
-        [ img_tokens   (B, T*cams*4, d) |
+        [ img_tokens   (B, T*cams*4, d) |   ← prefix (attend freely)
           state_tokens (B, T, d)        |
-          task_token   (B, 1, d)        |
-          timestep_emb (B, 1, d)        |
-          action_tokens (B, H, d)       ]   ← only these are projected to output
+          action_tokens (B, H, d)       ]   ← only these projected to output
+
+    Conditioning (AdaLN-Zero, not in the sequence):
+        c = cat([timestep_emb, task_token], dim=-1)  → shift / scale / gate per layer
     """
 
     def __init__(self, action_dim: int, d_model: int = TOKEN_DIM, n_heads: int = 8,
@@ -279,9 +330,9 @@ class VectorFieldTransformer(nn.Module):
         super().__init__()
         self.norm_img   = nn.LayerNorm(d_model)
         self.norm_state = nn.LayerNorm(d_model)
-        self.norm_task  = nn.LayerNorm(d_model)
         self.layers = nn.ModuleList([
-            TransformerLayer(d_model=d_model, n_heads=n_heads, ffn_dim=ffn_dim, dropout=dropout)
+            TransformerLayer(d_model=d_model, n_heads=n_heads, ffn_dim=ffn_dim, dropout=dropout,
+                             cond_dim=2 * d_model)
             for _ in range(n_layers)
         ])
         self.norm_out = nn.LayerNorm(d_model)
@@ -297,29 +348,30 @@ class VectorFieldTransformer(nn.Module):
         return emb.unsqueeze(0)                                       # (1, L, d)
 
     def forward(self, action_tokens, timestep_emb, img_tokens, state_tokens, task_token):
-        # Build prefix: all conditioning tokens including timestep
+        # AdaLN conditioning: concatenate timestep and task embeddings so each
+        # signal stays independent before the AdaLNZero linear mixes them
+        cond = torch.cat([timestep_emb, task_token.squeeze(1)], dim=-1)  # (B, 2*d_model)
+
+        # Prefix: image and state tokens only (task/timestep go through AdaLN)
         prefix = torch.cat([
             self.norm_img(img_tokens),
             self.norm_state(state_tokens),
-            self.norm_task(task_token),
-            timestep_emb.unsqueeze(1),                        # (B, 1, d_model)
         ], dim=1)                                              # (B, n_prefix, d_model)
         n_prefix = prefix.shape[1]
 
-        # Add sinusoidal positional encoding to action tokens so the transformer
-        # knows their temporal order within the prediction horizon
+        # Add sinusoidal positional encoding to action tokens
         L, d = action_tokens.shape[1], action_tokens.shape[2]
-        pos_emb = self._sinusoidal_pos_emb(L, d, action_tokens.device)  # (1, L, d)
+        pos_emb = self._sinusoidal_pos_emb(L, d, action_tokens.device)
         action_tokens = action_tokens + pos_emb
 
-        # Full sequence: prefix tokens + action tokens attend to everything jointly
-        x = torch.cat([prefix, action_tokens], dim=1)         # (B, n_prefix + pred_horizon, d_model)
+        # Full sequence: prefix + action tokens
+        x = torch.cat([prefix, action_tokens], dim=1)         # (B, n_prefix + H, d_model)
 
         for layer in self.layers:
-            x = layer(x)
+            x = layer(x, cond)
 
         # Read out only the action positions
-        x = x[:, n_prefix:]                                   # (B, pred_horizon, d_model)
+        x = x[:, n_prefix:]                                   # (B, H, d_model)
         return self.out_proj(self.norm_out(x))
 
 
