@@ -3,15 +3,14 @@
   <model name="Basler Camera">
     <link name="basler_cam_link">
       <visual name="basler_cam_visual">
-      <pose>0.0 0.0145 -0.02174 0.0 0.0 0.0</pose>
         <geometry>
           <mesh>
-            <uri>model://intrinsic/apps/aic/resources/basler_cam_visual.glb</uri>
+            <uri>basler_cam_visual.glb</uri>
           </mesh>
         </geometry>
       </visual>
       <collision name="135368670234ip01880201_collider_box">
-        <pose>-0.0 0.0001 -0.01919 3.141593 -0.0 0.0</pose>
+        <pose>-0.0 -0.0144 0.00255 3.141593 -0.0 0.0</pose>
         <geometry>
           <box>
             <size>0.029 0.029 0.0483</size>
@@ -19,7 +18,7 @@
         </geometry>
       </collision>
       <collision name="sphere_collider_cylinder">
-        <pose>0.0 -0.000007 0.02659 0.0 0.0 0.0</pose>
+        <pose>0.0 -0.014507 0.04833 0.0 0.0 0.0</pose>
         <geometry>
           <cylinder>
             <radius>0.015631</radius>
@@ -28,7 +27,7 @@
         </geometry>
       </collision>
       <collision name="59871rev000001_collider_box">
-        <pose>-0.008138 0.014048 0.030947 -1.587325 0.0 -2.633954</pose>
+        <pose>-0.008138 -0.000452 0.052687 -1.587325 0.0 -2.633954</pose>
         <geometry>
           <box>
             <size>0.003998 0.011586 0.006875</size>
@@ -37,27 +36,20 @@
       </collision>
     </link>
 
+    <!-- 1. Required sensor link with offset translation relative to mesh -->
     <link name="sensor_link">
-      <inertial>
-        <mass>0.001</mass>
-        <inertia>
-          <ixx>0.000001</ixx>
-          <ixy>0</ixy>
-          <ixz>0</ixz>
-          <iyy>0.000001</iyy>
-          <iyz>0</iyz>
-          <izz>0.000001</izz>
-        </inertia>
-      </inertial>
+      <!-- Position at lens tip, rotate YAW to align screen display to horizon -->
+      <pose>0.0 -0.014507 0.04833 0.0 0.0 0</pose> 
       <sensor name="camera_sensor" type="camera">
+        <!-- Standard coordinate look aligned directly out lens tip -->
         <pose>0 0 0 1.57079632679 -1.57079632679 0</pose>
         <update_rate>20.0</update_rate>
+        <horizontal_fov>0.8718</horizontal_fov> 
         <camera name="camera">
-        <horizontal_fov>0.8718</horizontal_fov>
           <image>
              <width>1152</width>
              <height>1024</height>
-             <format>R8G8B8</format>
+             <format>R8G8B8</format> 
           </image>
           <clip>
             <near>0.07</near>
@@ -75,6 +67,7 @@
       </sensor>
     </link>
 
+    <!-- 2. Attach sensor_link to the chassis link -->
     <joint name="camera_joint" type="fixed">
       <parent>basler_cam_link</parent>
       <child>sensor_link</child>
