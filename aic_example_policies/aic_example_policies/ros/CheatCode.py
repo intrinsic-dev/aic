@@ -85,8 +85,8 @@ class CheatCode(Policy):
             port_transform.rotation.z,
         )
         plug_tf_stamped = self._parent_node._tf_buffer.lookup_transform(
-            "base_link",
-            f"{self._task.cable_name}/{self._task.plug_name}_link",
+            "robot/robot/base_link",
+            f"aic_{self._task.plug_type}/aic_{self._task.plug_type}/{self._task.plug_name}_link",
             Time(),
         )
         q_plug = (
@@ -102,9 +102,10 @@ class CheatCode(Policy):
             q_plug[3],
         )
         q_diff = quaternion_multiply(q_port, q_plug_inv)
+
         gripper_tf_stamped = self._parent_node._tf_buffer.lookup_transform(
-            "base_link",
-            "gripper/tcp",
+            "robot/robot/base_link",
+            "robot/robot/arm_link_tip",
             Time(),
         )
         q_gripper = (
@@ -194,18 +195,18 @@ class CheatCode(Policy):
         self.get_logger().info(f"CheatCode.insert_cable() task: {task}")
         self._task = task
 
-        port_frame = f"task_board/{task.target_module_name}/{task.port_name}_link"
-        cable_tip_frame = f"{task.cable_name}/{task.plug_name}_link"
+        port_frame = f"aic_{task.target_module_name}/aic_{task.target_module_name}/{task.port_name}_link"
+        cable_tip_frame = f"aic_{task.plug_type}/aic_{task.plug_type}/{task.plug_name}_link"
 
         # Wait for both the port and cable tip TFs to become available.
         # These come via ground_truth and may not be immediate.
         for frame in [port_frame, cable_tip_frame]:
-            if not self._wait_for_tf("base_link", frame):
+            if not self._wait_for_tf("robot/robot/base_link", frame):
                 return False
 
         try:
             port_tf_stamped = self._parent_node._tf_buffer.lookup_transform(
-                "base_link",
+                "robot/robot/base_link",
                 port_frame,
                 Time(),
             )
@@ -213,7 +214,6 @@ class CheatCode(Policy):
             self.get_logger().error(f"Could not look up port transform: {ex}")
             return False
         port_transform = port_tf_stamped.transform
-
         z_offset = 0.2
 
         # Over five seconds, smoothly interpolate from the current position to
