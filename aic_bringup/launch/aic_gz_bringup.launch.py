@@ -84,7 +84,6 @@ def launch_setup(context, *args, **kwargs):
     task_board_pitch = LaunchConfiguration("task_board_pitch")
     task_board_yaw = LaunchConfiguration("task_board_yaw")
     cable_x = LaunchConfiguration("cable_x")
-    cable_x_2 = LaunchConfiguration("cable_x_2")
     cable_y = LaunchConfiguration("cable_y")
     cable_z = LaunchConfiguration("cable_z")
     cable_roll = LaunchConfiguration("cable_roll")
@@ -302,33 +301,7 @@ def launch_setup(context, *args, **kwargs):
         ),
         launch_arguments={
             "cable_description_file": cable_description_file,
-            "cable_name": "cable_0",
             "cable_x": cable_x,
-            "cable_y": cable_y,
-            "cable_z": cable_z,
-            "cable_roll": cable_roll,
-            "cable_pitch": cable_pitch,
-            "cable_yaw": cable_yaw,
-            "attach_cable_to_gripper": attach_cable_to_gripper,
-            "cable_type": cable_type,
-        }.items(),
-        condition=IfCondition(spawn_cable),
-    )
-
-    spawn_cable_launch_2 = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            PathJoinSubstitution(
-                [
-                    FindPackageShare("aic_bringup"),
-                    "launch",
-                    "spawn_cable.launch.py",
-                ]
-            )
-        ),
-        launch_arguments={
-            "cable_description_file": cable_description_file,
-            "cable_name": "cable_1",
-            "cable_x": cable_x_2,
             "cable_y": cable_y,
             "cable_z": cable_z,
             "cable_roll": cable_roll,
@@ -454,7 +427,6 @@ def launch_setup(context, *args, **kwargs):
         gz_spawn_entity,
         spawn_task_board_launch,
         spawn_cable_launch,
-        spawn_cable_launch_2,
         ground_truth_tf_relay,
         ground_truth_static_tf_publisher,
         aic_engine,
@@ -719,13 +691,6 @@ def generate_launch_description():
         DeclareLaunchArgument(
             "cable_x",
             default_value="0.172",
-            description="Cable spawn X position",
-        )
-    )
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            "cable_x_2",
-            default_value="0.372",
             description="Cable spawn X position",
         )
     )
