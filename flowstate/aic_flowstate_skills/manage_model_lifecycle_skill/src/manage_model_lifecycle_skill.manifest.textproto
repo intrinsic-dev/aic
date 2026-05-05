@@ -1,0 +1,28 @@
+id {
+  package: "ai.flowstate"
+  name: "manage_model_lifecycle_skill"
+}
+display_name: "Manage Model Lifecycle Skill"
+vendor {
+  display_name: "Intrinsic"
+}
+documentation {
+  description: "Skill that dispatches ChangeState requests to aic_model lifecycle node."
+}
+options {
+  supports_cancellation: false
+  cc_config {
+    create_skill: "::ManageModelLifecycleSkill::CreateSkill"
+  }
+}
+dependencies {
+}
+parameter {
+  message_full_name: "ai.flowstate.ManageModelLifecycleSkillParams"
+  default_value: {
+    type_url: "type.googleapis.com/ai.flowstate.ManageModelLifecycleSkillParams"
+  }
+}
+return_type {
+  message_full_name: "ai.flowstate.ManageModelLifecycleSkillResult"
+}

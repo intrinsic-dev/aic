@@ -18,5 +18,6 @@ find_package(rclcpp_action REQUIRED)
 
 
 add_subdirectory(insert_cable_skill)
+add_subdirectory(manage_model_lifecycle_skill)
 
 ament_package()
