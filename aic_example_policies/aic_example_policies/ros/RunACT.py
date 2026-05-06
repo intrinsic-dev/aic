@@ -15,9 +15,6 @@
 #
 
 import os
-
-os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "1"
-
 import time
 import json
 import torch
@@ -44,13 +41,12 @@ from aic_control_interfaces.msg import (
 )
 from geometry_msgs.msg import Wrench
 
-# LeRobot & Safetensors
+# LeRobot ACT — needed for both Plan B and (indirectly) Plan C dispatch.
+# Diffusion imports are deferred to load_policy_and_stats below to keep cold
+# import time low on the competition cluster (30s model-discovery budget).
 from lerobot.policies.act.modeling_act import ACTPolicy
 from lerobot.policies.act.configuration_act import ACTConfig
-from lerobot.policies.diffusion.modeling_diffusion import DiffusionPolicy
-from lerobot.policies.diffusion.configuration_diffusion import DiffusionConfig
 from safetensors.torch import load_file
-from huggingface_hub import snapshot_download
 
 
 class RunACT(Policy):
@@ -128,6 +124,9 @@ class RunACT(Policy):
             config = draccus.decode(ACTConfig, config_dict)
             self.policy = ACTPolicy(config)
         elif policy_type == "diffusion":
+            # Lazy-imported to keep cold startup fast for the common Plan B path.
+            from lerobot.policies.diffusion.modeling_diffusion import DiffusionPolicy
+            from lerobot.policies.diffusion.configuration_diffusion import DiffusionConfig
             config = draccus.decode(DiffusionConfig, config_dict)
             self.policy = DiffusionPolicy(config)
         else:
