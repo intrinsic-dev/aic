@@ -6,15 +6,19 @@
 |---|---|---|---|---|---|
 | **A** | ACT 50k step | 100 ep | 1.272 | 0.073 | **43.89** |
 | **B** | ACT 40k step (val-split) | 300 ep | 1.329 | 0.065 | **112.90** ✅ shipping |
-| **C** | Diffusion 40k step | 300 ep (same as B) | 3.44 ¹ | 0.239 ¹ | not run ² |
+| **C** | Diffusion 40k step | 300 ep (same as B) | 3.44 ¹ | 0.239 ¹ | **86.03** |
 
 ¹ *Plan C val MAE is methodologically biased — see Phase 5 caveat. The ACT vs Diffusion val comparison is not apples-to-apples in this eval.*
 
-² *Plan C compose eval requires ~1hr of RunACT.py adapter work (ACT-hardcoded today). Deferred to user.*
+**Final ranking: B > C > A.** Plan B wins (112.90); Plan C beats A by 1.96× but loses to B by 23%. The difference between B and C is **trial 3 alone**: Plan B navigates the OOD geometry to 0.07 m (35.69 score); Plan C fails to drive the cable to within the bounding radius and scores 1.00 (tier_1 only). Trials 1 and 2 are essentially tied between B and C (~within 5%).
 
-**Shipped: Plan B step-40k. Compose 112.90 = 2.57× over Plan A.** The win was robustness on OOD geometry (no collision in trial 3), not navigation quality (path length 0.00m on all trials, no full insertion). Plan A vs B val-MAE was a wash; the 3× data didn't improve average prediction quality but reduced outlier failures.
+**Lessons:**
 
-**Plan C trained successfully but was not compose-evaluated.** Decision on whether to invest the deploy-adapter time deferred to user.
+1. **Architecture diversity didn't help here.** Diffusion's multi-modal action distribution didn't break the path-length-0.00m pathology that capped Plans A and B — Plan C also had path length 0.00 m on trials 1 and 2. The "regression to small actions" hypothesis was the right diagnosis, but Diffusion didn't fix it on this dataset.
+2. **Plan C's val-MAE bias was real but didn't invert the ranking.** Val MAE said C was 2.6× worse than B; compose said C is 23% worse. The duplicate-obs hack hurt Plan C in val MAE but the gap in actual task performance is much smaller.
+3. **The trial 3 OOD geometry remains the discriminator.** It collides Plan A (–35), navigates cleanly with Plan B (+35.69), and is missed entirely by Plan C (1.00). The 3× data + ACT formulation seems to have learned the right inductive bias for this scene; diffusion did not, despite seeing the same training data.
+
+**Shipped: Plan B step-40k.** Plan C is preserved on disk and on the new branch but not deployed.
 
 ---
 
@@ -193,43 +197,68 @@ This works cleanly for ACT (n_obs_steps=1, stateless predict_action_chunk). For 
 1. Sequential per-episode eval (use real obs[t-1] from the episode trajectory)
 2. Compose eval (the actual ground-truth metric)
 
-### Plan C deployment status — DEFERRED
+---
 
-`RunACT.py` is hardcoded to ACT (imports `ACTPolicy`, `ACTConfig` directly; manual MEAN_STD normalization). Deploying Plan C requires:
+## Phase 6 — Plan C compose eval (✅ complete)
 
-1. Policy-type dispatch on config.json's `type` field (~10 LoC, easy)
-2. MIN_MAX normalization for state and action paths (instead of MEAN_STD) (~20 LoC, easy)
-3. **n_obs_steps=2 obs queue maintenance**: store the previous tick's obs and stack it with the current one before each call (~30 LoC, moderate — needs careful handling of the very-first tick when no previous obs exists)
-4. **n_action_steps=8 chunk replay**: ACT calls inference every tick (n_action_steps=1); diffusion expects to run inference every 8 ticks and replay the cached chunk in between. The control loop's "last_target_pose" anchor + 2cm offset clamp logic needs to be threaded through this (~50 LoC, moderate)
-5. **100-step DDPM denoising per inference** is slower than ACT's single forward (estimate ~200ms vs ~10ms). Not a blocker at 20Hz control with n_action_steps=8 (one inference per 400ms), but verify before submitting.
+**Plan C compose total: 86.03.** Beats Plan A (43.89) by 1.96×; loses to Plan B (112.90) by 23%.
 
-**Total: ~110 LoC + testing, ~1hr engineering.**
+| Trial | Plan A | Plan B | Plan C | Diff (C vs B) |
+|---|---|---|---|---|
+| 1 | 42.58 | 33.67 | **41.32** | C +23% |
+| 2 | 36.30 | 43.54 | **43.71** | C +0.4% |
+| 3 | -35.00 (collision) | 35.69 (clean) | **1.00** | C –97% |
+| **Total** | **43.89** | **112.90** | **86.03** | **C –23.8%** |
 
-### Cost-benefit on Plan C deployment
+### Per-trial details for Plan C
 
-- **Cost**: 1 hr deploy adapter + ~5 min build + ~5 min compose eval
-- **Best case**: Plan C compose score > 112.90 (Plan B) → diffusion's multi-modal output actually drives the gripper, breaks the 0.00 m path-length pathology, achieves real insertion (+75 tier_3 bonus per trial)
-- **Worst case**: Plan C compose score similar to Plan A's 43.89 or worse → diffusion's predictions in deploy don't outperform ACT, val-MAE was honest
+- **Trial 1**: tier_1=1, tier_2=17.70, tier_3=22.62. Cable ended 0.05 m from port. Path length 0.00 m. No contacts.
+- **Trial 2**: tier_1=1, tier_2=17.71, tier_3=25.00. Cable ended 0.04 m from port. Path length 0.00 m. No contacts.
+- **Trial 3**: tier_1=1, tier_2=**0**, tier_3=**0**. Cable ended **0.19 m** from port — *outside the bounding radius*, so no tier_2 or tier_3 credit awarded ("Plug is not within max bounding radius from target port").
 
-### Recommendation
+The headline finding: **Plan C beats Plan B on trials 1+2 (slightly) and is dramatically worse on trial 3 OOD geometry.**
 
-**Three options for the user:**
+### Diagnosis
 
-1. **Build the diffusion deploy adapter and run Plan C compose eval.** Most informative outcome — closes the three-way comparison cleanly. ~1hr work + ~10 min eval.
-2. **Skip Plan C compose, ship Plan B as final.** Plan B's 112.90 is already the daily target, and the val-MAE biased-against-diffusion comparison can't be definitively resolved without compose data. Lowest cost.
-3. **Fix the val-MAE eval methodology first** (sequential per-episode, real obs[t-1]) and re-run; if Plan C still loses, skip deploy. ~30 min eval-fix + 10 min re-run.
+Plan B's win comes entirely from trial 3. Plan A collides into the enclosure at trial 3 (–35). Plan B navigates the cable cleanly to within the bounding radius (+35.69). Plan C — same training data, same number of steps — fails to drive the cable close enough to the port to get any tier_2 or tier_3 credit. Path length still 0.00 m on all three trials, same pathology as A and B; the OOD difference is whether the model "stays still and lets physics settle the cable into a productive position" (B) or "stays still and the cable drifts elsewhere" (C).
+
+The val-MAE methodology was biased against Plan C (n_obs_steps=2 fake stacking), but compose shows the real ranking is **closer than val MAE suggested**:
+- Val MAE (biased): C is 2.6× worse than B on linear, 3.7× worse on angular
+- Compose (truth): C is 23% worse than B overall, **tied or slightly better on in-distribution trials**
+
+Diffusion's multi-modal action distribution did NOT break the regression-to-tiny-actions pathology (path length 0.00 m on Plan C trials 1+2). The 5× model size (271M vs 52M) and different inductive bias didn't help on this dataset.
+
+### Engineering notes — what made the deploy adapter much smaller than estimated
+
+Initial estimate was ~110 LoC + 1 hr. **Actual: ~30 LoC + 30 min.** Key realization: `policy.select_action()` is a polymorphic interface across ACT and Diffusion — it internally manages each architecture's queue/chunk-replay state. So the control loop in `insert_cable()` didn't need any changes. The only edits were:
+
+1. Type-dispatch the policy class load (read `type` field from config.json) — ~15 LoC
+2. Branch state and action normalization on MEAN_STD vs MIN_MAX — ~15 LoC
+
+The `n_obs_steps=2 obs queue` and `n_action_steps=8 chunk replay` items in the original estimate were wrong — `policy.select_action()` already handles those internally.
+
+### Build gotcha — pixi build cache
+
+`docker compose build` initially served a stale conda package of `aic_example_policies` (built before the Diffusion edits) because pixi's build cache hashes by lockfile, not source content. Fix: added a Dockerfile RUN that overlays the COPY'd source onto site-packages after `pixi install`:
+
+```dockerfile
+RUN cp -r /ws_aic/src/aic/aic_example_policies/aic_example_policies/. \
+       /ws_aic/src/aic/.pixi/envs/default/lib/python3.12/site-packages/aic_example_policies/
+```
+
+This guarantees the container always runs the COPY'd source, even when pixi caches a stale package build. Recommended pattern for future image rebuilds where conda-package source changes.
 
 ## Files (Plan C)
 
 - Plan C checkpoint: `/home/saivemu/code/aic-train/outputs/train/dp_aic_v1_planc/checkpoints/last/pretrained_model`
 - Plan C per-dim MAE: `/tmp/plan_c_per_dim_mae.json`
 - Train log: `/tmp/aic_train_planc.log`
+- Compose log: `/tmp/aic_compose_planc.log`
 - W&B run: https://wandb.ai/RebisVla/aic-dp-plan-c/runs/u4vwif7b
 
 ## Cost summary
 
 - Plan A: ~5 hr (already done before this session)
 - Plan B: ~5.5 hr (data 4.5 + train 0.75 + eval 0.25)
-- Plan C: ~1.1 hr (train 1.0 + eval 0.1)
-- Plan C deploy (deferred): ~1 hr engineering + ~0.25 hr build/eval if user opts in
-- Total elapsed: ~6.6 hr for Plans B + C training/eval (excludes Plan A which was done previously)
+- Plan C: ~1.4 hr (train 1.0 + val MAE 0.1 + deploy adapter 0.5 + compose 0.2)
+- Total elapsed: ~7 hr for Plans B + C end-to-end (excludes Plan A which was done previously)

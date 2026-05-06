@@ -18,6 +18,13 @@ SHELL ["/bin/bash", "-c"]
 RUN --mount=type=cache,target=/root/.cache/rattler/cache --mount=type=cache,target=/ws_aic/src/aic/.pixi/build \
     cd /ws_aic/src/aic && pixi install --locked
 
+# pixi install caches built conda packages by lockfile hash, not source content,
+# so edits to aic_example_policies/**/*.py don't always invalidate the cached
+# package in site-packages. Force-overlay the source onto the installed package
+# so the container always runs the COPY'd code.
+RUN cp -r /ws_aic/src/aic/aic_example_policies/aic_example_policies/. \
+       /ws_aic/src/aic/.pixi/envs/default/lib/python3.12/site-packages/aic_example_policies/
+
 # Bake the locally-trained ACT checkpoint into the image at /opt/policy.
 # The competition network has internal=true so HuggingFace is unreachable at
 # runtime; the model must already be on disk inside the container.

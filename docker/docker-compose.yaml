@@ -15,7 +15,7 @@ services:
       AIC_MODEL_PASSWD: CHANGE_IN_PROD
       # AIC_ENABLE_ACL: true
   model:
-    image: aic-runact:plan-b-trained
+    image: aic-runact:plan-c-trained
     build:
       dockerfile: docker/aic_model/Dockerfile
       context: ..

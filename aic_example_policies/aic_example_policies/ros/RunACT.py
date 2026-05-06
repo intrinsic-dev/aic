@@ -47,6 +47,8 @@ from geometry_msgs.msg import Wrench
 # LeRobot & Safetensors
 from lerobot.policies.act.modeling_act import ACTPolicy
 from lerobot.policies.act.configuration_act import ACTConfig
+from lerobot.policies.diffusion.modeling_diffusion import DiffusionPolicy
+from lerobot.policies.diffusion.configuration_diffusion import DiffusionConfig
 from safetensors.torch import load_file
 from huggingface_hub import snapshot_download
 
@@ -101,22 +103,37 @@ class RunACT(Policy):
                 "/home/saivemu/code/aic-train/outputs/train/act_aic_v1/checkpoints/last/pretrained_model"
             )
 
-        # Load Config Manually (Fixes 'Draccus' error by removing unknown 'type' field)
+        # Load Config — dispatch on `type` field. We support ACT (MEAN_STD norm,
+        # n_obs_steps=1, n_action_steps=1+temporal_ensemble) and Diffusion (MIN_MAX
+        # norm, n_obs_steps=2, n_action_steps=8 chunk replay). policy.select_action()
+        # handles each architecture's internal state management; the control loop is
+        # the same for both.
         with open(policy_path / "config.json", "r") as f:
             config_dict = json.load(f)
-            if "type" in config_dict:
-                del config_dict["type"]
+        policy_type = config_dict.pop("type", "act")
+        norm_map = config_dict.get("normalization_mapping", {})
+        self._action_norm_mode = norm_map.get("ACTION", "MEAN_STD")
+        self._state_norm_mode = norm_map.get("STATE", "MEAN_STD")
 
-        config = draccus.decode(ACTConfig, config_dict)
+        if policy_type == "act":
+            config = draccus.decode(ACTConfig, config_dict)
+            self.policy = ACTPolicy(config)
+        elif policy_type == "diffusion":
+            config = draccus.decode(DiffusionConfig, config_dict)
+            self.policy = DiffusionPolicy(config)
+        else:
+            raise ValueError(f"Unsupported policy type: {policy_type!r}")
+        self._policy_type = policy_type
 
-        # Load Policy Architecture & Weights
-        self.policy = ACTPolicy(config)
         model_weights_path = policy_path / "model.safetensors"
         self.policy.load_state_dict(load_file(model_weights_path))
         self.policy.eval()
         self.policy.to(self.device)
 
-        self.get_logger().info(f"ACT Policy loaded on {self.device} from {policy_path}")
+        self.get_logger().info(
+            f"{policy_type.upper()} Policy loaded on {self.device} from {policy_path} "
+            f"(state_norm={self._state_norm_mode}, action_norm={self._action_norm_mode})"
+        )
 
         # -------------------------------------------------------------------------
         # 2. Normalization Stats Loading
@@ -147,17 +164,25 @@ class RunACT(Policy):
         }
         print(f"Image stats: {self.img_stats}")
 
-        # Robot State Stats (1, 26)
-        self.state_mean = get_stat("observation.state.mean", (1, -1))
-        self.state_std = get_stat("observation.state.std", (1, -1))
-        print(f"Robot state mean: {self.state_mean}")
-        print(f"Robot state std: {self.state_std}")
+        # Robot State Stats (1, 26) — load mean/std OR min/max depending on mode.
+        if self._state_norm_mode == "MEAN_STD":
+            self.state_mean = get_stat("observation.state.mean", (1, -1))
+            self.state_std = get_stat("observation.state.std", (1, -1))
+        elif self._state_norm_mode == "MIN_MAX":
+            self.state_min = get_stat("observation.state.min", (1, -1))
+            self.state_max = get_stat("observation.state.max", (1, -1))
+        else:
+            raise ValueError(f"Unsupported state norm mode: {self._state_norm_mode!r}")
 
-        # Action Stats (1, 7) - Used for Un-normalization
-        self.action_mean = get_stat("action.mean", (1, -1))
-        self.action_std = get_stat("action.std", (1, -1))
-        print(f"Action mean: {self.action_mean}")
-        print(f"Action std: {self.action_std}")
+        # Action Stats (1, 7) — used for un-normalization at inference output.
+        if self._action_norm_mode == "MEAN_STD":
+            self.action_mean = get_stat("action.mean", (1, -1))
+            self.action_std = get_stat("action.std", (1, -1))
+        elif self._action_norm_mode == "MIN_MAX":
+            self.action_min = get_stat("action.min", (1, -1))
+            self.action_max = get_stat("action.max", (1, -1))
+        else:
+            raise ValueError(f"Unsupported action norm mode: {self._action_norm_mode!r}")
 
         # Config
         self.image_scaling = 0.25  # Must match AICRobotAICControllerConfig
@@ -258,11 +283,16 @@ class RunACT(Policy):
             dtype=np.float32,
         )
 
-        # Normalize State
+        # Normalize State per the configured mode.
         raw_state_tensor = (
             torch.from_numpy(state_np).float().unsqueeze(0).to(self.device)
         )
-        obs["observation.state"] = (raw_state_tensor - self.state_mean) / self.state_std
+        if self._state_norm_mode == "MEAN_STD":
+            obs["observation.state"] = (raw_state_tensor - self.state_mean) / self.state_std
+        else:  # MIN_MAX → [-1, 1]
+            obs["observation.state"] = (
+                2 * (raw_state_tensor - self.state_min) / (self.state_max - self.state_min) - 1
+            )
 
         return obs
 
@@ -353,11 +383,17 @@ class RunACT(Policy):
                 self.sleep_for(self.LOOP_DT)
                 continue
 
-            # Inference.
+            # Inference. policy.select_action() returns one un-normalized-space action
+            # per call. ACT: 1 inference per tick (n_action_steps=1). Diffusion: 1
+            # inference every 8 ticks with chunk replay (n_action_steps=8); managed
+            # internally by the policy's action queue.
             obs_tensors = self.prepare_observations(observation_msg)
             with torch.inference_mode():
                 normalized_action = self.policy.select_action(obs_tensors)
-            raw_action_tensor = (normalized_action * self.action_std) + self.action_mean
+            if self._action_norm_mode == "MEAN_STD":
+                raw_action_tensor = (normalized_action * self.action_std) + self.action_mean
+            else:  # MIN_MAX from [-1, 1]
+                raw_action_tensor = (normalized_action + 1) / 2 * (self.action_max - self.action_min) + self.action_min
             scaled_action_tensor = raw_action_tensor * self.ACTION_SCALE
             raw_action = raw_action_tensor[0].cpu().numpy()
             action = scaled_action_tensor[0].cpu().numpy()
