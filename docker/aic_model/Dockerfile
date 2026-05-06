@@ -25,12 +25,14 @@ RUN --mount=type=cache,target=/root/.cache/rattler/cache --mount=type=cache,targ
 RUN cp -r /ws_aic/src/aic/aic_example_policies/aic_example_policies/. \
        /ws_aic/src/aic/.pixi/envs/default/lib/python3.12/site-packages/aic_example_policies/
 
-# Bake the locally-trained ACT checkpoint into the image at /opt/policy.
+# Bake BOTH plans' checkpoints into the image. RunACT.py picks one at runtime
+# via the AIC_POLICY_PLAN env var (set in docker-compose.yaml). Costs ~1.1 GB
+# extra image size (Plan C is the heavier diffusion model) in exchange for
+# one-line plan switching without rebuilding.
 # The competition network has internal=true so HuggingFace is unreachable at
-# runtime; the model must already be on disk inside the container.
-# (This requires ../outputs symlinking to the aic-train worktree; see
-# `ln -sfn /home/saivemu/code/aic-train/outputs ./outputs` in the repo root.)
-COPY outputs/train/act_aic_v1/checkpoints/last/pretrained_model /opt/policy
+# runtime; the models must already be on disk inside the container.
+COPY outputs/plan_b/pretrained_model /opt/policy_b
+COPY outputs/plan_c/pretrained_model /opt/policy_c
 
 # resnet18 backbone weights are also unreachable at runtime, so cache them.
 RUN cd /ws_aic/src/aic && pixi run --as-is python -c "import torchvision.models as m; m.resnet18(weights=m.ResNet18_Weights.IMAGENET1K_V1); print('resnet18 backbone cached')"

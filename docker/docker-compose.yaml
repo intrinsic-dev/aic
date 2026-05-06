@@ -15,7 +15,7 @@ services:
       AIC_MODEL_PASSWD: CHANGE_IN_PROD
       # AIC_ENABLE_ACL: true
   model:
-    image: aic-runact:plan-c-trained
+    image: aic-runact:plans-bc
     build:
       dockerfile: docker/aic_model/Dockerfile
       context: ..
@@ -27,6 +27,10 @@ services:
       ZENOH_ROUTER_CHECK_ATTEMPTS: -1
       AIC_ROUTER_ADDR: eval:7447
       AIC_MODEL_PASSWD: CHANGE_IN_PROD
+      # Switch policy at runtime without rebuilding:
+      #   default        ->  Plan B (ACT 300ep, compose 112.90)  [shipping]
+      #   AIC_POLICY_PLAN=c docker compose ... up  ->  Plan C (Diffusion 300ep, compose 86.03)
+      AIC_POLICY_PLAN: ${AIC_POLICY_PLAN:-b}
       # AIC_ENABLE_ACL: true
 networks:
   default:

@@ -94,13 +94,22 @@ class RunACT(Policy):
         # -------------------------------------------------------------------------
         # 1. Configuration & Weights Loading
         # -------------------------------------------------------------------------
-        # Local checkpoint trained on saivemu/aic_act_v1 (100 CheatCode rollouts).
-        # Baked into the docker image via Dockerfile COPY at /opt/policy.
-        # Falls back to a workspace-relative path for non-docker testing.
-        policy_path = Path("/opt/policy")
+        # Pick the plan at runtime. Both Plan B (ACT, 300 ep, 40k steps) and
+        # Plan C (Diffusion, 300 ep, 40k steps) are baked into the docker image
+        # at /opt/policy_b and /opt/policy_c. The AIC_POLICY_PLAN env var (set in
+        # docker-compose.yaml) selects one without a rebuild. Defaults to Plan B
+        # since it scored 112.90 vs Plan C's 86.03 in compose eval.
+        plan = os.environ.get("AIC_POLICY_PLAN", "b").lower()
+        if plan not in ("b", "c"):
+            raise ValueError(
+                f"AIC_POLICY_PLAN must be 'b' or 'c' (got {plan!r}). "
+                "b = Plan B (ACT 300 ep). c = Plan C (Diffusion 300 ep)."
+            )
+        policy_path = Path(f"/opt/policy_{plan}")
         if not policy_path.exists():
+            # Non-docker fallback: workspace-relative path for local testing.
             policy_path = Path(
-                "/home/saivemu/code/aic-train/outputs/train/act_aic_v1/checkpoints/last/pretrained_model"
+                f"/home/saivemu/code/aic/outputs/plan_{plan}/pretrained_model"
             )
 
         # Load Config — dispatch on `type` field. We support ACT (MEAN_STD norm,
