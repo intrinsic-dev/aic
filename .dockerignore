@@ -1,1 +1,9 @@
 .pixi
+**/__pycache__
+**/*.pyc
+**/*.pyo
+.git
+.claude
+wandb
+SapanReferenceComparisonWandB.pdf
+wget-log

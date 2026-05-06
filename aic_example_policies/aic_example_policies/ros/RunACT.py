@@ -14,17 +14,23 @@
 #  limitations under the License.
 #
 
+# `from __future__ import annotations` makes all type hints lazy strings, so
+# annotations referencing `torch.Tensor` / `np.ndarray` etc. don't require those
+# modules to be imported at class-definition time. This is essential for
+# deferring heavy imports below the model-discovery budget (see comment near
+# __init__).
+from __future__ import annotations
+
 import os
 import time
 import json
-import torch
-import numpy as np
-import cv2
-import draccus
 from pathlib import Path
 from typing import Callable, Dict, Any, List
+
+# ROS message types and the Policy base class are cheap (<100ms total) and are
+# referenced by the class definition + lifecycle plumbing — keep at module level.
 from rclpy.node import Node
-from geometry_msgs.msg import Twist, Vector3, Pose, Point, Quaternion
+from geometry_msgs.msg import Twist, Vector3, Pose, Point, Quaternion, Wrench
 
 from aic_model.policy import (
     GetObservationCallback,
@@ -34,19 +40,16 @@ from aic_model.policy import (
 )
 from aic_model_interfaces.msg import Observation
 from aic_task_interfaces.msg import Task
-
 from aic_control_interfaces.msg import (
     MotionUpdate,
     TrajectoryGenerationMode,
 )
-from geometry_msgs.msg import Wrench
 
-# LeRobot ACT — needed for both Plan B and (indirectly) Plan C dispatch.
-# Diffusion imports are deferred to load_policy_and_stats below to keep cold
-# import time low on the competition cluster (30s model-discovery budget).
-from lerobot.policies.act.modeling_act import ACTPolicy
-from lerobot.policies.act.configuration_act import ACTConfig
-from safetensors.torch import load_file
+# Heavy imports (torch, numpy, cv2, draccus, lerobot, safetensors) are deferred
+# into RunACT.__init__ to keep top-level module import under the 30-second
+# model-discovery budget the AIC engine enforces (see docs/troubleshooting.md).
+# They're hoisted to module-level via `global` declarations once __init__ runs,
+# so all instance methods can use them as if they were imported at top.
 
 
 class RunACT(Policy):
@@ -85,6 +88,19 @@ class RunACT(Policy):
 
     def __init__(self, parent_node: Node):
         super().__init__(parent_node)
+
+        # Deferred heavy imports — promoted to module globals so methods on this
+        # class (and any future instances) see them at module scope. Python's
+        # import cache makes second-instance __init__ effectively free.
+        global torch, np, cv2, draccus, ACTPolicy, ACTConfig, load_file
+        import torch  # noqa: F401
+        import numpy as np  # noqa: F401
+        import cv2  # noqa: F401
+        import draccus  # noqa: F401
+        from lerobot.policies.act.modeling_act import ACTPolicy  # noqa: F401
+        from lerobot.policies.act.configuration_act import ACTConfig  # noqa: F401
+        from safetensors.torch import load_file  # noqa: F401
+
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         # -------------------------------------------------------------------------

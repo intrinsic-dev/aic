@@ -25,14 +25,21 @@ RUN --mount=type=cache,target=/root/.cache/rattler/cache --mount=type=cache,targ
 RUN cp -r /ws_aic/src/aic/aic_example_policies/aic_example_policies/. \
        /ws_aic/src/aic/.pixi/envs/default/lib/python3.12/site-packages/aic_example_policies/
 
-# Bake BOTH plans' checkpoints into the image. RunACT.py picks one at runtime
-# via the AIC_POLICY_PLAN env var (set in docker-compose.yaml). Costs ~1.1 GB
-# extra image size (Plan C is the heavier diffusion model) in exchange for
-# one-line plan switching without rebuilding.
+# Bake ONLY Plan B for submission (Plan-B-only build). The full multi-plan
+# Dockerfile bakes both plans + uses AIC_POLICY_PLAN env to dispatch, but for
+# leaderboard submission we ship the smallest working image: Plan B alone.
 # The competition network has internal=true so HuggingFace is unreachable at
-# runtime; the models must already be on disk inside the container.
+# runtime; the model must already be on disk inside the container.
 COPY outputs/plan_b/pretrained_model /opt/policy_b
-COPY outputs/plan_c/pretrained_model /opt/policy_c
+
+# Sanity-check the policy module imports under cluster timing constraints. If
+# this RUN takes more than a few seconds, the model_discovery_timeout will
+# fire on the leaderboard — better to fail the build than waste a daily slot.
+RUN cd /ws_aic/src/aic && pixi run --as-is python -c "\
+import time, sys; t0=time.time(); \
+import aic_example_policies.ros.RunACT; \
+print(f'RunACT module import: {time.time()-t0:.2f}s'); \
+assert time.time()-t0 < 5.0, 'Module import too slow for 30s discovery budget'"
 
 # resnet18 backbone weights are also unreachable at runtime, so cache them.
 RUN cd /ws_aic/src/aic && pixi run --as-is python -c "import torchvision.models as m; m.resnet18(weights=m.ResNet18_Weights.IMAGENET1K_V1); print('resnet18 backbone cached')"
