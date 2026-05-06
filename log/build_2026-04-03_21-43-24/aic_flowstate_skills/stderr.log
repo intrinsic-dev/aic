@@ -1,0 +1,8 @@
+/usr/local/google/home/kbalasundar/aic_ws/src/aic/flowstate/aic_flowstate_skills/insert_cable_skill/src/insert_cable_skill.cc:23:10: fatal error: insert_cable_skill.pb.h: No such file or directory
+   23 | #include "insert_cable_skill.pb.h"
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~
+compilation terminated.
+gmake[2]: *** [insert_cable_skill/CMakeFiles/insert_cable_skill_main.dir/build.make:85: insert_cable_skill/CMakeFiles/insert_cable_skill_main.dir/src/insert_cable_skill.cc.o] Error 1
+gmake[2]: *** Waiting for unfinished jobs....
+gmake[1]: *** [CMakeFiles/Makefile2:262: insert_cable_skill/CMakeFiles/insert_cable_skill_main.dir/all] Error 2
+gmake: *** [Makefile:146: all] Error 2

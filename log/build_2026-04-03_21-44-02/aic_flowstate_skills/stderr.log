@@ -1,0 +1,6 @@
+/usr/local/google/home/kbalasundar/aic_ws/src/aic/flowstate/aic_flowstate_skills/insert_cable_skill/src/insert_cable_skill.cc:181:1: error: expected declaration before ‘}’ token
+  181 | }
+      | ^
+gmake[2]: *** [insert_cable_skill/CMakeFiles/insert_cable_skill_main.dir/build.make:85: insert_cable_skill/CMakeFiles/insert_cable_skill_main.dir/src/insert_cable_skill.cc.o] Error 1
+gmake[1]: *** [CMakeFiles/Makefile2:262: insert_cable_skill/CMakeFiles/insert_cable_skill_main.dir/all] Error 2
+gmake: *** [Makefile:146: all] Error 2

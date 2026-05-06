@@ -1,0 +1,31 @@
+// generated from rosidl_adapter/resource/action.idl.em
+// with input from aic_task_interfaces/action/InsertCable.action
+// generated code does not contain a copyright notice
+
+#include "aic_task_interfaces/msg/Task.idl"
+
+module aic_task_interfaces {
+  module action {
+    @verbatim (language="comment", text=
+      "Request")
+    struct InsertCable_Goal {
+      aic_task_interfaces::msg::Task task;
+    };
+    struct InsertCable_Result {
+      @verbatim (language="comment", text=
+        "Response" "\n"
+        "True if the task succeeded.")
+      boolean success;
+
+      @verbatim (language="comment", text=
+        "A message if the task succeeded or failed.")
+      string message;
+    };
+    struct InsertCable_Feedback {
+      @verbatim (language="comment", text=
+        "Feedback" "\n"
+        "A description on how the task is progressing.")
+      string message;
+    };
+  };
+};

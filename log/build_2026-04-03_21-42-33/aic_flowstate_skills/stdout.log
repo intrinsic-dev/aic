@@ -1,0 +1,55 @@
+-- Found aic_task_interfaces: 0.0.1 (/usr/local/google/home/kbalasundar/aic_ws/src/aic/install/aic_task_interfaces/share/aic_task_interfaces/cmake)
+-- Found rosidl_generator_c: 4.9.6 (/opt/ros/kilted/share/rosidl_generator_c/cmake)
+-- Found rosidl_generator_cpp: 4.9.6 (/opt/ros/kilted/share/rosidl_generator_cpp/cmake)
+-- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+-- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+-- Found abseil_cpp_vendor: 0.1.0 (/usr/local/google/home/kbalasundar/flowstate_ws/install/abseil_cpp_vendor/share/abseil_cpp_vendor/cmake)
+-- Found eigen_vendor: 0.1.0 (/usr/local/google/home/kbalasundar/flowstate_ws/install/eigen_vendor/share/eigen_vendor/cmake)
+-- Found flatbuffers_vendor: 0.1.0 (/usr/local/google/home/kbalasundar/flowstate_ws/install/flatbuffers_vendor/share/flatbuffers_vendor/cmake)
+-- Found grpc_vendor: 0.1.0 (/usr/local/google/home/kbalasundar/flowstate_ws/install/grpc_vendor/share/grpc_vendor/cmake)
+-- Found gz_cmake_vendor: 0.1.0 (/usr/local/google/home/kbalasundar/flowstate_ws/install/gz_cmake_vendor/share/gz_cmake_vendor/cmake)
+-- Found gz_math_vendor: 0.1.0 (/usr/local/google/home/kbalasundar/flowstate_ws/install/gz_math_vendor/share/gz_math_vendor/cmake)
+-- Found gz_msgs_vendor: 0.1.0 (/usr/local/google/home/kbalasundar/flowstate_ws/install/gz_msgs_vendor/share/gz_msgs_vendor/cmake)
+-- Found gz_utils_vendor: 0.1.0 (/usr/local/google/home/kbalasundar/flowstate_ws/install/gz_utils_vendor/share/gz_utils_vendor/cmake)
+-- Found gz_transport_vendor: 0.1.0 (/usr/local/google/home/kbalasundar/flowstate_ws/install/gz_transport_vendor/share/gz_transport_vendor/cmake)
+-- Found intrinsic_pybind11_vendor: 1.65.0 (/usr/local/google/home/kbalasundar/flowstate_ws/install/intrinsic_pybind11_vendor/share/intrinsic_pybind11_vendor/cmake)
+-- Found pybind11_abseil_vendor: 1.65.0 (/usr/local/google/home/kbalasundar/flowstate_ws/install/pybind11_abseil_vendor/share/pybind11_abseil_vendor/cmake)
+-- Found pybind11_protobuf_vendor: 1.65.0 (/usr/local/google/home/kbalasundar/flowstate_ws/install/pybind11_protobuf_vendor/share/pybind11_protobuf_vendor/cmake)
+-- Found ortools_vendor: 0.1.0 (/usr/local/google/home/kbalasundar/flowstate_ws/install/ortools_vendor/share/ortools_vendor/cmake)
+-- Found opencensus_cpp_vendor: 0.1.0 (/usr/local/google/home/kbalasundar/flowstate_ws/install/opencensus_cpp_vendor/share/opencensus_cpp_vendor/cmake)
+-- Found RE2 via CMake.
+-- Looking for gz-msgs11 -- found version 11.1.0
+-- Searching for dependencies of gz-msgs11
+-- Looking for gz-utils3 -- found version 3.1.1
+-- Searching for dependencies of gz-utils3
+-- Searching for <gz-utils3> component [cli]
+-- Looking for gz-utils3-cli -- found version 3.1.1
+-- Searching for dependencies of gz-utils3-cli
+-- Looking for gz-math8 -- found version 8.2.0
+-- Searching for dependencies of gz-math8
+-- Looking for gz-utils3 -- found version 3.1.1
+-- Checking for module 'tinyxml2'
+--   Found tinyxml2, version 10.0.0
+-- Looking for gz-transport14 -- found version 14.1.0
+-- Searching for dependencies of gz-transport14
+-- Config-file not installed for ZeroMQ -- checking for pkg-config
+-- Checking for module 'libzmq >= 4'
+--   Found libzmq, version 4.3.5
+-- Checking for module 'uuid'
+--   Found uuid, version 2.39.3
+-- Looking for gz-utils3 -- found version 3.1.1
+-- Looking for gz-msgs11 -- found version 11.1.0
+-- Found pybind11: /usr/local/google/home/kbalasundar/flowstate_ws/install/intrinsic_pybind11_vendor/opt/intrinsic_pybind11_vendor/include (found version "2.13.6")
+-- Found rclcpp: 29.5.6 (/opt/ros/kilted/share/rclcpp/cmake)
+-- Found rmw_implementation_cmake: 7.8.2 (/opt/ros/kilted/share/rmw_implementation_cmake/cmake)
+-- Found rmw_fastrtps_cpp: 9.3.3 (/opt/ros/kilted/share/rmw_fastrtps_cpp/cmake)
+-- Using RMW implementation 'rmw_fastrtps_cpp' as default
+-- Found rclcpp_action: 29.5.6 (/opt/ros/kilted/share/rclcpp_action/cmake)
+-- Configuring done (1.5s)
+-- Generating done (0.1s)
+-- Build files have been written to: /usr/local/google/home/kbalasundar/aic_ws/src/aic/build/aic_flowstate_skills
+[  8%] Built target insert_cable_skill_protos_desc
+[ 33%] Built target insert_cable_skill_config
+[ 58%] Built target insert_cable_skill_protos
+[ 75%] [32mBuilding CXX object insert_cable_skill/CMakeFiles/insert_cable_skill_main.dir/src/insert_cable_skill.cc.o[0m
+[ 75%] [32mBuilding CXX object insert_cable_skill/CMakeFiles/insert_cable_skill_main.dir/insert_cable_skill_main.cc.o[0m

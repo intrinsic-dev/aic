@@ -1,0 +1,63 @@
+[0.024s] Invoking command in '/usr/local/google/home/kbalasundar/aic_ws/src/aic/build/aic_flowstate_skills': AMENT_PREFIX_PATH=/usr/local/google/home/kbalasundar/aic_ws/src/aic/install/aic_task_interfaces:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/usr/local/google/home/kbalasundar/aic_ws/src/aic/install/aic_task_interfaces:/usr/local/google/home/kbalasundar/flowstate_ws/install/sdk_examples_ros_skills:/usr/local/google/home/kbalasundar/flowstate_ws/install/sdk_examples_ros_services:/usr/local/google/home/kbalasundar/flowstate_ws/install/intrinsic_sdk_ros:/usr/local/google/home/kbalasundar/flowstate_ws/install/intrinsic_sdk_cmake:/usr/local/google/home/kbalasundar/flowstate_ws/install/pybind11_protobuf_vendor:/usr/local/google/home/kbalasundar/flowstate_ws/install/pybind11_abseil_vendor:/usr/local/google/home/kbalasundar/flowstate_ws/install/ortools_vendor:/usr/local/google/home/kbalasundar/flowstate_ws/install/gz_transport_vendor/opt/gz_transport_vendor:/usr/local/google/home/kbalasundar/flowstate_ws/install/gz_transport_vendor:/usr/local/google/home/kbalasundar/flowstate_ws/install/gz_msgs_vendor/opt/gz_msgs_vendor:/usr/local/google/home/kbalasundar/flowstate_ws/install/gz_msgs_vendor:/usr/local/google/home/kbalasundar/flowstate_ws/install/grpc_vendor:/usr/local/google/home/kbalasundar/flowstate_ws/install/re2_vendor:/usr/local/google/home/kbalasundar/flowstate_ws/install/opencensus_cpp_vendor:/usr/local/google/home/kbalasundar/flowstate_ws/install/prometheus_cpp_vendor:/usr/local/google/home/kbalasundar/flowstate_ws/install/intrinsic_pybind11_vendor:/usr/local/google/home/kbalasundar/flowstate_ws/install/gz_math_vendor/opt/gz_math_vendor:/usr/local/google/home/kbalasundar/flowstate_ws/install/gz_math_vendor:/usr/local/google/home/kbalasundar/flowstate_ws/install/gz_utils_vendor/opt/gz_utils_vendor:/usr/local/google/home/kbalasundar/flowstate_ws/install/gz_utils_vendor:/usr/local/google/home/kbalasundar/flowstate_ws/install/gz_cmake_vendor/opt/gz_cmake_vendor:/usr/local/google/home/kbalasundar/flowstate_ws/install/gz_cmake_vendor:/usr/local/google/home/kbalasundar/flowstate_ws/install/flatbuffers_vendor:/usr/local/google/home/kbalasundar/flowstate_ws/install/eigen_vendor:/usr/local/google/home/kbalasundar/flowstate_ws/install/bazelisk_vendor:/usr/local/google/home/kbalasundar/flowstate_ws/install/abseil_cpp_vendor:/opt/ros/kilted/opt/sdformat_vendor:/opt/ros/kilted/opt/gz_math_vendor:/opt/ros/kilted/opt/gz_utils_vendor:/opt/ros/kilted/opt/gz_tools_vendor:/opt/ros/kilted/opt/gz_ogre_next_vendor:/opt/ros/kilted/opt/gz_dartsim_vendor:/opt/ros/kilted/opt/gz_cmake_vendor:/opt/ros/kilted DEBUGINFOD_URLS=https://debuginfod.debian.net LD_LIBRARY_PATH=/usr/local/google/home/kbalasundar/aic_ws/src/aic/install/aic_task_interfaces/lib:${LD_LIBRARY_PATH} PYTHONPATH=/usr/local/google/home/kbalasundar/aic_ws/src/aic/install/aic_task_interfaces/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/cmake --build /usr/local/google/home/kbalasundar/aic_ws/src/aic/build/aic_flowstate_skills -- -j64 -l64
+[0.092s] -- Found aic_task_interfaces: 0.0.1 (/usr/local/google/home/kbalasundar/aic_ws/src/aic/install/aic_task_interfaces/share/aic_task_interfaces/cmake)
+[0.413s] -- Found rosidl_generator_c: 4.9.6 (/opt/ros/kilted/share/rosidl_generator_c/cmake)
+[0.426s] -- Found rosidl_generator_cpp: 4.9.6 (/opt/ros/kilted/share/rosidl_generator_cpp/cmake)
+[0.443s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[0.463s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[0.569s] -- Found abseil_cpp_vendor: 0.1.0 (/usr/local/google/home/kbalasundar/flowstate_ws/install/abseil_cpp_vendor/share/abseil_cpp_vendor/cmake)
+[0.570s] -- Found eigen_vendor: 0.1.0 (/usr/local/google/home/kbalasundar/flowstate_ws/install/eigen_vendor/share/eigen_vendor/cmake)
+[0.571s] -- Found flatbuffers_vendor: 0.1.0 (/usr/local/google/home/kbalasundar/flowstate_ws/install/flatbuffers_vendor/share/flatbuffers_vendor/cmake)
+[0.571s] -- Found grpc_vendor: 0.1.0 (/usr/local/google/home/kbalasundar/flowstate_ws/install/grpc_vendor/share/grpc_vendor/cmake)
+[0.573s] -- Found gz_cmake_vendor: 0.1.0 (/usr/local/google/home/kbalasundar/flowstate_ws/install/gz_cmake_vendor/share/gz_cmake_vendor/cmake)
+[0.573s] -- Found gz_math_vendor: 0.1.0 (/usr/local/google/home/kbalasundar/flowstate_ws/install/gz_math_vendor/share/gz_math_vendor/cmake)
+[0.573s] -- Found gz_msgs_vendor: 0.1.0 (/usr/local/google/home/kbalasundar/flowstate_ws/install/gz_msgs_vendor/share/gz_msgs_vendor/cmake)
+[0.574s] -- Found gz_utils_vendor: 0.1.0 (/usr/local/google/home/kbalasundar/flowstate_ws/install/gz_utils_vendor/share/gz_utils_vendor/cmake)
+[0.574s] -- Found gz_transport_vendor: 0.1.0 (/usr/local/google/home/kbalasundar/flowstate_ws/install/gz_transport_vendor/share/gz_transport_vendor/cmake)
+[0.574s] -- Found intrinsic_pybind11_vendor: 1.65.0 (/usr/local/google/home/kbalasundar/flowstate_ws/install/intrinsic_pybind11_vendor/share/intrinsic_pybind11_vendor/cmake)
+[0.575s] -- Found pybind11_abseil_vendor: 1.65.0 (/usr/local/google/home/kbalasundar/flowstate_ws/install/pybind11_abseil_vendor/share/pybind11_abseil_vendor/cmake)
+[0.575s] -- Found pybind11_protobuf_vendor: 1.65.0 (/usr/local/google/home/kbalasundar/flowstate_ws/install/pybind11_protobuf_vendor/share/pybind11_protobuf_vendor/cmake)
+[0.575s] -- Found ortools_vendor: 0.1.0 (/usr/local/google/home/kbalasundar/flowstate_ws/install/ortools_vendor/share/ortools_vendor/cmake)
+[0.576s] -- Found opencensus_cpp_vendor: 0.1.0 (/usr/local/google/home/kbalasundar/flowstate_ws/install/opencensus_cpp_vendor/share/opencensus_cpp_vendor/cmake)
+[0.588s] -- Found RE2 via CMake.
+[0.591s] -- Looking for gz-msgs11 -- found version 11.1.0
+[0.598s] -- Searching for dependencies of gz-msgs11
+[0.601s] -- Looking for gz-utils3 -- found version 3.1.1
+[0.601s] -- Searching for dependencies of gz-utils3
+[0.602s] -- Searching for <gz-utils3> component [cli]
+[0.603s] -- Looking for gz-utils3-cli -- found version 3.1.1
+[0.603s] -- Searching for dependencies of gz-utils3-cli
+[0.604s] -- Looking for gz-math8 -- found version 8.2.0
+[0.604s] -- Searching for dependencies of gz-math8
+[0.604s] -- Looking for gz-utils3 -- found version 3.1.1
+[0.613s] -- Checking for module 'tinyxml2'
+[0.643s] --   Found tinyxml2, version 10.0.0
+[0.709s] -- Looking for gz-transport14 -- found version 14.1.0
+[0.709s] -- Searching for dependencies of gz-transport14
+[0.756s] -- Config-file not installed for ZeroMQ -- checking for pkg-config
+[0.763s] -- Checking for module 'libzmq >= 4'
+[0.793s] --   Found libzmq, version 4.3.5
+[0.893s] -- Checking for module 'uuid'
+[0.924s] --   Found uuid, version 2.39.3
+[0.993s] -- Looking for gz-utils3 -- found version 3.1.1
+[0.993s] -- Looking for gz-msgs11 -- found version 11.1.0
+[0.999s] -- Found pybind11: /usr/local/google/home/kbalasundar/flowstate_ws/install/intrinsic_pybind11_vendor/opt/intrinsic_pybind11_vendor/include (found version "2.13.6")
+[1.223s] -- Found rclcpp: 29.5.6 (/opt/ros/kilted/share/rclcpp/cmake)
+[1.275s] -- Found rmw_implementation_cmake: 7.8.2 (/opt/ros/kilted/share/rmw_implementation_cmake/cmake)
+[1.278s] -- Found rmw_fastrtps_cpp: 9.3.3 (/opt/ros/kilted/share/rmw_fastrtps_cpp/cmake)
+[1.339s] -- Using RMW implementation 'rmw_fastrtps_cpp' as default
+[1.424s] -- Found rclcpp_action: 29.5.6 (/opt/ros/kilted/share/rclcpp_action/cmake)
+[1.548s] -- Configuring done (1.5s)
+[1.635s] -- Generating done (0.1s)
+[1.656s] -- Build files have been written to: /usr/local/google/home/kbalasundar/aic_ws/src/aic/build/aic_flowstate_skills
+[1.748s] [ 33%] Built target insert_cable_skill_config
+[1.748s] [ 33%] Built target insert_cable_skill_protos_desc
+[1.818s] [ 58%] Built target insert_cable_skill_protos
+[1.899s] [ 66%] [32mBuilding CXX object insert_cable_skill/CMakeFiles/insert_cable_skill_main.dir/src/insert_cable_skill.cc.o[0m
+[1.907s] [ 75%] [32mBuilding CXX object insert_cable_skill/CMakeFiles/insert_cable_skill_main.dir/insert_cable_skill_main.cc.o[0m
+[10.894s] /usr/local/google/home/kbalasundar/aic_ws/src/aic/flowstate/aic_flowstate_skills/insert_cable_skill/src/insert_cable_skill.cc:181:1: error: expected declaration before ‘}’ token
+[10.894s]   181 | }
+[10.894s]       | ^
+[13.198s] gmake[2]: *** [insert_cable_skill/CMakeFiles/insert_cable_skill_main.dir/build.make:85: insert_cable_skill/CMakeFiles/insert_cable_skill_main.dir/src/insert_cable_skill.cc.o] Error 1
+[13.199s] gmake[1]: *** [CMakeFiles/Makefile2:262: insert_cable_skill/CMakeFiles/insert_cable_skill_main.dir/all] Error 2
+[13.199s] gmake: *** [Makefile:146: all] Error 2
+[13.203s] Invoked command in '/usr/local/google/home/kbalasundar/aic_ws/src/aic/build/aic_flowstate_skills' returned '2': AMENT_PREFIX_PATH=/usr/local/google/home/kbalasundar/aic_ws/src/aic/install/aic_task_interfaces:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/usr/local/google/home/kbalasundar/aic_ws/src/aic/install/aic_task_interfaces:/usr/local/google/home/kbalasundar/flowstate_ws/install/sdk_examples_ros_skills:/usr/local/google/home/kbalasundar/flowstate_ws/install/sdk_examples_ros_services:/usr/local/google/home/kbalasundar/flowstate_ws/install/intrinsic_sdk_ros:/usr/local/google/home/kbalasundar/flowstate_ws/install/intrinsic_sdk_cmake:/usr/local/google/home/kbalasundar/flowstate_ws/install/pybind11_protobuf_vendor:/usr/local/google/home/kbalasundar/flowstate_ws/install/pybind11_abseil_vendor:/usr/local/google/home/kbalasundar/flowstate_ws/install/ortools_vendor:/usr/local/google/home/kbalasundar/flowstate_ws/install/gz_transport_vendor/opt/gz_transport_vendor:/usr/local/google/home/kbalasundar/flowstate_ws/install/gz_transport_vendor:/usr/local/google/home/kbalasundar/flowstate_ws/install/gz_msgs_vendor/opt/gz_msgs_vendor:/usr/local/google/home/kbalasundar/flowstate_ws/install/gz_msgs_vendor:/usr/local/google/home/kbalasundar/flowstate_ws/install/grpc_vendor:/usr/local/google/home/kbalasundar/flowstate_ws/install/re2_vendor:/usr/local/google/home/kbalasundar/flowstate_ws/install/opencensus_cpp_vendor:/usr/local/google/home/kbalasundar/flowstate_ws/install/prometheus_cpp_vendor:/usr/local/google/home/kbalasundar/flowstate_ws/install/intrinsic_pybind11_vendor:/usr/local/google/home/kbalasundar/flowstate_ws/install/gz_math_vendor/opt/gz_math_vendor:/usr/local/google/home/kbalasundar/flowstate_ws/install/gz_math_vendor:/usr/local/google/home/kbalasundar/flowstate_ws/install/gz_utils_vendor/opt/gz_utils_vendor:/usr/local/google/home/kbalasundar/flowstate_ws/install/gz_utils_vendor:/usr/local/google/home/kbalasundar/flowstate_ws/install/gz_cmake_vendor/opt/gz_cmake_vendor:/usr/local/google/home/kbalasundar/flowstate_ws/install/gz_cmake_vendor:/usr/local/google/home/kbalasundar/flowstate_ws/install/flatbuffers_vendor:/usr/local/google/home/kbalasundar/flowstate_ws/install/eigen_vendor:/usr/local/google/home/kbalasundar/flowstate_ws/install/bazelisk_vendor:/usr/local/google/home/kbalasundar/flowstate_ws/install/abseil_cpp_vendor:/opt/ros/kilted/opt/sdformat_vendor:/opt/ros/kilted/opt/gz_math_vendor:/opt/ros/kilted/opt/gz_utils_vendor:/opt/ros/kilted/opt/gz_tools_vendor:/opt/ros/kilted/opt/gz_ogre_next_vendor:/opt/ros/kilted/opt/gz_dartsim_vendor:/opt/ros/kilted/opt/gz_cmake_vendor:/opt/ros/kilted DEBUGINFOD_URLS=https://debuginfod.debian.net LD_LIBRARY_PATH=/usr/local/google/home/kbalasundar/aic_ws/src/aic/install/aic_task_interfaces/lib:${LD_LIBRARY_PATH} PYTHONPATH=/usr/local/google/home/kbalasundar/aic_ws/src/aic/install/aic_task_interfaces/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/cmake --build /usr/local/google/home/kbalasundar/aic_ws/src/aic/build/aic_flowstate_skills -- -j64 -l64

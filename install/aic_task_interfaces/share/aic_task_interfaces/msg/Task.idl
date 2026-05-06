@@ -1,0 +1,47 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from aic_task_interfaces/msg/Task.msg
+// generated code does not contain a copyright notice
+
+
+module aic_task_interfaces {
+  module msg {
+    @verbatim (language="comment", text=
+      "A unique ID for the cable insertion task.")
+    struct Task {
+      string id;
+
+      @verbatim (language="comment", text=
+        "The type of cable which should be inserted.")
+      string cable_type;
+
+      @verbatim (language="comment", text=
+        "The name of the cable which should be inserted, e.g., \"sfp_sc\".")
+      string cable_name;
+
+      @verbatim (language="comment", text=
+        "The type of plug at the end of the cable which should be inserted, e.g., \"sfp\".")
+      string plug_type;
+
+      @verbatim (language="comment", text=
+        "The name of plug at the end of the cable which should be inserted, e.g., \"sfp_module\".")
+      string plug_name;
+
+      @verbatim (language="comment", text=
+        "The type of port on the module side into which the plug should be inserted, e.g., \"sfp\".")
+      string port_type;
+
+      @verbatim (language="comment", text=
+        "The name of the port on the module side into which the plug should be inserted, e.g., \"sfp_port_0\".")
+      string port_name;
+
+      @verbatim (language="comment", text=
+        "The name of the component or module on which the port exists, e.g., \"nic_card_0\"")
+      string target_module_name;
+
+      @verbatim (language="comment", text=
+        "The number of seconds from the moment this request is received by when the task must complete." "\n"
+        "todo(yadunund): should this be a system clock timestamp instead.")
+      uint64 time_limit;
+    };
+  };
+};

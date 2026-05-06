@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package ai.flowstate;
+
+message ManageModelLifecycleSkillParams {
+  enum Transition {
+    UNKNOWN = 0;
+    CONFIGURE = 1;
+    ACTIVATE = 2;
+    DEACTIVATE = 3;
+    CLEANUP = 4;
+    SHUTDOWN = 5;
+  }
+  Transition transition = 1;
+}
+
+message ManageModelLifecycleSkillResult {
+  bool success = 1;
+  string message = 2;
+}

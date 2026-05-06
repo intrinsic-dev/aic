@@ -159,7 +159,7 @@ class CheatCode(Policy):
             f"pfrac: {position_fraction:.3} xy_error: {tip_x_error:0.3} {tip_y_error:0.3}   integrators: {self._tip_x_error_integrator:.3} , {self._tip_y_error_integrator:.3}"
         )
 
-        i_gain = 0.15
+        i_gain = 0.05
 
         target_x = port_xy[0] + i_gain * self._tip_x_error_integrator
         target_y = port_xy[1] + i_gain * self._tip_y_error_integrator

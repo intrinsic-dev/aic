@@ -1,0 +1,5 @@
+[ 25%] Built target insert_cable_skill_protos_desc
+[ 33%] Built target insert_cable_skill_config
+[ 58%] Built target insert_cable_skill_protos
+[ 66%] [32mBuilding CXX object insert_cable_skill/CMakeFiles/insert_cable_skill_main.dir/src/insert_cable_skill.cc.o[0m
+[ 75%] [32mBuilding CXX object insert_cable_skill/CMakeFiles/insert_cable_skill_main.dir/insert_cable_skill_main.cc.o[0m

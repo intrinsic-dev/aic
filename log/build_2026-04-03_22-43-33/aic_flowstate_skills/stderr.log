@@ -1,0 +1,22 @@
+/usr/local/google/home/kbalasundar/aic_ws/src/aic/flowstate/aic_flowstate_skills/insert_cable_skill/src/insert_cable_skill.cc: In member function ‘absl::lts_20250512::StatusOr<std::shared_ptr<aic_task_interfaces::action::InsertCable_Result_<std::allocator<void> > > > {anonymous}::InsertCableClientNode::SendAction(const aic_task_interfaces::action::InsertCable::Goal&, double)’:
+/usr/local/google/home/kbalasundar/aic_ws/src/aic/flowstate/aic_flowstate_skills/insert_cable_skill/src/insert_cable_skill.cc:101:40: error: ‘active_goal_mutex’ was not declared in this scope
+  101 |       std::lock_guard<std::mutex> lock(active_goal_mutex);
+      |                                        ^~~~~~~~~~~~~~~~~
+/usr/local/google/home/kbalasundar/aic_ws/src/aic/flowstate/aic_flowstate_skills/insert_cable_skill/src/insert_cable_skill.cc:102:7: error: ‘active_goal_handle’ was not declared in this scope
+  102 |       active_goal_handle = goal_handle;
+      |       ^~~~~~~~~~~~~~~~~~
+/usr/local/google/home/kbalasundar/aic_ws/src/aic/flowstate/aic_flowstate_skills/insert_cable_skill/src/insert_cable_skill.cc:112:42: error: ‘active_goal_mutex’ was not declared in this scope
+  112 |         std::lock_guard<std::mutex> lock(active_goal_mutex);
+      |                                          ^~~~~~~~~~~~~~~~~
+/usr/local/google/home/kbalasundar/aic_ws/src/aic/flowstate/aic_flowstate_skills/insert_cable_skill/src/insert_cable_skill.cc:113:9: error: ‘active_goal_handle’ was not declared in this scope
+  113 |         active_goal_handle.reset();
+      |         ^~~~~~~~~~~~~~~~~~
+/usr/local/google/home/kbalasundar/aic_ws/src/aic/flowstate/aic_flowstate_skills/insert_cable_skill/src/insert_cable_skill.cc:120:40: error: ‘active_goal_mutex’ was not declared in this scope
+  120 |       std::lock_guard<std::mutex> lock(active_goal_mutex);
+      |                                        ^~~~~~~~~~~~~~~~~
+/usr/local/google/home/kbalasundar/aic_ws/src/aic/flowstate/aic_flowstate_skills/insert_cable_skill/src/insert_cable_skill.cc:121:7: error: ‘active_goal_handle’ was not declared in this scope
+  121 |       active_goal_handle.reset();
+      |       ^~~~~~~~~~~~~~~~~~
+gmake[2]: *** [insert_cable_skill/CMakeFiles/insert_cable_skill_main.dir/build.make:85: insert_cable_skill/CMakeFiles/insert_cable_skill_main.dir/src/insert_cable_skill.cc.o] Error 1
+gmake[1]: *** [CMakeFiles/Makefile2:262: insert_cable_skill/CMakeFiles/insert_cable_skill_main.dir/all] Error 2
+gmake: *** [Makefile:146: all] Error 2
