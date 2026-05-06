@@ -61,7 +61,7 @@
       <collision name="v1015079011_collider_box003_collider_box.003">
         <origin xyz="0.017774 0.0 0.008656" rpy="0.0 0.785398 0.0"/>
         <geometry>
-          <box size="0.025812 0.014 0.001239"/>
+          <box size="0.009 0.014 0.001239"/>
         </geometry>
       </collision>
 
