@@ -38,16 +38,16 @@
       </collision>
 
       <collision name="iso_4762_m2_x_8072_collider_box_003">
-        <origin xyz="0.021242 0.007723 0.013979" rpy="0.0 -0.785398 0.0"/>
+        <origin xyz="0.021242 0.0080 0.013979" rpy="0.0 -0.785398 0.0"/>
         <geometry>
-          <box size="0.036111 0.002305 0.010956"/>
+          <box size="0.036111 0.0018 0.010956"/>
         </geometry>
       </collision>
 
       <collision name="iso_4762_m2_x_8072_collider_box_004">
-        <origin xyz="0.021003 -0.007938 0.014217" rpy="0.0 -0.785398 0.0"/>
+        <origin xyz="0.021003 -0.008 0.014217" rpy="0.0 -0.785398 0.0"/>
         <geometry>
-          <box size="0.036111 0.001875 0.01163"/>
+          <box size="0.036111 0.0018 0.01163"/>
         </geometry>
       </collision>
 
