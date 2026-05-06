@@ -221,6 +221,7 @@ class CheatCode(Policy):
         for t in range(0, 100):
             interp_fraction = t / 100.0
             try:
+                self.get_logger().info("Sending move_robot command for interpolation...")
                 self.set_pose_target(
                     move_robot=move_robot,
                     pose=self.calc_gripper_pose(
@@ -243,6 +244,7 @@ class CheatCode(Policy):
             z_offset -= 0.0005
             self.get_logger().info(f"z_offset: {z_offset:0.5}")
             try:
+                self.get_logger().info(f"Sending move_robot command for insertion, z_offset: {z_offset:0.5}")
                 self.set_pose_target(
                     move_robot=move_robot,
                     pose=self.calc_gripper_pose(port_transform, z_offset=z_offset),
