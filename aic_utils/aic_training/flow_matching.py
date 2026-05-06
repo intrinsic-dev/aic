@@ -219,6 +219,13 @@ class TaskEncoder(nn.Module):
 
     def forward(self, target_module: torch.Tensor, port_name: torch.Tensor) -> torch.Tensor:
         task_idx = self.lookup[target_module, port_name]
+        if (task_idx < 0).any():
+            bad_tm = target_module[task_idx < 0].tolist()
+            bad_pn = port_name[task_idx < 0].tolist()
+            raise ValueError(
+                f"Unknown (target_module, port_name) pairs (no task index assigned): "
+                f"{list(zip(bad_tm, bad_pn))}"
+            )
         return self.embedding(task_idx).unsqueeze(1)
 
 
@@ -325,8 +332,8 @@ class VectorFieldTransformer(nn.Module):
         c = cat([timestep_emb, task_token], dim=-1)  → shift / scale / gate per layer
     """
 
-    def __init__(self, action_dim: int, d_model: int = TOKEN_DIM, n_heads: int = 8,
-                 n_layers: int = 4, ffn_dim: int = 1024, dropout: float = 0.0):
+    def __init__(self, action_dim: int, pred_horizon: int, d_model: int = TOKEN_DIM,
+                 n_heads: int = 8, n_layers: int = 4, ffn_dim: int = 1024, dropout: float = 0.0):
         super().__init__()
         self.norm_img   = nn.LayerNorm(d_model)
         self.norm_state = nn.LayerNorm(d_model)
@@ -338,31 +345,35 @@ class VectorFieldTransformer(nn.Module):
         self.norm_out = nn.LayerNorm(d_model)
         self.out_proj = nn.Linear(d_model, action_dim)
 
-    @staticmethod
-    def _sinusoidal_pos_emb(length: int, dim: int, device: torch.device) -> torch.Tensor:
-        """Sinusoidal positional encoding for positions 0 .. length-1, shape (1, length, dim)."""
-        pos = torch.arange(length, device=device).unsqueeze(1)       # (L, 1)
-        i   = torch.arange(dim // 2, device=device).unsqueeze(0)     # (1, d/2)
-        angles = pos / (10000.0 ** (2.0 * i / dim))                  # (L, d/2)
-        emb = torch.cat([angles.sin(), angles.cos()], dim=-1)        # (L, d)
-        return emb.unsqueeze(0)                                       # (1, L, d)
+        # Pre-compute sinusoidal PE for the fixed prediction horizon (1, H, d_model)
+        pos = torch.arange(pred_horizon).unsqueeze(1)              # (H, 1)
+        i   = torch.arange(d_model // 2).unsqueeze(0)             # (1, d/2)
+        angles = pos / (10000.0 ** (2.0 * i / d_model))           # (H, d/2)
+        pe = torch.cat([angles.sin(), angles.cos()], dim=-1)      # (H, d_model)
+        self.register_buffer("pos_emb", pe.unsqueeze(0))          # (1, H, d_model)
 
-    def forward(self, action_tokens, timestep_emb, img_tokens, state_tokens, task_token):
+    def encode_prefix(self, img_tokens: torch.Tensor, state_tokens: torch.Tensor) -> torch.Tensor:
+        """Normalise and concatenate image and state tokens into the prefix.
+
+        Call once per sample() invocation; the result is constant across all ODE steps.
+        """
+        return torch.cat([self.norm_img(img_tokens), self.norm_state(state_tokens)], dim=1)
+
+    def forward(self, action_tokens, timestep_emb, task_token,
+                img_tokens=None, state_tokens=None, prefix_cache=None):
         # AdaLN conditioning: concatenate timestep and task embeddings so each
         # signal stays independent before the AdaLNZero linear mixes them
         cond = torch.cat([timestep_emb, task_token.squeeze(1)], dim=-1)  # (B, 2*d_model)
 
-        # Prefix: image and state tokens only (task/timestep go through AdaLN)
-        prefix = torch.cat([
-            self.norm_img(img_tokens),
-            self.norm_state(state_tokens),
-        ], dim=1)                                              # (B, n_prefix, d_model)
+        # Prefix: use pre-computed cache when available (constant across ODE steps)
+        if prefix_cache is not None:
+            prefix = prefix_cache
+        else:
+            prefix = torch.cat([self.norm_img(img_tokens), self.norm_state(state_tokens)], dim=1)
         n_prefix = prefix.shape[1]
 
-        # Add sinusoidal positional encoding to action tokens
-        L, d = action_tokens.shape[1], action_tokens.shape[2]
-        pos_emb = self._sinusoidal_pos_emb(L, d, action_tokens.device)
-        action_tokens = action_tokens + pos_emb
+        # Add pre-computed sinusoidal PE to action tokens
+        action_tokens = action_tokens + self.pos_emb[:, :action_tokens.shape[1]]
 
         # Full sequence: prefix + action tokens
         x = torch.cat([prefix, action_tokens], dim=1)         # (B, n_prefix + H, d_model)
@@ -401,6 +412,7 @@ class FlowMatchingPolicy(nn.Module):
     def __init__(
         self,
         obs_horizon: int = 2,
+        pred_horizon: int = 16,
         action_dim: int = 7,
         robot_state_dim: int = ROBOT_STATE_DIM,
         d_model: int = TOKEN_DIM,
@@ -414,6 +426,7 @@ class FlowMatchingPolicy(nn.Module):
     ):
         super().__init__()
         self.obs_horizon      = obs_horizon
+        self.pred_horizon     = pred_horizon
         self.action_dim       = action_dim
         self.cfg_dropout_prob = cfg_dropout_prob
 
@@ -434,6 +447,7 @@ class FlowMatchingPolicy(nn.Module):
         self.action_in_proj = nn.Linear(action_dim, d_model)
         self.vector_field_net = VectorFieldTransformer(
             action_dim=action_dim,
+            pred_horizon=pred_horizon,
             d_model=d_model,
             n_heads=n_heads,
             n_layers=n_layers,
@@ -479,19 +493,26 @@ class FlowMatchingPolicy(nn.Module):
         t: torch.Tensor,
         use_uncond: bool = False,
         img_tokens_cache: torch.Tensor | None = None,
+        state_tokens_cache: torch.Tensor | None = None,
+        task_token_cache: torch.Tensor | None = None,
+        prefix_cache: torch.Tensor | None = None,
     ) -> torch.Tensor:
         """Predict velocity field v_θ(x_t, t).
 
         Args:
-            images:           {camera_key: (B, obs_horizon, C, H, W)}
-            robot_state:      (B, obs_horizon, ROBOT_STATE_DIM)
-            target_module:    (B,) int64
-            port_name:        (B,) int64
-            x_t:              (B, pred_horizon, action_dim) — interpolated action at time t
-            t:                (B,) float32 in [0, 1] — flow matching time
-            use_uncond:       if True, zero all conditions (img, state, task) for the CFG
-                              unconditional pass.
-            img_tokens_cache: pre-computed image tokens; skips image encoder if provided
+            images:             {camera_key: (B, obs_horizon, C, H, W)}
+            robot_state:        (B, obs_horizon, ROBOT_STATE_DIM)
+            target_module:      (B,) int64
+            port_name:          (B,) int64
+            x_t:                (B, pred_horizon, action_dim) — interpolated action at time t
+            t:                  (B,) float32 in [0, 1] — flow matching time
+            use_uncond:         if True, zero all conditions for the CFG unconditional pass.
+            img_tokens_cache:   pre-computed image tokens; skips image encoder if provided
+            state_tokens_cache: pre-computed state tokens; skips state encoder if provided
+            task_token_cache:   pre-computed task token (cond or null); skips task encoder
+            prefix_cache:       pre-computed encode_prefix() result; skips both token
+                                encoders and the LayerNorm inside vector_field_net.
+                                Inference-only — CFG dropout during training will not work.
 
         Returns:
             v_pred: (B, pred_horizon, action_dim) — predicted velocity field
@@ -504,32 +525,50 @@ class FlowMatchingPolicy(nn.Module):
                 torch.cuda.synchronize(dev)
             _t = time.perf_counter()
 
-        if img_tokens_cache is not None:
-            img_tokens = img_tokens_cache
+        # When the normed prefix is pre-computed, skip all img/state encoding.
+        if prefix_cache is None:
+            if img_tokens_cache is not None:
+                img_tokens = img_tokens_cache
+            else:
+                img_tokens = self.image_encoder(images)
+
+            if self.profiling and img_tokens_cache is None:
+                _t = self._tock(_t, "image_encoder", dev)
+            elif self.profiling:
+                if dev.type == "cuda":
+                    torch.cuda.synchronize(dev)
+                _t = time.perf_counter()
+
+            if state_tokens_cache is not None:
+                state_tokens = state_tokens_cache
+            else:
+                state_tokens = self.state_encoder(
+                    robot_state.flatten(end_dim=1)
+                ).reshape(B, self.obs_horizon, -1)
+
+            if self.profiling:
+                _t = self._tock(_t, "state_encoder", dev)
+
+            if use_uncond:
+                img_tokens   = torch.zeros_like(img_tokens)
+                state_tokens = torch.zeros_like(state_tokens)
         else:
-            img_tokens = self.image_encoder(images)
+            img_tokens   = None  # prefix_cache already encodes these
+            state_tokens = None
+            if self.profiling:
+                if dev.type == "cuda":
+                    torch.cuda.synchronize(dev)
+                _t = time.perf_counter()
 
-        if self.profiling and img_tokens_cache is None:
-            _t = self._tock(_t, "image_encoder", dev)
-        elif self.profiling:
-            if dev.type == "cuda":
-                torch.cuda.synchronize(dev)
-            _t = time.perf_counter()
-
-        state_tokens = self.state_encoder(
-            robot_state.flatten(end_dim=1)
-        ).reshape(B, self.obs_horizon, -1)
-
-        if self.profiling:
-            _t = self._tock(_t, "state_encoder", dev)
-
+        # Task token
         if use_uncond:
-            # Unconditional pass: zero image and state tokens, use learnable null task token.
-            img_tokens   = torch.zeros_like(img_tokens)
-            state_tokens = torch.zeros_like(state_tokens)
-            task_token   = self.task_encoder.uncond_token(B, dev)
+            task_token = (task_token_cache if task_token_cache is not None
+                          else self.task_encoder.uncond_token(B, dev))
         else:
-            task_token = self.task_encoder(target_module, port_name)
+            if task_token_cache is not None:
+                task_token = task_token_cache
+            else:
+                task_token = self.task_encoder(target_module, port_name)
             if self.cfg_dropout_prob > 0.0 and self.training:
                 # Drop all conditions jointly with the same mask.
                 drop_mask    = (torch.rand(B, device=dev) < self.cfg_dropout_prob).view(B, 1, 1)
@@ -547,9 +586,10 @@ class FlowMatchingPolicy(nn.Module):
         v_pred = self.vector_field_net(
             action_tokens=action_tokens,
             timestep_emb=timestep_emb,
+            task_token=task_token,
             img_tokens=img_tokens,
             state_tokens=state_tokens,
-            task_token=task_token,
+            prefix_cache=prefix_cache,
         )
 
         if self.profiling:
@@ -640,7 +680,6 @@ class FlowMatchingPolicy(nn.Module):
         robot_state: torch.Tensor,
         target_module: torch.Tensor,
         port_name: torch.Tensor,
-        pred_horizon: int = 16,
         num_steps: int = 10,
         guidance_scale: float = 1.0,
         solver: str = "midpoint",
@@ -661,7 +700,6 @@ class FlowMatchingPolicy(nn.Module):
             robot_state:    (B, obs_horizon, ROBOT_STATE_DIM)
             target_module:  (B,) int64
             port_name:      (B,) int64
-            pred_horizon:   number of action steps to generate
             num_steps:      number of ODE integration steps
             guidance_scale: CFG scale (1.0 = disabled)
             solver:         "euler" or "midpoint"
@@ -674,45 +712,59 @@ class FlowMatchingPolicy(nn.Module):
         use_cfg = guidance_scale != 1.0
         h       = 1.0 / num_steps                                 # step size in [0, 1]
 
-        # Pre-encode images once — they are constant across all ODE steps
+        # Pre-encode everything constant across ODE steps (images, state, task, prefix)
         if self.profiling:
             if device.type == "cuda":
                 torch.cuda.synchronize(device)
-            _t_img = time.perf_counter()
-        img_tokens_cache = self.image_encoder(images)
+            _t_enc = time.perf_counter()
+        img_tokens      = self.image_encoder(images)
+        state_tokens    = self.state_encoder(
+            robot_state.flatten(end_dim=1)
+        ).reshape(B, self.obs_horizon, -1)
+        task_token_cond = self.task_encoder(target_module, port_name)
+        prefix_cond     = self.vector_field_net.encode_prefix(img_tokens, state_tokens)
         if self.profiling:
             if device.type == "cuda":
                 torch.cuda.synchronize(device)
-            print(f"[profile] image_encoder (once per sample): "
-                  f"{(time.perf_counter() - _t_img)*1e3:.2f} ms", flush=True)
+            print(f"[profile] pre-encode (once per sample): "
+                  f"{(time.perf_counter() - _t_enc)*1e3:.2f} ms", flush=True)
 
-        # Pre-compute zero image cache for the unconditional CFG pass so we
-        # don't allocate it inside the hot ODE loop.
-        img_tokens_cache_zeros = (
-            torch.zeros_like(img_tokens_cache) if use_cfg else None
-        )
+        if use_cfg:
+            prefix_uncond     = self.vector_field_net.encode_prefix(
+                torch.zeros_like(img_tokens),
+                torch.zeros_like(state_tokens),
+            )
+            task_token_uncond = self.task_encoder.uncond_token(B, device)
+            # Stack cond/uncond once so the hot loop runs a single 2B forward pass
+            # instead of two sequential B-size passes.
+            prefix_2b = torch.cat([prefix_cond, prefix_uncond], dim=0)
+            task_2b   = torch.cat([task_token_cond, task_token_uncond], dim=0)
 
         def eval_v(xt: torch.Tensor, t_val: float) -> torch.Tensor:
             """Evaluate velocity field (with optional CFG) at a given t."""
             t_tensor = torch.full((B,), t_val, dtype=torch.float32, device=device)
-            v_cond = self(
-                images=images, robot_state=robot_state,
-                target_module=target_module, port_name=port_name,
-                x_t=xt, t=t_tensor, use_uncond=False,
-                img_tokens_cache=img_tokens_cache,
-            )
             if use_cfg:
-                v_uncond = self(
+                # Single 2B forward pass: first B = cond, second B = uncond
+                v_out = self(
                     images=images, robot_state=robot_state,
                     target_module=target_module, port_name=port_name,
-                    x_t=xt, t=t_tensor, use_uncond=True,
-                    img_tokens_cache=img_tokens_cache_zeros,
+                    x_t=torch.cat([xt, xt], dim=0),
+                    t=torch.cat([t_tensor, t_tensor], dim=0),
+                    task_token_cache=task_2b,
+                    prefix_cache=prefix_2b,
                 )
+                v_cond, v_uncond = v_out[:B], v_out[B:]
                 return v_uncond + guidance_scale * (v_cond - v_uncond)
-            return v_cond
+            return self(
+                images=images, robot_state=robot_state,
+                target_module=target_module, port_name=port_name,
+                x_t=xt, t=t_tensor,
+                task_token_cache=task_token_cond,
+                prefix_cache=prefix_cond,
+            )
 
         # Start from pure noise at t=0
-        x = torch.randn(B, pred_horizon, self.action_dim, device=device)
+        x = torch.randn(B, self.pred_horizon, self.action_dim, device=device)
 
         if solver == "euler":
             # 1st-order Euler integration

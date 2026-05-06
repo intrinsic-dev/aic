@@ -33,6 +33,16 @@ _aic_utils = str(Path(__file__).resolve().parent.parent)
 if _aic_utils not in sys.path:
     sys.path.insert(0, _aic_utils)
 
+_lerobot_robot_aic = str(Path(__file__).resolve().parent.parent / "lerobot_robot_aic")
+if _lerobot_robot_aic not in sys.path:
+    sys.path.insert(0, _lerobot_robot_aic)
+from lerobot_robot_aic.aic_robot_aic_controller import (
+    TASK_PORT_NAME_ENCODING,
+    TASK_TARGET_MODULE_ENCODING,
+)
+_PORT_NAMES          = {v: k for k, v in TASK_PORT_NAME_ENCODING.items()}
+_TARGET_MODULE_NAMES = {v: k for k, v in TASK_TARGET_MODULE_ENCODING.items()}
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -133,6 +143,7 @@ _COL_QUAT_XYZW = slice(3, 7)
 QUAT_NORM_TOL  = 1e-3
 
 CAMERA_KEYS = ("left_camera", "center_camera", "right_camera")
+
 
 
 def _quat_xyzw_to_rot6d(quat_xyzw: np.ndarray) -> torch.Tensor:
@@ -265,13 +276,34 @@ class AICLeRobotDataset(torch.utils.data.Dataset):
         }
 
 
+def _print_task_distribution(datasets: list, label: str) -> None:
+    """Print a window-count breakdown by port_name across all datasets."""
+    import collections
+    counts: collections.Counter = collections.Counter()
+    for ds in datasets:
+        arr    = ds._state_arr
+        ws_arr = np.array(ds._windows)
+        pns    = arr[ws_arr, _COL_PORT_NAME].round().astype(int)
+        for pn in pns.tolist():
+            counts[pn] += 1
+    total = sum(counts.values())
+    print(f"\n{label} task distribution ({total} windows total):")
+    print(f"  {'port_name':<16} {'windows':>8}  {'%':>6}")
+    print(f"  {'-'*16} {'-'*8}  {'-'*6}")
+    for pn, cnt in sorted(counts.items()):
+        pn_name = _PORT_NAMES.get(pn, str(pn))
+        print(f"  {pn_name:<16} {cnt:>8}  {cnt/total*100:>5.1f}%")
+
+
 def build_dataloader(dataset_dirs, obs_horizon, pred_horizon, action_dim,
-                     batch_size, num_workers=4, shuffle=True) -> DataLoader:
+                     batch_size, num_workers=4, shuffle=True,
+                     label: str = "Training") -> DataLoader:
     datasets = [
         AICLeRobotDataset(d, obs_horizon=obs_horizon, pred_horizon=pred_horizon,
                           action_dim=action_dim)
         for d in dataset_dirs
     ]
+    _print_task_distribution(datasets, label)
     return DataLoader(
         ConcatDataset(datasets),
         batch_size=batch_size,
@@ -338,6 +370,7 @@ def train(args):
 
     policy = FlowMatchingPolicy(
         obs_horizon      = args.obs_horizon,
+        pred_horizon     = args.pred_horizon,
         action_dim       = args.action_dim,
         robot_state_dim  = ROBOT_STATE_DIM,
         d_model          = TOKEN_DIM,
@@ -367,6 +400,7 @@ def train(args):
         action_dim   = args.action_dim,
         batch_size   = args.batch_size,
         num_workers  = args.num_workers,
+        label        = "Training",
     )
 
     val_loader = None
@@ -378,6 +412,7 @@ def train(args):
             action_dim   = args.action_dim,
             batch_size   = args.batch_size,
             num_workers  = args.num_workers,
+            label        = "Validation",
         )
         print(f"Validation loader: {len(val_loader.dataset)} windows, evaluating {args.val_steps} batches/epoch")
 

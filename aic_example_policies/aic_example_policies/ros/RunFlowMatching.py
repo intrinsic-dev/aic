@@ -53,7 +53,7 @@ TASK_PORT_NAME_ENCODING: dict[str, int] = {
 }
 
 CHECKPOINT_PATH = Path(
-    "/home/lhphanto/ws_aic/src/aic/outputs/05_04_cfg_fm_6d/checkpoint_epoch0025.pt"
+    "/home/lhphanto/ws_aic/src/aic/outputs/05_05_cfg_fm_6d3/checkpoint_epoch0025.pt"
 )
 
 # Image size expected by the policy (must match training dataset resolution)
@@ -63,11 +63,11 @@ IMG_W = 288
 # Flow matching sampling hyperparameters
 NUM_FLOW_STEPS = 10   # midpoint solver needs far fewer steps than DDPM
 FLOW_SOLVER     = "euler"   # "euler" or "midpoint"
-GUIDANCE_SCALE  = 5.0          # > 1.0 enables CFG (requires cfg_dropout_prob > 0 at training)
+GUIDANCE_SCALE  = 1.0          # > 1.0 enables CFG (requires cfg_dropout_prob > 0 at training)
 
 # Observation / prediction horizon (must match training)
 OBS_HORIZON      = 2
-PRED_HORIZON     = 16
+PRED_HORIZON     = 8
 # How many generated actions to execute before re-running inference
 ACTION_EXEC_STEPS = 2
 
@@ -175,6 +175,7 @@ class RunFlowMatching(Policy):
 
         policy = FlowMatchingPolicy(
             obs_horizon=args.get("obs_horizon", OBS_HORIZON),
+            pred_horizon=args.get("pred_horizon", PRED_HORIZON),
             action_dim=args.get("action_dim", 9),  # 9 = pos+rot6d, 10 = +dist_to_target
             robot_state_dim=ROBOT_STATE_DIM,
             n_heads=args.get("n_heads", 8),
@@ -286,11 +287,10 @@ class RunFlowMatching(Policy):
             robot_state=robot_state,
             target_module=target_module,
             port_name=port_name,
-            pred_horizon=PRED_HORIZON,
             num_steps=NUM_FLOW_STEPS,
             guidance_scale=GUIDANCE_SCALE,
             solver=FLOW_SOLVER,
-        )  # (1, pred_horizon, 9)
+        )  # (1, pred_horizon, action_dim)
         elapsed_ms = (time.perf_counter() - t0) * 1e3
         self.get_logger().info(
             f"RunFlowMatching: sample() {elapsed_ms:.1f} ms  "
