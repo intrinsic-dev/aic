@@ -15,6 +15,7 @@ find_package(ament_cmake REQUIRED)
 find_package(intrinsic_sdk_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
+find_package(lifecycle_msgs REQUIRED)
 
 
 add_subdirectory(insert_cable_skill)

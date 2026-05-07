@@ -47,6 +47,7 @@ target_link_libraries(insert_cable_skill_main
   rclcpp::rclcpp
   rclcpp_action::rclcpp_action
   ${aic_task_interfaces_TARGETS}
+  ${lifecycle_msgs_TARGETS}
 )
 
 add_dependencies(insert_cable_skill_main insert_cable_skill_config)
