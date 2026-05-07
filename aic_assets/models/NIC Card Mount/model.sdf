@@ -320,45 +320,6 @@
           </box>
         </geometry>
       </collision>
-
-      <collision name="contact_collision_01">
-        <pose>0.012963 -0.0305 0.002845 3.128092 0.0 0.0</pose>
-        <geometry>
-          <box>
-            <size>0.008112 0.00025 0.0025</size>
-          </box>
-        </geometry>
-      </collision>
-      <collision name="contact_collision_02">
-        <pose>-0.010237 -0.0305 0.002845 3.128092 0.0 0.0</pose>
-        <geometry>
-          <box>
-            <size>0.008112 0.00025 0.0025</size>
-          </box>
-        </geometry>
-      </collision>
-      <collision name="contact_collision_01_holder">
-        <pose>0.012963 -0.030 0.008 3.128092 0.0 0.0</pose>
-        <geometry>
-          <box>
-            <size>0.008112 0.00025 0.002</size>
-          </box>
-        </geometry>
-      </collision>
-      <collision name="contact_collision_02_holder">
-        <pose>-0.010237 -0.030 0.008 3.128092 0.0 0.0</pose>
-        <geometry>
-          <box>
-            <size>0.008112 0.00025 0.002</size>
-          </box>
-        </geometry>
-      </collision>
-      <sensor name="sfp_port_sensor" type="contact">
-        <contact>
-          <collision>contact_collision_01</collision>
-          <collision>contact_collision_02</collision>
-        </contact>
-      </sensor>
     </link>
 
     <joint name="card_joint" type="fixed">
@@ -402,5 +363,85 @@
       <child>sfp_port_1_link_entrance</child>
     </joint>
 
+    <model name="sfp_port_0">
+      <link name="sfp_port_0">
+        <collision name="contact_collision_01">
+          <pose>0.012963 -0.0305 0.002845 3.128092 0.0 0.0</pose>
+          <geometry>
+            <box>
+              <size>0.008112 0.00025 0.0025</size>
+            </box>
+          </geometry>
+        </collision>
+        <collision name="contact_collision_01_holder">
+          <pose>0.012963 -0.030 0.008 3.128092 0.0 0.0</pose>
+          <geometry>
+            <box>
+              <size>0.008112 0.00025 0.002</size>
+            </box>
+          </geometry>
+        </collision>
+        <sensor name="sfp_port_sensor_01" type="contact">
+          <contact>
+            <collision>contact_collision_01</collision>
+          </contact>
+        </sensor>
+      </link>
+      <plugin
+        filename="gz-sim-touchplugin-system"
+        name="gz::sim::systems::TouchPlugin">
+        <target>sfp_tip_link/collision/contact_collision</target>
+        <time>1</time>
+        <enabled>true</enabled>
+        <collision>contact_collision_01</collision>
+      </plugin>
+    </model>
+    <model name="sfp_port_1">
+      <link name="sfp_port_1">
+        <collision name="contact_collision_02">
+          <pose>-0.010237 -0.0305 0.002845 3.128092 0.0 0.0</pose>
+          <geometry>
+            <box>
+              <size>0.008112 0.00025 0.0025</size>
+            </box>
+          </geometry>
+        </collision>
+        <collision name="contact_collision_02_holder">
+          <pose>-0.010237 -0.030 0.008 3.128092 0.0 0.0</pose>
+          <geometry>
+            <box>
+              <size>0.008112 0.00025 0.002</size>
+            </box>
+          </geometry>
+        </collision>
+        <sensor name="sfp_port_sensor_02" type="contact">
+          <contact>
+            <collision>contact_collision_02</collision>
+          </contact>
+        </sensor>
+      </link>
+      <plugin
+        filename="gz-sim-touchplugin-system"
+        name="gz::sim::systems::TouchPlugin">
+        <target>sfp_tip_link/collision/contact_collision</target>
+        <time>1</time>
+        <enabled>true</enabled>
+        <collision>contact_collision_02</collision>
+      </plugin>
+    </model>
+
+    <plugin filename="libgz-sim-pose-publisher-system.so"
+      name="gz::sim::systems::PosePublisher">
+      <publish_link_pose>true</publish_link_pose>
+      <publish_sensor_pose>false</publish_sensor_pose>
+      <publish_collision_pose>false</publish_collision_pose>
+      <publish_visual_pose>false</publish_visual_pose>
+      <publish_nested_model_pose>true</publish_nested_model_pose>
+      <publish_model_pose>true</publish_model_pose>
+      <use_pose_vector_msg>true</use_pose_vector_msg>
+      <static_publisher>true</static_publisher>
+      <update_frequency>0</update_frequency>
+      <static_update_frequency>1</static_update_frequency>
+    </plugin>
   </model>
 </sdf>
