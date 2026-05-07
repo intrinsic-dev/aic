@@ -26,28 +26,28 @@
       <collision name="v1015079011_collider_box.001">
         <origin xyz="0.022568 -0.0054 0.013451" rpy="0.0 0.785398 0.0"/>
         <geometry>
-          <box size="0.025812 0.0032 0.013799"/>
+          <box size="0.025812 0.0022 0.013799"/>
         </geometry>
       </collision>
 
       <collision name="v1015079011_collider_box.002">
         <origin xyz="0.022568 0.00585 0.013451" rpy="0.0 0.785398 0.0"/>
         <geometry>
-          <box size="0.025812 0.0023 0.013799"/>
+          <box size="0.025812 0.0022 0.013799"/>
         </geometry>
       </collision>
 
       <collision name="v1015079011_collider_box003_collider_box">
         <origin xyz="0.01415 0.0 0.02187" rpy="0.0 0.785398 0.0"/>
         <geometry>
-          <box size="0.002 0.014 0.013799"/>
+          <box size="0.0012 0.014 0.013799"/>
         </geometry>
       </collision>
 
       <collision name="v1015079011_collider_box003_collider_box.001">
         <origin xyz="0.031064 0.0 0.004956" rpy="0.0 0.785398 0.0"/>
         <geometry>
-          <box size="0.001842 0.014 0.013799"/>
+          <box size="0.001042 0.014 0.013799"/>
         </geometry>
       </collision>
 
