@@ -1,0 +1,96 @@
+<?xml version="1.0" ?>
+<sdf version="1.9">
+  <model name="sfp_sc_cable">
+    <include merge="true">
+      <!--
+         A few links in cable intersect with gripper palm.
+         Workaround this by removing their collisions.
+      -->
+      <experimental:params>
+        <collision element_id="link_1::link_1_collision" action="modify">
+          <pose>0 0 0.006 0 0 0</pose>
+          <geometry>
+            <capsule>
+              <length>0.036</length>
+              <radius>0.002</radius>
+            </capsule>
+          </geometry>
+          <surface>
+            <friction>
+              <torsional>
+                <coefficient>0.05</coefficient>
+              </torsional>
+              <bullet>
+                <friction>0.05</friction>
+                <friction2>0.05</friction2>
+              </bullet>
+            </friction>
+          </surface>
+        </collision>
+        <collision element_id="cable_end_0::base_collision" action="remove"/>
+        <collision element_id="cable_connection_0::collision_0" action="remove"/>
+        <collision element_id="cable_connection_0::collision_1" action="remove"/>
+      </experimental:params>
+      <uri>model://cable_base_c_rotated_phase_1</uri>
+    </include>
+    <include merge="true">
+      <!--
+         Some collisions in LC Plug intersect with gripper fingers on startup
+         Workaround this by removing those collisions.
+      -->
+      <experimental:params>
+        <collision element_id="lc_plug_link::1af02-003-ma2_collider_cylinder" action="remove"/>
+        <collision element_id="lc_plug_link::1af02-003-ma2001_collider_cylinder" action="remove"/>
+        <collision element_id="lc_plug_link::cube_collider_box.002" action="remove"/>
+        <collision element_id="lc_plug_link::cube_collider_box.003" action="remove"/>
+        <collision element_id="lc_plug_link::cube001_collider_box.002" action="remove"/>
+        <collision element_id="lc_plug_link::cube001_collider_box.003" action="remove"/>
+      </experimental:params>
+      <uri>model://LC Plug</uri>
+      <pose relative_to="cable_connection_0">-0.041 0 0 0 0 1.57079</pose>
+    </include>
+    <include merge="true">
+      <uri>model://SC Plug</uri>
+      <pose relative_to="cable_connection_1">0.052 0 0 0 0 0.0</pose>
+    </include>
+    <include merge="true">
+      <!--
+         Some collisions in SFP Module intersect with gripper fingers on startup
+         Workaround this by removing those collisions.
+      -->
+      <experimental:params>
+        <collision element_id="sfp_module_link::port_collider_box" action="remove"/>
+        <collision element_id="sfp_module_link::port_collider_box.001" action="remove"/>
+        <collision element_id="sfp_module_link::port_collider_box.002" action="remove"/>
+        <collision element_id="sfp_module_link::port_collider_box.003" action="remove"/>
+        <collision element_id="sfp_module_link::port_collider_box.004" action="remove"/>
+        <collision element_id="sfp_module_link::port_collider_box.005" action="remove"/>
+        <collision element_id="sfp_module_link::port_collider_box.006" action="remove"/>
+        <collision element_id="sfp_module_link::port_collider_box.007" action="remove"/>
+        <collision element_id="sfp_module_link::latch_collider_box" action="remove"/>
+        <collision element_id="sfp_module_link::latch_collider_box.001" action="remove"/>
+        <collision element_id="sfp_module_link::latch_collider_box.002" action="remove"/>
+        <collision element_id="sfp_module_link::latch_collider_box.003" action="remove"/>
+        <collision element_id="sfp_module_link::head_collider_box" action="remove"/>
+        <collision element_id="sfp_module_link::head_collider_box.001" action="remove"/>
+        <collision element_id="sfp_module_link::head_collider_box.002" action="remove"/>
+        <collision element_id="sfp_module_link::head_collider_box.003" action="remove"/>
+      </experimental:params>
+      <uri>model://SFP Module</uri>
+      <pose relative_to="lc_plug_link">0 0.0384 0 0 3.14159 3.14159</pose>
+    </include>
+    <joint name="plug_0_joint" type="fixed">
+      <parent>cable_connection_0</parent>
+      <child>lc_plug_link</child>
+    </joint>
+    <joint name="plug_1_joint" type="fixed">
+      <parent>cable_connection_1</parent>
+      <child>sc_plug_link</child>
+    </joint>
+    <joint name="sfp_module_joint" type="fixed">
+      <parent>lc_plug_link</parent>
+      <child>sfp_module_link</child>
+    </joint>
+  </model>
+
+</sdf>
