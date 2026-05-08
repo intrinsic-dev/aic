@@ -105,4 +105,13 @@ The task time limit is measured against simulation time (the ROS clock), not wal
 
 When the policy module is loaded, all top-level code, including imports, runs within a 30-second model discovery budget (`model_discovery_timeout_seconds`). Importing large libraries such as `torch` at the top of the module can exceed this budget and cause the policy to be killed before it reports an error.
 
-Move heavy imports into the policy class `__init__` instead. The policy class is instantiated inside `on_configure`, which has its own 60-second budget (`model_configure_timeout_seconds`), giving imports more headroom and keeping discovery fast.
+Move heavy imports into the policy class `insert_cable` callback instead.
+It is important to not slow down the `__init__` of the policy, as `aic_engine` will be periodically querying lifecycle state of `aic_model`, and the `__init__` method of the `Policy` object will block responses to these queries.
+This can cause `aic_engine` to assume the policy node has failed.
+If you have large or slow-running imports, it is safest to run them inside the `insert_cable` callback of your policy.
+
+### Avoid NIC card assumptions
+
+The task board has up to [five different NIC cards](https://github.com/intrinsic-dev/aic/blob/main/docs/task_board_description.md), even though only NIC cards 0 and 1 are used in the provided `aic_engine` `sample_config.yaml` .
+We recommend running code locally also using NIC cards 2, 3, and 4, to ensure there are no hard-coded assumptions that cause exceptions when using these cards.
+This can be done by modifying [sample_config.yaml](https://github.com/intrinsic-dev/aic/blob/main/aic_engine/config/sample_config.yaml) and rebuilding the eval container, or by using the pre-built eval container and following the launch parameter instructions as described in the [Scene Description doc page](https://github.com/intrinsic-dev/aic/blob/main/docs/scene_description.md#creating-training-scenarios).
