@@ -312,6 +312,7 @@ Engine::Engine(const rclcpp::NodeOptions& options)
   skip_ready_simulator_ =
       node_->declare_parameter("skip_ready_simulator", false);
   node_->declare_parameter("model_discovery_timeout_seconds", 30);
+  node_->declare_parameter("model_init_timeout_seconds", 60);
   node_->declare_parameter("model_configure_timeout_seconds", 60);
   node_->declare_parameter("model_activate_timeout_seconds", 60);
   node_->declare_parameter("model_deactivate_timeout_seconds", 60);
@@ -909,7 +910,10 @@ bool Engine::model_node_is_unconfigured() {
   auto request = std::make_shared<lifecycle_msgs::srv::GetState::Request>();
   auto future = model_get_state_client_->async_send_request(request);
 
-  if (!wait_for_interruptible(future, std::chrono::seconds(5))) {
+  const int init_timeout =
+      this->node_->get_parameter("model_init_timeout_seconds").as_int();
+
+  if (!wait_for_interruptible(future, std::chrono::seconds(init_timeout))) {
     RCLCPP_ERROR(node_->get_logger(),
                  "GetState service call timed out for node '%s'",
                  model_node_name_.c_str());

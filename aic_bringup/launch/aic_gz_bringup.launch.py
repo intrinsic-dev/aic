@@ -98,6 +98,7 @@ def launch_setup(context, *args, **kwargs):
     model_discovery_timeout_seconds = LaunchConfiguration(
         "model_discovery_timeout_seconds"
     )
+    model_init_timeout_seconds = LaunchConfiguration("model_init_timeout_seconds")
     model_configure_timeout_seconds = LaunchConfiguration(
         "model_configure_timeout_seconds"
     )
@@ -249,6 +250,7 @@ def launch_setup(context, *args, **kwargs):
                 "config_file_path": aic_engine_config_file,
                 "use_sim_time": True,
                 "model_discovery_timeout_seconds": model_discovery_timeout_seconds,
+                "model_init_timeout_seconds": model_init_timeout_seconds,
                 "model_configure_timeout_seconds": model_configure_timeout_seconds,
             },
         ],
@@ -780,7 +782,13 @@ def generate_launch_description():
             description="Timeout for model configuration checks.",
         )
     )
-
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "model_init_timeout_seconds",
+            default_value="60",
+            description="Timeout for model init to respond to Lifecycle queries).",
+        )
+    )
     declared_arguments.append(
         DeclareLaunchArgument(
             "model_discovery_timeout_seconds",
