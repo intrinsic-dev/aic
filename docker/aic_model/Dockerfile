@@ -1,7 +1,7 @@
 FROM docker.io/library/ros:kilted-ros-core AS build
 
 # Install pixi
-RUN apt update && apt install -y git && curl -fsSL https://pixi.sh/install.sh | bash
+RUN apt update && apt install -y git && curl -fsSL https://pixi.sh/install.sh | PIXI_VERSION=0.67.2 bash
 ENV PATH="/root/.pixi/bin:$PATH"
 
 # Add base dependencies
