@@ -91,6 +91,12 @@ curl -fsSL https://pixi.sh/install.sh | sh
 # Restart your terminal after installation
 ```
 
+> [!IMPORTANT]
+> There was a change in `pixi` hash calculation during the contest in May 2026, so we need to manually pin the `pixi` version to the version before this change to avoid hash conflicts during container generation. Fresh `pixi` installs after 8 May 2026 will install versions >= `0.68.0`, which is not compatible with the `pixi` [version pinned in the example Dockerfile](https://github.com/intrinsic-dev/aic/blob/main/docker/aic_model/Dockerfile#L4). To use the latest compatible version, `0.67.2`:
+> ```bash
+> pixi self-update --version 0.67.2
+> ```
+
 For other operating systems, refer to the [Alternative Installation Methods](https://pixi.prefix.dev/latest/installation/#alternative-installation-methods).
 
 > [!IMPORTANT]
