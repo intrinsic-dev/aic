@@ -253,11 +253,68 @@ The **real question** is what happens in the last 5 cm of CheatCode demos. If Ch
 
 ---
 
+## Phase 8 — Alignment-phase characterization (✅ complete)
+
+The Phase 7 diagnostic identified the alignment phase as the bottleneck but didn't say whether the failure was in the **data** (no learnable signal) or the **model** (signal exists but isn't learned). Phase 8 ran two interlocking analyses to pin this down — see `analysis/phase_and_openloop.py` and the plots under `analysis/plots/`.
+
+### Method
+
+1. **Phase boundary detection** on training episodes: smooth |lin_z action| over a 1s window, find the first sustained-quiet region (smoothed < 5 mm/s for ≥1s). That's the descent → alignment boundary.
+2. **Phase-sliced action statistics**: aggregate CheatCode actions per phase across 10 sampled training episodes (1002 descent frames, 4766 alignment frames).
+3. **Open-loop replay**: for 4 held-out val episodes, run `policy.predict_action_chunk` on every frame, take slot 0, compare per-frame to GT.
+
+### Finding 1: training data has a real alignment signal
+
+Per-dim action stats from training episodes (descent vs alignment):
+
+| Dim | Descent mean | Alignment mean | Alignment q99 (magnitude) |
+|---|---|---|---|
+| lin_x | -8.5 mm/s | -0.24 mm/s | 3.0 mm/s |
+| lin_y | +17.3 mm/s | +0.05 mm/s | 7.9 mm/s |
+| **lin_z** | **-18.8 mm/s** | **-8.8 mm/s** | 10.5 mm/s |
+| ang_x | -4.8 deg/s | -0.03 deg/s | ~0 |
+
+CheatCode keeps commanding **~9 mm/s sustained downward push (lin_z)** during alignment, plus **small ~0.7 mm/s xy corrections** (mean |action| during alignment). It is **not** going silent and letting physics finish — there's a clear, sustained signal in the data.
+
+### Finding 2: model partially fails to learn alignment — specifically the xy corrections
+
+Per-dim MAE / GT-magnitude ratio on val open-loop replay:
+
+| Dim | Descent MAE/GT | Alignment MAE/GT | Interpretation |
+|---|---|---|---|
+| lin_x | 16% | **96%** | predictions ≈ 0; model misses xy corrections |
+| lin_y | 25% | **90%** | predictions ≈ 0; model misses xy corrections |
+| lin_z | 14% | 30% | continues pushing down; partially correct |
+| ang_x | 16% | 40% | small-magnitude marginal |
+| ang_y | 14% | 36% | small-magnitude marginal |
+| ang_z | 16% | 22% | acceptable |
+
+**A MAE/GT ratio of 90–96% on alignment xy means the model is predicting roughly zero**, which gives the same MAE as the GT magnitude. The model has learned to "go quiet on xy after descent" when CheatCode is actually making sustained tiny corrections.
+
+`lin_z` doesn't have this failure because its alignment distribution is **biased negative** (mean −9, asymmetric). For xy, the alignment distribution is symmetric and near-zero (mean ≈ 0, but with non-zero |action|). L1 loss regresses to the *median* of the conditional distribution — for a symmetric near-zero distribution, that's exactly zero. So the model minimizes L1 perfectly by predicting zero, while losing the actual tiny-correction information.
+
+### Why Plan C (Diffusion) didn't help on this
+
+The compose result showed Plan C ~tied with Plan B on trials 1+2. Per-dim val MAE was biased against C so we couldn't see the per-phase story there. The likely reason Diffusion didn't fix the xy alignment: same training-distribution shape, same near-zero symmetric xy signal during alignment, so even Diffusion's multi-modal head learns to concentrate around zero. Architecture diversity didn't address the **loss-function-vs-distribution-shape** issue.
+
+### Decisive interpretation
+
+This is the **signal-exists-in-data, model-fails-to-predict-it** outcome from the framework we laid out before running the analysis. The fix is on the model side, specifically the loss formulation. Concretely:
+
+| Priority | Experiment | Cost | Expected effect |
+|---|---|---|---|
+| **1** | Retrain ACT with **L2 (MSE) loss** instead of L1. MSE regresses to the *mean*, not the median — on a symmetric near-zero distribution the mean might still be near zero, but variance is preserved better and gradients drive the predictor toward the actual signal | ~1 hr training | If L1-regression-to-median is the diagnosis, this should recover xy alignment predictions |
+| 2 | Train with **phase-weighted loss** (upweight alignment-phase samples by 3–5× since they're ~80% of frames but their gradient contribution is dominated by larger-magnitude descent frames) | ~1.5 hr (loss customization) | Targets the same gradient-imbalance issue from a different angle |
+| 3 | Re-run **open-loop replay on Plan C** to directly verify whether Diffusion does/doesn't collapse to zero on xy alignment | ~10 min (needs adding diffusion path to phase_and_openloop.py) | Settles the architecture-vs-loss question |
+| 4 | If 1+2 don't help: collect new CheatCode demos with **larger xy corrections** during alignment (modify CheatCode's gain or add deliberate exploration) | ~4 hr data + 1 hr train | Last resort if the model genuinely needs more signal-to-noise |
+
+---
+
 ## Recommendation
 
 **Ship Plan B step-40k (`aic-runact:plan-b-v3`).** 2.57× over Plan A. Robust on OOD geometry. Both Plans B and C avoid Plan A's collision.
 
-**Don't pursue more data or architecture-diversity experiments until we've characterized the alignment phase in CheatCode demos.** The path-length-0.00 m red herring sent us on two training runs that probably didn't address the real bottleneck.
+**Next research direction (Plan D, when capacity allows): retrain ACT with L2 loss.** This is a one-line config change. The phase-and-openloop diagnostic localized the failure to symmetric-near-zero xy alignment signals being regressed-to-median by L1 loss. L2 is the cheapest test of that hypothesis. Don't pursue more data or another architecture sweep until L2 is tried — the path-length-0.00 m red herring already cost two training runs that didn't address the real bottleneck.
 
 ---
 
