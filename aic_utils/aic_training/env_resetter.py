@@ -34,6 +34,7 @@ Usage (inside distrobox):
 """
 
 import copy
+from collections import deque
 import json
 import math
 import random
@@ -62,6 +63,7 @@ import tf2_ros
 # ---- Default Configuration ----
 
 # Home joint positions (from ur_gz.urdf.xacro initial_positions)
+# and similar to sample_config.yaml
 HOME_JOINT_POSITIONS = {
     "shoulder_pan_joint": -0.1597,
     "shoulder_lift_joint": -1.3542,
@@ -345,6 +347,13 @@ class EnvResetter(Node):
         # so we must delete by the name Gazebo assigned, not the name we requested.
         self._last_cable_name: str | None = None
 
+        # Queue of pre-generated reset configs.
+        # Each entry is a dict with keys: trial_name, task_board_cfg, task_info,
+        # cable_override, spawn_board.  When empty, _fill_reset_queue() generates
+        # a fresh board config and enqueues 2 episodes that share the same physical
+        # board layout but target different ports.
+        self._reset_queue: deque[dict] = deque()
+
         # Track whether this is the first reset (skip delete on first call
         # if entities were spawned by the launch file)
         self._first_reset = True
@@ -602,21 +611,12 @@ class EnvResetter(Node):
         }
 
     def _randomize_sfp_trial_board(
-        self, base_cfg: dict
-    ) -> tuple[dict, int]:
-        """Return (randomized_cfg, target_rail_idx) for SFP insertion trials.
+        self, base_cfg: dict,
+    ) -> tuple[dict, list[int]]:
+        """Return (randomized_cfg, chosen_nic_rails) for SFP insertion trials.
 
-        Randomizes:
-          - Board pose: x, y (within RANDOM_BOARD_*_RANGE), yaw (within RANDOM_BOARD_YAW_RANGE).
-            z, roll, pitch are fixed so the board stays level at table height and in camera view.
-          - NIC rails: RANDOM_NIC_MIN_COUNT..RANDOM_NIC_MAX_COUNT rails are chosen at random
-            from the 5 available; each gets a random translation (clamped to nic_rail limits)
-            and a small random yaw offset. Remaining rails are marked absent.
-
-        sc_rail and all mount_rail entries are copied unchanged from base_cfg.
-
-        Returns the modified config and the index of the randomly chosen target NIC rail
-        (one of the populated rails, randomly selected as the insertion target for this episode).
+        Randomizes board pose and NIC rail layout.  Caller picks the target rail(s)
+        from the returned chosen_nic_rails list.
         """
         cfg = copy.deepcopy(base_cfg)
 
@@ -640,7 +640,6 @@ class EnvResetter(Node):
 
         num_nics = random.randint(RANDOM_NIC_MIN_COUNT, RANDOM_NIC_MAX_COUNT)
         chosen_rails = sorted(random.sample(range(5), num_nics))
-        target_rail = random.choice(chosen_rails)
 
         for i in range(5):
             if i in chosen_rails:
@@ -659,27 +658,23 @@ class EnvResetter(Node):
 
         self.get_logger().info(
             f"  board pose: x={new_x:.3f} y={new_y:.3f} yaw={new_yaw:.3f} | "
-            f"NIC rails populated: {chosen_rails} | target rail: {target_rail}"
+            f"NIC rails populated: {chosen_rails}"
         )
-        return cfg, target_rail
+        return cfg, chosen_rails
 
     def _randomize_sc_trial_board(
-        self, base_cfg: dict
-    ) -> tuple[dict, int]:
-        """Return (randomized_cfg, target_sc_rail_idx) for SC port insertion trials (trial_3).
+        self, base_cfg: dict, num_sc: int | None = None,
+    ) -> tuple[dict, list[int]]:
+        """Return (randomized_cfg, chosen_sc_rails) for SC port insertion trials (trial_3).
 
-        Randomizes:
-          - Board pose: x, y (within RANDOM_BOARD_*_RANGE), yaw (within RANDOM_BOARD_YAW_RANGE).
-            z, roll, pitch are fixed.
-          - SC rails: either one or both SC ports are present.
-            SC_PORT_0 is always on SC_RAIL_0; SC_PORT_1 is always on SC_RAIL_1.
-            Each present port gets a random translation (clamped to sc_rail limits)
-            and a small random yaw offset.
-          - NIC rails: RANDOM_NIC_MIN_COUNT..RANDOM_NIC_MAX_COUNT NIC cards are placed as
-            distractors (same randomization as SFP trials; none are the insertion target).
-          - Target: one of the present SC rails is randomly chosen as the insertion target.
+        Randomizes board pose, SC rail layout, and NIC distractor layout.
+        Caller picks the target SC rail(s) from the returned chosen_sc_rails list.
 
-        Mount rails are copied unchanged from base_cfg.
+        Args:
+            base_cfg: Trial scene.task_board config to randomize on top of.
+            num_sc:   Number of SC ports to place (1 or 2).  If None, chosen randomly.
+                      Pass 2 when generating episode pairs so two distinct targets are
+                      always available.
         """
         cfg = copy.deepcopy(base_cfg)
 
@@ -701,10 +696,9 @@ class EnvResetter(Node):
         sc_min = float(sc_lim.get("min_translation", -0.06))
         sc_max = float(sc_lim.get("max_translation", 0.055))
 
-        # Randomly decide which SC ports are present (at least 1, at most both).
-        num_sc = random.randint(1, 2)
+        if num_sc is None:
+            num_sc = random.randint(1, 2)
         chosen_sc_rails = sorted(random.sample([0, 1], num_sc))
-        target_sc_rail = random.choice(chosen_sc_rails)
 
         for i in range(2):
             if i in chosen_sc_rails:
@@ -746,10 +740,117 @@ class EnvResetter(Node):
 
         self.get_logger().info(
             f"  board pose: x={new_x:.3f} y={new_y:.3f} yaw={new_yaw:.3f} | "
-            f"SC rails populated: {chosen_sc_rails} | target SC rail: {target_sc_rail} | "
+            f"SC rails populated: {chosen_sc_rails} | "
             f"NIC distractors: {chosen_nic_rails}"
         )
-        return cfg, target_sc_rail
+        return cfg, chosen_sc_rails
+
+    def _fill_reset_queue(self) -> None:
+        """Pick a random trial, generate one board config, and enqueue 2 episodes.
+
+        Both episodes share the same physical board layout (same task_board_cfg) but
+        target different modules/ports.  The first entry in the pair gets
+        spawn_board=True (board must be (re-)spawned); the second gets spawn_board=False
+        (board is already in place from the first episode, so spawning is skipped).
+        """
+        trial_name, trial = self._pick_random_trial()
+        if not trial:
+            return
+
+        cable_override = self._cable_config_from_trial(trial)
+        task_board_cfg = trial.get("scene", {}).get("task_board")
+        base_task = next(iter(trial.get("tasks", {}).values()), {})
+
+        entries: list[dict] = []
+
+        if trial_name in SC_RANDOMIZED_TRIALS and task_board_cfg:
+            # Always place both SC ports so we always have 2 distinct targets.
+            board_cfg, chosen_sc_rails = self._randomize_sc_trial_board(
+                task_board_cfg, num_sc=2
+            )
+            targets = random.sample(chosen_sc_rails, min(2, len(chosen_sc_rails)))
+            for target_sc_rail in targets:
+                entries.append({
+                    "trial_name": trial_name,
+                    "task_board_cfg": board_cfg,
+                    "cable_override": cable_override,
+                    "task_info": {
+                        "trial_name": trial_name,
+                        "cable_type": base_task.get("cable_type", "sc"),
+                        "cable_name": cable_override["entity_name"] if cable_override else CABLE_ENTITY_NAME,
+                        "plug_type": base_task.get("plug_type", "sc"),
+                        "plug_name": base_task.get("plug_name", "sc_tip"),
+                        "port_type": base_task.get("port_type", "sc"),
+                        "port_name": "sc_port_base",
+                        "target_module_name": f"sc_port_{target_sc_rail}",
+                        "time_limit": base_task.get("time_limit", 180),
+                    },
+                })
+
+        elif trial_name in PROCEDURALLY_RANDOMIZED_TRIALS and task_board_cfg:
+            board_cfg, chosen_rails = self._randomize_sfp_trial_board(task_board_cfg)
+            # Two pairing strategies:
+            #   - len == 1, or 50% chance when len > 1: same NIC rail, different port
+            #   - 50% chance when len > 1: two different NIC rails, each with a random port
+            if len(chosen_rails) > 1 and random.random() < 0.5:
+                target_rails = random.sample(chosen_rails, 2)
+                pairs = [
+                    (target_rails[0], random.choice(["sfp_port_0", "sfp_port_1"])),
+                    (target_rails[1], random.choice(["sfp_port_0", "sfp_port_1"])),
+                ]
+            else:
+                target_rail = random.choice(chosen_rails)
+                pairs = [
+                    (target_rail, "sfp_port_0"),
+                    (target_rail, "sfp_port_1"),
+                ]
+            for target_rail, port_name in pairs:
+                entries.append({
+                    "trial_name": trial_name,
+                    "task_board_cfg": board_cfg,
+                    "cable_override": cable_override,
+                    "task_info": {
+                        "trial_name": trial_name,
+                        "cable_type": base_task.get("cable_type", "sfp_sc"),
+                        "cable_name": cable_override["entity_name"] if cable_override else CABLE_ENTITY_NAME,
+                        "plug_type": base_task.get("plug_type", "sfp"),
+                        "plug_name": base_task.get("plug_name", "sfp_tip"),
+                        "port_type": base_task.get("port_type", "sfp"),
+                        "port_name": port_name,
+                        "target_module_name": f"nic_card_mount_{target_rail}",
+                        "time_limit": base_task.get("time_limit", 180),
+                    },
+                })
+
+        else:
+            # Fixed scene config — only one episode per board config.
+            entries.append({
+                "trial_name": trial_name,
+                "task_board_cfg": task_board_cfg,
+                "cable_override": cable_override,
+                "task_info": {
+                    "trial_name": trial_name,
+                    "cable_type": base_task.get("cable_type", ""),
+                    "cable_name": base_task.get("cable_name", CABLE_ENTITY_NAME),
+                    "plug_type": base_task.get("plug_type", ""),
+                    "plug_name": base_task.get("plug_name", ""),
+                    "port_type": base_task.get("port_type", ""),
+                    "port_name": base_task.get("port_name", ""),
+                    "target_module_name": base_task.get("target_module_name", ""),
+                    "time_limit": base_task.get("time_limit", 180),
+                },
+            })
+
+        # First entry spawns the board; subsequent entries reuse it.
+        for idx, entry in enumerate(entries):
+            entry["spawn_board"] = (idx == 0)
+            self._reset_queue.append(entry)
+
+        self.get_logger().info(
+            f"Filled reset queue with {len(entries)} episode(s) "
+            f"(trial='{trial_name}', "
+            f"targets={[e['task_info']['target_module_name'] for e in entries]})"
+        )
 
     def _reset_callback(self, request: SetBool.Request, response: SetBool.Response):
         """Full environment reset sequence.
@@ -765,77 +866,37 @@ class EnvResetter(Node):
             f"=== Starting environment reset (random={random_reset}) ==="
         )
 
-        trial: dict | None = None
         trial_name: str | None = None
         cable_override: dict | None = None
         task_board_cfg: dict | None = None
         task_info: dict = {}
+        spawn_board: bool = True
 
         if random_reset:
-            trial_name, trial = self._pick_random_trial()
-            if trial:
-                cable_override = self._cable_config_from_trial(trial)
-                task_board_cfg = trial.get("scene", {}).get("task_board")
-                base_task = next(iter(trial.get("tasks", {}).values()), {})
+            # Refill the queue when empty, then dequeue the next episode.
+            if not self._reset_queue:
+                self._fill_reset_queue()
 
-                # For trials in PROCEDURALLY_RANDOMIZED_TRIALS, replace the fixed YAML
-                # scene with a freshly randomized one (board pose + NIC rail layout).
-                # For trials in SC_RANDOMIZED_TRIALS, randomize SC port placement instead.
-                if trial_name in SC_RANDOMIZED_TRIALS and task_board_cfg:
-                    self.get_logger().info(
-                        f"Random reset: picked trial '{trial_name}' (SC procedural randomization) | "
-                        f"cable='{cable_override['entity_name'] if cable_override else 'default'}' "
-                        f"type='{cable_override['cable_type'] if cable_override else 'default'}'"
-                    )
-                    task_board_cfg, target_sc_rail = self._randomize_sc_trial_board(task_board_cfg)
-                    task_info = {
-                        "trial_name": trial_name,
-                        "cable_type": base_task.get("cable_type", "sc"),
-                        "cable_name": cable_override["entity_name"] if cable_override else CABLE_ENTITY_NAME,
-                        "plug_type": base_task.get("plug_type", "sc"),
-                        "plug_name": base_task.get("plug_name", "sc_tip"),
-                        "port_type": base_task.get("port_type", "sc"),
-                        "port_name": "sc_port_base",
-                        "target_module_name": f"sc_port_{target_sc_rail}",
-                        "time_limit": base_task.get("time_limit", 180),
-                    }
-                elif trial_name in PROCEDURALLY_RANDOMIZED_TRIALS and task_board_cfg:
-                    self.get_logger().info(
-                        f"Random reset: picked trial '{trial_name}' (procedural randomization) | "
-                        f"cable='{cable_override['entity_name'] if cable_override else 'default'}' "
-                        f"type='{cable_override['cable_type'] if cable_override else 'default'}'"
-                    )
-                    task_board_cfg, target_rail = self._randomize_sfp_trial_board(task_board_cfg)
-                    port_name = random.choice(["sfp_port_0", "sfp_port_1"])
-                    task_info = {
-                        "trial_name": trial_name,
-                        "cable_type": base_task.get("cable_type", "sfp_sc"),
-                        "cable_name": cable_override["entity_name"] if cable_override else CABLE_ENTITY_NAME,
-                        "plug_type": base_task.get("plug_type", "sfp"),
-                        "plug_name": base_task.get("plug_name", "sfp_tip"),
-                        "port_type": base_task.get("port_type", "sfp"),
-                        "port_name": port_name,
-                        "target_module_name": f"nic_card_mount_{target_rail}",
-                        "time_limit": base_task.get("time_limit", 180),
-                    }
-                else:
-                    self.get_logger().info(
-                        f"Random reset: picked trial '{trial_name}' (fixed scene config) | "
-                        f"cable='{cable_override['entity_name'] if cable_override else 'default'}' "
-                        f"type='{cable_override['cable_type'] if cable_override else 'default'}' | "
-                        f"task_board_pose={task_board_cfg.get('pose') if task_board_cfg else 'none'}"
-                    )
-                    task_info = {
-                        "trial_name": trial_name,
-                        "cable_type": base_task.get("cable_type", ""),
-                        "cable_name": base_task.get("cable_name", CABLE_ENTITY_NAME),
-                        "plug_type": base_task.get("plug_type", ""),
-                        "plug_name": base_task.get("plug_name", ""),
-                        "port_type": base_task.get("port_type", ""),
-                        "port_name": base_task.get("port_name", ""),
-                        "target_module_name": base_task.get("target_module_name", ""),
-                        "time_limit": base_task.get("time_limit", 180),
-                    }
+            if self._reset_queue:
+                entry = self._reset_queue.popleft()
+                trial_name = entry["trial_name"]
+                task_board_cfg = entry["task_board_cfg"]
+                cable_override = entry["cable_override"]
+                task_info = entry["task_info"]
+                spawn_board = entry["spawn_board"]
+                self.get_logger().info(
+                    f"Random reset: dequeued episode "
+                    f"(trial='{trial_name}', "
+                    f"target='{task_info.get('target_module_name')}', "
+                    f"port='{task_info.get('port_name')}', "
+                    f"spawn_board={spawn_board}, "
+                    f"queue_remaining={len(self._reset_queue)})"
+                )
+            else:
+                self.get_logger().warn(
+                    "Random reset requested but queue is still empty after fill — "
+                    "no trials loaded?"
+                )
 
         success = True
         message_parts = []
@@ -852,13 +913,16 @@ class EnvResetter(Node):
             # Not fatal - cable might not exist on first reset
 
         # Step 2: Delete task board
-        #   - always for random reset (we'll re-spawn with new scene config)
-        #   - only when delete_task_board param is True for deterministic reset
-        if random_reset or self.get_parameter("delete_task_board").value:
+        #   - for random reset: only when spawn_board=True (first episode of a pair
+        #     spawns a fresh board; second episode reuses the existing board)
+        #   - for deterministic reset: only when delete_task_board param is True
+        if (random_reset and spawn_board) or self.get_parameter("delete_task_board").value:
             self.get_logger().info("Step 2: Deleting task board...")
             if not self._delete_entity("task_board"):
                 message_parts.append("task board deletion failed (may not exist)")
                 # Not fatal
+        elif random_reset:
+            self.get_logger().info("Step 2: Skipping task board deletion (reusing board from previous episode)")
 
         # Step 3: Deactivate controller
         self.get_logger().info("Step 3: Deactivating aic_controller...")
@@ -887,13 +951,15 @@ class EnvResetter(Node):
                 # Not fatal
 
         # Step 7: Spawn task board
-        #   - for random reset: spawn with new scene config from trial
+        #   - for random reset: only when spawn_board=True (first episode of a pair)
         #   - for deterministic reset: no-op (task board stays as launched)
-        if success and random_reset and task_board_cfg:
+        if success and random_reset and spawn_board and task_board_cfg:
             self.get_logger().info("Step 7: Spawning task board from trial config...")
             if not self._spawn_task_board(task_board_cfg):
                 success = False
                 message_parts.append("task board spawn failed")
+        elif random_reset and not spawn_board:
+            self.get_logger().info("Step 7: Skipping task board spawn (reusing board from previous episode)")
 
         # Step 8: Spawn cable
         if success:
@@ -919,6 +985,16 @@ class EnvResetter(Node):
             self.get_logger().info(f"=== Environment reset complete{warnings} ===")
             if task_info:
                 self.get_logger().info(f"Task info: {task_info}")
+            # Derive which NIC cards and SC ports are physically present on the board.
+            if task_board_cfg and task_info:
+                present_entities = []
+                for i in range(5):
+                    if task_board_cfg.get(f"nic_rail_{i}", {}).get("entity_present", False):
+                        present_entities.append(f"nic_card_mount_{i}")
+                for i in range(2):
+                    if task_board_cfg.get(f"sc_rail_{i}", {}).get("entity_present", False):
+                        present_entities.append(f"sc_port_{i}")
+                task_info["present_entities"] = present_entities
             # Encode task details as JSON so callers can parse structured data.
             # On failure the message is a plain error string instead.
             response.message = json.dumps(task_info) if task_info else "{}"

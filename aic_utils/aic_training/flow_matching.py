@@ -27,13 +27,21 @@ All tokens share TOKEN_DIM = 128.
 CFG is supported: train with cfg_dropout_prob > 0, sample with guidance_scale > 1.
 """
 
+import math
+import re
 import time
 
+import timm
+from timm.data import create_transform, resolve_data_config
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision
-from typing import Callable
+import torchvision.transforms.functional as TF
+from torchvision.models.feature_extraction import create_feature_extractor
+from typing import Callable, Union, List, Optional, Dict, Tuple, Any, Sequence
+from transformers import AutoImageProcessor, AutoModel
+import numpy as np
 
 
 # ---------------------------------------------------------------------------
@@ -46,8 +54,7 @@ NUM_PORT_NAMES = 3
 ROBOT_STATE_DIM = 20  # tcp_pose(7) + joint_positions(7) + wrench(6)
 
 TOKEN_DIM = 128
-RESNET_FEATURE_DIM = 512
-IMG_TOKENS_PER_VIEW = RESNET_FEATURE_DIM // TOKEN_DIM   # 4
+RESNET_FEATURE_DIM = 512   # layer4 output channels for ResNet18/34
 
 # Flow matching uses continuous t ∈ [0, 1].  Multiply by this factor before
 # the sinusoidal embedding so the input covers a wider frequency range
@@ -59,12 +66,19 @@ _T_EMBED_SCALE = 1000.0
 # Vision encoder helpers  (identical to diffusion_policy.py)
 # ---------------------------------------------------------------------------
 
-def get_resnet(name: str, weights=None, **kwargs) -> nn.Module:
+def get_resnet(name: str, weights=None, local_weights_path: str | None = None, **kwargs) -> nn.Module:
     func = getattr(torchvision.models, name)
-    resnet = func(weights=weights, **kwargs)
-    resnet.fc = nn.Identity()
-    #debug_weights = torchvision.models.ResNet18_Weights.IMAGENET1K_V1
-    #print("LXH:", debug_weights.transforms())
+    if local_weights_path is not None:
+        # Load from a local .pth file — avoids any network download.
+        # strict=False: the original fc.weight / fc.bias in the ImageNet checkpoint
+        # are silently ignored after we replace fc with nn.Identity().
+        resnet = func(weights=None, **kwargs)
+        resnet.fc = nn.Identity()
+        sd = torch.load(local_weights_path, map_location="cpu")
+        resnet.load_state_dict(sd, strict=False)
+    else:
+        resnet = func(weights=weights, **kwargs)
+        resnet.fc = nn.Identity()
     return resnet
 
 
@@ -112,24 +126,52 @@ def replace_bn_with_gn(root_module: nn.Module, features_per_group: int = 16) -> 
     )
     return root_module
 
-
 # ---------------------------------------------------------------------------
 # Image Encoder  (identical to diffusion_policy.py)
 # ---------------------------------------------------------------------------
 
 class ImageEncoder(nn.Module):
+    """Image encoder using a ResNet18 backbone (torchvision).
+
+    Extracts the layer4 spatial feature map (7×7 for 224×224 input, 512 ch) via
+    create_feature_extractor, then projects each spatial cell to TOKEN_DIM,
+    giving 49 patch tokens per camera per timestep.
+
+    Output shape: (B, T * num_cameras * 49, TOKEN_DIM)
+    """
+
     CAMERA_KEYS = ("left_camera", "center_camera", "right_camera")
 
-    # ImageNet normalization — matches ResNet18_Weights.IMAGENET1K_V1.transforms()
+    # Full ResNet18_Weights.IMAGENET1K_V1.transforms() pipeline on float tensors:
+    #   resize shortest edge → 256, center-crop → 224×224, ImageNet normalize.
     _IMAGENET_MEAN = [0.485, 0.456, 0.406]
     _IMAGENET_STD  = [0.229, 0.224, 0.225]
+    _RESIZE_SIZE   = 256
+    _CROP_SIZE     = 224
 
     def __init__(self, resnet_name: str = "resnet18", weights="IMAGENET1K_V1",
-                 features_per_group: int = 16):
+                 features_per_group: int = 16,
+                 camera_keys: tuple[str, ...] | None = None,
+                 local_weights_path: str | None = None,
+                 obs_horizon: int = 2,
+                 pos_enc: str = "rope"):
         super().__init__()
-        backbone = get_resnet(resnet_name, weights=weights)
-        self.backbone = replace_bn_with_gn(backbone, features_per_group=features_per_group)
+        if camera_keys is not None:
+            self.CAMERA_KEYS = camera_keys
         self.num_cameras = len(self.CAMERA_KEYS)
+
+        backbone = get_resnet(resnet_name, weights=weights, local_weights_path=local_weights_path)
+        backbone = replace_bn_with_gn(backbone, features_per_group=features_per_group)
+        self.backbone = create_feature_extractor(backbone, return_nodes={"layer4": "feat"})
+
+        self.proj       = nn.Linear(RESNET_FEATURE_DIM, TOKEN_DIM)
+        if pos_enc == "rope":
+            self.pos_enc2d = RoPE2D(dim=TOKEN_DIM)
+        else:
+            self.pos_enc2d = SinCos2D(dim=TOKEN_DIM)
+        self.cam_id_emb = nn.Embedding(self.num_cameras, TOKEN_DIM)
+        self.time_emb   = nn.Embedding(obs_horizon, TOKEN_DIM)
+
         self.register_buffer(
             "img_mean", torch.tensor(self._IMAGENET_MEAN, dtype=torch.float32).view(1, 3, 1, 1)
         )
@@ -139,17 +181,312 @@ class ImageEncoder(nn.Module):
 
     def forward(self, images: dict) -> torch.Tensor:
         B, T = next(iter(images.values())).shape[:2]
+        device = next(iter(images.values())).device
         per_camera = []
-        for key in self.CAMERA_KEYS:
-            img = images[key]
-            img_flat = img.flatten(end_dim=1)                        # (B*T, C, H, W)
-            img_flat = (img_flat - self.img_mean) / self.img_std     # ImageNet normalize
-            feat = self.backbone(img_flat)
-            feat = feat.reshape(B, T, RESNET_FEATURE_DIM)
-            per_camera.append(feat)
-        stacked = torch.stack(per_camera, dim=2)
-        tokens = stacked.reshape(B, T * self.num_cameras * IMG_TOKENS_PER_VIEW, TOKEN_DIM)
-        return tokens
+        for cam_idx, key in enumerate(self.CAMERA_KEYS):
+            img_flat = images[key].flatten(end_dim=1)                          # (B*T, C, H, W)
+            img_flat = TF.resize(img_flat, self._RESIZE_SIZE, antialias=True)  # shortest edge → 256
+            img_flat = TF.center_crop(img_flat, self._CROP_SIZE)               # → 224×224
+            img_flat = (img_flat - self.img_mean) / self.img_std               # ImageNet normalize
+            feat_map = self.backbone(img_flat)["feat"]                         # (B*T, 512, H, W)
+            _, C, H, W = feat_map.shape
+            patches = feat_map.permute(0, 2, 3, 1).reshape(B * T, H * W, C)  # (B*T, H*W, 512)
+            tokens  = self.proj(patches)                                       # (B*T, H*W, TOKEN_DIM)
+            tokens  = self.pos_enc2d(tokens, H, W)                            # 2D spatial PE
+            tokens  = tokens + self.cam_id_emb.weight[cam_idx]                # camera ID
+            tokens  = tokens.reshape(B, T, H * W, -1)
+            t_idx   = torch.arange(T, device=device)
+            tokens  = tokens + self.time_emb(t_idx).unsqueeze(0).unsqueeze(2) # (1,T,1,d)
+            per_camera.append(tokens.reshape(B, T * H * W, TOKEN_DIM))
+        return torch.cat(per_camera, dim=1)                                    # (B, cams*T*H*W, TOKEN_DIM)
+
+
+# ---------------------------------------------------------------------------
+# 2-D Rotary Position Embedding  (for image patch tokens)
+# ---------------------------------------------------------------------------
+
+class RoPE2D(nn.Module):
+    """2D Rotary Position Embedding for row-major image patch tokens.
+
+    Row positions modulate the first half of the embedding dimension;
+    column positions modulate the second half. Each half uses standard
+    1-D RoPE: x * cos(θ) + rotate_half(x) * sin(θ).
+
+    dim must be divisible by 4 (two axes × two elements per rotation pair).
+    """
+
+    def __init__(self, dim: int, base: float = 10000.0):
+        super().__init__()
+        assert dim % 4 == 0, "dim must be divisible by 4 for 2D RoPE"
+        half = dim // 2
+        inv_freq = 1.0 / (base ** (torch.arange(0, half, 2).float() / half))
+        self.register_buffer("inv_freq", inv_freq)  # (half//2,)
+
+    @staticmethod
+    def _rotate_half(x: torch.Tensor) -> torch.Tensor:
+        x1, x2 = x[..., 0::2], x[..., 1::2]
+        return torch.stack([-x2, x1], dim=-1).flatten(-2)
+
+    def _apply_1d(self, x: torch.Tensor, positions: torch.Tensor) -> torch.Tensor:
+        """Apply 1-D RoPE.  x: (..., N, d), positions: (N,)"""
+        angles = positions.float().unsqueeze(-1) * self.inv_freq   # (N, d//2)
+        cos = angles.cos().repeat_interleave(2, dim=-1)            # (N, d)
+        sin = angles.sin().repeat_interleave(2, dim=-1)            # (N, d)
+        return x * cos + self._rotate_half(x) * sin
+
+    def forward(self, x: torch.Tensor, grid_h: int, grid_w: int) -> torch.Tensor:
+        """
+        Args:
+            x:             (..., grid_h * grid_w, dim) — patches in row-major order
+            grid_h, grid_w: spatial patch grid dimensions
+        Returns:
+            x with 2D RoPE applied in-place on a copy
+        """
+        device = x.device
+        rows = torch.arange(grid_h, device=device).repeat_interleave(grid_w)  # (N,)
+        cols = torch.arange(grid_w, device=device).repeat(grid_h)             # (N,)
+        half = x.shape[-1] // 2
+        x_row = self._apply_1d(x[..., :half], rows)
+        x_col = self._apply_1d(x[..., half:], cols)
+        return torch.cat([x_row, x_col], dim=-1)
+
+
+# ---------------------------------------------------------------------------
+# 2-D Sinusoidal Position Embedding  (for image patch tokens)
+# ---------------------------------------------------------------------------
+
+class SinCos2D(nn.Module):
+    """Additive 2D sinusoidal positional encoding for row-major patch tokens.
+
+    Encodes row in the first half of the embedding dimension and column in the
+    second half, using the standard ViT/BERT sinusoidal formula:
+        PE[pos, 2i]   = sin(pos / 10000^(2i / d))
+        PE[pos, 2i+1] = cos(pos / 10000^(2i / d))
+
+    The encoding is computed on the fly and not stored as a parameter, so it
+    generalises to arbitrary grid sizes without retraining.
+    dim must be divisible by 4 (two axes × even sinusoidal pairs).
+    """
+
+    def __init__(self, dim: int, base: float = 10000.0):
+        super().__init__()
+        assert dim % 4 == 0, "dim must be divisible by 4 for 2D SinCos"
+        half = dim // 2
+        # inv_freq shape: (half//2,) — shared for row and col axes
+        inv_freq = 1.0 / (base ** (torch.arange(0, half, 2).float() / half))
+        self.register_buffer("inv_freq", inv_freq)
+
+    def _encode_1d(self, positions: torch.Tensor) -> torch.Tensor:
+        """Return sinusoidal encoding for (N,) integer positions → (N, half_dim)."""
+        angles = positions.float().unsqueeze(-1) * self.inv_freq  # (N, half//2)
+        return torch.cat([angles.sin(), angles.cos()], dim=-1)    # (N, half)
+
+    def forward(self, x: torch.Tensor, grid_h: int, grid_w: int) -> torch.Tensor:
+        """
+        Args:
+            x:              (..., grid_h * grid_w, dim) — patches in row-major order
+            grid_h, grid_w: spatial patch grid dimensions
+        Returns:
+            x + sinusoidal 2D position encoding (same shape as x)
+        """
+        device = x.device
+        rows = torch.arange(grid_h, device=device).repeat_interleave(grid_w)  # (N,)
+        cols = torch.arange(grid_w, device=device).repeat(grid_h)             # (N,)
+        pe = torch.cat([self._encode_1d(rows), self._encode_1d(cols)], dim=-1)  # (N, dim)
+        return x + pe
+
+
+# ---------------------------------------------------------------------------
+# DINO Image Encoder
+# ---------------------------------------------------------------------------
+
+class DINOImageEncoder(nn.Module):
+    """Image encoder using a frozen DINOv2 ViT-S/14 backbone with 4 registers.
+
+    Extracts the CLS token per camera per timestep and projects it to TOKEN_DIM.
+    Output shape: (B, T * num_cameras, TOKEN_DIM)  —  vs ResNet's (B, T*cams*4, TOKEN_DIM).
+
+    Usage:
+        encoder = DINOImageEncoder("/path/to/dinov2_vits14_reg4_pretrain.pth")
+    """
+
+    CAMERA_KEYS = ImageEncoder.CAMERA_KEYS
+    DINO_DIM = 384  # ViT-S embed_dim
+
+    def __init__(self, checkpoint_path: str, freeze_backbone: bool = True,
+                 camera_keys: tuple[str, ...] | None = None,
+                 obs_horizon: int = 2,
+                 pos_enc: str = "rope"):
+        super().__init__()
+        self._freeze_backbone = freeze_backbone
+        if camera_keys is not None:
+            self.CAMERA_KEYS = camera_keys
+
+        self.processor = AutoImageProcessor.from_pretrained(checkpoint_path)
+        self.backbone = AutoModel.from_pretrained(checkpoint_path)
+
+        if freeze_backbone:
+            for p in self.backbone.parameters():
+                p.requires_grad_(False)
+
+        self.num_cameras = len(self.CAMERA_KEYS)
+        self._num_registers = getattr(self.backbone.config, "num_register_tokens", 0)
+
+        self.proj        = nn.Linear(self.DINO_DIM, TOKEN_DIM)
+        if pos_enc == "rope":
+            self.pos_enc2d = RoPE2D(dim=TOKEN_DIM)
+        else:
+            self.pos_enc2d = SinCos2D(dim=TOKEN_DIM)
+        self.cam_id_emb  = nn.Embedding(self.num_cameras, TOKEN_DIM)
+        self.time_emb    = nn.Embedding(obs_horizon, TOKEN_DIM)
+
+    def train(self, mode: bool = True):
+        super().train(mode)
+        if self._freeze_backbone:
+            self.backbone.eval()
+        return self
+
+    def forward(self, images: dict) -> torch.Tensor:
+        B, T = next(iter(images.values())).shape[:2]
+        device = next(iter(images.values())).device
+        per_camera = []
+        for cam_idx, key in enumerate(self.CAMERA_KEYS):
+            img_flat = images[key].flatten(end_dim=1)              # (B*T, C, H, W)
+            inputs = self.processor(images=img_flat, return_tensors="pt")
+            inputs = {k: v.to(device) for k, v in inputs.items()}
+            with torch.no_grad():
+                outputs = self.backbone(**inputs)
+                # Skip CLS token and register tokens; remaining patches are row-major
+                patches = outputs.last_hidden_state[
+                    :, 1 + self._num_registers:, :
+                ]                                                  # (B*T, N, DINO_DIM)
+            N = patches.shape[1]
+            #print("LXH debug patch dim:", N)
+            grid_h = grid_w = int(math.isqrt(N))
+            assert grid_h * grid_w == N, \
+                f"Non-square patch grid for camera {key!r}: N={N}"
+            tokens = self.proj(patches)                            # (B*T, N, TOKEN_DIM)
+            tokens = self.pos_enc2d(tokens, grid_h, grid_w)       # 2D spatial PE
+            tokens = tokens + self.cam_id_emb.weight[cam_idx]     # camera ID: (TOKEN_DIM,)
+            # Temporal embedding: reshape to (B, T, N, d), add (T, d), reshape back
+            tokens = tokens.reshape(B, T, N, -1)
+            t_idx  = torch.arange(T, device=device)
+            tokens = tokens + self.time_emb(t_idx).unsqueeze(0).unsqueeze(2)  # (1,T,1,d)
+            per_camera.append(tokens.reshape(B, T * N, TOKEN_DIM))
+        return torch.cat(per_camera, dim=1)                        # (B, cams*T*N, TOKEN_DIM)
+
+
+# ---------------------------------------------------------------------------
+# EfficientFormer Image Encoder
+# ---------------------------------------------------------------------------
+
+class EfformerImageEncoder(nn.Module):
+    """Image encoder using a frozen EfficientFormerV2-S1 backbone (timm).
+
+    Extracts the stage-2 feature map (14×14 spatial grid, 120 channels) and
+    projects each spatial cell to TOKEN_DIM, giving 196 patch tokens per
+    camera per timestep.
+
+    Output shape: (B, T * num_cameras * 196, TOKEN_DIM)
+
+    The stage-2 feature map sits at a good mid-level semantic resolution —
+    finer than the final 7×7 stage but already past the pure-texture early
+    stages.
+
+    Key remapping from the original checkpoint format (stem.conv1, stages.0.*)
+    to timm's FeatureListNet format (stem_conv1, stages_0.*) is done at load
+    time; the classification head keys are silently dropped (strict=False).
+    """
+
+    CAMERA_KEYS  = ImageEncoder.CAMERA_KEYS
+    STAGE2_DIM   = 120   # EfficientFormerV2-S1 stage-2 output channels
+    STAGE2_IDX   = 2     # 0-based stage index
+
+    def __init__(self, checkpoint_path: str, freeze_backbone: bool = True,
+                 camera_keys: tuple[str, ...] | None = None,
+                 obs_horizon: int = 2,
+                 pos_enc: str = "rope"):
+        super().__init__()
+        self._freeze_backbone = freeze_backbone
+        if camera_keys is not None:
+            self.CAMERA_KEYS = camera_keys
+
+        backbone = timm.create_model("efficientformerv2_s1", pretrained=False, features_only=True)
+        raw_sd = torch.load(checkpoint_path, map_location="cpu", weights_only=True)
+        remapped = {}
+        for k, v in raw_sd.items():
+            k = k.replace("stem.conv1", "stem_conv1").replace("stem.conv2", "stem_conv2")
+            k = re.sub(r"stages\.(\d+)", r"stages_\1", k)
+            remapped[k] = v
+        backbone.load_state_dict(remapped, strict=False)
+        self.backbone = backbone
+
+        if freeze_backbone:
+            for p in self.backbone.parameters():
+                p.requires_grad_(False)
+
+        # Derive preprocessing transform and normalisation stats from the model itself.
+        # self.transform is the canonical PIL pipeline; _input_* / _resize_* replicate
+        # the same resize → center-crop → normalize sequence on tensors in forward().
+        config = resolve_data_config({}, model=self.backbone)
+        transform = create_transform(**config)
+        print("EfficientTransformer transform loaded:", transform)
+        print("EfficientTransformer config loaded:", config)
+        # Extract resize/crop sizes directly from the transform to stay in sync:
+        #   Resize(shorter-edge → _resize_size)  →  CenterCrop(_input_h, _input_w)
+        resize_step = transform.transforms[0]
+        self._resize_size = (resize_step.size if isinstance(resize_step.size, int)
+                             else resize_step.size[0])
+        _, self._input_h, self._input_w = config["input_size"]
+        self.register_buffer(
+            "img_mean", torch.tensor(list(config["mean"]), dtype=torch.float32).view(1, 3, 1, 1)
+        )
+        self.register_buffer(
+            "img_std",  torch.tensor(list(config["std"]),  dtype=torch.float32).view(1, 3, 1, 1)
+        )
+
+        self.num_cameras = len(self.CAMERA_KEYS)
+
+        self.proj        = nn.Linear(self.STAGE2_DIM, TOKEN_DIM)
+        if pos_enc == "rope":
+            self.pos_enc2d = RoPE2D(dim=TOKEN_DIM)
+        else:
+            self.pos_enc2d = SinCos2D(dim=TOKEN_DIM)
+        self.cam_id_emb  = nn.Embedding(self.num_cameras, TOKEN_DIM)
+        self.time_emb    = nn.Embedding(obs_horizon, TOKEN_DIM)
+
+    def train(self, mode: bool = True):
+        super().train(mode)
+        if self._freeze_backbone:
+            self.backbone.eval()
+        return self
+
+    def forward(self, images: dict) -> torch.Tensor:
+        B, T = next(iter(images.values())).shape[:2]
+        device = next(iter(images.values())).device
+        per_camera = []
+        for cam_idx, key in enumerate(self.CAMERA_KEYS):
+            img_flat = images[key].flatten(end_dim=1).float()        # (B*T, C, H, W)
+            # Replicate self.transform on tensors:
+            #   Resize(shorter-edge → _resize_size, bicubic) → CenterCrop → Normalize
+            img_flat = TF.resize(img_flat, self._resize_size,
+                                 interpolation=TF.InterpolationMode.BICUBIC, antialias=True)
+            img_flat = TF.center_crop(img_flat, [self._input_h, self._input_w])
+            img_flat = (img_flat - self.img_mean) / self.img_std
+            with torch.no_grad():
+                feat = self.backbone(img_flat)[self.STAGE2_IDX]     # (B*T, STAGE2_DIM, H, W)
+            BT, C, H, W = feat.shape # for stage 2 it should be BT x 120 x 14 x 14
+            # Row-major flatten: (B*T, H*W, C)
+            patches = feat.permute(0, 2, 3, 1).reshape(BT, H * W, C)
+            tokens = self.proj(patches)                             # (B*T, N, TOKEN_DIM)
+            tokens = self.pos_enc2d(tokens, H, W)                  # 2D spatial PE
+            tokens = tokens + self.cam_id_emb.weight[cam_idx]      # camera ID: (TOKEN_DIM,)
+            # Temporal embedding
+            tokens = tokens.reshape(B, T, H * W, -1)
+            t_idx  = torch.arange(T, device=device)
+            tokens = tokens + self.time_emb(t_idx).unsqueeze(0).unsqueeze(2)  # (1,T,1,d)
+            per_camera.append(tokens.reshape(B, T * H * W, TOKEN_DIM))
+        return torch.cat(per_camera, dim=1)                         # (B, cams*T*N, TOKEN_DIM)
 
 
 # ---------------------------------------------------------------------------
@@ -420,15 +757,20 @@ class FlowMatchingPolicy(nn.Module):
         n_layers: int = 4,
         ffn_dim: int = 1024,
         dropout: float = 0.0,
+        image_encoder_type: str = "resnet",
         resnet_name: str = "resnet18",
-        resnet_weights="IMAGENET1K_V1",
+        resnet_weights: str = "IMAGENET1K_V1",
+        local_ckpt_path: str | None = None,
+        camera_keys: tuple[str, ...] | None = None,
         cfg_dropout_prob: float = 0.0,
+        pos_enc: str = "rope",
     ):
         super().__init__()
-        self.obs_horizon      = obs_horizon
-        self.pred_horizon     = pred_horizon
-        self.action_dim       = action_dim
-        self.cfg_dropout_prob = cfg_dropout_prob
+        self.obs_horizon        = obs_horizon
+        self.pred_horizon       = pred_horizon
+        self.action_dim         = action_dim
+        self.cfg_dropout_prob   = cfg_dropout_prob
+        self.image_encoder_type = image_encoder_type
 
         # Profiling (disabled by default; set policy.profiling = True to enable)
         self.profiling       = False
@@ -436,14 +778,43 @@ class FlowMatchingPolicy(nn.Module):
         self._prof_n         = 0
         self._prof_acc: dict[str, float] = {}
 
-        self.image_encoder = ImageEncoder(resnet_name=resnet_name, weights=resnet_weights)
-        self.timestep_encoder = TimestepEncoder(embed_dim=d_model)
-        self.task_encoder  = TaskEncoder(task_embed_dim=d_model)
-        self.state_encoder = nn.Sequential(
+        if image_encoder_type == "resnet":
+            self.image_encoder = ImageEncoder(resnet_name=resnet_name, weights=resnet_weights,
+                                              local_weights_path=local_ckpt_path,
+                                              camera_keys=camera_keys,
+                                              obs_horizon=obs_horizon,
+                                              pos_enc=pos_enc)
+        elif image_encoder_type == "dino":
+            if local_ckpt_path is None:
+                raise ValueError("dino_checkpoint must be provided when image_encoder_type='dino'")
+            self.image_encoder = DINOImageEncoder(checkpoint_path=local_ckpt_path,
+                                                  camera_keys=camera_keys,
+                                                  obs_horizon=obs_horizon,
+                                                  pos_enc=pos_enc)
+        elif image_encoder_type == "efformer":
+            if local_ckpt_path is None:
+                raise ValueError(
+                    "efformer_checkpoint must be provided when image_encoder_type='efformer'"
+                )
+            self.image_encoder = EfformerImageEncoder(checkpoint_path=local_ckpt_path,
+                                                      camera_keys=camera_keys,
+                                                      obs_horizon=obs_horizon,
+                                                      pos_enc=pos_enc)
+        else:
+            raise ValueError(
+                f"Unknown image_encoder_type {image_encoder_type!r}. "
+                f"Choose 'resnet', 'dino', or 'efformer'."
+            )
+        self.timestep_encoder  = TimestepEncoder(embed_dim=d_model)
+        self.task_encoder      = TaskEncoder(task_embed_dim=d_model)
+        self.state_encoder     = nn.Sequential(
             nn.Linear(robot_state_dim, 256),
             nn.ReLU(),
             nn.Linear(256, d_model),
         )
+        # Separate temporal PE for state tokens (independent from image temporal PE
+        # in DINOImageEncoder — the two modalities have very different value ranges)
+        self.state_time_emb = nn.Embedding(obs_horizon, d_model)
         self.action_in_proj = nn.Linear(action_dim, d_model)
         self.vector_field_net = VectorFieldTransformer(
             action_dim=action_dim,
@@ -545,6 +916,8 @@ class FlowMatchingPolicy(nn.Module):
                 state_tokens = self.state_encoder(
                     robot_state.flatten(end_dim=1)
                 ).reshape(B, self.obs_horizon, -1)
+                t_idx = torch.arange(self.obs_horizon, device=dev)
+                state_tokens = state_tokens + self.state_time_emb(t_idx).unsqueeze(0)
 
             if self.profiling:
                 _t = self._tock(_t, "state_encoder", dev)
@@ -721,6 +1094,8 @@ class FlowMatchingPolicy(nn.Module):
         state_tokens    = self.state_encoder(
             robot_state.flatten(end_dim=1)
         ).reshape(B, self.obs_horizon, -1)
+        t_idx        = torch.arange(self.obs_horizon, device=device)
+        state_tokens = state_tokens + self.state_time_emb(t_idx).unsqueeze(0)
         task_token_cond = self.task_encoder(target_module, port_name)
         prefix_cond     = self.vector_field_net.encode_prefix(img_tokens, state_tokens)
         if self.profiling:

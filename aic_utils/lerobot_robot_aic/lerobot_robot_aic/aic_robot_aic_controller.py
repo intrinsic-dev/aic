@@ -52,7 +52,11 @@ from rclpy.node import Node
 from rclpy.publisher import Publisher
 from rclpy.qos import qos_profile_sensor_data
 from rclpy.subscription import Subscription
-from sensor_msgs.msg import JointState
+from rclpy.duration import Duration
+from rclpy.time import Time
+import tf2_ros
+from tf2_ros import TransformException
+from sensor_msgs.msg import CameraInfo, JointState
 from std_msgs.msg import String
 
 from .aic_robot import aic_cameras, arm_joint_names
@@ -80,6 +84,12 @@ TASK_PORT_NAME_ENCODING: dict[str, int] = {
     "sfp_port_0": 0,
     "sfp_port_1": 1,
     "sc_port_base": 2,
+}
+
+_CAMERA_NAMES: list[str] = ["left_camera", "center_camera", "right_camera"]
+_ENTITY_PORTS: dict[str, list[str]] = {
+    **{f"nic_card_mount_{i}": ["sfp_port_0", "sfp_port_1"] for i in range(5)},
+    **{f"sc_port_{i}": ["sc_port_base"] for i in range(2)},
 }
 
 ObservationState = TypedDict(
@@ -178,6 +188,9 @@ class AICRos2Interface:
     joint_states_sub: Subscription[JointState]
     wrench_sub: Subscription[WrenchStamped]
     insertion_event_sub: Subscription[String]
+    tf_buffer: tf2_ros.Buffer
+    tf_listener: tf2_ros.TransformListener
+    camera_infos: dict[str, CameraInfo | None]
     logger: RcutilsLogger
 
     @staticmethod
@@ -228,6 +241,21 @@ class AICRos2Interface:
             String, "/scoring/insertion_event", insertion_event_cb, 10
         )
 
+        tf_buffer = tf2_ros.Buffer()
+        tf_listener = tf2_ros.TransformListener(tf_buffer, node)
+
+        camera_infos: dict[str, CameraInfo | None] = {cam: None for cam in _CAMERA_NAMES}
+
+        def _make_cam_info_cb(cam_name: str):
+            def cb(msg: CameraInfo):
+                camera_infos[cam_name] = msg
+            return cb
+
+        for cam_name in _CAMERA_NAMES:
+            node.create_subscription(
+                CameraInfo, f"/{cam_name}/camera_info", _make_cam_info_cb(cam_name), 10
+            )
+
         # Client for /env/reset (env_resetter.py). Not waited on here —
         # the service lives in a separate process and may start later.
         env_reset_client = node.create_client(SetBool, "/env/reset")
@@ -255,6 +283,9 @@ class AICRos2Interface:
             joint_states_sub=joint_states_sub,
             wrench_sub=wrench_sub,
             insertion_event_sub=insertion_event_sub,
+            tf_buffer=tf_buffer,
+            tf_listener=tf_listener,
+            camera_infos=camera_infos,
             logger=logger,
         )
 
@@ -282,6 +313,21 @@ class AICRobotAICController(Robot):
         self.episode_number: int = 0
 
         # Auto-reset on insertion event, approach done, or episode timeout
+        # Port center projections: keyed by "port_center.{cam}.{entity}.{port}.{u|v|dist}"
+        # u, v: pixel coords in full-res camera space (-1 if not visible).
+        # dist: Euclidean distance in metres from camera optical centre to port (-1 if unknown).
+        # Initialized to -1 (invalid); updated per-frame via _project_port_centers_nonblocking().
+        self._port_centers: dict[str, float] = {
+            f"port_center.{cam}.{entity}.{port_key}.{coord}": -1.0
+            for cam in _CAMERA_NAMES
+            for entity, ports in _ENTITY_PORTS.items()
+            for port in ports
+            for port_key in [port, f"{port}_entrance"]
+            for coord in ["u", "v", "dist"]
+        }
+        # Which entities are currently on the board (set at reset / connect time).
+        self._present_entities: set[str] = set()
+
         self._auto_reset_enabled: bool = False
         self._auto_reset_pending: bool = False
         self._last_reset_time: float = 0.0
@@ -348,7 +394,8 @@ class AICRobotAICController(Robot):
 
     @cached_property
     def observation_features(self) -> dict:
-        return {**ObservationState.__annotations__, **self._cameras_ft}
+        port_center_features = {k: float for k in self._port_centers}
+        return {**ObservationState.__annotations__, **self._cameras_ft, **port_center_features}
 
     @cached_property
     def action_features(self) -> dict[str, type]:
@@ -431,6 +478,10 @@ class AICRobotAICController(Robot):
             cam.connect()
 
         self._is_connected = True
+
+        # Populate port centers for whatever board is already in the scene
+        # (covers episode 0, before the first random reset fires).
+        self._compute_port_centers()
 
         if self.config.auto_reset:
             self.enable_auto_reset()
@@ -551,7 +602,8 @@ class AICRobotAICController(Robot):
                 Thread(target=self._auto_reset_after_delay, daemon=True).start()
         self._last_approach_done = approach_done_now
 
-        obs = {**cam_obs, **controller_state_obs}
+        port_centers = self._project_port_centers_nonblocking()
+        obs = {**cam_obs, **controller_state_obs, **port_centers}
         return obs
 
     def send_action_cartesian(self, action: dict[str, Any]) -> None:
@@ -617,6 +669,173 @@ class AICRobotAICController(Robot):
             return action
         else:
             raise ValueError("Invalid teleop_target_mode")
+
+    def _compute_port_centers(self) -> None:
+        """Project each present port's TF frame into every camera image.
+
+        Results are stored in self._port_centers keyed by
+        "port_center.{camera}.{entity}.{port}.{u|v}". Entries for ports that
+        are absent, behind the camera (Z<=0), or outside the image bounds are
+        left at -1.0.
+        """
+        if not self.ros2_interface:
+            return
+
+        tf_buffer = self.ros2_interface.tf_buffer
+        camera_infos = self.ros2_interface.camera_infos
+        present_entities = set(self.current_task_info.get("present_entities", []))
+
+        # If present_entities is not in task_info (e.g. first episode before any
+        # random reset), fall back to probing TF for every possible entity.
+        print("LXH debug number of present entities:", len(present_entities))
+
+        # If present_entities is not in task_info (e.g. first episode before any
+        # random reset), fall back to probing TF for every possible entity.
+        if not present_entities:
+            camera_frame = next(
+                (ci.header.frame_id for ci in camera_infos.values() if ci is not None),
+                None,
+            )
+            if camera_frame:
+                present_entities = {
+                    entity
+                    for entity, ports in _ENTITY_PORTS.items()
+                    if tf_buffer.can_transform(
+                        camera_frame,
+                        f"task_board/{entity}/{ports[0]}_link",
+                        Time(),
+                    )
+                }
+                if present_entities:
+                    logger.info(f"Auto-detected present entities from TF: {sorted(present_entities)}")
+
+        self._present_entities = present_entities
+        centers = {k: -1.0 for k in self._port_centers}
+
+        for cam_name in _CAMERA_NAMES:
+            cam_info = camera_infos.get(cam_name)
+            if cam_info is None:
+                continue
+            camera_frame = cam_info.header.frame_id
+            print("LXH debug frame id:", camera_frame, "for", cam_name)
+            P = np.array(cam_info.p).reshape(3, 4)
+            img_h, img_w = cam_info.height, cam_info.width
+
+            for entity in present_entities:
+                ports = _ENTITY_PORTS.get(entity)
+                if ports is None:
+                    continue
+                for port_name in ports:
+                    for port_key, tf_frame in [
+                        (port_name,              f"task_board/{entity}/{port_name}_link"),
+                        (f"{port_name}_entrance", f"task_board/{entity}/{port_name}_link_entrance"),
+                    ]:
+                        try:
+                            t = tf_buffer.lookup_transform(
+                                camera_frame,
+                                tf_frame,
+                                Time(),
+                                timeout=Duration(seconds=1.0),
+                            )
+                        except TransformException as ex:
+                            logger.debug(f"TF lookup failed for {tf_frame}: {ex}")
+                            continue
+
+                        X = t.transform.translation.x
+                        Y = t.transform.translation.y
+                        Z = t.transform.translation.z
+
+                        if Z <= 0.0:
+                            continue
+
+                        centers[f"port_center.{cam_name}.{entity}.{port_key}.dist"] = float(
+                            np.sqrt(X * X + Y * Y + Z * Z)
+                        )
+
+                        uvw = P @ np.array([X, Y, Z, 1.0])
+                        u = uvw[0] / uvw[2]
+                        v = uvw[1] / uvw[2]
+
+                        if not (0 <= u < img_w and 0 <= v < img_h):
+                            continue
+
+                        centers[f"port_center.{cam_name}.{entity}.{port_key}.u"] = float(u)
+                        centers[f"port_center.{cam_name}.{entity}.{port_key}.v"] = float(v)
+
+        self._port_centers = centers
+        #logger.info(f"Port centers computed for {len(present_entities)} entities")
+
+        logger.info(
+            f"Port centers computed for {len(present_entities)} entities: "
+            + ", ".join(
+                f"{k}=({centers[k.replace('.v', '.u')]:.1f})"
+                for k in centers
+                if k.endswith(".v") and centers[k] >= 0
+            )
+        )
+
+    def _project_port_centers_nonblocking(self) -> dict[str, float]:
+        """Project present ports into camera images using the latest TF, non-blocking.
+
+        Called every frame from get_observation(). Uses timeout=0 so it never
+        stalls the observation loop; ports whose transform isn't immediately
+        available are left at -1.0 for that frame.
+        """
+        if not self.ros2_interface or not self._present_entities:
+            return {k: -1.0 for k in self._port_centers}
+
+        tf_buffer = self.ros2_interface.tf_buffer
+        camera_infos = self.ros2_interface.camera_infos
+        centers = {k: -1.0 for k in self._port_centers}
+
+        for cam_name in _CAMERA_NAMES:
+            cam_info = camera_infos.get(cam_name)
+            if cam_info is None:
+                continue
+            camera_frame = cam_info.header.frame_id
+            P = np.array(cam_info.p).reshape(3, 4)
+            img_h, img_w = cam_info.height, cam_info.width
+
+            for entity in self._present_entities:
+                ports = _ENTITY_PORTS.get(entity)
+                if ports is None:
+                    continue
+                for port_name in ports:
+                    for port_key, tf_frame in [
+                        (port_name,              f"task_board/{entity}/{port_name}_link"),
+                        (f"{port_name}_entrance", f"task_board/{entity}/{port_name}_link_entrance"),
+                    ]:
+                        try:
+                            t = tf_buffer.lookup_transform(
+                                camera_frame,
+                                tf_frame,
+                                Time(),
+                                timeout=Duration(seconds=0),
+                            )
+                        except TransformException:
+                            continue
+
+                        X = t.transform.translation.x
+                        Y = t.transform.translation.y
+                        Z = t.transform.translation.z
+
+                        if Z <= 0.0:
+                            continue
+
+                        dist = float(np.sqrt(X * X + Y * Y + Z * Z))
+                        centers[f"port_center.{cam_name}.{entity}.{port_key}.dist"] = dist
+
+                        uvw = P @ np.array([X, Y, Z, 1.0])
+                        u = uvw[0] / uvw[2]
+                        v = uvw[1] / uvw[2]
+
+                        if not (0 <= u < img_w and 0 <= v < img_h):
+                            continue
+
+                        centers[f"port_center.{cam_name}.{entity}.{port_key}.u"] = float(u)
+                        centers[f"port_center.{cam_name}.{entity}.{port_key}.v"] = float(v)
+
+        return centers
 
     def enable_auto_reset(self) -> None:
         """Enable automatic env reset on insertion event or episode timeout."""
@@ -710,6 +929,7 @@ class AICRobotAICController(Robot):
         self.last_insertion_event = 0.0
         self.episode_number += 1
         logger.info(f"Environment reset complete. episode_number={self.episode_number} task_info={task_info}")
+        self._compute_port_centers()
 
         # Stamp reset time so the watchdog timeout starts from now.
         self._last_reset_time = time.monotonic()

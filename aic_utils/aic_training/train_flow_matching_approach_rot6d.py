@@ -161,12 +161,14 @@ class AICLeRobotDataset(torch.utils.data.Dataset):
     """
 
     def __init__(self, dataset_dir: str | Path, obs_horizon: int = 2,
-                 pred_horizon: int = 16, action_dim: int = 9):
+                 pred_horizon: int = 16, action_dim: int = 9,
+                 camera_keys: tuple[str, ...] = CAMERA_KEYS):
         from lerobot.datasets.lerobot_dataset import LeRobotDataset
 
         self.obs_horizon  = obs_horizon
         self.pred_horizon = pred_horizon
         self.action_dim   = action_dim
+        self.camera_keys  = camera_keys
         self._window_len  = obs_horizon + pred_horizon
 
         self._lerobot = LeRobotDataset(str(dataset_dir))
@@ -253,10 +255,10 @@ class AICLeRobotDataset(torch.utils.data.Dataset):
         rot6d = _quat_xyzw_to_rot6d(pred_state[:, 3:7])
         action = torch.cat([pos, rot6d], dim=-1)            # (pred_horizon, 9)
 
-        images: dict[str, torch.Tensor] = {k: [] for k in CAMERA_KEYS}
+        images: dict[str, torch.Tensor] = {k: [] for k in self.camera_keys}
         for gi in gidx[: self.obs_horizon]:
             frame = self._lerobot[int(gi)]
-            for k in CAMERA_KEYS:
+            for k in self.camera_keys:
                 images[k].append(frame[f"observation.images.{k}"])
         images = {k: torch.stack(v) for k, v in images.items()}
 
@@ -297,10 +299,11 @@ def _print_task_distribution(datasets: list, label: str) -> None:
 
 def build_dataloader(dataset_dirs, obs_horizon, pred_horizon, action_dim,
                      batch_size, num_workers=4, shuffle=True,
-                     label: str = "Training") -> DataLoader:
+                     label: str = "Training",
+                     camera_keys: tuple[str, ...] = CAMERA_KEYS) -> DataLoader:
     datasets = [
         AICLeRobotDataset(d, obs_horizon=obs_horizon, pred_horizon=pred_horizon,
-                          action_dim=action_dim)
+                          action_dim=action_dim, camera_keys=camera_keys)
         for d in dataset_dirs
     ]
     _print_task_distribution(datasets, label)
@@ -315,6 +318,30 @@ def build_dataloader(dataset_dirs, obs_horizon, pred_horizon, action_dim,
 
 
 # ---------------------------------------------------------------------------
+# Batch utilities
+# ---------------------------------------------------------------------------
+
+def _infinite(loader):
+    """Yield batches from loader indefinitely without caching them."""
+    while True:
+        yield from loader
+
+
+def merge_batches(a: dict, b: dict) -> dict:
+    """Concatenate two half-batches along the batch dimension."""
+    merged = {}
+    for key in a:
+        if key == "images":
+            merged["images"] = {
+                k: torch.cat([a["images"][k], b["images"][k]], dim=0)
+                for k in a["images"]
+            }
+        else:
+            merged[key] = torch.cat([a[key], b[key]], dim=0)
+    return merged
+
+
+# ---------------------------------------------------------------------------
 # Training step
 # ---------------------------------------------------------------------------
 
@@ -326,7 +353,7 @@ def flow_matching_loss(
     """Thin wrapper around policy.compute_loss() for the training loop."""
     action = batch["action"].to(device)                               # (B, pred_horizon, 9)
     dist   = batch["dist_to_target"].to(device).unsqueeze(-1)        # (B, pred_horizon, 1)
-    actions = torch.cat([action, dist], dim=-1)                      # (B, pred_horizon, 10)
+    actions = torch.cat([action, dist], dim=-1)                      # (B, pred_horizon, 10) 
     return policy.compute_loss(
         images        = {k: v.to(device) for k, v in batch["images"].items()},
         robot_state   = batch["robot_state"].to(device),
@@ -368,21 +395,41 @@ def train(args):
     device = torch.device(args.device if torch.cuda.is_available() else "cpu")
     print(f"Training on {device}")
 
+    camera_keys = ("center_camera", "right_camera") if args.skip_left_camera else CAMERA_KEYS
+    if args.skip_left_camera:
+        print(f"Skipping left camera — using cameras: {camera_keys}")
+
     policy = FlowMatchingPolicy(
-        obs_horizon      = args.obs_horizon,
-        pred_horizon     = args.pred_horizon,
-        action_dim       = args.action_dim,
-        robot_state_dim  = ROBOT_STATE_DIM,
-        d_model          = TOKEN_DIM,
-        n_heads          = args.n_heads,
-        n_layers         = args.n_layers,
-        ffn_dim          = args.ffn_dim,
-        dropout          = args.dropout,
-        cfg_dropout_prob = args.cfg_dropout_prob,
+        obs_horizon         = args.obs_horizon,
+        pred_horizon        = args.pred_horizon,
+        action_dim          = args.action_dim,
+        robot_state_dim     = ROBOT_STATE_DIM,
+        d_model             = TOKEN_DIM,
+        n_heads             = args.n_heads,
+        n_layers            = args.n_layers,
+        ffn_dim             = args.ffn_dim,
+        dropout             = args.dropout,
+        image_encoder_type  = args.image_encoder_type,
+        resnet_name         = args.resnet_name,
+        resnet_weights      = args.resnet_weights,
+        local_ckpt_path     = args.local_ckpt_path,
+        camera_keys         = camera_keys,
+        cfg_dropout_prob    = args.cfg_dropout_prob,
+        pos_enc             = args.pos_enc,
     ).to(device)
 
-    for p in policy.image_encoder.parameters():
-        p.requires_grad = False
+    # For ResNet, freeze the entire backbone (only the policy head trains).
+    # For DINO, the backbone is already frozen inside DINOImageEncoder; only
+    # the proj layer is trainable, so we leave image_encoder alone here.
+    if args.image_encoder_type == "resnet":
+        for p in policy.image_encoder.parameters():
+            p.requires_grad_(False)
+
+    # Compile the frozen image encoder — it runs every training step and its
+    # weights never change, so compilation is always profitable.
+    policy.image_encoder = torch.compile(policy.image_encoder)
+
+    policy.profiling = args.profile
 
     total     = sum(p.numel() for p in policy.parameters())
     trainable = sum(p.numel() for p in policy.parameters() if p.requires_grad)
@@ -393,15 +440,35 @@ def train(args):
 
     optimizer = torch.optim.AdamW(policy.parameters(), lr=args.lr, weight_decay=1e-4)
 
+    use_ordered  = bool(args.ordered_dataset_dirs)
+    half_batch   = args.batch_size // 2 if use_ordered else args.batch_size
+
     loader = build_dataloader(
         dataset_dirs = args.dataset_dirs,
         obs_horizon  = args.obs_horizon,
         pred_horizon = args.pred_horizon,
         action_dim   = args.action_dim,
-        batch_size   = args.batch_size,
+        batch_size   = half_batch,
         num_workers  = args.num_workers,
         label        = "Training",
+        camera_keys  = camera_keys,
     )
+
+    ordered_loader = None
+    if use_ordered:
+        ordered_loader = build_dataloader(
+            dataset_dirs = args.ordered_dataset_dirs,
+            obs_horizon  = args.obs_horizon,
+            pred_horizon = args.pred_horizon,
+            action_dim   = args.action_dim,
+            batch_size   = half_batch,
+            num_workers  = args.num_workers,
+            shuffle      = False,
+            label        = "Ordered Training",
+            camera_keys  = camera_keys,
+        )
+        print(f"Ordered loader: {len(ordered_loader.dataset)} windows, "
+              f"shuffle=False, half_batch={half_batch}")
 
     val_loader = None
     if args.val_dataset_dirs:
@@ -413,11 +480,17 @@ def train(args):
             batch_size   = args.batch_size,
             num_workers  = args.num_workers,
             label        = "Validation",
+            camera_keys  = camera_keys,
         )
         print(f"Validation loader: {len(val_loader.dataset)} windows, evaluating {args.val_steps} batches/epoch")
 
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
+
+    use_fp16 = args.fp16 and device.type == "cuda"
+    scaler   = torch.amp.GradScaler('cuda', enabled=use_fp16)
+    if use_fp16:
+        print("Mixed-precision training enabled (fp16)")
 
     policy.train()
     global_step = 0
@@ -426,16 +499,24 @@ def train(args):
     val_losses: list[float] = []
     val_epoch_indices: list[int] = []
 
+    ordered_iter = _infinite(ordered_loader) if ordered_loader is not None else None
+
     for epoch in range(args.num_epochs):
         epoch_loss = 0.0
         epoch_start = time.perf_counter()
 
+        # image from lerobot dataset seems already converted to 0 - 1 in tensor format
         for batch in loader:
+            if ordered_iter is not None:
+                batch = merge_batches(batch, next(ordered_iter))
             optimizer.zero_grad()
-            loss = flow_matching_loss(policy, batch, device)
-            loss.backward()
+            with torch.autocast(device_type=device.type, dtype=torch.float16, enabled=use_fp16):
+                loss = flow_matching_loss(policy, batch, device)
+            scaler.scale(loss).backward()
+            scaler.unscale_(optimizer)
             nn.utils.clip_grad_norm_(policy.parameters(), max_norm=1.0)
-            optimizer.step()
+            scaler.step(optimizer)
+            scaler.update()
 
             step_losses.append(loss.item())
             epoch_loss += loss.item()
@@ -460,11 +541,19 @@ def train(args):
         is_last_epoch = (epoch + 1) == args.num_epochs
         if (epoch + 1) % args.save_every == 0 or is_last_epoch:
             ckpt_path = output_dir / f"checkpoint_epoch{epoch + 1:04d}.pt"
+            ## torch.compile() inserts "._orig_mod." into every state-dict key.
+            ## Unwrap it so checkpoints load cleanly without key remapping.
+            #compiled = policy.image_encoder
+            #policy.image_encoder = getattr(compiled, "_orig_mod", compiled)
+            #model_sd = policy.state_dict()
+            #policy.image_encoder = compiled
+
             torch.save({
                 "epoch":        epoch + 1,
                 "global_step":  global_step,
                 "model_state":  policy.state_dict(),
                 "optim_state":  optimizer.state_dict(),
+                "scaler_state": scaler.state_dict(),
                 "args":         vars(args),
             }, ckpt_path)
             print(f"  Saved checkpoint: {ckpt_path}")
@@ -517,7 +606,10 @@ def parse_args():
 
     # Data
     p.add_argument("--dataset_dirs", nargs="+", required=True,
-                   help="Paths to one or more LeRobot dataset directories")
+                   help="Paths to one or more LeRobot dataset directories (shuffled)")
+    p.add_argument("--ordered_dataset_dirs", nargs="+", default=None,
+                   help="Optional datasets loaded without shuffle; each batch will be "
+                        "half from --dataset_dirs and half from these (batch_size is split evenly)")
     p.add_argument("--val_dataset_dirs", nargs="+", default=None,
                    help="Paths to one or more LeRobot dataset directories for validation (optional)")
     p.add_argument("--val_steps", type=int, default=200,
@@ -538,6 +630,18 @@ def parse_args():
     p.add_argument("--dropout",          type=float, default=0.0)
     p.add_argument("--cfg_dropout_prob", type=float, default=0.1,
                    help="Probability of replacing task token with null token (CFG dropout)")
+    p.add_argument("--skip_left_camera", action="store_true",
+                   help="Use only center and right cameras, skipping left camera input")
+    p.add_argument("--image_encoder_type", default="resnet", choices=["resnet", "dino", "efformer"],
+                   help="Image encoder backbone: 'resnet' (frozen ResNet18) or 'dino' (frozen DINOv2 ViT-S/14 + trainable proj) or 'efformer' (frozen efficient transformer s1")
+    p.add_argument("--pos_enc", default="rope", choices=["sincos", "rope"],
+                   help="2D spatial positional encoding for patch tokens: 'sincos' (additive, simpler) or 'rope' (rotary, only used with dino/efformer)")
+    p.add_argument("--resnet_name",    default="resnet18",
+                   help="torchvision ResNet variant (only used when --image_encoder_type=resnet)")
+    p.add_argument("--resnet_weights", default="IMAGENET1K_V1",
+                   help="torchvision weights name (only used when --image_encoder_type=resnet; ignored if --local_ckpt_path is set)")
+    p.add_argument("--local_ckpt_path", default="/home/lhphanto/models/dinov2-small",
+                   help="Path to DINOv2 ViT-S/14 .pth or efformer checkpoint (required when --image_encoder_type=dino or efformer)")
 
     # Training
     p.add_argument("--num_epochs", type=int,   default=100)
@@ -545,6 +649,10 @@ def parse_args():
     p.add_argument("--lr",         type=float, default=1e-4)
     p.add_argument("--num_workers",type=int,   default=4)
     p.add_argument("--device",     default="cuda")
+    p.add_argument("--profile",    action="store_true",
+                   help="Enable FlowMatchingPolicy forward-pass profiling (prints avg timing per sub-module every 50 steps)")
+    p.add_argument("--fp16",       action="store_true",
+                   help="Enable mixed-precision (fp16) training via torch.cuda.amp (CUDA only)")
     p.add_argument("--log_every",  type=int,   default=100)
     p.add_argument("--save_every", type=int,   default=10)
 

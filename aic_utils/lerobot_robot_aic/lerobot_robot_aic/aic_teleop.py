@@ -387,6 +387,10 @@ class AICCheatCodeTeleopConfig(TeleoperatorConfig):
     max_linear_vel: float = 0.1
     max_angular_vel: float = 0.5
 
+    # Noise injection: Gaussian noise with std = noise_std_fraction * |v|, disabled during INSERT
+    add_noise: bool = False
+    noise_std_fraction: float = 0.2
+
     # --- Task Variables (Override via command line) ---
     task_cable_name: str = "cable_0"
     task_plug_name: str = "sfp_tip"
@@ -704,7 +708,16 @@ class AICCheatCodeTeleop(Teleoperator):
         v_linear_tcp = r_current.inv().apply(v_linear_world)
         v_angular_tcp = r_current.inv().apply(v_angular_world)
 
-        # 5. Map to LeRobot action dict using the TCP-Frame velocities
+        # 5. Optional noise injection (disabled during INSERT to avoid perturbing precision alignment)
+        if self.config.add_noise and self.phase != "INSERT":
+            #logger.info("LXH add some noise")
+            std = self.config.noise_std_fraction
+            v_linear_tcp = v_linear_tcp + np.random.normal(0.0, std * np.abs(v_linear_tcp))
+            v_angular_tcp = v_angular_tcp + np.random.normal(0.0, std * np.abs(v_angular_tcp))
+            v_linear_tcp = np.clip(v_linear_tcp, -self.config.max_linear_vel, self.config.max_linear_vel)
+            v_angular_tcp = np.clip(v_angular_tcp, -self.config.max_angular_vel, self.config.max_angular_vel)
+
+        # 6. Map to LeRobot action dict using the TCP-Frame velocities
         self._current_actions = {
             "linear.x": float(v_linear_tcp[0]),
             "linear.y": float(v_linear_tcp[1]),

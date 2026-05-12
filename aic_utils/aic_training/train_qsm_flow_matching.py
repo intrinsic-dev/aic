@@ -185,6 +185,12 @@ class AICRLEnv(AICGymEnv):
         # Timestamp (time.monotonic) when force first exceeded 20 N; None if below threshold
         self._high_force_since: float | None = None
 
+        # Cached port position (x, y, z) — valid for the duration of one episode, cleared on reset
+        self._cached_port_pos: np.ndarray | None = None
+        self._cached_port_frame: str = ""
+        # Previous TCP position for approach-reward computation
+        self._prev_tcp_pos: np.ndarray | None = None
+
         # ref code: aic_utils/lerobot_robot_aic/lerobot_robot_aic/aic_robot.py
         for cam_key, topic in CAMERA_TOPICS.items():
             # Capture cam_key in closure
@@ -222,6 +228,9 @@ class AICRLEnv(AICGymEnv):
     def reset(self, **kwargs):
         self._last_insertion_event_data = ""
         self._high_force_since = None
+        self._cached_port_pos = None
+        self._cached_port_frame = ""
+        self._prev_tcp_pos = None
         return super().reset(**kwargs)
 
     # ------------------------------------------------------------------
@@ -248,22 +257,27 @@ class AICRLEnv(AICGymEnv):
         port_name          = task.get("port_name", "")
         if target_module_name and port_name:
             port_frame = f"task_board/{target_module_name}/{port_name}_link"
-            try:
-                tf_stamped = self._tf_buffer.lookup_transform(
-                    "base_link", port_frame, Time()
-                )
-                port_pos = tf_stamped.transform.translation
-                tcp_pos  = obs[0:2]                               # x, y only
-                dist = float(np.linalg.norm(
-                    tcp_pos - np.array([port_pos.x, port_pos.y])
-                ))
-                if dist > 0.3:
-                    reward -= 1.0
-                else:
-                    t = dist / 0.3                # 0 (close) → 1 (at boundary)
-                    reward += 2.0 * (1.0 - t) + 0.05 * t
-            except TransformException:
-                pass  # TF not yet available — skip distance reward this step
+            if self._cached_port_frame != port_frame or self._cached_port_pos is None:
+                try:
+                    tf_stamped = self._tf_buffer.lookup_transform(
+                        "base_link", port_frame, Time()
+                    )
+                    t = tf_stamped.transform.translation
+                    self._cached_port_pos   = np.array([t.x, t.y, t.z], dtype=np.float32)
+                    self._cached_port_frame = port_frame
+                except TransformException:
+                    pass
+            if self._cached_port_pos is not None:
+                tcp_pos = obs[0:3].astype(np.float32)             # x, y, z
+                dist = float(np.linalg.norm(tcp_pos - self._cached_port_pos))
+                if self._prev_tcp_pos is not None:
+                    prev_dist = float(np.linalg.norm(self._prev_tcp_pos - self._cached_port_pos))
+                    delta = prev_dist - dist                       # positive = getting closer
+                    reward += 10.0 * delta
+                    delta_z = float(tcp_pos[2] - self._prev_tcp_pos[2])
+                    if delta_z > 0:
+                        reward -= 5.0 * delta_z                   # small penalty for moving up
+                self._prev_tcp_pos = tcp_pos
         #print("LXH Debug reward:", info)
 
         # 3. Insertion event
@@ -286,6 +300,17 @@ class AICRLEnv(AICGymEnv):
             self._high_force_since = None
             if np.any(np.abs(force) > 15.0):
                 reward -= 1.0
+
+        # 5. Tilt penalty — discourage tilting away from vertical
+        # R[2,2] = 1 - 2*(qx²+qy²): the z-component of the tool's z-axis in world frame.
+        # 1 = pointing up, -1 = pointing down, 0 = horizontal (fully tilted).
+        # tilt = 1 - |R[2,2]|: 0 when vertical, 1 when horizontal.
+        qx, qy = float(obs[3]), float(obs[4])
+        z_alignment = 1.0 - 2.0 * (qx * qx + qy * qy)
+        tilt = 1.0 - abs(z_alignment)           # 0 = vertical, 1 = fully tilted
+        tilt_threshold = 0.3                     # ~46° from vertical — free zone
+        if tilt > tilt_threshold:
+            reward -= 2.0 * (tilt - tilt_threshold)
 
         return reward
 
@@ -595,12 +620,12 @@ def update_critic(
             robot_state=next_robot_state,
             target_module=target_module,
             port_name=port_name,
-            pred_horizon=pred_horizon,
             num_steps=target_num_flow_steps,
             guidance_scale=1.0,
             solver="euler",
         )                                                # (B, pred_horizon, action_dim)
-        a_next = next_actions_raw[:, 0, :]              # (B, action_dim) — first step of sequence
+        # Strip auxiliary dims; q_func.action_dim is the control dim it was built with.
+        a_next = next_actions_raw[:, 0, :q_func.action_dim]   # (B, control_action_dim)
         # Target policy smoothing (TD3): small noise prevents the critic from
         # overcommitting to narrow Q peaks around the next action.
         a_next = a_next + 0.1 * torch.randn_like(a_next)
@@ -627,13 +652,14 @@ def update_critic(
 
 
 def update_actor(
-    policy:       FlowMatchingPolicy,
-    q_func:       QFunction,
-    opt:          torch.optim.Optimizer,
-    batch:        dict,
-    device:       torch.device,
-    q_alpha:      float = 0.1,
-    pred_horizon: int   = 16,
+    policy:            FlowMatchingPolicy,
+    q_func:            QFunction,
+    opt:               torch.optim.Optimizer,
+    batch:             dict,
+    device:            torch.device,
+    q_alpha:           float = 0.1,
+    pred_horizon:      int   = 16,
+    policy_action_dim: int   = 9,
 ) -> float:
     """Q-Score Matching actor update.
 
@@ -667,16 +693,23 @@ def update_actor(
     actions = action_single.unsqueeze(1).expand(-1, pred_horizon, -1).contiguous()
     #                                                              (B, T, action_dim)
 
-    T, D = pred_horizon, actions.shape[-1]
+    T, D = pred_horizon, actions.shape[-1]  # D = control_action_dim (e.g. 9)
 
-    # --- Rectified-flow interpolation (x_t first — gradient is taken here) ---
+    # --- Rectified-flow interpolation in the policy's full action space ---
+    # If the policy outputs auxiliary dims (e.g. distance at index 9), pad the
+    # stored 9D actions with zeros so x_t has the shape the policy expects.
     t_flow  = torch.rand(B, device=device)                       # (B,)
     t_bc    = t_flow[:, None, None]
-    x_noise = torch.randn_like(actions)                          # (B, T, D)
-    x_t     = (1.0 - t_bc) * x_noise + t_bc * actions.detach()
+    if policy_action_dim > D:
+        pad     = torch.zeros(B, T, policy_action_dim - D, device=device)
+        actions_full = torch.cat([actions, pad], dim=-1)         # (B, T, policy_action_dim)
+    else:
+        actions_full = actions
+    x_noise = torch.randn(B, T, policy_action_dim, device=device)
+    x_t     = (1.0 - t_bc) * x_noise + t_bc * actions_full.detach()
 
-    # --- Q-gradient w.r.t. x_t, mean of two critics, averaged over horizon ---
-    x_t_g = x_t.detach().requires_grad_(True)                   # (B, T, D)
+    # --- Q-gradient over control dims only (policy aux outputs are not robot commands) ---
+    x_t_g = x_t[:, :, :D].detach().requires_grad_(True)         # (B, T, D)
 
     # Flatten B×T → per-step Q evaluations
     rs_flat = robot_state.unsqueeze(1).expand(-1, T, -1, -1).reshape(B * T, *robot_state.shape[1:])
@@ -692,8 +725,14 @@ def update_actor(
     grad_norm = q_grad.norm(dim=[-1, -2], keepdim=True).clamp(min=1e-8)
     q_grad_n  = q_grad / grad_norm                               # unit-norm per sample
 
-    # Target velocity is purely the Q-gradient direction (matches reference)
-    u_guided = q_alpha * q_grad_n.detach()
+    # Target velocity — only defined over control dims; aux dims get zero target.
+    if policy_action_dim > D:
+        u_guided = torch.cat([
+            q_alpha * q_grad_n.detach(),
+            torch.zeros(B, T, policy_action_dim - D, device=device),
+        ], dim=-1)
+    else:
+        u_guided = q_alpha * q_grad_n.detach()
 
     # --- Policy forward + actor loss ---
     v_pred = policy(
@@ -704,7 +743,8 @@ def update_actor(
         x_t=x_t,
         t=t_flow,
     )
-    loss = F.mse_loss(v_pred, u_guided)
+    # Supervise only the control dims; aux dims (e.g. distance) are not guided.
+    loss = F.mse_loss(v_pred[:, :, :D], u_guided[:, :, :D])
 
     opt.zero_grad()
     loss.backward()
@@ -767,8 +807,8 @@ def main() -> None:
                         help="Path to a previous RL training checkpoint to resume from. "
                              "Restores policy, Q-function, both optimizers, and the step/update "
                              "counters so training continues seamlessly.  Overrides --checkpoint.")
-    parser.add_argument("--action_dim",    type=int, default=9,
-                        help="Action dimension: 7 for pos+quat, 9 for pos+rot6d.")
+    parser.add_argument("--action_dim",    type=int, default=10,
+                        help="Action dimension: 7 for pos+quat, 9 for pos+rot6d. 10 for pos+rot6d+dist_to_target")
     parser.add_argument("--obs_horizon",   type=int, default=2)
     # make this consistent with the imitation training
     parser.add_argument("--pred_horizon",  type=int, default=8)
@@ -825,6 +865,7 @@ def main() -> None:
     # ---- Build policy ----
     policy = FlowMatchingPolicy(
         obs_horizon=args.obs_horizon,
+        pred_horizon=args.pred_horizon,
         action_dim=args.action_dim,
         robot_state_dim=ROBOT_STATE_DIM,
         cfg_dropout_prob=0.0,          # no CFG dropout during RL fine-tuning
@@ -839,16 +880,20 @@ def main() -> None:
     policy.train()
 
     # ---- Build Q-function ----
+    # The policy may output an extra distance-estimate dim (action_dim=10); that auxiliary
+    # output is not a robot command and must not be fed to the critic.
+    control_action_dim = min(args.action_dim, 9)  # pos(3) + rot6d(6) only
+
     q_func = QFunction(
         obs_horizon=args.obs_horizon,
-        action_dim=args.action_dim,
+        action_dim=control_action_dim,
         robot_state_dim=ROBOT_STATE_DIM,
     ).to(device)
 
     # Target critics — same architecture, initialized from q_func, never directly optimized
     target_q_func = QFunction(
         obs_horizon=args.obs_horizon,
-        action_dim=args.action_dim,
+        action_dim=control_action_dim,
         robot_state_dim=ROBOT_STATE_DIM,
     ).to(device)
     target_q_func.load_state_dict(q_func.state_dict())
@@ -966,13 +1011,13 @@ def main() -> None:
                         robot_state=robot_state_t,
                         target_module=tm_t,
                         port_name=pn_t,
-                        pred_horizon=args.pred_horizon,
                         num_steps=args.num_flow_steps,
                         guidance_scale=args.guidance_scale,
                         solver="euler",
                     )  # (1, pred_horizon, action_dim)
 
-                action_seq = actions_out[0].cpu().numpy()  # (pred_horizon, action_dim)
+                # Strip auxiliary dims (e.g. distance estimate at index 9)
+                action_seq = actions_out[0, :, :control_action_dim].cpu().numpy()  # (pred_horizon, 9)
 
             action_queue = [action_seq[i] for i in range(args.exec_steps)]
 
@@ -1081,6 +1126,7 @@ def main() -> None:
                     a_loss = update_actor(
                         policy, q_func, actor_opt, batch, device, args.q_alpha,
                         pred_horizon=args.pred_horizon,
+                        policy_action_dim=args.action_dim,
                     )
                     actor_losses.append(a_loss)
 
