@@ -61,7 +61,7 @@
       </collision>
     </link>
     <static>true</static>
-    <plugin filename="libgz-sim-pose-publisher-system.so"
+    <plugin filename="static://gz::sim::systems::PosePublisher"
       name="gz::sim::systems::PosePublisher">
       <publish_link_pose>true</publish_link_pose>
       <publish_sensor_pose>false</publish_sensor_pose>
