@@ -247,15 +247,7 @@ void CableModeratorPlugin::PreUpdate(const gz::sim::UpdateInfo& /*_info*/,
                                      gz::sim::EntityComponentManager& _ecm) {
   if (this->cableState == CableState::COMPLETED) return;
 
-  if (!this->foundAllCables) {
-    this->foundAllCables = this->FindCableModels(_ecm);
-    if (this->foundAllCables) {
-      for (std::size_t i = 0; i < this->cableTrackers.size(); ++i) {
-        this->MakeCableStatic(i, _ecm);
-        gzmsg << "Froze cable " << this->cableConfigs[i].modelName << std::endl;
-      }
-    }
-  }
+  this->FindCableModels(_ecm);
 
   if (this->endEffectorLinkEntity == kNullEntity) {
     this->endEffectorLinkEntity =
@@ -362,17 +354,13 @@ void CableModeratorPlugin::PreUpdate(const gz::sim::UpdateInfo& /*_info*/,
     this->attachCableConnectionToPort = false;
     this->touchEventCallbackNamespace = std::nullopt;
 
-    if (this->cableIndex + 1 < static_cast<int>(this->cableTrackers.size())) {
+    if (static_cast<std::size_t>(this->cableIndex + 1) <
+        this->cableTrackers.size()) {
       // There are more cables to be processed
       if (this->ToggleActiveCable(_ecm)) {
         gzmsg << "Cable transitioning to WAITING_CONN_0 state for next cable."
               << std::endl;
         this->cableState = CableState::WAITING_CONN_0;
-      } else {
-        gzmsg << "Failed to toggle active cable. Transitioning to COMPLETED "
-                 "state."
-              << std::endl;
-        this->cableState = CableState::COMPLETED;
       }
     } else {
       gz::msgs::StringMsg msg;
@@ -558,9 +546,10 @@ bool CableModeratorPlugin::FindCableModels(
         this->cableTrackers[i].found = true;
         gzdbg << "Found cable model " << this->cableConfigs[i].modelName
               << std::endl;
+
+        this->MakeCableStatic(i, const_cast<gz::sim::EntityComponentManager&>(_ecm));
+        gzmsg << "Froze cable " << this->cableConfigs[i].modelName << std::endl;
       } else {
-        // gzwarn << "Cable model " << this->cableConfigs[i].modelName << "
-        // could not be found.\n";
         allFound = false;
       }
     }
@@ -604,28 +593,37 @@ void CableModeratorPlugin::CreatePortSubscribers(const std::string& _portName) {
 //////////////////////////////////////////////////
 bool CableModeratorPlugin::ToggleActiveCable(
     gz::sim::EntityComponentManager& _ecm) {
-  this->cableIndex++;
-  auto& tracker = this->cableTrackers[this->cableIndex];
-  // Make sure we unfreeze the newly active cable
-  this->MakeCableDynamic(this->cableIndex, _ecm);
+  int nextIndex = this->cableIndex + 1;
+  if (static_cast<std::size_t>(nextIndex) >= this->cableTrackers.size())
+    return false;
 
-  this->cableModel = Model(tracker.modelEntity);
-  this->activeGraspJoint = kNullEntity;
-  const auto& cableModelName = this->cableModel.Name(_ecm);
+  auto& tracker = this->cableTrackers[nextIndex];
+  if (!tracker.found) return false;
 
-  if (!this->cableModel.Valid(_ecm)) return false;
+  Model model(tracker.modelEntity);
+  const auto& cableModelName = model.Name(_ecm);
 
-  const auto& config = this->cableConfigs[this->cableIndex];
+  if (!model.Valid(_ecm)) return false;
 
-  tracker.connection0LinkEntity =
+  const auto& config = this->cableConfigs[nextIndex];
+
+  Entity connection0 =
       findLinkInModel(cableModelName, config.connection0LinkName, _ecm);
 
-  tracker.connection1LinkEntity =
+  Entity connection1 =
       findLinkInModel(cableModelName, config.connection1LinkName, _ecm);
 
-  if (tracker.connection0LinkEntity == kNullEntity ||
-      tracker.connection1LinkEntity == kNullEntity)
-    return false;
+  if (connection0 == kNullEntity || connection1 == kNullEntity) return false;
+
+  tracker.connection0LinkEntity = connection0;
+  tracker.connection1LinkEntity = connection1;
+
+  this->cableModel = model;
+  this->activeGraspJoint = kNullEntity;
+  this->cableIndex = nextIndex;
+
+  // Make sure we unfreeze the newly active cable
+  this->MakeCableDynamic(this->cableIndex, _ecm);
 
   this->manualGraspSubs.clear();
 

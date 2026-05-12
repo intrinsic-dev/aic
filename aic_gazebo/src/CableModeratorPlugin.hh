@@ -254,8 +254,6 @@ namespace aic_gazebo
     /// \brief Manual grasp subscribers
     private: std::vector<gz::transport::Node::Subscriber> manualGraspSubs;
 
-    /// \brief Flag to indicate if all cable model entities are found.
-    private: bool foundAllCables = false;
 };
 }
 #endif
