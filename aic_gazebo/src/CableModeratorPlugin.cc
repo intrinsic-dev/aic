@@ -97,14 +97,41 @@ void CableModeratorPlugin::Configure(
       continue;
     }
 
-    config.connection0LinkName =
-        cableElem->Get<std::string>("cable_connection_0_link");
-    config.connection0PortName =
-        cableElem->Get<std::string>("cable_connection_0_port");
-    config.connection1LinkName =
-        cableElem->Get<std::string>("cable_connection_1_link");
-    config.connection1PortName =
-        cableElem->Get<std::string>("cable_connection_1_port");
+    if (cableElem->HasElement("cable_connection_0_link")) {
+      config.connection0LinkName =
+          cableElem->Get<std::string>("cable_connection_0_link");
+    } else {
+      gzerr << "Missing <cable_connection_0_link> parameter." << std::endl;
+      cableElem = cableElem->GetNextElement("cable");
+      continue;
+    }
+
+    if (cableElem->HasElement("cable_connection_0_port")) {
+      config.connection0PortName =
+          cableElem->Get<std::string>("cable_connection_0_port");
+    } else {
+      gzerr << "Missing <cable_connection_0_port> parameter." << std::endl;
+      cableElem = cableElem->GetNextElement("cable");
+      continue;
+    }
+
+    if (cableElem->HasElement("cable_connection_1_link")) {
+      config.connection1LinkName =
+          cableElem->Get<std::string>("cable_connection_1_link");
+    } else {
+      gzerr << "Missing <cable_connection_1_link> parameter." << std::endl;
+      cableElem = cableElem->GetNextElement("cable");
+      continue;
+    }
+
+    if (cableElem->HasElement("cable_connection_1_port")) {
+      config.connection1PortName =
+          cableElem->Get<std::string>("cable_connection_1_port");
+    } else {
+      gzerr << "Missing <cable_connection_1_port> parameter." << std::endl;
+      cableElem = cableElem->GetNextElement("cable");
+      continue;
+    }
 
     this->cableConfigs.push_back(config);
     cableElem = cableElem->GetNextElement("cable");
@@ -260,15 +287,6 @@ void CableModeratorPlugin::Cleanup(gz::sim::EntityComponentManager& _ecm) {
 }
 
 //////////////////////////////////////////////////
-bool CableModeratorPlugin::IsModelValid(
-    const gz::sim::EntityComponentManager& _ecm) {
-  for (const auto& tracker : this->cableTrackers) {
-    if (tracker->found && !_ecm.HasEntity(tracker->modelEntity)) return false;
-  }
-  return true;
-}
-
-//////////////////////////////////////////////////
 void CableModeratorPlugin::PreUpdate(const gz::sim::UpdateInfo& /*_info*/,
                                      gz::sim::EntityComponentManager& _ecm) {
   this->FindCableModels(_ecm);
@@ -344,7 +362,7 @@ void CableModeratorPlugin::PreUpdate(const gz::sim::UpdateInfo& /*_info*/,
       tracker->lastGraspedEnd = -1;
     }
 
-    // Keep searching for port topics until we find at least one (or both)
+    // Keep searching for port topics until we find at least one (or more)
     if (tracker->portSubs.empty()) this->CreatePortSubscribers(i);
 
     if (tracker->end0Inserted &&
@@ -505,6 +523,21 @@ void CableModeratorPlugin::FindCableModels(const EntityComponentManager& _ecm) {
             model.LinkByName(_ecm, this->cableConfigs[i].connection0LinkName);
         this->cableTrackers[i]->connection1LinkEntity =
             model.LinkByName(_ecm, this->cableConfigs[i].connection1LinkName);
+
+        // Build the topological graph of the cable
+        for (Entity jointEnt : model.Joints(_ecm)) {
+          auto pName = _ecm.Component<components::ParentLinkName>(jointEnt);
+          auto cName = _ecm.Component<components::ChildLinkName>(jointEnt);
+          if (pName && cName) {
+            Entity pEnt = model.LinkByName(_ecm, pName->Data());
+            Entity cEnt = model.LinkByName(_ecm, cName->Data());
+            if (pEnt != kNullEntity && cEnt != kNullEntity) {
+              this->cableTrackers[i]->neighbors[pEnt].push_back(cEnt);
+              this->cableTrackers[i]->neighbors[cEnt].push_back(pEnt);
+            }
+          }
+        }
+
         this->MakeCableStatic(i, const_cast<EntityComponentManager&>(_ecm));
         gzmsg << "Found cable model: " << this->cableConfigs[i].modelName
               << std::endl;
@@ -599,25 +632,8 @@ int CableModeratorPlugin::FindGraspedEnd(
 
   // Fallback: Topological distance (link count).
   // This is used if the gripper attaches to a link that isn't one of the ends.
-  // It builds a graph of the cable's links and performs a BFS to find the
-  // logical distance (number of joints) to each end.
-  std::unordered_map<Entity, std::vector<Entity>> neighbors;
-  for (Entity jointEnt : model.Joints(_ecm)) {
-    // Identify the links connected by this joint by name
-    auto pName = _ecm.Component<components::ParentLinkName>(jointEnt);
-    auto cName = _ecm.Component<components::ChildLinkName>(jointEnt);
-    if (pName && cName) {
-      // Resolve names to entities within the model
-      Entity pEnt = model.LinkByName(_ecm, pName->Data());
-      Entity cEnt = model.LinkByName(_ecm, cName->Data());
-      if (pEnt != kNullEntity && cEnt != kNullEntity) {
-        neighbors[pEnt].push_back(cEnt);
-        neighbors[cEnt].push_back(pEnt);
-      }
-    }
-  }
-
-  // Perform BFS to find the shortest topological path to both ends
+  // Perform BFS to find the shortest topological path to both ends using cached
+  // graph
   std::unordered_map<Entity, int> dists;
   std::queue<Entity> q;
   q.push(cableLink);
@@ -636,10 +652,13 @@ int CableModeratorPlugin::FindGraspedEnd(
     // Stop early if both ends are found
     if (d0 != -1 && d1 != -1) break;
 
-    for (Entity next : neighbors[curr]) {
-      if (dists.find(next) == dists.end()) {
-        dists[next] = d + 1;
-        q.push(next);
+    auto it = tracker->neighbors.find(curr);
+    if (it != tracker->neighbors.end()) {
+      for (Entity next : it->second) {
+        if (dists.find(next) == dists.end()) {
+          dists[next] = d + 1;
+          q.push(next);
+        }
       }
     }
   }

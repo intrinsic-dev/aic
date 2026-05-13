@@ -87,6 +87,9 @@ namespace aic_gazebo
     /// \brief Cable connection port subscribers
     std::vector<gz::transport::Node::Subscriber> portSubs;
 
+    /// \brief Topological graph of the cable (link -> neighbor links)
+    std::unordered_map<gz::sim::Entity, std::vector<gz::sim::Entity>> neighbors;
+
     /// \brief Flags for manual attach/detach of connection 0
     std::atomic<bool> attachEnd0Requested{false};
     std::atomic<bool> detachEnd0Requested{false};
@@ -128,10 +131,6 @@ namespace aic_gazebo
     // Documentation inherited
     public: void Reset(const gz::sim::UpdateInfo &_info,
                        gz::sim::EntityComponentManager &_ecm) override;
-
-    /// \brief Check if model entity is removed
-    /// \param[in] _ecm Immutable reference to the Entity Component Manager.
-    private: bool IsModelValid(const gz::sim::EntityComponentManager& _ecm);
 
     /// \brief Clean up entities created by this plugin
     /// \param[in] _ecm Mutable reference to the Entity Component Manager.
