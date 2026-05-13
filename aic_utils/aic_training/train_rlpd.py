@@ -27,6 +27,7 @@ from pathlib import Path
 from threading import Lock
 
 import cv2
+import logging
 import numpy as np
 import torch
 import torch.nn as nn
@@ -301,8 +302,16 @@ class AICRLEnv(AICGymEnv):
         self._prev_tcp_pos = None
         return super().reset(**kwargs)
 
-    def _compute_reward(self, obs: np.ndarray, action: np.ndarray, info: dict) -> float:
+    def _compute_reward(
+        self, obs: np.ndarray, action: np.ndarray, info: dict
+    ) -> tuple[float, float]:
+        """Return (reward, long_horizon_reward).
+
+        long_horizon_reward contains only the insertion-event and force-penalty
+        contributions so the caller can retroactively credit prior steps.
+        """
         reward = -0.01   # step penalty
+        long_horizon_reward = 0.0
 
         # Distance to target port (ground-truth TF)
         task = info.get("task", {})
@@ -326,10 +335,16 @@ class AICRLEnv(AICGymEnv):
                 if self._prev_tcp_pos is not None:
                     prev_dist = float(np.linalg.norm(self._prev_tcp_pos - self._cached_port_pos))
                     delta = prev_dist - dist           # positive = getting closer
-                    reward += 10.0 * delta
+                    reward += 5.0 * delta
                     delta_z = float(tcp_pos[2] - self._prev_tcp_pos[2])
                     if delta_z > 0:
-                        reward -= 5.0 * delta_z       # penalise moving upward
+                        reward -= 4.0 * delta_z       # penalise moving upward
+                    # While XY is still far, penalise large z changes (waste of motion)
+                    xy_dist = float(np.linalg.norm(
+                        (tcp_pos - self._cached_port_pos)[:2]
+                    ))
+                    if xy_dist > 0.05:
+                        reward -= 2.0 * abs(delta_z)
                 self._prev_tcp_pos = tcp_pos
 
         # Insertion event — reward only if it matches the target task
@@ -337,9 +352,19 @@ class AICRLEnv(AICGymEnv):
         if event_data:
             if target_module_name and port_name \
                     and target_module_name in event_data and port_name in event_data:
-                reward += 3.0   # correct insertion
+                insertion_r = 3.0
+                print(
+                    f"[RLPD][INSERTION] CORRECT  module={target_module_name}"
+                    f"  port={port_name}  event='{event_data}'"
+                )
             else:
-                reward -= 3.0   # wrong port
+                insertion_r = -3.0
+                print(
+                    f"[RLPD][INSERTION] WRONG    target=({target_module_name}/{port_name})"
+                    f"  event='{event_data}'"
+                )
+            reward              += insertion_r
+            long_horizon_reward += insertion_r
 
         # Force penalty
         force = obs[20:23]
@@ -347,11 +372,13 @@ class AICRLEnv(AICGymEnv):
             if self._high_force_since is None:
                 self._high_force_since = time.monotonic()
             elif time.monotonic() - self._high_force_since >= 1.0:
-                reward -= 2.5
+                reward              -= 2.5
+                long_horizon_reward -= 2.5
         else:
             self._high_force_since = None
             if np.any(np.abs(force) > 15.0):
-                reward -= 1.0
+                reward              -= 1.0
+                long_horizon_reward -= 1.0
 
         # Tilt penalty
         qx, qy  = float(obs[3]), float(obs[4])
@@ -360,7 +387,7 @@ class AICRLEnv(AICGymEnv):
         if tilt > 0.3:
             reward -= 2.0 * (tilt - 0.3)
 
-        return reward
+        return reward, long_horizon_reward
 
     def _spot_target(
         self,
@@ -448,6 +475,17 @@ class AICRLEnv(AICGymEnv):
         msg.trajectory_generation_mode.mode = TrajectoryGenerationMode.MODE_POSITION
         self._motion_update_pub.publish(msg)
 
+    def _check_truncated(self, obs: np.ndarray, info: dict) -> bool:
+        if super()._check_truncated(obs, info):
+            return True
+        # Truncate early when high force is sustained for > 1 seconds — prevents
+        # long stuck episodes that flood the buffer with identical bad transitions.
+        if self._high_force_since is not None:
+            if time.monotonic() - self._high_force_since >= 1.0:
+                print("[RLPD] Truncating: sustained high force > 1 s")
+                return True
+        return False
+
     def step_pose(self, action_9d: np.ndarray):
         self._step_count += 1
         pose7 = _action9_to_pose7(action_9d)
@@ -455,10 +493,10 @@ class AICRLEnv(AICGymEnv):
         time.sleep(self._step_period)
         obs        = self._get_observation()
         info       = self._get_info()
-        reward     = self._compute_reward(obs, action_9d, info)
+        reward, lhr = self._compute_reward(obs, action_9d, info)
         terminated = self._check_terminated(obs, info)
         truncated  = self._check_truncated(obs, info)
-        return obs, reward, terminated, truncated, info
+        return obs, reward, lhr, terminated, truncated, info
 
 
 # ---------------------------------------------------------------------------
@@ -536,9 +574,14 @@ class ReplayBuffer:
     def __init__(self, capacity: int, image_store: ImageStore):
         self._buf: deque[dict] = deque(maxlen=capacity)
         self._image_store = image_store
+        self._trajectory_idx: int = 0
 
     def __len__(self) -> int:
         return len(self._buf)
+
+    def new_trajectory(self) -> None:
+        """Call at every episode reset to mark the boundary between trajectories."""
+        self._trajectory_idx += 1
 
     def push(
         self,
@@ -550,13 +593,35 @@ class ReplayBuffer:
         truncated:  bool,
     ) -> None:
         self._buf.append({
-            "obs":        obs,
-            "action":     action.astype(np.float32),
-            "reward":     float(reward),
-            "next_obs":   next_obs,
-            "terminated": bool(terminated),
-            "truncated":  bool(truncated),
+            "obs":            obs,
+            "action":         action.astype(np.float32),
+            "reward":         float(reward),
+            "next_obs":       next_obs,
+            "terminated":     bool(terminated),
+            "truncated":      bool(truncated),
+            "trajectory_idx": self._trajectory_idx,
         })
+
+    def update_recent_rewards(
+        self, lhr: float, n_steps: int = 8, decay: float = 0.95
+    ) -> None:
+        """Add decayed lhr to the n_steps transitions before the latest push.
+
+        Step k steps back from the most recent transition receives lhr * decay^k.
+        Stops early if a transition from a different trajectory is encountered,
+        so long_horizon_reward never bleeds across episode boundaries.
+        The current (just-pushed) transition already contains lhr in its reward,
+        so we start from k=1.
+        """
+        if lhr == 0.0:
+            return
+        current_traj = self._buf[-1]["trajectory_idx"]
+        n_available  = len(self._buf) - 1   # exclude the just-pushed transition
+        for k in range(1, min(n_steps, n_available) + 1):
+            entry = self._buf[-1 - k]
+            if entry["trajectory_idx"] != current_traj:
+                break
+            entry["reward"] += lhr * (decay ** k)
 
     def sample(self, n: int) -> list[dict]:
         return random.sample(self._buf, min(n, len(self._buf)))
@@ -730,16 +795,17 @@ def update_critic(
     nn.utils.clip_grad_norm_(critic.parameters(), 1.0)
     opt.step()
     soft_update(target_critic, critic, tau)
-    return loss.item()
+    return loss.item(), q1.mean().item(), q2.mean().item()
 
 
 def update_actor(
-    policy:    RobotWithTaskPolicy,
-    critic:    ImageConditionedQFunction,
-    log_alpha: torch.Tensor,
-    opt:       torch.optim.Optimizer,
-    batch:     dict,
-    device:    torch.device,
+    policy:      RobotWithTaskPolicy,
+    critic:      ImageConditionedQFunction,
+    log_alpha:   torch.Tensor,
+    opt:         torch.optim.Optimizer,
+    batch:       dict,
+    device:      torch.device,
+    normalize_q: bool = False,
 ) -> tuple[float, float]:
     """SAC actor update: maximise E[Q(s,a)] - α H(π).
 
@@ -758,8 +824,11 @@ def update_actor(
     a    = dist.rsample()
     lp   = dist.log_prob(a).sum(-1)     # (B,)
 
-    q1, q2    = critic(images, robot_state, prev_action, a)
-    actor_loss = (log_alpha.exp().detach() * lp - torch.min(q1, q2)).mean()
+    q1, q2 = critic(images, robot_state, prev_action, a)
+    q_min  = torch.min(q1, q2)          # (B,)
+    if normalize_q:
+        q_min = (q_min - q_min.mean()) / (q_min.std() + 1e-8)
+    actor_loss = (log_alpha.exp().detach() * lp - q_min).mean()
 
     opt.zero_grad()
     actor_loss.backward()
@@ -844,6 +913,9 @@ def main() -> None:
                         help="Gradient steps per environment step.")
     parser.add_argument("--actor_update_every", type=int, default=2,
                         help="Update actor every N critic steps.")
+    parser.add_argument("--normalize_q", action="store_true",
+                        help="Normalise Q values (zero-mean, unit-std) before the actor loss. "
+                             "Stabilises actor gradients when Q-value scale drifts.")
     parser.add_argument("--max_steps",          type=int, default=200_000)
 
     # Environment
@@ -945,6 +1017,8 @@ def main() -> None:
     critic_losses:   list[float] = []
     actor_losses:    list[float] = []
     alpha_log:       list[float] = []
+    q1_log:          list[float] = []
+    q2_log:          list[float] = []
     recent_rewards: deque[float] = deque(maxlen=100)
     step_reward_log: list[float] = []
     total_steps  = 0
@@ -1027,7 +1101,7 @@ def main() -> None:
             "port_name":     pn_idx,
         }
 
-        flat_obs_new, reward, terminated, truncated, _ = env.step_pose(action_9d)
+        flat_obs_new, reward, lhr, terminated, truncated, _ = env.step_pose(action_9d)
 
         new_imgs = env.get_images()
         if new_imgs is not None:
@@ -1043,6 +1117,7 @@ def main() -> None:
         }
 
         replay_buffer.push(obs_snap, action_9d, reward, next_obs_snap, terminated, truncated)
+        replay_buffer.update_recent_rewards(lhr)
 
         flat_obs    = flat_obs_new
         img_idx     = new_img_idx
@@ -1066,6 +1141,7 @@ def main() -> None:
             )
             episode_reward  = 0.0
             episode_len     = 0
+            replay_buffer.new_trajectory()
             flat_obs, info  = env.reset()
             _task_info      = info.get("task", {})
             tm_name         = _task_info.get("target_module_name", "")
@@ -1095,17 +1171,20 @@ def main() -> None:
                          for k, v in raw.items()}
 
                 # Critic step
-                c_loss = update_critic(
+                c_loss, q1_mean, q2_mean = update_critic(
                     critic, target_critic, policy, log_alpha, critic_opt,
                     batch, device, gamma=args.gamma, tau=args.tau,
                 )
                 critic_losses.append(c_loss)
+                q1_log.append(q1_mean)
+                q2_log.append(q2_mean)
                 update_count += 1
 
                 # Actor + temperature step
                 if update_count % args.actor_update_every == 0:
                     a_loss, mean_lp = update_actor(
-                        policy, critic, log_alpha, actor_opt, batch, device
+                        policy, critic, log_alpha, actor_opt, batch, device,
+                        normalize_q=args.normalize_q,
                     )
                     actor_losses.append(a_loss)
                     update_temperature(log_alpha, alpha_opt, mean_lp, target_entropy)
@@ -1125,6 +1204,8 @@ def main() -> None:
                 f"critic={np.mean(critic_losses[-50:]) if critic_losses else float('nan'):.4f}  "
                 f"actor={np.mean(actor_losses[-50:]) if actor_losses else float('nan'):.4f}  "
                 f"α={log_alpha.exp().item():.4f}  "
+                f"q1={np.mean(q1_log[-50:]) if q1_log else float('nan'):.3f}  "
+                f"q2={np.mean(q2_log[-50:]) if q2_log else float('nan'):.3f}  "
                 f"ep_ret(10)={np.mean(episode_rewards[-10:]) if episode_rewards else float('nan'):.3f}  "
                 f"step_r={r_step:.4f}  "
                 f"buffer={len(replay_buffer)}  "
