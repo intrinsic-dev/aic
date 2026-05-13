@@ -19,15 +19,32 @@ import textwrap
 from pathlib import Path
 
 
-# ── Physical limits (from sample_config.yaml task_board_limits) ───────────────
-NIC_RAIL_TRANS  = (-0.0215,  0.0234)
+# ── Physical limits ───────────────────────────────────────────────────────────
+# NIC rail: sample_config.yaml uses translation = 0.036, which exceeds the
+# advertised task_board_limits range of [-0.0215, 0.0234]. The trial values
+# are the empirically-valid evidence of what the sim accepts, so widen the
+# range symmetrically to match. (task_board_limits appears to be advisory
+# rather than strictly enforced.)
+NIC_RAIL_TRANS  = (-0.036,   0.036)
 SC_RAIL_TRANS   = (-0.060,   0.055)
 MOUNT_RAIL_TRANS = (-0.09425, 0.09425)
+
+# SC ports in sample_config.yaml have non-zero yaw (e.g. yaw=0.1). Although
+# the qualification doc only mentions translation randomization for Trial 3,
+# we mirror the sample's behaviour: ±0.1 rad (~5.7°) yaw jitter on SC ports.
+SC_RAIL_YAW_JITTER = 0.1     # set to 0.0 to match qualification doc strictly
 
 # ── Board pose ranges (observed in 10_trials.yaml) ────────────────────────────
 BOARD_X   = (0.14, 0.46)
 BOARD_Y   = (-0.20, 0.05)
-BOARD_Z   = (1.10, 1.22)
+# Task board rests flush on the table; Z is fixed (gravity pins it).
+# Per sample_config.yaml, all reference trials use z = 1.14 — this is the
+# authoritative table-surface height in the AIC sim environment.
+# The original 10_trials.yaml had Z ranging [1.10, 1.22], which corresponds
+# to the board floating up to 8 cm above the table — not physically realistic.
+# Adjust TABLE_SURFACE_Z only if your sim's table is at a different height.
+TABLE_SURFACE_Z   = 1.14
+BOARD_Z_JITTER    = 0.000   # set to e.g. 0.002 for ±2 mm placement noise
 BOARD_YAW = (-0.35, 3.49)   # 0 to ~200°
 
 # ── Cable gripper offsets (from sample_config.yaml / 10_trials.yaml) ─────────
@@ -120,10 +137,13 @@ def jittered_offset(base: dict, rng: random.Random) -> dict:
 
 
 def build_board_pose():
+    z = TABLE_SURFACE_Z
+    if BOARD_Z_JITTER > 0:
+        z = round(z + random.uniform(-BOARD_Z_JITTER, BOARD_Z_JITTER), 4)
     return {
         "x": rand(*BOARD_X),
         "y": rand(*BOARD_Y),
-        "z": rand(*BOARD_Z),
+        "z": z,
         "roll": 0.0,
         "pitch": 0.0,
         "yaw": rand(*BOARD_YAW),
@@ -172,7 +192,8 @@ def build_sfp_trial(trial_idx: int, rng: random.Random) -> dict:
                             "entity_name": rng.choice(SC_ENTITY_NAMES),
                             "entity_pose": {
                                 "translation": rand_trans(*SC_RAIL_TRANS),
-                                "roll": 0.0, "pitch": 0.0, "yaw": 0.0,
+                                "roll": 0.0, "pitch": 0.0,
+                                "yaw": round(rng.uniform(-SC_RAIL_YAW_JITTER, SC_RAIL_YAW_JITTER), 4),
                             },
                         }
                         if i == sc_rail_for_prop else {"entity_present": False}
@@ -260,7 +281,8 @@ def build_sc_trial(trial_idx: int, rng: random.Random, plan=None) -> dict:
             "entity_name": entity,
             "entity_pose": {
                 "translation": rand_trans(*SC_RAIL_TRANS),
-                "roll": 0.0, "pitch": 0.0, "yaw": 0.0,
+                "roll": 0.0, "pitch": 0.0,
+                "yaw": round(rng.uniform(-SC_RAIL_YAW_JITTER, SC_RAIL_YAW_JITTER), 4),
             },
         }
 
