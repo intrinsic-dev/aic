@@ -193,6 +193,7 @@
           </cylinder>
         </geometry>
       </collision>
+
       <collision name="contact_collision">
         <pose>0.0 -0.0034 -0.0 3.141593 -0.0 0.0</pose>
         <geometry>
@@ -201,6 +202,13 @@
           </box>
         </geometry>
       </collision>
+
+      <sensor name="sc_port_sensor" type="contact">
+        <contact>
+          <collision>contact_collision</collision>
+        </contact>
+      </sensor>
+
     </link>
 
     <link name="sc_port_base_link">
@@ -220,31 +228,6 @@
       <parent>sc_port_link</parent>
       <child>sc_port_base_link</child>
     </joint>
-
-    <plugin
-      filename="static://gz::sim::systems::TouchPlugin"
-      name="gz::sim::systems::TouchPlugin">
-      <target>sc_plug</target>
-      <time>1</time>
-      <enabled>true</enabled>
-      <create_contact_sensor_for_collision>true</create_contact_sensor_for_collision>
-      <collision>contact_collision</collision>
-      <namespace>sc_port_0/sc_port_base</namespace>
-    </plugin>
-
-    <plugin filename="static://gz::sim::systems::PosePublisher"
-      name="gz::sim::systems::PosePublisher">
-      <publish_link_pose>true</publish_link_pose>
-      <publish_sensor_pose>false</publish_sensor_pose>
-      <publish_collision_pose>false</publish_collision_pose>
-      <publish_visual_pose>false</publish_visual_pose>
-      <publish_nested_model_pose>true</publish_nested_model_pose>
-      <publish_model_pose>true</publish_model_pose>
-      <use_pose_vector_msg>true</use_pose_vector_msg>
-      <static_publisher>true</static_publisher>
-      <update_frequency>0</update_frequency>
-      <static_update_frequency>1</static_update_frequency>
-    </plugin>
 
   </model>
 </sdf>
