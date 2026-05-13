@@ -40,7 +40,15 @@ if not _AIC_UTILS.exists():
 if str(_AIC_UTILS) not in sys.path:
     sys.path.insert(0, str(_AIC_UTILS))
 
-from aic_training.flow_matching import FlowMatchingPolicy, ROBOT_STATE_DIM
+# flow_matching.py imports both timm (EfficientFormer) and transformers (DINOv2)
+# at module level, which adds ~20 s of cold-start cost even when only one encoder
+# is used.  Once the encoder choice is finalised, the unused import can be removed
+# from flow_matching.py to cut startup time further.
+# For now, defer the entire import to _load_policy() so this module loads in
+# milliseconds and the lifecycle node can respond to the configure transition
+# before the external manager times out.
+FlowMatchingPolicy = None
+ROBOT_STATE_DIM = None
 
 # Task encoding tables (must match aic_robot_aic_controller.py)
 TASK_TARGET_MODULE_ENCODING: dict[str, int] = {
@@ -53,7 +61,7 @@ TASK_PORT_NAME_ENCODING: dict[str, int] = {
 }
 
 CHECKPOINT_PATH = Path(
-    "/home/lhphanto/ws_aic/src/aic/outputs/05_05_cfg_fm_6d3/checkpoint_epoch0025.pt"
+    "/home/lhphanto/ws_aic/src/aic/outputs/05_09_cfg_fm_6d1/checkpoint_epoch0025.pt"
 )
 
 # Image size expected by the policy (must match training dataset resolution)
@@ -169,7 +177,16 @@ class RunFlowMatching(Policy):
     # Model loading
     # ------------------------------------------------------------------
 
-    def _load_policy(self) -> FlowMatchingPolicy:
+    def _load_policy(self):
+        global FlowMatchingPolicy, ROBOT_STATE_DIM
+        if FlowMatchingPolicy is None:
+            from aic_training.flow_matching import (
+                FlowMatchingPolicy as _FMP,
+                ROBOT_STATE_DIM as _RSD,
+            )
+            FlowMatchingPolicy = _FMP
+            ROBOT_STATE_DIM = _RSD
+
         ckpt = torch.load(CHECKPOINT_PATH, map_location=self.device)
         args = ckpt.get("args", {})
 
@@ -181,9 +198,32 @@ class RunFlowMatching(Policy):
             n_heads=args.get("n_heads", 8),
             n_layers=args.get("n_layers", 4),
             ffn_dim=args.get("ffn_dim", 1024),
+            image_encoder_type=args.get("image_encoder_type", "resnet"),
+            resnet_name=args.get("resnet_name", "resnet18"),
+            resnet_weights=args.get("resnet_weights", "IMAGENET1K_V1"),
+            local_ckpt_path=args.get("dino_checkpoint", args.get("local_ckpt_path", None)),
+            camera_keys=("center_camera", "right_camera") if args.get("skip_left_camera", False) else None,
+            pos_enc=args.get("pos_enc", "rope"),
         ).to(self.device)
 
-        policy.load_state_dict(ckpt["model_state"])
+        # torch.compile() renames state-dict keys by inserting "._orig_mod." into
+        # every submodule path (e.g. image_encoder._orig_mod.backbone.*).  Strip
+        # that infix so checkpoints saved after compilation load cleanly here.
+        raw_sd = ckpt["model_state"]
+        sd = {k.replace("._orig_mod.", "."): v for k, v in raw_sd.items()}
+        # strict=False: tolerates keys added after the checkpoint was saved
+        # (e.g. state_time_emb introduced after this checkpoint was trained).
+        missing, unexpected = policy.load_state_dict(sd, strict=False)
+        if missing:
+            self.get_logger().warn(
+                f"load_state_dict: {len(missing)} missing key(s) — "
+                "will use random init: " + str(missing[:5])
+            )
+        if unexpected:
+            self.get_logger().warn(
+                f"load_state_dict: {len(unexpected)} unexpected key(s) ignored: "
+                + str(unexpected[:5])
+            )
         policy.eval()
         policy.profiling = True
 

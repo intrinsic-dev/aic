@@ -136,6 +136,7 @@ class LeRobotKeypointDataset(Dataset):
         transform=None,
         cache_frames: bool = True,
         episodes: Optional[list[int]] = None,
+        frame_indices: Optional[list[int]] = None,
         backend: str = "local",
     ):
         if backend not in ("local", "lerobot"):
@@ -183,6 +184,12 @@ class LeRobotKeypointDataset(Dataset):
         else:
             self._init_local_backend(episodes, cache_frames)
 
+        # --- Optional frame-level subset (applied after episode filter) ---
+        if frame_indices is not None:
+            fi = np.asarray(frame_indices, dtype=np.int64)
+            self._global_indices = self._global_indices[fi]
+            self._states         = self._states[fi]
+
     # ------------------------------------------------------------------
     # Backend-specific initialisation
     # ------------------------------------------------------------------
@@ -199,6 +206,8 @@ class LeRobotKeypointDataset(Dataset):
         if episodes is not None:
             df = df[df["episode_index"].isin(episodes)].reset_index(drop=True)
         self.df = df
+        self._global_indices = df["index"].to_numpy(dtype=np.int64)
+        self._states = np.array(df["observation.state"].tolist(), dtype=np.float32)
 
         self._frame_cache: Optional[dict] = None
         if cache_frames:
@@ -229,6 +238,8 @@ class LeRobotKeypointDataset(Dataset):
         if episodes is not None:
             df = df[df["episode_index"].isin(set(episodes))].reset_index(drop=True)
         self.df = df
+        self._global_indices = df["index"].to_numpy(dtype=np.int64)
+        self._states = np.array(df["observation.state"].tolist(), dtype=np.float32)
 
         self._frame_cache: Optional[dict] = None
         if cache_frames:
@@ -280,40 +291,46 @@ class LeRobotKeypointDataset(Dataset):
             if "u" in v and "v" in v and "dist" in v
         }
 
-    def _get_frame(self, cam: str, global_idx: int):
-        """Return a frame for the given camera and global frame index.
+    def _ensure_lerobot_ds(self) -> None:
+        """Lazy-init the lerobot dataset handle inside each DataLoader worker.
 
-        local   backend → H×W×3 uint8 numpy array
-        lerobot backend → (C, H, W) float32 tensor in [0, 1]
+        _lerobot_ds is set to None before the dataset is pickled for spawn workers
+        so each worker creates its own torchcodec decoder independently.
+        """
+        if self._lerobot_ds is None:
+            from lerobot.datasets.lerobot_dataset import LeRobotDataset as _LRDataset
+            self._lerobot_ds = _LRDataset(self._lerobot_dataset_path)
+
+    def _get_all_frames(self, global_idx: int) -> list:
+        """Return one raw frame per camera as a list ordered by CAMERA_NAMES.
+
+        For the lerobot backend a single _lerobot_ds[global_idx] call decodes all
+        cameras at once, avoiding the 3× redundant decoding that results from
+        calling it once per camera.
         """
         if self._frame_cache is not None:
-            return self._frame_cache[cam][global_idx]
+            return [self._frame_cache[cam][global_idx] for cam in CAMERA_NAMES]
         if self.backend == "lerobot":
-            if self._lerobot_ds is None:
-                # Lazy init per DataLoader worker. _lerobot_ds is set to None
-                # before fork so each worker creates its own decoder-safe instance.
-                from lerobot.datasets.lerobot_dataset import LeRobotDataset as _LRDataset
-                self._lerobot_ds = _LRDataset(self._lerobot_dataset_path)
-            return self._lerobot_ds[global_idx][f"observation.images.{cam}"]
-        return decode_single_frame(self._video_path(cam), global_idx)
+            self._ensure_lerobot_ds()
+            frame = self._lerobot_ds[global_idx]   # one call decodes all cameras
+            return [frame[f"observation.images.{cam}"] for cam in CAMERA_NAMES]
+        # local backend: each camera has its own video file — decode separately
+        return [decode_single_frame(self._video_path(cam), global_idx) for cam in CAMERA_NAMES]
 
     # ------------------------------------------------------------------
     # Dataset interface
     # ------------------------------------------------------------------
 
     def __len__(self) -> int:
-        return len(self.df)
+        return len(self._global_indices)
 
     def __getitem__(self, idx: int):
-        row = self.df.iloc[idx]
-        global_idx = int(row["index"])
-        state = np.asarray(row["observation.state"], dtype=np.float32)
+        global_idx = int(self._global_indices[idx])
+        state      = self._states[idx]
 
         # --- Images ---
-        imgs = [
-            self.transform(self._get_frame(cam, global_idx))
-            for cam in CAMERA_NAMES
-        ]  # list of (3, H, W) tensors
+        imgs = [self.transform(f) for f in self._get_all_frames(global_idx)]
+        # list of (3, H, W) tensors
 
         # --- Targets ---
         conf_visible = torch.zeros(NUM_OUTPUTS, dtype=torch.float32)
@@ -332,7 +349,7 @@ class LeRobotKeypointDataset(Dataset):
             dist = float(state[d_i])
 
             img_h, img_w = self.img_shapes[cam][:2]
-
+            #print("LXH debug shape:",  self.img_shapes[cam])
             if dist > 0.0:
                 conf_present[out_idx] = 1.0
                 log_dist[out_idx]     = math.log(dist)
@@ -365,28 +382,23 @@ class LeRobotKeypointDataset(Dataset):
         val_transform=None,
         **kwargs,   # forwarded to __init__ (e.g. cache_frames)
     ) -> tuple["LeRobotKeypointDataset", "LeRobotKeypointDataset"]:
-        """Split by episode so no episode appears in both sets. Returns (train_ds, val_ds)."""
+        """Split by frame so train and val share the full episode set. Returns (train_ds, val_ds)."""
         import random
 
-        if backend == "lerobot":
-            from lerobot.datasets.lerobot_dataset import LeRobotDataset as _LRDataset
-            tmp_ds   = _LRDataset(str(dataset_path))
-            episodes = sorted(set(tmp_ds.hf_dataset["episode_index"]))
-            del tmp_ds   # free before the two cls() constructors each create their own instance
-        else:
-            with open(Path(dataset_path) / "meta" / "info.json") as f:
-                info = json.load(f)
-            episodes = list(range(info["total_episodes"]))
+        # Build a lightweight temporary instance to discover the total frame count.
+        tmp = cls(dataset_path, backend=backend, cache_frames=False)
+        n   = len(tmp)
+        del tmp
 
-        rng   = random.Random(seed)
-        rng.shuffle(episodes)
-        split     = max(1, int(len(episodes) * val_fraction))
-        val_eps   = episodes[:split]
-        train_eps = episodes[split:]
-        train_ds = cls(dataset_path, episodes=train_eps, backend=backend,
-                       transform=train_transform, **kwargs)
-        val_ds   = cls(dataset_path, episodes=val_eps,   backend=backend,
-                       transform=val_transform,   **kwargs)
+        rng     = random.Random(seed)
+        indices = list(range(n))
+        rng.shuffle(indices)
+        n_val = max(1, int(n * val_fraction))
+
+        train_ds = cls(dataset_path, transform=train_transform, backend=backend,
+                       frame_indices=indices[n_val:], **kwargs)
+        val_ds   = cls(dataset_path, transform=val_transform,   backend=backend,
+                       frame_indices=indices[:n_val],  **kwargs)
         return train_ds, val_ds
 
     @classmethod
@@ -401,7 +413,7 @@ class LeRobotKeypointDataset(Dataset):
         **kwargs,
     ) -> tuple["ConcatDataset", "ConcatDataset"]:
         """
-        Load multiple datasets, split each by episode, then concatenate.
+        Load multiple datasets, split each by frame, then concatenate.
         Each dataset is split independently so val_fraction is respected per-dataset.
         Returns (train_ConcatDataset, val_ConcatDataset).
         """

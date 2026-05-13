@@ -16,6 +16,7 @@
 
 """LeRobot driver for AIC robot: derived from https://github.com/huggingface/lerobot/blob/main/src/lerobot/robots/robot.py"""
 
+import datetime
 import json
 import logging
 import time
@@ -64,6 +65,11 @@ from .aic_teleop import AICCheatCodeTeleopConfig, approach_state, reset_in_progr
 from .types import JointMotionUpdateActionDict, MotionUpdateActionDict
 
 logger = logging.getLogger(__name__)
+
+
+def _ts() -> str:
+    """Wall-clock timestamp with millisecond precision for timing logs."""
+    return datetime.datetime.now().strftime("%H:%M:%S.%f")[:-3]
 
 
 # Encoding maps for task observation integers
@@ -325,8 +331,16 @@ class AICRobotAICController(Robot):
             for port_key in [port, f"{port}_entrance"]
             for coord in ["u", "v", "dist"]
         }
+        # Sentinel dict for fast copy-to-invalid in _project_port_centers_nonblocking.
+        self._port_centers_sentinel: dict[str, float] = dict.fromkeys(self._port_centers, -1.0)
         # Which entities are currently on the board (set at reset / connect time).
         self._present_entities: set[str] = set()
+        # Camera projection parameters cached at reset/connect time; P, image size
+        # and frame_id don't change between resets so there's no need to re-fetch
+        # camera_infos on every frame inside _project_port_centers_nonblocking.
+        self._camera_projection_cache: dict[str, dict] = {}
+        # Persistent thread pool for parallel camera reads (avoids per-frame create/destroy).
+        self._camera_thread_pool: ThreadPoolExecutor | None = None
 
         self._auto_reset_enabled: bool = False
         self._auto_reset_pending: bool = False
@@ -477,6 +491,7 @@ class AICRobotAICController(Robot):
         for cam in self.cameras.values():
             cam.connect()
 
+        self._camera_thread_pool = ThreadPoolExecutor(max_workers=len(self.cameras))
         self._is_connected = True
 
         # Populate port centers for whatever board is already in the scene
@@ -565,33 +580,51 @@ class AICRobotAICController(Robot):
             ),
         }
 
-        # Capture images from cameras in parallel to reduce latency
-        def _read_camera(cam_key: str) -> tuple[str, NDArray[Any]]:
+        #obs_t0 = time.monotonic()
+        #logger.info(f"[get_observation] START {_ts()}")
+
+        # Capture images from cameras in parallel.
+        # Each _read_camera records Time() (latest-available sentinel) so that
+        # _project_port_centers_nonblocking uses per-camera timestamps without
+        # a wall-clock vs ROS-time domain mismatch.
+        def _read_camera(cam_key: str) -> tuple[str, NDArray[Any], Time | None]:
+            #t0 = time.monotonic()
+            #logger.info(f"[_read_camera {cam_key}] START {_ts()}")
             cam = self.cameras[cam_key]
             try:
                 data = cam.async_read(timeout_ms=2000)
+                read_ts = Time()  # "latest available" sentinel — avoids wall-clock vs ROS-time mismatch
                 if data is not None and data.size > 0:
                     image_scale = self.config.camera_image_scaling[cam_key]
                     if image_scale != 1:
-                        return cam_key, cv2.resize(
+                        data = cv2.resize(
                             data,
                             None,
                             fx=image_scale,
                             fy=image_scale,
                             interpolation=cv2.INTER_AREA,
                         )
-                    return cam_key, data
+                    #logger.info(f"[_read_camera {cam_key}] END   {_ts()}  ({(time.monotonic()-t0)*1000:.1f} ms)")
+                    return cam_key, data, read_ts
             except Exception as e:
                 logger.error(f"Failed to read camera {cam_key}: {e}")
-            logger.debug(f"Camera {cam_key} data is empty (camera not ready yet?), using all-black placeholder.")
-            return cam_key, np.zeros(self._cameras_ft[cam_key], dtype=np.uint8)
+            #logger.info(f"[_read_camera {cam_key}] END (placeholder)  {_ts()}  ({(time.monotonic()-t0)*1000:.1f} ms)")
+            return cam_key, np.zeros(self._cameras_ft[cam_key], dtype=np.uint8), None
 
         cam_obs: dict[str, NDArray[Any]] = {}
-        with ThreadPoolExecutor(max_workers=len(self.cameras)) as pool:
-            futures = {pool.submit(_read_camera, k): k for k in self.cameras}
-            for future in as_completed(futures):
-                key, frame = future.result()
+        cam_timestamps: dict[str, Time] = {}
+        pool = self._camera_thread_pool
+        if pool is not None:
+            cam_futures = {pool.submit(_read_camera, k): k for k in self.cameras}
+            for future in as_completed(cam_futures):
+                key, frame, ts = future.result()
                 cam_obs[key] = frame
+                if ts is not None:
+                    cam_timestamps[key] = ts
+
+        #logger.info(f"[get_observation] cameras done  {_ts()}  ({(time.monotonic()-obs_t0)*1000:.1f} ms so far)")
+        port_centers = self._project_port_centers_nonblocking(cam_timestamps)
+        #logger.info(f"[get_observation] TF done  {_ts()}  ({(time.monotonic()-obs_t0)*1000:.1f} ms so far)")
 
         # Rising edge: approach_state.done just became True → trigger reset
         approach_done_now = approach_state.done
@@ -602,8 +635,8 @@ class AICRobotAICController(Robot):
                 Thread(target=self._auto_reset_after_delay, daemon=True).start()
         self._last_approach_done = approach_done_now
 
-        port_centers = self._project_port_centers_nonblocking()
         obs = {**cam_obs, **controller_state_obs, **port_centers}
+        #logger.info(f"[get_observation] END   {_ts()}  ({(time.monotonic()-obs_t0)*1000:.1f} ms total)")
         return obs
 
     def send_action_cartesian(self, action: dict[str, Any]) -> None:
@@ -687,7 +720,7 @@ class AICRobotAICController(Robot):
 
         # If present_entities is not in task_info (e.g. first episode before any
         # random reset), fall back to probing TF for every possible entity.
-        print("LXH debug number of present entities:", len(present_entities))
+        # print("LXH debug number of present entities:", len(present_entities))
 
         # If present_entities is not in task_info (e.g. first episode before any
         # random reset), fall back to probing TF for every possible entity.
@@ -717,9 +750,18 @@ class AICRobotAICController(Robot):
             if cam_info is None:
                 continue
             camera_frame = cam_info.header.frame_id
-            print("LXH debug frame id:", camera_frame, "for", cam_name)
             P = np.array(cam_info.p).reshape(3, 4)
             img_h, img_w = cam_info.height, cam_info.width
+            p0, p1, p2 = P[0].tolist(), P[1].tolist(), P[2].tolist()
+
+            # Cache projection parameters — these are stable until the next reset.
+            # P_rows stored as Python float lists to avoid numpy overhead in the per-frame path.
+            self._camera_projection_cache[cam_name] = {
+                "camera_frame": camera_frame,
+                "P_rows": (p0, p1, p2),
+                "img_h": img_h,
+                "img_w": img_w,
+            }
 
             for entity in present_entities:
                 ports = _ENTITY_PORTS.get(entity)
@@ -735,7 +777,7 @@ class AICRobotAICController(Robot):
                                 camera_frame,
                                 tf_frame,
                                 Time(),
-                                timeout=Duration(seconds=1.0),
+                                timeout=Duration(seconds=0.1),
                             )
                         except TransformException as ex:
                             logger.debug(f"TF lookup failed for {tf_frame}: {ex}")
@@ -748,13 +790,11 @@ class AICRobotAICController(Robot):
                         if Z <= 0.0:
                             continue
 
-                        centers[f"port_center.{cam_name}.{entity}.{port_key}.dist"] = float(
-                            np.sqrt(X * X + Y * Y + Z * Z)
-                        )
+                        centers[f"port_center.{cam_name}.{entity}.{port_key}.dist"] = math.sqrt(X*X + Y*Y + Z*Z)
 
-                        uvw = P @ np.array([X, Y, Z, 1.0])
-                        u = uvw[0] / uvw[2]
-                        v = uvw[1] / uvw[2]
+                        w = p2[0]*X + p2[1]*Y + p2[2]*Z + p2[3]
+                        u = (p0[0]*X + p0[1]*Y + p0[2]*Z + p0[3]) / w
+                        v = (p1[0]*X + p1[1]*Y + p1[2]*Z + p1[3]) / w
 
                         if not (0 <= u < img_w and 0 <= v < img_h):
                             continue
@@ -763,38 +803,47 @@ class AICRobotAICController(Robot):
                         centers[f"port_center.{cam_name}.{entity}.{port_key}.v"] = float(v)
 
         self._port_centers = centers
-        #logger.info(f"Port centers computed for {len(present_entities)} entities")
+        logger.info(f"Port centers computed for {len(present_entities)} entities")
 
-        logger.info(
-            f"Port centers computed for {len(present_entities)} entities: "
-            + ", ".join(
-                f"{k}=({centers[k.replace('.v', '.u')]:.1f})"
-                for k in centers
-                if k.endswith(".v") and centers[k] >= 0
-            )
-        )
+        #logger.info(
+        #    f"Port centers computed for {len(present_entities)} entities: "
+        #    + ", ".join(
+        #        f"{k}=({centers[k.replace('.v', '.u')]:.1f})"
+        #        for k in centers
+        #        if k.endswith(".v") and centers[k] >= 0
+        #    )
+        #)
 
-    def _project_port_centers_nonblocking(self) -> dict[str, float]:
-        """Project present ports into camera images using the latest TF, non-blocking.
+    def _project_port_centers_nonblocking(
+        self, cam_timestamps: dict[str, Time] | None = None
+    ) -> dict[str, float]:
+        """Project present ports into camera images using per-camera TF timestamps.
 
-        Called every frame from get_observation(). Uses timeout=0 so it never
-        stalls the observation loop; ports whose transform isn't immediately
-        available are left at -1.0 for that frame.
+        `cam_timestamps` maps camera name → ROS Time snapshotted immediately
+        after that camera's async_read() returned.  Using a per-camera timestamp
+        means each camera's port projection reflects the robot pose at the moment
+        that camera's frame was captured, rather than a single shared time.
+        Falls back to Time() (latest) for any camera without a timestamp.
         """
-        if not self.ros2_interface or not self._present_entities:
+        #proj_t0 = time.monotonic()
+        #logger.info(f"[_project_port_centers] START {_ts()}")
+
+        if not self.ros2_interface or not self._present_entities or not self._camera_projection_cache:
+            #logger.info(f"[_project_port_centers] END (no interface/entities/cache)  {_ts()}  ({(time.monotonic()-proj_t0)*1000:.1f} ms)")
             return {k: -1.0 for k in self._port_centers}
 
         tf_buffer = self.ros2_interface.tf_buffer
-        camera_infos = self.ros2_interface.camera_infos
-        centers = {k: -1.0 for k in self._port_centers}
+        centers = self._port_centers_sentinel.copy()
 
         for cam_name in _CAMERA_NAMES:
-            cam_info = camera_infos.get(cam_name)
-            if cam_info is None:
+            cam_cache = self._camera_projection_cache.get(cam_name)
+            if cam_cache is None:
                 continue
-            camera_frame = cam_info.header.frame_id
-            P = np.array(cam_info.p).reshape(3, 4)
-            img_h, img_w = cam_info.height, cam_info.width
+            camera_frame  = cam_cache["camera_frame"]
+            p0, p1, p2    = cam_cache["P_rows"]
+            img_h         = cam_cache["img_h"]
+            img_w         = cam_cache["img_w"]
+            tf_query_time = (cam_timestamps or {}).get(cam_name, Time())
 
             for entity in self._present_entities:
                 ports = _ENTITY_PORTS.get(entity)
@@ -809,10 +858,11 @@ class AICRobotAICController(Robot):
                             t = tf_buffer.lookup_transform(
                                 camera_frame,
                                 tf_frame,
-                                Time(),
+                                tf_query_time,
                                 timeout=Duration(seconds=0),
                             )
-                        except TransformException:
+                        except TransformException as e:
+                            logger.debug(f"TF lookup failed for {tf_frame}: {e}")
                             continue
 
                         X = t.transform.translation.x
@@ -822,12 +872,11 @@ class AICRobotAICController(Robot):
                         if Z <= 0.0:
                             continue
 
-                        dist = float(np.sqrt(X * X + Y * Y + Z * Z))
-                        centers[f"port_center.{cam_name}.{entity}.{port_key}.dist"] = dist
+                        centers[f"port_center.{cam_name}.{entity}.{port_key}.dist"] = math.sqrt(X*X + Y*Y + Z*Z)
 
-                        uvw = P @ np.array([X, Y, Z, 1.0])
-                        u = uvw[0] / uvw[2]
-                        v = uvw[1] / uvw[2]
+                        w = p2[0]*X + p2[1]*Y + p2[2]*Z + p2[3]
+                        u = (p0[0]*X + p0[1]*Y + p0[2]*Z + p0[3]) / w
+                        v = (p1[0]*X + p1[1]*Y + p1[2]*Z + p1[3]) / w
 
                         if not (0 <= u < img_w and 0 <= v < img_h):
                             continue
@@ -835,6 +884,7 @@ class AICRobotAICController(Robot):
                         centers[f"port_center.{cam_name}.{entity}.{port_key}.u"] = float(u)
                         centers[f"port_center.{cam_name}.{entity}.{port_key}.v"] = float(v)
 
+        #logger.info(f"[_project_port_centers] END   {_ts()}  ({(time.monotonic()-proj_t0)*1000:.1f} ms)")
         return centers
 
     def enable_auto_reset(self) -> None:
@@ -875,6 +925,9 @@ class AICRobotAICController(Robot):
         """Background thread: wait `delay` seconds then call reset()."""
         logger.info("auto reset thread start")
         time.sleep(delay)
+        if not self._auto_reset_enabled or not self.is_connected:
+            self._auto_reset_pending = False
+            return
         try:
             self.reset()
         finally:
@@ -948,6 +1001,15 @@ class AICRobotAICController(Robot):
             raise DeviceNotConnectedError(f"{self} is not connected.")
 
         self.disable_auto_reset()
+
+        # Wait for any in-progress auto-reset to finish before tearing down the interface.
+        deadline = time.monotonic() + 10.0
+        while self._auto_reset_pending and time.monotonic() < deadline:
+            time.sleep(0.1)
+
+        if self._camera_thread_pool is not None:
+            self._camera_thread_pool.shutdown(wait=False)
+            self._camera_thread_pool = None
 
         for cam in self.cameras.values():
             cam.disconnect()

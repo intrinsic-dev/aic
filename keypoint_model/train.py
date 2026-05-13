@@ -14,6 +14,7 @@ Splits are done per-episode (not per-frame) to avoid leakage.
 import argparse
 import logging
 import math
+import time
 from pathlib import Path
 
 import matplotlib
@@ -229,6 +230,12 @@ def run_epoch(
 # ---------------------------------------------------------------------------
 
 def train(args: argparse.Namespace) -> None:
+    # The default 'file_descriptor' sharing strategy opens one fd per tensor crossing
+    # the process boundary, exhausting the OS limit under spawn + large batches.
+    # 'file_system' uses temp files instead — no fd pressure, slightly more I/O.
+    if args.num_workers > 0:
+        torch.multiprocessing.set_sharing_strategy("file_system")
+
     device = torch.device(args.device)
     output = Path(args.output)
     output.mkdir(parents=True, exist_ok=True)
@@ -261,6 +268,11 @@ def train(args: argparse.Namespace) -> None:
     )
     logger.info(f"  Total: {len(train_ds)} train frames, {len(val_ds)} val frames")
 
+    # multiprocessing_context="spawn" is required when num_workers > 0 with lerobot/torchcodec:
+    # the default "fork" copies the parent's open video decoder state into each worker,
+    # causing races and "Invalid data" decoder crashes. spawn starts each worker fresh.
+    mp_ctx = "spawn" if args.num_workers > 0 else None
+
     train_loader = DataLoader(
         train_ds,
         batch_size=args.batch_size,
@@ -268,6 +280,7 @@ def train(args: argparse.Namespace) -> None:
         num_workers=args.num_workers,
         pin_memory=(device.type == "cuda"),
         persistent_workers=(args.num_workers > 0),
+        multiprocessing_context=mp_ctx,
     )
     val_loader = DataLoader(
         val_ds,
@@ -276,6 +289,7 @@ def train(args: argparse.Namespace) -> None:
         num_workers=args.num_workers,
         pin_memory=(device.type == "cuda"),
         persistent_workers=(args.num_workers > 0),
+        multiprocessing_context=mp_ctx,
     )
 
     # --- Model ---
@@ -325,11 +339,13 @@ def train(args: argparse.Namespace) -> None:
     # --- Training loop ---
     best_val = math.inf
     for epoch in range(1, args.epochs + 1):
+        t0      = time.monotonic()
         train_m = run_epoch(model, train_loader, optimizer, scheduler, device)
         val_m   = run_epoch(model, val_loader,   None,      None,      device)
+        elapsed = time.monotonic() - t0
 
         logger.info(
-            f"Epoch {epoch:3d}/{args.epochs}"
+            f"Epoch {epoch:3d}/{args.epochs}  ({elapsed:.0f}s)"
             f"  train={train_m['total']:.4f}"
             f" (vis={train_m['vis']:.3f} pres={train_m['pres']:.3f}"
             f"  xy={train_m['xy']:.4f} dist={train_m['dist']:.4f})"
@@ -362,7 +378,7 @@ def main() -> None:
     parser.add_argument("--dropout",      type=float, default=0.3)
     parser.add_argument("--val-split",    type=float, default=0.15)
     parser.add_argument("--seed",         type=int,   default=42)
-    parser.add_argument("--num-workers",  type=int,   default=1)
+    parser.add_argument("--num-workers",  type=int,   default=4)
     parser.add_argument(
         "--device",
         default="cuda" if torch.cuda.is_available() else "cpu",
