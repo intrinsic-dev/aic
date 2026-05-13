@@ -79,7 +79,7 @@ repositories:
   gazebo/ros_gz:
     type: git
     url: https://github.com/gazebosim/ros_gz.git
-    version: 2.1.12
+    version: c706e201cec93f037f0b9641bcea9ee07d83a058
   gazebo/gz-cmake:
     type: git
     url: https://github.com/gazebosim/gz-cmake

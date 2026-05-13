@@ -101,15 +101,7 @@ def launch_setup(context, *args, **kwargs):
     model_configure_timeout_seconds = LaunchConfiguration(
         "model_configure_timeout_seconds"
     )
-    post_home_stabilization_seconds = LaunchConfiguration(
-        "post_home_stabilization_seconds"
-    )
-    settling_consecutive_readings = LaunchConfiguration(
-        "settling_consecutive_readings"
-    )
-    pre_cable_spawn_stabilization_seconds = LaunchConfiguration(
-        "pre_cable_spawn_stabilization_seconds"
-    )
+    gz_verbosity_level = LaunchConfiguration("gz_verbosity_level")
 
     gripper_initial_pos = "0.00655"
     cable_type_str = LaunchConfiguration("cable_type").perform(context)
@@ -357,6 +349,7 @@ def launch_setup(context, *args, **kwargs):
         container_name="ros_gz_container",
         create_own_container="True",
         use_composition="True",
+        verbosity_level=gz_verbosity_level,
     )
 
     gzgui = ExecuteProcess(
@@ -799,23 +792,9 @@ def generate_launch_description():
     )
     declared_arguments.append(
         DeclareLaunchArgument(
-            "post_home_stabilization_seconds",
-            default_value="2.0",
-            description="Seconds to wait after homing for the controller to stabilize.",
-        )
-    )
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            "settling_consecutive_readings",
-            default_value="5",
-            description="Number of consecutive low-velocity joint readings required before proceeding.",
-        )
-    )
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            "pre_cable_spawn_stabilization_seconds",
-            default_value="1.0",
-            description="Seconds to wait before spawning cable to let the arm fully settle.",
+            "gz_verbosity_level",
+            default_value="4",
+            description="Verbosity level of the Gazebo server (0=critical, 4=debug).",
         )
     )
     return LaunchDescription(

@@ -163,7 +163,17 @@ Make sure you run this without sourcing the ROS 2 workspace in a new terminal (u
 
 #### 6. View in MuJoCo
 
-At this point you can view the generated scene in MuJoCo **without** any ROS 2 control setup.
+At this point you can view the generated scene in MuJoCo **without** any ROS 2 control setup. Comment out the following lines from the `aic_world.xml` before running the viewer:
+
+```
+ <equality>
+    <weld body1="ati/tool_link" body2="lc_plug_link" relpose="-0.000711 0.001759 0.168213 0.577301 0.816105 -0.021418 -0.015395" solref="0.002 1" solimp="0.99 0.999 0.001"/>
+ </equality>
+ ```
+
+
+The weld constraint forces the robot end effector ati/tool_link to mate with the lc_plug_link. When we start the mujoco viewer as a standalone application, the ROS2 controller that enforces the initial condition of the robot is not present. The robot is spawned much farther away and you will observe flickering caused by the weld constraint. You should see both the wire and the robot collapse under gravity. ** Make sure you uncomment this line after testing this step. **
+
 
 ##### Using pixi environment
 
@@ -298,6 +308,8 @@ ros2 launch aic_mujoco aic_mujoco_bringup.launch.py
 The robot can now be teleoperated using the `aic_teleoperation` package. See the [teleoperation](../../docs/teleoperation.md) section for details. For cartesian teleop use:
 
 ```bash
+export RMW_IMPLEMENTATION=rmw_zenoh_cpp 
+export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=false' 
 source ~/ws_aic/install/setup.bash
 ros2 run aic_teleoperation cartesian_keyboard_teleop
 ```

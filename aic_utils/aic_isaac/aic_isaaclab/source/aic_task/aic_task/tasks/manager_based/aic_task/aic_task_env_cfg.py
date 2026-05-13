@@ -196,6 +196,7 @@ class AICTaskSceneCfg(InteractiveSceneCfg):
         ),
         init_state=RigidObjectCfg.InitialStateCfg(
             pos=(0.25135, 0.25229, 0.0743),
+            rot=(0.0, 0.0, -0.7068252, 0.7073883),
         ),
     )
 

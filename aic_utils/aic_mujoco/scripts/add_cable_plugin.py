@@ -748,13 +748,13 @@ def main():
                 sc_port_link_name = candidate
                 break
 
-        if sc_port_link_name:
-            world_spec.add_exclude(
-                bodyname1=sc_port_link_name, bodyname2="sc_plug_link"
-            )
-            print(f"Added exclusion: {sc_port_link_name} <-> sc_plug_link")
-        else:
-            print("Warning: Could not find sc_port link for exclusion.")
+            if sc_port_link_name:
+                world_spec.add_exclude(
+                    bodyname1=sc_port_link_name, bodyname2="sc_plug_link"
+                )
+                print(f"Added exclusion: {sc_port_link_name} <-> sc_plug_link")
+            else:
+                print("Warning: Could not find sc_port link for exclusion.")
         world_spec.add_exclude(bodyname1="cable_end_0", bodyname2="link_1")
         print("Added exclusion: cable_end_0 <-> link_1")
 
