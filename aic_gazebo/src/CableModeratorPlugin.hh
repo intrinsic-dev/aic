@@ -21,8 +21,12 @@
 #include <atomic>
 #include <chrono>
 #include <unordered_set>
+#include <vector>
+#include <string>
+#include <memory>
 
 #include <gz/transport/Node.hh>
+#include <gz/msgs/stringmsg_v.pb.h>
 #include <gz/sim/EventManager.hh>
 #include <gz/sim/Model.hh>
 #include <gz/sim/SdfEntityCreator.hh>
@@ -30,35 +34,6 @@
 
 namespace aic_gazebo
 {
-  /// \brief State of the cable
-  enum class CableState {
-    /// \brief Being initialized
-    INITIALIZATION,
-
-    /// \brief Waiting for end effector to approach connection 0
-    WAITING_CONN_0,
-
-    /// \brief Connection 0 attached to gripper, wait for touch
-    ATTACHED_TO_GRIPPER_CONN_0,
-
-    /// \brief Detach connection 0 from gripper, make static
-    ATTACH_TO_PORT_CONN_0,
-
-    /// \brief Waiting for end effector to approach connection 1
-    WAITING_CONN_1,
-
-    /// \brief Connection 1 attached to gripper, wait for touch
-    ATTACHED_TO_GRIPPER_CONN_1,
-
-    /// \brief Detach connection 1 from gripper, make static
-    ATTACH_TO_PORT_CONN_1,
-
-    /// \brief Move to the next cable
-    NEXT_CABLE,
-
-    /// \brief Task complete - cable connections are completed
-    COMPLETED,
-  };
 
   /// \brief Configuration for a cable
   struct CableConfig {
@@ -92,6 +67,33 @@ namespace aic_gazebo
     gz::sim::Entity connection0LinkEntity{gz::sim::kNullEntity};
     /// \brief Connection 1 link entity in the cable model
     gz::sim::Entity connection1LinkEntity{gz::sim::kNullEntity};
+
+    /// \brief Whether connection 0 has been inserted into a port
+    bool end0Inserted{false};
+    /// \brief Whether connection 1 has been inserted into a port
+    bool end1Inserted{false};
+    /// \brief Whether connection 0 insertion has been published
+    bool end0Published{false};
+    /// \brief Whether connection 1 insertion has been published
+    bool end1Published{false};
+    /// \brief Whether the cable task is completed
+    bool isCompleted{false};
+    /// \brief Entity of the detachable joint found while waiting for grasp
+    std::atomic<gz::sim::Entity> activeGraspJoint{gz::sim::kNullEntity};
+    /// \brief Topic namespace from the touched port
+    std::string touchEventCallbackNamespace;
+    /// \brief Which end was last identified as grasped (0, 1, or -1)
+    int lastGraspedEnd{-1};
+    /// \brief Cable connection port subscribers
+    std::vector<gz::transport::Node::Subscriber> portSubs;
+
+    /// \brief Flags for manual attach/detach of connection 0
+    std::atomic<bool> attachEnd0Requested{false};
+    std::atomic<bool> detachEnd0Requested{false};
+
+    /// \brief Flags for manual attach/detach of connection 1
+    std::atomic<bool> attachEnd1Requested{false};
+    std::atomic<bool> detachEnd1Requested{false};
   };
 
   /// \brief Plugin for initializing the cable
@@ -137,6 +139,7 @@ namespace aic_gazebo
 
     /// \brief Make an entity static by spawning a static model and attaching
     /// the entity to a static model
+    /// \param[in] _entity The entity to make static
     /// \param[in] _attachEntityAsParentOfJoint True to attach entity as parent
     /// of the detachable joint.
     /// \param[in] _ecm Entity component manager
@@ -154,10 +157,12 @@ namespace aic_gazebo
         const gz::sim::EntityComponentManager& _ecm) const;
 
     /// \brief Find a detachable joint created by an external plugin that
-    /// connects any link in the current cable model to an external link.
+    /// connects any link in the given cable model to an external link.
+    /// \param[in] _cableModelEntity The cable model entity to check
     /// \param[in] _ecm Entity Component Manager
     /// \return Entity of the grasp joint if found, kNullEntity otherwise
     private: gz::sim::Entity FindExternalGraspJoint(
+        gz::sim::Entity _cableModelEntity,
         const gz::sim::EntityComponentManager& _ecm) const;
 
     /// \brief Process any pending manual attach/detach requests
@@ -165,49 +170,45 @@ namespace aic_gazebo
     private: void ProcessManualGraspRequests(
         gz::sim::EntityComponentManager& _ecm);
 
-    /// \brief Freezes all links in the given cable in place by making them static
+    /// \brief Freezes the cable model by making it static
     /// \param[in] _cableIndex The index of the cable to freeze
     /// \param[in] _ecm Entity Component Manager
-    private: void MakeCableStatic(int _cableIndex,
+    private: void MakeCableStatic(size_t _cableIndex,
         gz::sim::EntityComponentManager& _ecm);
 
-    /// \brief Unfreezes all links in the given cable by removing static joints
+    /// \brief Unfreezes the cable model by making it dynamic
     /// \param[in] _cableIndex The index of the cable to unfreeze
     /// \param[in] _ecm Entity Component Manager
     private: void MakeCableDynamic(size_t _cableIndex,
         gz::sim::EntityComponentManager& _ecm);
 
-    /// \brief Toggle active cable. Done by setting internal vairables to keep
-    /// track of the connection link entities of the next cable in the queue
+    /// \brief Find which end of the cable the gripper is closer to
+    /// \param[in] _cableIndex The index of the cable
+    /// \param[in] _graspJoint The entity of the detachable joint representing the grasp
     /// \param[in] _ecm Entity Component Manager
-    private: bool ToggleActiveCable(
-        gz::sim::EntityComponentManager& _ecm);
+    /// \return 0 for end 0, 1 for end 1, -1 if cannot be determined
+    private: int FindGraspedEnd(size_t _cableIndex, gz::sim::Entity _graspJoint,
+        const gz::sim::EntityComponentManager& _ecm) const;
 
     /// \brief Find Cable model entities based on their names
     /// \param[in] _ecm Entity Component Manager
-    private: bool FindCableModels(const gz::sim::EntityComponentManager& _ecm);
+    private: void FindCableModels(const gz::sim::EntityComponentManager& _ecm);
 
-    /// \brief Initialize port contact subscribers for the given port
-    /// \param[in] _portName The name of the port to subscribe to for contacts
-    private: void CreatePortSubscribers(const std::string& _portName);
+    /// \brief Initialize port contact subscribers for the given cable
+    /// \param[in] _cableIndex The index of the cable to subscribe for
+    private: void CreatePortSubscribers(size_t _cableIndex);
 
     /// \brief Entity of attachment link in the end effector model
     private: gz::sim::Entity endEffectorLinkEntity{gz::sim::kNullEntity};
 
-    /// \brief Entity of the detachable joint found while waiting for grasp
-    private: gz::sim::Entity activeGraspJoint{gz::sim::kNullEntity};
-
     /// \brief A list of cable configurations
     private: std::vector<CableConfig> cableConfigs;
 
-    /// \brief The current active cable model.
-    private: gz::sim::Model cableModel;
-
-    /// \brief Index of the active cable model.
-    private: int cableIndex{-1};
-
     /// \brief State trackers for the cable models
-    private: std::vector<CableTracker> cableTrackers;
+    private: std::vector<std::unique_ptr<CableTracker>> cableTrackers;
+
+    /// \brief Index of the cable currently being manually tested
+    private: int cableIndex{0};
 
     /// \brief Name of the end effector model
     private: std::string endEffectorModelName;
@@ -219,23 +220,8 @@ namespace aic_gazebo
     /// Used for holding cable connections in place
     private: std::unique_ptr<gz::sim::SdfEntityCreator> creator{nullptr};
 
-    /// \brief Current state of the cable
-    private: CableState cableState{CableState::INITIALIZATION};
-
-    /// \brief Cable connection port subscribers
-    private: std::vector<gz::transport::Node::Subscriber>
-        cableConnectionPortSubs;
-
-    /// \brief Task completion event publisher
-    private: gz::transport::Node::Publisher taskCompletionPub;
-
-    /// \brief Whether to attach cable connection to the port
-    /// This is set on cableConnectionPortSub callback
-    private: std::atomic<bool> attachCableConnectionToPort{false};
-
-    /// \brief Topic in which the touch event is received
-    /// This is set on cableConnectionPortSub callback
-    private: std::optional<std::string> touchEventCallbackNamespace;
+    /// \brief Cable insertion event publisher
+    private: gz::transport::Node::Publisher cableInsertionPub;
 
     /// \brief Gazebo transport node
     private: gz::transport::Node node;
@@ -243,17 +229,9 @@ namespace aic_gazebo
     /// \brief Static entities created by this plugin
     private: std::unordered_set<gz::sim::Entity> staticEntities;
 
-    /// \brief Flags for manual attach/detach of connection 0
-    private: std::atomic<bool> attachEnd0Requested{false};
-    private: std::atomic<bool> detachEnd0Requested{false};
-
-    /// \brief Flags for manual attach/detach of connection 1
-    private: std::atomic<bool> attachEnd1Requested{false};
-    private: std::atomic<bool> detachEnd1Requested{false};
-
     /// \brief Manual grasp subscribers
     private: std::vector<gz::transport::Node::Subscriber> manualGraspSubs;
 
-};
+  };
 }
 #endif
