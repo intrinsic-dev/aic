@@ -25,13 +25,13 @@ import torch
 import torch.nn.functional as F
 from torch.utils.data import ConcatDataset, DataLoader, Subset
 
-from .constants import CAMERA_NAMES, OUTPUT_KEYS
-from .dataset import (
+from .keypoint_constants import CAMERA_NAMES, OUTPUT_KEYS
+from .keypoint_dataset import (
     LeRobotKeypointDataset,
     DEFAULT_TRANSFORM, TRAIN_TRANSFORM,
     LEROBOT_TRANSFORM, LEROBOT_TRAIN_TRANSFORM,
 )
-from .model import PortKeypointNet
+from .keypoint_model import PortKeypointNet
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s  %(message)s")
 logger = logging.getLogger(__name__)
