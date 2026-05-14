@@ -22,11 +22,12 @@
 #include <chrono>
 #include <unordered_set>
 #include <vector>
+#include <deque>
 #include <string>
 #include <memory>
 
 #include <gz/transport/Node.hh>
-#include <gz/msgs/stringmsg_v.pb.h>
+#include <gz/msgs/stringmsg.pb.h>
 #include <gz/sim/EventManager.hh>
 #include <gz/sim/Model.hh>
 #include <gz/sim/SdfEntityCreator.hh>
@@ -82,8 +83,8 @@ namespace aic_gazebo
     std::atomic<gz::sim::Entity> activeGraspJoint{gz::sim::kNullEntity};
     /// \brief Topic namespace from the touched port
     std::string touchEventCallbackNamespace;
-    /// \brief Which end was last identified as grasped (0, 1, or -1)
-    int lastGraspedEnd{-1};
+    /// \brief Which end was last identified as grasped (0, 1)
+    std::optional<int> lastGraspedEnd;
     /// \brief Cable connection port subscribers
     std::vector<gz::transport::Node::Subscriber> portSubs;
 
@@ -157,11 +158,11 @@ namespace aic_gazebo
 
     /// \brief Find a detachable joint created by an external plugin that
     /// connects any link in the given cable model to an external link.
-    /// \param[in] _cableModelEntity The cable model entity to check
+    /// \param[in] _tracker The cable tracker to check
     /// \param[in] _ecm Entity Component Manager
     /// \return Entity of the grasp joint if found, kNullEntity otherwise
     private: gz::sim::Entity FindExternalGraspJoint(
-        gz::sim::Entity _cableModelEntity,
+        const CableTracker& _tracker,
         const gz::sim::EntityComponentManager& _ecm) const;
 
     /// \brief Process any pending manual attach/detach requests
@@ -185,8 +186,9 @@ namespace aic_gazebo
     /// \param[in] _cableIndex The index of the cable
     /// \param[in] _graspJoint The entity of the detachable joint representing the grasp
     /// \param[in] _ecm Entity Component Manager
-    /// \return 0 for end 0, 1 for end 1, -1 if cannot be determined
-    private: int FindGraspedEnd(size_t _cableIndex, gz::sim::Entity _graspJoint,
+    /// \return 0 for end 0, 1 for end 1, std::nullopt if cannot be determined
+    private: std::optional<int> FindGraspedEnd(size_t _cableIndex,
+        gz::sim::Entity _graspJoint,
         const gz::sim::EntityComponentManager& _ecm) const;
 
     /// \brief Find Cable model entities based on their names
@@ -204,7 +206,7 @@ namespace aic_gazebo
     private: std::vector<CableConfig> cableConfigs;
 
     /// \brief State trackers for the cable models
-    private: std::vector<std::unique_ptr<CableTracker>> cableTrackers;
+    private: std::deque<CableTracker> cableTrackers;
 
     /// \brief Index of the cable currently being manually tested
     private: int cableIndex{0};
