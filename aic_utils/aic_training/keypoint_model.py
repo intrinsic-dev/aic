@@ -26,7 +26,7 @@ import torch
 import torch.nn as nn
 import timm
 
-from .constants import NUM_CAMERAS, NUM_OUTPUTS
+from .keypoint_constants import NUM_CAMERAS, NUM_OUTPUTS
 
 # Default backbone — ViT-S/16, ~22 M params
 # Use 'vit_small_patch14_dinov2' for DINOv2 features (same size, stronger but
@@ -117,7 +117,7 @@ class PortKeypointNet(nn.Module):
         xy / dist are None when the corresponding confidence is below threshold.
         """
         import math
-        from .constants import OUTPUT_KEYS
+        from .keypoint_constants import OUTPUT_KEYS
 
         out = self.forward(imgs)
         B = imgs[0].shape[0]

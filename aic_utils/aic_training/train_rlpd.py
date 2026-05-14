@@ -45,11 +45,6 @@ _AIC_UTILS = Path(__file__).resolve().parent.parent
 if str(_AIC_UTILS) not in sys.path:
     sys.path.insert(0, str(_AIC_UTILS))
 
-# keypoint_model lives one level above aic_utils (ws_aic/src/aic/)
-_AIC_ROOT = _AIC_UTILS.parent
-if str(_AIC_ROOT) not in sys.path:
-    sys.path.insert(0, str(_AIC_ROOT))
-
 import rclpy  # noqa: F401 — triggers rclpy context init
 
 from geometry_msgs.msg import Point, Pose, Quaternion, Vector3, Wrench
@@ -60,11 +55,12 @@ from rclpy.time import Time
 from tf2_ros import Buffer, TransformException, TransformListener
 
 from aic_training.aic_gym_env import AICGymEnv, AICGymEnvConfig
-from aic_training.robot_vit import (
+from aic_training.robot_vit_with_task import (
     ImageConditioner,
-    ROBOT_STATE_DIM, TOKEN_DIM,
+    ROBOT_STATE_DIM,
+    TOKEN_DIM,
+    RobotWithTaskPolicy,
 )
-from aic_training.robot_vit_with_task import RobotWithTaskPolicy
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -261,7 +257,7 @@ class AICRLEnv(AICGymEnv):
         # Keypoint model (optional) — used by _spot_target
         self._keypoint_model = None
         if keypoint_checkpoint:
-            from keypoint_model.model import PortKeypointNet as _PortKeypointNet
+            from aic_training.keypoint_model import PortKeypointNet as _PortKeypointNet
             _kp_dev = torch.device("cuda" if torch.cuda.is_available() else "cpu")
             _ckpt   = torch.load(keypoint_checkpoint, map_location="cpu")
             _kp     = _PortKeypointNet(pretrained=False)
@@ -409,7 +405,7 @@ class AICRLEnv(AICGymEnv):
         if self._keypoint_model is None or not target_module or not port_name:
             return images
 
-        from keypoint_model.constants import OUTPUT_KEYS
+        from aic_training.keypoint_constants import OUTPUT_KEYS
 
         img_h = images[_KEYPOINT_CAM_ORDER[0]].shape[1]
         img_w = images[_KEYPOINT_CAM_ORDER[0]].shape[2]

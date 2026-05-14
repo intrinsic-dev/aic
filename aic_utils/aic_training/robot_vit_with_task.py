@@ -32,8 +32,6 @@ import math
 import re
 import time
 
-import timm
-from timm.data import create_transform, resolve_data_config
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -41,7 +39,6 @@ import torchvision
 import torchvision.transforms.functional as TF
 from torchvision.models.feature_extraction import create_feature_extractor
 from typing import Callable, Union, List, Optional, Dict, Tuple, Any, Sequence
-from transformers import AutoImageProcessor, AutoModel
 import numpy as np
 
 
@@ -503,7 +500,7 @@ class RobotPolicyTransformer(nn.Module):
         Args:
             img_tokens:   (B, N_img, d_model) — image patch tokens from ImageEncoder
             state_token:  (B, 1, d_model)
-            action_token: (B, 1, d_model)
+            action_token: (B, M, d_model)
             cond:         (B, TOKEN_DIM)      — task conditioning vector
         Returns:
             out: (B, d_model) — output at the prev_action_token position (last token)
@@ -619,3 +616,99 @@ class RobotWithTaskPolicy(nn.Module):
         params     = self.output_head(out)                             # (B, 2*action_dim)
         means, log_stds = params.chunk(2, dim=-1)
         return means, log_stds.clamp(_LOG_STD_MIN, _LOG_STD_MAX)
+
+class RobotWithTaskCritic(nn.Module):
+    """RLPD-compatible robot critic with task-conditioned AdaLN and image tokens in sequence.
+
+    Architecture:
+        ImageEncoder (ResNet18, patch tokens with spatial/camera/temporal PE)
+            → (B, obs_horizon * num_cameras * N_patches, d_model)  image prefix tokens
+        TaskEncoder (target_module, port_name)
+            → (B, d_model)  AdaLN-Zero conditioning vector
+        state_encoder  robot_state → (B, 1, d_model)
+        action_in_proj prev_action → (B, 1, d_model)
+        RobotPolicyTransformer
+            sequence = [img_tokens | state_token | action_token]
+            cond     = task_token  (AdaLN-Zero)
+        output_head MLP → (B, 2 * action_dim)  →  [means | log_stds]
+
+    Inputs:
+        images:        {camera_key: (B, obs_horizon, C, H, W)}
+        robot_state:   (B, robot_state_dim)
+        prev_action:   (B, action_dim)
+        target_module: (B,) int64
+        port_name:     (B,) int64
+        action:        (B, action_dim)
+
+    Outputs:
+        reward:    (B, 1)
+    """
+
+    def __init__(
+        self,
+        robot_state_dim:    int = ROBOT_STATE_DIM,
+        action_dim:         int = 9,
+        obs_horizon:        int = 1,
+        d_model:            int = TOKEN_DIM,
+        n_heads:            int = 4,
+        n_layers:           int = 4,
+        ffn_dim:            int = 512,
+        dropout:            float = 0.0,
+        resnet_name:        str = "resnet18",
+        resnet_weights:     str = "IMAGENET1K_V1",
+        camera_keys: tuple[str, ...] | None = None,
+        local_ckpt_path:    str | None = None,
+        features_per_group: int = 16,
+    ):
+        super().__init__()
+        self.action_dim  = action_dim
+        self.obs_horizon = obs_horizon
+
+        self.image_encoder = ImageEncoder(
+            resnet_name=resnet_name,
+            weights=resnet_weights,
+            features_per_group=features_per_group,
+            camera_keys=camera_keys,
+            local_weights_path=local_ckpt_path,
+            obs_horizon=obs_horizon,
+        )
+        self.task_encoder = TaskEncoder(task_embed_dim=d_model)
+        self.state_encoder = nn.Sequential(
+            nn.Linear(robot_state_dim, 256),
+            nn.ReLU(),
+            nn.Linear(256, d_model),
+        )
+        self.action_in_proj = nn.Linear(action_dim, d_model)
+        self.transformer = RobotPolicyTransformer(
+            d_model=d_model,
+            n_heads=n_heads,
+            n_layers=n_layers,
+            ffn_dim=ffn_dim,
+            dropout=dropout,
+            cond_dim=d_model,   # task token dimension
+        )
+        self.output_head = nn.Sequential(
+            nn.Linear(d_model, d_model),
+            nn.ReLU(),
+            nn.Linear(d_model, 1),
+        )
+
+    def forward(
+        self,
+        images:        dict,
+        robot_state:   torch.Tensor,
+        prev_action:   torch.Tensor,
+        target_module: torch.Tensor,
+        port_name:     torch.Tensor,
+        action:        torch.Tensor,
+    ) -> torch.Tensor:
+        """
+        Returns:
+            reward value:    (B, 1)
+        """
+        img_tokens = self.image_encoder(images)                        # (B, N_img, d)
+        task_cond  = self.task_encoder(target_module, port_name).squeeze(1)  # (B, d)
+        state_tok  = self.state_encoder(robot_state).unsqueeze(1)      # (B, 1, d)
+        action_toks = self.action_in_proj(torch.cat([prev_action, action], dim=1))     # (B, 2, d)
+        out        = self.transformer(img_tokens, state_tok, action_toks, task_cond)  # (B, d)
+        return self.output_head(out)                             # (B, 1)
