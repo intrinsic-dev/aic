@@ -558,8 +558,9 @@ void CableModeratorPlugin::CreatePortSubscribers(size_t _cableIndex) {
     if (_msg.data()) {
       auto& tracker = this->cableTrackers[_cableIndex];
       // Grasp filter: Only report insertion if this cable is actually being
-      // held
-      if (tracker.activeGraspJoint.load() == kNullEntity) {
+      // held and the touch plugin reported touch on the grasped end
+      if (tracker.activeGraspJoint.load() == kNullEntity
+          || tracker.lastGraspedEnd != end) {
         gzdbg << "Ignoring touch event for "
               << this->cableConfigs[_cableIndex].modelName << " on port "
               << _info.Topic() << " (Not grasped)" << std::endl;
