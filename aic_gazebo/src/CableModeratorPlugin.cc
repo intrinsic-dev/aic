@@ -304,7 +304,7 @@ void CableModeratorPlugin::PreUpdate(const gz::sim::UpdateInfo& /*_info*/,
   for (size_t i = 0; i < this->cableTrackers.size(); ++i) {
     auto& tracker = this->cableTrackers[i];
     if (!tracker.found || tracker.isCompleted) continue;
-    Entity graspJoint = this->FindExternalGraspJoint(tracker.modelEntity, _ecm);
+    Entity graspJoint = this->FindExternalGraspJoint(tracker, _ecm);
     if (graspJoint != kNullEntity) {
       // Create subscribers if they weren't already.
       if (tracker.portSubs.empty()) this->CreatePortSubscribers(i);
@@ -476,18 +476,14 @@ Entity CableModeratorPlugin::FindGripperJoint(
 
 //////////////////////////////////////////////////
 Entity CableModeratorPlugin::FindExternalGraspJoint(
-    Entity _cableModelEntity, const EntityComponentManager& _ecm) const {
-  if (_cableModelEntity == kNullEntity) return kNullEntity;
-  Model model(_cableModelEntity);
-  auto cableLinks = model.Links(_ecm);
-  std::unordered_set<Entity> cableLinkSet(cableLinks.begin(), cableLinks.end());
+    const CableTracker& _tracker, const EntityComponentManager& _ecm) const {
   Entity result = kNullEntity;
   _ecm.Each<components::DetachableJoint>(
       [&](const Entity& _entity,
           const components::DetachableJoint* _joint) -> bool {
         const auto& info = _joint->Data();
-        bool parentInCable = cableLinkSet.count(info.parentLink) > 0;
-        bool childInCable = cableLinkSet.count(info.childLink) > 0;
+        bool parentInCable = _tracker.neighbors.count(info.parentLink) > 0;
+        bool childInCable = _tracker.neighbors.count(info.childLink) > 0;
         if (parentInCable != childInCable) {
           Entity externalLink =
               parentInCable ? info.childLink : info.parentLink;
@@ -620,12 +616,9 @@ std::optional<int> CableModeratorPlugin::FindGraspedEnd(
   if (!jointComp) return std::nullopt;
   const auto& info = jointComp->Data();
 
-  Model model(tracker.modelEntity);
-  auto cableLinks = model.Links(_ecm);
-  std::unordered_set<Entity> cableLinkSet(cableLinks.begin(), cableLinks.end());
-
-  Entity cableLink = cableLinkSet.count(info.parentLink) > 0 ? info.parentLink
-                                                             : info.childLink;
+  Entity cableLink = tracker.neighbors.count(info.parentLink) > 0
+                         ? info.parentLink
+                         : info.childLink;
 
   if (cableLink == tracker.connection0LinkEntity) return 0;
   if (cableLink == tracker.connection1LinkEntity) return 1;

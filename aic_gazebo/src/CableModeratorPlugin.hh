@@ -158,11 +158,11 @@ namespace aic_gazebo
 
     /// \brief Find a detachable joint created by an external plugin that
     /// connects any link in the given cable model to an external link.
-    /// \param[in] _cableModelEntity The cable model entity to check
+    /// \param[in] _tracker The cable tracker to check
     /// \param[in] _ecm Entity Component Manager
     /// \return Entity of the grasp joint if found, kNullEntity otherwise
     private: gz::sim::Entity FindExternalGraspJoint(
-        gz::sim::Entity _cableModelEntity,
+        const CableTracker& _tracker,
         const gz::sim::EntityComponentManager& _ecm) const;
 
     /// \brief Process any pending manual attach/detach requests
