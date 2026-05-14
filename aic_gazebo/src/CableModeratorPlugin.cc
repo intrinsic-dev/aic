@@ -152,7 +152,7 @@ void CableModeratorPlugin::Configure(
 
   this->creator = std::make_unique<SdfEntityCreator>(_ecm, _eventManager);
 
-  this->cableInsertionPub = this->node.Advertise<gz::msgs::StringMsg_V>(
+  this->cableInsertionPub = this->node.Advertise<gz::msgs::StringMsg>(
       "/cable_moderator/insertion_event");
 
   // Manual grasp subscribers for all cables
@@ -576,10 +576,10 @@ void CableModeratorPlugin::CreatePortSubscribers(size_t _cableIndex) {
       auto pos = _info.Topic().rfind("/");
       if (pos != std::string::npos)
         tracker.touchEventCallbackNamespace = _info.Topic().substr(0, pos);
-      gz::msgs::StringMsg_V pubMsg;
-      pubMsg.add_data(this->cableConfigs[_cableIndex].modelName);
-      pubMsg.add_data(std::to_string(end));
-      pubMsg.add_data(tracker.touchEventCallbackNamespace);
+      gz::msgs::StringMsg pubMsg;
+      pubMsg.set_data(this->cableConfigs[_cableIndex].modelName + "#" +
+                      std::to_string(end) + "#" +
+                      tracker.touchEventCallbackNamespace);
       this->cableInsertionPub.Publish(pubMsg);
     }
   };

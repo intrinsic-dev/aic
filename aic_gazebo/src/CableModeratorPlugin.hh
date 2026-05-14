@@ -27,7 +27,7 @@
 #include <memory>
 
 #include <gz/transport/Node.hh>
-#include <gz/msgs/stringmsg_v.pb.h>
+#include <gz/msgs/stringmsg.pb.h>
 #include <gz/sim/EventManager.hh>
 #include <gz/sim/Model.hh>
 #include <gz/sim/SdfEntityCreator.hh>
