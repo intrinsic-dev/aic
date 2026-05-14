@@ -268,7 +268,7 @@ class AICRLEnv(AICGymEnv):
             _kp.load_state_dict(_ckpt.get("model", _ckpt))
             _kp.eval().to(_kp_dev)
             self._keypoint_model = _kp
-            print(f"[RLPD] Keypoint model loaded from {keypoint_checkpoint}")
+            logger.info(f"[RLPD] Keypoint model loaded from {keypoint_checkpoint}")
 
         for cam_key, topic in CAMERA_TOPICS.items():
             def _make_cb(key: str):
@@ -355,13 +355,13 @@ class AICRLEnv(AICGymEnv):
             if target_module_name and port_name \
                     and target_module_name in event_data and port_name in event_data:
                 insertion_r = 3.0
-                print(
+                logger.info(
                     f"[RLPD][INSERTION] CORRECT  module={target_module_name}"
                     f"  port={port_name}  event='{event_data}'"
                 )
             else:
                 insertion_r = -3.0
-                print(
+                logger.info(
                     f"[RLPD][INSERTION] WRONG    target=({target_module_name}/{port_name})"
                     f"  event='{event_data}'"
                 )
@@ -449,7 +449,7 @@ class AICRLEnv(AICGymEnv):
             img_np  = numpy_imgs[cam]
             overlay = img_np.copy()
             cv2.circle(overlay, (px, py), radius=radius, color=color, thickness=-1)
-            # print("LXH debug circle added:", cv_val, px, py, ",radius:", radius)
+            # logger.info("LXH debug circle added:", cv_val, px, py, ",radius:", radius)
             # alpha-blend: circle at opacity = conf_visible
             cv2.addWeighted(overlay, cv_val, img_np, 1.0 - cv_val, 0, img_np)
 
@@ -484,7 +484,7 @@ class AICRLEnv(AICGymEnv):
         # long stuck episodes that flood the buffer with identical bad transitions.
         if self._high_force_since is not None:
             if time.monotonic() - self._high_force_since >= 1.0:
-                print("[RLPD] Truncating: sustained high force > 1 s")
+                logger.info("[RLPD] Truncating: sustained high force > 1 s")
                 return True
         return False
 
@@ -517,7 +517,7 @@ def _save_spot_debug(
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
     except ImportError:
-        print("[RLPD] matplotlib not available — skipping spot debug image")
+        logger.info("[RLPD] matplotlib not available — skipping spot debug image")
         return
 
     cam_order = [k for k in _KEYPOINT_CAM_ORDER if k in images]
@@ -535,7 +535,7 @@ def _save_spot_debug(
     save_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(save_path, dpi=120, bbox_inches="tight")
     plt.close(fig)
-    print(f"[RLPD] Spot-target debug image: {save_path}")
+    logger.info(f"[RLPD] Spot-target debug image: {save_path}")
 
 
 # ---------------------------------------------------------------------------
@@ -994,7 +994,7 @@ def main() -> None:
 
     # ---- Offline dataset (placeholder — disabled) ----
     # TODO: instantiate OfflineDataset and enable _merge() once demos are ready.
-    print("[RLPD] Offline mixing disabled — running as online SAC.")
+    logger.info("[RLPD] Offline mixing disabled — running as online SAC.")
 
     # ---- Online buffer + image store ----
     image_store   = ImageStore(capacity=args.buffer_capacity + 10)
@@ -1011,7 +1011,7 @@ def main() -> None:
         ),
         keypoint_checkpoint=args.keypoint_checkpoint or None,
     )
-    print("[RLPD] Environment ready.")
+    logger.info("[RLPD] Environment ready.")
 
     # ---- Metrics ----
     episode_rewards: list[float] = []
@@ -1038,7 +1038,7 @@ def main() -> None:
         log_alpha.data.copy_(rl_ckpt["log_alpha"])
         total_steps  = rl_ckpt.get("step", 0)
         update_count = rl_ckpt.get("update_count", 0)
-        print(f"[RLPD] Resumed: step={total_steps}  updates={update_count}")
+        logger.info(f"[RLPD] Resumed: step={total_steps}  updates={update_count}")
 
     # ---- Initial reset ----
     flat_obs, info = env.reset()
@@ -1064,7 +1064,7 @@ def main() -> None:
     episode_len    = 0
     last_log_time  = time.monotonic()
 
-    print(f"[RLPD] start_training={args.start_training}  "
+    logger.info(f"[RLPD] start_training={args.start_training}  "
           f"offline_ratio={args.offline_ratio}  max_steps={args.max_steps}")
 
     # ====================================================================
@@ -1137,7 +1137,7 @@ def main() -> None:
         if done:
             episode_rewards.append(episode_reward)
             episode_lengths.append(episode_len)
-            print(
+            logger.info(
                 f"[RLPD] Episode  len={episode_len}  return={episode_reward:.3f}  "
                 f"buffer={len(replay_buffer)}  α={log_alpha.exp().item():.4f}"
             )
@@ -1201,7 +1201,7 @@ def main() -> None:
             last_log_time = now
             r_step = float(np.mean(recent_rewards)) if recent_rewards else float("nan")
             step_reward_log.append(r_step)
-            print(
+            logger.info(
                 f"[RLPD] step={total_steps:6d}  "
                 f"critic={np.mean(critic_losses[-50:]) if critic_losses else float('nan'):.4f}  "
                 f"actor={np.mean(actor_losses[-50:]) if actor_losses else float('nan'):.4f}  "
@@ -1230,7 +1230,7 @@ def main() -> None:
                 "alpha_opt":    alpha_opt.state_dict(),
                 "log_alpha":    log_alpha.detach().cpu(),
             }, ckpt_path)
-            print(f"[RLPD] Saved: {ckpt_path}")
+            logger.info(f"[RLPD] Saved: {ckpt_path}")
 
     # ---- Final checkpoint ----
     torch.save({
@@ -1284,12 +1284,12 @@ def main() -> None:
         plt.tight_layout()
         fig.savefig(output_dir / "training_curves.png", dpi=150)
         plt.close(fig)
-        print(f"[RLPD] Curves saved to {output_dir / 'training_curves.png'}")
+        logger.info(f"[RLPD] Curves saved to {output_dir / 'training_curves.png'}")
     except ImportError:
         pass
 
     env.close()
-    print("[RLPD] Done.")
+    logger.info("[RLPD] Done.")
 
 
 if __name__ == "__main__":
