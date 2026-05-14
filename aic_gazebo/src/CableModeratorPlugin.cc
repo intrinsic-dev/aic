@@ -313,6 +313,7 @@ void CableModeratorPlugin::PreUpdate(const gz::sim::UpdateInfo& /*_info*/,
       auto closerEnd = this->FindGraspedEnd(i, graspJoint, _ecm);
       if (!closerEnd.has_value()) {
         gzwarn << "Grasped end not found. Report this" << std::endl;
+        continue;
       }
       if (tracker.activeGraspJoint.load() == kNullEntity ||
           closerEnd != tracker.lastGraspedEnd) {
@@ -362,7 +363,7 @@ void CableModeratorPlugin::PreUpdate(const gz::sim::UpdateInfo& /*_info*/,
       if (tracker.activeGraspJoint.exchange(kNullEntity) != kNullEntity) {
         this->MakeCableStatic(i, _ecm);
       }
-      tracker.lastGraspedEnd = -1;
+      tracker.lastGraspedEnd = std::nullopt;
     }
 
     if (tracker.end0Inserted &&
