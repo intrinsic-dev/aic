@@ -307,11 +307,17 @@ void CableModeratorPlugin::PreUpdate(const gz::sim::UpdateInfo& /*_info*/,
     Entity graspJoint =
         this->FindExternalGraspJoint(tracker.modelEntity, _ecm);
     if (graspJoint != kNullEntity) {
-      int closerEnd = this->FindGraspedEnd(i, graspJoint, _ecm);
+      // Create subscribers if they weren't already.
+      if (tracker.portSubs.empty()) this->CreatePortSubscribers(i);
+
+      auto closerEnd = this->FindGraspedEnd(i, graspJoint, _ecm);
+      if (!closerEnd.has_value()) {
+        gzwarn << "Grasped end not found. Report this" << std::endl;
+      }
       if (tracker.activeGraspJoint.load() == kNullEntity ||
           closerEnd != tracker.lastGraspedEnd) {
         gzmsg << "Cable " << this->cableConfigs[i].modelName
-              << " grasp confirmed near End " << closerEnd
+              << " grasp confirmed near End " << *closerEnd
               << " (joint: " << graspJoint << ")" << std::endl;
         tracker.lastGraspedEnd = closerEnd;
         if (tracker.activeGraspJoint.load() == kNullEntity)
@@ -353,15 +359,11 @@ void CableModeratorPlugin::PreUpdate(const gz::sim::UpdateInfo& /*_info*/,
       }
       tracker.activeGraspJoint.store(graspJoint);
     } else {
-      if (tracker.activeGraspJoint.load() != kNullEntity) {
+      if (tracker.activeGraspJoint.exchange(kNullEntity) != kNullEntity) {
         this->MakeCableStatic(i, _ecm);
       }
-      tracker.activeGraspJoint.store(kNullEntity);
       tracker.lastGraspedEnd = -1;
     }
-
-    // Keep searching for port topics until we find at least one (or more)
-    if (tracker.portSubs.empty()) this->CreatePortSubscribers(i);
 
     if (tracker.end0Inserted &&
         tracker.detachableJointStatic0Entity == kNullEntity) {
@@ -380,6 +382,7 @@ void CableModeratorPlugin::PreUpdate(const gz::sim::UpdateInfo& /*_info*/,
       this->MakeCableStatic(i, _ecm);
       gzmsg << "Cable " << this->cableConfigs[i].modelName << " fully inserted."
             << std::endl;
+      tracker.portSubs.clear();
     }
   }
 }
@@ -611,12 +614,12 @@ void CableModeratorPlugin::CreatePortSubscribers(size_t _cableIndex) {
 }
 
 //////////////////////////////////////////////////
-int CableModeratorPlugin::FindGraspedEnd(
+std::optional<int> CableModeratorPlugin::FindGraspedEnd(
     size_t _cableIndex, Entity _graspJoint,
     const EntityComponentManager& _ecm) const {
   auto& tracker = this->cableTrackers[_cableIndex];
   auto jointComp = _ecm.Component<components::DetachableJoint>(_graspJoint);
-  if (!jointComp) return -1;
+  if (!jointComp) return std::nullopt;
   const auto& info = jointComp->Data();
 
   Model model(tracker.modelEntity);
@@ -638,18 +641,14 @@ int CableModeratorPlugin::FindGraspedEnd(
   q.push(cableLink);
   dists[cableLink] = 0;
 
-  int d0 = -1, d1 = -1;
   while (!q.empty()) {
     Entity curr = q.front();
     q.pop();
     int d = dists[curr];
 
     // Check if we've reached either end link
-    if (curr == tracker.connection0LinkEntity) d0 = d;
-    if (curr == tracker.connection1LinkEntity) d1 = d;
-
-    // Stop early if both ends are found
-    if (d0 != -1 && d1 != -1) break;
+    if (curr == tracker.connection0LinkEntity) return 0;
+    if (curr == tracker.connection1LinkEntity) return 1;
 
     auto it = tracker.neighbors.find(curr);
     if (it != tracker.neighbors.end()) {
@@ -662,12 +661,8 @@ int CableModeratorPlugin::FindGraspedEnd(
     }
   }
 
-  // If one end is unreachable, assume the other is the closer one
-  if (d0 == -1) return 1;
-  if (d1 == -1) return 0;
-
-  // Return the logically closer end
-  return (d0 < d1) ? 0 : 1;
+  // Failed to find a connection to any link
+  return std::nullopt;
 }
 
 }  // namespace aic_gazebo

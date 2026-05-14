@@ -83,8 +83,8 @@ namespace aic_gazebo
     std::atomic<gz::sim::Entity> activeGraspJoint{gz::sim::kNullEntity};
     /// \brief Topic namespace from the touched port
     std::string touchEventCallbackNamespace;
-    /// \brief Which end was last identified as grasped (0, 1, or -1)
-    int lastGraspedEnd{-1};
+    /// \brief Which end was last identified as grasped (0, 1)
+    std::optional<int> lastGraspedEnd;
     /// \brief Cable connection port subscribers
     std::vector<gz::transport::Node::Subscriber> portSubs;
 
@@ -186,8 +186,9 @@ namespace aic_gazebo
     /// \param[in] _cableIndex The index of the cable
     /// \param[in] _graspJoint The entity of the detachable joint representing the grasp
     /// \param[in] _ecm Entity Component Manager
-    /// \return 0 for end 0, 1 for end 1, -1 if cannot be determined
-    private: int FindGraspedEnd(size_t _cableIndex, gz::sim::Entity _graspJoint,
+    /// \return 0 for end 0, 1 for end 1, std::nullopt if cannot be determined
+    private: std::optional<int> FindGraspedEnd(size_t _cableIndex,
+        gz::sim::Entity _graspJoint,
         const gz::sim::EntityComponentManager& _ecm) const;
 
     /// \brief Find Cable model entities based on their names
