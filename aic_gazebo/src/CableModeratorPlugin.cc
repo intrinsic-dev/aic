@@ -34,6 +34,7 @@
 #include <gz/sim/components/ParentLinkName.hh>
 #include <gz/sim/components/Pose.hh>
 #include <gz/sim/components/World.hh>
+#include <gz/sim/config.hh>
 #include <queue>
 #include <unordered_map>
 
@@ -257,7 +258,18 @@ void CableModeratorPlugin::ProcessManualGraspRequests(
 void CableModeratorPlugin::MakeCableStatic(
     size_t _cableIndex, gz::sim::EntityComponentManager& _ecm) {
   auto& tracker = this->cableTrackers[_cableIndex];
+#if (GZ_SIM_MAJOR_VERSION == 9 && GZ_SIM_MINOR_VERSION >= 6) ||  \
+    (GZ_SIM_MAJOR_VERSION == 10 && GZ_SIM_MINOR_VERSION >= 3) || \
+    (GZ_SIM_MAJOR_VERSION > 10)
   Model(tracker.modelEntity).SetStatic(_ecm, true);
+#else
+  static bool warnedOnce = false;
+  if (!warnedOnce) {
+    gzwarn << "Unable to set model static state in version "
+           << GZ_SIM_VERSION_FULL << std::endl;
+    warnedOnce = true;
+  }
+#endif
 
   if (tracker.detachableJointStatic0Entity != kNullEntity) {
     _ecm.RequestRemoveEntity(tracker.detachableJointStatic0Entity);
@@ -272,8 +284,21 @@ void CableModeratorPlugin::MakeCableStatic(
 //////////////////////////////////////////////////
 void CableModeratorPlugin::MakeCableDynamic(
     size_t _cableIndex, gz::sim::EntityComponentManager& _ecm) {
+#if (GZ_SIM_MAJOR_VERSION == 9 && GZ_SIM_MINOR_VERSION >= 6) ||  \
+    (GZ_SIM_MAJOR_VERSION == 10 && GZ_SIM_MINOR_VERSION >= 3) || \
+    (GZ_SIM_MAJOR_VERSION > 10)
   auto& tracker = this->cableTrackers[_cableIndex];
   Model(tracker.modelEntity).SetStatic(_ecm, false);
+#else
+  static bool warnedOnce = false;
+  if (!warnedOnce) {
+    gzwarn << "Unable to set model static state in version "
+           << GZ_SIM_VERSION_FULL << std::endl;
+    warnedOnce = true;
+  }
+  (void)_cableIndex;
+  (void)_ecm;
+#endif
 }
 
 //////////////////////////////////////////////////
