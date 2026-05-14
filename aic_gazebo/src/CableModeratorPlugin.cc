@@ -304,8 +304,7 @@ void CableModeratorPlugin::PreUpdate(const gz::sim::UpdateInfo& /*_info*/,
   for (size_t i = 0; i < this->cableTrackers.size(); ++i) {
     auto& tracker = this->cableTrackers[i];
     if (!tracker.found || tracker.isCompleted) continue;
-    Entity graspJoint =
-        this->FindExternalGraspJoint(tracker.modelEntity, _ecm);
+    Entity graspJoint = this->FindExternalGraspJoint(tracker.modelEntity, _ecm);
     if (graspJoint != kNullEntity) {
       // Create subscribers if they weren't already.
       if (tracker.portSubs.empty()) this->CreatePortSubscribers(i);
@@ -377,8 +376,7 @@ void CableModeratorPlugin::PreUpdate(const gz::sim::UpdateInfo& /*_info*/,
           this->MakeStatic(tracker.connection1LinkEntity, true, _ecm);
     }
 
-    if (tracker.end0Inserted && tracker.end1Inserted &&
-        !tracker.isCompleted) {
+    if (tracker.end0Inserted && tracker.end1Inserted && !tracker.isCompleted) {
       tracker.isCompleted = true;
       this->MakeCableStatic(i, _ecm);
       gzmsg << "Cable " << this->cableConfigs[i].modelName << " fully inserted."
@@ -563,8 +561,8 @@ void CableModeratorPlugin::CreatePortSubscribers(size_t _cableIndex) {
       auto& tracker = this->cableTrackers[_cableIndex];
       // Grasp filter: Only report insertion if this cable is actually being
       // held and the touch plugin reported touch on the grasped end
-      if (tracker.activeGraspJoint.load() == kNullEntity
-          || tracker.lastGraspedEnd != end) {
+      if (tracker.activeGraspJoint.load() == kNullEntity ||
+          tracker.lastGraspedEnd != end) {
         gzdbg << "Ignoring touch event for "
               << this->cableConfigs[_cableIndex].modelName << " on port "
               << _info.Topic() << " (Not grasped)" << std::endl;
@@ -593,12 +591,12 @@ void CableModeratorPlugin::CreatePortSubscribers(size_t _cableIndex) {
   auto subscribe = [this, &config, &tracker, cb](const std::string& _topic,
                                                  int _end) {
     gzmsg << "Subscribing End " << _end << " of " << config.modelName
-      << " to: " << _topic << std::endl;
+          << " to: " << _topic << std::endl;
     tracker.portSubs.emplace_back(this->node.CreateSubscriber(
-      _topic,
-      std::function<void(const gz::msgs::Boolean&,
-                         const gz::transport::MessageInfo&)>(
-          std::bind(cb, std::placeholders::_1, std::placeholders::_2, _end))));
+        _topic, std::function<void(const gz::msgs::Boolean&,
+                                   const gz::transport::MessageInfo&)>(
+                    std::bind(cb, std::placeholders::_1, std::placeholders::_2,
+                              _end))));
   };
 
   for (const auto& topic : allTopics) {
