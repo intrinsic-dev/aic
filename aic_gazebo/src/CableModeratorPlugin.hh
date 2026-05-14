@@ -22,6 +22,7 @@
 #include <chrono>
 #include <unordered_set>
 #include <vector>
+#include <deque>
 #include <string>
 #include <memory>
 
@@ -204,7 +205,7 @@ namespace aic_gazebo
     private: std::vector<CableConfig> cableConfigs;
 
     /// \brief State trackers for the cable models
-    private: std::vector<std::unique_ptr<CableTracker>> cableTrackers;
+    private: std::deque<CableTracker> cableTrackers;
 
     /// \brief Index of the cable currently being manually tested
     private: int cableIndex{0};
