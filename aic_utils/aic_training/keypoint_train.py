@@ -336,9 +336,27 @@ def train(args: argparse.Namespace) -> None:
         sample_dir   = output / "samples"
         logger.info(f"Sample images will be saved to {sample_dir}/")
 
+    # --- Resume ---
+    start_epoch = 1
+    best_val    = math.inf
+    if args.resume:
+        ckpt_r = torch.load(args.resume, map_location=device)
+        model.load_state_dict(ckpt_r["model"])
+        if "optimizer" in ckpt_r:
+            optimizer.load_state_dict(ckpt_r["optimizer"])
+        if "scheduler" in ckpt_r:
+            scheduler.load_state_dict(ckpt_r["scheduler"])
+        if "best_val" in ckpt_r:
+            best_val = ckpt_r["best_val"]
+        start_epoch = ckpt_r.get("epoch", 0) + 1
+        logger.info(
+            f"Resumed from {args.resume}  "
+            f"(epoch {start_epoch - 1} → continuing from epoch {start_epoch}  "
+            f"best_val={best_val:.4f})"
+        )
+
     # --- Training loop ---
-    best_val = math.inf
-    for epoch in range(1, args.epochs + 1):
+    for epoch in range(start_epoch, args.epochs + 1):
         t0      = time.monotonic()
         train_m = run_epoch(model, train_loader, optimizer, scheduler, device)
         val_m   = run_epoch(model, val_loader,   None,      None,      device)
@@ -352,11 +370,19 @@ def train(args: argparse.Namespace) -> None:
             f"  val={val_m['total']:.4f}"
         )
 
-        ckpt = {"epoch": epoch, "model": model.state_dict(), "val_loss": val_m["total"]}
+        ckpt = {
+            "epoch":     epoch,
+            "model":     model.state_dict(),
+            "optimizer": optimizer.state_dict(),
+            "scheduler": scheduler.state_dict(),
+            "val_loss":  val_m["total"],
+            "best_val":  best_val,
+        }
         torch.save(ckpt, output / "last.pt")
 
         if val_m["total"] < best_val:
-            best_val = val_m["total"]
+            best_val       = val_m["total"]
+            ckpt["best_val"] = best_val
             torch.save(ckpt, output / "best.pt")
             logger.info(f"  → new best  val={best_val:.4f}")
 
@@ -386,6 +412,8 @@ def main() -> None:
     parser.add_argument("--dataset-type", default="local", choices=["local", "lerobot"],
                         help="'local': read parquet+mp4 directly; "
                              "'lerobot': use LeRobotDataset (supports HF remote datasets)")
+    parser.add_argument("--resume",       type=str, default=None,
+                        help="Path to a checkpoint (e.g. last.pt) to resume training from.")
     parser.add_argument("--no-pretrain",  action="store_true", help="Random backbone init")
     parser.add_argument("--no-cache",     action="store_true",
                         help="Don't preload frames into RAM (local backend: slow seeks; lerobot: default)")
