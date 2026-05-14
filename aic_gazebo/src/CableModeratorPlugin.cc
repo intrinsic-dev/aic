@@ -590,26 +590,25 @@ void CableModeratorPlugin::CreatePortSubscribers(size_t _cableIndex) {
     }
   };
 
+  auto subscribe = [this, &config, &tracker, cb](const std::string& _topic,
+                                                 int _end) {
+    gzmsg << "Subscribing End " << _end << " of " << config.modelName
+      << " to: " << _topic << std::endl;
+    tracker.portSubs.emplace_back(this->node.CreateSubscriber(
+      _topic,
+      std::function<void(const gz::msgs::Boolean&,
+                         const gz::transport::MessageInfo&)>(
+          std::bind(cb, std::placeholders::_1, std::placeholders::_2, _end))));
+  };
+
   for (const auto& topic : allTopics) {
     if (topic.find("touched") == std::string::npos) continue;
 
     if (topic.find(config.connection0PortName) != std::string::npos) {
-      gzmsg << "Subscribing End 0 of " << config.modelName << " to: " << topic
-            << std::endl;
-      tracker.portSubs.emplace_back(this->node.CreateSubscriber(
-          topic,
-          std::function<void(const gz::msgs::Boolean&,
-                             const gz::transport::MessageInfo&)>(
-              std::bind(cb, std::placeholders::_1, std::placeholders::_2, 0))));
+      subscribe(topic, 0);
     }
     if (topic.find(config.connection1PortName) != std::string::npos) {
-      gzmsg << "Subscribing End 1 of " << config.modelName << " to: " << topic
-            << std::endl;
-      tracker.portSubs.emplace_back(this->node.CreateSubscriber(
-          topic,
-          std::function<void(const gz::msgs::Boolean&,
-                             const gz::transport::MessageInfo&)>(
-              std::bind(cb, std::placeholders::_1, std::placeholders::_2, 1))));
+      subscribe(topic, 1);
     }
   }
 }
