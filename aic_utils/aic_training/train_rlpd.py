@@ -35,6 +35,8 @@ import torch.nn.functional as F
 from torch.distributions import Normal, TransformedDistribution
 from torch.distributions.transforms import TanhTransform
 
+logger = logging.getLogger(__name__)
+
 # ---------------------------------------------------------------------------
 # Path setup
 # ---------------------------------------------------------------------------
@@ -937,15 +939,15 @@ def main() -> None:
     target_entropy = args.target_entropy if args.target_entropy is not None else float(-ACTION_DIM)
 
     # ---- Log all config ----
-    print("[RLPD] =" * 36)
-    print("[RLPD] Configuration")
-    print("[RLPD] =" * 36)
+    logger.info("[RLPD] =============================")
+    logger.info("[RLPD] Configuration")
+    logger.info("[RLPD] ======================")
     col_w = max(len(k) for k in vars(args)) + 2
     for k, v in sorted(vars(args).items()):
-        print(f"[RLPD]   {k:<{col_w}}{v}")
-    print(f"[RLPD]   {'device':<{col_w}}{device}")
-    print(f"[RLPD]   {'target_entropy':<{col_w}}{target_entropy}")
-    print("[RLPD] =" * 36)
+        logger.info(f"[RLPD]   {k:<{col_w}}{v}")
+    logger.info(f"[RLPD]   {'device':<{col_w}}{device}")
+    logger.info(f"[RLPD]   {'target_entropy':<{col_w}}{target_entropy}")
+    logger.info("[RLPD] =============================")
 
     # ---- Actor ----
     policy = RobotWithTaskPolicy(
@@ -959,7 +961,7 @@ def main() -> None:
     if args.checkpoint and not args.resume:
         ckpt = torch.load(args.checkpoint, map_location=device)
         policy.load_state_dict(ckpt.get("policy_state", ckpt), strict=False)
-        print(f"[RLPD] Loaded actor checkpoint: {args.checkpoint}")
+        logger.info(f"[RLPD] Loaded actor checkpoint: {args.checkpoint}")
 
     policy.train()
 
