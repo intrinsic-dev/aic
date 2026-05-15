@@ -18,7 +18,6 @@
 #ifndef AIC_ENGINE_HPP_
 #define AIC_ENGINE_HPP_
 
-#include <aic_engine_interfaces/srv/start_engine.hpp>
 #include <functional>
 #include <memory>
 #include <optional>
@@ -29,6 +28,8 @@
 #include "aic_control_interfaces/msg/joint_motion_update.hpp"
 #include "aic_control_interfaces/msg/motion_update.hpp"
 #include "aic_control_interfaces/msg/trajectory_generation_mode.hpp"
+#include <aic_engine_interfaces/srv/start_engine.hpp>
+#include <aic_engine_interfaces/srv/stop_engine.hpp>
 #include "aic_scoring/ScoringTier2.hh"
 #include "aic_scoring/TierScore.hh"
 #include "aic_task_interfaces/action/insert_cable.hpp"
@@ -41,45 +42,50 @@
 #include "yaml-cpp/yaml.h"
 
 #include <grpcpp/grpcpp.h>
-#include "intrinsic/executive/proto/executive_service.grpc.pb.h"
 
 //==============================================================================
 namespace aic {
 
-using ExecutiveService = intrinsic_proto::executive::ExecutiveService;
 using InsertCableAction = aic_task_interfaces::action::InsertCable;
 using JointMotionUpdateMsg = aic_control_interfaces::msg::JointMotionUpdate;
 using MotionUpdateMsg = aic_control_interfaces::msg::MotionUpdate;
 using StartEngineSrv = aic_engine_interfaces::srv::StartEngine;
+using StopEngineSrv = aic_engine_interfaces::srv::StopEngine;
+using TaskMsg = aic_task_interfaces::msg::Task;
 using TriggerSrv = std_srvs::srv::Trigger;
 
 //==============================================================================
-struct Score {
-  // Tier_1 done only once for the whole run
+struct TrialScore {
   aic_scoring::Tier1Score tier_1;
+  aic_scoring::Tier2Score tier_2;
+  aic_scoring::Tier3Score tier_3;
+
+  TrialScore()
+      : tier_1(0),
+        tier_2("Task execution failed"),
+        tier_3(0, "Task execution failed") {}
 
   void tier_1_success() { tier_1 = aic_scoring::Tier1Score(1); }
 
-  // Intentionally alphabetically sorted, trial_id -> category scores
-  std::map<std::string, aic_scoring::Tier2Score> breakdown;
-
-  /// \brief Serializes the score into a YAML node for logging.
-  /// \return The resulting YAML node with serialized data.
-  YAML::Node serialize() const;
-
-  /// \brief Computes the total score from the score breakdown.
-  double calculate_total_score() const;
+  double total_score() const {
+    return tier_1.total_score() + tier_2.total_score() + tier_3.total_score();
+  }
 };
 
 //==============================================================================
-struct TrialResult {
-  // Score for the run
-  Score score;
-  // Error message if there was an error, std::nullopt otherwise.
-  std::optional<std::string> error;
+enum class TaskStatus {
+  // The task was started, stopping it will initialize scoring.
+  STARTED=0,
+  // The task finished, it will be scored and printed
+  FINISHED=1
+};
 
-  TrialResult(const Score& score_, const std::optional<std::string>& error_ = std::nullopt) :
-    score(score_), error(error_) { }
+//==============================================================================
+struct TrialAttempt {
+  TaskMsg task;
+  TaskStatus status;
+  TrialScore score;
+  TrialAttempt(const TaskMsg& task_) : task(task_), status(TaskStatus::STARTED) { }
 };
 
 //==============================================================================
@@ -89,27 +95,25 @@ class Engine {
   /// \brief Constructor.
   Engine(const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
 
-  /// \brief Processes incoming requests. Blocking call will only exit when
-  /// rclcpp::ok() returns false;
-  void process();
-
-  /// \brief Destructor.
-  ~Engine();
+  /// \brief Spin the inner node.
+  void spin();
 
  private:
   // Initializes the engine.
-  /// \param[in] trial The yaml configuration for the run.
+  /// \param[in] taskThe task to score.
   /// \return An error message if initialization failed, std::nullopt otherwise.
-  std::optional<std::string> initialize(const std::string& yaml_config);
+  std::optional<std::string> initialize(const TaskMsg& task);
 
   /// \brief Run the engine.
   /// \return An error message if execution failed, std::nullopt otherwise.
   std::optional<std::string> run();
 
   /// \brief Handle the logic for a given trial.
-  /// \param[in] trial The trial to handle.
-  /// \return The result of the trial after handling.
-  TrialResult handle_trial();
+  /// \return An error message if an error occured, std::nullopt otherwise.
+  std::optional<std::string> start_trial();
+
+  /// \brief Fully resets the engine to prepare for a new set of tasks.
+  void reset_engine();
 
   /// \brief Reset internal and simulator states after a trial is completed.
   /// \param[in] trial The trial currently being ran
@@ -127,14 +131,6 @@ class Engine {
   /// \brief Check if the scoring system is ready.
   /// \return True if the scoring system is ready, false otherwise.
   bool ready_scoring();
-
-  /// \brief Check if tasks were started successfully.
-  /// \return True if tasks were started successfully, false otherwise.
-  bool tasks_started();
-
-  /// \brief Check if all tasks have been completed successfully.
-  /// \return True if tasks were completed successfully, false otherwise.
-  bool tasks_completed_successfully();
 
   /// @brief Check if the robot was commanded to move by the model node.
   /// @return True if the robot was commanded to move, false otherwise.
@@ -173,11 +169,11 @@ class Engine {
 
   /// @brief Stop the bag recording and compute the current score.
   /// @param[in] A reference to the current trial score to update.
-  void compute_score(Score& trial);
+  void compute_score(TrialScore& trial);
 
   /// @brief Writes the result of the current run to a YAML file.
   /// \param[in] The score to serialize and write.
-  void score_run(const Score& score);
+  void score_run();
 
   /// @brief Wait for a future, interrupt if rclcpp Context is shut down.
   /// \param[in] The future to wait for.
@@ -197,10 +193,14 @@ class Engine {
     return false;
   }
 
-  /// @brief Callback for the service to start the engine. Will handle the
-  /// requested trial and return a response with its outcome.
+  /// @brief Callback for the service to start the engine. Will start scoring.
   void start_engine_callback(const std::shared_ptr<StartEngineSrv::Request> request,
       std::shared_ptr<StartEngineSrv::Response> response);
+
+  /// @brief Callback for the service to stop the engine. Will stop the scoring
+  /// and optionally print and return the result of all trials.
+  void stop_engine_callback(const std::shared_ptr<StopEngineSrv::Request> request,
+      std::shared_ptr<StopEngineSrv::Response> response);
 
   // Strings.
   // Name of the aic_adapter node for lifecycle transitions.
@@ -211,13 +211,6 @@ class Engine {
   std::string model_get_state_service_name_;
   // Name of the service to change the lifecycle state of the model node.
   std::string model_change_state_service_name_;
-
-  // Executive service address.
-  std::string executive_service_address_;
-  // Executive service stub.
-  std::unique_ptr<ExecutiveService::Stub> executive_stub_;
-  // Current long running operation name.
-  std::string current_operation_name_;
 
   // Internal ROS 2 node.
   rclcpp::Node::SharedPtr node_;
@@ -244,22 +237,17 @@ class Engine {
 
   // Service servers.
   rclcpp::Service<StartEngineSrv>::SharedPtr start_engine_server_;
+  rclcpp::Service<StopEngineSrv>::SharedPtr stop_engine_server_;
 
   // Callback group for concurrent execution.
   rclcpp::CallbackGroup::SharedPtr callback_group_;
 
   // Set to true when a run is requested, will be processed by main thread.
   // Set to false when a run is finished and the engine is idle.
-  std::atomic<bool> requested_run_ = false;
+  bool requested_run_ = false;
 
-  // Task config.
-  YAML::Node config_;
-
-  // Thread to spin ROS 2 node.
-  std::thread spin_thread_;
-
-  // Whether to publish ground truth data for scoring.
-  bool ground_truth_;
+  // Task configs. Key is id, value is the task.
+  std::map<std::string, TrialAttempt> tasks_;
 
   // Parameters to skip states for testing purposes.
   bool skip_model_ready_;

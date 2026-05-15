@@ -37,27 +37,6 @@
 namespace aic {
 
 //==============================================================================
-YAML::Node Score::serialize() const {
-  const double total_score = this->calculate_total_score();
-  YAML::Node score;
-  score["total"] = total_score;
-  score["milestone_0"] = this->tier_1.to_yaml();
-  for (const auto& [trial_name, trial_score] : this->breakdown) {
-    score[trial_name] = trial_score.to_yaml();
-  }
-  return score;
-}
-
-//==============================================================================
-double Score::calculate_total_score() const {
-  double score = this->tier_1.total_score();
-  for (const auto& [trial_name, trial_score] : this->breakdown) {
-    score += trial_score.total_score();
-  }
-  return score;
-}
-
-//==============================================================================
 Engine::Engine(const rclcpp::NodeOptions& options)
     : node_(std::make_shared<rclcpp::Node>("aic_engine", options)),
       insert_cable_action_client_(nullptr),
@@ -74,7 +53,6 @@ Engine::Engine(const rclcpp::NodeOptions& options)
   node_->declare_parameter("config_file_path", std::string(""));
   node_->declare_parameter("endpoint_ready_timeout_seconds", 10);
   node_->declare_parameter("gripper_frame_name", std::string("gripper/tcp"));
-  ground_truth_ = node_->declare_parameter("ground_truth", false);
   skip_model_ready_ = node_->declare_parameter("skip_model_ready", false);
   node_->declare_parameter("model_discovery_timeout_seconds", 30);
   node_->declare_parameter("model_configure_timeout_seconds", 60);
@@ -82,13 +60,6 @@ Engine::Engine(const rclcpp::NodeOptions& options)
   node_->declare_parameter("model_deactivate_timeout_seconds", 60);
   node_->declare_parameter("model_cleanup_timeout_seconds", 60);
   node_->declare_parameter("model_shutdown_timeout_seconds", 60);
-  executive_service_address_ = node_->declare_parameter(
-      "executive_service_address", std::string("localhost:17080"));
-
-  // Create executive service stub.
-  auto channel = grpc::CreateChannel(executive_service_address_,
-                                     grpc::InsecureChannelCredentials());
-  executive_stub_ = ExecutiveService::NewStub(channel);
 
   // Set scoring output directory from AIC_RESULTS_DIR environment variable
   // If not set or empty, default to $HOME/aic_results
@@ -109,23 +80,28 @@ Engine::Engine(const rclcpp::NodeOptions& options)
   RCLCPP_INFO(node_->get_logger(), "Scoring output directory set to: %s",
               scoring_output_dir_.c_str());
 
-  callback_group_ = node_->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
-
   start_engine_server_ = node_->create_service<StartEngineSrv>("/start_aic_engine",
       std::bind(&Engine::start_engine_callback, this, std::placeholders::_1, std::placeholders::_2),
-      rclcpp::ServicesQoS(), callback_group_);
+      rclcpp::ServicesQoS());
 
-  spin_thread_ = std::thread([node = node_]() {
-    rclcpp::executors::MultiThreadedExecutor executor;
-    executor.add_node(node);
-    executor.spin();
-  });
+  stop_engine_server_ = node_->create_service<StopEngineSrv>("/stop_aic_engine",
+      std::bind(&Engine::stop_engine_callback, this, std::placeholders::_1, std::placeholders::_2),
+      rclcpp::ServicesQoS());
+}
+
+//==============================================================================
+void Engine::spin() {
+  rclcpp::spin(this->node_);
 }
 
 //==============================================================================
 void Engine::start_engine_callback(const std::shared_ptr<StartEngineSrv::Request> request,
     std::shared_ptr<StartEngineSrv::Response> response)
 {
+  if (request->reset) {
+    this->reset_engine();
+  }
+
   if (requested_run_) {
     const std::string error = "Failed starting engine, a run is already underway";
     RCLCPP_ERROR(node_->get_logger(), "%s", error.c_str());
@@ -134,7 +110,7 @@ void Engine::start_engine_callback(const std::shared_ptr<StartEngineSrv::Request
     return;
   }
 
-  const auto initialization_result = this->initialize(request->config);
+  const auto initialization_result = this->initialize(request->task);
   if (initialization_result.has_value()) {
     RCLCPP_ERROR(node_->get_logger(), "Failed initializing engine: %s", initialization_result.value().c_str());
     response->success = false;
@@ -155,7 +131,39 @@ void Engine::start_engine_callback(const std::shared_ptr<StartEngineSrv::Request
 }
 
 //==============================================================================
-std::optional<std::string> Engine::initialize(const std::string& yaml_config) {
+void Engine::stop_engine_callback(const std::shared_ptr<StopEngineSrv::Request> request,
+    std::shared_ptr<StopEngineSrv::Response> response)
+{
+  const auto task_it = this->tasks_.find(request->task_id);
+  if (task_it == this->tasks_.end()) {
+    const std::string error = "Failed stopping engine, task id " + request->task_id + " was not started";
+    RCLCPP_ERROR(node_->get_logger(), "%s", error.c_str());
+    response->success = false;
+    response->message = error;
+    return;
+  }
+
+  if (task_it->second.status != TaskStatus::STARTED) {
+    const std::string error = "Failed stopping engine, task id " + request->task_id + " already scored";
+    RCLCPP_ERROR(node_->get_logger(), "%s", error.c_str());
+    response->success = false;
+    response->message = error;
+    return;
+  }
+
+  task_it->second.score.tier_1_success();
+  compute_score(task_it->second.score);
+
+  if (request->finished) {
+    this->reset_engine();
+    this->score_run();
+  }
+
+  response->success = true;
+}
+
+//==============================================================================
+std::optional<std::string> Engine::initialize(const TaskMsg& task) {
   RCLCPP_INFO(node_->get_logger(),
               "\033[1;36m╔════════════════════════════════════════╗\033[0m");
   RCLCPP_INFO(node_->get_logger(),
@@ -163,16 +171,7 @@ std::optional<std::string> Engine::initialize(const std::string& yaml_config) {
   RCLCPP_INFO(node_->get_logger(),
               "\033[1;36m╚════════════════════════════════════════╝\033[0m");
 
-  // Try to load config as YAML
-  try {
-    config_ = YAML::Load(yaml_config);
-  } catch (const YAML::Exception& e) {
-    const std::string error = "Failed to load config '" + yaml_config + "': " + e.what();
-    return error;
-  } catch (const std::exception& e) {
-    const std::string error = "Failed to load config '" + yaml_config + "': " + e.what();
-    return error;
-  }
+  this->tasks_.insert({task.id, task});
 
   // Make sure a valid clock is received, it takes time to initialize
   // the subscriber and following timeout calls might fail otherwise
@@ -186,29 +185,26 @@ std::optional<std::string> Engine::initialize(const std::string& yaml_config) {
   // Create ROS endpoints.
   const rclcpp::QoS reliable_qos = rclcpp::QoS(rclcpp::KeepLast(10)).reliable();
 
-  auto sub_options = rclcpp::SubscriptionOptions();
-  sub_options.callback_group = callback_group_;
-
   joint_motion_update_sub_ = node_->create_subscription<JointMotionUpdateMsg>(
       "/aic_controller/joint_motion_update", reliable_qos,
       [this](JointMotionUpdateMsg::ConstSharedPtr msg) {
         last_joint_motion_update_msg_ = msg;
-      }, sub_options);
+      });
   motion_update_sub_ = node_->create_subscription<MotionUpdateMsg>(
       "/aic_controller/motion_update", reliable_qos,
       [this](MotionUpdateMsg::ConstSharedPtr msg) {
         last_motion_update_msg_ = msg;
-      }, sub_options);
+      });
 
   insert_cable_action_client_ =
       rclcpp_action::create_client<InsertCableAction>(node_, "/insert_cable");
   model_get_state_client_ = node_->create_client<lifecycle_msgs::srv::GetState>(
-      model_get_state_service_name_, rclcpp::ServicesQoS(), callback_group_);
+      model_get_state_service_name_, rclcpp::ServicesQoS());
   model_change_state_client_ =
       node_->create_client<lifecycle_msgs::srv::ChangeState>(
-          model_change_state_service_name_, rclcpp::ServicesQoS(), callback_group_);
+          model_change_state_service_name_, rclcpp::ServicesQoS());
   tare_ft_client_ = node_->create_client<TriggerSrv>(
-      "/aic_controller/tare_force_torque_sensor", rclcpp::ServicesQoS(), callback_group_);
+      "/aic_controller/tare_force_torque_sensor", rclcpp::ServicesQoS());
 
   scoring_tier2_ = std::make_unique<aic_scoring::ScoringTier2>(node_.get());
   // TODO(luca) Change initialization to static topic names / types?
@@ -248,64 +244,36 @@ std::optional<std::string> Engine::run() {
               "\033[1;35m╚════════════════════════════════════════╝\033[0m");
   RCLCPP_INFO(node_->get_logger(), " ");
 
-  TrialResult trial_result = this->handle_trial();
-
-  RCLCPP_INFO(node_->get_logger(), " ");
-  if (trial_result.error.has_value()) {
-    RCLCPP_ERROR(node_->get_logger(),
-                 "\033[1;31m╔════════════════════════════════════════╗\033[0m");
-    RCLCPP_ERROR(node_->get_logger(),
-                 "\033[1;31m║   ✗ Engine Stopped with Errors         ║\033[0m");
-    RCLCPP_ERROR(node_->get_logger(),
-                 "\033[1;31m╚════════════════════════════════════════╝\033[0m");
-    this->score_run(trial_result.score);
-    this->reset_after_trial();
-  }
-  return trial_result.error;
+  const auto err = this->start_trial();
+  return err;
 }
 
 //==============================================================================
-void Engine::process() {
-  while (rclcpp::ok()) {
-    // Wait for an incoming request. Pretty lightweight so just normal spinlock
-    while (!this->requested_run_) {
-      if (!rclcpp::ok())
-        return;
-      std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    }
-    RCLCPP_INFO(node_->get_logger(), "Received request for scoring, starting...");
+void Engine::reset_engine() {
+  if (this->scoring_tier2_->IsRecording()) {
+    this->scoring_tier2_->StopRecording(true);
+  }
+  this->tasks_.clear();
+  this->requested_run_ = false;
 
-    if (this->tasks_completed_successfully()) {
-      RCLCPP_INFO(node_->get_logger(),
-                  "\033[1;32m  ✓ Tasks Completed!\033[0m");
-    } else {
-      RCLCPP_ERROR(node_->get_logger(),
-                   "\033[1;31m  ✗ Tasks were not completed successfully.\033[0m");
-    }
-    Score score;
-    score.tier_1_success();
-    compute_score(score);
-    this->score_run(score);
-    reset_after_trial();
-    requested_run_ = false;
+  if (this->model_discovered_) {
+    this->deactivate_model_node();
+    this->cleanup_model_node();
   }
 }
 
 //==============================================================================
-TrialResult Engine::handle_trial() {
-  Score score;
-
+std::optional<std::string> Engine::start_trial() {
   constexpr int MAX_RETRIES = 5;
 
   if (!this->check_model()) {
     const std::string error =
         "\033[1;31m  ✗ Participant model is not ready.'\033[0m";
-    return {score, error};
+    return error;
   }
 
   RCLCPP_INFO(node_->get_logger(),
               "\033[1;32m  ✓ Model Ready\033[0m");
-  score.tier_1_success();
 
   bool success = false;
   for (int attempt = 1; attempt <= MAX_RETRIES && !success; ++attempt) {
@@ -324,7 +292,7 @@ TrialResult Engine::handle_trial() {
                  "after " + std::to_string(MAX_RETRIES) + " attempts. "
                  "This is an infrastructure issue. Is eval environment "
                  "started?\033[0m";
-    return {score, error};
+    return error;
   }
 
   RCLCPP_INFO(node_->get_logger(), "\033[1;32m  ✓ Endpoints Ready \033[0m");
@@ -346,22 +314,15 @@ TrialResult Engine::handle_trial() {
                  "after " + std::to_string(MAX_RETRIES) + " attempts. "
                  "This is an infrastructure issue. Is eval environment "
                  "started?\033[0m";
-    return {score, error};
+    return error;
   }
 
 
   RCLCPP_INFO(node_->get_logger(),
               "\033[1;32m  ✓ Scoring Ready\033[0m");
 
-  if (!this->tasks_started()) {
-    const std::string error = "\033[1;31m  ✗ Tasks not found.\033[0m";
-    return {score, error};
-  }
-
-  RCLCPP_INFO(node_->get_logger(),
-              "\033[1;36m  ⟳ Tasks Executing...\033[0m");
   this->scoring_tier2_->SetTaskStartTime(this->node_->now());
-  return {score};
+  return std::nullopt;
 }
 
 /// Given a set [s1, s2, s3] returns a string "s1, s2, s3"
@@ -705,65 +666,6 @@ bool Engine::ready_scoring() {
 }
 
 //==============================================================================
-bool Engine::tasks_started() {
-  // Get current operation name.
-  google::longrunning::ListOperationsRequest list_request;
-  google::longrunning::ListOperationsResponse list_response;
-  grpc::ClientContext context;
-  auto status = executive_stub_->ListOperations(&context, list_request, &list_response);
-  current_operation_name_ = "";
-  if (status.ok()) {
-    for (int i = 0; i < list_response.operations_size(); ++i) {
-      if (!list_response.operations(i).done()) {
-        current_operation_name_ = list_response.operations(i).name();
-        RCLCPP_INFO(node_->get_logger(), "Found running operation: %s",
-                    current_operation_name_.c_str());
-        break;
-      }
-    }
-  } else {
-    RCLCPP_ERROR(node_->get_logger(), "Failed to list operations: %s",
-                 status.error_message().c_str());
-    return false;
-  }
-  if (current_operation_name_ == "") {
-    RCLCPP_ERROR(node_->get_logger(), "No running operation found");
-    return false;
-  }
-  return true;
-}
-
-//==============================================================================
-bool Engine::tasks_completed_successfully() {
-  RCLCPP_INFO(node_->get_logger(),
-              "Checking if all tasks were completed successfully...");
-
-  // Wait until long running operation is done here
-  if (!current_operation_name_.empty()) {
-    RCLCPP_INFO(node_->get_logger(), "Waiting for operation %s to complete...",
-                current_operation_name_.c_str());
-    google::longrunning::WaitOperationRequest wait_request;
-    wait_request.set_name(current_operation_name_);
-    google::longrunning::Operation operation;
-    grpc::ClientContext wait_context;
-    auto wait_status =
-        executive_stub_->WaitOperation(&wait_context, wait_request, &operation);
-    current_operation_name_ = "";
-    if (!wait_status.ok()) {
-      RCLCPP_ERROR(node_->get_logger(), "Error waiting for operation: %s",
-                   wait_status.error_message().c_str());
-      return false;
-    } else {
-      RCLCPP_INFO(node_->get_logger(), "Operation %s completed.",
-                  current_operation_name_.c_str());
-      this->scoring_tier2_->SetTaskEndTime(this->node_->now());
-      return true;
-    }
-  }
-  return false;
-}
-
-//==============================================================================
 bool Engine::transition_model_lifecycle_node(const uint8_t transition) {
   std::string transition_name;
   switch (transition) {
@@ -881,42 +783,43 @@ void Engine::reset_after_trial() {
   }
 
   RCLCPP_INFO(node_->get_logger(), "Reset after trial completed.");
+  this->model_discovered_ = false;
 }
 
 //==============================================================================
-Engine::~Engine() {
-  if (spin_thread_.joinable()) {
-    spin_thread_.join();
-  }
-}
-
-//==============================================================================
-void Engine::compute_score(Score& score) {
+void Engine::compute_score(TrialScore& score) {
   if (!scoring_tier2_->StopRecording()) {
     RCLCPP_ERROR(node_->get_logger(), "Failed to stop recording.");
     return;
   }
   auto [tier2_score, tier3_score] = scoring_tier2_->ComputeScore();
-  // TODO(luca) Change return type of scoring and fill Score here
-  /*
   score.tier_2 = tier2_score;
   score.tier_3 = tier3_score;
-  */
 
-  RCLCPP_INFO(node_->get_logger(), "Finished scoring run, total score is: %f",
-              score.calculate_total_score());
+  RCLCPP_INFO(node_->get_logger(), "Finished scoring trial, total score is: %f",
+              score.total_score());
 }
 
 //==============================================================================
-void Engine::score_run(const Score& score) {
-  YAML::Node node = score.serialize();
+void Engine::score_run() {
+  YAML::Node score;
+  double total_score = 0;
+  for (const auto& [trial_name, attempt] : this->tasks_) {
+    score[trial_name]["tier_1"] = attempt.score.tier_1.to_yaml();
+    score[trial_name]["tier_2"] = attempt.score.tier_2.to_yaml();
+    score[trial_name]["tier_3"] = attempt.score.tier_3.to_yaml();
+    total_score += attempt.score.tier_1.total_score();
+    total_score += attempt.score.tier_2.total_score();
+    total_score += attempt.score.tier_3.total_score();
+  }
+  score["total"] = total_score;
 
   const std::string yaml_output_file = scoring_output_dir_ + "/scoring.yaml";
   std::ofstream fout(yaml_output_file);
-  fout << node;
+  fout << score;
 
   std::stringstream ss;
-  ss << node;
+  ss << score;
   RCLCPP_INFO(node_->get_logger(),
               "\033[1;36m╔════════════════════════════════════════╗\033[0m");
   RCLCPP_INFO(node_->get_logger(),

@@ -181,8 +181,9 @@ namespace aic_scoring
                 const std::chrono::seconds &_max_task_time);
 
     /// \brief Stop recording all scoring topics.
+    /// \param[in] _force Whether to force a stop without waiting for TFs.
     /// \return True if the bag was closed correctly.
-    public: bool StopRecording();
+    public: bool StopRecording(const bool _force = false);
 
     /// \brief Compute the score the bag that we just recorded.
     /// \return A pair with the Tier2 and Tier3 scores.
@@ -203,6 +204,10 @@ namespace aic_scoring
     /// \brief Set the end time for the task.
     /// \param[in] _time The end time of the task.
     public: void SetTaskEndTime(const rclcpp::Time& _time);
+
+    /// \brief Return whether the system is currently recording.
+    /// \return True if recording, false otherwise.
+    public: bool IsRecording() const;
 
     /// \brief Populate the scoring input params from a YAML file.
     /// \param[in] _config YAML configuration for the node

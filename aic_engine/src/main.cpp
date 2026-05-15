@@ -25,7 +25,7 @@ int main(int argc, char** argv) {
   rclcpp::init(argc, argv);
 
   auto engine = std::make_shared<aic::Engine>();
-  engine->process();
+  engine->spin();
 
   rclcpp::shutdown();
   return 0;

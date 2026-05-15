@@ -1,0 +1,8 @@
+# Service to stop the recording for a trial and optionally return the result
+
+string task_id # The task being executed by the model
+bool finished # Whether the full task is finished and it should be scored
+---
+bool success             # indicate successful reset
+string message
+

@@ -1,6 +1,7 @@
 # Service to start the engine
 
-string config # The config yaml, follows the format of the engine's sample_config.yaml
+aic_task_interfaces/Task task # The task being executed by the model
+bool reset # Whether to reset the engine
 ---
 bool success             # indicate successful reset
 string message

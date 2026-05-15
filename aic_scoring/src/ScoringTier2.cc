@@ -25,6 +25,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <filesystem>
 #include <iostream>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
@@ -152,8 +153,8 @@ bool ScoringTier2::WaitForTfs() {
 }
 
 //////////////////////////////////////////////////
-bool ScoringTier2::StopRecording() {
-  if (!this->WaitForTfs()) {
+bool ScoringTier2::StopRecording(const bool _force) {
+  if (!_force && !this->WaitForTfs()) {
     return false;
   }
   std::lock_guard<std::mutex> lock(this->mutex);
@@ -285,6 +286,7 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
 //////////////////////////////////////////////////
 void ScoringTier2::Reset(const std::chrono::seconds &_buffer_size) {
   this->connections.clear();
+  std::filesystem::remove_all(this->bagUri);
   this->bagUri.clear();
   this->tf2_buffer = std::make_unique<tf2::BufferCore>(_buffer_size);
   this->state = State::Idle;
@@ -364,6 +366,10 @@ std::set<std::string> ScoringTier2::GetMissingRequiredTopics() const {
     }
   }
   return unavailable;
+}
+
+bool ScoringTier2::IsRecording() const {
+  return this->state == State::Recording;
 }
 
 //////////////////////////////////////////////////
