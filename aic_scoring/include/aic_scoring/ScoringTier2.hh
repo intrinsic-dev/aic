@@ -57,9 +57,6 @@ namespace aic_scoring
     /// \brief Cable name.
     public: std::string cableName;
 
-    /// \brief Task board name.
-    public: std::string taskBoardName;
-
     /// \brief Plug name.
     public: std::string plugName;
 
@@ -78,15 +75,13 @@ namespace aic_scoring
     /// \brief Get the name of the port TF
     /// \return Name of the port TF
     public: std::string PortTfName() const {
-      return taskBoardName + "/" + targetModuleName + "/" +
-          portName + "_link";
+      return targetModuleName + "/" + portName + "_link";
     }
 
     /// \brief Get the name of the port's entrance TF, used for partial insertion.
     /// \return Name of the port's entrance TF
     public: std::string PortEntranceTfName() const {
-      return taskBoardName + "/" + targetModuleName + "/" +
-          portName + "_link_entrance";
+      return targetModuleName + "/" + portName + "_link_entrance";
     }
   };
 
@@ -158,10 +153,6 @@ namespace aic_scoring
     /// \brief Class constructor.
     /// \param[in] _node Pointer to the ROS node.
     public: ScoringTier2(rclcpp::Node *_node);
-
-    /// \brief Populate the scoring input params from a YAML file.
-    /// \param[in] _config YAML configuration for the node
-    public: bool Initialize(YAML::Node _config);
 
     /// \brief Reset connection.
     /// \param[in] _connections New connection.
@@ -278,7 +269,7 @@ namespace aic_scoring
     private: std::optional<TransformStampedMsg> GetTransform(
                  tf2::TimePoint _t,
                  const std::string& _target_frame,
-                 const std::string& _reference_frame = "aic_world",
+                 const std::string& _reference_frame = "default",
                  const bool _suppress_error = false) const;
 
     /// \brief Calculates the distance between the plug and the port.

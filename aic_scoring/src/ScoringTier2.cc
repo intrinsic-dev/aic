@@ -39,19 +39,60 @@
 
 namespace aic_scoring {
 //////////////////////////////////////////////////
-ScoringTier2::ScoringTier2(rclcpp::Node *_node) : node(_node) {}
-
-//////////////////////////////////////////////////
-// TODO(luca) consider having a make function that returns a pointer which is
-// nullptr if initialization failed instead.
-bool ScoringTier2::Initialize(YAML::Node _config) {
-  if (!this->node) {
-    std::cerr << "[ScoringTier2]: null ROS node. Aborting." << std::endl;
-    return false;
+ScoringTier2::ScoringTier2(rclcpp::Node *_node) : node(_node) {
+  this->topics.push_back({
+    .name = kJointStateTopic,
+    .type = "sensor_msgs/msg/JointState",
+    .latched = false
+  });
+  this->topics.push_back({
+    .name = kTfStaticTopic,
+    .type = "tf2_msgs/msg/TFMessage",
+    .latched = true
+  });
+  this->topics.push_back({
+    .name = kTfTopic,
+    .type = "tf2_msgs/msg/TFMessage",
+    .latched = false
+  });
+  this->topics.push_back({
+    .name = kScoringTfTopic,
+    .type = "tf2_msgs/msg/TFMessage",
+    .latched = false
+  });
+  this->topics.push_back({
+    .name = kContactsTopic,
+    .type = "ros_gz_interfaces/msg/Contacts",
+    .latched = false
+  });
+  this->topics.push_back({
+    .name = kWrenchTopic,
+    .type = "geometry_msgs/msg/WrenchStamped",
+    .latched = false
+  });
+  this->topics.push_back({
+    .name = kMotionUpdateTopic,
+    .type = "aic_control_interfaces/msg/MotionUpdate",
+    .latched = false
+  });
+  this->topics.push_back({
+    .name = kJointMotionUpdateTopic,
+    .type = "aic_control_interfaces/msg/JointMotionUpdate",
+    .latched = false
+  });
+  this->topics.push_back({
+    .name = kInsertionEventTopic,
+    .type = "std_msgs/msg/String",
+    .latched = false
+  });
+  this->topics.push_back({
+    .name = kControllerStateTopic,
+    .type = "aic_control_interfaces/msg/ControllerState",
+    .latched = false
+  });
+  for (const auto& topic : this->topics) {
+    std::cout << "Name: " << topic.name << " type " << topic.type << std::endl;
   }
-  if (!this->ParseStats(_config)) return false;
-
-  return true;
 }
 
 //////////////////////////////////////////////////
@@ -852,7 +893,7 @@ std::optional<ScoringTier2::TransformStampedMsg> ScoringTier2::EndEffectorPose(
                  "Unable to compute end effector pose, gripper frame not set");
     return std::nullopt;
   }
-  return this->GetTransform(t, this->gripperFrame, "aic_world", true);
+  return this->GetTransform(t, this->gripperFrame, "default", true);
 }
 
 //////////////////////////////////////////////////
@@ -966,7 +1007,6 @@ ScoringTier2Node::ScoringTier2Node(const std::string &_yamlFile)
   try {
     auto config = YAML::LoadFile(_yamlFile);
     this->score = std::make_unique<aic_scoring::ScoringTier2>(this);
-    this->score->Initialize(config);
   } catch (const YAML::BadFile &_e) {
     std::cerr << "Unable to open YAML file [" << _yamlFile << "]" << std::endl;
     return;

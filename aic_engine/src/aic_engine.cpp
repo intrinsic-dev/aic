@@ -205,14 +205,6 @@ std::optional<std::string> Engine::initialize() {
   }
   RCLCPP_INFO(node_->get_logger(), "Clock found successfully.");
 
-  // TODO(luca) Change initialization to static topic names / types?
-  /*
-  if (!scoring_tier2_->Initialize(config_["scoring"])) {
-    const std::string error = "Failed to initialize scoring system";
-    return error;
-  }
-  */
-
   // Create output directory for bag files.
   std::error_code ec;
   std::filesystem::create_directories(scoring_output_dir_, ec);
@@ -567,7 +559,6 @@ bool Engine::ready_scoring(const TaskMsg& task) {
   // Register the connection for this trial.
   aic_scoring::Connection connection;
   connection.cableName = task.cable_name;
-  connection.taskBoardName = "aic_task_board";
   connection.plugName = task.plug_name;
   connection.portName = task.port_name;
   connection.targetModuleName = task.target_module_name;
