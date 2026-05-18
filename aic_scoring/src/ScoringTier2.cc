@@ -55,18 +55,8 @@ bool ScoringTier2::Initialize(YAML::Node _config) {
 }
 
 //////////////////////////////////////////////////
-void ScoringTier2::ResetConnections(
-    const std::vector<Connection> &_connections) {
-  this->connections = _connections;
-
-  // Debug output.
-  // std::cout << "Connections" << std::endl;
-  // for (const Connection &c : this->connections)
-  // {
-  //   std::cout << "  plug: " << c.plugName << std::endl;
-  //   std::cout << "  port: " << c.portName << std::endl;
-  //   std::cout << "  Dist: " << c.distance << std::endl;
-  // }
+void ScoringTier2::SetConnection(const Connection &_connection) {
+  this->connection = _connection;
 }
 
 //////////////////////////////////////////////////
@@ -76,10 +66,10 @@ void ScoringTier2::SetGripperFrame(const std::string &_gripperFrame) {
 
 //////////////////////////////////////////////////
 bool ScoringTier2::StartRecording(const std::string &_filename,
-                                  const std::vector<Connection> &_connections,
+                                  const Connection &_connection,
                                   const std::chrono::seconds &_max_task_time) {
   this->Reset(_max_task_time);
-  this->ResetConnections(_connections);
+  this->SetConnection(_connection);
   {
     std::lock_guard<std::mutex> lock(this->mutex);
     if (this->state != State::Idle) {
@@ -285,7 +275,7 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
 
 //////////////////////////////////////////////////
 void ScoringTier2::Reset(const std::chrono::seconds &_buffer_size) {
-  this->connections.clear();
+  this->connection.reset();
   std::filesystem::remove_all(this->bagUri);
   this->bagUri.clear();
   this->tf2_buffer = std::make_unique<tf2::BufferCore>(_buffer_size);
@@ -491,15 +481,15 @@ std::optional<ScoringTier2::TransformStampedMsg> ScoringTier2::GetTransform(
 //////////////////////////////////////////////////
 std::optional<double> ScoringTier2::GetPlugPortDistance(
     tf2::TimePoint t) const {
-  if (this->connections.empty()) {
+  if (!this->connection.has_value()) {
     RCLCPP_ERROR(this->node->get_logger(), "No connection was found");
     return std::nullopt;
   }
   // For now we only calculate the distance for the first connection
   const auto plug_tf_opt =
-      this->GetTransform(t, this->connections[0].PlugTfName());
+      this->GetTransform(t, this->connection->PlugTfName());
   const auto port_tf_opt =
-      this->GetTransform(t, this->connections[0].PortTfName());
+      this->GetTransform(t, this->connection->PortTfName());
   if (!plug_tf_opt.has_value() || !port_tf_opt.has_value()) {
     return std::nullopt;
   }
@@ -746,11 +736,11 @@ Tier3Score ScoringTier2::GetDistanceScore() const {
 
   // Check if we are in partial insertion
   const auto port_entrance_tf = this->GetTransform(
-      tf2::TimePoint(end_time), this->connections[0].PortEntranceTfName());
+      tf2::TimePoint(end_time), this->connection->PortEntranceTfName());
   const auto port_tf = this->GetTransform(tf2::TimePoint(end_time),
-                                          this->connections[0].PortTfName());
+                                          this->connection->PortTfName());
   const auto plug_tf = this->GetTransform(tf2::TimePoint(end_time),
-                                          this->connections[0].PlugTfName());
+                                          this->connection->PlugTfName());
 
   if (!port_entrance_tf.has_value() || !port_tf.has_value() ||
       !plug_tf.has_value()) {
@@ -834,8 +824,8 @@ Tier3Score ScoringTier2::ComputeTier3Score() const {
 
     if (tokens.size() >= 2u) {
       // Verify the plug is inserted into the correct target port
-      if (tokens[0] == connections[0].targetModuleName &&
-          tokens[1] == connections[0].portName) {
+      if (tokens[0] == connection->targetModuleName &&
+          tokens[1] == connection->portName) {
         return Tier3Score(kInsertionCompletionScore,
                           "Cable insertion successful.");
       } else {

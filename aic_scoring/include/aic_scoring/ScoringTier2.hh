@@ -163,9 +163,9 @@ namespace aic_scoring
     /// \param[in] _config YAML configuration for the node
     public: bool Initialize(YAML::Node _config);
 
-    /// \brief Reset connections.
-    /// \param[in] _connections New connections.
-    private: void ResetConnections(const std::vector<Connection> &_connections);
+    /// \brief Reset connection.
+    /// \param[in] _connections New connection.
+    private: void SetConnection(const Connection &_connection);
 
     /// \brief Set the gripper frame name.
     /// \param[in] _gripperFrame Gripper frame name.
@@ -174,10 +174,10 @@ namespace aic_scoring
     /// \brief Start recording all scoring topics.
     /// \return True if the bag was opened correctly and it's ready to record.
     /// \param[in] _filename The path to the bag.
-    /// \param[in] _connections Connections to monitor.
+    /// \param[in] _connection Connection to monitor.
     /// \param[in] _max_task_time The maximum time to record for, used for tf buffer size.
     public: bool StartRecording(const std::string &_filename,
-                const std::vector<Connection> &_connections,
+                const Connection &_connection,
                 const std::chrono::seconds &_max_task_time);
 
     /// \brief Stop recording all scoring topics.
@@ -316,8 +316,8 @@ namespace aic_scoring
     /// \brief Topics to subscribe to.
     private: std::vector<TopicInfo> topics;
 
-    /// \brief Connections.
-    private: std::vector<Connection> connections;
+    /// \brief Connection.
+    private: std::optional<Connection> connection;
 
     /// \brief Generic subscriptions for all topics.
     private: std::vector<std::shared_ptr<rclcpp::GenericSubscription>>

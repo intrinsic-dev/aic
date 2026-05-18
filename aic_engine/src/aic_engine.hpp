@@ -100,24 +100,16 @@ class Engine {
 
  private:
   // Initializes the engine.
-  /// \param[in] taskThe task to score.
   /// \return An error message if initialization failed, std::nullopt otherwise.
-  std::optional<std::string> initialize(const TaskMsg& task);
-
-  /// \brief Run the engine.
-  /// \return An error message if execution failed, std::nullopt otherwise.
-  std::optional<std::string> run();
+  std::optional<std::string> initialize();
 
   /// \brief Handle the logic for a given trial.
+  /// \param[in] task The task to score.
   /// \return An error message if an error occured, std::nullopt otherwise.
-  std::optional<std::string> start_trial();
+  std::optional<std::string> start_trial(const TaskMsg& task);
 
   /// \brief Fully resets the engine to prepare for a new set of tasks.
   void reset_engine();
-
-  /// \brief Reset internal and simulator states after a trial is completed.
-  /// \param[in] trial The trial currently being ran
-  void reset_after_trial();
 
   /// \brief Check if the participant model is ready. As per challenge
   /// requirements. See challenge_rules.md for details. \return True if the
@@ -130,11 +122,7 @@ class Engine {
 
   /// \brief Check if the scoring system is ready.
   /// \return True if the scoring system is ready, false otherwise.
-  bool ready_scoring();
-
-  /// @brief Check if the robot was commanded to move by the model node.
-  /// @return True if the robot was commanded to move, false otherwise.
-  bool model_node_moved_robot();
+  bool ready_scoring(const TaskMsg& task);
 
   /// @brief Check if the model is in the unconfigured state together with other
   /// expectations in this state.
@@ -214,14 +202,6 @@ class Engine {
 
   // Internal ROS 2 node.
   rclcpp::Node::SharedPtr node_;
-  // Subscriptions.
-  rclcpp::Subscription<JointMotionUpdateMsg>::SharedPtr
-      joint_motion_update_sub_;
-  rclcpp::Subscription<MotionUpdateMsg>::SharedPtr motion_update_sub_;
-
-  // Subscription messages.
-  JointMotionUpdateMsg::ConstSharedPtr last_joint_motion_update_msg_;
-  MotionUpdateMsg::ConstSharedPtr last_motion_update_msg_;
 
   // Action clients.
   rclcpp_action::Client<InsertCableAction>::SharedPtr
@@ -252,9 +232,6 @@ class Engine {
   // Parameters to skip states for testing purposes.
   bool skip_model_ready_;
   bool skip_ready_simulator_;
-
-  // Whether the participant model has been discovered and readied.
-  bool model_discovered_;
 
   // Scoring tier 2 instance.
   std::unique_ptr<aic_scoring::ScoringTier2> scoring_tier2_;

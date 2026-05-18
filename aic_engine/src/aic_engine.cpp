@@ -40,8 +40,7 @@ namespace aic {
 //==============================================================================
 Engine::Engine(const rclcpp::NodeOptions& options)
     : node_(std::make_shared<rclcpp::Node>("aic_engine", options)),
-      insert_cable_action_client_(nullptr),
-      model_discovered_(false) {
+      insert_cable_action_client_(nullptr) {
   RCLCPP_INFO(node_->get_logger(), "Creating AIC Engine...");
 
   // Declare ROS parameters.
@@ -90,6 +89,24 @@ Engine::Engine(const rclcpp::NodeOptions& options)
   stop_engine_server_ = node_->create_service<StopEngineSrv>("/stop_aic_engine",
       std::bind(&Engine::stop_engine_callback, this, std::placeholders::_1, std::placeholders::_2),
       rclcpp::ServicesQoS(), callback_group_);
+
+  scoring_tier2_ = std::make_unique<aic_scoring::ScoringTier2>(node_.get());
+
+  scoring_tier2_->SetGripperFrame(
+      node_->get_parameter("gripper_frame_name").as_string());
+
+  auto sub_options = rclcpp::SubscriptionOptions();
+  sub_options.callback_group = callback_group_;
+
+  insert_cable_action_client_ =
+      rclcpp_action::create_client<InsertCableAction>(node_, "/insert_cable", callback_group_);
+  model_get_state_client_ = node_->create_client<lifecycle_msgs::srv::GetState>(
+      model_get_state_service_name_, rclcpp::ServicesQoS(), callback_group_);
+  model_change_state_client_ =
+      node_->create_client<lifecycle_msgs::srv::ChangeState>(
+          model_change_state_service_name_, rclcpp::ServicesQoS(), callback_group_);
+  tare_ft_client_ = node_->create_client<TriggerSrv>(
+      "/aic_controller/tare_force_torque_sensor", rclcpp::ServicesQoS(), callback_group_);
 }
 
 //==============================================================================
@@ -115,15 +132,18 @@ void Engine::start_engine_callback(const std::shared_ptr<StartEngineSrv::Request
     return;
   }
 
-  const auto initialization_result = this->initialize(request->task);
-  if (initialization_result.has_value()) {
-    RCLCPP_ERROR(node_->get_logger(), "Failed initializing engine: %s", initialization_result.value().c_str());
-    response->success = false;
-    response->message = initialization_result.value();
-    return;
+  // Only initialize once per run on the initial trial
+  if (request->reset) {
+    const auto initialization_result = this->initialize();
+    if (initialization_result.has_value()) {
+      RCLCPP_ERROR(node_->get_logger(), "Failed initializing engine: %s", initialization_result.value().c_str());
+      response->success = false;
+      response->message = initialization_result.value();
+      return;
+    }
   }
 
-  const auto err = this->run();
+  const auto err = this->start_trial(request->task);
   if (err.has_value()) {
     RCLCPP_ERROR(node_->get_logger(), "Failed starting engine: %s", err.value().c_str());
     response->success = false;
@@ -168,15 +188,13 @@ void Engine::stop_engine_callback(const std::shared_ptr<StopEngineSrv::Request> 
 }
 
 //==============================================================================
-std::optional<std::string> Engine::initialize(const TaskMsg& task) {
+std::optional<std::string> Engine::initialize() {
   RCLCPP_INFO(node_->get_logger(),
               "\033[1;36m╔════════════════════════════════════════╗\033[0m");
   RCLCPP_INFO(node_->get_logger(),
               "\033[1;36m║   Initializing AIC Engine...           ║\033[0m");
   RCLCPP_INFO(node_->get_logger(),
               "\033[1;36m╚════════════════════════════════════════╝\033[0m");
-
-  this->tasks_.insert({task.id, task});
 
   // Make sure a valid clock is received, it takes time to initialize
   // the subscriber and following timeout calls might fail otherwise
@@ -187,34 +205,6 @@ std::optional<std::string> Engine::initialize(const TaskMsg& task) {
   }
   RCLCPP_INFO(node_->get_logger(), "Clock found successfully.");
 
-  // Create ROS endpoints.
-  const rclcpp::QoS reliable_qos = rclcpp::QoS(rclcpp::KeepLast(10)).reliable();
-
-  auto sub_options = rclcpp::SubscriptionOptions();
-  sub_options.callback_group = callback_group_;
-
-  joint_motion_update_sub_ = node_->create_subscription<JointMotionUpdateMsg>(
-      "/aic_controller/joint_motion_update", reliable_qos,
-      [this](JointMotionUpdateMsg::ConstSharedPtr msg) {
-        last_joint_motion_update_msg_ = msg;
-      }, sub_options);
-  motion_update_sub_ = node_->create_subscription<MotionUpdateMsg>(
-      "/aic_controller/motion_update", reliable_qos,
-      [this](MotionUpdateMsg::ConstSharedPtr msg) {
-        last_motion_update_msg_ = msg;
-      }, sub_options);
-
-  insert_cable_action_client_ =
-      rclcpp_action::create_client<InsertCableAction>(node_, "/insert_cable", callback_group_);
-  model_get_state_client_ = node_->create_client<lifecycle_msgs::srv::GetState>(
-      model_get_state_service_name_, rclcpp::ServicesQoS(), callback_group_);
-  model_change_state_client_ =
-      node_->create_client<lifecycle_msgs::srv::ChangeState>(
-          model_change_state_service_name_, rclcpp::ServicesQoS(), callback_group_);
-  tare_ft_client_ = node_->create_client<TriggerSrv>(
-      "/aic_controller/tare_force_torque_sensor", rclcpp::ServicesQoS(), callback_group_);
-
-  scoring_tier2_ = std::make_unique<aic_scoring::ScoringTier2>(node_.get());
   // TODO(luca) Change initialization to static topic names / types?
   /*
   if (!scoring_tier2_->Initialize(config_["scoring"])) {
@@ -222,8 +212,6 @@ std::optional<std::string> Engine::initialize(const TaskMsg& task) {
     return error;
   }
   */
-  scoring_tier2_->SetGripperFrame(
-      node_->get_parameter("gripper_frame_name").as_string());
 
   // Create output directory for bag files.
   std::error_code ec;
@@ -235,42 +223,6 @@ std::optional<std::string> Engine::initialize(const TaskMsg& task) {
   RCLCPP_INFO(node_->get_logger(), "Bag output directory: %s",
               scoring_output_dir_.c_str());
 
-  RCLCPP_INFO(node_->get_logger(),
-              "\033[1;32m✓ AIC Engine initialized successfully!\033[0m");
-
-  return std::nullopt;
-}
-
-//==============================================================================
-std::optional<std::string> Engine::run() {
-  RCLCPP_INFO(node_->get_logger(), " ");
-  RCLCPP_INFO(node_->get_logger(),
-              "\033[1;35m╔════════════════════════════════════════╗\033[0m");
-  RCLCPP_INFO(node_->get_logger(),
-              "\033[1;35m║      Starting AIC Engine Run           ║\033[0m");
-  RCLCPP_INFO(node_->get_logger(),
-              "\033[1;35m╚════════════════════════════════════════╝\033[0m");
-  RCLCPP_INFO(node_->get_logger(), " ");
-
-  return this->start_trial();
-}
-
-//==============================================================================
-void Engine::reset_engine() {
-  if (this->scoring_tier2_->IsRecording()) {
-    this->scoring_tier2_->StopRecording(true);
-  }
-  this->tasks_.clear();
-  this->requested_run_ = false;
-
-  if (this->model_discovered_) {
-    this->deactivate_model_node();
-    this->cleanup_model_node();
-  }
-}
-
-//==============================================================================
-std::optional<std::string> Engine::start_trial() {
   constexpr int MAX_RETRIES = 5;
 
   if (!this->check_model()) {
@@ -303,27 +255,45 @@ std::optional<std::string> Engine::start_trial() {
   }
 
   RCLCPP_INFO(node_->get_logger(), "\033[1;32m  ✓ Endpoints Ready \033[0m");
+  RCLCPP_INFO(node_->get_logger(),
+              "\033[1;32m✓ AIC Engine initialized successfully!\033[0m");
 
-  success = false;
-  for (int attempt = 1; attempt <= MAX_RETRIES && !success; ++attempt) {
-    if (attempt > 1) {
-      RCLCPP_WARN(node_->get_logger(),
-                  "\033[1;33m  ⟳ Retrying ready_scoring (attempt %d/%d)...\033[0m",
-                  attempt, MAX_RETRIES);
-    }
-    if (this->ready_scoring()) {
-      success = true;
-    }
+  return std::nullopt;
+}
+
+//==============================================================================
+void Engine::reset_engine() {
+  if (this->scoring_tier2_->IsRecording()) {
+    this->scoring_tier2_->StopRecording(true);
   }
-  if (!success) {
+  this->tasks_.clear();
+  this->requested_run_ = false;
+
+  // Force deactivation + cleanup to make sure we are in a clean state
+  this->deactivate_model_node();
+  this->cleanup_model_node();
+}
+
+//==============================================================================
+std::optional<std::string> Engine::start_trial(const TaskMsg& task) {
+  RCLCPP_INFO(node_->get_logger(), " ");
+  RCLCPP_INFO(node_->get_logger(),
+              "\033[1;35m╔════════════════════════════════════════╗\033[0m");
+  RCLCPP_INFO(node_->get_logger(),
+              "\033[1;35m║      Starting AIC Engine Trial         ║\033[0m");
+  RCLCPP_INFO(node_->get_logger(),
+              "\033[1;35m╚════════════════════════════════════════╝\033[0m");
+  RCLCPP_INFO(node_->get_logger(), " ");
+
+  this->tasks_.insert({task.id, task});
+
+  if (!this->ready_scoring(task)) {
     const std::string error =
-                 "\033[1;31m  ✗ EVALUATION ERROR: Scoring setup failed "
-                 "after " + std::to_string(MAX_RETRIES) + " attempts. "
+                 "\033[1;31m  ✗ EVALUATION ERROR: Scoring setup failed."
                  "This is an infrastructure issue. Is eval environment "
                  "started?\033[0m";
     return error;
   }
-
 
   RCLCPP_INFO(node_->get_logger(),
               "\033[1;32m  ✓ Scoring Ready\033[0m");
@@ -345,17 +315,6 @@ static std::string string_set_to_csv(const std::set<std::string>& strings) {
   }
   result += *it;
   return result;
-}
-
-//==============================================================================
-bool Engine::model_node_moved_robot() {
-  // TODO(Yadunund): We'll need to make this check more effective.
-  // The model could always publish this after we check here.
-  if (last_joint_motion_update_msg_ != nullptr ||
-      last_motion_update_msg_ != nullptr) {
-    return true;
-  }
-  return false;
 }
 
 //==============================================================================
@@ -401,14 +360,6 @@ bool Engine::model_node_is_unconfigured() {
               "Lifecycle node '%s' is in 'unconfigured' state",
               model_node_name_.c_str());
 
-  // Check that the model is not publishing any robot command topics.
-  if (model_node_moved_robot()) {
-    RCLCPP_ERROR(node_->get_logger(),
-                 "Participant model is publishing command topics "
-                 "while in 'unconfigured' state. This is a rule violation.");
-    return false;
-  }
-
   return true;
 }
 
@@ -419,13 +370,6 @@ bool Engine::configure_model_node() {
 
   if (!this->transition_model_lifecycle_node(
           lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE)) {
-    return false;
-  }
-
-  if (model_node_moved_robot()) {
-    RCLCPP_ERROR(node_->get_logger(),
-                 "Participant model is publishing command topics "
-                 "while in 'configured' state. This is a rule violation.");
     return false;
   }
 
@@ -487,9 +431,9 @@ bool Engine::check_model() {
       this->node_->get_parameter("model_discovery_timeout_seconds").as_int());
 
   // Check if aic_model node exists in the graph and is a lifecycle node.
-  model_discovered_ = false;
+  bool model_discovered = false;
 
-  while (rclcpp::ok() && !model_discovered_ &&
+  while (rclcpp::ok() && !model_discovered &&
          !(this->node_->now() - start_time > timeout)) {
     // First check that only one node with the expected name exists.
     auto node_graph = node_->get_node_graph_interface();
@@ -532,12 +476,12 @@ bool Engine::check_model() {
       RCLCPP_INFO(node_->get_logger(),
                   "Service '%s' is available. Participant model discovered.",
                   model_get_state_service_name_.c_str());
-      model_discovered_ = true;
+      model_discovered = true;
       break;
     }
   }
 
-  if (!model_discovered_) {
+  if (!model_discovered) {
     RCLCPP_ERROR(node_->get_logger(),
                  "Lifecycle node '%s' not discovered after waiting (checked "
                  "for service '%s' with type 'lifecycle_msgs/srv/GetState')",
@@ -618,23 +562,15 @@ bool Engine::check_endpoints() {
 }
 
 //==============================================================================
-bool Engine::ready_scoring() {
+bool Engine::ready_scoring(const TaskMsg& task) {
   RCLCPP_INFO(node_->get_logger(), "Checking scoring system readiness...");
-  return true;
-  // Register the new connections for this trial.
-  std::vector<aic_scoring::Connection> connections;
-  // TODO(luca) Register the vector of connections
-  /*
-  for (const auto& task : trial.tasks) {
-    aic_scoring::Connection connection;
-    connection.cableName = task.cable_name;
-    connection.taskBoardName = "task_board";
-    connection.plugName = task.plug_name;
-    connection.portName = task.port_name;
-    connection.targetModuleName = task.target_module_name;
-    connections.push_back(connection);
-  }
-  */
+  // Register the connection for this trial.
+  aic_scoring::Connection connection;
+  connection.cableName = task.cable_name;
+  connection.taskBoardName = "aic_task_board";
+  connection.plugName = task.plug_name;
+  connection.portName = task.port_name;
+  connection.targetModuleName = task.target_module_name;
 
   // Create unique bag filename with timestamp
   auto now = std::chrono::system_clock::now();
@@ -649,18 +585,9 @@ bool Engine::ready_scoring() {
       << std::setfill('0') << std::setw(3) << ms.count();
   const std::string bag_path = oss.str();
 
-  unsigned int max_task_limit = 0;
-  // TODO(luca) A const for time limit? Or just get rid of it?
-  /*
-  for (const auto& task : trial.tasks) {
-    if (task.time_limit > max_task_limit) {
-      max_task_limit = task.time_limit;
-    }
-  }
-  */
   // Add a few seconds for safety since this is a limit for recorded data
-  max_task_limit += 5;
-  if (!scoring_tier2_->StartRecording(bag_path, connections,
+  const unsigned int max_task_limit = task.time_limit + 10;
+  if (!scoring_tier2_->StartRecording(bag_path, connection,
                                       std::chrono::seconds(max_task_limit))) {
     RCLCPP_ERROR(node_->get_logger(), "Failed to start recording to '%s'.",
                  bag_path.c_str());
@@ -771,26 +698,8 @@ bool Engine::cleanup_model_node() {
     return true;
   }
 
-  if (!this->model_discovered_) {
-    return true;
-  }
-
   return this->transition_model_lifecycle_node(
       lifecycle_msgs::msg::Transition::TRANSITION_CLEANUP);
-}
-
-//==============================================================================
-void Engine::reset_after_trial() {
-  RCLCPP_INFO(node_->get_logger(), "Resetting after trial completion...");
-
-  // Deactivate the model node to transition back to configured state
-  if (this->model_discovered_) {
-    this->deactivate_model_node();
-    this->cleanup_model_node();
-  }
-
-  RCLCPP_INFO(node_->get_logger(), "Reset after trial completed.");
-  this->model_discovered_ = false;
 }
 
 //==============================================================================
