@@ -31,6 +31,7 @@
 #include "google/longrunning/operations.pb.h"
 #include "lifecycle_msgs/msg/state.hpp"
 #include "lifecycle_msgs/srv/get_state.hpp"
+#include "rclcpp/executors.hpp"
 #include "rclcpp/subscription_options.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
 
@@ -80,18 +81,22 @@ Engine::Engine(const rclcpp::NodeOptions& options)
   RCLCPP_INFO(node_->get_logger(), "Scoring output directory set to: %s",
               scoring_output_dir_.c_str());
 
+  callback_group_ = node_->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
+
   start_engine_server_ = node_->create_service<StartEngineSrv>("/start_aic_engine",
       std::bind(&Engine::start_engine_callback, this, std::placeholders::_1, std::placeholders::_2),
-      rclcpp::ServicesQoS());
+      rclcpp::ServicesQoS(), callback_group_);
 
   stop_engine_server_ = node_->create_service<StopEngineSrv>("/stop_aic_engine",
       std::bind(&Engine::stop_engine_callback, this, std::placeholders::_1, std::placeholders::_2),
-      rclcpp::ServicesQoS());
+      rclcpp::ServicesQoS(), callback_group_);
 }
 
 //==============================================================================
 void Engine::spin() {
-  rclcpp::spin(this->node_);
+  rclcpp::executors::MultiThreadedExecutor executor;
+  executor.add_node(this->node_);
+  executor.spin();
 }
 
 //==============================================================================
@@ -185,26 +190,29 @@ std::optional<std::string> Engine::initialize(const TaskMsg& task) {
   // Create ROS endpoints.
   const rclcpp::QoS reliable_qos = rclcpp::QoS(rclcpp::KeepLast(10)).reliable();
 
+  auto sub_options = rclcpp::SubscriptionOptions();
+  sub_options.callback_group = callback_group_;
+
   joint_motion_update_sub_ = node_->create_subscription<JointMotionUpdateMsg>(
       "/aic_controller/joint_motion_update", reliable_qos,
       [this](JointMotionUpdateMsg::ConstSharedPtr msg) {
         last_joint_motion_update_msg_ = msg;
-      });
+      }, sub_options);
   motion_update_sub_ = node_->create_subscription<MotionUpdateMsg>(
       "/aic_controller/motion_update", reliable_qos,
       [this](MotionUpdateMsg::ConstSharedPtr msg) {
         last_motion_update_msg_ = msg;
-      });
+      }, sub_options);
 
   insert_cable_action_client_ =
-      rclcpp_action::create_client<InsertCableAction>(node_, "/insert_cable");
+      rclcpp_action::create_client<InsertCableAction>(node_, "/insert_cable", callback_group_);
   model_get_state_client_ = node_->create_client<lifecycle_msgs::srv::GetState>(
-      model_get_state_service_name_, rclcpp::ServicesQoS());
+      model_get_state_service_name_, rclcpp::ServicesQoS(), callback_group_);
   model_change_state_client_ =
       node_->create_client<lifecycle_msgs::srv::ChangeState>(
-          model_change_state_service_name_, rclcpp::ServicesQoS());
+          model_change_state_service_name_, rclcpp::ServicesQoS(), callback_group_);
   tare_ft_client_ = node_->create_client<TriggerSrv>(
-      "/aic_controller/tare_force_torque_sensor", rclcpp::ServicesQoS());
+      "/aic_controller/tare_force_torque_sensor", rclcpp::ServicesQoS(), callback_group_);
 
   scoring_tier2_ = std::make_unique<aic_scoring::ScoringTier2>(node_.get());
   // TODO(luca) Change initialization to static topic names / types?
@@ -244,8 +252,7 @@ std::optional<std::string> Engine::run() {
               "\033[1;35m╚════════════════════════════════════════╝\033[0m");
   RCLCPP_INFO(node_->get_logger(), " ");
 
-  const auto err = this->start_trial();
-  return err;
+  return this->start_trial();
 }
 
 //==============================================================================
