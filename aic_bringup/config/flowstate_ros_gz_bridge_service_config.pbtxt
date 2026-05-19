@@ -10,7 +10,7 @@
       lazy: false
     }
     bridges: {
-      ros_topic_name: "/scoring/tf"
+      ros_topic_name: "/scoring/tf_static"
       gz_topic_name: "/nic_card_mount_0/pose_static"
       ros_type_name: "tf2_msgs/msg/TFMessage"
       gz_type_name: "gz.msgs.Pose_V"
@@ -18,7 +18,7 @@
       lazy: false
     }
     bridges: {
-      ros_topic_name: "/scoring/tf"
+      ros_topic_name: "/scoring/tf_static"
       gz_topic_name: "/nic_card_mount_1/pose_static"
       ros_type_name: "tf2_msgs/msg/TFMessage"
       gz_type_name: "gz.msgs.Pose_V"
@@ -26,7 +26,7 @@
       lazy: false
     }
     bridges: {
-      ros_topic_name: "/scoring/tf"
+      ros_topic_name: "/scoring/tf_static"
       gz_topic_name: "/nic_card_mount_2/pose_static"
       ros_type_name: "tf2_msgs/msg/TFMessage"
       gz_type_name: "gz.msgs.Pose_V"
@@ -34,7 +34,7 @@
       lazy: false
     }
     bridges: {
-      ros_topic_name: "/scoring/tf"
+      ros_topic_name: "/scoring/tf_static"
       gz_topic_name: "/nic_card_mount_3/pose_static"
       ros_type_name: "tf2_msgs/msg/TFMessage"
       gz_type_name: "gz.msgs.Pose_V"
@@ -42,7 +42,7 @@
       lazy: false
     }
     bridges: {
-      ros_topic_name: "/scoring/tf"
+      ros_topic_name: "/scoring/tf_static"
       gz_topic_name: "/nic_card_mount_4/pose_static"
       ros_type_name: "tf2_msgs/msg/TFMessage"
       gz_type_name: "gz.msgs.Pose_V"
@@ -50,7 +50,7 @@
       lazy: false
     }
     bridges: {
-      ros_topic_name: "/scoring/tf"
+      ros_topic_name: "/scoring/tf_static"
       gz_topic_name: "/sc_port_0/pose_static"
       ros_type_name: "tf2_msgs/msg/TFMessage"
       gz_type_name: "gz.msgs.Pose_V"
@@ -58,7 +58,7 @@
       lazy: false
     }
     bridges: {
-      ros_topic_name: "/scoring/tf"
+      ros_topic_name: "/scoring/tf_static"
       gz_topic_name: "/sc_port_1/pose_static"
       ros_type_name: "tf2_msgs/msg/TFMessage"
       gz_type_name: "gz.msgs.Pose_V"
@@ -66,7 +66,7 @@
       lazy: false
     }
     bridges: {
-      ros_topic_name: "/scoring/tf"
+      ros_topic_name: "/scoring/tf_static"
       gz_topic_name: "/sc_port_2/pose_static"
       ros_type_name: "tf2_msgs/msg/TFMessage"
       gz_type_name: "gz.msgs.Pose_V"
@@ -74,7 +74,7 @@
       lazy: false
     }
     bridges: {
-      ros_topic_name: "/scoring/tf"
+      ros_topic_name: "/scoring/tf_static"
       gz_topic_name: "/sc_port_3/pose_static"
       ros_type_name: "tf2_msgs/msg/TFMessage"
       gz_type_name: "gz.msgs.Pose_V"
@@ -82,7 +82,7 @@
       lazy: false
     }
     bridges: {
-      ros_topic_name: "/scoring/tf"
+      ros_topic_name: "/scoring/tf_static"
       gz_topic_name: "/sc_port_4/pose_static"
       ros_type_name: "tf2_msgs/msg/TFMessage"
       gz_type_name: "gz.msgs.Pose_V"
