@@ -1,6 +1,7 @@
 <?xml version="1.0" ?>
 <sdf version="1.9">
   <model name="SFP Mount">
+    <static>true</static>
     <link name="sfp_mount_link">
       <visual name="sfp_mount_visual">
         <geometry>

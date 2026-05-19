@@ -1,6 +1,7 @@
 <?xml version="1.0" ?>
 <sdf version="1.9">
   <model name="NIC Card Mount 1">
+    <static>true</static>
 
     <link name="nic_card_mount_link">
       <visual name="nic_card_mount_visual">
