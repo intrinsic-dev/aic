@@ -41,8 +41,6 @@
 #include "std_srvs/srv/trigger.hpp"
 #include "yaml-cpp/yaml.h"
 
-#include <grpcpp/grpcpp.h>
-
 //==============================================================================
 namespace aic {
 

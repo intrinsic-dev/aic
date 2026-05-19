@@ -18,8 +18,6 @@ find_package(aic_scoring REQUIRED)
 find_package(aic_control_interfaces REQUIRED)
 find_package(aic_engine_interfaces REQUIRED)
 find_package(aic_task_interfaces REQUIRED)
-find_package(grpc_vendor REQUIRED)
-find_package(intrinsic_sdk_cmake REQUIRED)
 find_package(lifecycle_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
@@ -33,14 +31,12 @@ add_executable(aic_engine
 )
 target_link_libraries(aic_engine
   aic_scoring::aic_scoring
-  intrinsic_sdk_cmake::intrinsic_sdk_cmake
   rclcpp::rclcpp
   rclcpp_action::rclcpp_action
   yaml-cpp
   ${aic_control_interfaces_TARGETS}
   ${aic_engine_interfaces_TARGETS}
   ${aic_task_interfaces_TARGETS}
-  ${flowstate_interfaces_TARGETS}
   ${lifecycle_msgs_TARGETS}
   ${std_srvs_TARGETS}
 )
