@@ -39,57 +39,37 @@
 
 namespace aic_scoring {
 //////////////////////////////////////////////////
-ScoringTier2::ScoringTier2(rclcpp::Node *_node) : node(_node) {
-  this->topics.push_back({
-    .name = kJointStateTopic,
-    .type = "sensor_msgs/msg/JointState",
-    .latched = false
-  });
-  this->topics.push_back({
-    .name = kTfStaticTopic,
-    .type = "tf2_msgs/msg/TFMessage",
-    .latched = true
-  });
-  this->topics.push_back({
-    .name = kTfTopic,
-    .type = "tf2_msgs/msg/TFMessage",
-    .latched = false
-  });
-  this->topics.push_back({
-    .name = kScoringTfTopic,
-    .type = "tf2_msgs/msg/TFMessage",
-    .latched = false
-  });
-  this->topics.push_back({
-    .name = kContactsTopic,
-    .type = "ros_gz_interfaces/msg/Contacts",
-    .latched = false
-  });
-  this->topics.push_back({
-    .name = kWrenchTopic,
-    .type = "geometry_msgs/msg/WrenchStamped",
-    .latched = false
-  });
-  this->topics.push_back({
-    .name = kMotionUpdateTopic,
-    .type = "aic_control_interfaces/msg/MotionUpdate",
-    .latched = false
-  });
-  this->topics.push_back({
-    .name = kJointMotionUpdateTopic,
-    .type = "aic_control_interfaces/msg/JointMotionUpdate",
-    .latched = false
-  });
-  this->topics.push_back({
-    .name = kInsertionEventTopic,
-    .type = "std_msgs/msg/String",
-    .latched = false
-  });
-  this->topics.push_back({
-    .name = kControllerStateTopic,
-    .type = "aic_control_interfaces/msg/ControllerState",
-    .latched = false
-  });
+ScoringTier2::ScoringTier2(rclcpp::Node* _node) : node(_node) {
+  this->topics.push_back({.name = kJointStateTopic,
+                          .type = "sensor_msgs/msg/JointState",
+                          .latched = false});
+  this->topics.push_back({.name = kTfStaticTopic,
+                          .type = "tf2_msgs/msg/TFMessage",
+                          .latched = true});
+  this->topics.push_back(
+      {.name = kTfTopic, .type = "tf2_msgs/msg/TFMessage", .latched = false});
+  this->topics.push_back({.name = kScoringTfTopic,
+                          .type = "tf2_msgs/msg/TFMessage",
+                          .latched = false});
+  this->topics.push_back({.name = kContactsTopic,
+                          .type = "ros_gz_interfaces/msg/Contacts",
+                          .latched = false});
+  this->topics.push_back({.name = kWrenchTopic,
+                          .type = "geometry_msgs/msg/WrenchStamped",
+                          .latched = false});
+  this->topics.push_back({.name = kMotionUpdateTopic,
+                          .type = "aic_control_interfaces/msg/MotionUpdate",
+                          .latched = false});
+  this->topics.push_back(
+      {.name = kJointMotionUpdateTopic,
+       .type = "aic_control_interfaces/msg/JointMotionUpdate",
+       .latched = false});
+  this->topics.push_back({.name = kInsertionEventTopic,
+                          .type = "std_msgs/msg/String",
+                          .latched = false});
+  this->topics.push_back({.name = kControllerStateTopic,
+                          .type = "aic_control_interfaces/msg/ControllerState",
+                          .latched = false});
   for (const auto& topic : this->topics) {
     std::cout << "Name: " << topic.name << " type " << topic.type << std::endl;
   }
@@ -174,12 +154,15 @@ bool ScoringTier2::WaitForTfs() {
   // straightforward wait.
   const auto start = this->node->get_clock()->now();
   const auto timeout = std::chrono::seconds(10);
-  while (rclcpp::ok() && (!this->cableTfReceived || !this->gripperTfReceived || !this->staticTfReceived) &&
+  while (rclcpp::ok() &&
+         (!this->cableTfReceived || !this->gripperTfReceived ||
+          !this->staticTfReceived) &&
          this->node->get_clock()->now() - start < timeout) {
     this->node->get_clock()->sleep_for(
         rclcpp::Duration(std::chrono::milliseconds(100)));
   }
-  if (!this->cableTfReceived || !this->gripperTfReceived || !this->staticTfReceived) {
+  if (!this->cableTfReceived || !this->gripperTfReceived ||
+      !this->staticTfReceived) {
     RCLCPP_ERROR(this->node->get_logger(),
                  "Timeout while waiting for transforms for scoring.");
     return false;

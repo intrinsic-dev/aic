@@ -28,8 +28,8 @@
 #include "aic_control_interfaces/msg/joint_motion_update.hpp"
 #include "aic_control_interfaces/msg/motion_update.hpp"
 #include "aic_control_interfaces/msg/trajectory_generation_mode.hpp"
-#include <aic_engine_interfaces/srv/start_engine.hpp>
-#include <aic_engine_interfaces/srv/stop_engine.hpp>
+#include "aic_engine_interfaces/srv/start_engine.hpp"
+#include "aic_engine_interfaces/srv/stop_engine.hpp"
 #include "aic_scoring/ScoringTier2.hh"
 #include "aic_scoring/TierScore.hh"
 #include "aic_task_interfaces/action/insert_cable.hpp"
@@ -73,9 +73,9 @@ struct TrialScore {
 //==============================================================================
 enum class TaskStatus {
   // The task was started, stopping it will initialize scoring.
-  STARTED=0,
+  STARTED = 0,
   // The task finished, it will be scored and printed
-  FINISHED=1
+  FINISHED = 1
 };
 
 //==============================================================================
@@ -83,7 +83,8 @@ struct TrialAttempt {
   TaskMsg task;
   TaskStatus status;
   TrialScore score;
-  TrialAttempt(const TaskMsg& task_) : task(task_), status(TaskStatus::STARTED) { }
+  TrialAttempt(const TaskMsg& task_)
+      : task(task_), status(TaskStatus::STARTED) {}
 };
 
 //==============================================================================
@@ -180,12 +181,14 @@ class Engine {
   }
 
   /// @brief Callback for the service to start the engine. Will start scoring.
-  void start_engine_callback(const std::shared_ptr<StartEngineSrv::Request> request,
+  void start_engine_callback(
+      const std::shared_ptr<StartEngineSrv::Request> request,
       std::shared_ptr<StartEngineSrv::Response> response);
 
   /// @brief Callback for the service to stop the engine. Will stop the scoring
   /// and optionally print and return the result of all trials.
-  void stop_engine_callback(const std::shared_ptr<StopEngineSrv::Request> request,
+  void stop_engine_callback(
+      const std::shared_ptr<StopEngineSrv::Request> request,
       std::shared_ptr<StopEngineSrv::Response> response);
 
   // Strings.
@@ -211,7 +214,6 @@ class Engine {
   rclcpp::Client<lifecycle_msgs::srv::ChangeState>::SharedPtr
       model_change_state_client_;
   rclcpp::Client<TriggerSrv>::SharedPtr tare_ft_client_;
-
 
   // Service servers.
   rclcpp::Service<StartEngineSrv>::SharedPtr start_engine_server_;

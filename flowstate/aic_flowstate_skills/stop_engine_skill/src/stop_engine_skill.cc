@@ -43,12 +43,11 @@ class StopEngineClientNode : public rclcpp::Node {
   }
 
   absl::StatusOr<aic_engine_interfaces::srv::StopEngine::Response::SharedPtr>
-  CallService(const aic_engine_interfaces::srv::StopEngine::Request::SharedPtr&
-                  request,
-              double timeout_ms) {
+  CallService(
+      const aic_engine_interfaces::srv::StopEngine::Request::SharedPtr& request,
+      double timeout_ms) {
     if (!client_->wait_for_service(std::chrono::seconds(10))) {
-      return absl::UnavailableError(
-          "Service '/stop_aic_engine' not available");
+      return absl::UnavailableError("Service '/stop_aic_engine' not available");
     }
 
     auto result_future = client_->async_send_request(request);
@@ -86,7 +85,7 @@ StopEngineSkill::CreateSkill() {
 
 absl::StatusOr<std::unique_ptr<google::protobuf::Message>>
 StopEngineSkill::Preview(const intrinsic::skills::PreviewRequest& /*request*/,
-                          intrinsic::skills::PreviewContext& /*context*/) {
+                         intrinsic::skills::PreviewContext& /*context*/) {
   return absl::UnimplementedError("Skill has not implemented `Preview`.");
 }
 
@@ -96,7 +95,7 @@ StopEngineSkill::Preview(const intrinsic::skills::PreviewRequest& /*request*/,
 
 absl::StatusOr<std::unique_ptr<google::protobuf::Message>>
 StopEngineSkill::Execute(const intrinsic::skills::ExecuteRequest& request,
-                          intrinsic::skills::ExecuteContext& /*context*/) {
+                         intrinsic::skills::ExecuteContext& /*context*/) {
   RCLCPP_INFO(client_node_.get_logger(), "StopEngineSkill::Execute");
 
   INTR_ASSIGN_OR_RETURN(auto params,

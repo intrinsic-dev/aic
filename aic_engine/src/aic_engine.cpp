@@ -79,14 +79,19 @@ Engine::Engine(const rclcpp::NodeOptions& options)
   RCLCPP_INFO(node_->get_logger(), "Scoring output directory set to: %s",
               scoring_output_dir_.c_str());
 
-  callback_group_ = node_->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
+  callback_group_ =
+      node_->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
 
-  start_engine_server_ = node_->create_service<StartEngineSrv>("/start_aic_engine",
-      std::bind(&Engine::start_engine_callback, this, std::placeholders::_1, std::placeholders::_2),
+  start_engine_server_ = node_->create_service<StartEngineSrv>(
+      "/start_aic_engine",
+      std::bind(&Engine::start_engine_callback, this, std::placeholders::_1,
+                std::placeholders::_2),
       rclcpp::ServicesQoS(), callback_group_);
 
-  stop_engine_server_ = node_->create_service<StopEngineSrv>("/stop_aic_engine",
-      std::bind(&Engine::stop_engine_callback, this, std::placeholders::_1, std::placeholders::_2),
+  stop_engine_server_ = node_->create_service<StopEngineSrv>(
+      "/stop_aic_engine",
+      std::bind(&Engine::stop_engine_callback, this, std::placeholders::_1,
+                std::placeholders::_2),
       rclcpp::ServicesQoS(), callback_group_);
 
   scoring_tier2_ = std::make_unique<aic_scoring::ScoringTier2>(node_.get());
@@ -97,15 +102,17 @@ Engine::Engine(const rclcpp::NodeOptions& options)
   auto sub_options = rclcpp::SubscriptionOptions();
   sub_options.callback_group = callback_group_;
 
-  insert_cable_action_client_ =
-      rclcpp_action::create_client<InsertCableAction>(node_, "/insert_cable", callback_group_);
+  insert_cable_action_client_ = rclcpp_action::create_client<InsertCableAction>(
+      node_, "/insert_cable", callback_group_);
   model_get_state_client_ = node_->create_client<lifecycle_msgs::srv::GetState>(
       model_get_state_service_name_, rclcpp::ServicesQoS(), callback_group_);
   model_change_state_client_ =
       node_->create_client<lifecycle_msgs::srv::ChangeState>(
-          model_change_state_service_name_, rclcpp::ServicesQoS(), callback_group_);
+          model_change_state_service_name_, rclcpp::ServicesQoS(),
+          callback_group_);
   tare_ft_client_ = node_->create_client<TriggerSrv>(
-      "/aic_controller/tare_force_torque_sensor", rclcpp::ServicesQoS(), callback_group_);
+      "/aic_controller/tare_force_torque_sensor", rclcpp::ServicesQoS(),
+      callback_group_);
 }
 
 //==============================================================================
@@ -116,15 +123,16 @@ void Engine::spin() {
 }
 
 //==============================================================================
-void Engine::start_engine_callback(const std::shared_ptr<StartEngineSrv::Request> request,
-    std::shared_ptr<StartEngineSrv::Response> response)
-{
+void Engine::start_engine_callback(
+    const std::shared_ptr<StartEngineSrv::Request> request,
+    std::shared_ptr<StartEngineSrv::Response> response) {
   if (request->reset) {
     this->reset_engine();
   }
 
   if (requested_run_) {
-    const std::string error = "Failed starting engine, a run is already underway";
+    const std::string error =
+        "Failed starting engine, a run is already underway";
     RCLCPP_ERROR(node_->get_logger(), "%s", error.c_str());
     response->success = false;
     response->message = error;
@@ -135,7 +143,8 @@ void Engine::start_engine_callback(const std::shared_ptr<StartEngineSrv::Request
   if (request->reset) {
     const auto initialization_result = this->initialize();
     if (initialization_result.has_value()) {
-      RCLCPP_ERROR(node_->get_logger(), "Failed initializing engine: %s", initialization_result.value().c_str());
+      RCLCPP_ERROR(node_->get_logger(), "Failed initializing engine: %s",
+                   initialization_result.value().c_str());
       response->success = false;
       response->message = initialization_result.value();
       return;
@@ -144,7 +153,8 @@ void Engine::start_engine_callback(const std::shared_ptr<StartEngineSrv::Request
 
   const auto err = this->start_trial(request->task);
   if (err.has_value()) {
-    RCLCPP_ERROR(node_->get_logger(), "Failed starting engine: %s", err.value().c_str());
+    RCLCPP_ERROR(node_->get_logger(), "Failed starting engine: %s",
+                 err.value().c_str());
     response->success = false;
     response->message = err.value();
     return;
@@ -155,12 +165,13 @@ void Engine::start_engine_callback(const std::shared_ptr<StartEngineSrv::Request
 }
 
 //==============================================================================
-void Engine::stop_engine_callback(const std::shared_ptr<StopEngineSrv::Request> request,
-    std::shared_ptr<StopEngineSrv::Response> response)
-{
+void Engine::stop_engine_callback(
+    const std::shared_ptr<StopEngineSrv::Request> request,
+    std::shared_ptr<StopEngineSrv::Response> response) {
   const auto task_it = this->tasks_.find(request->task_id);
   if (task_it == this->tasks_.end()) {
-    const std::string error = "Failed stopping engine, task id " + request->task_id + " was not started";
+    const std::string error = "Failed stopping engine, task id " +
+                              request->task_id + " was not started";
     RCLCPP_ERROR(node_->get_logger(), "%s", error.c_str());
     response->success = false;
     response->message = error;
@@ -168,7 +179,8 @@ void Engine::stop_engine_callback(const std::shared_ptr<StopEngineSrv::Request> 
   }
 
   if (task_it->second.status != TaskStatus::STARTED) {
-    const std::string error = "Failed stopping engine, task id " + request->task_id + " already scored";
+    const std::string error = "Failed stopping engine, task id " +
+                              request->task_id + " already scored";
     RCLCPP_ERROR(node_->get_logger(), "%s", error.c_str());
     response->success = false;
     response->message = error;
@@ -209,7 +221,9 @@ std::optional<std::string> Engine::initialize() {
   std::error_code ec;
   std::filesystem::create_directories(scoring_output_dir_, ec);
   if (ec) {
-    const std::string error = "Failed to create bag output directory '" + scoring_output_dir_ + "': " + ec.message().c_str();
+    const std::string error = "Failed to create bag output directory '" +
+                              scoring_output_dir_ +
+                              "': " + ec.message().c_str();
     return error;
   }
   RCLCPP_INFO(node_->get_logger(), "Bag output directory: %s",
@@ -223,15 +237,15 @@ std::optional<std::string> Engine::initialize() {
     return error;
   }
 
-  RCLCPP_INFO(node_->get_logger(),
-              "\033[1;32m  ✓ Model Ready\033[0m");
+  RCLCPP_INFO(node_->get_logger(), "\033[1;32m  ✓ Model Ready\033[0m");
 
   bool success = false;
   for (int attempt = 1; attempt <= MAX_RETRIES && !success; ++attempt) {
     if (attempt > 1) {
-      RCLCPP_WARN(node_->get_logger(),
-                  "\033[1;33m  ⟳ Retrying check_endpoints (attempt %d/%d)...\033[0m",
-                  attempt, MAX_RETRIES);
+      RCLCPP_WARN(
+          node_->get_logger(),
+          "\033[1;33m  ⟳ Retrying check_endpoints (attempt %d/%d)...\033[0m",
+          attempt, MAX_RETRIES);
     }
     if (this->check_endpoints()) {
       success = true;
@@ -239,10 +253,12 @@ std::optional<std::string> Engine::initialize() {
   }
   if (!success) {
     const std::string error =
-                 "\033[1;31m  ✗ EVALUATION ERROR: Endpoints check failed "
-                 "after " + std::to_string(MAX_RETRIES) + " attempts. "
-                 "This is an infrastructure issue. Is eval environment "
-                 "started?\033[0m";
+        "\033[1;31m  ✗ EVALUATION ERROR: Endpoints check failed "
+        "after " +
+        std::to_string(MAX_RETRIES) +
+        " attempts. "
+        "This is an infrastructure issue. Is eval environment "
+        "started?\033[0m";
     return error;
   }
 
@@ -281,14 +297,13 @@ std::optional<std::string> Engine::start_trial(const TaskMsg& task) {
 
   if (!this->ready_scoring(task)) {
     const std::string error =
-                 "\033[1;31m  ✗ EVALUATION ERROR: Scoring setup failed."
-                 "This is an infrastructure issue. Is eval environment "
-                 "started?\033[0m";
+        "\033[1;31m  ✗ EVALUATION ERROR: Scoring setup failed."
+        "This is an infrastructure issue. Is eval environment "
+        "started?\033[0m";
     return error;
   }
 
-  RCLCPP_INFO(node_->get_logger(),
-              "\033[1;32m  ✓ Scoring Ready\033[0m");
+  RCLCPP_INFO(node_->get_logger(), "\033[1;32m  ✓ Scoring Ready\033[0m");
 
   this->scoring_tier2_->SetTaskStartTime(this->node_->now());
   return std::nullopt;

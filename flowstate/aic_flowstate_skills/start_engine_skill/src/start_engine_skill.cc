@@ -99,8 +99,8 @@ StartEngineSkill::Execute(const intrinsic::skills::ExecuteRequest& request,
                           intrinsic::skills::ExecuteContext& /*context*/) {
   RCLCPP_INFO(client_node_.get_logger(), "StartEngineSkill::Execute");
 
-  INTR_ASSIGN_OR_RETURN(auto params,
-                        request.params<ai::flowstate::StartEngineSkillParams>());
+  INTR_ASSIGN_OR_RETURN(
+      auto params, request.params<ai::flowstate::StartEngineSkillParams>());
 
   // Populate service request
   auto service_request =
