@@ -122,7 +122,7 @@ namespace aic_scoring
     public: static constexpr const char* kJointStateTopic = "/joint_states";
 
     /// \brief Topic to subscribe for static tf.
-    public: static constexpr const char* kTfStaticTopic = "/tf_static";
+    public: static constexpr const char* kTfStaticTopic = "/scoring/tf_static";
 
     /// \brief Topic to subscribe for tf.
     public: static constexpr const char* kTfTopic = "/tf";
@@ -172,9 +172,8 @@ namespace aic_scoring
                 const std::chrono::seconds &_max_task_time);
 
     /// \brief Stop recording all scoring topics.
-    /// \param[in] _force Whether to force a stop without waiting for TFs.
     /// \return True if the bag was closed correctly.
-    public: bool StopRecording(const bool _force = false);
+    public: bool StopRecording();
 
     /// \brief Compute the score the bag that we just recorded.
     /// \return A pair with the Tier2 and Tier3 scores.
@@ -360,6 +359,9 @@ namespace aic_scoring
 
     /// \brief Whether the tf from a gripper was recorded.
     private: std::atomic<bool> gripperTfReceived = false;
+
+    /// \brief Whether the tf from a gripper was recorded.
+    private: std::atomic<bool> staticTfReceived = false;
 
     /// \brief The last tared ft reading rotated to the current pose received.
     private: std::optional<WrenchMsg> lastTaredFt;

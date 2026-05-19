@@ -28,7 +28,6 @@
 #include <unordered_set>
 
 #include "aic_task_interfaces/msg/task.hpp"
-#include "google/longrunning/operations.pb.h"
 #include "lifecycle_msgs/msg/state.hpp"
 #include "lifecycle_msgs/srv/get_state.hpp"
 #include "rclcpp/executors.hpp"
@@ -180,10 +179,11 @@ void Engine::stop_engine_callback(const std::shared_ptr<StopEngineSrv::Request> 
   compute_score(task_it->second.score);
 
   if (request->finished) {
-    this->reset_engine();
     this->score_run();
+    this->reset_engine();
   }
 
+  this->requested_run_ = false;
   response->success = true;
 }
 
@@ -256,7 +256,7 @@ std::optional<std::string> Engine::initialize() {
 //==============================================================================
 void Engine::reset_engine() {
   if (this->scoring_tier2_->IsRecording()) {
-    this->scoring_tier2_->StopRecording(true);
+    this->scoring_tier2_->StopRecording();
   }
   this->tasks_.clear();
   this->requested_run_ = false;

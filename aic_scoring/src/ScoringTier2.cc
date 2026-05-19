@@ -153,6 +153,9 @@ bool ScoringTier2::StartRecording(const std::string &_filename,
             } else if (topic.name == kTfTopic) {
               // A new gripper transform was received
               this->gripperTfReceived = true;
+            } else if (topic.name == kTfStaticTopic) {
+              // A new static transform was received
+              this->staticTfReceived = true;
             }
           }
         });
@@ -166,16 +169,17 @@ bool ScoringTier2::StartRecording(const std::string &_filename,
 bool ScoringTier2::WaitForTfs() {
   this->cableTfReceived = false;
   this->gripperTfReceived = false;
+  this->staticTfReceived = false;
   // Simple spinlock to avoid locking, condition variables etc. for a fairly
   // straightforward wait.
   const auto start = this->node->get_clock()->now();
   const auto timeout = std::chrono::seconds(10);
-  while (rclcpp::ok() && (!this->cableTfReceived || !this->gripperTfReceived) &&
+  while (rclcpp::ok() && (!this->cableTfReceived || !this->gripperTfReceived || !this->staticTfReceived) &&
          this->node->get_clock()->now() - start < timeout) {
     this->node->get_clock()->sleep_for(
         rclcpp::Duration(std::chrono::milliseconds(100)));
   }
-  if (!this->cableTfReceived || !this->gripperTfReceived) {
+  if (!this->cableTfReceived || !this->gripperTfReceived || !this->staticTfReceived) {
     RCLCPP_ERROR(this->node->get_logger(),
                  "Timeout while waiting for transforms for scoring.");
     return false;
@@ -184,10 +188,7 @@ bool ScoringTier2::WaitForTfs() {
 }
 
 //////////////////////////////////////////////////
-bool ScoringTier2::StopRecording(const bool _force) {
-  if (!_force && !this->WaitForTfs()) {
-    return false;
-  }
+bool ScoringTier2::StopRecording() {
   std::lock_guard<std::mutex> lock(this->mutex);
   if (this->state != State::Recording) {
     RCLCPP_ERROR(this->node->get_logger(), "Scoring system is not recording");
@@ -273,17 +274,6 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
                   msg_ptr->topic_name.c_str());
     }
   }
-
-  // Complete the TF tree by linking world and aic_world
-  // The aic_gz_bringup launch file uses a static tf broadcaster to do this
-  // when ground truth is enabled. Here we manually add the fixed transform to
-  // the tf buffer
-  geometry_msgs::msg::TransformStamped transform_stamped;
-  transform_stamped.header.frame_id = "world";
-  transform_stamped.child_frame_id = "aic_world";
-  TFMsg msg;
-  msg.transforms.push_back(transform_stamped);
-  this->TfStaticCallback(msg);
 
   this->state = State::Idle;
   // Compute initial plug-port distance for trajectory efficiency scoring.
