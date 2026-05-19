@@ -39,7 +39,7 @@
 
 namespace aic_scoring {
 //////////////////////////////////////////////////
-ScoringTier2::ScoringTier2(rclcpp::Node* _node) : node(_node) {
+ScoringTier2::ScoringTier2(rclcpp::Node *_node) : node(_node) {
   this->topics.push_back({.name = kJointStateTopic,
                           .type = "sensor_msgs/msg/JointState",
                           .latched = false});
@@ -70,9 +70,6 @@ ScoringTier2::ScoringTier2(rclcpp::Node* _node) : node(_node) {
   this->topics.push_back({.name = kControllerStateTopic,
                           .type = "aic_control_interfaces/msg/ControllerState",
                           .latched = false});
-  for (const auto& topic : this->topics) {
-    std::cout << "Name: " << topic.name << " type " << topic.type << std::endl;
-  }
 }
 
 //////////////////////////////////////////////////
