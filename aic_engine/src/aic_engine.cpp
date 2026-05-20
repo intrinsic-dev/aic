@@ -203,11 +203,11 @@ void Engine::stop_engine_callback(
 //==============================================================================
 std::optional<std::string> Engine::initialize() {
   RCLCPP_INFO(node_->get_logger(),
-              "\033[1;36m╔════════════════════════════════════════╗\033[0m");
+              "╔════════════════════════════════════════╗");
   RCLCPP_INFO(node_->get_logger(),
-              "\033[1;36m║   Initializing AIC Engine...           ║\033[0m");
+              "║   Initializing AIC Engine...           ║");
   RCLCPP_INFO(node_->get_logger(),
-              "\033[1;36m╚════════════════════════════════════════╝\033[0m");
+              "╚════════════════════════════════════════╝");
 
   // Make sure a valid clock is received, it takes time to initialize
   // the subscriber and following timeout calls might fail otherwise
@@ -233,20 +233,18 @@ std::optional<std::string> Engine::initialize() {
   constexpr int MAX_RETRIES = 5;
 
   if (!this->check_model()) {
-    const std::string error =
-        "\033[1;31m  ✗ Participant model is not ready.'\033[0m";
+    const std::string error = "  ✗ Participant model is not ready.";
     return error;
   }
 
-  RCLCPP_INFO(node_->get_logger(), "\033[1;32m  ✓ Model Ready\033[0m");
+  RCLCPP_INFO(node_->get_logger(), "  ✓ Model Ready");
 
   bool success = false;
   for (int attempt = 1; attempt <= MAX_RETRIES && !success; ++attempt) {
     if (attempt > 1) {
-      RCLCPP_WARN(
-          node_->get_logger(),
-          "\033[1;33m  ⟳ Retrying check_endpoints (attempt %d/%d)...\033[0m",
-          attempt, MAX_RETRIES);
+      RCLCPP_WARN(node_->get_logger(),
+                  "  ⟳ Retrying check_endpoints (attempt %d/%d)...", attempt,
+                  MAX_RETRIES);
     }
     if (this->check_endpoints()) {
       success = true;
@@ -254,18 +252,17 @@ std::optional<std::string> Engine::initialize() {
   }
   if (!success) {
     const std::string error =
-        "\033[1;31m  ✗ EVALUATION ERROR: Endpoints check failed "
+        "  ✗ EVALUATION ERROR: Endpoints check failed "
         "after " +
         std::to_string(MAX_RETRIES) +
         " attempts. "
         "This is an infrastructure issue. Is eval environment "
-        "started?\033[0m";
+        "started?";
     return error;
   }
 
-  RCLCPP_INFO(node_->get_logger(), "\033[1;32m  ✓ Endpoints Ready \033[0m");
-  RCLCPP_INFO(node_->get_logger(),
-              "\033[1;32m✓ AIC Engine initialized successfully!\033[0m");
+  RCLCPP_INFO(node_->get_logger(), "  ✓ Endpoints Ready ");
+  RCLCPP_INFO(node_->get_logger(), "✓ AIC Engine initialized successfully!");
 
   return std::nullopt;
 }
@@ -287,22 +284,22 @@ void Engine::reset_engine() {
 std::optional<std::string> Engine::start_trial(const TaskMsg& task) {
   RCLCPP_INFO(node_->get_logger(), " ");
   RCLCPP_INFO(node_->get_logger(),
-              "\033[1;35m╔════════════════════════════════════════╗\033[0m");
+              "╔════════════════════════════════════════╗");
   RCLCPP_INFO(node_->get_logger(),
-              "\033[1;35m║      Starting AIC Engine Trial         ║\033[0m");
+              "║      Starting AIC Engine Trial         ║");
   RCLCPP_INFO(node_->get_logger(),
-              "\033[1;35m╚════════════════════════════════════════╝\033[0m");
+              "╚════════════════════════════════════════╝");
   RCLCPP_INFO(node_->get_logger(), " ");
 
   if (!this->ready_scoring(task)) {
     const std::string error =
-        "\033[1;31m  ✗ EVALUATION ERROR: Scoring setup failed."
+        "  ✗ EVALUATION ERROR: Scoring setup failed."
         "This is an infrastructure issue. Is eval environment "
-        "started?\033[0m";
+        "started?";
     return error;
   }
 
-  RCLCPP_INFO(node_->get_logger(), "\033[1;32m  ✓ Scoring Ready\033[0m");
+  RCLCPP_INFO(node_->get_logger(), "  ✓ Scoring Ready");
 
   this->scoring_tier2_->SetTaskStartTime(this->node_->now());
   this->tasks_.insert({task.id, task});
@@ -743,16 +740,16 @@ void Engine::score_run() {
   std::stringstream ss;
   ss << score;
   RCLCPP_INFO(node_->get_logger(),
-              "\033[1;36m╔════════════════════════════════════════╗\033[0m");
+              "╔════════════════════════════════════════╗");
   RCLCPP_INFO(node_->get_logger(),
-              "\033[1;36m║        Complete Scoring Results        ║\033[0m");
+              "║        Complete Scoring Results        ║");
   RCLCPP_INFO(node_->get_logger(),
-              "\033[1;36m╚════════════════════════════════════════╝\033[0m");
+              "╚════════════════════════════════════════╝");
 
   // Split the YAML output by lines and print each line
   std::string line;
   while (std::getline(ss, line)) {
-    RCLCPP_INFO(node_->get_logger(), "\033[1;36m%s\033[0m", line.c_str());
+    RCLCPP_INFO(node_->get_logger(), "%s", line.c_str());
   }
   RCLCPP_INFO(node_->get_logger(), " ");
 }
