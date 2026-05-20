@@ -188,6 +188,7 @@ void Engine::stop_engine_callback(
   }
 
   task_it->second.score.tier_1_success();
+  task_it->second.status = TaskStatus::FINISHED;
   compute_score(task_it->second.score);
 
   if (request->finished) {
@@ -293,8 +294,6 @@ std::optional<std::string> Engine::start_trial(const TaskMsg& task) {
               "\033[1;35m╚════════════════════════════════════════╝\033[0m");
   RCLCPP_INFO(node_->get_logger(), " ");
 
-  this->tasks_.insert({task.id, task});
-
   if (!this->ready_scoring(task)) {
     const std::string error =
         "\033[1;31m  ✗ EVALUATION ERROR: Scoring setup failed."
@@ -306,6 +305,7 @@ std::optional<std::string> Engine::start_trial(const TaskMsg& task) {
   RCLCPP_INFO(node_->get_logger(), "\033[1;32m  ✓ Scoring Ready\033[0m");
 
   this->scoring_tier2_->SetTaskStartTime(this->node_->now());
+  this->tasks_.insert({task.id, task});
   return std::nullopt;
 }
 
