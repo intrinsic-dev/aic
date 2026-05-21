@@ -673,17 +673,20 @@ void CableModeratorPlugin::FindCableModels(EntityComponentManager& _ecm) {
                         _collisionEntity,
                         components::ContactSensorData::typeId)) {
                   _ecm.CreateComponent(_collisionEntity,
-                                      components::ContactSensorData());
+                                       components::ContactSensorData());
                   std::string collisionName = std::to_string(_collisionEntity);
-                  if (auto nameComp = _ecm.Component<components::Name>(_collisionEntity)) {
+                  if (auto nameComp =
+                          _ecm.Component<components::Name>(_collisionEntity)) {
                     collisionName = nameComp->Data();
                   }
                   std::string parentName = std::to_string(linkEntity);
-                  if (auto parentNameComp = _ecm.Component<components::Name>(linkEntity)) {
+                  if (auto parentNameComp =
+                          _ecm.Component<components::Name>(linkEntity)) {
                     parentName = parentNameComp->Data();
                   }
                   gzdbg << "Enabled contact tracking on End 0 collision: "
-                        << collisionName << " (parent: " << parentName << ")" << std::endl;
+                        << collisionName << " (parent: " << parentName << ")"
+                        << std::endl;
                 }
               } else if (tracker.end1MonitoredLinks.count(linkEntity) > 0) {
                 tracker.end1CollisionEntities.insert(_collisionEntity);
@@ -691,17 +694,20 @@ void CableModeratorPlugin::FindCableModels(EntityComponentManager& _ecm) {
                         _collisionEntity,
                         components::ContactSensorData::typeId)) {
                   _ecm.CreateComponent(_collisionEntity,
-                                      components::ContactSensorData());
+                                       components::ContactSensorData());
                   std::string collisionName = std::to_string(_collisionEntity);
-                  if (auto nameComp = _ecm.Component<components::Name>(_collisionEntity)) {
+                  if (auto nameComp =
+                          _ecm.Component<components::Name>(_collisionEntity)) {
                     collisionName = nameComp->Data();
                   }
                   std::string parentName = std::to_string(linkEntity);
-                  if (auto parentNameComp = _ecm.Component<components::Name>(linkEntity)) {
+                  if (auto parentNameComp =
+                          _ecm.Component<components::Name>(linkEntity)) {
                     parentName = parentNameComp->Data();
                   }
                   gzdbg << "Enabled contact tracking on End 1 collision: "
-                        << collisionName << " (parent: " << parentName << ")" << std::endl;
+                        << collisionName << " (parent: " << parentName << ")"
+                        << std::endl;
                 }
               }
               return true;
