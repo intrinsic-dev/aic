@@ -67,7 +67,7 @@ bool AicCameraBridge::initialize(
           data_->node_interfaces_
               .get<rclcpp::node_interfaces::NodeTopicsInterface>();
 
-  // Reliable QoS subscriptions for motion commands.
+  // Reliable QoS subscriptions for images.
   rclcpp::QoS image_pub_qos = rclcpp::QoS(rclcpp::KeepLast(2)).reliable();
 
   data_->left_image_pub_ = rclcpp::create_publisher<sensor_msgs::msg::Image>(
@@ -87,7 +87,7 @@ bool AicCameraBridge::initialize(
       rclcpp::create_publisher<sensor_msgs::msg::CameraInfo>(
           topics_interface, "/right_camera/camera_info", image_pub_qos);
 
-  // Create a Zenoh subscriber on the robot_state pubsub topic
+  // Create a Zenoh subscriber on the image pubsub topic
   auto image_sub =
       data_->pubsub_->CreateSubscription<sensor_msgs::msg::pb::jazzy::Image>(
           "cameras/*/image", intrinsic::TopicConfig(),
