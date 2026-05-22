@@ -144,8 +144,6 @@ void AicCameraBridge::ImageCallback(
     LOG(INFO) << absl::StrFormat(
         "camera image translation took %.6f seconds",
         absl::ToDoubleSeconds(ros_image_creation_duration));
-    if (data_->focal_length_x_ == 0) {
-    }
   }
 
   sensor_msgs::msg::CameraInfo camera_info;
