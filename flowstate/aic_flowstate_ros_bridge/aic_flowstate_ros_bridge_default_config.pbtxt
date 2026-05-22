@@ -13,7 +13,7 @@
   bridge_plugins: [
     "flowstate_ros_bridge::WorldBridge",
     "flowstate_ros_bridge::ExecutiveBridge",
-    "flowstate_ros_bridge::RobotControlBridge"
+    "flowstate_ros_bridge::RobotControlBridge",
     "flowstate_ros_bridge::AicCameraBridge"
   ]
   executive_deadline_seconds: 5
