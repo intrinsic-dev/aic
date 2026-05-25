@@ -1,0 +1,136 @@
+[type.googleapis.com/flowstate.RosGzBridgeServiceConfig]: {
+  ros_gz_bridge_config: {
+    bridges: {
+      ros_topic_name: "/clock"
+      gz_topic_name: "/clock"
+      ros_type_name: "rosgraph_msgs/msg/Clock"
+      gz_type_name: "gz.msgs.Clock"
+      direction: GZ_TO_ROS
+      qos_profile: CLOCK
+      lazy: false
+    }
+    bridges: {
+      ros_topic_name: "/scoring/tf_static"
+      gz_topic_name: "/nic_card_mount_0/pose_static"
+      ros_type_name: "tf2_msgs/msg/TFMessage"
+      gz_type_name: "gz.msgs.Pose_V"
+      direction: GZ_TO_ROS
+      lazy: false
+    }
+    bridges: {
+      ros_topic_name: "/scoring/tf_static"
+      gz_topic_name: "/nic_card_mount_1/pose_static"
+      ros_type_name: "tf2_msgs/msg/TFMessage"
+      gz_type_name: "gz.msgs.Pose_V"
+      direction: GZ_TO_ROS
+      lazy: false
+    }
+    bridges: {
+      ros_topic_name: "/scoring/tf_static"
+      gz_topic_name: "/nic_card_mount_2/pose_static"
+      ros_type_name: "tf2_msgs/msg/TFMessage"
+      gz_type_name: "gz.msgs.Pose_V"
+      direction: GZ_TO_ROS
+      lazy: false
+    }
+    bridges: {
+      ros_topic_name: "/scoring/tf_static"
+      gz_topic_name: "/nic_card_mount_3/pose_static"
+      ros_type_name: "tf2_msgs/msg/TFMessage"
+      gz_type_name: "gz.msgs.Pose_V"
+      direction: GZ_TO_ROS
+      lazy: false
+    }
+    bridges: {
+      ros_topic_name: "/scoring/tf_static"
+      gz_topic_name: "/nic_card_mount_4/pose_static"
+      ros_type_name: "tf2_msgs/msg/TFMessage"
+      gz_type_name: "gz.msgs.Pose_V"
+      direction: GZ_TO_ROS
+      lazy: false
+    }
+    bridges: {
+      ros_topic_name: "/scoring/tf_static"
+      gz_topic_name: "/sc_port_0/pose_static"
+      ros_type_name: "tf2_msgs/msg/TFMessage"
+      gz_type_name: "gz.msgs.Pose_V"
+      direction: GZ_TO_ROS
+      lazy: false
+    }
+    bridges: {
+      ros_topic_name: "/scoring/tf_static"
+      gz_topic_name: "/sc_port_1/pose_static"
+      ros_type_name: "tf2_msgs/msg/TFMessage"
+      gz_type_name: "gz.msgs.Pose_V"
+      direction: GZ_TO_ROS
+      lazy: false
+    }
+    bridges: {
+      ros_topic_name: "/scoring/tf_static"
+      gz_topic_name: "/sc_port_2/pose_static"
+      ros_type_name: "tf2_msgs/msg/TFMessage"
+      gz_type_name: "gz.msgs.Pose_V"
+      direction: GZ_TO_ROS
+      lazy: false
+    }
+    bridges: {
+      ros_topic_name: "/scoring/tf_static"
+      gz_topic_name: "/sc_port_3/pose_static"
+      ros_type_name: "tf2_msgs/msg/TFMessage"
+      gz_type_name: "gz.msgs.Pose_V"
+      direction: GZ_TO_ROS
+      lazy: false
+    }
+    bridges: {
+      ros_topic_name: "/scoring/tf_static"
+      gz_topic_name: "/sc_port_4/pose_static"
+      ros_type_name: "tf2_msgs/msg/TFMessage"
+      gz_type_name: "gz.msgs.Pose_V"
+      direction: GZ_TO_ROS
+      lazy: false
+    }
+    bridges: {
+      ros_topic_name: "/scoring/tf"
+      gz_topic_name: "/cable_0/pose"
+      ros_type_name: "tf2_msgs/msg/TFMessage"
+      gz_type_name: "gz.msgs.Pose_V"
+      direction: GZ_TO_ROS
+      lazy: false
+    }
+    bridges: {
+      ros_topic_name: "/scoring/tf"
+      gz_topic_name: "/cable_1/pose"
+      ros_type_name: "tf2_msgs/msg/TFMessage"
+      gz_type_name: "gz.msgs.Pose_V"
+      direction: GZ_TO_ROS
+      lazy: false
+    }
+    bridges: {
+      ros_topic_name: "/scoring/tf"
+      gz_topic_name: "/cable_2/pose"
+      ros_type_name: "tf2_msgs/msg/TFMessage"
+      gz_type_name: "gz.msgs.Pose_V"
+      direction: GZ_TO_ROS
+      lazy: false
+    }
+    bridges: {
+      ros_topic_name: "/scoring/tf"
+      gz_topic_name: "/cable_3/pose"
+      ros_type_name: "tf2_msgs/msg/TFMessage"
+      gz_type_name: "gz.msgs.Pose_V"
+      direction: GZ_TO_ROS
+      lazy: false
+    }
+    bridges: {
+      ros_topic_name: "/scoring/tf"
+      gz_topic_name: "/cable_4/pose"
+      ros_type_name: "tf2_msgs/msg/TFMessage"
+      gz_type_name: "gz.msgs.Pose_V"
+      direction: GZ_TO_ROS
+      lazy: false
+    }
+  }
+  gazebo_simulator: {
+    name: "aic_gazebo_simulator"
+  }
+}

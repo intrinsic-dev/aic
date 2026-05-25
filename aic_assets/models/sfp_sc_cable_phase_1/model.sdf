@@ -91,6 +91,20 @@
       <parent>lc_plug_link</parent>
       <child>sfp_module_link</child>
     </joint>
+
+    <plugin filename="static://gz::sim::systems::PosePublisher"
+      name="gz::sim::systems::PosePublisher">
+      <publish_link_pose>true</publish_link_pose>
+      <publish_sensor_pose>false</publish_sensor_pose>
+      <publish_collision_pose>false</publish_collision_pose>
+      <publish_visual_pose>false</publish_visual_pose>
+      <publish_nested_model_pose>true</publish_nested_model_pose>
+      <publish_model_pose>true</publish_model_pose>
+      <use_pose_vector_msg>true</use_pose_vector_msg>
+      <static_publisher>false</static_publisher>
+      <update_frequency>0</update_frequency>
+      <static_update_frequency>0</static_update_frequency>
+    </plugin>
   </model>
 
 </sdf>
