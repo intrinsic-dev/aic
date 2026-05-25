@@ -58,6 +58,8 @@ bool ReorderJointArray(const std::vector<T>& original,
 AicAdapterNode::AicAdapterNode() : Node("aic_adapter_node") {
   include_gripper_in_joint_state_ =
       this->declare_parameter("include_gripper_in_joint_state", true);
+  image_time_tolerance_ =
+      this->declare_parameter("image_time_tolerance", 0.001);
 
   tf_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
   tf_listener_ = std::make_unique<tf2_ros::TransformListener>(*tf_buffer_);
@@ -149,7 +151,7 @@ void AicAdapterNode::image_callback(size_t camera_idx,
   for (size_t i = 1; i < kNumCameras; i++) {
     const rclcpp::Duration cam_time_diff =
         t_image_0 - rclcpp::Time(images_[i]->header.stamp);
-    if (abs(cam_time_diff.seconds()) > 0.001) {
+    if (abs(cam_time_diff.seconds()) > image_time_tolerance_) {
       return;
     }
   }
@@ -161,6 +163,10 @@ void AicAdapterNode::image_callback(size_t camera_idx,
   observation_msg->left_image = std::move(*images_[kLeftCameraIndex]);
   observation_msg->center_image = std::move(*images_[kCenterCameraIndex]);
   observation_msg->right_image = std::move(*images_[kRightCameraIndex]);
+
+  images_[kLeftCameraIndex].reset();
+  images_[kCenterCameraIndex].reset();
+  images_[kRightCameraIndex].reset();
 
   // Make a copy of the CameraInfos, in case we need the original again
   // during the next image cycle.

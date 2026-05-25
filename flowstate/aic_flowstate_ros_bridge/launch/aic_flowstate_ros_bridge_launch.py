@@ -93,6 +93,7 @@ def generate_launch_description():
                             "flowstate_ros_bridge::ExecutiveBridge",
                             "flowstate_ros_bridge::WorldBridge",
                             "flowstate_ros_bridge::RobotControlBridge",
+                            "flowstate_ros_bridge::AicCameraBridge",
                         ],
                         "server_address": LaunchConfiguration("server_address"),
                         "instance": LaunchConfiguration("instance"),
