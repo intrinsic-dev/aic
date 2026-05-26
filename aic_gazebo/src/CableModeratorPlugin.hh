@@ -79,12 +79,29 @@ namespace aic_gazebo
     bool end1Published{false};
     /// \brief Whether the cable task is completed
     bool isCompleted{false};
-    /// \brief Entity of the detachable joint found while waiting for grasp
+    /// \brief Thread-safe tracker of the active contact end
+    /// (-1 = none, 0 = End 0, 1 = End 1)
+    std::atomic<int> activeContactEnd{-1};
+    /// \brief Thread-safe tracker of the active grasp joint
     std::atomic<gz::sim::Entity> activeGraspJoint{gz::sim::kNullEntity};
+    /// \brief Cached indicator of which end of the cable is currently grasped
+    std::optional<int> lastGraspedEnd{std::nullopt};
+    /// \brief Flag indicating if the cable is active/dynamic
+    bool isDynamic{false};
     /// \brief Topic namespace from the touched port
     std::string touchEventCallbackNamespace;
-    /// \brief Which end was last identified as grasped (0, 1)
-    std::optional<int> lastGraspedEnd;
+
+    /// \brief Monitored link entities for end 0
+    /// (including connection0LinkEntity and its immediate fixed neighbors)
+    std::unordered_set<gz::sim::Entity> end0MonitoredLinks;
+    /// \brief Monitored link entities for end 1
+    /// (including connection1LinkEntity and its immediate fixed neighbors)
+    std::unordered_set<gz::sim::Entity> end1MonitoredLinks;
+
+    /// \brief Collision entities monitored for End 0
+    std::unordered_set<gz::sim::Entity> end0CollisionEntities;
+    /// \brief Collision entities monitored for End 1
+    std::unordered_set<gz::sim::Entity> end1CollisionEntities;
     /// \brief Cable connection port subscribers
     std::vector<gz::transport::Node::Subscriber> portSubs;
 
@@ -156,11 +173,11 @@ namespace aic_gazebo
         gz::sim::Entity _connectionLinkEntity,
         const gz::sim::EntityComponentManager& _ecm) const;
 
-    /// \brief Find a detachable joint created by an external plugin that
-    /// connects any link in the given cable model to an external link.
-    /// \param[in] _tracker The cable tracker to check
+    /// \brief Find the external detachable joint connecting the end effector
+    /// to any link of the cable.
+    /// \param[in] _tracker The tracker of the cable to check
     /// \param[in] _ecm Entity Component Manager
-    /// \return Entity of the grasp joint if found, kNullEntity otherwise
+    /// \return Entity of the external grasp joint if found, kNullEntity otherwise
     private: gz::sim::Entity FindExternalGraspJoint(
         const CableTracker& _tracker,
         const gz::sim::EntityComponentManager& _ecm) const;
@@ -193,7 +210,7 @@ namespace aic_gazebo
 
     /// \brief Find Cable model entities based on their names
     /// \param[in] _ecm Entity Component Manager
-    private: void FindCableModels(const gz::sim::EntityComponentManager& _ecm);
+    private: void FindCableModels(gz::sim::EntityComponentManager& _ecm);
 
     /// \brief Initialize port contact subscribers for the given cable
     /// \param[in] _cableIndex The index of the cable to subscribe for
