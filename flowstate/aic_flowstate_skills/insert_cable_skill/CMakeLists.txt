@@ -29,6 +29,8 @@ intrinsic_sdk_generate_skill_main_cc(
   MAIN_FILE_OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/insert_cable_skill_main.cc"
 )
 
+find_package(lifecycle_msgs REQUIRED)
+
 add_executable(insert_cable_skill_main
   src/insert_cable_skill.cc
   ${CMAKE_CURRENT_BINARY_DIR}/insert_cable_skill_main.cc
@@ -46,6 +48,7 @@ target_link_libraries(insert_cable_skill_main
   insert_cable_skill_protos
   rclcpp::rclcpp
   rclcpp_action::rclcpp_action
+  lifecycle_msgs::lifecycle_msgs
   ${aic_task_interfaces_TARGETS}
 )
 
