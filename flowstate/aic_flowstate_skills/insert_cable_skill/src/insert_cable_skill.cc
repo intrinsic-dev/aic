@@ -22,6 +22,10 @@
 #include "absl/status/statusor.h"
 #include "aic_task_interfaces/action/insert_cable.hpp"
 #include "insert_cable_skill.pb.h"
+#include "lifecycle_msgs/srv/change_state.hpp"
+#include "lifecycle_msgs/srv/get_state.hpp"
+#include "lifecycle_msgs/msg/state.hpp"
+#include "lifecycle_msgs/msg/transition.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
 
@@ -47,6 +51,10 @@ class InsertCableClientNode : public rclcpp::Node {
   InsertCableClientNode() : Node("insert_cable_skill_node") {
     client_ =
         rclcpp_action::create_client<InsertCableAction>(this, "/insert_cable");
+    change_state_client_ =
+        this->create_client<lifecycle_msgs::srv::ChangeState>("/aic_model/change_state");
+    get_state_client_ =
+        this->create_client<lifecycle_msgs::srv::GetState>("/aic_model/get_state");
   }
 
   absl::StatusOr<InsertCableAction::Result::SharedPtr> SendAction(
@@ -140,7 +148,54 @@ class InsertCableClientNode : public rclcpp::Node {
     return result_wrapper.result;
   }
 
+  absl::StatusOr<bool> ChangeState(uint8_t transition, double timeout_ms) {
+    if (!change_state_client_->wait_for_service(std::chrono::seconds(5))) {
+      return absl::UnavailableError(
+          "Service '/aic_model/change_state' not available");
+    }
+
+    auto request = std::make_shared<lifecycle_msgs::srv::ChangeState::Request>();
+    request->transition.id = transition;
+
+    auto future = change_state_client_->async_send_request(request);
+    
+    if (rclcpp::spin_until_future_complete(
+            this->get_node_base_interface(), future,
+            std::chrono::milliseconds(static_cast<int>(timeout_ms))) !=
+        rclcpp::FutureReturnCode::SUCCESS) {
+      return absl::DeadlineExceededError(
+          "Timed out waiting for change_state response");
+    }
+
+    auto response = future.get();
+    return response->success;
+  }
+
+  absl::StatusOr<uint8_t> GetState(double timeout_ms) {
+    if (!get_state_client_->wait_for_service(std::chrono::seconds(5))) {
+      return absl::UnavailableError(
+          "Service '/aic_model/get_state' not available");
+    }
+
+    auto request = std::make_shared<lifecycle_msgs::srv::GetState::Request>();
+
+    auto future = get_state_client_->async_send_request(request);
+    
+    if (rclcpp::spin_until_future_complete(
+            this->get_node_base_interface(), future,
+            std::chrono::milliseconds(static_cast<int>(timeout_ms))) !=
+        rclcpp::FutureReturnCode::SUCCESS) {
+      return absl::DeadlineExceededError(
+          "Timed out waiting for get_state response");
+    }
+
+    auto response = future.get();
+    return response->current_state.id;
+  }
+
   rclcpp_action::Client<InsertCableAction>::SharedPtr client_;
+  rclcpp::Client<lifecycle_msgs::srv::ChangeState>::SharedPtr change_state_client_;
+  rclcpp::Client<lifecycle_msgs::srv::GetState>::SharedPtr get_state_client_;
 };
 
 InitRos init;
@@ -194,6 +249,39 @@ InsertCableSkill::Execute(const intrinsic::skills::ExecuteRequest& request,
 
   RCLCPP_INFO(client_node_.get_logger(), "Sending goal for task ID: %s",
               goal_msg.task.id.c_str());
+
+  // Check state of aic_model
+  auto status_or_state = client_node_.GetState(5000.0);
+  if (!status_or_state.ok()) {
+    return absl::InternalError("Failed to get state of aic_model");
+  }
+
+  uint8_t current_state = status_or_state.value();
+  RCLCPP_INFO(client_node_.get_logger(), "Current state of aic_model: %u", current_state);
+
+  if (current_state == lifecycle_msgs::msg::State::PRIMARY_STATE_UNCONFIGURED) {
+    RCLCPP_INFO(client_node_.get_logger(), "Configuring aic_model...");
+    auto status_or_success = client_node_.ChangeState(
+        lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE, 10000.0);
+    if (!status_or_success.ok() || !status_or_success.value()) {
+      return absl::InternalError("Failed to configure aic_model");
+    }
+    current_state = lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE;
+  }
+
+  if (current_state == lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE) {
+    RCLCPP_INFO(client_node_.get_logger(), "Activating aic_model...");
+    auto status_or_success = client_node_.ChangeState(
+        lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE, 10000.0);
+    if (!status_or_success.ok() || !status_or_success.value()) {
+      return absl::InternalError("Failed to activate aic_model");
+    }
+    current_state = lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE;
+  }
+
+  if (current_state != lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE) {
+    return absl::InternalError("aic_model is not in active state");
+  }
 
   auto status_or_result =
       client_node_.SendAction(goal_msg, params.time_limit() * 1000.0);
