@@ -66,6 +66,24 @@ In each trial, the robot spawns at a pre-specified (not random) pose, and the ca
 
 See [Scoring](scoring.md) for details.
 
+## 4. Final Evaluation Configuration
+
+Following the conclusion of the Qualification Phase, we have released the exact [eval_config.yaml](../aic_engine/config/eval_config.yaml) used on our cloud evaluation platform. This file contains the exact settings, rails, translations, and constraints used to calculate the official leaderboard scores.
+
+To run the simulation environment using this official configuration instead of the default `sample_config.yaml`, pass the `aic_engine_config_file` argument when starting the simulation:
+
+**Within the evaluation container (distrobox):**
+```bash
+/entrypoint.sh aic_engine_config_file:=/ws_aic/install/share/aic_engine/config/eval_config.yaml
+```
+
+**Running from source:**
+```bash
+ros2 launch aic_bringup aic_gz_bringup.launch.py \
+  aic_engine_config_file:=$(ros2 pkg prefix aic_engine)/share/aic_engine/config/eval_config.yaml \
+  start_aic_engine:=true
+```
+
 ---
 
 ## Next Steps
