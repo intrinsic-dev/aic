@@ -46,10 +46,13 @@ target_include_directories(insert_cable_skill_main
 target_link_libraries(insert_cable_skill_main
   intrinsic_sdk_cmake::intrinsic_sdk_cmake
   insert_cable_skill_protos
-  rclcpp::rclcpp
-  rclcpp_action::rclcpp_action
-  lifecycle_msgs::lifecycle_msgs
-  ${aic_task_interfaces_TARGETS}
+)
+
+ament_target_dependencies(insert_cable_skill_main
+  rclcpp
+  rclcpp_action
+  lifecycle_msgs
+  aic_task_interfaces
 )
 
 add_dependencies(insert_cable_skill_main insert_cable_skill_config)
