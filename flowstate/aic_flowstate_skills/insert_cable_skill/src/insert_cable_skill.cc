@@ -22,10 +22,10 @@
 #include "absl/status/statusor.h"
 #include "aic_task_interfaces/action/insert_cable.hpp"
 #include "insert_cable_skill.pb.h"
-#include "lifecycle_msgs/srv/change_state.hpp"
-#include "lifecycle_msgs/srv/get_state.hpp"
 #include "lifecycle_msgs/msg/state.hpp"
 #include "lifecycle_msgs/msg/transition.hpp"
+#include "lifecycle_msgs/srv/change_state.hpp"
+#include "lifecycle_msgs/srv/get_state.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
 
@@ -52,9 +52,10 @@ class InsertCableClientNode : public rclcpp::Node {
     client_ =
         rclcpp_action::create_client<InsertCableAction>(this, "/insert_cable");
     change_state_client_ =
-        this->create_client<lifecycle_msgs::srv::ChangeState>("/aic_model/change_state");
-    get_state_client_ =
-        this->create_client<lifecycle_msgs::srv::GetState>("/aic_model/get_state");
+        this->create_client<lifecycle_msgs::srv::ChangeState>(
+            "/aic_model/change_state");
+    get_state_client_ = this->create_client<lifecycle_msgs::srv::GetState>(
+        "/aic_model/get_state");
   }
 
   absl::StatusOr<InsertCableAction::Result::SharedPtr> SendAction(
@@ -154,11 +155,12 @@ class InsertCableClientNode : public rclcpp::Node {
           "Service '/aic_model/change_state' not available");
     }
 
-    auto request = std::make_shared<lifecycle_msgs::srv::ChangeState::Request>();
+    auto request =
+        std::make_shared<lifecycle_msgs::srv::ChangeState::Request>();
     request->transition.id = transition;
 
     auto future = change_state_client_->async_send_request(request);
-    
+
     if (rclcpp::spin_until_future_complete(
             this->get_node_base_interface(), future,
             std::chrono::milliseconds(static_cast<int>(timeout_ms))) !=
@@ -180,7 +182,7 @@ class InsertCableClientNode : public rclcpp::Node {
     auto request = std::make_shared<lifecycle_msgs::srv::GetState::Request>();
 
     auto future = get_state_client_->async_send_request(request);
-    
+
     if (rclcpp::spin_until_future_complete(
             this->get_node_base_interface(), future,
             std::chrono::milliseconds(static_cast<int>(timeout_ms))) !=
@@ -194,7 +196,8 @@ class InsertCableClientNode : public rclcpp::Node {
   }
 
   rclcpp_action::Client<InsertCableAction>::SharedPtr client_;
-  rclcpp::Client<lifecycle_msgs::srv::ChangeState>::SharedPtr change_state_client_;
+  rclcpp::Client<lifecycle_msgs::srv::ChangeState>::SharedPtr
+      change_state_client_;
   rclcpp::Client<lifecycle_msgs::srv::GetState>::SharedPtr get_state_client_;
 };
 
@@ -257,7 +260,8 @@ InsertCableSkill::Execute(const intrinsic::skills::ExecuteRequest& request,
   }
 
   uint8_t current_state = status_or_state.value();
-  RCLCPP_INFO(client_node_.get_logger(), "Current state of aic_model: %u", current_state);
+  RCLCPP_INFO(client_node_.get_logger(), "Current state of aic_model: %u",
+              current_state);
 
   if (current_state == lifecycle_msgs::msg::State::PRIMARY_STATE_UNCONFIGURED) {
     RCLCPP_INFO(client_node_.get_logger(), "Configuring aic_model...");
