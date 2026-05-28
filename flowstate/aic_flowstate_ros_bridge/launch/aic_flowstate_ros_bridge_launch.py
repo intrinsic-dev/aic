@@ -73,7 +73,7 @@ def generate_launch_description():
             ),
             DeclareLaunchArgument(
                 "ft_sensor_part_name",
-                default_value="ft_sensor",
+                default_value="ati_ft_sensor",
                 description="F/T sensor part name",
             ),
             LifecycleNode(
