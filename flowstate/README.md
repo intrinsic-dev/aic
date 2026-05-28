@@ -94,9 +94,9 @@ export INTRINSIC_CLUSTER="vmp-xxxx-xxxxxxx"
 
 ---
 
-## 🛠️ Building the Skill
+## 🛠️ Building the insert_cable_skill
 
-We can use the `build_container.sh` and `build_bundle.sh` script from the intrinsic-ai/sdk-ros repository to build and package the skill bundle. The instructions below build and bundle the `insert_cable_skill`.
+We can use the `build_container.sh` script to build and package the skill bundle using the following instructions.
 
 ---
 
@@ -108,8 +108,7 @@ cd ~/ws_aic_phase1
   --skill_name insert_cable_skill \
   --skill_package aic_flowstate_skills \
   --manifest_path src/aic/flowstate/aic_flowstate_skills/insert_cable_skill/src/insert_cable_skill.manifest.textproto \
-  --dockerfile ./src/aic/flowstate/resources/Dockerfile.skill \
-  --ros_distro kilted
+  --dockerfile ./src/aic/flowstate/resources/Dockerfile.skill
 
 # This command bundles the skill into a deployable tarball
 ./inbuild skill bundle \
@@ -121,7 +120,7 @@ cd ~/ws_aic_phase1
 
 ---
 
-## 📥 Installing skills to Flowstate
+## 📥 Installing insert_cable_skill to Flowstate
 
 After building, upload and install the skill into your solution context.
 
@@ -146,3 +145,53 @@ export INTRINSIC_CLUSTER="vmp-xxxx-xxxxxxx"
 ```
 
 ---
+
+## 🛠️ Building the tare_force_torque_sensor_skill
+
+We can use the `build_container.sh` script to build and package the skill bundle using the following instructions.
+
+---
+
+```bash
+cd ~/ws_aic_phase1
+
+# This command builds the insert_cable_skill, the Intrinsic SDK, and the necessary ROS dependencies into a tar image.
+./src/aic/flowstate/scripts/build_container.sh \
+  --skill_name tare_force_torque_sensor_skill \
+  --skill_package aic_flowstate_skills \
+  --manifest_path src/aic/flowstate/aic_flowstate_skills/tare_force_torque_sensor_skill/src/tare_force_torque_sensor_skill.manifest.textproto \
+  --dockerfile ./src/aic/flowstate/resources/Dockerfile.skill
+
+# This command bundles the skill into a deployable tarball
+./inbuild skill bundle \
+  --file_descriptor_set images/tare_force_torque_sensor_skill/tare_force_torque_sensor_skill_protos.desc \
+  --manifest src/aic/flowstate/aic_flowstate_skills/tare_force_torque_sensor_skill/src/tare_force_torque_sensor_skill.manifest.textproto \
+  --oci_image images/tare_force_torque_sensor_skill/tare_force_torque_sensor_skill.tar \
+  --output images/tare_force_torque_sensor_skill/tare_force_torque_sensor_skill.bundle.tar
+```
+
+---
+
+## 📥 Installing tare_force_torque_sensor_skill to Flowstate
+
+After building, upload and install the skill into your solution context.
+
+---
+
+```bash
+
+# 1. Export path to side-loaded service bundle
+export SKILL_BUNDLE=~/ws_aic_phase1/images/tare_force_torque_sensor_skill/tare_force_torque_sensor_skill.bundle.tar
+
+# 2. Add Organization
+export INTRINSIC_ORGANIZATION="<ORG_NAME>"
+
+# 3. Add Cluster Endpoint
+export INTRINSIC_CLUSTER="vmp-xxxx-xxxxxxx"
+
+./inctl asset install \
+  --org $INTRINSIC_ORGANIZATION \
+  --cluster $INTRINSIC_CLUSTER \
+  $SKILL_BUNDLE
+
+```
