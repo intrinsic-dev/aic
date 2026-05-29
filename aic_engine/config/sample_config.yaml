@@ -324,11 +324,11 @@ trials:
         port_name: "sc_port_base"
         target_module_name: "sc_port_1"
         time_limit: 180
-robot:	
-  home_joint_positions:	
-    shoulder_pan_joint: -0.1597	
-    shoulder_lift_joint: -1.3542	
-    elbow_joint: -1.6648	
-    wrist_1_joint: -1.6933	
-    wrist_2_joint: 1.5710	
-    wrist_3_joint: 1.4110	
+robot:
+  home_joint_positions:
+    shoulder_pan_joint: -0.1597
+    shoulder_lift_joint: -1.3542
+    elbow_joint: -1.6648
+    wrist_1_joint: -1.6933
+    wrist_2_joint: 1.5710
+    wrist_3_joint: 1.4110
