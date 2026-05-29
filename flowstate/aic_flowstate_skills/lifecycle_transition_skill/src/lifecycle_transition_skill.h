@@ -8,7 +8,8 @@
 #include "intrinsic/skills/cc/skill_interface.h"
 #include "intrinsic/skills/proto/skill_service.pb.h"
 
-class LifecycleTransitionSkill final : public intrinsic::skills::SkillInterface {
+class LifecycleTransitionSkill final
+    : public intrinsic::skills::SkillInterface {
  public:
   /**
    * @copydoc intrinsic::skills::SkillInterface:: CreateSkill
