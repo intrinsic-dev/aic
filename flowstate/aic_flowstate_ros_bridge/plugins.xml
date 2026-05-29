@@ -1,5 +1,12 @@
-<library path="robot_control_bridge">
-  <class type="flowstate_ros_bridge::RobotControlBridge" base_class_type="flowstate_ros_bridge::BridgeInterface">
-    <description>Bridge with the Flowstate real-time controller service.</description>
-  </class>
-</library>
+<class_libraries>
+  <library path="robot_control_bridge">
+    <class type="flowstate_ros_bridge::RobotControlBridge" base_class_type="flowstate_ros_bridge::BridgeInterface">
+      <description>Bridge with the Flowstate real-time controller service.</description>
+    </class>
+  </library>
+  <library path="aic_camera_bridge">
+    <class type="flowstate_ros_bridge::AicCameraBridge" base_class_type="flowstate_ros_bridge::BridgeInterface">
+      <description>Bridge for the AIC wrist cameras.</description>
+    </class>
+  </library>
+</class_libraries>

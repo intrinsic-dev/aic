@@ -25,14 +25,22 @@
 #include <gz/plugin/Register.hh>
 #include <gz/sim/Util.hh>
 #include <gz/sim/components/CanonicalLink.hh>
+#include <gz/sim/components/ChildLinkName.hh>
+#include <gz/sim/components/Collision.hh>
+#include <gz/sim/components/ContactSensorData.hh>
 #include <gz/sim/components/DetachableJoint.hh>
+#include <gz/sim/components/JointType.hh>
 #include <gz/sim/components/Link.hh>
 #include <gz/sim/components/Model.hh>
 #include <gz/sim/components/Name.hh>
 #include <gz/sim/components/ParentEntity.hh>
+#include <gz/sim/components/ParentLinkName.hh>
 #include <gz/sim/components/Pose.hh>
-#include <gz/sim/components/PoseCmd.hh>
 #include <gz/sim/components/World.hh>
+#include <gz/sim/config.hh>
+#include <queue>
+#include <sdf/Joint.hh>
+#include <unordered_map>
 
 using namespace gz;
 using namespace sim;
@@ -45,10 +53,6 @@ GZ_ADD_PLUGIN(aic_gazebo::CableModeratorPlugin, gz::sim::System,
               aic_gazebo::CableModeratorPlugin::ISystemReset)
 
 namespace {
-
-/// \brief Default offset of gripper grasping point w.r.t. the end effector.
-const gz::math::Pose3d kEndEffectorOffset =
-    gz::math::Pose3d(0, 0.0, 0.165, 0, 0, 0);
 
 /// \brief Find link in a model
 /// \param[in] _modelName Name of model
@@ -67,8 +71,6 @@ Entity findLinkInModel(const std::string& _modelName,
     return _ecm.EntityByComponents(components::Link(),
                                    components::ParentEntity(modelEntity),
                                    components::Name(_linkName));
-  } else {
-    // gzwarn << "Model " << _modelName << " could not be found.\n";
   }
   return kNullEntity;
 }
@@ -140,202 +142,353 @@ void CableModeratorPlugin::Configure(
     cableElem = cableElem->GetNextElement("cable");
   }
 
-  if (this->cableConfigs.empty()) {
-    gzerr << "Missing valid <cable> parameters." << std::endl;
-    return;
-  }
+  this->cableTrackers.resize(this->cableConfigs.size());
 
   if (_sdf->HasElement("end_effector_model")) {
     this->endEffectorModelName = _sdf->Get<std::string>("end_effector_model");
-  } else {
-    gzerr << "Missing <end_effector_model> parameter." << std::endl;
-    return;
+    gzdbg << "Moderator targeting end effector model: "
+          << this->endEffectorModelName << std::endl;
   }
-
   if (_sdf->HasElement("end_effector_link")) {
     this->endEffectorLinkName = _sdf->Get<std::string>("end_effector_link");
-  } else {
-    gzerr << "Missing <end_effector_link> parameter." << std::endl;
-    return;
-  }
-
-  this->endEffectorOffset =
-      _sdf->Get<math::Pose3d>("end_effector_offset", kEndEffectorOffset).first;
-
-  if (_sdf->HasElement("grasp_distance_threshold")) {
-    this->graspDistanceThreshold =
-        _sdf->Get<double>("grasp_distance_threshold",
-                          this->graspDistanceThreshold)
-            .first;
+    gzdbg << "Moderator targeting end effector link: "
+          << this->endEffectorLinkName << std::endl;
   }
 
   this->creator = std::make_unique<SdfEntityCreator>(_ecm, _eventManager);
 
-  this->taskCompletionPub = this->node.Advertise<gz::msgs::StringMsg>(
+  this->cableInsertionPub = this->node.Advertise<gz::msgs::StringMsg>(
       "/cable_moderator/insertion_event");
 
-  gzmsg << "Initializing to NEXT_CABLE state." << std::endl;
-  this->cableState = CableState::NEXT_CABLE;
+  // Manual grasp subscribers for all cables
+  for (size_t i = 0; i < this->cableTrackers.size(); ++i) {
+    const auto& config = this->cableConfigs[i];
+    auto& tracker = this->cableTrackers[i];
+    std::string prefix = "/" + config.modelName;
+
+    this->manualGraspSubs.push_back(this->node.CreateSubscriber(
+        prefix + "/attach_end_0", std::function<void(const gz::msgs::Empty&)>(
+                                      [&tracker](const gz::msgs::Empty&) {
+                                        tracker.attachEnd0Requested = true;
+                                      })));
+    this->manualGraspSubs.push_back(this->node.CreateSubscriber(
+        prefix + "/detach_end_0", std::function<void(const gz::msgs::Empty&)>(
+                                      [&tracker](const gz::msgs::Empty&) {
+                                        tracker.detachEnd0Requested = true;
+                                      })));
+    this->manualGraspSubs.push_back(this->node.CreateSubscriber(
+        prefix + "/attach_end_1", std::function<void(const gz::msgs::Empty&)>(
+                                      [&tracker](const gz::msgs::Empty&) {
+                                        tracker.attachEnd1Requested = true;
+                                      })));
+    this->manualGraspSubs.push_back(this->node.CreateSubscriber(
+        prefix + "/detach_end_1", std::function<void(const gz::msgs::Empty&)>(
+                                      [&tracker](const gz::msgs::Empty&) {
+                                        tracker.detachEnd1Requested = true;
+                                      })));
+  }
+}
+
+//////////////////////////////////////////////////
+void CableModeratorPlugin::ProcessManualGraspRequests(
+    gz::sim::EntityComponentManager& _ecm) {
+  for (size_t i = 0; i < this->cableTrackers.size(); ++i) {
+    auto& tracker = this->cableTrackers[i];
+    if (!tracker.found) continue;
+
+    if (tracker.attachEnd0Requested.exchange(false)) {
+      gzdbg << "Received manual attach request for "
+            << this->cableConfigs[i].modelName << " end 0" << std::endl;
+      if (this->endEffectorLinkEntity == kNullEntity) {
+        gzerr << "Cannot attach: End effector link not found yet." << std::endl;
+        continue;
+      }
+      if (this->FindGripperJoint(tracker.connection0LinkEntity, _ecm) ==
+          kNullEntity) {
+        Entity jointEntity = _ecm.CreateEntity();
+        _ecm.CreateComponent(jointEntity,
+                             components::DetachableJoint(
+                                 {this->endEffectorLinkEntity,
+                                  tracker.connection0LinkEntity, "fixed"}));
+        gzmsg << "Manually attached " << this->cableConfigs[i].modelName
+              << " end 0" << std::endl;
+      }
+    }
+    if (tracker.detachEnd0Requested.exchange(false)) {
+      gzdbg << "Received manual detach request for "
+            << this->cableConfigs[i].modelName << " end 0" << std::endl;
+      Entity gripperJoint =
+          this->FindGripperJoint(tracker.connection0LinkEntity, _ecm);
+      if (gripperJoint != kNullEntity) {
+        _ecm.RequestRemoveEntity(gripperJoint);
+        gzmsg << "Manually detached " << this->cableConfigs[i].modelName
+              << " end 0" << std::endl;
+      }
+    }
+
+    if (tracker.attachEnd1Requested.exchange(false)) {
+      gzdbg << "Received manual attach request for "
+            << this->cableConfigs[i].modelName << " end 1" << std::endl;
+      if (this->endEffectorLinkEntity == kNullEntity) {
+        gzerr << "Cannot attach: End effector link not found yet." << std::endl;
+        continue;
+      }
+      if (this->FindGripperJoint(tracker.connection1LinkEntity, _ecm) ==
+          kNullEntity) {
+        Entity jointEntity = _ecm.CreateEntity();
+        _ecm.CreateComponent(jointEntity,
+                             components::DetachableJoint(
+                                 {this->endEffectorLinkEntity,
+                                  tracker.connection1LinkEntity, "fixed"}));
+        gzmsg << "Manually attached " << this->cableConfigs[i].modelName
+              << " end 1" << std::endl;
+      }
+    }
+    if (tracker.detachEnd1Requested.exchange(false)) {
+      gzdbg << "Received manual detach request for "
+            << this->cableConfigs[i].modelName << " end 1" << std::endl;
+      Entity gripperJoint =
+          this->FindGripperJoint(tracker.connection1LinkEntity, _ecm);
+      if (gripperJoint != kNullEntity) {
+        _ecm.RequestRemoveEntity(gripperJoint);
+        gzmsg << "Manually detached " << this->cableConfigs[i].modelName
+              << " end 1" << std::endl;
+      }
+    }
+  }
+}
+
+//////////////////////////////////////////////////
+void CableModeratorPlugin::MakeCableStatic(
+    size_t _cableIndex, gz::sim::EntityComponentManager& _ecm) {
+  auto& tracker = this->cableTrackers[_cableIndex];
+  tracker.isDynamic = false;
+#if (GZ_SIM_MAJOR_VERSION == 9 && GZ_SIM_MINOR_VERSION >= 6) ||  \
+    (GZ_SIM_MAJOR_VERSION == 10 && GZ_SIM_MINOR_VERSION >= 3) || \
+    (GZ_SIM_MAJOR_VERSION > 10)
+  Model(tracker.modelEntity).SetStatic(_ecm, true);
+#else
+  static bool warnedOnce = false;
+  if (!warnedOnce) {
+    gzwarn << "Unable to set model static state in version "
+           << GZ_SIM_VERSION_FULL << std::endl;
+    warnedOnce = true;
+  }
+#endif
+
+  if (tracker.detachableJointStatic0Entity != kNullEntity) {
+    _ecm.RequestRemoveEntity(tracker.detachableJointStatic0Entity);
+    tracker.detachableJointStatic0Entity = kNullEntity;
+  }
+  if (tracker.detachableJointStatic1Entity != kNullEntity) {
+    _ecm.RequestRemoveEntity(tracker.detachableJointStatic1Entity);
+    tracker.detachableJointStatic1Entity = kNullEntity;
+  }
+}
+
+//////////////////////////////////////////////////
+void CableModeratorPlugin::MakeCableDynamic(
+    size_t _cableIndex, gz::sim::EntityComponentManager& _ecm) {
+  auto& tracker = this->cableTrackers[_cableIndex];
+  tracker.isDynamic = true;
+#if (GZ_SIM_MAJOR_VERSION == 9 && GZ_SIM_MINOR_VERSION >= 6) ||  \
+    (GZ_SIM_MAJOR_VERSION == 10 && GZ_SIM_MINOR_VERSION >= 3) || \
+    (GZ_SIM_MAJOR_VERSION > 10)
+  Model(tracker.modelEntity).SetStatic(_ecm, false);
+#else
+  static bool warnedOnce = false;
+  if (!warnedOnce) {
+    gzwarn << "Unable to set model static state in version "
+           << GZ_SIM_VERSION_FULL << std::endl;
+    warnedOnce = true;
+  }
+  (void)_ecm;
+#endif
+}
+
+//////////////////////////////////////////////////
+void CableModeratorPlugin::Cleanup(gz::sim::EntityComponentManager& _ecm) {
+  for (const auto& ent : this->staticEntities) {
+    if (ent != kNullEntity) _ecm.RequestRemoveEntity(ent);
+  }
+  this->staticEntities.clear();
 }
 
 //////////////////////////////////////////////////
 void CableModeratorPlugin::PreUpdate(const gz::sim::UpdateInfo& /*_info*/,
                                      gz::sim::EntityComponentManager& _ecm) {
-  if (this->cableState == CableState::COMPLETED) return;
+  this->FindCableModels(_ecm);
 
-  if (this->cableModels.empty()) {
-    if (!this->FindCableModels(_ecm)) return;
-  }
+  this->ProcessManualGraspRequests(_ecm);
 
   if (this->endEffectorLinkEntity == kNullEntity) {
-    this->endEffectorLinkEntity =
-        findLinkInModel(this->endEffectorModelName, endEffectorLinkName, _ecm);
+    this->endEffectorLinkEntity = findLinkInModel(
+        this->endEffectorModelName, this->endEffectorLinkName, _ecm);
+    if (this->endEffectorLinkEntity != kNullEntity) {
+      gzmsg << "End effector link discovered: " << this->endEffectorLinkName
+            << std::endl;
+    }
   }
   if (this->endEffectorLinkEntity == kNullEntity) return;
 
-  if (this->cableState == CableState::HARNESS) {
-    // Hold both connections of the cable in place
-    this->detachableJointStatic0Entity =
-        this->MakeStatic(this->cableConnection0LinkEntity, true, _ecm);
-    this->detachableJointStatic1Entity =
-        this->MakeStatic(this->cableConnection1LinkEntity, true, _ecm);
+  for (size_t i = 0; i < this->cableTrackers.size(); ++i) {
+    auto& tracker = this->cableTrackers[i];
+    if (!tracker.found || tracker.isCompleted) continue;
 
-    gzmsg << "Cable transitioning to WAITING_CONN_0 state." << std::endl;
-    this->cableState = CableState::WAITING_CONN_0;
-  }
+    // Helper lambda: check if a contact involves a gripper/finger link
+    auto hasGripperContact =
+        [&](Entity collisionEnt,
+            const std::unordered_set<Entity>& ownCollisions) -> bool {
+      auto contactComp =
+          _ecm.Component<components::ContactSensorData>(collisionEnt);
+      if (!contactComp) return false;
+      for (const auto& contact : contactComp->Data().contact()) {
+        // Determine which collision in the pair is the "other" (not ours)
+        Entity otherCollision = kNullEntity;
+        Entity c1 = contact.collision1().id();
+        Entity c2 = contact.collision2().id();
+        if (ownCollisions.count(c1) > 0) {
+          otherCollision = c2;
+        } else if (ownCollisions.count(c2) > 0) {
+          otherCollision = c1;
+        } else {
+          continue;
+        }
+        // Walk up to the parent link of the other collision
+        auto parentComp =
+            _ecm.Component<components::ParentEntity>(otherCollision);
+        if (!parentComp) continue;
+        auto nameComp = _ecm.Component<components::Name>(parentComp->Data());
+        if (!nameComp) continue;
+        const std::string& linkName = nameComp->Data();
+        if (linkName.find(this->endEffectorLinkName) != std::string::npos) {
+          return true;
+        }
+      }
+      return false;
+    };
 
-  if (this->cableState == CableState::WAITING_CONN_0) {
-    if (this->HandleGrasping(this->cableConnection0LinkEntity,
-                             this->detachableJointStatic0Entity, _ecm)) {
-      gzmsg << "Cable transitioning to ATTACHED_TO_GRIPPER_CONN_0 state."
-            << std::endl;
-      this->cableState = CableState::ATTACHED_TO_GRIPPER_CONN_0;
-    }
-  }
+    bool end0InContact = false;
+    bool end1InContact = false;
+    int currentContactEnd = -1;
 
-  if (this->cableState == CableState::ATTACHED_TO_GRIPPER_CONN_0) {
-    if (this->cableConnectionPortSubs.empty()) {
-      this->CreatePortSubscribers(
-          this->cableConfigs[this->cableIndex - 1].connection0PortName);
-    }
-
-    if (this->attachCableConnectionToPort) {
-      gzmsg << "Cable transitioning to ATTACH_TO_PORT_CONN_0 state."
-            << std::endl;
-      this->cableState = CableState::ATTACH_TO_PORT_CONN_0;
-    }
-  }
-
-  if (this->cableState == CableState::ATTACH_TO_PORT_CONN_0) {
-    this->cableConnectionPortSubs.clear();
-    this->attachCableConnectionToPort = false;
-    this->touchEventCallbackNamespace = std::nullopt;
-    if (this->detachableJointGripperConnEntity != kNullEntity) {
-      _ecm.RequestRemoveEntity(this->detachableJointGripperConnEntity);
-      this->detachableJointGripperConnEntity = kNullEntity;
-    }
-
-    this->detachableJointStatic0Entity =
-        this->MakeStatic(this->cableConnection0LinkEntity, true, _ecm);
-
-    gzmsg << "Cable transitioning to WAITING_CONN_1 state." << std::endl;
-    this->cableState = CableState::WAITING_CONN_1;
-  }
-
-  if (this->cableState == CableState::WAITING_CONN_1) {
-    if (this->HandleGrasping(this->cableConnection1LinkEntity,
-                             this->detachableJointStatic1Entity, _ecm)) {
-      gzmsg << "Cable transitioning to ATTACHED_TO_GRIPPER_CONN_1 state."
-            << std::endl;
-      this->cableState = CableState::ATTACHED_TO_GRIPPER_CONN_1;
-    }
-  }
-
-  if (this->cableState == CableState::ATTACHED_TO_GRIPPER_CONN_1) {
-    if (this->cableConnectionPortSubs.empty()) {
-      this->CreatePortSubscribers(
-          this->cableConfigs[this->cableIndex - 1].connection1PortName);
+    for (Entity collisionEnt : tracker.end0CollisionEntities) {
+      if (hasGripperContact(collisionEnt, tracker.end0CollisionEntities)) {
+        end0InContact = true;
+        break;
+      }
     }
 
-    if (this->attachCableConnectionToPort) {
-      gzmsg << "Cable transitioning to ATTACH_TO_PORT_CONN_1 state."
-            << std::endl;
-      this->cableState = CableState::ATTACH_TO_PORT_CONN_1;
-    }
-  }
-
-  if (this->cableState == CableState::ATTACH_TO_PORT_CONN_1) {
-    if (this->detachableJointGripperConnEntity != kNullEntity) {
-      _ecm.RequestRemoveEntity(this->detachableJointGripperConnEntity);
-      this->detachableJointGripperConnEntity = kNullEntity;
+    for (Entity collisionEnt : tracker.end1CollisionEntities) {
+      if (hasGripperContact(collisionEnt, tracker.end1CollisionEntities)) {
+        end1InContact = true;
+        break;
+      }
     }
 
-    this->detachableJointStatic1Entity =
-        this->MakeStatic(this->cableConnection1LinkEntity, true, _ecm);
+    if (end0InContact) {
+      currentContactEnd = 0;
+    } else if (end1InContact) {
+      currentContactEnd = 1;
+    }
 
-    gzmsg << "Cable transitioning to NEXT_CABLE state." << std::endl;
-    this->cableState = CableState::NEXT_CABLE;
-  }
+    if (currentContactEnd != -1) {
+      // Create subscribers if they weren't already.
+      if (tracker.portSubs.empty()) this->CreatePortSubscribers(i);
 
-  if (this->cableState == CableState::NEXT_CABLE) {
-    this->cableConnectionPortSubs.clear();
-    this->attachCableConnectionToPort = false;
-    this->touchEventCallbackNamespace = std::nullopt;
-
-    if (this->cableIndex < this->cableModels.size()) {
-      if (this->ToggleActiveCable(_ecm)) {
-        gzmsg << "Cable transitioning to HARNESS state for next cable."
+      int prevContactEnd = tracker.activeContactEnd.load();
+      if (prevContactEnd == -1 || prevContactEnd != currentContactEnd) {
+        gzmsg << "Cable " << this->cableConfigs[i].modelName
+              << " contact confirmed near End " << currentContactEnd
               << std::endl;
-        this->cableState = CableState::HARNESS;
+        tracker.activeContactEnd.store(currentContactEnd);
+        if (prevContactEnd == -1) {
+          this->MakeCableDynamic(i, _ecm);
+        }
+      }
+
+      if (currentContactEnd == 0) {
+        // Grasping near End 0: Unfreeze End 0 (if not inserted), Ensure End 1
+        // is frozen
+        if (!tracker.end0Inserted &&
+            tracker.detachableJointStatic0Entity != kNullEntity) {
+          _ecm.RequestRemoveEntity(tracker.detachableJointStatic0Entity);
+          tracker.detachableJointStatic0Entity = kNullEntity;
+          gzmsg << "Unfreezing End 0 for manipulation." << std::endl;
+        }
+        if (!tracker.end1Inserted &&
+            tracker.detachableJointStatic1Entity == kNullEntity) {
+          tracker.detachableJointStatic1Entity =
+              this->MakeStatic(tracker.connection1LinkEntity, true, _ecm);
+          gzdbg << "Locking End 1. Resulting joint: "
+                << tracker.detachableJointStatic1Entity << std::endl;
+        }
       } else {
-        gzmsg << "Failed to toggle active cable. Transitioning to COMPLETED "
-                 "state."
-              << std::endl;
-        this->cableState = CableState::COMPLETED;
+        // Grasping near End 1: Unfreeze End 1 (if not inserted), Ensure End 0
+        // is frozen
+        if (!tracker.end1Inserted &&
+            tracker.detachableJointStatic1Entity != kNullEntity) {
+          _ecm.RequestRemoveEntity(tracker.detachableJointStatic1Entity);
+          tracker.detachableJointStatic1Entity = kNullEntity;
+          gzmsg << "Unfreezing End 1 for manipulation." << std::endl;
+        }
+        if (!tracker.end0Inserted &&
+            tracker.detachableJointStatic0Entity == kNullEntity) {
+          tracker.detachableJointStatic0Entity =
+              this->MakeStatic(tracker.connection0LinkEntity, true, _ecm);
+          gzdbg << "Locking End 0. Resulting joint: "
+                << tracker.detachableJointStatic0Entity << std::endl;
+        }
       }
     } else {
-      gz::msgs::StringMsg msg;
-      msg.set_data("all_cables_completed");
-      this->taskCompletionPub.Publish(msg);
+      // Dynamic State Persistence: once made dynamic, keep it dynamic even
+      // without active contact.
+      tracker.activeContactEnd.store(-1);
+    }
 
-      gzmsg << "All cables processed. Transitioning to COMPLETED state."
+    if (tracker.isDynamic) {
+      Entity graspJoint = this->FindExternalGraspJoint(tracker, _ecm);
+      if (graspJoint != kNullEntity) {
+        auto closerEnd = this->FindGraspedEnd(i, graspJoint, _ecm);
+        if (closerEnd.has_value()) {
+          tracker.lastGraspedEnd = closerEnd;
+        }
+        tracker.activeGraspJoint.store(graspJoint);
+      } else {
+        tracker.activeGraspJoint.store(kNullEntity);
+        tracker.lastGraspedEnd = std::nullopt;
+      }
+    }
+
+    if (tracker.end0Inserted &&
+        tracker.detachableJointStatic0Entity == kNullEntity) {
+      tracker.detachableJointStatic0Entity =
+          this->MakeStatic(tracker.connection0LinkEntity, true, _ecm);
+    }
+    if (tracker.end1Inserted &&
+        tracker.detachableJointStatic1Entity == kNullEntity) {
+      tracker.detachableJointStatic1Entity =
+          this->MakeStatic(tracker.connection1LinkEntity, true, _ecm);
+    }
+
+    if (tracker.end0Inserted && tracker.end1Inserted && !tracker.isCompleted) {
+      tracker.isCompleted = true;
+      this->MakeCableStatic(i, _ecm);
+      gzmsg << "Cable " << this->cableConfigs[i].modelName << " fully inserted."
             << std::endl;
-      this->cableState = CableState::COMPLETED;
+      tracker.portSubs.clear();
     }
   }
 }
 
 //////////////////////////////////////////////////
-void CableModeratorPlugin::Update(const gz::sim::UpdateInfo& /*_info*/,
-                                  gz::sim::EntityComponentManager& /*_ecm*/) {}
-
-//////////////////////////////////////////////////
-void CableModeratorPlugin::PostUpdate(
-    const gz::sim::UpdateInfo& /*_info*/,
-    const gz::sim::EntityComponentManager& /*_ecm*/) {}
-
-//////////////////////////////////////////////////
-void CableModeratorPlugin::Reset(const gz::sim::UpdateInfo& /*_info*/,
-                                 gz::sim::EntityComponentManager& /*_ecm*/) {
+void CableModeratorPlugin::Update(const gz::sim::UpdateInfo&,
+                                  gz::sim::EntityComponentManager&) {}
+void CableModeratorPlugin::PostUpdate(const gz::sim::UpdateInfo&,
+                                      const gz::sim::EntityComponentManager&) {}
+void CableModeratorPlugin::Reset(const gz::sim::UpdateInfo&,
+                                 gz::sim::EntityComponentManager&) {
   gzdbg << "aic_gazebo::CableModeratorPlugin::Reset" << std::endl;
-}
-
-//////////////////////////////////////////////////
-void CableModeratorPlugin::Cleanup(gz::sim::EntityComponentManager& _ecm) {
-  if (this->detachableJointStatic0Entity != kNullEntity)
-    _ecm.RequestRemoveEntity(this->detachableJointStatic0Entity);
-  if (this->detachableJointStatic1Entity != kNullEntity)
-    _ecm.RequestRemoveEntity(this->detachableJointStatic1Entity);
-  if (this->detachableJointGripperConnEntity != kNullEntity)
-    _ecm.RequestRemoveEntity(this->detachableJointGripperConnEntity);
-
-  for (const auto& ent : this->staticEntities) {
-    if (ent != kNullEntity) {
-      _ecm.RequestRemoveEntity(ent);
-    }
-  }
-
-  this->staticEntities.clear();
 }
 
 //////////////////////////////////////////////////
@@ -355,8 +508,11 @@ Entity CableModeratorPlugin::MakeStatic(Entity _entity,
     staticModelToSpawn.Load(staticModelSDF);
   }
 
+  auto parentComp = _ecm.Component<components::ParentEntity>(_entity);
+  auto parentNameComp = _ecm.Component<components::Name>(parentComp->Data());
   auto nameComp = _ecm.Component<components::Name>(_entity);
-  std::string staticEntName = nameComp->Data() + "__static__";
+  std::string staticEntName =
+      nameComp->Data() + "_" + parentNameComp->Data() + "__static__";
   Entity staticEntity =
       _ecm.EntityByComponents(components::Name(staticEntName));
   if (staticEntity == kNullEntity) {
@@ -394,109 +550,289 @@ Entity CableModeratorPlugin::MakeStatic(Entity _entity,
 }
 
 //////////////////////////////////////////////////
-bool CableModeratorPlugin::HandleGrasping(
-    gz::sim::Entity _connectionLinkEntity,
-    gz::sim::Entity& _detachableJointStaticEntity,
-    gz::sim::EntityComponentManager& _ecm) {
-  auto eeLinkWorldPose = gz::sim::worldPose(this->endEffectorLinkEntity, _ecm);
-  auto eeLinkOffsetWorldPose = eeLinkWorldPose * this->endEffectorOffset;
-  auto connPose = gz::sim::worldPose(_connectionLinkEntity, _ecm);
-
-  if (eeLinkOffsetWorldPose.Pos().Distance(connPose.Pos()) <
-      this->graspDistanceThreshold) {
-    // TODO(anyone) Add check for gripper joint state to make sure it is closed.
-    if (_detachableJointStaticEntity != kNullEntity) {
-      _ecm.RequestRemoveEntity(_detachableJointStaticEntity);
-      _detachableJointStaticEntity = kNullEntity;
-    }
-
-    this->detachableJointGripperConnEntity = _ecm.CreateEntity();
-    _ecm.CreateComponent(
-        this->detachableJointGripperConnEntity,
-        components::DetachableJoint(
-            {this->endEffectorLinkEntity, _connectionLinkEntity, "fixed"}));
-    return true;
-  }
-  return false;
+Entity CableModeratorPlugin::FindGripperJoint(
+    Entity _connectionLinkEntity, const EntityComponentManager& _ecm) const {
+  Entity result = kNullEntity;
+  _ecm.Each<components::DetachableJoint>(
+      [&](const Entity& _entity,
+          const components::DetachableJoint* _joint) -> bool {
+        const auto& info = _joint->Data();
+        if ((info.parentLink == this->endEffectorLinkEntity &&
+             info.childLink == _connectionLinkEntity) ||
+            (info.parentLink == _connectionLinkEntity &&
+             info.childLink == this->endEffectorLinkEntity)) {
+          result = _entity;
+          return false;
+        }
+        return true;
+      });
+  return result;
 }
 
 //////////////////////////////////////////////////
-bool CableModeratorPlugin::FindCableModels(
-    const gz::sim::EntityComponentManager& _ecm) {
-  for (const auto& config : this->cableConfigs) {
-    auto entitiesMatchingName = entitiesFromScopedName(config.modelName, _ecm);
-    Entity modelEntity{kNullEntity};
-    if (entitiesMatchingName.size() == 1) {
-      modelEntity = *entitiesMatchingName.begin();
-      this->cableModels.push_back(modelEntity);
-    } else {
-      gzwarn << "Cable model " << config.modelName << " could not be found.\n";
-    }
-  }
-
-  if (this->cableModels.size() != this->cableConfigs.size()) {
-    this->cableModels.clear();
-    return false;
-  }
-  return true;
+Entity CableModeratorPlugin::FindExternalGraspJoint(
+    const CableTracker& _tracker,
+    const gz::sim::EntityComponentManager& _ecm) const {
+  Entity result = kNullEntity;
+  _ecm.Each<components::DetachableJoint>(
+      [&](const Entity& _entity,
+          const components::DetachableJoint* _joint) -> bool {
+        const auto& info = _joint->Data();
+        bool parentInCable = _tracker.neighbors.count(info.parentLink) > 0;
+        bool childInCable = _tracker.neighbors.count(info.childLink) > 0;
+        if (parentInCable != childInCable) {
+          Entity externalLink =
+              parentInCable ? info.childLink : info.parentLink;
+          auto parentEnt =
+              _ecm.Component<components::ParentEntity>(externalLink);
+          if (parentEnt) {
+            auto modelName =
+                _ecm.Component<components::Name>(parentEnt->Data());
+            if (modelName &&
+                modelName->Data().find("__static__") != std::string::npos) {
+              return true;
+            }
+          }
+          result = _entity;
+          return false;
+        }
+        return true;
+      });
+  return result;
 }
 
 //////////////////////////////////////////////////
-void CableModeratorPlugin::CreatePortSubscribers(const std::string& _portName) {
+void CableModeratorPlugin::FindCableModels(EntityComponentManager& _ecm) {
+  for (size_t i = 0; i < this->cableConfigs.size(); ++i) {
+    if (!this->cableTrackers[i].found) {
+      auto entitiesMatchingName =
+          entitiesFromScopedName(this->cableConfigs[i].modelName, _ecm);
+      if (!entitiesMatchingName.empty()) {
+        Entity modelEntity = *entitiesMatchingName.begin();
+        this->cableTrackers[i].modelEntity = modelEntity;
+        this->cableTrackers[i].found = true;
+        Model model(modelEntity);
+        this->cableTrackers[i].connection0LinkEntity =
+            model.LinkByName(_ecm, this->cableConfigs[i].connection0LinkName);
+        this->cableTrackers[i].connection1LinkEntity =
+            model.LinkByName(_ecm, this->cableConfigs[i].connection1LinkName);
+
+        // Build the topological graph of the cable
+        for (Entity jointEnt : model.Joints(_ecm)) {
+          auto pName = _ecm.Component<components::ParentLinkName>(jointEnt);
+          auto cName = _ecm.Component<components::ChildLinkName>(jointEnt);
+          if (pName && cName) {
+            Entity pEnt = model.LinkByName(_ecm, pName->Data());
+            Entity cEnt = model.LinkByName(_ecm, cName->Data());
+            if (pEnt != kNullEntity && cEnt != kNullEntity) {
+              this->cableTrackers[i].neighbors[pEnt].push_back(cEnt);
+              this->cableTrackers[i].neighbors[cEnt].push_back(pEnt);
+            }
+          }
+        }
+
+        // Initialize monitored links (connection links and their immediate
+        // fixed neighbors)
+        auto& tracker = this->cableTrackers[i];
+        tracker.end0MonitoredLinks.insert(tracker.connection0LinkEntity);
+        tracker.end1MonitoredLinks.insert(tracker.connection1LinkEntity);
+
+        for (Entity jointEnt : model.Joints(_ecm)) {
+          auto jointTypeComp = _ecm.Component<components::JointType>(jointEnt);
+          if (jointTypeComp && jointTypeComp->Data() == sdf::JointType::FIXED) {
+            auto pName = _ecm.Component<components::ParentLinkName>(jointEnt);
+            auto cName = _ecm.Component<components::ChildLinkName>(jointEnt);
+            if (pName && cName) {
+              Entity pEnt = model.LinkByName(_ecm, pName->Data());
+              Entity cEnt = model.LinkByName(_ecm, cName->Data());
+              if (pEnt != kNullEntity && cEnt != kNullEntity) {
+                if (pEnt == tracker.connection0LinkEntity) {
+                  tracker.end0MonitoredLinks.insert(cEnt);
+                } else if (cEnt == tracker.connection0LinkEntity) {
+                  tracker.end0MonitoredLinks.insert(pEnt);
+                }
+
+                if (pEnt == tracker.connection1LinkEntity) {
+                  tracker.end1MonitoredLinks.insert(cEnt);
+                } else if (cEnt == tracker.connection1LinkEntity) {
+                  tracker.end1MonitoredLinks.insert(pEnt);
+                }
+              }
+            }
+          }
+        }
+
+        // Discover and register collision entities for monitored links
+        _ecm.Each<components::Collision, components::ParentEntity>(
+            [&](const Entity& _collisionEntity, const components::Collision*,
+                const components::ParentEntity* _parentLinkComp) -> bool {
+              Entity linkEntity = _parentLinkComp->Data();
+              if (tracker.end0MonitoredLinks.count(linkEntity) > 0) {
+                tracker.end0CollisionEntities.insert(_collisionEntity);
+                if (!_ecm.EntityHasComponentType(
+                        _collisionEntity,
+                        components::ContactSensorData::typeId)) {
+                  _ecm.CreateComponent(_collisionEntity,
+                                       components::ContactSensorData());
+                  std::string collisionName = std::to_string(_collisionEntity);
+                  if (auto nameComp =
+                          _ecm.Component<components::Name>(_collisionEntity)) {
+                    collisionName = nameComp->Data();
+                  }
+                  std::string parentName = std::to_string(linkEntity);
+                  if (auto parentNameComp =
+                          _ecm.Component<components::Name>(linkEntity)) {
+                    parentName = parentNameComp->Data();
+                  }
+                  gzdbg << "Enabled contact tracking on End 0 collision: "
+                        << collisionName << " (parent: " << parentName << ")"
+                        << std::endl;
+                }
+              } else if (tracker.end1MonitoredLinks.count(linkEntity) > 0) {
+                tracker.end1CollisionEntities.insert(_collisionEntity);
+                if (!_ecm.EntityHasComponentType(
+                        _collisionEntity,
+                        components::ContactSensorData::typeId)) {
+                  _ecm.CreateComponent(_collisionEntity,
+                                       components::ContactSensorData());
+                  std::string collisionName = std::to_string(_collisionEntity);
+                  if (auto nameComp =
+                          _ecm.Component<components::Name>(_collisionEntity)) {
+                    collisionName = nameComp->Data();
+                  }
+                  std::string parentName = std::to_string(linkEntity);
+                  if (auto parentNameComp =
+                          _ecm.Component<components::Name>(linkEntity)) {
+                    parentName = parentNameComp->Data();
+                  }
+                  gzdbg << "Enabled contact tracking on End 1 collision: "
+                        << collisionName << " (parent: " << parentName << ")"
+                        << std::endl;
+                }
+              }
+              return true;
+            });
+
+        this->MakeCableStatic(i, _ecm);
+        gzmsg << "Found cable model: " << this->cableConfigs[i].modelName
+              << std::endl;
+      }
+    }
+  }
+}
+
+//////////////////////////////////////////////////
+void CableModeratorPlugin::CreatePortSubscribers(size_t _cableIndex) {
+  auto& config = this->cableConfigs[_cableIndex];
+  auto& tracker = this->cableTrackers[_cableIndex];
+
   std::vector<std::string> allTopics;
   this->node.TopicList(allTopics);
 
-  std::function<void(const msgs::Boolean&, const transport::MessageInfo&)>
-      callback = [this](const msgs::Boolean& _msg,
-                        const transport::MessageInfo& _info) {
-        size_t pos = _info.Topic().rfind("/");
-        // TODO(luca) If we only ever receive true boolean messages consider
-        // removing the atomic bool and only having the namespace as a
-        // std::optional
-        // TODO(luca) Protect the namespace with a mutex since it can't be
-        // atomic and it is set in a separate thread.
-        // TODO(luca) Check if we need the namespace at all, it is used to check
-        // if we plugged into the right port but this might be done by another
-        // plugin (scoring)
-        this->touchEventCallbackNamespace = _info.Topic().substr(0, pos);
-        this->attachCableConnectionToPort = _msg.data();
-        gzdbg << "Cable connection touched: " << _msg.data()
-              << ". Topic: " << _info.Topic() << std::endl;
-      };
+  auto cb = [this, _cableIndex](const gz::msgs::Boolean& _msg,
+                                const gz::transport::MessageInfo& _info,
+                                int end) {
+    if (_msg.data()) {
+      auto& tracker = this->cableTrackers[_cableIndex];
+      // Grasp filter: Only report insertion if this cable is actually being
+      // held and the touch plugin reported touch on the grasped end
+      if (tracker.activeGraspJoint.load() == kNullEntity ||
+          tracker.lastGraspedEnd != end) {
+        gzdbg << "Ignoring touch event for "
+              << this->cableConfigs[_cableIndex].modelName << " on port "
+              << _info.Topic() << " (Not grasped)" << std::endl;
+        return;
+      }
+
+      if (end == 0 ? tracker.end0Inserted : tracker.end1Inserted) return;
+      if (end == 0)
+        tracker.end0Inserted = true;
+      else
+        tracker.end1Inserted = true;
+      gzmsg << "Touch event received for "
+            << this->cableConfigs[_cableIndex].modelName << " end " << end
+            << " from topic " << _info.Topic() << std::endl;
+      auto pos = _info.Topic().rfind("/");
+      if (pos != std::string::npos)
+        tracker.touchEventCallbackNamespace = _info.Topic().substr(0, pos);
+      gz::msgs::StringMsg pubMsg;
+      pubMsg.set_data(this->cableConfigs[_cableIndex].modelName + "#" +
+                      std::to_string(end) + "#" +
+                      tracker.touchEventCallbackNamespace);
+      this->cableInsertionPub.Publish(pubMsg);
+    }
+  };
+
+  auto subscribe = [this, &config, &tracker, cb](const std::string& _topic,
+                                                 int _end) {
+    gzmsg << "Subscribing End " << _end << " of " << config.modelName
+          << " to: " << _topic << std::endl;
+    tracker.portSubs.emplace_back(this->node.CreateSubscriber(
+        _topic, std::function<void(const gz::msgs::Boolean&,
+                                   const gz::transport::MessageInfo&)>(
+                    std::bind(cb, std::placeholders::_1, std::placeholders::_2,
+                              _end))));
+  };
 
   for (const auto& topic : allTopics) {
-    if (topic.find(_portName) != std::string::npos &&
-        topic.find("touched") != std::string::npos) {
-      this->cableConnectionPortSubs.emplace_back(
-          this->node.CreateSubscriber(topic, callback));
+    if (topic.find("touched") == std::string::npos) continue;
+
+    if (topic.find(config.connection0PortName) != std::string::npos) {
+      subscribe(topic, 0);
+    }
+    if (topic.find(config.connection1PortName) != std::string::npos) {
+      subscribe(topic, 1);
     }
   }
 }
 
 //////////////////////////////////////////////////
-bool CableModeratorPlugin::ToggleActiveCable(
-    const gz::sim::EntityComponentManager& _ecm) {
-  // TODO(anyone) make previous cable (including all links) static?
-  this->cableModel = Model(this->cableModels[this->cableIndex]);
-  const auto cableModelName = this->cableModel.Name(_ecm);
+std::optional<int> CableModeratorPlugin::FindGraspedEnd(
+    size_t _cableIndex, Entity _graspJoint,
+    const EntityComponentManager& _ecm) const {
+  auto& tracker = this->cableTrackers[_cableIndex];
+  auto jointComp = _ecm.Component<components::DetachableJoint>(_graspJoint);
+  if (!jointComp) return std::nullopt;
+  const auto& info = jointComp->Data();
 
-  if (!this->cableModel.Valid(_ecm)) return false;
+  Entity cableLink = tracker.neighbors.count(info.parentLink) > 0
+                         ? info.parentLink
+                         : info.childLink;
 
-  const auto& config = this->cableConfigs[this->cableIndex];
+  if (cableLink == tracker.connection0LinkEntity) return 0;
+  if (cableLink == tracker.connection1LinkEntity) return 1;
 
-  this->cableConnection0LinkEntity =
-      findLinkInModel(cableModelName, config.connection0LinkName, _ecm);
+  // Fallback: Topological distance (link count).
+  // This is used if the gripper attaches to a link that isn't one of the ends.
+  // Perform BFS to find the shortest topological path to both ends using cached
+  // graph
+  std::unordered_map<Entity, int> dists;
+  std::queue<Entity> q;
+  q.push(cableLink);
+  dists[cableLink] = 0;
 
-  this->cableConnection1LinkEntity =
-      findLinkInModel(cableModelName, config.connection1LinkName, _ecm);
+  while (!q.empty()) {
+    Entity curr = q.front();
+    q.pop();
+    int d = dists[curr];
 
-  if (this->cableConnection0LinkEntity == kNullEntity ||
-      this->cableConnection1LinkEntity == kNullEntity)
-    return false;
+    // Check if we've reached either end link
+    if (curr == tracker.connection0LinkEntity) return 0;
+    if (curr == tracker.connection1LinkEntity) return 1;
 
-  this->cableIndex++;
+    auto it = tracker.neighbors.find(curr);
+    if (it != tracker.neighbors.end()) {
+      for (Entity next : it->second) {
+        if (dists.find(next) == dists.end()) {
+          dists[next] = d + 1;
+          q.push(next);
+        }
+      }
+    }
+  }
 
-  return true;
+  // Failed to find a connection to any link
+  return std::nullopt;
 }
 
 }  // namespace aic_gazebo

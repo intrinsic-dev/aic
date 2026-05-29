@@ -1,0 +1,1830 @@
+<?xml version="1.0" ?>
+<sdf version="1.9">
+  <model name="cable">
+    <link name='cable_end_0'>
+      <pose>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0</mass>
+        <inertia>
+          <ixx>0.001</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.001</iyy>
+          <iyz>0</iyz>
+          <izz>0.001</izz>
+        </inertia>
+      </inertial>
+      <collision name='base_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.05</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.05</friction>
+              <friction2>0.05</friction2>
+            </bullet>
+          </friction>
+        </surface>
+      </collision>
+      <visual name='base_vis'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <sphere>
+            <radius>0.002</radius>
+          </sphere>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <enable_wind>false</enable_wind>
+    </link>
+    <joint name='joint_end_0' type='ball'>
+      <pose>-1.2196199999999999e-18 1.7036e-19 -0.024 0.024762999999999993 1.7999999999999909e-05 -0.061838999999999998</pose>
+      <child>link_1</child>
+      <parent>cable_end_0</parent>
+      <axis>
+        <xyz>1.7146062837236352e-16 -1.5504091066549018e-17 1</xyz>
+        <limit>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+          <effort>inf</effort>
+          <velocity>inf</velocity>
+          <stiffness>100000000</stiffness>
+          <dissipation>1</dissipation>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+          <damping>0.20000000000000001</damping>
+          <friction>0</friction>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='link_1'>
+      <pose>0.008285270026755942 0.00090974360136397703 0.022503620592118634 0.030248501434986374 0.35347438069324083 0.1965656925848957</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0</mass>
+        <inertia>
+          <ixx>0.001</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.001</iyy>
+          <iyz>0</iyz>
+          <izz>0.001</izz>
+        </inertia>
+      </inertial>
+      <collision name='link_1_collision'>
+        <pose>0 0 0.0060000000000000001 0 0 0</pose>
+        <geometry>
+          <capsule>
+            <length>0.035999999999999997</length>
+            <radius>0.002</radius>
+          </capsule>
+        </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.050000000000000003</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.050000000000000003</friction>
+              <friction2>0.050000000000000003</friction2>
+            </bullet>
+          </friction>
+        </surface>
+      </collision>
+      <visual name='link_1_vis'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <capsule>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </capsule>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <enable_wind>false</enable_wind>
+    </link>
+    <link name='link_2'>
+      <pose>0.02939153165201347 0.0046136601655235032 0.065097538877921246 0.16626173834772792 0.55672948194858762 0.52205207666730291</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0</mass>
+        <inertia>
+          <ixx>0.001</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.001</iyy>
+          <iyz>0</iyz>
+          <izz>0.001</izz>
+        </inertia>
+      </inertial>
+      <collision name='link_2_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <capsule>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </capsule>
+        </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.050000000000000003</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.050000000000000003</friction>
+              <friction2>0.050000000000000003</friction2>
+            </bullet>
+          </friction>
+        </surface>
+      </collision>
+      <visual name='link_2_vis'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <capsule>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </capsule>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <enable_wind>false</enable_wind>
+    </link>
+    <link name='link_3'>
+      <pose>0.057153364056589773 0.011170405104272418 0.10357949385143034 0.41880122695709227 0.57530736391681037 0.93249384066024532</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0</mass>
+        <inertia>
+          <ixx>0.001</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.001</iyy>
+          <iyz>0</iyz>
+          <izz>0.001</izz>
+        </inertia>
+      </inertial>
+      <collision name='link_3_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <capsule>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </capsule>
+        </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.050000000000000003</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.050000000000000003</friction>
+              <friction2>0.050000000000000003</friction2>
+            </bullet>
+          </friction>
+        </surface>
+      </collision>
+      <visual name='link_3_vis'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <capsule>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </capsule>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <enable_wind>false</enable_wind>
+    </link>
+    <link name='link_4'>
+      <pose>0.088682073728616695 0.018895727692867126 0.13883689620313056 0.69551666984829164 0.41270548696486697 1.357330522349333</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0</mass>
+        <inertia>
+          <ixx>0.001</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.001</iyy>
+          <iyz>0</iyz>
+          <izz>0.001</izz>
+        </inertia>
+      </inertial>
+      <collision name='link_4_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <capsule>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </capsule>
+        </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.050000000000000003</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.050000000000000003</friction>
+              <friction2>0.050000000000000003</friction2>
+            </bullet>
+          </friction>
+        </surface>
+      </collision>
+      <visual name='link_4_vis'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <capsule>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </capsule>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <enable_wind>false</enable_wind>
+    </link>
+    <link name='link_5'>
+      <pose>0.12376637580592709 0.0268874747987361 0.17040941000011572 0.90844140104159921 0.068528156329668355 1.7320902866495604</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0</mass>
+        <inertia>
+          <ixx>0.001</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.001</iyy>
+          <iyz>0</iyz>
+          <izz>0.001</izz>
+        </inertia>
+      </inertial>
+      <collision name='link_5_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <capsule>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </capsule>
+        </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.050000000000000003</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.050000000000000003</friction>
+              <friction2>0.050000000000000003</friction2>
+            </bullet>
+          </friction>
+        </surface>
+      </collision>
+      <visual name='link_5_vis'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <capsule>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </capsule>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <enable_wind>false</enable_wind>
+    </link>
+    <link name='link_6'>
+      <pose>0.16267066677155051 0.034711321421656727 0.19703317873456117 0.9810885291290079 -0.45930277985347973 2.0435337976852814</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0</mass>
+        <inertia>
+          <ixx>0.001</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.001</iyy>
+          <iyz>0</iyz>
+          <izz>0.001</izz>
+        </inertia>
+      </inertial>
+      <collision name='link_6_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <capsule>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </capsule>
+        </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.050000000000000003</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.050000000000000003</friction>
+              <friction2>0.050000000000000003</friction2>
+            </bullet>
+          </friction>
+        </surface>
+      </collision>
+      <visual name='link_6_vis'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <capsule>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </capsule>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <enable_wind>false</enable_wind>
+    </link>
+    <link name='link_7'>
+      <pose>0.20337583372476709 0.042444463772830926 0.22085857069715703 0.56285688430793523 -0.93871818398439266 2.6705906514245008</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0</mass>
+        <inertia>
+          <ixx>0.001</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.001</iyy>
+          <iyz>0</iyz>
+          <izz>0.001</izz>
+        </inertia>
+      </inertial>
+      <collision name='link_7_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <capsule>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </capsule>
+        </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.050000000000000003</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.050000000000000003</friction>
+              <friction2>0.050000000000000003</friction2>
+            </bullet>
+          </friction>
+        </surface>
+      </collision>
+      <visual name='link_7_vis'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <capsule>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </capsule>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <enable_wind>false</enable_wind>
+    </link>
+    <link name='link_8'>
+      <pose>0.2391505570920418 0.050955764702356354 0.25027272603107581 -0.14299910833305185 -0.73388919942900077 -2.6419102283279545</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0</mass>
+        <inertia>
+          <ixx>0.001</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.001</iyy>
+          <iyz>0</iyz>
+          <izz>0.001</izz>
+        </inertia>
+      </inertial>
+      <collision name='link_8_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <capsule>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </capsule>
+        </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.050000000000000003</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.050000000000000003</friction>
+              <friction2>0.050000000000000003</friction2>
+            </bullet>
+          </friction>
+        </surface>
+      </collision>
+      <visual name='link_8_vis'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <capsule>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </capsule>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <enable_wind>false</enable_wind>
+    </link>
+    <link name='link_9'>
+      <pose>0.258946865599464 0.059422163011106255 0.29091205419886285 -0.041231458002225448 -0.24352775279681368 -2.2395016234709875</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0</mass>
+        <inertia>
+          <ixx>0.001</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.001</iyy>
+          <iyz>0</iyz>
+          <izz>0.001</izz>
+        </inertia>
+      </inertial>
+      <collision name='link_9_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <capsule>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </capsule>
+        </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.050000000000000003</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.050000000000000003</friction>
+              <friction2>0.050000000000000003</friction2>
+            </bullet>
+          </friction>
+        </surface>
+      </collision>
+      <visual name='link_9_vis'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <capsule>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </capsule>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <enable_wind>false</enable_wind>
+    </link>
+    <link name='link_10'>
+      <pose>0.25242815879395297 0.064725654869659588 0.33529862724789683 0.46436385581535794 0.1005083466642729 -1.8983941769762329</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0</mass>
+        <inertia>
+          <ixx>0.001</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.001</iyy>
+          <iyz>0</iyz>
+          <izz>0.001</izz>
+        </inertia>
+      </inertial>
+      <collision name='link_10_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <capsule>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </capsule>
+        </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.050000000000000003</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.050000000000000003</friction>
+              <friction2>0.050000000000000003</friction2>
+            </bullet>
+          </friction>
+        </surface>
+      </collision>
+      <visual name='link_10_vis'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <capsule>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </capsule>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <enable_wind>false</enable_wind>
+    </link>
+    <link name='link_11'>
+      <pose>0.21949373442461328 0.064158915944090511 0.36545801957052509 1.1835219627224609 0.14940654804363199 -1.5424594835078329</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0</mass>
+        <inertia>
+          <ixx>0.001</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.001</iyy>
+          <iyz>0</iyz>
+          <izz>0.001</izz>
+        </inertia>
+      </inertial>
+      <collision name='link_11_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <capsule>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </capsule>
+        </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.050000000000000003</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.050000000000000003</friction>
+              <friction2>0.050000000000000003</friction2>
+            </bullet>
+          </friction>
+        </surface>
+      </collision>
+      <visual name='link_11_vis'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <capsule>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </capsule>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <enable_wind>false</enable_wind>
+    </link>
+    <link name='link_12'>
+      <pose>0.1746776880138905 0.058360978683564574 0.36815964753951447 1.8331977873262935 -0.045555528418002339 -1.4163889481482461</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0</mass>
+        <inertia>
+          <ixx>0.001</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.001</iyy>
+          <iyz>0</iyz>
+          <izz>0.001</izz>
+        </inertia>
+      </inertial>
+      <collision name='link_12_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <capsule>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </capsule>
+        </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.050000000000000003</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.050000000000000003</friction>
+              <friction2>0.050000000000000003</friction2>
+            </bullet>
+          </friction>
+        </surface>
+      </collision>
+      <visual name='link_12_vis'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <capsule>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </capsule>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <enable_wind>false</enable_wind>
+    </link>
+    <link name='link_13'>
+      <pose>0.13518385327761617 0.05098258671922129 0.34548714507953338 2.3636164079212465 -0.23520695888109253 -1.5934110154231889</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0</mass>
+        <inertia>
+          <ixx>0.001</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.001</iyy>
+          <iyz>0</iyz>
+          <izz>0.001</izz>
+        </inertia>
+      </inertial>
+      <collision name='link_13_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <capsule>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </capsule>
+        </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.050000000000000003</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.050000000000000003</friction>
+              <friction2>0.050000000000000003</friction2>
+            </bullet>
+          </friction>
+        </surface>
+      </collision>
+      <visual name='link_13_vis'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <capsule>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </capsule>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <enable_wind>false</enable_wind>
+    </link>
+    <link name='link_14'>
+      <pose>0.10767364568704174 0.044893512611374142 0.30792536312839158 2.7583555761863887 -0.29768833227172697 -1.9666977603461049</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0</mass>
+        <inertia>
+          <ixx>0.001</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.001</iyy>
+          <iyz>0</iyz>
+          <izz>0.001</izz>
+        </inertia>
+      </inertial>
+      <collision name='link_14_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <capsule>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </capsule>
+        </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.050000000000000003</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.050000000000000003</friction>
+              <friction2>0.050000000000000003</friction2>
+            </bullet>
+          </friction>
+        </surface>
+      </collision>
+      <visual name='link_14_vis'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <capsule>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </capsule>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <enable_wind>false</enable_wind>
+    </link>
+    <link name='link_15'>
+      <pose>0.088100153942727744 0.040139659863253685 0.26473577996811926 2.9499767866679454 -0.34329886545270721 -2.3724179827680278</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0</mass>
+        <inertia>
+          <ixx>0.001</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.001</iyy>
+          <iyz>0</iyz>
+          <izz>0.001</izz>
+        </inertia>
+      </inertial>
+      <collision name='link_15_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <capsule>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </capsule>
+        </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.050000000000000003</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.050000000000000003</friction>
+              <friction2>0.050000000000000003</friction2>
+            </bullet>
+          </friction>
+        </surface>
+      </collision>
+      <visual name='link_15_vis'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <capsule>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </capsule>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <enable_wind>false</enable_wind>
+    </link>
+    <link name='link_16'>
+      <pose>0.069618176194718551 0.035637894765127354 0.22081710287267142 3.0836992984935909 -0.42207976259121394 -2.7682781989019198</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0</mass>
+        <inertia>
+          <ixx>0.001</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.001</iyy>
+          <iyz>0</iyz>
+          <izz>0.001</izz>
+        </inertia>
+      </inertial>
+      <collision name='link_16_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <capsule>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </capsule>
+        </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.050000000000000003</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.050000000000000003</friction>
+              <friction2>0.050000000000000003</friction2>
+            </bullet>
+          </friction>
+        </surface>
+      </collision>
+      <visual name='link_16_vis'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <capsule>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </capsule>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <enable_wind>false</enable_wind>
+    </link>
+    <link name='link_17'>
+      <pose>0.049051170208135542 0.03216067369543224 0.17768265122227533 -3.0749371220791328 -0.47214753750112626 3.1048195047930198</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0</mass>
+        <inertia>
+          <ixx>0.001</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.001</iyy>
+          <iyz>0</iyz>
+          <izz>0.001</izz>
+        </inertia>
+      </inertial>
+      <collision name='link_17_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <capsule>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </capsule>
+        </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.050000000000000003</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.050000000000000003</friction>
+              <friction2>0.050000000000000003</friction2>
+            </bullet>
+          </friction>
+        </surface>
+      </collision>
+      <visual name='link_17_vis'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <capsule>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </capsule>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <enable_wind>false</enable_wind>
+    </link>
+    <link name='link_18'>
+      <pose>0.027267698046697486 0.031496603730987838 0.13497763009434482 -2.9646423180116086 -0.43747430537047161 2.693320428193136</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0</mass>
+        <inertia>
+          <ixx>0.001</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.001</iyy>
+          <iyz>0</iyz>
+          <izz>0.001</izz>
+        </inertia>
+      </inertial>
+      <collision name='link_18_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <capsule>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </capsule>
+        </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.050000000000000003</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.050000000000000003</friction>
+              <friction2>0.050000000000000003</friction2>
+            </bullet>
+          </friction>
+        </surface>
+      </collision>
+      <visual name='link_18_vis'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <capsule>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </capsule>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <enable_wind>false</enable_wind>
+    </link>
+    <link name='link_19'>
+      <pose>0.0086512666422666751 0.030798617329264588 0.09091431780964021 -2.8690457938594367 -0.19551376017119262 2.3350638789498679</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0</mass>
+        <inertia>
+          <ixx>0.001</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.001</iyy>
+          <iyz>0</iyz>
+          <izz>0.001</izz>
+        </inertia>
+      </inertial>
+      <collision name='link_19_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <capsule>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </capsule>
+        </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.050000000000000003</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.050000000000000003</friction>
+              <friction2>0.050000000000000003</friction2>
+            </bullet>
+          </friction>
+        </surface>
+      </collision>
+      <visual name='link_19_vis'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <capsule>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </capsule>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <enable_wind>false</enable_wind>
+    </link>
+    <link name='link_20'>
+      <pose>-0.0042805541340493747 0.017125918297191012 0.048384212813087579 -2.661390402397418 0.36779050952563447 2.1441655055173738</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0</mass>
+        <inertia>
+          <ixx>0.001</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.001</iyy>
+          <iyz>0</iyz>
+          <izz>0.001</izz>
+        </inertia>
+      </inertial>
+      <collision name='link_20_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <capsule>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </capsule>
+        </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.050000000000000003</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.050000000000000003</friction>
+              <friction2>0.050000000000000003</friction2>
+            </bullet>
+          </friction>
+        </surface>
+      </collision>
+      <visual name='link_20_vis'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <capsule>
+            <length>0.048000000000000001</length>
+            <radius>0.002</radius>
+          </capsule>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <enable_wind>false</enable_wind>
+    </link>
+    <joint name='joint_1' type='ball'>
+      <pose>-3.4694499999999997e-18 3.1441900000000001e-18 -0.024 0.057665000000000015 -0.0035260000000000005 -0.14366599999999999</pose>
+      <parent>link_1</parent>
+      <child>link_2</child>
+      <axis>
+        <xyz>-2.2174644932759779e-16 -6.9392327170861326e-17 1</xyz>
+        <limit>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+          <effort>inf</effort>
+          <velocity>inf</velocity>
+          <stiffness>100000000</stiffness>
+          <dissipation>1</dissipation>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+          <damping>0.20000000000000001</damping>
+          <friction>0</friction>
+        </dynamics>
+      </axis>
+    </joint>
+    <joint name='joint_2' type='ball'>
+      <pose>-2.4286099999999999e-17 -3.4694499999999997e-18 -0.024 0.072919999999999971 -0.015119999999999996 -0.18287300000000001</pose>
+      <parent>link_2</parent>
+      <child>link_3</child>
+      <axis>
+        <xyz>1.1752751549742868e-16 6.2558465352413594e-17 1</xyz>
+        <limit>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+          <effort>inf</effort>
+          <velocity>inf</velocity>
+          <stiffness>100000000</stiffness>
+          <dissipation>1</dissipation>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+          <damping>0.20000000000000001</damping>
+          <friction>0</friction>
+        </dynamics>
+      </axis>
+    </joint>
+    <joint name='joint_3' type='ball'>
+      <pose>-3.46945e-17 1.3877799999999999e-17 -0.024 0.09283799999999999 -0.037758000000000028 -0.23843600000000004</pose>
+      <parent>link_3</parent>
+      <child>link_4</child>
+      <axis>
+        <xyz>-1.3877787807814457e-17 1.1102230246251564e-16 1</xyz>
+        <limit>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+          <effort>inf</effort>
+          <velocity>inf</velocity>
+          <stiffness>100000000</stiffness>
+          <dissipation>1</dissipation>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+          <damping>0.20000000000000001</damping>
+          <friction>0</friction>
+        </dynamics>
+      </axis>
+    </joint>
+    <joint name='joint_4' type='ball'>
+      <pose>3.46945e-17 -8.3266699999999998e-17 -0.024 0.11562100000000003 -0.082796999999999996 -0.31582500000000002</pose>
+      <parent>link_4</parent>
+      <child>link_5</child>
+      <axis>
+        <xyz>7.6327832942979488e-17 5.5511151231257815e-17 1</xyz>
+        <limit>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+          <effort>inf</effort>
+          <velocity>inf</velocity>
+          <stiffness>100000000</stiffness>
+          <dissipation>1</dissipation>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+          <damping>0.20000000000000001</damping>
+          <friction>0</friction>
+        </dynamics>
+      </axis>
+    </joint>
+    <joint name='joint_5' type='ball'>
+      <pose>6.9388900000000004e-18 1.3877799999999999e-17 -0.024 0.12748000000000004 -0.17044200000000007 -0.41081300000000026</pose>
+      <parent>link_5</parent>
+      <child>link_6</child>
+      <axis>
+        <xyz>-2.081668171172163e-17 -1.3684555315672042e-48 1</xyz>
+        <limit>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+          <effort>inf</effort>
+          <velocity>inf</velocity>
+          <stiffness>100000000</stiffness>
+          <dissipation>1</dissipation>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+          <damping>0.20000000000000001</damping>
+          <friction>0</friction>
+        </dynamics>
+      </axis>
+    </joint>
+    <joint name='joint_6' type='ball'>
+      <pose>1.3877799999999999e-17 -1.3877799999999999e-17 -0.024 0.077454999999999954 -0.3108280000000001 -0.47354099999999982</pose>
+      <parent>link_6</parent>
+      <child>link_7</child>
+      <axis>
+        <xyz>-5.8980598183211417e-17 1.3877787807814417e-17 1</xyz>
+        <limit>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+          <effort>inf</effort>
+          <velocity>inf</velocity>
+          <stiffness>100000000</stiffness>
+          <dissipation>1</dissipation>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+          <damping>0.20000000000000001</damping>
+          <friction>0</friction>
+        </dynamics>
+      </axis>
+    </joint>
+    <joint name='joint_7' type='ball'>
+      <pose>-2.7755599999999997e-17 -1.3877799999999999e-17 -0.024 -0.099142999999999981 -0.40827100000000011 -0.39838499999999988</pose>
+      <parent>link_7</parent>
+      <child>link_8</child>
+      <axis>
+        <xyz>3.4087316302944254e-16 1.960237527853792e-16 1</xyz>
+        <limit>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+          <effort>inf</effort>
+          <velocity>inf</velocity>
+          <stiffness>100000000</stiffness>
+          <dissipation>1</dissipation>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+          <damping>0.20000000000000001</damping>
+          <friction>0</friction>
+        </dynamics>
+      </axis>
+    </joint>
+    <joint name='joint_8' type='ball'>
+      <pose>-2.2204499999999999e-16 -2.7755599999999997e-17 -0.024 -0.25860899999999998 -0.32846800000000009 -0.24861</pose>
+      <parent>link_8</parent>
+      <child>link_9</child>
+      <axis>
+        <xyz>-2.1293730667615307e-16 1.5265566588595902e-16 1</xyz>
+        <limit>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+          <effort>inf</effort>
+          <velocity>inf</velocity>
+          <stiffness>100000000</stiffness>
+          <dissipation>1</dissipation>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+          <damping>0.20000000000000001</damping>
+          <friction>0</friction>
+        </dynamics>
+      </axis>
+    </joint>
+    <joint name='joint_9' type='ball'>
+      <pose>-1.11022e-16 5.5511199999999995e-17 -0.024 -0.28042499999999998 -0.20139399999999993 -0.16083399999999995</pose>
+      <parent>link_9</parent>
+      <child>link_10</child>
+      <axis>
+        <xyz>-7.2858385991025886e-17 -1.3183898417423734e-16 1</xyz>
+        <limit>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+          <effort>inf</effort>
+          <velocity>inf</velocity>
+          <stiffness>100000000</stiffness>
+          <dissipation>1</dissipation>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+          <damping>0.20000000000000001</damping>
+          <friction>0</friction>
+        </dynamics>
+      </axis>
+    </joint>
+    <joint name='joint_10' type='ball'>
+      <pose>-1.11022e-16 2.2204499999999999e-16 -0.024 -0.2767980000000001 -0.13009000000000007 -0.12658500000000003</pose>
+      <parent>link_10</parent>
+      <child>link_11</child>
+      <axis>
+        <xyz>-1.7347234759768123e-17 -2.7755575615628889e-17 1</xyz>
+        <limit>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+          <effort>inf</effort>
+          <velocity>inf</velocity>
+          <stiffness>100000000</stiffness>
+          <dissipation>1</dissipation>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+          <damping>0.20000000000000001</damping>
+          <friction>0</friction>
+        </dynamics>
+      </axis>
+    </joint>
+    <joint name='joint_11' type='ball'>
+      <pose>-8.3266699999999998e-17 1.11022e-16 -0.024 -0.31800899999999988 -0.097124000000000016 -0.12714500000000001</pose>
+      <parent>link_11</parent>
+      <child>link_12</child>
+      <axis>
+        <xyz>-1.3877787807814457e-17 5.5511151231257827e-17 1</xyz>
+        <limit>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+          <effort>inf</effort>
+          <velocity>inf</velocity>
+          <stiffness>100000000</stiffness>
+          <dissipation>1</dissipation>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+          <damping>0.20000000000000001</damping>
+          <friction>0</friction>
+        </dynamics>
+      </axis>
+    </joint>
+    <joint name='joint_12' type='ball'>
+      <pose>-1.2489999999999999e-16 5.5511199999999995e-17 -0.024 -0.41514299999999998 -0.064825000000000021 -0.15662800000000004</pose>
+      <parent>link_12</parent>
+      <child>link_13</child>
+      <axis>
+        <xyz>5.4123372450476381e-16 3.8163916471489584e-17 1</xyz>
+        <limit>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+          <effort>inf</effort>
+          <velocity>inf</velocity>
+          <stiffness>100000000</stiffness>
+          <dissipation>1</dissipation>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+          <damping>0.20000000000000001</damping>
+          <friction>0</friction>
+        </dynamics>
+      </axis>
+    </joint>
+    <joint name='joint_13' type='ball'>
+      <pose>5.8980600000000002e-17 3.46945e-17 -0.024 -0.47514499999999982 0.00481899999999999 -0.19548199999999996</pose>
+      <parent>link_13</parent>
+      <child>link_14</child>
+      <axis>
+        <xyz>1.3823577699190157e-17 -5.5511151231257815e-17 1</xyz>
+        <limit>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+          <effort>inf</effort>
+          <velocity>inf</velocity>
+          <stiffness>100000000</stiffness>
+          <dissipation>1</dissipation>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+          <damping>0.20000000000000001</damping>
+          <friction>0</friction>
+        </dynamics>
+      </axis>
+    </joint>
+    <joint name='joint_14' type='ball'>
+      <pose>-1.9082000000000001e-17 -4.1633400000000002e-17 -0.024 -0.37640199999999963 0.076180000000000053 -0.18553599999999995</pose>
+      <parent>link_14</parent>
+      <child>link_15</child>
+      <axis>
+        <xyz>-1.1102230246251564e-16 2.0816681711721694e-17 1</xyz>
+        <limit>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+          <effort>inf</effort>
+          <velocity>inf</velocity>
+          <stiffness>100000000</stiffness>
+          <dissipation>1</dissipation>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+          <damping>0.20000000000000001</damping>
+          <friction>0</friction>
+        </dynamics>
+      </axis>
+    </joint>
+    <joint name='joint_15' type='ball'>
+      <pose>4.1633400000000002e-17 -8.6736199999999999e-17 -0.024 -0.23104200000000003 0.090075999999999989 -0.13426600000000005</pose>
+      <parent>link_15</parent>
+      <child>link_16</child>
+      <axis>
+        <xyz>1.7347234759768065e-17 -8.3266726846886728e-17 1</xyz>
+        <limit>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+          <effort>inf</effort>
+          <velocity>inf</velocity>
+          <stiffness>100000000</stiffness>
+          <dissipation>1</dissipation>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+          <damping>0.20000000000000001</damping>
+          <friction>0</friction>
+        </dynamics>
+      </axis>
+    </joint>
+    <joint name='joint_16' type='ball'>
+      <pose>2.0816700000000001e-17 -6.2449999999999997e-17 -0.024 -0.13905600000000001 0.075479000000000004 -0.092463999999999991</pose>
+      <parent>link_16</parent>
+      <child>link_17</child>
+      <axis>
+        <xyz>1.5612511283791252e-17 -2.0816681711721679e-17 1</xyz>
+        <limit>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+          <effort>inf</effort>
+          <velocity>inf</velocity>
+          <stiffness>100000000</stiffness>
+          <dissipation>1</dissipation>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+          <damping>0.20000000000000001</damping>
+          <friction>0</friction>
+        </dynamics>
+      </axis>
+    </joint>
+    <joint name='joint_17' type='ball'>
+      <pose>-4.1633400000000002e-17 1.04083e-17 -0.024 -0.089686000000000002 0.059461 -0.066655000000000006</pose>
+      <parent>link_17</parent>
+      <child>link_18</child>
+      <axis>
+        <xyz>2.1337098754514722e-16 -1.3877787807814466e-17 1</xyz>
+        <limit>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+          <effort>inf</effort>
+          <velocity>inf</velocity>
+          <stiffness>100000000</stiffness>
+          <dissipation>1</dissipation>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+          <damping>0.20000000000000001</damping>
+          <friction>0</friction>
+        </dynamics>
+      </axis>
+    </joint>
+    <joint name='joint_18' type='ball'>
+      <pose>3.4694499999999997e-18 -2.60209e-17 -0.024 -0.062118000000000013 0.047213000000000012 -0.050650000000000014</pose>
+      <parent>link_18</parent>
+      <child>link_19</child>
+      <axis>
+        <xyz>4.3021142204224816e-16 9.6277152916712769e-17 1</xyz>
+        <limit>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+          <effort>inf</effort>
+          <velocity>inf</velocity>
+          <stiffness>100000000</stiffness>
+          <dissipation>1</dissipation>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+          <damping>0.20000000000000001</damping>
+          <friction>0</friction>
+        </dynamics>
+      </axis>
+    </joint>
+    <joint name='joint_19' type='ball'>
+      <pose>-1.73472e-17 -1.04083e-17 -0.024 -0.045549999999999986 0.038313000000000014 -0.040162000000000003</pose>
+      <parent>link_19</parent>
+      <child>link_20</child>
+      <axis>
+        <xyz>1.8735013540549514e-16 2.7755575615628914e-16 1</xyz>
+        <limit>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+          <effort>inf</effort>
+          <velocity>inf</velocity>
+          <stiffness>100000000</stiffness>
+          <dissipation>1</dissipation>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+          <damping>0.20000000000000001</damping>
+          <friction>0</friction>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='cable_connection_0'>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.01</mass>
+        <inertia>
+          <ixx>0.001</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.001</iyy>
+          <iyz>0</iyz>
+          <izz>0.001</izz>
+        </inertia>
+      </inertial>
+      <pose>-1.3486563843478905e-07 -1.9101259907117196e-08 1.2155173811922992e-07 -0.12253571847844784 -0.31528794334473198 -0.080197017132016282</pose>
+      <collision name='collision_0'>
+        <pose>-0.0018027756377319948 0.002 0 0.5880026035475675 1.57079 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.001</radius>
+            <length>0.0036055512754639895</length>
+          </cylinder>
+        </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.05</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.05</friction>
+              <friction2>0.05</friction2>
+            </bullet>
+          </friction>
+        </surface>
+      </collision>
+      <visual name='visual_0'>
+        <pose>-0.0018027756377319948 0.002 0 0.5880026035658189 1.5707900001331654 8.7741370751731541e-12</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.001</radius>
+            <length>0.0036055512754639895</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <collision name='collision_1'>
+        <pose>-0.0018027756377319948 -0.002 0 -0.5880026035475675 1.57079 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.001</radius>
+            <length>0.0036055512754639895</length>
+          </cylinder>
+        </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.05</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.05</friction>
+              <friction2>0.05</friction2>
+            </bullet>
+          </friction>
+        </surface>
+      </collision>
+      <visual name='visual_1'>
+        <pose>-0.0018027756377319948 -0.002 0 -0.5880026035658189 1.5707900001331654 -8.7741370751731541e-12</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.001</radius>
+            <length>0.0036055512754639895</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <enable_wind>false</enable_wind>
+    </link>
+    <link name='cable_connection_1'>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>0.01</mass>
+        <inertia>
+          <ixx>0.001</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.001</iyy>
+          <iyz>0</iyz>
+          <izz>0.001</izz>
+        </inertia>
+      </inertial>
+      <pose>-0.0094421441225924774 0.0046834817511228199 0.028524408804356693 -1.4491367519334295 0.29246638457905783 3.0584575712681583</pose>
+      <collision name='collision_0'>
+        <pose>0.0036763602924631857 -0.0042500000000000003 0 0.61629693740938429 1.570790000168262 2.6322484238358005e-11</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.001</radius>
+            <length>0.0073527205849263713</length>
+          </cylinder>
+        </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.050000000000000003</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.050000000000000003</friction>
+              <friction2>0.050000000000000003</friction2>
+            </bullet>
+          </friction>
+        </surface>
+      </collision>
+      <visual name='visual_0'>
+        <pose>0.0036763602924631857 -0.0042500000000000003 0 0.61629693740938429 1.570790000168262 2.6322484238358005e-11</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.001</radius>
+            <length>0.0073527205849263713</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <collision name='collision_1'>
+        <pose>0.0036763602924631857 0.0042500000000000003 0 -0.61629693740938429 1.570790000168262 -2.6322484238358005e-11</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.001</radius>
+            <length>0.0073527205849263713</length>
+          </cylinder>
+        </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.050000000000000003</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.050000000000000003</friction>
+              <friction2>0.050000000000000003</friction2>
+            </bullet>
+          </friction>
+        </surface>
+      </collision>
+      <visual name='visual_1'>
+        <pose>0.0036763602924631857 0.0042500000000000003 0 -0.61629693740938429 1.570790000168262 -2.6322484238358005e-11</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.001</radius>
+            <length>0.0073527205849263713</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <diffuse>1 0.219999999 0 1</diffuse>
+          <specular>0.5 0.5 0.5 1</specular>
+          <pbr>
+            <metal>
+              <roughness>0.01</roughness>
+              <metalness>0.01</metalness>
+            </metal>
+          </pbr>
+        </material>
+      </visual>
+      <enable_wind>false</enable_wind>
+    </link>
+    <joint name='joint_connection_end_0' type='ball'>
+      <pose>5.2939599999999994e-23 1.65436e-24 -6.6174400000000005e-23 0 1.6479900000000001e-17 0</pose>
+      <parent>cable_end_0</parent>
+      <child>cable_connection_0</child>
+      <axis>
+        <xyz>1.6274614964084939e-16 -2.0816681711721685e-17 1</xyz>
+        <limit>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+          <effort>inf</effort>
+          <velocity>inf</velocity>
+          <stiffness>100000000</stiffness>
+          <dissipation>1</dissipation>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+          <damping>0.20000000000000001</damping>
+          <friction>0</friction>
+        </dynamics>
+      </axis>
+    </joint>
+    <joint name='joint_connection_end_1' type='ball'>
+      <pose>7.3725699999999996e-18 -3.1224999999999998e-17 -1.3877799999999999e-17 -0.026259000000000015 0.023921000000000012 0.76093299999999986</pose>
+      <parent>link_20</parent>
+      <child>cable_connection_1</child>
+      <axis>
+        <xyz>-1.3877787807814475e-17 5.2909066017292592e-17 1</xyz>
+        <limit>
+          <lower>-inf</lower>
+          <upper>inf</upper>
+          <effort>inf</effort>
+          <velocity>inf</velocity>
+          <stiffness>100000000</stiffness>
+          <dissipation>1</dissipation>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+          <damping>0.20000000000000001</damping>
+          <friction>0</friction>
+        </dynamics>
+      </axis>
+    </joint>
+  </model>
+</sdf>

@@ -26,28 +26,28 @@
       <collision name="iso_4762_m2_x_8072_collider_box_001">
         <origin xyz="0.016366 0.0 0.017144" rpy="0.0 -0.785398 0.0"/>
         <geometry>
-          <box size="0.038533 0.01775 0.001728"/>
+          <box size="0.038533 0.01775 0.001028"/>
         </geometry>
       </collision>
 
       <collision name="iso_4762_m2_x_8072_collider_box_002">
         <origin xyz="0.028636 0.0 0.012684" rpy="0.0 -0.785398 0.0"/>
         <geometry>
-          <box size="0.027485 0.01775 0.003688"/>
+          <box size="0.027485 0.01775 0.002888"/>
         </geometry>
       </collision>
 
       <collision name="iso_4762_m2_x_8072_collider_box_003">
-        <origin xyz="0.021242 0.007723 0.013979" rpy="0.0 -0.785398 0.0"/>
+        <origin xyz="0.021242 0.0080 0.013979" rpy="0.0 -0.785398 0.0"/>
         <geometry>
-          <box size="0.036111 0.002305 0.010956"/>
+          <box size="0.036111 0.0012 0.010956"/>
         </geometry>
       </collision>
 
       <collision name="iso_4762_m2_x_8072_collider_box_004">
-        <origin xyz="0.021003 -0.007938 0.014217" rpy="0.0 -0.785398 0.0"/>
+        <origin xyz="0.021003 -0.008 0.014217" rpy="0.0 -0.785398 0.0"/>
         <geometry>
-          <box size="0.036111 0.001875 0.01163"/>
+          <box size="0.036111 0.0012 0.01163"/>
         </geometry>
       </collision>
 

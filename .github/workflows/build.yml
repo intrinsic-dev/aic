@@ -31,7 +31,7 @@ jobs:
       - name: Install build dependencies
         run: |
           apt-get update && apt-get upgrade -y
-          apt-get install -y python3-colcon-common-extensions
+          apt-get install -y python3-colcon-common-extensions python3-toml
 
       - name: Set up git authentication
         run: |
@@ -52,7 +52,8 @@ jobs:
             {
               "build": {
                 "packages-skip": [
-                  "aic_flowstate_skills"
+                  "aic_flowstate_skills",
+                  "aic_flowstate_ros_bridge"
                   ],
                 "cmake-args": [
                   "-DCMAKE_BUILD_TYPE=Release"

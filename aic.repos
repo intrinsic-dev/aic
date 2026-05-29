@@ -95,7 +95,7 @@ repositories:
   gazebo/gz-sim:
     type: git
     url: https://github.com/gazebosim/gz-sim
-    version: d99d458c9987b20a18347b9a273f907d3391db61
+    version: e675e2edd7bc232964d16ab9bf4b27b8755da365
   gazebo/gz-gui:
     type: git
     url: https://github.com/gazebosim/gz-gui
@@ -103,7 +103,7 @@ repositories:
   gazebo/gz-math:
     type: git
     url: https://github.com/gazebosim/gz-math
-    version: b779522d210a09d163b4b79071ac9a56e0668f0f
+    version: 0c38e855c620e619d45a18401809bf02872cd1e4
   gazebo/gz-msgs:
     type: git
     url: https://github.com/gazebosim/gz-msgs
@@ -111,7 +111,7 @@ repositories:
   gazebo/gz-physics:
     type: git
     url: https://github.com/gazebosim/gz-physics
-    version: 5c173ea69cde372d6e49f6200580459659166ce3
+    version: 1048054ac536561fdffbeb9f292ceeaa145c02de
   gazebo/gz-plugin:
     type: git
     url: https://github.com/gazebosim/gz-plugin

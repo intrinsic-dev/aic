@@ -59,6 +59,33 @@ target_link_libraries(robot_control_bridge
 target_compile_features(robot_control_bridge PUBLIC cxx_std_17)
 
 ament_export_libraries(robot_control_bridge)
+
+#===============================================================================
+
+add_library(aic_camera_bridge SHARED
+  src/aic_camera_bridge.cpp
+)
+target_include_directories(aic_camera_bridge
+  PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+    ${pluginlib_INCLUDE_DIRS}
+)
+target_link_libraries(aic_camera_bridge
+  absl::log
+  absl::time
+  ament_index_cpp::ament_index_cpp
+  flowstate_ros_bridge::flowstate_ros_builtin_bridges
+  pluginlib::pluginlib
+  rclcpp::rclcpp
+  ${std_srvs_TARGETS}
+)
+target_compile_features(aic_camera_bridge PUBLIC cxx_std_17)
+
+ament_export_libraries(aic_camera_bridge)
+
+#===============================================================================
+
 pluginlib_export_plugin_description_file(flowstate_ros_bridge plugins.xml)
 
 #===============================================================================
@@ -88,6 +115,7 @@ target_link_libraries(${SERVICE_NAME}_main
 install(TARGETS
   robot_control_bridge
   agent_bridge_proto
+  aic_camera_bridge
   ${SERVICE_NAME}_main
   DESTINATION lib/${PROJECT_NAME}
 )
