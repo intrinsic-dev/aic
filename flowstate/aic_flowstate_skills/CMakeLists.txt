@@ -20,5 +20,6 @@ find_package(std_srvs REQUIRED)
 
 add_subdirectory(insert_cable_skill)
 add_subdirectory(tare_force_torque_sensor_skill)
+add_subdirectory(lifecycle_transition_skill)
 
 ament_package()
