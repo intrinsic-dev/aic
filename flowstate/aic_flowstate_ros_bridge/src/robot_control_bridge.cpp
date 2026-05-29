@@ -76,7 +76,7 @@ void RobotControlBridge::declare_ros_parameters(
   param_interface->declare_parameter(kAgentBridgeJointTaskSettingsFileParamName,
                                      rclcpp::ParameterValue{""});
   param_interface->declare_parameter(kRestartConnectionRetriesParamName,
-                                     rclcpp::ParameterValue{3});
+                                     rclcpp::ParameterValue{6});
 }
 
 ///=============================================================================
@@ -558,8 +558,8 @@ void RobotControlBridge::TareForceTorqueSensorCallback(
       }
       if (i < data_->restart_connection_retries_ - 1) {
         LOG(INFO)
-            << "Failed to restart controller bridge. Retrying in 500ms...";
-        rclcpp::sleep_for(std::chrono::milliseconds(500));
+            << "Failed to restart controller bridge. Retrying in 250ms...";
+        rclcpp::sleep_for(std::chrono::milliseconds(250));
       }
     }
   }
@@ -787,8 +787,7 @@ bool RobotControlBridge::startControllerSession() {
   if (data_->ft_sensor_part_name_ != data_->part_name_) {
     parts.push_back(data_->ft_sensor_part_name_);
   }
-  // todo(johntgz) test if starting a session with multiple parts would cause an
-  // issue
+
   auto session_or = Session::Start(icon_channel_or.value(), parts);
   if (!session_or.ok()) {
     LOG(ERROR) << "Failed to start ICON session: "
