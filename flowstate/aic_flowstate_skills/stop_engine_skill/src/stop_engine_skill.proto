@@ -3,11 +3,8 @@ syntax = "proto3";
 package ai.flowstate;
 
 message StopEngineSkillParams {
-  // The unique ID of the task to stop.
-  string task_id = 1;
-
   // Whether the full task is finished and it should be scored.
-  bool finished = 2;
+  bool finished = 1;
 }
 
 message StopEngineSkillResult {

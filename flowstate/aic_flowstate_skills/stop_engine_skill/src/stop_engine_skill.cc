@@ -104,11 +104,9 @@ StopEngineSkill::Execute(const intrinsic::skills::ExecuteRequest& request,
   // Populate service request
   auto service_request =
       std::make_shared<aic_engine_interfaces::srv::StopEngine::Request>();
-  service_request->task_id = params.task_id();
   service_request->finished = params.finished();
 
-  RCLCPP_INFO(client_node_.get_logger(), "Stopping engine for task ID: %s",
-              service_request->task_id.c_str());
+  RCLCPP_INFO(client_node_.get_logger(), "Stopping engine...");
 
   // Default timeout of 60s
   const double timeout_ms = 60000.0;
@@ -121,8 +119,12 @@ StopEngineSkill::Execute(const intrinsic::skills::ExecuteRequest& request,
 
   auto service_result = status_or_result.value();
   if (!service_result->success) {
+    RCLCPP_INFO(client_node_.get_logger(), "Failed stopping task, reason: %s",
+                service_result->message.c_str());
     return absl::InternalError(service_result->message);
   }
+
+  RCLCPP_INFO(client_node_.get_logger(), "Task stopped successfully");
 
   return std::make_unique<ai::flowstate::StopEngineSkillResult>();
 }

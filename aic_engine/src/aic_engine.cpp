@@ -168,19 +168,14 @@ void Engine::start_engine_callback(
 void Engine::stop_engine_callback(
     const std::shared_ptr<StopEngineSrv::Request> request,
     std::shared_ptr<StopEngineSrv::Response> response) {
-  const auto task_it = this->tasks_.find(request->task_id);
+  const auto task_it =
+    std::find_if(this->tasks_.begin(), this->tasks_.end(), [](const auto& it) {
+      if (it.second.status == TaskStatus::STARTED)
+        return true;
+      return false;
+  });
   if (task_it == this->tasks_.end()) {
-    const std::string error = "Failed stopping engine, task id " +
-                              request->task_id + " was not started";
-    RCLCPP_ERROR(node_->get_logger(), "%s", error.c_str());
-    response->success = false;
-    response->message = error;
-    return;
-  }
-
-  if (task_it->second.status != TaskStatus::STARTED) {
-    const std::string error = "Failed stopping engine, task id " +
-                              request->task_id + " already scored";
+    const std::string error = "Failed stopping engine, engine not started";
     RCLCPP_ERROR(node_->get_logger(), "%s", error.c_str());
     response->success = false;
     response->message = error;
