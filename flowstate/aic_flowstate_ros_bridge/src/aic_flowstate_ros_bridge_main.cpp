@@ -112,6 +112,8 @@ int main(int argc, char* argv[]) {
                       robot_control_bridge_config.server_address());
   params.emplace_back("instance", robot_control_bridge_config.instance());
   params.emplace_back("part_name", robot_control_bridge_config.part_name());
+  params.emplace_back("ft_sensor_part_name",
+                      robot_control_bridge_config.ft_sensor_part_name());
   params.emplace_back("task_settings_file",
                       robot_control_bridge_config.task_settings_file());
   params.emplace_back("joint_task_settings_file",

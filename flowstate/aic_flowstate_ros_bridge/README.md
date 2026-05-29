@@ -9,14 +9,14 @@ A Flowstate-ROS bridge plugin that bridges the real-time controller service to R
 Set up the Docker engine:
 
 ```bash
-cd ~/ws_aic
+cd ~/ws_aic_phase1
 ./src/sdk-ros/scripts/setup_docker.sh
 ```
 
 Then, create the service bundle using the `build_service_bundle.sh` script.
 
 ```bash
-cd ~/ws_aic
+cd ~/ws_aic_phase1
 ./src/aic/flowstate/scripts/build_flowstate_ros_bridge.sh --ros_distro kilted
 ```
 
@@ -24,7 +24,7 @@ cd ~/ws_aic
 
 ```bash
 # 1. Export path to side-loaded service bundle
-export SERVICE_BUNDLE=~/ws_aic/images/aic_flowstate_ros_bridge/aic_flowstate_ros_bridge.bundle.tar
+export SERVICE_BUNDLE=~/ws_aic_phase1/images/aic_flowstate_ros_bridge/aic_flowstate_ros_bridge.bundle.tar
 
 # 2. Add Organization
 export INTRINSIC_ORGANIZATION="<ORG_NAME>"
