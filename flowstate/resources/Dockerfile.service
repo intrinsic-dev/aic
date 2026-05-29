@@ -11,13 +11,13 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Pixi
-RUN curl -fsSL https://pixi.sh/install.sh | bash
+RUN curl -fsSL https://pixi.sh/install.sh | PIXI_VERSION=0.67.2 bash
 ENV PATH="/root/.pixi/bin:${PATH}"
 
 WORKDIR /workspace
 
 # Pre-cache Pixi environment
-COPY src/aic/pixi.toml src/aic/pixi.lock ./
+COPY src/aic/pixi.toml src/aic/pixi.lock src/aic/robostack_mapping.json ./
 # Copy path-dependent local packages for Pixi validation
 COPY src/aic/aic_interfaces/ ./aic_interfaces/
 COPY src/aic/aic_example_policies/ ./aic_example_policies/
