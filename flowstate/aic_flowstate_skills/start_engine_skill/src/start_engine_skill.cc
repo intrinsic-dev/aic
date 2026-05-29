@@ -130,8 +130,9 @@ StartEngineSkill::Execute(const intrinsic::skills::ExecuteRequest& request,
 
   auto service_result = status_or_result.value();
   if (!service_result->success) {
-    RCLCPP_INFO(client_node_.get_logger(), "Failed starting task [%s], reason: %s",
-                service_request->task.id.c_str(), service_result->message.c_str());
+    RCLCPP_INFO(
+        client_node_.get_logger(), "Failed starting task [%s], reason: %s",
+        service_request->task.id.c_str(), service_result->message.c_str());
     return absl::InternalError(service_result->message);
   }
 
