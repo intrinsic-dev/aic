@@ -46,12 +46,15 @@ namespace flowstate_ros_bridge {
 constexpr const char* kServerAddressParamName = "server_address";
 constexpr const char* kInstanceParamName = "instance";
 constexpr const char* kPartNameParamName = "part_name";
+constexpr const char* kFTPartNameParamName = "ft_sensor_part_name";
 constexpr const char* kAgentBridgeTaskSettingsFileParamName =
     "task_settings_file";
 constexpr const char* kAgentBridgeJointTaskSettingsFileParamName =
     "joint_task_settings_file";
 constexpr const char* kFlowstateZenohRouterParamName =
     "flowstate_zenoh_router_address";
+constexpr const char* kRestartConnectionRetriesParamName =
+    "restart_connection_retries";
 
 ///=============================================================================
 void RobotControlBridge::declare_ros_parameters(
@@ -66,10 +69,14 @@ void RobotControlBridge::declare_ros_parameters(
       kInstanceParamName, rclcpp::ParameterValue{"robot_controller"});
   param_interface->declare_parameter(kPartNameParamName,
                                      rclcpp::ParameterValue{"arm"});
+  param_interface->declare_parameter(kFTPartNameParamName,
+                                     rclcpp::ParameterValue{"ft_sensor"});
   param_interface->declare_parameter(kAgentBridgeTaskSettingsFileParamName,
                                      rclcpp::ParameterValue{""});
   param_interface->declare_parameter(kAgentBridgeJointTaskSettingsFileParamName,
                                      rclcpp::ParameterValue{""});
+  param_interface->declare_parameter(kRestartConnectionRetriesParamName,
+                                     rclcpp::ParameterValue{6});
 }
 
 ///=============================================================================
@@ -92,6 +99,12 @@ bool RobotControlBridge::initialize(
                          .get_value<std::string>();
   data_->part_name_ = param_interface->get_parameter(kPartNameParamName)
                           .get_value<std::string>();
+  data_->ft_sensor_part_name_ =
+      param_interface->get_parameter(kFTPartNameParamName)
+          .get_value<std::string>();
+  data_->restart_connection_retries_ =
+      param_interface->get_parameter(kRestartConnectionRetriesParamName)
+          .get_value<int>();
   std::filesystem::path task_settings_file =
       param_interface->get_parameter(kAgentBridgeTaskSettingsFileParamName)
           .get_value<std::string>();
@@ -153,6 +166,9 @@ bool RobotControlBridge::initialize(
            "filepath for loading default task_settings.";
     throw std::runtime_error("'joint_task_settings_file' parameter is empty.");
   }
+  // Set default taring cycle of 100
+  // todo(johntgz) set this as a ros parameter
+  data_->tare_ft_sensor_fixed_params_.set_num_taring_cycles(100);
 
   // Create Zenoh subscriptions to the action output streams from the robot
   // controller server
@@ -270,6 +286,18 @@ bool RobotControlBridge::initialize(
       },
       rclcpp::ServicesQoS(), nullptr);
 
+  // ROS Service server for TareForceTorqueSensor
+  data_->tare_ft_sensor_srv_ = rclcpp::create_service<std_srvs::srv::Trigger>(
+      base_interface,
+      data_->node_interfaces_
+          .get<rclcpp::node_interfaces::NodeServicesInterface>(),
+      "aic_controller/tare_force_torque_sensor",
+      [this](const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
+             std::shared_ptr<std_srvs::srv::Trigger::Response> response) {
+        this->TareForceTorqueSensorCallback(request, response);
+      },
+      rclcpp::ServicesQoS(), nullptr);
+
   // Publisher for controller state message
   data_->controller_state_pub_ =
       rclcpp::create_publisher<aic_control_interfaces::msg::ControllerState>(
@@ -299,7 +327,8 @@ bool RobotControlBridge::initialize(
             << ", instance: " << data_->instance_
             << ", part: " << data_->part_name_;
 
-  if (!restartControllerBridge()) {
+  data_->connected_to_controller_ = restartControllerBridge();
+  if (!data_->connected_to_controller_) {
     LOG(ERROR) << "Failed to connect to controller bridge.";
     // todo(johntgz) add retry mechanism
   }
@@ -516,6 +545,51 @@ void RobotControlBridge::RestartBridgeCallback(
 }
 
 ///=============================================================================
+void RobotControlBridge::TareForceTorqueSensorCallback(
+    const std::shared_ptr<std_srvs::srv::Trigger::Request> /*request*/,
+    std::shared_ptr<std_srvs::srv::Trigger::Response> response) {
+  LOG(INFO) << "Received request to tare force torque sensor";
+
+  if (!data_->connected_to_controller_) {
+    for (int i = 0; i < data_->restart_connection_retries_; ++i) {
+      data_->connected_to_controller_ = restartControllerBridge();
+      if (data_->connected_to_controller_) {
+        break;
+      }
+      if (i < data_->restart_connection_retries_ - 1) {
+        LOG(INFO)
+            << "Failed to restart controller bridge. Retrying in 250ms...";
+        // todo(johntgz): This sleep currently blocks the bridge. Investigate
+        // the use of threads for non-blocking behaviour.
+        rclcpp::sleep_for(std::chrono::milliseconds(250));
+      }
+    }
+  }
+
+  if (!data_->connected_to_controller_ || !data_->session_ ||
+      !data_->tare_action_.has_value()) {
+    response->success = false;
+    response->message =
+        "No active controller session or tare action not initialized";
+    return;
+  }
+
+  auto status =
+      data_->session_->StartAction(data_->tare_action_.value(), false);
+  if (!status.ok()) {
+    LOG(ERROR) << "Failed to start TareForceTorqueSensor Action: "
+               << status.message().data();
+    response->success = false;
+    response->message = "Failed to start TareForceTorqueSensor Action";
+    return;
+  }
+
+  LOG(INFO) << "Successfully started TareForceTorqueSensor Action";
+  response->success = true;
+  response->message = "Successfully started TareForceTorqueSensor Action";
+}
+
+///=============================================================================
 bool RobotControlBridge::restartControllerBridge() {
   // Stop all currently running actions
   if (data_->session_) {
@@ -530,6 +604,7 @@ bool RobotControlBridge::restartControllerBridge() {
   data_->session_.reset();
   data_->agent_bridge_action_ = std::nullopt;
   data_->agent_bridge_joint_action_ = std::nullopt;
+  data_->tare_action_ = std::nullopt;
   data_->agent_bridge_writer_.reset();
   data_->agent_bridge_joint_writer_.reset();
 
@@ -576,6 +651,15 @@ bool RobotControlBridge::startControllerAction() {
                          data_->part_name_}})
           .WithFixedParams(data_->agent_bridge_joint_fixed_params_);
 
+  ActionDescriptor tare_ft_sensor_descriptor =
+      ActionDescriptor(
+          intrinsic::icon::TareForceTorqueSensorInfo::kActionTypeName,
+          kTareForceTorqueSensorId,
+          {{intrinsic::icon::TareForceTorqueSensorInfo::
+                kForceTorqueSensorSlotName,
+            data_->ft_sensor_part_name_}})
+          .WithFixedParams(data_->tare_ft_sensor_fixed_params_);
+
   // Add the AgentBridge and AgentBridgeJoint actions to the session, then
   // create StreamWriters for each of the actions.
 
@@ -598,6 +682,15 @@ bool RobotControlBridge::startControllerAction() {
     return false;
   }
   data_->agent_bridge_joint_action_ = agent_bridge_joint_action_or.value();
+
+  // Add the TareForceTorqueSensor action to the current session
+  auto tare_action_or = data_->session_->AddAction(tare_ft_sensor_descriptor);
+  if (!tare_action_or.ok()) {
+    LOG(ERROR) << "Failed to add TareForceTorqueSensor Action: "
+               << tare_action_or.status().message().data();
+    return false;
+  }
+  data_->tare_action_ = tare_action_or.value();
 
   // Create StreamWriter for the AgentBridge action
   auto agent_bridge_writer_or =
@@ -692,8 +785,12 @@ bool RobotControlBridge::startControllerSession() {
   data_->num_joints_ = part_status.value().joint_states_size();
 
   // Start ICON Session
-  auto session_or =
-      Session::Start(icon_channel_or.value(), {data_->part_name_});
+  std::vector<std::string> parts = {data_->part_name_};
+  if (data_->ft_sensor_part_name_ != data_->part_name_) {
+    parts.push_back(data_->ft_sensor_part_name_);
+  }
+
+  auto session_or = Session::Start(icon_channel_or.value(), parts);
   if (!session_or.ok()) {
     LOG(ERROR) << "Failed to start ICON session: "
                << session_or.status().message().data();
@@ -1104,6 +1201,7 @@ RobotControlBridge::Data::~Data() {
   session_.reset();
   agent_bridge_action_ = std::nullopt;
   agent_bridge_joint_action_ = std::nullopt;
+  tare_action_ = std::nullopt;
   agent_bridge_writer_.reset();
   agent_bridge_joint_writer_.reset();
 
@@ -1116,6 +1214,7 @@ RobotControlBridge::Data::~Data() {
   joint_motion_update_sub_.reset();
   change_target_mode_srv_.reset();
   restart_bridge_srv_.reset();
+  tare_ft_sensor_srv_.reset();
   controller_state_pub_.reset();
   controller_state_timer_.reset();
 

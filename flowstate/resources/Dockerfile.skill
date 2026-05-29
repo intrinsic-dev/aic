@@ -1,12 +1,12 @@
 # Build up the skill with these stages:
-#   - base (ros:jazzy + settings) ->
+#   - base (ros:kilted + settings) ->
 #   - underlay (dependencies) ->
 #   - overlay (user code) ->
 #   - result (base + copied install folder of underlay and overlay)
 
-ARG ROS_DISTRO=jazzy
+ARG ROS_DISTRO=kilted
 
-# base stage: ros:jazzy + configs
+# base stage: ros:kilted + configs
 FROM ros:${ROS_DISTRO} AS base
 
 WORKDIR /opt/ros/underlay
@@ -37,7 +37,7 @@ FROM underlay AS overlay
 ARG SKILL_PACKAGE
 ARG DEPENDENCIES
 
-ARG ROS_DISTRO=jazzy
+ARG ROS_DISTRO=kilted
 RUN apt-get update \
     && apt install -y ros-${ROS_DISTRO}-rmw-zenoh-cpp python3-protobuf ${DEPENDENCIES} \
     && rm -rf /var/lib/apt/lists/*
@@ -62,7 +62,7 @@ ARG SKILL_NAME
 ARG SKILL_EXECUTABLE_NAME
 ARG DEPENDENCIES
 
-ARG ROS_DISTRO=jazzy
+ARG ROS_DISTRO=kilted
 RUN apt-get update \
     && apt-get install -y ros-${ROS_DISTRO}-rmw-zenoh-cpp \
     && rm -rf /var/lib/apt/lists/*

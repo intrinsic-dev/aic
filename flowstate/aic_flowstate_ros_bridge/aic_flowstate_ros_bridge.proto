@@ -7,8 +7,9 @@ message RobotControlBridgeConfig {
   string server_address = 1;
   string instance = 2;
   string part_name = 3;
-  string task_settings_file = 4;
-  string joint_task_settings_file = 5;
+  string ft_sensor_part_name = 4;
+  string task_settings_file = 5;
+  string joint_task_settings_file = 6;
 }
 
 // Configuration to control which sensors are enabled to publish ROS 2 messages.

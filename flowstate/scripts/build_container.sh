@@ -2,7 +2,7 @@
 
 IMAGES_DIR=./images
 BUILDER_NAME=container-builder
-ROS_DISTRO=jazzy
+ROS_DISTRO=kilted
 
 while [[ $# -gt 0 ]]; do
   case $1 in

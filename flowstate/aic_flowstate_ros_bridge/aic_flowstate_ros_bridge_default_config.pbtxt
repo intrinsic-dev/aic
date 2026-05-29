@@ -40,6 +40,7 @@
     server_address: "istio-ingressgateway.app-ingress.svc.cluster.local:80"
     instance: "robot_controller"
     part_name: "arm"
+    ft_sensor_part_name: "ati_ft_sensor"
     task_settings_file: "config/default_task_settings.pbtxt"
     joint_task_settings_file: "config/default_joint_task_settings.pbtxt"
   },
