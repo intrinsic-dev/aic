@@ -2,27 +2,15 @@ id {
   package: "ai.flowstate"
   name: "lifecycle_transition_skill"
 }
-display_name: "Lifecycle Transition Skill"
-vendor {
-  display_name: "Intrinsic"
-}
-documentation {
-  description: "Generic skill to trigger lifecycle transitions for ROS 2 nodes."
-}
-options {
-  supports_cancellation: false
-  cc_config {
-    create_skill: "::LifecycleTransitionSkill::CreateSkill"
+metadata {
+  display_name: "Lifecycle Transition Skill"
+  documentation {
+    description: "Skill that triggers lifecycle transitions for a specified node."
   }
-}
-dependencies {
 }
 parameter {
-  message_full_name: "ai.flowstate.LifecycleTransitionParams"
-  default_value: {
-    type_url: "type.googleapis.com/ai.flowstate.LifecycleTransitionParams"
-  }
+  message_full_name: "ai.flowstate.LifecycleTransitionSkillParams"
 }
 return_type {
-  message_full_name: "ai.flowstate.LifecycleTransitionResult"
+  message_full_name: "ai.flowstate.LifecycleTransitionSkillResult"
 }

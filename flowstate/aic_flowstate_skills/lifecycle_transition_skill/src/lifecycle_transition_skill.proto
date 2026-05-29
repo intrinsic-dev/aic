@@ -2,18 +2,24 @@ syntax = "proto3";
 
 package ai.flowstate;
 
-message LifecycleTransitionParams {
-  // The name of the lifecycle node.
+message LifecycleTransitionSkillParams {
   string node_name = 1;
-  // The target state or transition label (e.g., "configure", "activate").
-  string target_state = 2;
-  // Timeout for the transition in seconds.
-  uint64 timeout = 3;
+  Transition transition = 2;
+
+  enum Transition {
+    UNKNOWN = 0;
+    CONFIGURE = 1;
+    CLEANUP = 2;
+    ACTIVATE = 3;
+    DEACTIVATE = 4;
+    UNCONFIGURED_SHUTDOWN = 5;
+    INACTIVE_SHUTDOWN = 6;
+    ACTIVE_SHUTDOWN = 7;
+    DESTROY = 8;
+  }
 }
 
-message LifecycleTransitionResult {
-  // True if the task succeeded.
+message LifecycleTransitionSkillResult {
   bool success = 1;
-  // A message if the task succeeded or failed.
   string message = 2;
 }

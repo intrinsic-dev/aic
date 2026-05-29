@@ -30,8 +30,6 @@ intrinsic_sdk_generate_skill_main_cc(
   MAIN_FILE_OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/lifecycle_transition_skill_main.cc"
 )
 
-find_package(lifecycle_msgs REQUIRED)
-
 add_executable(lifecycle_transition_skill_main
   src/lifecycle_transition_skill.cc
   ${CMAKE_CURRENT_BINARY_DIR}/lifecycle_transition_skill_main.cc
