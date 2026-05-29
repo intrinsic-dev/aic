@@ -35,7 +35,7 @@
     </include>
     <include merge="true">
       <uri>model://LC Plug</uri>
-      <pose relative_to="cable_connection_0">-0.041 0 0 0 0 1.57079</pose>
+      <pose relative_to="cable_connection_0">-0.041 0 0 0 3.14159 1.57079</pose>
     </include>
     <include merge="true">
       <uri>model://SC Plug</uri>

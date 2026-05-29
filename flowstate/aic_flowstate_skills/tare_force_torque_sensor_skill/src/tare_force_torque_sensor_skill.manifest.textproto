@@ -1,0 +1,30 @@
+# proto-file: https://github.com/intrinsic-ai/sdk/blob/main/intrinsic/skills/proto/skill_manifest.proto
+# proto-message: intrinsic_proto.skill.SkillManifest
+id {
+  package: "ai.flowstate"
+  name: "tare_force_torque_sensor_skill"
+}
+display_name: "Tare Force Torque Sensor Skill"
+vendor {
+  display_name: "Intrinsic"
+}
+documentation {
+  description: "Skill that tares the force torque sensor."
+}
+options {
+  supports_cancellation: false
+  cc_config {
+    create_skill: "::TareForceTorqueSensorSkill::CreateSkill"
+  }
+}
+dependencies {
+}
+parameter {
+  message_full_name: "ai.flowstate.TareForceTorqueSensorSkillParams"
+  default_value: {
+    type_url: "type.googleapis.com/ai.flowstate.TareForceTorqueSensorSkillParams"
+  }
+}
+return_type {
+  message_full_name: "ai.flowstate.TareForceTorqueSensorSkillResult"
+}
