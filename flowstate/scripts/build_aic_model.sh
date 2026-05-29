@@ -87,7 +87,7 @@ chmod 644 "$IMAGES_DIR/aic_model/aic_model.tar"
 # Packages the service using Intrinsic's 'inbuild' tool. It retrieves the
 # corresponding SDK version, downloads the tool if necessary, and generates
 # a .bundle.tar file using the service manifest and exported image.
-SDK_VERSION="v1.28.20260223"
+SDK_VERSION="v1.31.20260427.1"
 
 # Download the 'inbuild' tool if it doesn't exist
 if [ ! -f ./inbuild ]; then

@@ -1,15 +1,19 @@
 cmake_minimum_required(VERSION 3.8)
 project(aic_flowstate_ros_bridge)
 
-# Default to C++17
+# Default to C++20
 if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 17)
+  set(CMAKE_CXX_STANDARD 20)
   set(CMAKE_CXX_STANDARD_REQUIRED ON)
 endif()
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 find_package(ament_cmake REQUIRED)
+
+# Find LTTng-UST using PkgConfig to define target for flowstate_ros_bridge linking
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(LTTNG_UST REQUIRED lttng-ust IMPORTED_TARGET)
 
 set(dep_pkgs
   absl
@@ -32,7 +36,7 @@ intrinsic_sdk_protobuf_generate(
   NAME agent_bridge
   TARGET agent_bridge_proto
   SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/proto/agent_bridge.proto
-  IMPORT_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/proto
+  IMPORT_DIRS ${CMAKE_CURRENT_SOURCE_DIR}
   DESCRIPTOR_SET_OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/agent_bridge.desc"
 )
 
@@ -56,7 +60,8 @@ target_link_libraries(robot_control_bridge
   ${aic_control_interfaces_TARGETS}
   ${std_srvs_TARGETS}
 )
-target_compile_features(robot_control_bridge PUBLIC cxx_std_17)
+add_dependencies(robot_control_bridge agent_bridge_proto)
+target_compile_features(robot_control_bridge PUBLIC cxx_std_20)
 
 ament_export_libraries(robot_control_bridge)
 
@@ -80,7 +85,7 @@ target_link_libraries(aic_camera_bridge
   rclcpp::rclcpp
   ${std_srvs_TARGETS}
 )
-target_compile_features(aic_camera_bridge PUBLIC cxx_std_17)
+target_compile_features(aic_camera_bridge PUBLIC cxx_std_20)
 
 ament_export_libraries(aic_camera_bridge)
 

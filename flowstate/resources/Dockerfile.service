@@ -1,0 +1,103 @@
+FROM ubuntu:24.04 AS pixi-builder
+
+# Install prerequisites
+RUN apt-get update && apt-get install -y \
+    curl \
+    git \
+    build-essential \
+    python3 \
+    libxml2-dev \
+    liblttng-ust-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Pixi
+RUN curl -fsSL https://pixi.sh/install.sh | bash
+ENV PATH="/root/.pixi/bin:${PATH}"
+
+WORKDIR /workspace
+
+# Pre-cache Pixi environment
+COPY src/aic/pixi.toml src/aic/pixi.lock ./
+# Copy path-dependent local packages for Pixi validation
+COPY src/aic/aic_interfaces/ ./aic_interfaces/
+COPY src/aic/aic_example_policies/ ./aic_example_policies/
+COPY src/aic/aic_model/ ./aic_model/
+COPY src/aic/aic_utils/ ./aic_utils/
+RUN pixi install
+
+
+# Pre-build SDK to optimize caching of heavy dependencies
+FROM pixi-builder AS sdk-builder
+COPY src/sdk-ros/ ./sdk-ros/
+RUN pixi run colcon build \
+    --merge-install \
+    --cmake-args -DCMAKE_BUILD_TYPE=Release \
+    --event-handlers=console_direct+ \
+    --packages-up-to intrinsic_sdk \
+    --base-paths sdk-ros
+
+# Final build stage for user code overlay
+FROM sdk-builder AS build
+
+ARG SERVICE_PACKAGE
+ARG DEPENDENCIES
+
+# Copy target user packages
+COPY src/aic/flowstate/ ./flowstate/
+COPY src/aic/aic_adapter/ ./aic_adapter/
+
+# Build target service package using existing install space
+RUN pixi run colcon build \
+    --merge-install \
+    --cmake-args -DCMAKE_BUILD_TYPE=Release \
+    --event-handlers=console_direct+ \
+    --packages-up-to ${SERVICE_PACKAGE} \
+    --base-paths flowstate aic_adapter sdk-ros
+
+# Capture pixi environment activation for runtime
+RUN pixi shell-hook > /pixi_hook.sh \
+    && rm -rf /root/.pixi/cache /root/.cache/pixi /workspace/.pixi/cache
+
+# Runtime stage
+FROM ubuntu:24.04 AS runtime
+
+ARG SERVICE_PACKAGE
+ARG SERVICE_NAME
+ARG SERVICE_EXECUTABLE_NAME
+ARG DEPENDENCIES
+
+RUN apt-get update && apt-get install -y \
+    bash \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /workspace
+
+# Copy Pixi environment and built artifacts
+COPY --from=build /root/.pixi /root/.pixi
+COPY --from=build /workspace/.pixi /workspace/.pixi
+COPY --from=build /workspace/pixi.toml /workspace/pixi.lock ./
+COPY --from=build /workspace/install ./install
+COPY --from=build /pixi_hook.sh /pixi_hook.sh
+
+# Bridge paths for build_bundle.sh expectations (/opt/ros/overlay/install)
+RUN mkdir -p /opt/ros/overlay \
+    && ln -sf /workspace/install /opt/ros/overlay/install
+
+# Runtime environment variables
+ENV ROS_HOME=/tmp
+ENV RMW_IMPLEMENTATION=rmw_zenoh_cpp
+ENV ZENOH_CONFIG_OVERRIDE='connect/endpoints=["tcp/zenoh-router.app-intrinsic-base.svc.cluster.local:7447"]'
+ENV SERVICE_PACKAGE=${SERVICE_PACKAGE}
+ENV SERVICE_NAME=${SERVICE_NAME}
+ENV SERVICE_EXECUTABLE_NAME=${SERVICE_EXECUTABLE_NAME}
+
+# Entrypoint to activate Pixi and ROS setup
+RUN echo '#!/bin/bash' > /entrypoint.sh \
+    && echo 'set -e' >> /entrypoint.sh \
+    && echo 'source /pixi_hook.sh' >> /entrypoint.sh \
+    && echo 'source /workspace/install/setup.bash' >> /entrypoint.sh \
+    && echo 'exec "$@"' >> /entrypoint.sh \
+    && chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["bash", "-c", "exec /workspace/install/lib/${SERVICE_PACKAGE}/${SERVICE_EXECUTABLE_NAME}"]

@@ -41,7 +41,8 @@ src/sdk-ros/scripts/build_container.sh \
   --ros_distro "$ROS_DISTRO" \
   --service_name aic_flowstate_ros_bridge \
   --service_package aic_flowstate_ros_bridge \
-  --dependencies nlohmann-json3-dev
+  --dependencies nlohmann-json3-dev \
+  --dockerfile src/aic/flowstate/resources/Dockerfile.service
 src/sdk-ros/scripts/build_bundle.sh \
   --service_name aic_flowstate_ros_bridge \
   --service_package aic_flowstate_ros_bridge \
