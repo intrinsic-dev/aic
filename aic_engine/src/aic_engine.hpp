@@ -123,10 +123,9 @@ class Engine {
   /// \return True if the scoring system is ready, false otherwise.
   bool ready_scoring(const TaskMsg& task);
 
-  /// @brief Check if the model is in the unconfigured state together with other
-  /// expectations in this state.
-  /// @return True if the model is unconfigured, false otherwise.
-  bool model_node_is_unconfigured();
+  /// @brief Get the current model node's lifecycle state.
+  /// @return State if successful, std::nullopt if not.
+  std::optional<int> get_model_state();
 
   /// @brief Trigger a state transition for the lifecycle node.
   /// \param[in] transition The transition to trigger as per

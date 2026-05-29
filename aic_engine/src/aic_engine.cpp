@@ -316,10 +316,9 @@ static std::string string_set_to_csv(const std::set<std::string>& strings) {
 }
 
 //==============================================================================
-bool Engine::model_node_is_unconfigured() {
+std::optional<int> Engine::get_model_state() {
   RCLCPP_INFO(node_->get_logger(),
-              "Lifecycle node '%s' is available. Checking if it is in "
-              "'unconfigured' state...",
+              "Lifecycle node '%s' is available. Getting its state...",
               model_node_name_.c_str());
 
   if (!model_get_state_client_->wait_for_service(std::chrono::seconds(5))) {
@@ -342,23 +341,7 @@ bool Engine::model_node_is_unconfigured() {
 
   auto response = future.get();
 
-  // Check if the state is unconfigured (PRIMARY_STATE_UNCONFIGURED = 1)
-  if (response->current_state.id !=
-      lifecycle_msgs::msg::State::PRIMARY_STATE_UNCONFIGURED) {
-    RCLCPP_ERROR(node_->get_logger(),
-                 "Lifecycle node '%s' is not in 'unconfigured' state. Current "
-                 "state: %s (id: %u)",
-                 model_node_name_.c_str(),
-                 response->current_state.label.c_str(),
-                 response->current_state.id);
-    return false;
-  }
-
-  RCLCPP_INFO(node_->get_logger(),
-              "Lifecycle node '%s' is in 'unconfigured' state",
-              model_node_name_.c_str());
-
-  return true;
+  return response->current_state.id;
 }
 
 //==============================================================================
@@ -488,19 +471,28 @@ bool Engine::check_model() {
     return false;
   }
 
-  if (!model_node_is_unconfigured()) {
+  const auto state = this->get_model_state();
+  if (!state.has_value()) {
     return false;
   }
 
-  if (!configure_model_node()) {
-    return false;
+  // Assume it will either be unconfigured or active, never inactive
+  if (state.value() == lifecycle_msgs::msg::State::PRIMARY_STATE_UNCONFIGURED) {
+    if (!configure_model_node()) {
+      return false;
+    }
+    if (!activate_model_node()) {
+      return false;
+    }
+    return true;
   }
 
-  // Activate the model node
-  if (!activate_model_node()) {
+  if (state.value() != lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE) {
+    RCLCPP_ERROR(node_->get_logger(),
+                 "Lifecycle node '%s' not in ACTIVE state.",
+                 model_node_name_.c_str());
     return false;
   }
-
   return true;
 }
 
