@@ -3,6 +3,9 @@ id {
   name: "lifecycle_transition_skill"
 }
 display_name: "Lifecycle Transition Skill"
+vendor {
+  display_name: "Intrinsic"
+}
 documentation {
   description: "Skill that triggers lifecycle transitions for a specified node."
 }
