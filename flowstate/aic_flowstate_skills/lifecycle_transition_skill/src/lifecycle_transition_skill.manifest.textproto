@@ -2,11 +2,9 @@ id {
   package: "ai.flowstate"
   name: "lifecycle_transition_skill"
 }
-metadata {
-  display_name: "Lifecycle Transition Skill"
-  documentation {
-    description: "Skill that triggers lifecycle transitions for a specified node."
-  }
+display_name: "Lifecycle Transition Skill"
+documentation {
+  description: "Skill that triggers lifecycle transitions for a specified node."
 }
 parameter {
   message_full_name: "ai.flowstate.LifecycleTransitionSkillParams"
