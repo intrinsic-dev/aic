@@ -54,9 +54,6 @@ namespace aic_scoring
   /// \brief Connection POD.
   struct Connection
   {
-    /// \brief Cable name.
-    public: std::string cableName;
-
     /// \brief Plug name.
     public: std::string plugName;
 
@@ -68,8 +65,8 @@ namespace aic_scoring
 
     /// \brief Get the name of the plug TF
     /// \return Name of the plug TF
-    public: std::string PlugTfName() const {
-      return cableName + "/" + plugName + "_link";
+    public: std::string PlugTfName(const std::string& _cableName) const {
+      return _cableName + "/" + plugName + "_link";
     }
 
     /// \brief Get the name of the port TF
@@ -142,9 +139,13 @@ namespace aic_scoring
     /// \brief Topic to subscribe for joint commands sent to the controller.
     public: static constexpr const char* kJointMotionUpdateTopic = "/aic_controller/joint_commands";
 
-    /// \brief Topic to subscribe for insertion event event
+    /// \brief Topic to subscribe for insertion event
     public: static constexpr const char* kInsertionEventTopic =
         "/scoring/insertion_event";
+
+    /// \brief Topic to subscribe for cable activation event
+    public: static constexpr const char* kCableActivatedTopic =
+        "/scoring/cable_activated";
 
     /// \brief Topic to subscribe for controller state used for FT sensor taring.
     public: static constexpr const char* kControllerStateTopic =
@@ -239,6 +240,10 @@ namespace aic_scoring
     /// \brief Callback for insertion event while scoring.
     /// \param[in] _msg The received message.
     private: void InsertionEventCallback(const StringMsg& _msg);
+
+    /// \brief Callback for cable activation event while scoring.
+    /// \param[in] _msg The received message.
+    private: void CableActivatedCallback(const StringMsg& _msg);
 
     /// \brief Callback for controller state while scoring.
     /// \param[in] _msg The received message.
@@ -353,6 +358,9 @@ namespace aic_scoring
     /// \brief The insertion port namespace as detected by the cable plugins.
     /// Empty string means no insertion event detected.
     private: std::string insertionPortNamespace;
+
+    /// \brief The cable that was activated and is being tracked.
+    private: std::optional<std::string> trackedCable;
 
     /// \brief Whether the tf from a cable was recorded.
     private: std::atomic<bool> cableTfReceived = false;

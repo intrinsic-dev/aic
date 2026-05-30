@@ -241,6 +241,9 @@ namespace aic_gazebo
     /// \brief Cable insertion event publisher
     private: gz::transport::Node::Publisher cableInsertionPub;
 
+    /// \brief Cable activation event publisher
+    private: gz::transport::Node::Publisher cableActivationPub;
+
     /// \brief Gazebo transport node
     private: gz::transport::Node node;
 

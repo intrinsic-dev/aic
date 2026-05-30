@@ -67,6 +67,9 @@ ScoringTier2::ScoringTier2(rclcpp::Node *_node) : node(_node) {
   this->topics.push_back({.name = kInsertionEventTopic,
                           .type = "std_msgs/msg/String",
                           .latched = false});
+  this->topics.push_back({.name = kCableActivatedTopic,
+                          .type = "std_msgs/msg/String",
+                          .latched = false});
   this->topics.push_back({.name = kControllerStateTopic,
                           .type = "aic_control_interfaces/msg/ControllerState",
                           .latched = false});
@@ -245,6 +248,9 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
     } else if (msg_ptr->topic_name == kInsertionEventTopic) {
       const auto msg = deserialize_from_rosbag<StringMsg>(msg_ptr);
       this->InsertionEventCallback(msg);
+    } else if (msg_ptr->topic_name == kCableActivatedTopic) {
+      const auto msg = deserialize_from_rosbag<StringMsg>(msg_ptr);
+      this->CableActivatedCallback(msg);
     } else if (msg_ptr->topic_name == kControllerStateTopic) {
       const auto msg = deserialize_from_rosbag<ControllerStateMsg>(msg_ptr);
       this->ControllerStateCallback(msg);
@@ -448,6 +454,22 @@ void ScoringTier2::JointMotionUpdateCallback(const JointMotionUpdateMsg &_msg) {
 }
 
 //////////////////////////////////////////////////
+void ScoringTier2::CableActivatedCallback(const StringMsg& _msg) {
+  if (!this->trackedCable.has_value()) {
+    this->trackedCable = _msg.data;
+  } else {
+    if (this->trackedCable.value() != _msg.data) {
+      // TODO(luca) Consider applying a penalty if another cable
+      // is activated in the same scoring run
+      RCLCPP_WARN(this->node->get_logger(),
+                  "Cable %s was being tracked but a new cable %s was activated,"
+                  " this is not allowed and might result in a penalty.",
+                  this->trackedCable.value().c_str(), _msg.data);
+    }
+  }
+}
+
+//////////////////////////////////////////////////
 void ScoringTier2::InsertionEventCallback(const StringMsg &_msg) {
   // \todo(iche033) For now, assume only one insertion event per task
   // Mark insertion completion as true as soon as one insertion is done.
@@ -496,9 +518,13 @@ std::optional<double> ScoringTier2::GetPlugPortDistance(
     RCLCPP_ERROR(this->node->get_logger(), "No connection was found");
     return std::nullopt;
   }
+  if (!this->trackedCable.has_value()) {
+    RCLCPP_ERROR(this->node->get_logger(), "No cable is active");
+    return std::nullopt;
+  }
   // For now we only calculate the distance for the first connection
   const auto plug_tf_opt =
-      this->GetTransform(t, this->connection->PlugTfName());
+      this->GetTransform(t, this->connection->PlugTfName(*this->trackedCable));
   const auto port_tf_opt =
       this->GetTransform(t, this->connection->PortTfName());
   if (!plug_tf_opt.has_value() || !port_tf_opt.has_value()) {
@@ -745,13 +771,19 @@ Tier3Score ScoringTier2::GetDistanceScore() const {
         0, "Distance computation failed, tf between cable and port not found");
   }
 
+  if (!this->trackedCable.has_value()) {
+    return Tier3Score(
+        0, "Distance computation failed, no active cable found");
+  }
+
   // Check if we are in partial insertion
   const auto port_entrance_tf = this->GetTransform(
       tf2::TimePoint(end_time), this->connection->PortEntranceTfName());
   const auto port_tf = this->GetTransform(tf2::TimePoint(end_time),
                                           this->connection->PortTfName());
   const auto plug_tf = this->GetTransform(tf2::TimePoint(end_time),
-                                          this->connection->PlugTfName());
+                                          this->connection->PlugTfName(
+                                            this->trackedCable.value()));
 
   if (!port_entrance_tf.has_value() || !port_tf.has_value() ||
       !plug_tf.has_value()) {

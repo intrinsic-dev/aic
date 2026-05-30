@@ -564,7 +564,6 @@ bool Engine::ready_scoring(const TaskMsg& task) {
   RCLCPP_INFO(node_->get_logger(), "Checking scoring system readiness...");
   // Register the connection for this trial.
   aic_scoring::Connection connection;
-  connection.cableName = task.cable_name;
   connection.plugName = task.plug_name;
   connection.portName = task.port_name;
   connection.targetModuleName = task.target_module_name;
