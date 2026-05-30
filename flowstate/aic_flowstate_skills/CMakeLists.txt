@@ -16,9 +16,11 @@ find_package(intrinsic_sdk_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
 find_package(std_srvs REQUIRED)
+find_package(lifecycle_msgs REQUIRED)
 
 
 add_subdirectory(insert_cable_skill)
 add_subdirectory(tare_force_torque_sensor_skill)
+add_subdirectory(lifecycle_transition_skill)
 
 ament_package()
