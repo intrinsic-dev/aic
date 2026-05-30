@@ -9,6 +9,11 @@ vendor {
 documentation {
   description: "Skill that triggers lifecycle transitions for a specified node."
 }
+options {
+  cc_config {
+    create_skill: "::LifecycleTransitionSkill::CreateSkill"
+  }
+}
 parameter {
   message_full_name: "ai.flowstate.LifecycleTransitionSkillParams"
 }
