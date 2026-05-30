@@ -1,0 +1,7 @@
+# Service to start the engine
+
+aic_task_interfaces/Task task # The task being executed by the model
+bool reset # Whether to reset the engine
+---
+bool success             # indicate successful reset
+string message

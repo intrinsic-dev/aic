@@ -25,6 +25,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <filesystem>
 #include <iostream>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
@@ -38,34 +39,42 @@
 
 namespace aic_scoring {
 //////////////////////////////////////////////////
-ScoringTier2::ScoringTier2(rclcpp::Node *_node) : node(_node) {}
-
-//////////////////////////////////////////////////
-// TODO(luca) consider having a make function that returns a pointer which is
-// nullptr if initialization failed instead.
-bool ScoringTier2::Initialize(YAML::Node _config) {
-  if (!this->node) {
-    std::cerr << "[ScoringTier2]: null ROS node. Aborting." << std::endl;
-    return false;
-  }
-  if (!this->ParseStats(_config)) return false;
-
-  return true;
+ScoringTier2::ScoringTier2(rclcpp::Node *_node) : node(_node) {
+  this->topics.push_back({.name = kJointStateTopic,
+                          .type = "sensor_msgs/msg/JointState",
+                          .latched = false});
+  this->topics.push_back({.name = kTfStaticTopic,
+                          .type = "tf2_msgs/msg/TFMessage",
+                          .latched = true});
+  this->topics.push_back(
+      {.name = kTfTopic, .type = "tf2_msgs/msg/TFMessage", .latched = false});
+  this->topics.push_back({.name = kScoringTfTopic,
+                          .type = "tf2_msgs/msg/TFMessage",
+                          .latched = false});
+  this->topics.push_back({.name = kContactsTopic,
+                          .type = "ros_gz_interfaces/msg/Contacts",
+                          .latched = false});
+  this->topics.push_back({.name = kWrenchTopic,
+                          .type = "geometry_msgs/msg/WrenchStamped",
+                          .latched = false});
+  this->topics.push_back({.name = kMotionUpdateTopic,
+                          .type = "aic_control_interfaces/msg/MotionUpdate",
+                          .latched = false});
+  this->topics.push_back(
+      {.name = kJointMotionUpdateTopic,
+       .type = "aic_control_interfaces/msg/JointMotionUpdate",
+       .latched = false});
+  this->topics.push_back({.name = kInsertionEventTopic,
+                          .type = "std_msgs/msg/String",
+                          .latched = false});
+  this->topics.push_back({.name = kControllerStateTopic,
+                          .type = "aic_control_interfaces/msg/ControllerState",
+                          .latched = false});
 }
 
 //////////////////////////////////////////////////
-void ScoringTier2::ResetConnections(
-    const std::vector<Connection> &_connections) {
-  this->connections = _connections;
-
-  // Debug output.
-  // std::cout << "Connections" << std::endl;
-  // for (const Connection &c : this->connections)
-  // {
-  //   std::cout << "  plug: " << c.plugName << std::endl;
-  //   std::cout << "  port: " << c.portName << std::endl;
-  //   std::cout << "  Dist: " << c.distance << std::endl;
-  // }
+void ScoringTier2::SetConnection(const Connection &_connection) {
+  this->connection = _connection;
 }
 
 //////////////////////////////////////////////////
@@ -75,10 +84,10 @@ void ScoringTier2::SetGripperFrame(const std::string &_gripperFrame) {
 
 //////////////////////////////////////////////////
 bool ScoringTier2::StartRecording(const std::string &_filename,
-                                  const std::vector<Connection> &_connections,
+                                  const Connection &_connection,
                                   const std::chrono::seconds &_max_task_time) {
   this->Reset(_max_task_time);
-  this->ResetConnections(_connections);
+  this->SetConnection(_connection);
   {
     std::lock_guard<std::mutex> lock(this->mutex);
     if (this->state != State::Idle) {
@@ -121,6 +130,9 @@ bool ScoringTier2::StartRecording(const std::string &_filename,
             } else if (topic.name == kTfTopic) {
               // A new gripper transform was received
               this->gripperTfReceived = true;
+            } else if (topic.name == kTfStaticTopic) {
+              // A new static transform was received
+              this->staticTfReceived = true;
             }
           }
         });
@@ -134,16 +146,20 @@ bool ScoringTier2::StartRecording(const std::string &_filename,
 bool ScoringTier2::WaitForTfs() {
   this->cableTfReceived = false;
   this->gripperTfReceived = false;
+  this->staticTfReceived = false;
   // Simple spinlock to avoid locking, condition variables etc. for a fairly
   // straightforward wait.
   const auto start = this->node->get_clock()->now();
   const auto timeout = std::chrono::seconds(10);
-  while (rclcpp::ok() && (!this->cableTfReceived || !this->gripperTfReceived) &&
+  while (rclcpp::ok() &&
+         (!this->cableTfReceived || !this->gripperTfReceived ||
+          !this->staticTfReceived) &&
          this->node->get_clock()->now() - start < timeout) {
     this->node->get_clock()->sleep_for(
         rclcpp::Duration(std::chrono::milliseconds(100)));
   }
-  if (!this->cableTfReceived || !this->gripperTfReceived) {
+  if (!this->cableTfReceived || !this->gripperTfReceived ||
+      !this->staticTfReceived) {
     RCLCPP_ERROR(this->node->get_logger(),
                  "Timeout while waiting for transforms for scoring.");
     return false;
@@ -153,9 +169,6 @@ bool ScoringTier2::WaitForTfs() {
 
 //////////////////////////////////////////////////
 bool ScoringTier2::StopRecording() {
-  if (!this->WaitForTfs()) {
-    return false;
-  }
   std::lock_guard<std::mutex> lock(this->mutex);
   if (this->state != State::Recording) {
     RCLCPP_ERROR(this->node->get_logger(), "Scoring system is not recording");
@@ -242,17 +255,6 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
     }
   }
 
-  // Complete the TF tree by linking world and aic_world
-  // The aic_gz_bringup launch file uses a static tf broadcaster to do this
-  // when ground truth is enabled. Here we manually add the fixed transform to
-  // the tf buffer
-  geometry_msgs::msg::TransformStamped transform_stamped;
-  transform_stamped.header.frame_id = "world";
-  transform_stamped.child_frame_id = "aic_world";
-  TFMsg msg;
-  msg.transforms.push_back(transform_stamped);
-  this->TfStaticCallback(msg);
-
   this->state = State::Idle;
   // Compute initial plug-port distance for trajectory efficiency scoring.
   // The robot must travel at least this distance, so it becomes the minimum
@@ -284,7 +286,8 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
 
 //////////////////////////////////////////////////
 void ScoringTier2::Reset(const std::chrono::seconds &_buffer_size) {
-  this->connections.clear();
+  this->connection.reset();
+  std::filesystem::remove_all(this->bagUri);
   this->bagUri.clear();
   this->tf2_buffer = std::make_unique<tf2::BufferCore>(_buffer_size);
   this->state = State::Idle;
@@ -364,6 +367,10 @@ std::set<std::string> ScoringTier2::GetMissingRequiredTopics() const {
     }
   }
   return unavailable;
+}
+
+bool ScoringTier2::IsRecording() const {
+  return this->state == State::Recording;
 }
 
 //////////////////////////////////////////////////
@@ -485,15 +492,15 @@ std::optional<ScoringTier2::TransformStampedMsg> ScoringTier2::GetTransform(
 //////////////////////////////////////////////////
 std::optional<double> ScoringTier2::GetPlugPortDistance(
     tf2::TimePoint t) const {
-  if (this->connections.empty()) {
+  if (!this->connection.has_value()) {
     RCLCPP_ERROR(this->node->get_logger(), "No connection was found");
     return std::nullopt;
   }
   // For now we only calculate the distance for the first connection
   const auto plug_tf_opt =
-      this->GetTransform(t, this->connections[0].PlugTfName());
+      this->GetTransform(t, this->connection->PlugTfName());
   const auto port_tf_opt =
-      this->GetTransform(t, this->connections[0].PortTfName());
+      this->GetTransform(t, this->connection->PortTfName());
   if (!plug_tf_opt.has_value() || !port_tf_opt.has_value()) {
     return std::nullopt;
   }
@@ -740,11 +747,11 @@ Tier3Score ScoringTier2::GetDistanceScore() const {
 
   // Check if we are in partial insertion
   const auto port_entrance_tf = this->GetTransform(
-      tf2::TimePoint(end_time), this->connections[0].PortEntranceTfName());
+      tf2::TimePoint(end_time), this->connection->PortEntranceTfName());
   const auto port_tf = this->GetTransform(tf2::TimePoint(end_time),
-                                          this->connections[0].PortTfName());
+                                          this->connection->PortTfName());
   const auto plug_tf = this->GetTransform(tf2::TimePoint(end_time),
-                                          this->connections[0].PlugTfName());
+                                          this->connection->PlugTfName());
 
   if (!port_entrance_tf.has_value() || !port_tf.has_value() ||
       !plug_tf.has_value()) {
@@ -828,8 +835,8 @@ Tier3Score ScoringTier2::ComputeTier3Score() const {
 
     if (tokens.size() >= 2u) {
       // Verify the plug is inserted into the correct target port
-      if (tokens[0] == connections[0].targetModuleName &&
-          tokens[1] == connections[0].portName) {
+      if (tokens[0] == connection->targetModuleName &&
+          tokens[1] == connection->portName) {
         return Tier3Score(kInsertionCompletionScore,
                           "Cable insertion successful.");
       } else {
@@ -856,7 +863,7 @@ std::optional<ScoringTier2::TransformStampedMsg> ScoringTier2::EndEffectorPose(
                  "Unable to compute end effector pose, gripper frame not set");
     return std::nullopt;
   }
-  return this->GetTransform(t, this->gripperFrame, "aic_world", true);
+  return this->GetTransform(t, this->gripperFrame, "default", true);
 }
 
 //////////////////////////////////////////////////
@@ -970,7 +977,6 @@ ScoringTier2Node::ScoringTier2Node(const std::string &_yamlFile)
   try {
     auto config = YAML::LoadFile(_yamlFile);
     this->score = std::make_unique<aic_scoring::ScoringTier2>(this);
-    this->score->Initialize(config);
   } catch (const YAML::BadFile &_e) {
     std::cerr << "Unable to open YAML file [" << _yamlFile << "]" << std::endl;
     return;

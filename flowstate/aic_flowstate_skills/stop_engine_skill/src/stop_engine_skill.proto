@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package ai.flowstate;
+
+message StopEngineSkillParams {
+  // Whether the full task is finished and it should be scored.
+  bool finished = 1;
+}
+
+message StopEngineSkillResult {
+}

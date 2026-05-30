@@ -57,9 +57,6 @@ namespace aic_scoring
     /// \brief Cable name.
     public: std::string cableName;
 
-    /// \brief Task board name.
-    public: std::string taskBoardName;
-
     /// \brief Plug name.
     public: std::string plugName;
 
@@ -78,15 +75,13 @@ namespace aic_scoring
     /// \brief Get the name of the port TF
     /// \return Name of the port TF
     public: std::string PortTfName() const {
-      return taskBoardName + "/" + targetModuleName + "/" +
-          portName + "_link";
+      return targetModuleName + "/" + portName + "_link";
     }
 
     /// \brief Get the name of the port's entrance TF, used for partial insertion.
     /// \return Name of the port's entrance TF
     public: std::string PortEntranceTfName() const {
-      return taskBoardName + "/" + targetModuleName + "/" +
-          portName + "_link_entrance";
+      return targetModuleName + "/" + portName + "_link_entrance";
     }
   };
 
@@ -127,7 +122,7 @@ namespace aic_scoring
     public: static constexpr const char* kJointStateTopic = "/joint_states";
 
     /// \brief Topic to subscribe for static tf.
-    public: static constexpr const char* kTfStaticTopic = "/tf_static";
+    public: static constexpr const char* kTfStaticTopic = "/scoring/tf_static";
 
     /// \brief Topic to subscribe for tf.
     public: static constexpr const char* kTfTopic = "/tf";
@@ -159,13 +154,9 @@ namespace aic_scoring
     /// \param[in] _node Pointer to the ROS node.
     public: ScoringTier2(rclcpp::Node *_node);
 
-    /// \brief Populate the scoring input params from a YAML file.
-    /// \param[in] _config YAML configuration for the node
-    public: bool Initialize(YAML::Node _config);
-
-    /// \brief Reset connections.
-    /// \param[in] _connections New connections.
-    private: void ResetConnections(const std::vector<Connection> &_connections);
+    /// \brief Reset connection.
+    /// \param[in] _connections New connection.
+    private: void SetConnection(const Connection &_connection);
 
     /// \brief Set the gripper frame name.
     /// \param[in] _gripperFrame Gripper frame name.
@@ -174,10 +165,10 @@ namespace aic_scoring
     /// \brief Start recording all scoring topics.
     /// \return True if the bag was opened correctly and it's ready to record.
     /// \param[in] _filename The path to the bag.
-    /// \param[in] _connections Connections to monitor.
+    /// \param[in] _connection Connection to monitor.
     /// \param[in] _max_task_time The maximum time to record for, used for tf buffer size.
     public: bool StartRecording(const std::string &_filename,
-                const std::vector<Connection> &_connections,
+                const Connection &_connection,
                 const std::chrono::seconds &_max_task_time);
 
     /// \brief Stop recording all scoring topics.
@@ -203,6 +194,10 @@ namespace aic_scoring
     /// \brief Set the end time for the task.
     /// \param[in] _time The end time of the task.
     public: void SetTaskEndTime(const rclcpp::Time& _time);
+
+    /// \brief Return whether the system is currently recording.
+    /// \return True if recording, false otherwise.
+    public: bool IsRecording() const;
 
     /// \brief Populate the scoring input params from a YAML file.
     /// \param[in] _config YAML configuration for the node
@@ -273,7 +268,7 @@ namespace aic_scoring
     private: std::optional<TransformStampedMsg> GetTransform(
                  tf2::TimePoint _t,
                  const std::string& _target_frame,
-                 const std::string& _reference_frame = "aic_world",
+                 const std::string& _reference_frame = "default",
                  const bool _suppress_error = false) const;
 
     /// \brief Calculates the distance between the plug and the port.
@@ -311,8 +306,8 @@ namespace aic_scoring
     /// \brief Topics to subscribe to.
     private: std::vector<TopicInfo> topics;
 
-    /// \brief Connections.
-    private: std::vector<Connection> connections;
+    /// \brief Connection.
+    private: std::optional<Connection> connection;
 
     /// \brief Generic subscriptions for all topics.
     private: std::vector<std::shared_ptr<rclcpp::GenericSubscription>>
@@ -364,6 +359,9 @@ namespace aic_scoring
 
     /// \brief Whether the tf from a gripper was recorded.
     private: std::atomic<bool> gripperTfReceived = false;
+
+    /// \brief Whether the tf from a gripper was recorded.
+    private: std::atomic<bool> staticTfReceived = false;
 
     /// \brief The last tared ft reading rotated to the current pose received.
     private: std::optional<WrenchMsg> lastTaredFt;
