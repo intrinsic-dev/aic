@@ -40,9 +40,6 @@
 namespace aic_scoring {
 //////////////////////////////////////////////////
 ScoringTier2::ScoringTier2(rclcpp::Node *_node) : node(_node) {
-  this->topics.push_back({.name = kJointStateTopic,
-                          .type = "sensor_msgs/msg/JointState",
-                          .latched = false});
   this->topics.push_back({.name = kTfStaticTopic,
                           .type = "tf2_msgs/msg/TFMessage",
                           .latched = true});
@@ -57,13 +54,6 @@ ScoringTier2::ScoringTier2(rclcpp::Node *_node) : node(_node) {
   this->topics.push_back({.name = kWrenchTopic,
                           .type = "geometry_msgs/msg/WrenchStamped",
                           .latched = false});
-  this->topics.push_back({.name = kMotionUpdateTopic,
-                          .type = "aic_control_interfaces/msg/MotionUpdate",
-                          .latched = false});
-  this->topics.push_back(
-      {.name = kJointMotionUpdateTopic,
-       .type = "aic_control_interfaces/msg/JointMotionUpdate",
-       .latched = false});
   this->topics.push_back({.name = kInsertionEventTopic,
                           .type = "std_msgs/msg/String",
                           .latched = false});
@@ -223,10 +213,7 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
     // Debugging to make sure messages are in the bag
     // RCLCPP_INFO(this->node->get_logger(), "Received message on topic '%s'",
     //     msg_ptr->topic_name.c_str());
-    if (msg_ptr->topic_name == kJointStateTopic) {
-      const auto msg = deserialize_from_rosbag<JointStateMsg>(msg_ptr);
-      this->JointStateCallback(msg);
-    } else if (msg_ptr->topic_name == kTfTopic ||
+    if (msg_ptr->topic_name == kTfTopic ||
                msg_ptr->topic_name == kScoringTfTopic) {
       const auto msg = deserialize_from_rosbag<TFMsg>(msg_ptr);
       this->TfCallback(msg);
@@ -239,12 +226,6 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
     } else if (msg_ptr->topic_name == kWrenchTopic) {
       const auto msg = deserialize_from_rosbag<WrenchMsg>(msg_ptr);
       this->WrenchCallback(msg);
-    } else if (msg_ptr->topic_name == kMotionUpdateTopic) {
-      const auto msg = deserialize_from_rosbag<MotionUpdateMsg>(msg_ptr);
-      this->MotionUpdateCallback(msg);
-    } else if (msg_ptr->topic_name == kJointMotionUpdateTopic) {
-      const auto msg = deserialize_from_rosbag<JointMotionUpdateMsg>(msg_ptr);
-      this->JointMotionUpdateCallback(msg);
     } else if (msg_ptr->topic_name == kInsertionEventTopic) {
       const auto msg = deserialize_from_rosbag<StringMsg>(msg_ptr);
       this->InsertionEventCallback(msg);
@@ -390,9 +371,6 @@ void ScoringTier2::SetTaskEndTime(const rclcpp::Time &_time) {
 }
 
 //////////////////////////////////////////////////
-void ScoringTier2::JointStateCallback(const JointStateMsg &_msg) { (void)_msg; }
-
-//////////////////////////////////////////////////
 void ScoringTier2::TfCallback(const TFMsg &_msg) {
   for (const auto &tf : _msg.transforms) {
     this->tf2_buffer->setTransform(tf, "scoring", false);
@@ -444,16 +422,6 @@ void ScoringTier2::WrenchCallback(const WrenchMsg &_msg) {
 }
 
 //////////////////////////////////////////////////
-void ScoringTier2::MotionUpdateCallback(const MotionUpdateMsg &_msg) {
-  (void)_msg;
-}
-
-//////////////////////////////////////////////////
-void ScoringTier2::JointMotionUpdateCallback(const JointMotionUpdateMsg &_msg) {
-  (void)_msg;
-}
-
-//////////////////////////////////////////////////
 void ScoringTier2::CableActivatedCallback(const StringMsg& _msg) {
   if (!this->trackedCable.has_value()) {
     this->trackedCable = _msg.data;
@@ -464,7 +432,7 @@ void ScoringTier2::CableActivatedCallback(const StringMsg& _msg) {
       RCLCPP_WARN(this->node->get_logger(),
                   "Cable %s was being tracked but a new cable %s was activated,"
                   " this is not allowed and might result in a penalty.",
-                  this->trackedCable.value().c_str(), _msg.data);
+                  this->trackedCable.value().c_str(), _msg.data.c_str());
     }
   }
 }

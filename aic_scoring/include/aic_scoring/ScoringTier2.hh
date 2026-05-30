@@ -115,9 +115,6 @@ namespace aic_scoring
       Scoring
     };
 
-    /// \brief Topic to subscribe for joint states.
-    public: static constexpr const char* kJointStateTopic = "/joint_states";
-
     /// \brief Topic to subscribe for static tf.
     public: static constexpr const char* kTfStaticTopic = "/scoring/tf_static";
 
@@ -135,9 +132,6 @@ namespace aic_scoring
 
     /// \brief Topic to subscribe for pose commands sent to the controller.
     public: static constexpr const char* kMotionUpdateTopic = "/aic_controller/pose_commands";
-
-    /// \brief Topic to subscribe for joint commands sent to the controller.
-    public: static constexpr const char* kJointMotionUpdateTopic = "/aic_controller/joint_commands";
 
     /// \brief Topic to subscribe for insertion event
     public: static constexpr const char* kInsertionEventTopic =
@@ -204,10 +198,6 @@ namespace aic_scoring
     /// \param[in] _config YAML configuration for the node
     private: bool ParseStats(YAML::Node _config);
 
-    /// \brief Callback for joint state messages received while scoring.
-    /// \param[in] _msg The received message.
-    private: void JointStateCallback(const JointStateMsg& _msg);
-
     /// \brief Callback for tf messages received while scoring.
     /// \param[in] _msg The received message.
     private: void TfCallback(const TFMsg& _msg);
@@ -228,14 +218,6 @@ namespace aic_scoring
     /// \param[in] t Time to check the pose.
     /// \return End effector pose at time t. nullopt if failed
     private: std::optional<TransformStampedMsg> EndEffectorPose(tf2::TimePoint t) const;
-
-    /// \brief Callback for pose commands received while scoring.
-    /// \param[in] _msg The received message.
-    private: void MotionUpdateCallback(const MotionUpdateMsg& _msg);
-
-    /// \brief Callback for joint commands received while scoring.
-    /// \param[in] _msg The received message.
-    private: void JointMotionUpdateCallback(const JointMotionUpdateMsg& _msg);
 
     /// \brief Callback for insertion event while scoring.
     /// \param[in] _msg The received message.
