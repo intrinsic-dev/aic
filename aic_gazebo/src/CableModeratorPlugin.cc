@@ -210,6 +210,8 @@ void CableModeratorPlugin::ProcessManualGraspRequests(
                              components::DetachableJoint(
                                  {this->endEffectorLinkEntity,
                                   tracker.connection0LinkEntity, "fixed"}));
+        _ecm.CreateComponent(jointEntity,
+                             components::DetachableJointWeldChildToParent(false));
         gzmsg << "Manually attached " << this->cableConfigs[i].modelName
               << " end 0" << std::endl;
       }
@@ -240,6 +242,8 @@ void CableModeratorPlugin::ProcessManualGraspRequests(
                              components::DetachableJoint(
                                  {this->endEffectorLinkEntity,
                                   tracker.connection1LinkEntity, "fixed"}));
+        _ecm.CreateComponent(jointEntity,
+                             components::DetachableJointWeldChildToParent(false));
         gzmsg << "Manually attached " << this->cableConfigs[i].modelName
               << " end 1" << std::endl;
       }
@@ -419,7 +423,7 @@ void CableModeratorPlugin::PreUpdate(const gz::sim::UpdateInfo& /*_info*/,
         if (!tracker.end1Inserted &&
             tracker.detachableJointStatic1Entity == kNullEntity) {
           tracker.detachableJointStatic1Entity =
-              this->MakeStatic(tracker.connection1LinkEntity, true, _ecm);
+              this->MakeStatic(tracker.connection1LinkEntity, false, _ecm);
           gzdbg << "Locking End 1. Resulting joint: "
                 << tracker.detachableJointStatic1Entity << std::endl;
         }
@@ -435,7 +439,7 @@ void CableModeratorPlugin::PreUpdate(const gz::sim::UpdateInfo& /*_info*/,
         if (!tracker.end0Inserted &&
             tracker.detachableJointStatic0Entity == kNullEntity) {
           tracker.detachableJointStatic0Entity =
-              this->MakeStatic(tracker.connection0LinkEntity, true, _ecm);
+              this->MakeStatic(tracker.connection0LinkEntity, false, _ecm);
           gzdbg << "Locking End 0. Resulting joint: "
                 << tracker.detachableJointStatic0Entity << std::endl;
         }
@@ -463,12 +467,12 @@ void CableModeratorPlugin::PreUpdate(const gz::sim::UpdateInfo& /*_info*/,
     if (tracker.end0Inserted &&
         tracker.detachableJointStatic0Entity == kNullEntity) {
       tracker.detachableJointStatic0Entity =
-          this->MakeStatic(tracker.connection0LinkEntity, true, _ecm);
+          this->MakeStatic(tracker.connection0LinkEntity, false, _ecm);
     }
     if (tracker.end1Inserted &&
         tracker.detachableJointStatic1Entity == kNullEntity) {
       tracker.detachableJointStatic1Entity =
-          this->MakeStatic(tracker.connection1LinkEntity, true, _ecm);
+          this->MakeStatic(tracker.connection1LinkEntity, false, _ecm);
     }
 
     if (tracker.end0Inserted && tracker.end1Inserted && !tracker.isCompleted) {
@@ -545,6 +549,8 @@ Entity CableModeratorPlugin::MakeStatic(Entity _entity,
   _ecm.CreateComponent(detachableJointEntity,
                        components::DetachableJoint(
                            {parentLinkEntity, childLinkEntity, "fixed"}));
+  _ecm.CreateComponent(detachableJointEntity,
+                       components::DetachableJointWeldChildToParent(true));
 
   return detachableJointEntity;
 }
