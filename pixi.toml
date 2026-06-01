@@ -62,7 +62,7 @@ nlohmann_json = "*"
 
 
 [tasks]
-colcon-build = "colcon build --base-paths flowstate ../sdk-ros --cmake-args -DCMAKE_BUILD_TYPE=Release"
+colcon-build = "LIBRARY_PATH=\"$CONDA_PREFIX/lib\" colcon build --base-paths flowstate ../sdk-ros --cmake-args -DCMAKE_BUILD_TYPE=Release"
 
 
 [pypi-dependencies]
