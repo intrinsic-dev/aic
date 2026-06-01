@@ -141,9 +141,7 @@ def generate_launch_description():
                         "strip_flowstate_tf_prefix": LaunchConfiguration(
                             "strip_flowstate_tf_prefix"
                         ),
-                        "remap_tf_names":  [
-                            "robotiq_gripper/tool_frame", "gripper/tcp"
-                        ],
+                        "remap_tf_names": ["robotiq_gripper/tool_frame", "gripper/tcp"],
                     }
                 ],
             ),

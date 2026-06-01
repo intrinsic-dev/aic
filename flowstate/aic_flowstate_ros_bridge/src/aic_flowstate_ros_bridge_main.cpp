@@ -95,7 +95,7 @@ int main(int argc, char* argv[]) {
                       ros_config.strip_flowstate_tf_prefix());
   const auto& remap_tf_names_proto = ros_config.remap_tf_names();
   std::vector<std::string> remap_tf_names_list(remap_tf_names_proto.begin(),
-                                       remap_tf_names_proto.end());
+                                               remap_tf_names_proto.end());
   rclcpp::Parameter remap_tf_names_param("remap_tf_names", remap_tf_names_list);
   params.push_back(std::move(remap_tf_names_param));
 
