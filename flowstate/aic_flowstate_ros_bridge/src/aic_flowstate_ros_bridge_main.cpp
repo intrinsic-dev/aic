@@ -91,6 +91,13 @@ int main(int argc, char* argv[]) {
                                        bridge_plugins_proto.end());
   rclcpp::Parameter bridge_plugins_param("bridge_plugins", plugin_list);
   params.push_back(std::move(bridge_plugins_param));
+  params.emplace_back("strip_flowstate_tf_prefix",
+                      ros_config.strip_flowstate_tf_prefix());
+  const auto& remap_tf_names_proto = ros_config.remap_tf_names();
+  std::vector<std::string> remap_tf_names_list(remap_tf_names_proto.begin(),
+                                       remap_tf_names_proto.end());
+  rclcpp::Parameter remap_tf_names_param("remap_tf_names", remap_tf_names_list);
+  params.push_back(std::move(remap_tf_names_param));
 
   const auto& s = ros_config.sensors();
   params.emplace_back("enable_robot_joint_state_topic",
