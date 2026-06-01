@@ -54,6 +54,7 @@ private:
   int score;
 
 public:
+  Tier1Score() : Tier1Score(false) { }
   Tier1Score(bool success) {
     if (success) {
       this->score = kTier1Success;

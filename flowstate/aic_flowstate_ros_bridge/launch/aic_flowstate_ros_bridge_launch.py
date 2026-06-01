@@ -76,6 +76,16 @@ def generate_launch_description():
                 default_value="ati_ft_sensor",
                 description="F/T sensor part name",
             ),
+            DeclareLaunchArgument(
+                "strip_flowstate_tf_prefix",
+                default_value="robot/",
+                description="Strips the TF prefix from flowstate TF frames",
+            ),
+            DeclareLaunchArgument(
+                "use_sim_time",
+                default_value="true",
+                description="Use simulation clock if true",
+            ),
             LifecycleNode(
                 package="flowstate_ros_bridge",
                 executable="flowstate_ros_bridge",
@@ -84,6 +94,7 @@ def generate_launch_description():
                 output="screen",
                 parameters=[
                     {
+                        "use_sim_time": LaunchConfiguration("use_sim_time"),
                         "autostart": True,
                         "service_tunnel": LaunchConfiguration("service_tunnel"),
                         "flowstate_zenoh_router_address": LaunchConfiguration(
@@ -93,7 +104,7 @@ def generate_launch_description():
                             "flowstate_ros_bridge::ExecutiveBridge",
                             "flowstate_ros_bridge::WorldBridge",
                             "flowstate_ros_bridge::RobotControlBridge",
-                            "flowstate_ros_bridge::AicCameraBridge",
+                            # "flowstate_ros_bridge::AicCameraBridge",
                         ],
                         "server_address": LaunchConfiguration("server_address"),
                         "instance": LaunchConfiguration("instance"),
@@ -127,6 +138,10 @@ def generate_launch_description():
                             "wrist_2_joint",
                             "wrist_3_joint",
                         ],
+                        "strip_flowstate_tf_prefix": LaunchConfiguration(
+                            "strip_flowstate_tf_prefix"
+                        ),
+                        "remap_tf_names": ["robotiq_gripper/tool_frame", "gripper/tcp"],
                     }
                 ],
             ),

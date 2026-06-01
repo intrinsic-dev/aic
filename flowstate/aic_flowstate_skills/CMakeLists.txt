@@ -10,15 +10,20 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # find dependencies
 find_package(absl REQUIRED)
+find_package(aic_engine_interfaces REQUIRED)
 find_package(aic_task_interfaces REQUIRED)
 find_package(ament_cmake REQUIRED)
 find_package(intrinsic_sdk_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
 find_package(std_srvs REQUIRED)
+find_package(lifecycle_msgs REQUIRED)
 
 
 add_subdirectory(insert_cable_skill)
+add_subdirectory(start_engine_skill)
+add_subdirectory(stop_engine_skill)
 add_subdirectory(tare_force_torque_sensor_skill)
+add_subdirectory(lifecycle_transition_skill)
 
 ament_package()

@@ -1,0 +1,17 @@
+id {
+  package: "ai.flowstate"
+  name: "lifecycle_transition_skill"
+}
+display_name: "Lifecycle Transition Skill"
+vendor {
+  display_name: "Intrinsic"
+}
+documentation {
+  description: "Skill that triggers lifecycle transitions for a specified node."
+}
+parameter {
+  message_full_name: "ai.flowstate.LifecycleTransitionSkillParams"
+}
+return_type {
+  message_full_name: "ai.flowstate.LifecycleTransitionSkillResult"
+}

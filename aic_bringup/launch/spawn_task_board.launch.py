@@ -87,6 +87,24 @@ def launch_setup(context, *args, **kwargs):
     sc_port_1_pitch = LaunchConfiguration("sc_port_1_pitch")
     sc_port_1_yaw = LaunchConfiguration("sc_port_1_yaw")
 
+    sc_port_2_present = LaunchConfiguration("sc_port_2_present")
+    sc_port_2_translation = LaunchConfiguration("sc_port_2_translation")
+    sc_port_2_roll = LaunchConfiguration("sc_port_2_roll")
+    sc_port_2_pitch = LaunchConfiguration("sc_port_2_pitch")
+    sc_port_2_yaw = LaunchConfiguration("sc_port_2_yaw")
+
+    sc_port_3_present = LaunchConfiguration("sc_port_3_present")
+    sc_port_3_translation = LaunchConfiguration("sc_port_3_translation")
+    sc_port_3_roll = LaunchConfiguration("sc_port_3_roll")
+    sc_port_3_pitch = LaunchConfiguration("sc_port_3_pitch")
+    sc_port_3_yaw = LaunchConfiguration("sc_port_3_yaw")
+
+    sc_port_4_present = LaunchConfiguration("sc_port_4_present")
+    sc_port_4_translation = LaunchConfiguration("sc_port_4_translation")
+    sc_port_4_roll = LaunchConfiguration("sc_port_4_roll")
+    sc_port_4_pitch = LaunchConfiguration("sc_port_4_pitch")
+    sc_port_4_yaw = LaunchConfiguration("sc_port_4_yaw")
+
     # NIC Card Mount parameters
     nic_card_mount_0_present = LaunchConfiguration("nic_card_mount_0_present")
     nic_card_mount_0_translation = LaunchConfiguration("nic_card_mount_0_translation")
@@ -262,6 +280,51 @@ def launch_setup(context, *args, **kwargs):
             " ",
             "sc_port_1_yaw:=",
             sc_port_1_yaw,
+            " ",
+            "sc_port_2_present:=",
+            sc_port_2_present,
+            " ",
+            "sc_port_2_translation:=",
+            sc_port_2_translation,
+            " ",
+            "sc_port_2_roll:=",
+            sc_port_2_roll,
+            " ",
+            "sc_port_2_pitch:=",
+            sc_port_2_pitch,
+            " ",
+            "sc_port_2_yaw:=",
+            sc_port_2_yaw,
+            " ",
+            "sc_port_3_present:=",
+            sc_port_3_present,
+            " ",
+            "sc_port_3_translation:=",
+            sc_port_3_translation,
+            " ",
+            "sc_port_3_roll:=",
+            sc_port_3_roll,
+            " ",
+            "sc_port_3_pitch:=",
+            sc_port_3_pitch,
+            " ",
+            "sc_port_3_yaw:=",
+            sc_port_3_yaw,
+            " ",
+            "sc_port_4_present:=",
+            sc_port_4_present,
+            " ",
+            "sc_port_4_translation:=",
+            sc_port_4_translation,
+            " ",
+            "sc_port_4_roll:=",
+            sc_port_4_roll,
+            " ",
+            "sc_port_4_pitch:=",
+            sc_port_4_pitch,
+            " ",
+            "sc_port_4_yaw:=",
+            sc_port_4_yaw,
             " ",
             "nic_card_mount_0_present:=",
             nic_card_mount_0_present,
@@ -718,6 +781,117 @@ def generate_launch_description():
             "sc_port_1_yaw",
             default_value="0.0",
             description="SC Port 1 yaw orientation (radians)",
+        )
+    )
+
+    # SC Port 2 arguments
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "sc_port_2_present",
+            default_value="false",
+            description="Whether SC Port 2 is present",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "sc_port_2_translation",
+            default_value="0.0",
+            description="SC Port 2 translation along rail (meters)",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "sc_port_2_roll",
+            default_value="0.0",
+            description="SC Port 2 roll orientation (radians)",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "sc_port_2_pitch",
+            default_value="0.0",
+            description="SC Port 2 pitch orientation (radians)",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "sc_port_2_yaw",
+            default_value="0.0",
+            description="SC Port 2 yaw orientation (radians)",
+        )
+    )
+
+    # SC Port 3 arguments
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "sc_port_3_present",
+            default_value="false",
+            description="Whether SC Port 3 is present",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "sc_port_3_translation",
+            default_value="0.0",
+            description="SC Port 3 translation along rail (meters)",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "sc_port_3_roll",
+            default_value="0.0",
+            description="SC Port 3 roll orientation (radians)",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "sc_port_3_pitch",
+            default_value="0.0",
+            description="SC Port 3 pitch orientation (radians)",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "sc_port_3_yaw",
+            default_value="0.0",
+            description="SC Port 3 yaw orientation (radians)",
+        )
+    )
+
+    # SC Port 4 arguments
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "sc_port_4_present",
+            default_value="false",
+            description="Whether SC Port 4 is present",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "sc_port_4_translation",
+            default_value="0.0",
+            description="SC Port 4 translation along rail (meters)",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "sc_port_4_roll",
+            default_value="0.0",
+            description="SC Port 4 roll orientation (radians)",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "sc_port_4_pitch",
+            default_value="0.0",
+            description="SC Port 4 pitch orientation (radians)",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "sc_port_4_yaw",
+            default_value="0.0",
+            description="SC Port 4 yaw orientation (radians)",
         )
     )
 

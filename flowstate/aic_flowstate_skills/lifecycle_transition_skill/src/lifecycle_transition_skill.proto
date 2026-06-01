@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package ai.flowstate;
+
+message LifecycleTransitionSkillParams {
+  string node_name = 1;
+  Transition transition = 2;
+
+  enum Transition {
+    TRANSITION_CREATE = 0;
+    TRANSITION_CONFIGURE = 1;
+    TRANSITION_CLEANUP = 2;
+    TRANSITION_ACTIVATE = 3;
+    TRANSITION_DEACTIVATE = 4;
+    TRANSITION_UNCONFIGURED_SHUTDOWN = 5;
+    TRANSITION_INACTIVE_SHUTDOWN = 6;
+    TRANSITION_ACTIVE_SHUTDOWN = 7;
+    TRANSITION_DESTROY = 8;
+  }
+}
+
+message LifecycleTransitionSkillResult {
+  bool success = 1;
+  string message = 2;
+}
