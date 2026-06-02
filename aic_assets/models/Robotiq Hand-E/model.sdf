@@ -2,7 +2,7 @@
 <sdf version="1.9">
   <model name="Robotiq Hand-E">
 
-    <link name="gripper_body">
+    <link name="hande_base_link">
       <inertial>
         <mass>1</mass>
         <inertia>
@@ -41,7 +41,7 @@
       </collision>
     </link>
 
-    <link name="gripper_finger1">
+    <link name="hande_finger_link_l">
       <inertial>
         <mass>0.2</mass>
         <inertia>
@@ -94,7 +94,7 @@
       </collision>
     </link>
 
-    <link name="gripper_finger2">
+    <link name="hande_finger_link_r">
       <inertial>
         <mass>0.2</mass>
         <inertia>
@@ -149,8 +149,8 @@
     </link>
 
     <joint name="finger1" type="prismatic">
-      <parent>gripper_body</parent>
-      <child>gripper_finger1</child>
+      <parent>hande_base_link</parent>
+      <child>hande_finger_link_l</child>
       <pose>0 0 0 0 0 0</pose>
       <axis>
         <xyz>-1 0 0</xyz>
@@ -161,8 +161,8 @@
        </axis>
     </joint>
     <joint name="finger2" type="prismatic">
-      <parent>gripper_body</parent>
-      <child>gripper_finger2</child>
+      <parent>hande_base_link</parent>
+      <child>hande_finger_link_r</child>
       <pose>0 0 0 0 0 0</pose>
       <axis>
         <xyz>1 0 0</xyz>
@@ -172,7 +172,7 @@
         </limit>
        </axis>
     </joint>
-    <frame name='tool_frame' attached_to='gripper_body' intrinsic:create_entity='true'>
+    <frame name='tcp' attached_to='hande_base_link' intrinsic:create_entity='true'>
       <pose>0 0 0.172 0 0 0</pose>
     </frame>
   </model>
