@@ -211,7 +211,7 @@ void CableModeratorPlugin::ProcessManualGraspRequests(
                                  {this->endEffectorLinkEntity,
                                   tracker.connection0LinkEntity, "fixed"}));
         _ecm.CreateComponent(jointEntity,
-                             components::DetachableJointWeldChildToParent(true));
+            components::DetachableJointEnforceFixedConstraint(true));
         gzmsg << "Manually attached " << this->cableConfigs[i].modelName
               << " end 0" << std::endl;
       }
@@ -243,7 +243,7 @@ void CableModeratorPlugin::ProcessManualGraspRequests(
                                  {this->endEffectorLinkEntity,
                                   tracker.connection1LinkEntity, "fixed"}));
         _ecm.CreateComponent(jointEntity,
-                             components::DetachableJointWeldChildToParent(true));
+            components::DetachableJointEnforceFixedConstraint(true));
         gzmsg << "Manually attached " << this->cableConfigs[i].modelName
               << " end 1" << std::endl;
       }
@@ -553,7 +553,7 @@ Entity CableModeratorPlugin::MakeStatic(Entity _entity,
                        components::DetachableJoint(
                            {parentLinkEntity, childLinkEntity, "fixed"}));
   _ecm.CreateComponent(detachableJointEntity,
-                       components::DetachableJointWeldChildToParent(false));
+      components::DetachableJointEnforceFixedConstraint(false));
 
   return detachableJointEntity;
 }
