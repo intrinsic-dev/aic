@@ -214,7 +214,7 @@ void CableModeratorPlugin::ProcessManualGraspRequests(
                                  {this->endEffectorLinkEntity,
                                   tracker.connection0LinkEntity, "fixed"}));
         _ecm.CreateComponent(jointEntity,
-                             components::DetachableJointWeldChildToParent(false));
+                             components::DetachableJointWeldChildToParent(true));
         gzmsg << "Manually attached " << this->cableConfigs[i].modelName
               << " end 0" << std::endl;
       }
@@ -246,7 +246,7 @@ void CableModeratorPlugin::ProcessManualGraspRequests(
                                  {this->endEffectorLinkEntity,
                                   tracker.connection1LinkEntity, "fixed"}));
         _ecm.CreateComponent(jointEntity,
-                             components::DetachableJointWeldChildToParent(false));
+                             components::DetachableJointWeldChildToParent(true));
         gzmsg << "Manually attached " << this->cableConfigs[i].modelName
               << " end 1" << std::endl;
       }
@@ -429,7 +429,7 @@ void CableModeratorPlugin::PreUpdate(const gz::sim::UpdateInfo& /*_info*/,
         if (!tracker.end1Inserted &&
             tracker.detachableJointStatic1Entity == kNullEntity) {
           tracker.detachableJointStatic1Entity =
-              this->MakeStatic(tracker.connection1LinkEntity, false, _ecm);
+              this->MakeStatic(tracker.connection1LinkEntity, true, _ecm);
           gzdbg << "Locking End 1. Resulting joint: "
                 << tracker.detachableJointStatic1Entity << std::endl;
         }
@@ -445,7 +445,7 @@ void CableModeratorPlugin::PreUpdate(const gz::sim::UpdateInfo& /*_info*/,
         if (!tracker.end0Inserted &&
             tracker.detachableJointStatic0Entity == kNullEntity) {
           tracker.detachableJointStatic0Entity =
-              this->MakeStatic(tracker.connection0LinkEntity, false, _ecm);
+              this->MakeStatic(tracker.connection0LinkEntity, true, _ecm);
           gzdbg << "Locking End 0. Resulting joint: "
                 << tracker.detachableJointStatic0Entity << std::endl;
         }
@@ -533,6 +533,9 @@ Entity CableModeratorPlugin::MakeStatic(Entity _entity,
                              _ecm.EntityByComponents(components::World()));
   }
 
+  math::Pose3d worldPoseOfLink = worldPose(_entity, _ecm);
+  _ecm.SetComponentData<components::Pose>(staticEntity, worldPoseOfLink);
+
   Entity staticLinkEntity = _ecm.EntityByComponents(
       components::Link(), components::ParentEntity(staticEntity),
       components::Name("static_link"));
@@ -556,7 +559,7 @@ Entity CableModeratorPlugin::MakeStatic(Entity _entity,
                        components::DetachableJoint(
                            {parentLinkEntity, childLinkEntity, "fixed"}));
   _ecm.CreateComponent(detachableJointEntity,
-                       components::DetachableJointWeldChildToParent(true));
+                       components::DetachableJointWeldChildToParent(false));
 
   return detachableJointEntity;
 }
