@@ -43,7 +43,7 @@ Before components can be built or uploaded:
 - Download the 'inctl' tool if it doesn't exist in `ws_aic_phase1`:
   ```bash
   cd ~/ws_aic_phase1
-  wget "https://github.com/intrinsic-ai/sdk/releases/download/v1.28.20260223/inctl-linux-amd64" -O inctl \
+  wget "https://github.com/intrinsic-ai/sdk/releases/download/v1.31.20260427.1/inctl-linux-amd64" -O inctl \
   && chmod +x inctl
   ```
 
