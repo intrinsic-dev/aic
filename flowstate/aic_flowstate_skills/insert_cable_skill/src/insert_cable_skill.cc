@@ -41,6 +41,7 @@ class InitRos {
 std::mutex active_goal_mutex;
 typename rclcpp_action::Client<InsertCableAction>::GoalHandle::SharedPtr
     active_goal_handle;
+bool cancellation_requested = false;
 
 class InsertCableClientNode : public rclcpp::Node {
  public:
@@ -110,6 +111,12 @@ class InsertCableClientNode : public rclcpp::Node {
     {
       std::lock_guard<std::mutex> lock(active_goal_mutex);
       active_goal_handle = goal_handle;
+      if (cancellation_requested) {
+        RCLCPP_INFO(this->get_logger(),
+                    "Cancellation was requested before goal became active. "
+                    "Canceling now.");
+        client_->async_cancel_goal(goal_handle);
+      }
     }
 
     auto result_future = client_->async_get_result(goal_handle);
@@ -133,11 +140,21 @@ class InsertCableClientNode : public rclcpp::Node {
     }
 
     auto result_wrapper = result_future.get();
+    if (result_wrapper.code == rclcpp_action::ResultCode::CANCELED) {
+      return absl::CancelledError("Action was canceled.");
+    }
     if (result_wrapper.code != rclcpp_action::ResultCode::SUCCEEDED) {
-      return absl::InternalError("Action failed or was canceled.");
+      return absl::InternalError("Action failed.");
     }
 
     return result_wrapper.result;
+  }
+
+  void CancelAction(
+      typename rclcpp_action::Client<InsertCableAction>::GoalHandle::SharedPtr
+          goal_handle) {
+    RCLCPP_INFO(this->get_logger(), "Sending cancel request for goal");
+    client_->async_cancel_goal(goal_handle);
   }
 
   rclcpp_action::Client<InsertCableAction>::SharedPtr client_;
@@ -174,11 +191,32 @@ InsertCableSkill::Preview(const intrinsic::skills::PreviewRequest& /*request*/,
 
 absl::StatusOr<std::unique_ptr<google::protobuf::Message>>
 InsertCableSkill::Execute(const intrinsic::skills::ExecuteRequest& request,
-                          intrinsic::skills::ExecuteContext& /*context*/) {
+                          intrinsic::skills::ExecuteContext& context) {
   RCLCPP_INFO(client_node_.get_logger(), "InsertCableSkill::Execute");
 
   INTR_ASSIGN_OR_RETURN(
       auto params, request.params<ai::flowstate::InsertCableSkillParams>());
+
+  // Reset cancellation flag
+  {
+    std::lock_guard<std::mutex> lock(active_goal_mutex);
+    cancellation_requested = false;
+  }
+
+  // Register cancellation callback
+  auto cancellation_status = context.canceller().RegisterCallback([this]() {
+    RCLCPP_INFO(client_node_.get_logger(), "Cancellation requested!");
+    std::lock_guard<std::mutex> lock(active_goal_mutex);
+    cancellation_requested = true;
+    if (active_goal_handle) {
+      client_node_.CancelAction(active_goal_handle);
+    }
+    return absl::OkStatus();
+  });
+  if (!cancellation_status.ok()) {
+    return cancellation_status;
+  }
+  context.canceller().Ready();
 
   // Populate goal msg
   auto goal_msg = InsertCableAction::Goal();
