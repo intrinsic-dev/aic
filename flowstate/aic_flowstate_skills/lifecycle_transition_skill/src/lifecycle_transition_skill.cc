@@ -126,49 +126,13 @@ LifecycleTransitionSkill::Execute(
               "Transitioning node %s to transition %d",
               params.node_name().c_str(), params.transition());
 
-  uint8_t transition_id = 0;
-  switch (static_cast<int>(params.transition())) {
-    case 0:  // create
-      transition_id = 0;
-      break;
-    case 1:  // configure
-      transition_id = 1;
-      break;
-    case 2:  // cleanup
-      transition_id = 2;
-      break;
-    case 3:  // activate
-      transition_id = 3;
-      break;
-    case 4:  // deactivate
-      transition_id = 4;
-      break;
-    case 5:  // shutdown
-    {
-      auto state_or_err = client_node_.GetState(params.node_name(), 5000.0);
-      if (!state_or_err.ok()) {
-        return state_or_err.status();
-      }
-      uint8_t current_state = state_or_err.value();
-      if (current_state == 1) {         // PRIMARY_STATE_UNCONFIGURED
-        transition_id = 5;              // TRANSITION_UNCONFIGURED_SHUTDOWN
-      } else if (current_state == 2) {  // PRIMARY_STATE_INACTIVE
-        transition_id = 6;              // TRANSITION_INACTIVE_SHUTDOWN
-      } else if (current_state == 3) {  // PRIMARY_STATE_ACTIVE
-        transition_id = 7;              // TRANSITION_ACTIVE_SHUTDOWN
-      } else {
-        return absl::FailedPreconditionError(
-            "Cannot shutdown node from current state");
-      }
-    } break;
-    case 6:  // destroy
-      transition_id = 8;
-      break;
-    default:
-      return absl::InvalidArgumentError(
-          absl::StrCat("!!! Unknown transition value: ",
-                       static_cast<int>(params.transition()), " !!!"));
+  if (!ai::flowstate::LifecycleTransitionSkillParams_Transition_IsValid(
+          params.transition())) {
+    return absl::InvalidArgumentError(
+        absl::StrCat("!!! Unknown transition value: ",
+                     static_cast<int>(params.transition()), " !!!"));
   }
+  uint8_t transition_id = static_cast<uint8_t>(params.transition());
 
   double timeout_ms =
       params.timeout() > 0.0 ? params.timeout() * 1000.0 : kDefaultTimeoutMs;
