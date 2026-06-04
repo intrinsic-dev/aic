@@ -63,17 +63,17 @@ def generate_launch_description():
             ),
             DeclareLaunchArgument(
                 "robot_base_frame_id",
-                default_value="robot/robot/base_link",
+                default_value="base_link",
                 description="Frame ID of robot base to be used in robot_joint_state_topic",
             ),
             DeclareLaunchArgument(
                 "force_torque_sensor_frame_id",
-                default_value="force_torque_sensor/force_torque_sensor/AtiForceTorqueSensor",
+                default_value="ati/tool_link",
                 description="Frame ID of F/T sensor to be used in force_torque_topic",
             ),
             DeclareLaunchArgument(
                 "ft_sensor_part_name",
-                default_value="ati_ft_sensor",
+                default_value="ati",
                 description="F/T sensor part name",
             ),
             DeclareLaunchArgument(

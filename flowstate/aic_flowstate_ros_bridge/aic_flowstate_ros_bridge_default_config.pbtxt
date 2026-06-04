@@ -25,8 +25,8 @@
     enable_force_torque_topic: true
     robot_joint_state_topic: "/joint_states"
     force_torque_topic: "/fts_broadcaster/wrench"
-    robot_base_frame_id: "robot/robot/base_link"
-    force_torque_sensor_frame_id: "force_torque_sensor/force_torque_sensor/AtiForceTorqueSensor"
+    robot_base_frame_id: "base_link"
+    force_torque_sensor_frame_id: "ati/tool_link"
     robot_controller_instance: "robot_controller"
     throttle_robot_state_topic: false
     override_joint_names: [
@@ -42,7 +42,7 @@
     server_address: "istio-ingressgateway.app-ingress.svc.cluster.local:80"
     instance: "robot_controller"
     part_name: "arm"
-    ft_sensor_part_name: "ati_ft_sensor"
+    ft_sensor_part_name: "ati"
     task_settings_file: "config/default_task_settings.pbtxt"
     joint_task_settings_file: "config/default_joint_task_settings.pbtxt"
   },
