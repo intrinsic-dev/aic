@@ -9,8 +9,17 @@ vendor {
 documentation {
   description: "Skill that triggers lifecycle transitions for a specified node."
 }
+options {
+  supports_cancellation: false
+  cc_config {
+    create_skill: "::LifecycleTransitionSkill::CreateSkill"
+  }
+}
 parameter {
   message_full_name: "ai.flowstate.LifecycleTransitionSkillParams"
+  default_value: {
+    type_url: "type.googleapis.com/ai.flowstate.LifecycleTransitionSkillParams"
+  }
 }
 return_type {
   message_full_name: "ai.flowstate.LifecycleTransitionSkillResult"

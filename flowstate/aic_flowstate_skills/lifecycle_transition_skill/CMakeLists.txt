@@ -1,7 +1,7 @@
 # Generate the skill's protobuf files, protobuf library, and descriptor set file.
 intrinsic_sdk_protobuf_generate(
   NAME lifecycle_transition_skill
-  SOURCES src/lifecycle_transition_skill.proto
+  SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/lifecycle_transition_skill.proto"
   TARGET lifecycle_transition_skill_protos
   DESCRIPTOR_SET_OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/lifecycle_transition_skill_protos.desc"
 )

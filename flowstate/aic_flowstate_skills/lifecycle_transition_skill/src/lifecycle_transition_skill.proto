@@ -7,16 +7,16 @@ message LifecycleTransitionSkillParams {
   Transition transition = 2;
 
   enum Transition {
-    TRANSITION_CREATE = 0;
-    TRANSITION_CONFIGURE = 1;
-    TRANSITION_CLEANUP = 2;
-    TRANSITION_ACTIVATE = 3;
-    TRANSITION_DEACTIVATE = 4;
-    TRANSITION_UNCONFIGURED_SHUTDOWN = 5;
-    TRANSITION_INACTIVE_SHUTDOWN = 6;
-    TRANSITION_ACTIVE_SHUTDOWN = 7;
-    TRANSITION_DESTROY = 8;
+    create = 0;
+    configure = 1;
+    cleanup = 2;
+    activate = 3;
+    deactivate = 4;
+    shutdown = 5;
+    destroy = 6;
   }
+
+  double timeout = 3;
 }
 
 message LifecycleTransitionSkillResult {
