@@ -76,7 +76,7 @@ void RobotControlBridge::declare_ros_parameters(
   param_interface->declare_parameter(kAgentBridgeJointTaskSettingsFileParamName,
                                      rclcpp::ParameterValue{""});
   param_interface->declare_parameter(kRestartConnectionRetriesParamName,
-                                     rclcpp::ParameterValue{6});
+                                     rclcpp::ParameterValue{10});
 }
 
 ///=============================================================================
@@ -327,10 +327,18 @@ bool RobotControlBridge::initialize(
             << ", instance: " << data_->instance_
             << ", part: " << data_->part_name_;
 
-  data_->connected_to_controller_ = restartControllerBridge();
-  if (!data_->connected_to_controller_) {
-    LOG(ERROR) << "Failed to connect to controller bridge.";
-    // todo(johntgz) add retry mechanism
+  for (int i = 0; i < data_->restart_connection_retries_; ++i) {
+    data_->connected_to_controller_ = restartControllerBridge();
+    if (data_->connected_to_controller_) {
+      break;
+    }
+    if (i < data_->restart_connection_retries_ - 1) {
+      LOG(INFO)
+          << "Failed to restart controller bridge. Retrying in 500ms...";
+      // todo(johntgz): This sleep currently blocks the bridge. Investigate
+      // the use of threads for non-blocking behaviour.
+      rclcpp::sleep_for(std::chrono::milliseconds(500));
+    }
   }
 
   LOG(INFO) << "Initialized RobotControlBridge.";
@@ -524,6 +532,20 @@ void RobotControlBridge::RobotStateCallback(
     LOG(WARNING) << "Backwards time jump detected for controller server "
                     "timestamp, indicating a reset.";
     data_->connected_to_controller_ = false;
+
+    for (int i = 0; i < data_->restart_connection_retries_; ++i) {
+      data_->connected_to_controller_ = restartControllerBridge();
+      if (data_->connected_to_controller_) {
+        break;
+      }
+      if (i < data_->restart_connection_retries_ - 1) {
+        LOG(INFO)
+            << "Failed to restart controller bridge. Retrying in 500ms...";
+        // todo(johntgz): This sleep currently blocks the bridge. Investigate
+        // the use of threads for non-blocking behaviour.
+        rclcpp::sleep_for(std::chrono::milliseconds(500));
+      }
+    }
   }
   data_->last_part_status_timestamp_ns_ = current_timestamp_ns;
 }
