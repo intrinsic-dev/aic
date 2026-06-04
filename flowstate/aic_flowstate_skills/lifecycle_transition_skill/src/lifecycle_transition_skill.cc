@@ -128,9 +128,9 @@ LifecycleTransitionSkill::Execute(
 
   if (!ai::flowstate::LifecycleTransitionSkillParams_Transition_IsValid(
           params.transition())) {
-    return absl::InvalidArgumentError(
-        absl::StrCat("!!! Unknown transition value: ",
-                     static_cast<int>(params.transition()), " !!!"));
+    return absl::InvalidArgumentError(absl::StrCat(
+        "!!! Unknown transition value: ", static_cast<int>(params.transition()),
+        " !!!"));
   }
   uint8_t transition_id = static_cast<uint8_t>(params.transition());
 
