@@ -15,3 +15,10 @@ parameter {
 return_type {
   message_full_name: "ai.flowstate.LifecycleTransitionSkillResult"
 }
+options {
+  supports_cancellation: false
+  cc_config {
+    create_skill: "::LifecycleTransitionSkill::CreateSkill"
+  }
+}
+
