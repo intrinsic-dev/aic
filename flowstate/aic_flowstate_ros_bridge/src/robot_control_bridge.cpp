@@ -327,17 +327,10 @@ bool RobotControlBridge::initialize(
             << ", instance: " << data_->instance_
             << ", part: " << data_->part_name_;
 
-  for (int i = 0; i < data_->restart_connection_retries_; ++i) {
-    data_->connected_to_controller_ = restartControllerBridge();
-    if (data_->connected_to_controller_) {
-      break;
-    }
-    if (i < data_->restart_connection_retries_ - 1) {
-      LOG(INFO) << "Failed to restart controller bridge. Retrying in 500ms...";
-      // todo(johntgz): This sleep currently blocks the bridge. Investigate
-      // the use of threads for non-blocking behaviour.
-      rclcpp::sleep_for(std::chrono::milliseconds(500));
-    }
+  data_->connected_to_controller_ = restartControllerBridge();
+  if (!data_->connected_to_controller_) {
+    LOG(ERROR) << "Failed to connect to controller bridge.";
+    // todo(johntgz) add retry mechanism
   }
 
   LOG(INFO) << "Initialized RobotControlBridge.";
