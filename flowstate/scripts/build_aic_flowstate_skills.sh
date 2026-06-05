@@ -40,7 +40,7 @@ set -o errexit
 set -o verbose
 
 # Build and bundle insert_cable_skill
-./flowstate/scripts/build_container.sh \
+src/aic/flowstate/scripts/build_container.sh \
   --ros_distro "$ROS_DISTRO" \
   --skill_name insert_cable_skill \
   --skill_package aic_flowstate_skills \
@@ -54,7 +54,7 @@ set -o verbose
   --output images/insert_cable_skill/insert_cable_skill.bundle.tar
 
 # Build and bundle tare_force_torque_sensor_skill
-./flowstate/scripts/build_container.sh \
+src/aic/flowstate/scripts/build_container.sh \
   --ros_distro "$ROS_DISTRO" \
   --skill_name tare_force_torque_sensor_skill \
   --skill_package aic_flowstate_skills \

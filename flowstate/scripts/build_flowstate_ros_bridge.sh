@@ -45,7 +45,7 @@ if [ ! -f ./inbuild ]; then
     && chmod +x inbuild
 fi
 
-./flowstate/scripts/build_container.sh \
+src/aic/flowstate/scripts/build_container.sh \
   --ros_distro "$ROS_DISTRO" \
   --service_name aic_flowstate_ros_bridge \
   --service_package aic_flowstate_ros_bridge \
