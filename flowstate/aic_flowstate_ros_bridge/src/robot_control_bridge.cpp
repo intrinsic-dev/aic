@@ -17,7 +17,9 @@
 
 #include "robot_control_bridge.hpp"
 
+#include <Eigen/Dense>
 #include <filesystem>
+#include <pinocchio/spatial/explog.hpp>
 #include <string>
 #include <utility>
 
@@ -421,10 +423,28 @@ void RobotControlBridge::agentBridgeOutputStreamCallback(
             last_update.reference_pose(6);
       }
 
-      for (int i = 0; i < 6 && i < ab_status_proto.pose_error_integrated_size();
-           ++i) {
-        data_->controller_state_.tcp_error[i] =
-            ab_status_proto.pose_error_integrated(i);
+      Eigen::VectorXd current_tcp_pose(7);
+      current_tcp_pose << data_->controller_state_.tcp_pose.position.x,
+          data_->controller_state_.tcp_pose.position.y,
+          data_->controller_state_.tcp_pose.position.z,
+          data_->controller_state_.tcp_pose.orientation.x,
+          data_->controller_state_.tcp_pose.orientation.y,
+          data_->controller_state_.tcp_pose.orientation.z,
+          data_->controller_state_.tcp_pose.orientation.w;
+      Eigen::VectorXd reference_tcp_pose(7);
+      reference_tcp_pose
+          << data_->controller_state_.reference_tcp_pose.position.x,
+          data_->controller_state_.reference_tcp_pose.position.y,
+          data_->controller_state_.reference_tcp_pose.position.z,
+          data_->controller_state_.reference_tcp_pose.orientation.x,
+          data_->controller_state_.reference_tcp_pose.orientation.y,
+          data_->controller_state_.reference_tcp_pose.orientation.z,
+          data_->controller_state_.reference_tcp_pose.orientation.w;
+      Eigen::Matrix<double, 6, 1> tcp_pose_error;
+
+      calculatePoseError(current_tcp_pose, reference_tcp_pose, tcp_pose_error);
+      for (int i = 0; i < 6; ++i) {
+        data_->controller_state_.tcp_error[i] = tcp_pose_error(i);
       }
 
       break;
@@ -473,6 +493,37 @@ void RobotControlBridge::agentBridgeOutputStreamCallback(
   LOG_EVERY_N(INFO, 5000) << absl::StrFormat(
       "AgentBridge output stream translation time: %.3f ms",
       1000.0 * elapsed.seconds());
+}
+
+///=============================================================================
+void RobotControlBridge::calculatePoseError(
+    const Eigen::VectorXd& pose_a, const Eigen::VectorXd& pose_b,
+    Eigen::Matrix<double, 6, 1>& pose_delta) {
+  // Adapted from the KinematicsInterfacePinocchio::calculate_frame_difference
+  // method of the kinematics_interface library Compute translation
+  const Eigen::Vector3d t_a = pose_a.head<3>();
+  const Eigen::Vector3d t_b = pose_b.head<3>();
+
+  // Quaterniond Constructor takes in arguemnts in the order (w,x,y,z)
+  Eigen::Quaterniond q_a(pose_a(6), pose_a(3), pose_a(4), pose_a(5));
+  Eigen::Quaterniond q_b(pose_b(6), pose_b(3), pose_b(4), pose_b(5));
+
+  q_a.normalize();
+  q_b.normalize();
+
+  const Eigen::Matrix3d R_a = q_a.toRotationMatrix();
+  const Eigen::Matrix3d R_b = q_b.toRotationMatrix();
+
+  // - linear part: simple difference of positions
+  const Eigen::Vector3d linear_delta = (t_b - t_a);
+
+  const Eigen::Matrix3d R_rel = R_a.transpose() * R_b;
+  // - angular part: log3(R_a^T * R_b) (axis-angle vector)
+  const Eigen::Vector3d angular_delta =
+      pinocchio::log3(R_rel);  // 3-vector (axis * angle)
+
+  pose_delta.head<3>() = linear_delta;
+  pose_delta.tail<3>() = angular_delta;
 }
 
 ///=============================================================================

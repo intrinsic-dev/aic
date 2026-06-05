@@ -20,6 +20,7 @@ set(dep_pkgs
   aic_control_interfaces
   ament_index_cpp
   flowstate_ros_bridge
+  pinocchio
   pluginlib
   rclcpp
   std_srvs
@@ -28,6 +29,7 @@ foreach(pkg ${dep_pkgs})
   find_package(${pkg} REQUIRED)
 endforeach()
 
+find_package(Eigen3 REQUIRED NO_MODULE)
 find_package(Protobuf REQUIRED)
 
 #==================================
@@ -54,7 +56,9 @@ target_link_libraries(robot_control_bridge
   absl::time
   agent_bridge_proto
   ament_index_cpp::ament_index_cpp
+  Eigen3::Eigen
   flowstate_ros_bridge::flowstate_ros_builtin_bridges
+  pinocchio::pinocchio
   pluginlib::pluginlib
   rclcpp::rclcpp
   ${aic_control_interfaces_TARGETS}

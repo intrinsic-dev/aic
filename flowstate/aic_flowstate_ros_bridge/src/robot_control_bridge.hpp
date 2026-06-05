@@ -67,6 +67,9 @@ class RobotControlBridge : public BridgeInterface {
                   std::shared_ptr<World> world_client) final;
 
  private:
+  void calculatePoseError(const Eigen::VectorXd& pose_a,
+                          const Eigen::VectorXd& pose_b,
+                          Eigen::Matrix<double, 6, 1>& pose_delta);
   void MotionUpdateCallback(
       const aic_control_interfaces::msg::MotionUpdate::SharedPtr msg);
 
