@@ -21,8 +21,8 @@
 
 #include "absl/status/statusor.h"
 #include "rclcpp/rclcpp.hpp"
-#include "switch_to_aic_controller_skill.pb.h"
 #include "std_srvs/srv/trigger.hpp"
+#include "switch_to_aic_controller_skill.pb.h"
 
 //==============================================================================
 // ROS initialization.
@@ -37,7 +37,8 @@ class InitRos {
 
 class RestartControlBridgeClientNode : public rclcpp::Node {
  public:
-  RestartControlBridgeClientNode() : Node("switch_to_aic_controller_skill_node") {
+  RestartControlBridgeClientNode()
+      : Node("switch_to_aic_controller_skill_node") {
     client_ = this->create_client<std_srvs::srv::Trigger>(
         "aic_controller/restart_bridge");
   }
@@ -95,9 +96,8 @@ SwitchToAICController::Preview(
 //==============================================================================
 
 absl::StatusOr<std::unique_ptr<google::protobuf::Message>>
-SwitchToAICController::Execute(
-    const intrinsic::skills::ExecuteRequest& request,
-    intrinsic::skills::ExecuteContext& /*context*/) {
+SwitchToAICController::Execute(const intrinsic::skills::ExecuteRequest& request,
+                               intrinsic::skills::ExecuteContext& /*context*/) {
   RCLCPP_INFO(client_node_.get_logger(), "SwitchToAICController::Execute");
 
   INTR_ASSIGN_OR_RETURN(
@@ -115,8 +115,7 @@ SwitchToAICController::Execute(
 
   auto service_result = status_or_result.value();
 
-  auto result =
-      std::make_unique<ai::flowstate::SwitchToAICControllerResult>();
+  auto result = std::make_unique<ai::flowstate::SwitchToAICControllerResult>();
   result->set_success(service_result->success);
   result->set_message(service_result->message);
 
