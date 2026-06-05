@@ -333,8 +333,7 @@ bool RobotControlBridge::initialize(
       break;
     }
     if (i < data_->restart_connection_retries_ - 1) {
-      LOG(INFO)
-          << "Failed to restart controller bridge. Retrying in 500ms...";
+      LOG(INFO) << "Failed to restart controller bridge. Retrying in 500ms...";
       // todo(johntgz): This sleep currently blocks the bridge. Investigate
       // the use of threads for non-blocking behaviour.
       rclcpp::sleep_for(std::chrono::milliseconds(500));
