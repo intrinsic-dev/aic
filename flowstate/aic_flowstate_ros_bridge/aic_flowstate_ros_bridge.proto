@@ -40,6 +40,5 @@ message FlowstateRosBridgeConfig {
   int64 executive_update_rate_millis = 11;
   SensorPublisherConfig sensors = 12;
   repeated string strip_flowstate_tf_prefix = 13;
-  repeated string remap_tf_names = 14;
-  RobotControlBridgeConfig robot_control_bridge_config = 15;
+  RobotControlBridgeConfig robot_control_bridge_config = 14;
 }

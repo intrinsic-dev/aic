@@ -19,7 +19,6 @@
   executive_deadline_seconds: 5
   executive_update_rate_millis: 1000
   strip_flowstate_tf_prefix: ["robot/"]
-  remap_tf_names: ["robotiq_gripper/tool_frame", "gripper/tcp"]
   sensors: {
     enable_robot_joint_state_topic: true
     enable_force_torque_topic: true

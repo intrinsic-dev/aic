@@ -99,7 +99,7 @@ def generate_launch_description():
                             "flowstate_ros_bridge::ExecutiveBridge",
                             "flowstate_ros_bridge::WorldBridge",
                             "flowstate_ros_bridge::RobotControlBridge",
-                            # "flowstate_ros_bridge::AicCameraBridge",
+                            "flowstate_ros_bridge::AicCameraBridge",
                         ],
                         "server_address": LaunchConfiguration("server_address"),
                         "instance": LaunchConfiguration("instance"),
@@ -134,7 +134,6 @@ def generate_launch_description():
                             "wrist_3_joint",
                         ],
                         "strip_flowstate_tf_prefix": ["robot/"],
-                        "remap_tf_names": ["robotiq_gripper/tool_frame", "gripper/tcp"],
                     }
                 ],
             ),

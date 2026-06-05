@@ -98,11 +98,6 @@ int main(int argc, char* argv[]) {
       strip_flowstate_tf_prefix_proto.end());
   params.push_back(std::move(rclcpp::Parameter(
       "strip_flowstate_tf_prefix", std::move(strip_flowstate_tf_prefix_list))));
-  const auto& remap_tf_names_proto = ros_config.remap_tf_names();
-  std::vector<std::string> remap_tf_names_list(remap_tf_names_proto.begin(),
-                                               remap_tf_names_proto.end());
-  params.push_back(std::move(
-      rclcpp::Parameter("remap_tf_names", std::move(remap_tf_names_list))));
 
   const auto& s = ros_config.sensors();
   params.emplace_back("enable_robot_joint_state_topic",
