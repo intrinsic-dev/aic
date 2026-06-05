@@ -3,15 +3,17 @@
 show_help() {
   echo "Usage: $(basename "$0") [OPTIONS]"
   echo ""
-  echo "Build and bundle the AIC skills (insert_cable_skill, tare_force_torque_sensor_skill) for Flowstate."
+  echo "Build and bundle the AIC skills (insert_cable_skill, tare_force_torque_sensor_skill, switch_to_aic_controller_skill) for Flowstate."
   echo ""
   echo "Options:"
   echo "  -h, --help           Show this help message and exit"
   echo "  --ros_distro DISTRO  Name of the ROS distro (default: kilted)"
+  echo "  --skill_name NAME    Build only the specified skill (default: build all)"
   echo ""
 }
 
 ROS_DISTRO="kilted"
+SKILL_NAME=""
 
 while [[ $# -gt 0 ]]; do
   case $1 in
@@ -21,6 +23,11 @@ while [[ $# -gt 0 ]]; do
       ;;
     --ros_distro)
       ROS_DISTRO="$2"
+      shift
+      shift
+      ;;
+    --skill_name)
+      SKILL_NAME="$2"
       shift
       shift
       ;;
@@ -39,30 +46,35 @@ fi
 set -o errexit
 set -o verbose
 
-# Build and bundle insert_cable_skill
-src/aic/flowstate/scripts/build_container.sh \
-  --ros_distro "$ROS_DISTRO" \
-  --skill_name insert_cable_skill \
-  --skill_package aic_flowstate_skills \
-  --manifest_path src/aic/flowstate/aic_flowstate_skills/insert_cable_skill/src/insert_cable_skill.manifest.textproto \
-  --dockerfile src/aic/flowstate/resources/Dockerfile.skill
+build_and_bundle_skill() {
+  local name="$1"
+  src/aic/flowstate/scripts/build_container.sh \
+    --ros_distro "$ROS_DISTRO" \
+    --skill_name "$name" \
+    --skill_package aic_flowstate_skills \
+    --manifest_path src/aic/flowstate/aic_flowstate_skills/"$name"/src/"$name".manifest.textproto \
+    --dockerfile src/aic/flowstate/resources/Dockerfile.skill
 
-./inbuild skill bundle \
-  --file_descriptor_set images/insert_cable_skill/insert_cable_skill_protos.desc \
-  --manifest src/aic/flowstate/aic_flowstate_skills/insert_cable_skill/src/insert_cable_skill.manifest.textproto \
-  --oci_image images/insert_cable_skill/insert_cable_skill.tar \
-  --output images/insert_cable_skill/insert_cable_skill.bundle.tar
+  ./inbuild skill bundle \
+    --file_descriptor_set images/"$name"/"$name"_protos.desc \
+    --manifest src/aic/flowstate/aic_flowstate_skills/"$name"/src/"$name".manifest.textproto \
+    --oci_image images/"$name"/"$name".tar \
+    --output images/"$name"/"$name".bundle.tar
+}
 
-# Build and bundle tare_force_torque_sensor_skill
-src/aic/flowstate/scripts/build_container.sh \
-  --ros_distro "$ROS_DISTRO" \
-  --skill_name tare_force_torque_sensor_skill \
-  --skill_package aic_flowstate_skills \
-  --manifest_path src/aic/flowstate/aic_flowstate_skills/tare_force_torque_sensor_skill/src/tare_force_torque_sensor_skill.manifest.textproto \
-  --dockerfile src/aic/flowstate/resources/Dockerfile.skill
-
-./inbuild skill bundle \
-  --file_descriptor_set images/tare_force_torque_sensor_skill/tare_force_torque_sensor_skill_protos.desc \
-  --manifest src/aic/flowstate/aic_flowstate_skills/tare_force_torque_sensor_skill/src/tare_force_torque_sensor_skill.manifest.textproto \
-  --oci_image images/tare_force_torque_sensor_skill/tare_force_torque_sensor_skill.tar \
-  --output images/tare_force_torque_sensor_skill/tare_force_torque_sensor_skill.bundle.tar
+if [ -n "$SKILL_NAME" ]; then
+  case "$SKILL_NAME" in
+    insert_cable_skill|tare_force_torque_sensor_skill|switch_to_aic_controller_skill)
+      build_and_bundle_skill "$SKILL_NAME"
+      ;;
+    *)
+      echo "Unknown skill name: $SKILL_NAME"
+      echo "Available skills: insert_cable_skill, tare_force_torque_sensor_skill, switch_to_aic_controller_skill"
+      exit 1
+      ;;
+  esac
+else
+  build_and_bundle_skill "insert_cable_skill"
+  build_and_bundle_skill "tare_force_torque_sensor_skill"
+  build_and_bundle_skill "switch_to_aic_controller_skill"
+fi

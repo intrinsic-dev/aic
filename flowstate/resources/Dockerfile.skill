@@ -52,7 +52,7 @@ RUN pixi run colcon build \
     --cmake-args -DCMAKE_BUILD_TYPE=Release \
     --event-handlers=console_direct+ \
     --packages-up-to ${SKILL_PACKAGE} \
-    --base-paths flowstate aic_adapter sdk-ros
+    --base-paths flowstate aic_adapter sdk-ros aic_interfaces
 
 # Capture pixi environment activation for runtime
 RUN pixi shell-hook > /pixi_hook.sh \
