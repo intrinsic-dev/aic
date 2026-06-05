@@ -31,6 +31,26 @@ vcs import . < aic/flowstate/flowstate.repos
 
 ---
 
+## 🚀 Automated Building and Bundling with Pixi
+
+You can build and bundle both the services and skills automatically inside the Pixi environment. Run these commands from the **workspace root** (e.g. `~/ws_aic_phase1`):
+
+```bash
+# 1. Build and bundle both insert_cable_skill and tare_force_torque_sensor_skill
+pixi run --manifest-path src/aic/pixi.toml bash src/aic/flowstate/scripts/build_aic_flowstate_skills.sh
+
+# 2. Build and bundle the flowstate ROS bridge service
+pixi run --manifest-path src/aic/pixi.toml bash src/aic/flowstate/scripts/build_flowstate_ros_bridge.sh
+
+# 3. Build and bundle the AIC adapter service
+pixi run --manifest-path src/aic/pixi.toml bash src/aic/flowstate/scripts/build_aic_adapter.sh
+
+# 4. Build and bundle the AIC model service
+pixi run --manifest-path src/aic/pixi.toml bash src/aic/flowstate/scripts/build_aic_model.sh
+```
+
+---
+
 ## 🔧 Prerequisites
 
 Before components can be built or uploaded:

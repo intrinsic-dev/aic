@@ -40,25 +40,29 @@ set -o errexit
 set -o verbose
 
 # Build and bundle insert_cable_skill
-src/sdk-ros/scripts/build_container.sh \
+./flowstate/scripts/build_container.sh \
   --ros_distro "$ROS_DISTRO" \
   --skill_name insert_cable_skill \
   --skill_package aic_flowstate_skills \
+  --manifest_path src/aic/flowstate/aic_flowstate_skills/insert_cable_skill/src/insert_cable_skill.manifest.textproto \
   --dockerfile src/aic/flowstate/resources/Dockerfile.skill
 
-src/sdk-ros/scripts/build_bundle.sh \
-  --skill_name insert_cable_skill \
-  --skill_package aic_flowstate_skills \
-  --manifest_path src/aic/flowstate/aic_flowstate_skills/insert_cable_skill/src/insert_cable_skill.manifest.textproto
+./inbuild skill bundle \
+  --file_descriptor_set images/insert_cable_skill/insert_cable_skill_protos.desc \
+  --manifest src/aic/flowstate/aic_flowstate_skills/insert_cable_skill/src/insert_cable_skill.manifest.textproto \
+  --oci_image images/insert_cable_skill/insert_cable_skill.tar \
+  --output images/insert_cable_skill/insert_cable_skill.bundle.tar
 
 # Build and bundle tare_force_torque_sensor_skill
-src/sdk-ros/scripts/build_container.sh \
+./flowstate/scripts/build_container.sh \
   --ros_distro "$ROS_DISTRO" \
   --skill_name tare_force_torque_sensor_skill \
   --skill_package aic_flowstate_skills \
+  --manifest_path src/aic/flowstate/aic_flowstate_skills/tare_force_torque_sensor_skill/src/tare_force_torque_sensor_skill.manifest.textproto \
   --dockerfile src/aic/flowstate/resources/Dockerfile.skill
 
-src/sdk-ros/scripts/build_bundle.sh \
-  --skill_name tare_force_torque_sensor_skill \
-  --skill_package aic_flowstate_skills \
-  --manifest_path src/aic/flowstate/aic_flowstate_skills/tare_force_torque_sensor_skill/src/tare_force_torque_sensor_skill.manifest.textproto
+./inbuild skill bundle \
+  --file_descriptor_set images/tare_force_torque_sensor_skill/tare_force_torque_sensor_skill_protos.desc \
+  --manifest src/aic/flowstate/aic_flowstate_skills/tare_force_torque_sensor_skill/src/tare_force_torque_sensor_skill.manifest.textproto \
+  --oci_image images/tare_force_torque_sensor_skill/tare_force_torque_sensor_skill.tar \
+  --output images/tare_force_torque_sensor_skill/tare_force_torque_sensor_skill.bundle.tar
