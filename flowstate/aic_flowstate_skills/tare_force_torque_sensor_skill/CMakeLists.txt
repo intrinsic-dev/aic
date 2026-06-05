@@ -47,6 +47,7 @@ target_link_libraries(tare_force_torque_sensor_skill_main
   tare_force_torque_sensor_skill_protos
   rclcpp::rclcpp
   ${std_srvs_TARGETS}
+  absl::synchronization
 )
 
 add_dependencies(tare_force_torque_sensor_skill_main tare_force_torque_sensor_skill_config)

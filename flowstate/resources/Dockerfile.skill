@@ -1,114 +1,117 @@
-# Build up the skill with these stages:
-#   - base (ros:kilted + settings) ->
-#   - underlay (dependencies) ->
-#   - overlay (user code) ->
-#   - result (base + copied install folder of underlay and overlay)
+FROM ubuntu:24.04 AS pixi-builder
 
-ARG ROS_DISTRO=kilted
+# Install prerequisites
+RUN apt-get update && apt-get install -y \
+    curl \
+    git \
+    build-essential \
+    python3 \
+    libxml2-dev \
+    liblttng-ust-dev \
+    && rm -rf /var/lib/apt/lists/*
 
-# base stage: ros:kilted + configs
-FROM ros:${ROS_DISTRO} AS base
+# Install Pixi
+RUN curl -fsSL https://pixi.sh/install.sh | PIXI_VERSION=0.67.2 bash
+ENV PATH="/root/.pixi/bin:${PATH}"
 
-WORKDIR /opt/ros/underlay
+WORKDIR /workspace
 
-ENV ROS_HOME=/tmp
-ENV RMW_IMPLEMENTATION=rmw_zenoh_cpp
+# Pre-cache Pixi environment
+COPY src/aic/pixi.toml src/aic/pixi.lock src/aic/robostack_mapping.json ./
+# Copy path-dependent local packages for Pixi validation
+COPY src/aic/aic_interfaces/ ./aic_interfaces/
+COPY src/aic/aic_example_policies/ ./aic_example_policies/
+COPY src/aic/aic_model/ ./aic_model/
+COPY src/aic/aic_utils/ ./aic_utils/
+RUN pixi install
 
-# underlay stage: base + dependencies built
-FROM base AS underlay
 
-ADD src/sdk-ros /opt/ros/underlay/src/sdk-ros
+# Pre-build SDK to optimize caching of heavy dependencies
+FROM pixi-builder AS sdk-builder
+COPY src/sdk-ros/ ./sdk-ros/
+RUN pixi run colcon build \
+    --merge-install \
+    --cmake-args -DCMAKE_BUILD_TYPE=Release \
+    --event-handlers=console_direct+ \
+    --packages-up-to intrinsic_sdk \
+    --base-paths sdk-ros
 
-RUN . /opt/ros/${ROS_DISTRO}/setup.sh \
-    && apt-get update \
-    && rosdep update \
-    && rosdep install --from-paths src --ignore-src -r -y \
-    && apt install -y ros-${ROS_DISTRO}-ament-cmake-vendor-package \
-    && colcon build \
-        --continue-on-error \
-        --cmake-args -DCMAKE_BUILD_TYPE=Release \
-        --event-handlers=console_direct+ \
-        --merge-install \
-        --packages-up-to intrinsic_sdk
-
-# overlay stage: underlay + skill code built
-FROM underlay AS overlay
+# Final build stage for user code overlay
+FROM sdk-builder AS build
 
 ARG SKILL_PACKAGE
 ARG DEPENDENCIES
 
-ARG ROS_DISTRO=kilted
-RUN apt-get update \
-    && apt install -y ros-${ROS_DISTRO}-rmw-zenoh-cpp python3-protobuf ${DEPENDENCIES} \
-    && rm -rf /var/lib/apt/lists/*
+# Copy target user packages
+COPY src/aic/flowstate/ ./flowstate/
+COPY src/aic/aic_adapter/ ./aic_adapter/
 
-ADD src /opt/ros/overlay/src
+# Build target skill package using existing install space
+RUN pixi run colcon build \
+    --merge-install \
+    --cmake-args -DCMAKE_BUILD_TYPE=Release \
+    --event-handlers=console_direct+ \
+    --packages-up-to ${SKILL_PACKAGE} \
+    --base-paths flowstate aic_adapter sdk-ros
 
-RUN . /opt/ros/${ROS_DISTRO}/setup.sh \
-    && . /opt/ros/underlay/install/setup.sh \
-    && cd /opt/ros/overlay \
-    && colcon build \
-      --cmake-args -DCMAKE_BUILD_TYPE=Release \
-      --event-handlers=console_direct+ \
-      --merge-install \
-      --packages-up-to=${SKILL_PACKAGE} \
-      --packages-skip intrinsic_sdk grpc_vendor
+# Capture pixi environment activation for runtime
+RUN pixi shell-hook > /pixi_hook.sh \
+    && rm -rf /root/.pixi/cache /root/.cache/pixi /workspace/.pixi/cache \
+    && if [ -d /workspace/build/pybind11_abseil_vendor/pybind11_abseil_vendor-prefix/src/pybind11_abseil_vendor-build ]; then \
+        mkdir -p /workspace/install/opt/bindings && \
+        cp -r /workspace/build/pybind11_abseil_vendor/pybind11_abseil_vendor-prefix/src/pybind11_abseil_vendor-build /workspace/install/opt/bindings/pybind11_abseil; \
+    fi
 
-# result stage: base + copied install folders from the overlay + skill setup
-FROM base
+# Runtime stage
+FROM ubuntu:24.04 AS runtime
 
 ARG SKILL_PACKAGE
 ARG SKILL_NAME
 ARG SKILL_EXECUTABLE_NAME
 ARG DEPENDENCIES
 
-ARG ROS_DISTRO=kilted
-RUN apt-get update \
-    && apt-get install -y ros-${ROS_DISTRO}-rmw-zenoh-cpp \
+RUN apt-get update && apt-get install -y \
+    bash \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=overlay /opt/ros/underlay/install /opt/ros/underlay/install
-COPY --from=overlay /opt/ros/overlay/install /opt/ros/overlay/install
+WORKDIR /workspace
 
-# The reverse domain name for the organization in the asset-id label.
-ARG SKILL_ASSET_ID_ORG="ai.intrinsic"
-ENV ENTRYPOINT="ros2 run ${SKILL_PACKAGE} ${SKILL_EXECUTABLE_NAME}"
-ENV SKILL_CONFIG=share/${SKILL_PACKAGE}/${SKILL_NAME}_config.pbbin
+# Copy Pixi environment and built artifacts
+COPY --from=build /root/.pixi /root/.pixi
+COPY --from=build /workspace/.pixi /workspace/.pixi
+COPY --from=build /workspace/pixi.toml /workspace/pixi.lock ./
+COPY --from=build /workspace/install ./install
+COPY --from=build /pixi_hook.sh /pixi_hook.sh
 
-# Create linkable bash script to run the ENTRYPOINT executable
-RUN echo -e "#!/bin/bash\nexec $ENTRYPOINT \"\$@\"" > /run_skill.sh \
-    && chmod +x /run_skill.sh
+# Bridge paths for build_bundle.sh expectations
+RUN mkdir -p /opt/ros/overlay \
+    && ln -sf /workspace/install /opt/ros/overlay/install
 
-RUN set -x \
-    && mkdir -p /skills \
-    && ln -sf /run_skill.sh /skills/skill_service \
-    && ln -sf /opt/ros/overlay/install/$SKILL_CONFIG /skills/skill_service_config.proto.bin \
-    && sed --in-place \
-        --expression '$isource "/opt/ros/overlay/install/setup.bash"' \
-        /ros_entrypoint.sh \
-    && sed --in-place \
-        --expression '$iexport RMW_IMPLEMENTATION=rmw_zenoh_cpp' \
-        /ros_entrypoint.sh \
-    && sed --in-place \
-        --expression '$iexport ROS_HOME=/tmp' \
-        /ros_entrypoint.sh \
-    && sed --in-place \
-        --expression '$iexport ZENOH_CONFIG_OVERRIDE='\'connect/endpoints=[\"tcp/zenoh-router.app-intrinsic-base.svc.cluster.local:7447\"]\''' \
-        /ros_entrypoint.sh
-
-# Set some labels used by Flowstate.
-LABEL "ai.intrinsic.asset-id"="${SKILL_ASSET_ID_ORG}.${SKILL_PACKAGE}"
-LABEL "ai.intrinsic.skill-image-name"="${SKILL_PACKAGE}"
-
-# Build arguments are not substituted in the CMD command and hence we set environemnt variables
-# which can be substituted instead.
+# Environment variables for skill execution
+ENV PYTHONPATH="/workspace/install/opt/bindings/pybind11_abseil:/workspace/install/lib/python3.12/site-packages"
+ENV LD_LIBRARY_PATH="/workspace/install/opt/bindings/pybind11_abseil:/workspace/install/lib"
 ENV SKILL_PACKAGE=${SKILL_PACKAGE}
 ENV SKILL_NAME=${SKILL_NAME}
-ENV SKILL_EXECUTABLE_NAME=${SKILL_EXECUTABLE_NAME}
-ENV ENTRYPOINT=${ENTRYPOINT}
+ENV SKILL_EXEC_PATH="/workspace/install/lib/${SKILL_PACKAGE}/${SKILL_EXECUTABLE_NAME}"
+ENV SKILL_CONFIG="share/${SKILL_PACKAGE}/${SKILL_NAME}_config.pbbin"
+
+# Create runner script activating Pixi and setting overrides
+RUN echo '#!/bin/bash' > /run_skill.sh \
+    && echo 'set -e' >> /run_skill.sh \
+    && echo 'source /pixi_hook.sh' >> /run_skill.sh \
+    && echo 'source /workspace/install/setup.bash' >> /run_skill.sh \
+    && echo 'export RMW_IMPLEMENTATION=rmw_zenoh_cpp' >> /run_skill.sh \
+    && echo 'export ROS_HOME=/tmp' >> /run_skill.sh \
+    && echo 'export ZENOH_CONFIG_OVERRIDE="connect/endpoints=[\"tcp/zenoh-router.app-intrinsic-base.svc.cluster.local:7447\"]"' >> /run_skill.sh \
+    && echo 'exec "$SKILL_EXEC_PATH" "$@"' >> /run_skill.sh \
+    && chmod +x /run_skill.sh
+
+# Setup /skills directory layout expected by Intrinsic runtime
+RUN mkdir -p /skills \
+    && ln -sf /run_skill.sh /skills/skill_service \
+    && ln -sf /workspace/install/$SKILL_CONFIG /skills/skill_service_config.proto.bin
+
+LABEL "ai.intrinsic.asset-id"="ai.intrinsic.${SKILL_PACKAGE}"
 ENV ZENOH_ROUTER_CHECK_ATTEMPTS=-1
 
-# Execute the skill main by default, but note that Flowstate will likely override this statement.
-CMD [ \
-    "/skills/skill_service", \
-    "--skill_service_config_filename=/skills/skill_service_config.proto.bin"]
+CMD ["/skills/skill_service", "--skill_service_config_filename=/skills/skill_service_config.proto.bin"]

@@ -46,14 +46,19 @@ AIC_TOP_DIR=$(cd "$SCRIPT_DIR/../.." && pwd)
 # 1. Build the Flowstate service image on top of my-solution:v1
 # This step adds the necessary configurations to the base image,
 # allowing the service to communicate with Flowstate Zenoh router.
+WORKSPACE_ROOT=$(cd "$AIC_TOP_DIR/../.." && pwd)
+DOCKERFILE_SERVICE="$AIC_TOP_DIR/flowstate/resources/Dockerfile.service"
 SERVICE_DIR="$AIC_TOP_DIR/flowstate/services/aic_adapter"
-DOCKERFILE_SERVICE="$SERVICE_DIR/Dockerfile.service"
+
 
 docker buildx build -t flowstate:aic_adapter \
-  --no-cache \
+  --builder="$BUILDER_NAME" \
   --load \
   --file "$DOCKERFILE_SERVICE" \
-  "$AIC_TOP_DIR"
+  --build-arg="SERVICE_PACKAGE=aic_adapter" \
+  --build-arg="SERVICE_NAME=aic_adapter" \
+  --build-arg="SERVICE_EXECUTABLE_NAME=aic_adapter" \
+  "$WORKSPACE_ROOT"
 
 # 2. Export the service image to a .tar bundle
 # This saves the docker image as a tar archive to the file system, which
@@ -71,7 +76,7 @@ chmod 644 "$IMAGES_DIR/aic_adapter/aic_adapter.tar"
 # Packages the service using Intrinsic's 'inbuild' tool. It retrieves the
 # corresponding SDK version, downloads the tool if necessary, and generates
 # a .bundle.tar file using the service manifest and exported image.
-SDK_VERSION=v1.28.20260223
+SDK_VERSION=v1.31.20260427.1
 
 # Download the 'inbuild' tool if it doesn't exist
 if [ ! -f ./inbuild ]; then
