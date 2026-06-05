@@ -33,6 +33,7 @@ RUN pixi run colcon build \
     --merge-install \
     --cmake-args -DCMAKE_BUILD_TYPE=Release \
     --event-handlers=console_direct+ \
+    --packages-up-to intrinsic_sdk \
     --base-paths sdk-ros
 
 # Final build stage for user code overlay
