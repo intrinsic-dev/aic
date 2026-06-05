@@ -15,8 +15,8 @@
  *
  */
 
-#ifndef RESTART_CONTROL_BRIDGE_SKILL_H_
-#define RESTART_CONTROL_BRIDGE_SKILL_H_
+#ifndef SWITCH_TO_AIC_CONTROLLER_SKILL_H_
+#define SWITCH_TO_AIC_CONTROLLER_SKILL_H_
 
 #include <memory>
 #include <string>
@@ -25,7 +25,7 @@
 #include "intrinsic/skills/cc/skill_interface.h"
 #include "intrinsic/skills/proto/skill_service.pb.h"
 
-class RestartControlBridgeSkill final
+class SwitchToAICController final
     : public intrinsic::skills::SkillInterface {
  public:
   /**
@@ -48,4 +48,4 @@ class RestartControlBridgeSkill final
       intrinsic::skills::ExecuteContext& context) override;
 };
 
-#endif  // RESTART_CONTROL_BRIDGE_SKILL_H_
+#endif  // SWITCH_TO_AIC_CONTROLLER_SKILL_H_

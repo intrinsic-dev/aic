@@ -15,13 +15,13 @@
  *
  */
 
-#include "restart_control_bridge_skill.h"
+#include "switch_to_aic_controller_skill.h"
 
 #include <chrono>
 
 #include "absl/status/statusor.h"
 #include "rclcpp/rclcpp.hpp"
-#include "restart_control_bridge_skill.pb.h"
+#include "switch_to_aic_controller_skill.pb.h"
 #include "std_srvs/srv/trigger.hpp"
 
 //==============================================================================
@@ -37,7 +37,7 @@ class InitRos {
 
 class RestartControlBridgeClientNode : public rclcpp::Node {
  public:
-  RestartControlBridgeClientNode() : Node("restart_control_bridge_skill_node") {
+  RestartControlBridgeClientNode() : Node("switch_to_aic_controller_skill_node") {
     client_ = this->create_client<std_srvs::srv::Trigger>(
         "aic_controller/restart_bridge");
   }
@@ -79,12 +79,12 @@ RestartControlBridgeClientNode client_node_;
 //==============================================================================
 
 std::unique_ptr<intrinsic::skills::SkillInterface>
-RestartControlBridgeSkill::CreateSkill() {
-  return std::make_unique<RestartControlBridgeSkill>();
+SwitchToAICController::CreateSkill() {
+  return std::make_unique<SwitchToAICController>();
 }
 
 absl::StatusOr<std::unique_ptr<google::protobuf::Message>>
-RestartControlBridgeSkill::Preview(
+SwitchToAICController::Preview(
     const intrinsic::skills::PreviewRequest& /*request*/,
     intrinsic::skills::PreviewContext& /*context*/) {
   return absl::UnimplementedError("Skill has not implemented `Preview`.");
@@ -95,14 +95,14 @@ RestartControlBridgeSkill::Preview(
 //==============================================================================
 
 absl::StatusOr<std::unique_ptr<google::protobuf::Message>>
-RestartControlBridgeSkill::Execute(
+SwitchToAICController::Execute(
     const intrinsic::skills::ExecuteRequest& request,
     intrinsic::skills::ExecuteContext& /*context*/) {
-  RCLCPP_INFO(client_node_.get_logger(), "RestartControlBridgeSkill::Execute");
+  RCLCPP_INFO(client_node_.get_logger(), "SwitchToAICController::Execute");
 
   INTR_ASSIGN_OR_RETURN(
       auto params,
-      request.params<ai::flowstate::RestartControlBridgeSkillParams>());
+      request.params<ai::flowstate::SwitchToAICControllerParams>());
 
   auto timeout_ms =
       params.time_limit() > 0 ? params.time_limit() * 1000.0 : 10000.0;
@@ -116,7 +116,7 @@ RestartControlBridgeSkill::Execute(
   auto service_result = status_or_result.value();
 
   auto result =
-      std::make_unique<ai::flowstate::RestartControlBridgeSkillResult>();
+      std::make_unique<ai::flowstate::SwitchToAICControllerResult>();
   result->set_success(service_result->success);
   result->set_message(service_result->message);
 

@@ -1,0 +1,30 @@
+# proto-file: https://github.com/intrinsic-ai/sdk/blob/main/intrinsic/skills/proto/skill_manifest.proto
+# proto-message: intrinsic_proto.skill.SkillManifest
+id {
+  package: "ai.flowstate"
+  name: "switch_to_aic_controller_skill"
+}
+display_name: "Switch to aic_controller skill"
+vendor {
+  display_name: "Intrinsic"
+}
+documentation {
+  description: "Skill that switches the controller to the aic_controller"
+}
+options {
+  supports_cancellation: false
+  cc_config {
+    create_skill: "::SwitchToAICController::CreateSkill"
+  }
+}
+dependencies {
+}
+parameter {
+  message_full_name: "ai.flowstate.SwitchToAICControllerParams"
+  default_value: {
+    type_url: "type.googleapis.com/ai.flowstate.SwitchToAICControllerParams"
+  }
+}
+return_type {
+  message_full_name: "ai.flowstate.SwitchToAICControllerResult"
+}
