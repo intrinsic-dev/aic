@@ -60,6 +60,8 @@ AicAdapterNode::AicAdapterNode() : Node("aic_adapter_node") {
       this->declare_parameter("include_gripper_in_joint_state", true);
   image_time_tolerance_ =
       this->declare_parameter("image_time_tolerance", 0.001);
+  align_camera_timestamps_ =
+      this->declare_parameter("align_camera_timestamps", false);
 
   tf_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
   tf_listener_ = std::make_unique<tf2_ros::TransformListener>(*tf_buffer_);
@@ -163,6 +165,14 @@ void AicAdapterNode::image_callback(size_t camera_idx,
   observation_msg->left_image = std::move(*images_[kLeftCameraIndex]);
   observation_msg->center_image = std::move(*images_[kCenterCameraIndex]);
   observation_msg->right_image = std::move(*images_[kRightCameraIndex]);
+
+  // Optionally force all camera timestamps to be exactly aligned
+  if (align_camera_timestamps_) {
+    observation_msg->left_image.header.stamp =
+        observation_msg->center_image.header.stamp;
+    observation_msg->right_image.header.stamp =
+        observation_msg->center_image.header.stamp;
+  }
 
   images_[kLeftCameraIndex].reset();
   images_[kCenterCameraIndex].reset();

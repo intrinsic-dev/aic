@@ -91,6 +91,7 @@ class AicAdapterNode : public rclcpp::Node {
   std::unordered_map<std::string, size_t> joint_sort_order_;
   bool include_gripper_in_joint_state_;
   double image_time_tolerance_ = 0.001;
+  bool align_camera_timestamps_ = false;
 };
 
 }  // namespace aic
