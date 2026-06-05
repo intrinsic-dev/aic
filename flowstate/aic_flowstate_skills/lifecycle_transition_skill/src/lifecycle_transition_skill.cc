@@ -20,11 +20,15 @@
 #include <chrono>
 
 #include "absl/status/statusor.h"
+#include "absl/strings/str_cat.h"
 #include "lifecycle_msgs/srv/change_state.hpp"
+#include "lifecycle_msgs/srv/get_state.hpp"
 #include "lifecycle_transition_skill.pb.h"
 #include "rclcpp/rclcpp.hpp"
 
 namespace {
+
+constexpr double kDefaultTimeoutMs = 60000.0;
 
 class InitRos {
  public:
@@ -64,6 +68,33 @@ class LifecycleClientNode : public rclcpp::Node {
     auto response = future.get();
     return response->success;
   }
+
+  absl::StatusOr<uint8_t> GetState(const std::string& node_name,
+                                   double timeout_ms) {
+    std::string service_name = "/" + node_name + "/get_state";
+    auto client =
+        this->create_client<lifecycle_msgs::srv::GetState>(service_name);
+
+    if (!client->wait_for_service(std::chrono::seconds(5))) {
+      return absl::UnavailableError("Service '" + service_name +
+                                    "' not available");
+    }
+
+    auto request = std::make_shared<lifecycle_msgs::srv::GetState::Request>();
+
+    auto future = client->async_send_request(request);
+
+    if (rclcpp::spin_until_future_complete(
+            this->get_node_base_interface(), future,
+            std::chrono::milliseconds(static_cast<int>(timeout_ms))) !=
+        rclcpp::FutureReturnCode::SUCCESS) {
+      return absl::DeadlineExceededError(
+          "Timed out waiting for get_state response");
+    }
+
+    auto response = future.get();
+    return response->current_state.id;
+  }
 };
 
 InitRos init;
@@ -95,10 +126,18 @@ LifecycleTransitionSkill::Execute(
               "Transitioning node %s to transition %d",
               params.node_name().c_str(), params.transition());
 
+  if (!ai::flowstate::LifecycleTransitionSkillParams_Transition_IsValid(
+          params.transition())) {
+    return absl::InvalidArgumentError(absl::StrCat(
+        "!!! Unknown transition value: ", static_cast<int>(params.transition()),
+        " !!!"));
+  }
   uint8_t transition_id = static_cast<uint8_t>(params.transition());
 
+  double timeout_ms =
+      params.timeout() > 0.0 ? params.timeout() * 1000.0 : kDefaultTimeoutMs;
   auto status_or_success =
-      client_node_.ChangeState(params.node_name(), transition_id, 10000.0);
+      client_node_.ChangeState(params.node_name(), transition_id, timeout_ms);
 
   if (!status_or_success.ok()) {
     return status_or_success.status();
