@@ -20,6 +20,7 @@
 
 #include <atomic>
 #include <chrono>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 #include <deque>
@@ -212,6 +213,21 @@ namespace aic_gazebo
     /// \param[in] _cableIndex The index of the cable to subscribe for
     private: void CreatePortSubscribers(size_t _cableIndex);
 
+    /// \brief Find cable mounts and update their physics properties
+    /// \param[in] _ecm Entity Component Manager
+    private: void FindCableMounts(gz::sim::EntityComponentManager& _ecm);
+
+    /// \brief Set collision and category bitmasks for all collisions in a model
+    /// \param[in] _modelEntity The model entity
+    /// \param[in] _categoryMask The category mask to set (optional)
+    /// \param[in] _collideMask The collide mask to set (optional)
+    /// \param[in] _ecm Entity Component Manager
+    private: void SetModelCollisionsBitmasks(
+        gz::sim::Entity _modelEntity,
+        std::optional<uint16_t> _categoryMask,
+        std::optional<uint16_t> _collideMask,
+        gz::sim::EntityComponentManager &_ecm);
+
     /// \brief Entity of attachment link in the end effector model
     private: gz::sim::Entity endEffectorLinkEntity{gz::sim::kNullEntity};
 
@@ -248,6 +264,14 @@ namespace aic_gazebo
 
     /// \brief Manual grasp subscribers
     private: std::vector<gz::transport::Node::Subscriber> manualGraspSubs;
+
+    /// \brief Map of cable model names and whether their physics properties
+    /// have been updated
+    private: std::unordered_map<std::string, bool> cableMounts;
+
+    /// \brief Flag indicating if all specified cable mount models have been
+    // updated
+    private: bool allCableMountsUpdated{false};
 
   };
 }

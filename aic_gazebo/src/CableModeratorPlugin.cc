@@ -24,6 +24,9 @@
 #include <gz/common/Console.hh>
 #include <gz/plugin/Register.hh>
 #include <gz/sim/Util.hh>
+#include <gz/sim/Link.hh>
+#include <gz/sim/components/CollisionBitmaskCmd.hh>
+#include <gz/sim/components/CategoryBitmaskCmd.hh>
 #include <gz/sim/components/CanonicalLink.hh>
 #include <gz/sim/components/ChildLinkName.hh>
 #include <gz/sim/components/Collision.hh>
@@ -74,6 +77,12 @@ Entity findLinkInModel(const std::string& _modelName,
   }
   return kNullEntity;
 }
+
+constexpr uint16_t kStaticModelCategory = 2;
+constexpr uint16_t kStaticModelCollideMask = 2;
+constexpr uint16_t kStaticCableCategory = 1;
+constexpr uint16_t kStaticCableCollideMask = 1;
+constexpr uint16_t kDefaultCollideMask = 0xFFFF;
 
 }  // namespace
 
@@ -140,6 +149,22 @@ void CableModeratorPlugin::Configure(
 
     this->cableConfigs.push_back(config);
     cableElem = cableElem->GetNextElement("cable");
+  }
+
+  if (_sdf->HasElement("cable_mounts")) {
+    auto cableMountsElem = _sdf->FindElement("cable_mounts");
+    auto modelNameElem = cableMountsElem->FindElement("model_name");
+    while (modelNameElem) {
+      std::string modelName = modelNameElem->Get<std::string>();
+      if (!modelName.empty()) {
+        this->cableMounts[modelName] = false;
+        gzdbg << "Added cable mount model: " << modelName << std::endl;
+      }
+      modelNameElem = modelNameElem->GetNextElement("model_name");
+    }
+  }
+  if (this->cableMounts.empty()) {
+    this->allCableMountsUpdated = true;
   }
 
   this->cableTrackers.resize(this->cableConfigs.size());
@@ -274,6 +299,9 @@ void CableModeratorPlugin::MakeCableStatic(
     (GZ_SIM_MAJOR_VERSION == 10 && GZ_SIM_MINOR_VERSION >= 3) || \
     (GZ_SIM_MAJOR_VERSION > 10)
   Model(tracker.modelEntity).SetStatic(_ecm, true);
+  math::Pose3d pose = worldPose(tracker.modelEntity, _ecm);
+  gzmsg << "Made cable [" << this->cableConfigs[_cableIndex].modelName
+        << "] static at pose: " << pose << std::endl;
 #else
   static bool warnedOnce = false;
   if (!warnedOnce) {
@@ -291,6 +319,8 @@ void CableModeratorPlugin::MakeCableStatic(
     _ecm.RequestRemoveEntity(tracker.detachableJointStatic1Entity);
     tracker.detachableJointStatic1Entity = kNullEntity;
   }
+  this->SetModelCollisionsBitmasks(tracker.modelEntity, kStaticCableCategory,
+                                   kStaticCableCollideMask, _ecm);
 }
 
 //////////////////////////////////////////////////
@@ -314,6 +344,44 @@ void CableModeratorPlugin::MakeCableDynamic(
   }
   (void)_ecm;
 #endif
+  this->SetModelCollisionsBitmasks(tracker.modelEntity, kDefaultCollideMask,
+                                   kDefaultCollideMask, _ecm);
+}
+
+//////////////////////////////////////////////////
+void CableModeratorPlugin::FindCableMounts(
+    gz::sim::EntityComponentManager& _ecm) {
+  bool allDone = true;
+  for (auto& item : this->cableMounts) {
+    if (item.second) continue;
+
+    auto entitiesMatchingName = entitiesFromScopedName(item.first, _ecm);
+    if (!entitiesMatchingName.empty()) {
+      Entity modelEntity = *entitiesMatchingName.begin();
+#if (GZ_SIM_MAJOR_VERSION == 9 && GZ_SIM_MINOR_VERSION >= 6) ||  \
+    (GZ_SIM_MAJOR_VERSION == 10 && GZ_SIM_MINOR_VERSION >= 3) || \
+    (GZ_SIM_MAJOR_VERSION > 10)
+      Model(modelEntity).SetStatic(_ecm, true);
+      item.second = true;
+      math::Pose3d pose = worldPose(modelEntity, _ecm);
+      gzmsg << "Made model [" << item.first << "] static at pose: " << pose
+            << std::endl;
+#else
+      static bool warnedOnce = false;
+      if (!warnedOnce) {
+        gzwarn << "Unable to set model static state in version "
+               << GZ_SIM_VERSION_FULL << std::endl;
+        warnedOnce = true;
+      }
+      item.second = true;
+#endif
+      this->SetModelCollisionsBitmasks(modelEntity, kStaticModelCategory,
+                                       kStaticModelCollideMask, _ecm);
+    } else {
+      allDone = false;
+    }
+  }
+  this->allCableMountsUpdated = allDone;
 }
 
 //////////////////////////////////////////////////
@@ -327,6 +395,10 @@ void CableModeratorPlugin::Cleanup(gz::sim::EntityComponentManager& _ecm) {
 //////////////////////////////////////////////////
 void CableModeratorPlugin::PreUpdate(const gz::sim::UpdateInfo& /*_info*/,
                                      gz::sim::EntityComponentManager& _ecm) {
+  if (!this->allCableMountsUpdated) {
+    this->FindCableMounts(_ecm);
+  }
+
   this->FindCableModels(_ecm);
 
   this->ProcessManualGraspRequests(_ecm);
@@ -848,6 +920,27 @@ std::optional<int> CableModeratorPlugin::FindGraspedEnd(
 
   // Failed to find a connection to any link
   return std::nullopt;
+}
+
+void CableModeratorPlugin::SetModelCollisionsBitmasks(
+    gz::sim::Entity _modelEntity,
+    std::optional<uint16_t> _categoryMask,
+    std::optional<uint16_t> _collideMask,
+    gz::sim::EntityComponentManager &_ecm) {
+  gz::sim::Model model(_modelEntity);
+  for (const auto& linkEntity : model.Links(_ecm)) {
+    gz::sim::Link link(linkEntity);
+    for (const auto& collisionEntity : link.Collisions(_ecm)) {
+      if (_categoryMask.has_value()) {
+        _ecm.SetComponentData<gz::sim::components::CategoryBitmaskCmd>(
+            collisionEntity, _categoryMask.value());
+      }
+      if (_collideMask.has_value()) {
+        _ecm.SetComponentData<gz::sim::components::CollisionBitmaskCmd>(
+            collisionEntity, _collideMask.value());
+      }
+    }
+  }
 }
 
 }  // namespace aic_gazebo
