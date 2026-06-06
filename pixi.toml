@@ -58,7 +58,6 @@ ros-kilted-vision-msgs = ">=4.2.0,<4.3"
 ros-kilted-ros-gz-interfaces = ">=2.1.0,<2.2"
 ros-kilted-yaml-cpp-vendor = "*"
 nlohmann_json = "*"
-ros-kilted-rcutils = ">=6.9.10,<7"
 
 
 
