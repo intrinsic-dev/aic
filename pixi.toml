@@ -7,45 +7,36 @@ version = "0.1.0"
 conda-pypi-map = { "robostack-kilted" = "robostack_mapping.json" }
 preview = ["pixi-build"]
 
-[target.linux-64.dependencies]
+[environments]
+default = { features = ["skill-runtime", "build-dependencies", "dev-only"], solve-group = "default" }
+skill-build = { features = ["skill-runtime", "build-dependencies"], solve-group = "default" }
+skill-runtime = { features = ["skill-runtime"], solve-group = "default" }
+
+[feature.skill-runtime.target.linux-64.dependencies]
 evdev = ">=1.9.2,<2"
 lttng-ust = "*"
 
-[dependencies]
-isort = "==5.13.2"                                                                     # version bundled by the vscode extension
-json5 = ">=0.13.0,<0.14"                                                               # version bundled by the vscode extension
-numpy = "<2.3.0"
-packaging = ">=24.2,<26.0"                                                             # required by lerobot==0.4.3
-pyright = "==1.1.408"
+[feature.skill-runtime.dependencies]
 ros-kilted-aic-control-interfaces = { path = "aic_interfaces/aic_control_interfaces" }
 ros-kilted-aic-example-policies = { path = "aic_example_policies" }
 ros-kilted-aic-model = { path = "aic_model" }
 ros-kilted-aic-model-interfaces = { path = "aic_interfaces/aic_model_interfaces" }
 ros-kilted-aic-task-interfaces = { path = "aic_interfaces/aic_task_interfaces" }
 ros-kilted-aic-teleoperation = { path = "aic_utils/aic_teleoperation" }
-ros-kilted-control-msgs = "*"                                                          # lerobot_robot_ros
-ros-kilted-geometry-msgs = "*"                                                         # lerobot_robot_ros
-ros-kilted-lerobot-robot-aic = { path = "aic_utils/lerobot_robot_aic" }
-ros-kilted-moveit-msgs = "*"                                                           # lerobot_robot_ros
+ros-kilted-control-msgs = "*"
+ros-kilted-geometry-msgs = "*"
+ros-kilted-sensor-msgs = "*"
+ros-kilted-std-msgs = "*"
+ros-kilted-std-srvs = "*"
+ros-kilted-tf2-ros-py = "*"
 ros-kilted-rclpy = "*"
 ros-kilted-rmw-zenoh-cpp = "*"
 ros-kilted-ros-core = "*"
-ros-kilted-sensor-msgs = "*"                                                           # lerobot_robot_ros
-ros-kilted-std-msgs = "*"                                                              # lerobot_robot_ros
-ros-kilted-std-srvs = "*"
-ros-kilted-tf2-ros-py = "*"
-setuptools = ">=71.0.0,<81.0.0"                                                        # required by lerobot==0.4.3
-
-# Added dependencies for sdk-ros and flowstate packages
-pybind11 = "*"
 re2 = "*"
-colcon-common-extensions = ">=0.3.0,<0.4"
-ros-kilted-ament-cmake-vendor-package = ">=2.7.0, <2.8"
 flatbuffers = "*"
 eigen = "==3.4.0"
 zeromq = "*"
-cppzmq = "*"
-grpcio-tools = "*"
+libgrpc = "<1.80.0"
 prometheus-cpp = "*"
 gz-msgs = "==12.0.1"
 gz-transport = "==15.0.2"
@@ -59,13 +50,30 @@ ros-kilted-ros-gz-interfaces = ">=2.1.0,<2.2"
 ros-kilted-yaml-cpp-vendor = "*"
 nlohmann_json = "*"
 
+[feature.build-dependencies.dependencies]
+colcon-common-extensions = ">=0.3.0,<0.4"
+ros-kilted-ament-cmake-vendor-package = ">=2.7.0, <2.8"
+pybind11 = "*"
+cppzmq = "*"
+grpcio-tools = "<1.80.0"
 
-
-[tasks]
+[feature.skill-runtime.tasks]
 colcon-build = "LIBRARY_PATH=\"$CONDA_PREFIX/lib\" colcon build --base-paths flowstate ../sdk-ros --cmake-args -DCMAKE_BUILD_TYPE=Release"
 
+[feature.skill-runtime.activation]
+scripts = ["pixi_env_setup.sh"]
 
-[pypi-dependencies]
+[feature.dev-only.dependencies]
+isort = "==5.13.2"
+json5 = ">=0.13.0,<0.14"
+numpy = "<2.3.0"
+packaging = ">=24.2,<26.0"
+pyright = "==1.1.408"
+ros-kilted-lerobot-robot-aic = { path = "aic_utils/lerobot_robot_aic" }
+ros-kilted-moveit-msgs = "*"
+setuptools = ">=71.0.0,<81.0.0"
+
+[feature.dev-only.pypi-dependencies]
 huggingface-hub = { version = "~=1.7" }
 lerobot = "==0.5.1"
 lerobot_robot_ros = { git = "https://github.com/koonpeng/lerobot-ros", rev = "87708d0ae14a724bca78f8ae9d55448332509a57", subdirectory = "lerobot_robot_ros" }
@@ -74,5 +82,3 @@ mujoco = "==3.5.0"
 pynput = ">=1.7.6,<2"
 pyspacemouse = ">=2.0.0, <3"
 
-[activation]
-scripts = ["pixi_env_setup.sh"]

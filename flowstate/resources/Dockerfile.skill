@@ -4,6 +4,7 @@ FROM ubuntu:24.04 AS pixi-builder
 RUN apt-get update && apt-get install -y \
     curl \
     git \
+    patch \
     build-essential \
     python3 \
     libxml2-dev \
@@ -23,13 +24,13 @@ COPY src/aic/aic_interfaces/ ./aic_interfaces/
 COPY src/aic/aic_example_policies/ ./aic_example_policies/
 COPY src/aic/aic_model/ ./aic_model/
 COPY src/aic/aic_utils/ ./aic_utils/
-RUN pixi install
+RUN pixi install --environment skill-build && pixi install --environment skill-runtime
 
 
 # Pre-build SDK to optimize caching of heavy dependencies
 FROM pixi-builder AS sdk-builder
 COPY src/sdk-ros/ ./sdk-ros/
-RUN pixi run colcon build \
+RUN pixi run --environment skill-build colcon build \
     --merge-install \
     --cmake-args -DCMAKE_BUILD_TYPE=Release \
     --event-handlers=console_direct+ \
@@ -47,7 +48,7 @@ COPY src/aic/flowstate/ ./flowstate/
 COPY src/aic/aic_adapter/ ./aic_adapter/
 
 # Build target skill package using existing install space
-RUN pixi run colcon build \
+RUN pixi run --environment skill-build colcon build \
     --merge-install \
     --cmake-args -DCMAKE_BUILD_TYPE=Release \
     --event-handlers=console_direct+ \
@@ -55,7 +56,7 @@ RUN pixi run colcon build \
     --base-paths flowstate aic_adapter sdk-ros aic_interfaces
 
 # Capture pixi environment activation for runtime
-RUN pixi shell-hook > /pixi_hook.sh \
+RUN pixi shell-hook --environment skill-runtime > /pixi_hook.sh \
     && rm -rf /root/.pixi/cache /root/.cache/pixi /workspace/.pixi/cache \
     && if [ -d /workspace/build/pybind11_abseil_vendor/pybind11_abseil_vendor-prefix/src/pybind11_abseil_vendor-build ]; then \
         mkdir -p /workspace/install/opt/bindings && \
