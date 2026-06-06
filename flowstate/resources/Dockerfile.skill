@@ -78,9 +78,7 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /workspace
 
 # Copy Pixi environment and built artifacts
-COPY --from=build /root/.pixi /root/.pixi
-COPY --from=build /workspace/.pixi /workspace/.pixi
-COPY --from=build /workspace/pixi.toml /workspace/pixi.lock ./
+COPY --from=build /workspace/.pixi/envs/skill-runtime /workspace/.pixi/envs/skill-runtime
 COPY --from=build /workspace/install ./install
 COPY --from=build /pixi_hook.sh /pixi_hook.sh
 
