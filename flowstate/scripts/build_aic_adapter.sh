@@ -85,6 +85,13 @@ if [ ! -f ./inbuild ]; then
   && chmod +x inbuild
 fi
 
+# Ensure the 'inbuild' tool is executable
+if [ -f ./inbuild ] && [ ! -x ./inbuild ]; then
+  echo "INFO: Making inbuild tool executable..."
+  chmod +x ./inbuild
+fi
+
+
 echo "INFO: Bundling service using inbuild..."
 ./inbuild service bundle \
   --manifest "$SERVICE_DIR/aic_adapter.manifest.textproto" \
