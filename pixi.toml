@@ -9,6 +9,7 @@ preview = ["pixi-build"]
 
 [target.linux-64.dependencies]
 evdev = ">=1.9.2,<2"
+lttng-ust = "*"
 
 [dependencies]
 isort = "==5.13.2"                                                                     # version bundled by the vscode extension
@@ -34,6 +35,35 @@ ros-kilted-std-msgs = "*"                                                       
 ros-kilted-std-srvs = "*"
 ros-kilted-tf2-ros-py = "*"
 setuptools = ">=71.0.0,<81.0.0"                                                        # required by lerobot==0.4.3
+
+# Added dependencies for sdk-ros and flowstate packages
+pybind11 = "*"
+re2 = "*"
+colcon-common-extensions = ">=0.3.0,<0.4"
+ros-kilted-ament-cmake-vendor-package = ">=2.7.0, <2.8"
+flatbuffers = "*"
+eigen = "==3.4.0"
+zeromq = "*"
+cppzmq = "*"
+grpcio-tools = "*"
+prometheus-cpp = "*"
+gz-msgs = "==12.0.1"
+gz-transport = "==15.0.2"
+gz-cmake = ">=5.0.0,<6.0"
+gz-math = ">=9.0.0,<10.0"
+gz-utils = ">=4.0.0,<5.0"
+ros-kilted-actuator-msgs = ">=0.0.1,<0.1"
+ros-kilted-gps-msgs = ">=2.1.0,<2.2"
+ros-kilted-vision-msgs = ">=4.2.0,<4.3"
+ros-kilted-ros-gz-interfaces = ">=2.1.0,<2.2"
+ros-kilted-yaml-cpp-vendor = "*"
+nlohmann_json = "*"
+
+
+
+[tasks]
+colcon-build = "LIBRARY_PATH=\"$CONDA_PREFIX/lib\" colcon build --base-paths flowstate ../sdk-ros --cmake-args -DCMAKE_BUILD_TYPE=Release"
+
 
 [pypi-dependencies]
 huggingface-hub = { version = "~=1.7" }

@@ -39,5 +39,6 @@ message FlowstateRosBridgeConfig {
   int64 executive_deadline_seconds = 10;
   int64 executive_update_rate_millis = 11;
   SensorPublisherConfig sensors = 12;
-  RobotControlBridgeConfig robot_control_bridge_config = 13;
+  repeated string strip_flowstate_tf_prefix = 13;
+  RobotControlBridgeConfig robot_control_bridge_config = 14;
 }

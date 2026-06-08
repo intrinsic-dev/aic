@@ -76,7 +76,7 @@ void RobotControlBridge::declare_ros_parameters(
   param_interface->declare_parameter(kAgentBridgeJointTaskSettingsFileParamName,
                                      rclcpp::ParameterValue{""});
   param_interface->declare_parameter(kRestartConnectionRetriesParamName,
-                                     rclcpp::ParameterValue{6});
+                                     rclcpp::ParameterValue{10});
 }
 
 ///=============================================================================

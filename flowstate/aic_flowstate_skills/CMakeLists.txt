@@ -23,6 +23,7 @@ find_package(lifecycle_msgs REQUIRED)
 add_subdirectory(insert_cable_skill)
 add_subdirectory(start_engine_skill)
 add_subdirectory(stop_engine_skill)
+add_subdirectory(switch_to_aic_controller_skill)
 add_subdirectory(tare_force_torque_sensor_skill)
 add_subdirectory(lifecycle_transition_skill)
 

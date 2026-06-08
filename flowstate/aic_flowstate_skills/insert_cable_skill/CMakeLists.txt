@@ -48,6 +48,7 @@ target_link_libraries(insert_cable_skill_main
   rclcpp::rclcpp
   rclcpp_action::rclcpp_action
   ${aic_task_interfaces_TARGETS}
+  absl::synchronization
 )
 
 add_dependencies(insert_cable_skill_main insert_cable_skill_config)
