@@ -23,6 +23,7 @@ set(dep_pkgs
   pluginlib
   rclcpp
   std_srvs
+  tf2_eigen
 )
 foreach(pkg ${dep_pkgs})
   find_package(${pkg} REQUIRED)
@@ -61,6 +62,7 @@ target_link_libraries(robot_control_bridge
   orocos-kdl
   pluginlib::pluginlib
   rclcpp::rclcpp
+  tf2_eigen::tf2_eigen
   ${aic_control_interfaces_TARGETS}
   ${std_srvs_TARGETS}
 )

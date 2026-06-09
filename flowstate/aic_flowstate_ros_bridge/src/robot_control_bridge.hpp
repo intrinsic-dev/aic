@@ -21,6 +21,8 @@
 #include <memory>
 #include <mutex>
 
+#include <Eigen/Geometry>
+
 #include "flowstate_ros_bridge/bridge_interface.hpp"
 #include "intrinsic/icon/actions/tare_force_torque_sensor_info.h"
 #include "intrinsic/icon/cc_client/client.h"
@@ -95,8 +97,8 @@ class RobotControlBridge : public BridgeInterface {
    * @param pose_b Second Cartesian pose (x, y, z, qx, qy, qz, qw)
    * @param pose_delta  Cartesian deltas (d_x, d_y, d_z, d_wx, d_wy, d_wz)
    */
-  void calculatePoseError(const Eigen::VectorXd& pose_a,
-                          const Eigen::VectorXd& pose_b,
+  void calculatePoseError(const Eigen::Isometry3d& pose_a,
+                          const Eigen::Isometry3d& pose_b,
                           Eigen::Matrix<double, 6, 1>& pose_delta);
 
   /**
