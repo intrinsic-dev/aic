@@ -17,7 +17,9 @@
 
 #include "robot_control_bridge.hpp"
 
+#include <Eigen/Dense>
 #include <filesystem>
+#include <kdl/frames.hpp>
 #include <string>
 #include <utility>
 
@@ -421,10 +423,29 @@ void RobotControlBridge::agentBridgeOutputStreamCallback(
             last_update.reference_pose(6);
       }
 
-      for (int i = 0; i < 6 && i < ab_status_proto.pose_error_integrated_size();
-           ++i) {
-        data_->controller_state_.tcp_error[i] =
-            ab_status_proto.pose_error_integrated(i);
+      Eigen::VectorXd current_tcp_pose(7);
+      current_tcp_pose << data_->controller_state_.tcp_pose.position.x,
+          data_->controller_state_.tcp_pose.position.y,
+          data_->controller_state_.tcp_pose.position.z,
+          data_->controller_state_.tcp_pose.orientation.x,
+          data_->controller_state_.tcp_pose.orientation.y,
+          data_->controller_state_.tcp_pose.orientation.z,
+          data_->controller_state_.tcp_pose.orientation.w;
+      Eigen::VectorXd reference_tcp_pose(7);
+      reference_tcp_pose
+          << data_->controller_state_.reference_tcp_pose.position.x,
+          data_->controller_state_.reference_tcp_pose.position.y,
+          data_->controller_state_.reference_tcp_pose.position.z,
+          data_->controller_state_.reference_tcp_pose.orientation.x,
+          data_->controller_state_.reference_tcp_pose.orientation.y,
+          data_->controller_state_.reference_tcp_pose.orientation.z,
+          data_->controller_state_.reference_tcp_pose.orientation.w;
+
+      Eigen::Matrix<double, 6, 1> tcp_pose_error;
+
+      calculatePoseError(current_tcp_pose, reference_tcp_pose, tcp_pose_error);
+      for (int i = 0; i < 6; ++i) {
+        data_->controller_state_.tcp_error[i] = tcp_pose_error(i);
       }
 
       break;
@@ -473,6 +494,29 @@ void RobotControlBridge::agentBridgeOutputStreamCallback(
   LOG_EVERY_N(INFO, 5000) << absl::StrFormat(
       "AgentBridge output stream translation time: %.3f ms",
       1000.0 * elapsed.seconds());
+}
+
+///=============================================================================
+void RobotControlBridge::calculatePoseError(
+    const Eigen::VectorXd& pose_a, const Eigen::VectorXd& pose_b,
+    Eigen::Matrix<double, 6, 1>& pose_delta) {
+  // Adapted from the KinematicsInterfaceKDL::calculate_frame_difference
+  // from the kinematics_interface library:
+  // Link:
+  // https://github.com/ros-controls/kinematics_interface/blob/078b57767f6dfa066876643a517f4e4117eb1480/kinematics_interface_kdl/src/kinematics_interface_kdl.cpp#L244
+
+  KDL::Frame frames_a = KDL::Frame(
+      KDL::Rotation::Quaternion(pose_a(3), pose_a(4), pose_a(5), pose_a(6)),
+      KDL::Vector(pose_a(0), pose_a(1), pose_a(2)));
+  KDL::Frame frames_b = KDL::Frame(
+      KDL::Rotation::Quaternion(pose_b(3), pose_b(4), pose_b(5), pose_b(6)),
+      KDL::Vector(pose_b(0), pose_b(1), pose_b(2)));
+
+  // compute the difference between the frames
+  KDL::Twist delta_x = KDL::diff(frames_a, frames_b, 1.0);
+  for (size_t i = 0; i < 6; ++i) {
+    pose_delta(static_cast<Eigen::Index>(i)) = delta_x[static_cast<int>(i)];
+  }
 }
 
 ///=============================================================================

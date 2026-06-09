@@ -89,6 +89,17 @@ class RobotControlBridge : public BridgeInterface {
       std::shared_ptr<std_srvs::srv::Trigger::Response> response);
 
   /**
+   * @brief Compute the pose error between pose_a and pose_b
+   *
+   * @param pose_a First Cartesian pose (x, y, z, qx, qy, qz, qw)
+   * @param pose_b Second Cartesian pose (x, y, z, qx, qy, qz, qw)
+   * @param pose_delta  Cartesian deltas (d_x, d_y, d_z, d_wx, d_wy, d_wz)
+   */
+  void calculatePoseError(const Eigen::VectorXd& pose_a,
+                          const Eigen::VectorXd& pose_b,
+                          Eigen::Matrix<double, 6, 1>& pose_delta);
+
+  /**
    * @brief Starts a session on the controller server
    *
    * @return true Successfully started an ICON session

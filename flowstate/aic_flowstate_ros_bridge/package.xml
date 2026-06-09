@@ -11,7 +11,9 @@
 
   <depend>aic_control_interfaces</depend>
   <depend>ament_index_cpp</depend>
+  <depend>eigen</depend>
   <depend>flowstate_ros_bridge</depend>
+  <depend>orocos_kdl_vendor</depend>
   <depend>rclcpp</depend>
   <depend>pluginlib</depend>
   <depend>std_srvs</depend>
