@@ -27,7 +27,6 @@
 #include <sstream>
 #include <unordered_set>
 
-#include "aic_task_interfaces/msg/task.hpp"
 #include "lifecycle_msgs/msg/state.hpp"
 #include "lifecycle_msgs/srv/get_state.hpp"
 #include "rclcpp/executors.hpp"
@@ -38,8 +37,7 @@ namespace aic {
 
 //==============================================================================
 Engine::Engine(const rclcpp::NodeOptions& options)
-    : node_(std::make_shared<rclcpp::Node>("aic_engine", options)),
-      insert_cable_action_client_(nullptr) {
+    : node_(std::make_shared<rclcpp::Node>("aic_engine", options)) {
   RCLCPP_INFO(node_->get_logger(), "Creating AIC Engine...");
 
   // Declare ROS parameters.
@@ -102,8 +100,6 @@ Engine::Engine(const rclcpp::NodeOptions& options)
   auto sub_options = rclcpp::SubscriptionOptions();
   sub_options.callback_group = callback_group_;
 
-  insert_cable_action_client_ = rclcpp_action::create_client<InsertCableAction>(
-      node_, "/insert_cable", callback_group_);
   model_get_state_client_ = node_->create_client<lifecycle_msgs::srv::GetState>(
       model_get_state_service_name_, rclcpp::ServicesQoS(), callback_group_);
   model_change_state_client_ =
@@ -151,7 +147,21 @@ void Engine::start_engine_callback(
     }
   }
 
-  const auto err = this->start_trial(request->task);
+  Connection conn0 = {
+    .plugName = request->plug_name[0],
+    .targetModuleName = request->target_module_name[0],
+    .portName = request->port_name[0]
+  };
+
+  Connection conn1 = {
+    .plugName = request->plug_name[1],
+    .targetModuleName = request->target_module_name[1],
+    .portName = request->port_name[1]
+  };
+
+  CableConnections task(conn0, conn1);
+
+  const auto err = this->start_trial(task, request->time_limit);
   if (err.has_value()) {
     RCLCPP_ERROR(node_->get_logger(), "Failed starting engine: %s",
                  err.value().c_str());
@@ -275,7 +285,7 @@ void Engine::reset_engine() {
 }
 
 //==============================================================================
-std::optional<std::string> Engine::start_trial(const TaskMsg& task) {
+std::optional<std::string> Engine::start_trial(const CableConnections& task, const uint64_t time_limit) {
   RCLCPP_INFO(node_->get_logger(), " ");
   RCLCPP_INFO(node_->get_logger(),
               "╔════════════════════════════════════════╗");
@@ -285,7 +295,7 @@ std::optional<std::string> Engine::start_trial(const TaskMsg& task) {
               "╚════════════════════════════════════════╝");
   RCLCPP_INFO(node_->get_logger(), " ");
 
-  if (!this->ready_scoring(task)) {
+  if (!this->ready_scoring(task, time_limit)) {
     const std::string error =
         "  ✗ EVALUATION ERROR: Scoring setup failed."
         "This is an infrastructure issue. Is eval environment "
@@ -296,7 +306,8 @@ std::optional<std::string> Engine::start_trial(const TaskMsg& task) {
   RCLCPP_INFO(node_->get_logger(), "  ✓ Scoring Ready");
 
   this->scoring_tier2_->SetTaskStartTime(this->node_->now());
-  this->tasks_.insert({task.id, task});
+  const auto task_id = std::string("trial_") + std::to_string(this->tasks_.size());
+  this->tasks_.insert({task_id, task});
   return std::nullopt;
 }
 
@@ -351,41 +362,6 @@ bool Engine::configure_model_node() {
 
   if (!this->transition_model_lifecycle_node(
           lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE)) {
-    return false;
-  }
-
-  // Check that the model rejects action goals.
-  if (!insert_cable_action_client_->wait_for_action_server(
-          std::chrono::seconds(5))) {
-    RCLCPP_ERROR(node_->get_logger(),
-                 "Insert cable action server not available after waiting");
-    return false;
-  }
-  auto goal_was_rejected = std::make_shared<bool>(false);
-  auto goal_msg = InsertCableAction::Goal();
-  auto goal_options =
-      rclcpp_action::Client<InsertCableAction>::SendGoalOptions();
-  goal_options
-      .goal_response_callback = [this, goal_was_rejected](
-                                    const rclcpp_action::ClientGoalHandle<
-                                        InsertCableAction>::SharedPtr&
-                                        goal_handle) {
-    if (!goal_handle) {
-      RCLCPP_INFO(
-          this->node_->get_logger(),
-          "Insert cable action goal was rejected by the server as expected.");
-      *goal_was_rejected = true;
-    } else {
-      RCLCPP_ERROR(this->node_->get_logger(),
-                   "Insert cable action goal was accepted by the server while "
-                   "in 'configured' state. This is a rule violation.");
-    }
-  };
-
-  insert_cable_action_client_->async_send_goal(goal_msg, goal_options);
-  node_->get_clock()->sleep_for(rclcpp::Duration(std::chrono::seconds(1)));
-
-  if (!*goal_was_rejected) {
     return false;
   }
 
@@ -552,13 +528,9 @@ bool Engine::check_endpoints() {
 }
 
 //==============================================================================
-bool Engine::ready_scoring(const TaskMsg& task) {
+bool Engine::ready_scoring(const CableConnections& task, const uint64_t time_limit) {
   RCLCPP_INFO(node_->get_logger(), "Checking scoring system readiness...");
   // Register the connection for this trial.
-  aic_scoring::Connection connection;
-  connection.plugName = task.plug_name;
-  connection.portName = task.port_name;
-  connection.targetModuleName = task.target_module_name;
 
   // Create unique bag filename with timestamp
   auto now = std::chrono::system_clock::now();
@@ -574,9 +546,8 @@ bool Engine::ready_scoring(const TaskMsg& task) {
   const std::string bag_path = oss.str();
 
   // Add a few seconds for safety since this is a limit for recorded data
-  const unsigned int max_task_limit = task.time_limit + 10;
-  if (!scoring_tier2_->StartRecording(bag_path, connection,
-                                      std::chrono::seconds(max_task_limit))) {
+  if (!scoring_tier2_->StartRecording(bag_path, task,
+                                      std::chrono::seconds(time_limit + 10))) {
     RCLCPP_ERROR(node_->get_logger(), "Failed to start recording to '%s'.",
                  bag_path.c_str());
     return false;

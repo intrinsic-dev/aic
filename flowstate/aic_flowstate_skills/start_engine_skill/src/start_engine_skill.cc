@@ -105,19 +105,23 @@ StartEngineSkill::Execute(const intrinsic::skills::ExecuteRequest& request,
   // Populate service request
   auto service_request =
       std::make_shared<aic_engine_interfaces::srv::StartEngine::Request>();
-  service_request->task.id = params.id();
-  service_request->task.cable_type = params.cable_type();
-  service_request->task.cable_name = params.cable_name();
-  service_request->task.plug_type = params.plug_type();
-  service_request->task.plug_name = params.plug_name();
-  service_request->task.port_type = params.port_type();
-  service_request->task.port_name = params.port_name();
-  service_request->task.target_module_name = params.target_module_name();
-  service_request->task.time_limit = params.time_limit();
+  if (params.plug_name().size() != 2 ||
+      params.port_name().size() != 2 ||
+      params.target_module_name().size() != 2) {
+    return absl::InvalidArgumentError("Exactly two plug_name, port_name "
+        "and target_module_name must be provided");
+  }
+
+  service_request->plug_name[0] = params.plug_name(0);
+  service_request->plug_name[1] = params.plug_name(1);
+  service_request->port_name[0] = params.port_name(0);
+  service_request->port_name[1] = params.port_name(1);
+  service_request->target_module_name[0] = params.target_module_name()[0];
+  service_request->target_module_name[1] = params.target_module_name()[1];
+  service_request->time_limit = params.time_limit();
   service_request->reset = params.reset();
 
-  RCLCPP_INFO(client_node_.get_logger(), "Starting engine for task ID: %s",
-              service_request->task.id.c_str());
+  RCLCPP_INFO(client_node_.get_logger(), "Starting engine");
 
   // Use a default timeout of 60s
   const double timeout_ms = 60000;
@@ -131,13 +135,12 @@ StartEngineSkill::Execute(const intrinsic::skills::ExecuteRequest& request,
   auto service_result = status_or_result.value();
   if (!service_result->success) {
     RCLCPP_INFO(
-        client_node_.get_logger(), "Failed starting task [%s], reason: %s",
-        service_request->task.id.c_str(), service_result->message.c_str());
+        client_node_.get_logger(), "Failed starting task, reason: %s",
+        service_result->message.c_str());
     return absl::InternalError(service_result->message);
   }
 
-  RCLCPP_INFO(client_node_.get_logger(), "Task [%s] started successfully",
-              service_request->task.id.c_str());
+  RCLCPP_INFO(client_node_.get_logger(), "Task started successfully");
 
   return std::make_unique<ai::flowstate::StartEngineSkillResult>();
 }

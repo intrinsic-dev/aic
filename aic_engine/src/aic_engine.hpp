@@ -32,7 +32,6 @@
 #include "aic_engine_interfaces/srv/stop_engine.hpp"
 #include "aic_scoring/ScoringTier2.hh"
 #include "aic_scoring/TierScore.hh"
-#include "aic_task_interfaces/action/insert_cable.hpp"
 #include "lifecycle_msgs/msg/state.hpp"
 #include "lifecycle_msgs/srv/change_state.hpp"
 #include "lifecycle_msgs/srv/get_state.hpp"
@@ -44,12 +43,12 @@
 //==============================================================================
 namespace aic {
 
-using InsertCableAction = aic_task_interfaces::action::InsertCable;
+using Connection = aic_scoring::Connection;
+using CableConnections = aic_scoring::CableConnections;
 using JointMotionUpdateMsg = aic_control_interfaces::msg::JointMotionUpdate;
 using MotionUpdateMsg = aic_control_interfaces::msg::MotionUpdate;
 using StartEngineSrv = aic_engine_interfaces::srv::StartEngine;
 using StopEngineSrv = aic_engine_interfaces::srv::StopEngine;
-using TaskMsg = aic_task_interfaces::msg::Task;
 using TriggerSrv = std_srvs::srv::Trigger;
 
 //==============================================================================
@@ -80,10 +79,10 @@ enum class TaskStatus {
 
 //==============================================================================
 struct TrialAttempt {
-  TaskMsg task;
+  CableConnections task;
   TaskStatus status;
   TrialScore score;
-  TrialAttempt(const TaskMsg& task_)
+  TrialAttempt(const CableConnections& task_)
       : task(task_), status(TaskStatus::STARTED) {}
 };
 
@@ -105,7 +104,7 @@ class Engine {
   /// \brief Handle the logic for a given trial.
   /// \param[in] task The task to score.
   /// \return An error message if an error occured, std::nullopt otherwise.
-  std::optional<std::string> start_trial(const TaskMsg& task);
+  std::optional<std::string> start_trial(const CableConnections& task, const uint64_t time_limit);
 
   /// \brief Fully resets the engine to prepare for a new set of tasks.
   void reset_engine();
@@ -121,7 +120,7 @@ class Engine {
 
   /// \brief Check if the scoring system is ready.
   /// \return True if the scoring system is ready, false otherwise.
-  bool ready_scoring(const TaskMsg& task);
+  bool ready_scoring(const CableConnections& task, const uint64_t time_limit);
 
   /// @brief Get the current model node's lifecycle state.
   /// @return State if successful, std::nullopt if not.
@@ -202,10 +201,6 @@ class Engine {
 
   // Internal ROS 2 node.
   rclcpp::Node::SharedPtr node_;
-
-  // Action clients.
-  rclcpp_action::Client<InsertCableAction>::SharedPtr
-      insert_cable_action_client_;
 
   // Service clients.
   rclcpp::Client<lifecycle_msgs::srv::GetState>::SharedPtr

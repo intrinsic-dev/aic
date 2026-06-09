@@ -66,21 +66,16 @@ ScoringTier2::ScoringTier2(rclcpp::Node *_node) : node(_node) {
 }
 
 //////////////////////////////////////////////////
-void ScoringTier2::SetConnection(const Connection &_connection) {
-  this->connection = _connection;
-}
-
-//////////////////////////////////////////////////
 void ScoringTier2::SetGripperFrame(const std::string &_gripperFrame) {
   this->gripperFrame = _gripperFrame;
 }
 
 //////////////////////////////////////////////////
 bool ScoringTier2::StartRecording(const std::string &_filename,
-                                  const Connection &_connection,
+                                  const CableConnections &_connections,
                                   const std::chrono::seconds &_max_task_time) {
   this->Reset(_max_task_time);
-  this->SetConnection(_connection);
+  this->connection = _connections;
   {
     std::lock_guard<std::mutex> lock(this->mutex);
     if (this->state != State::Idle) {
@@ -492,9 +487,9 @@ std::optional<double> ScoringTier2::GetPlugPortDistance(
   }
   // For now we only calculate the distance for the first connection
   const auto plug_tf_opt =
-      this->GetTransform(t, this->connection->PlugTfName(*this->trackedCable));
+      this->GetTransform(t, (*this->connection).data[0].PlugTfName(*this->trackedCable));
   const auto port_tf_opt =
-      this->GetTransform(t, this->connection->PortTfName());
+      this->GetTransform(t, (*this->connection).data[0].PortTfName());
   if (!plug_tf_opt.has_value() || !port_tf_opt.has_value()) {
     return std::nullopt;
   }
@@ -746,11 +741,11 @@ Tier3Score ScoringTier2::GetDistanceScore() const {
 
   // Check if we are in partial insertion
   const auto port_entrance_tf = this->GetTransform(
-      tf2::TimePoint(end_time), this->connection->PortEntranceTfName());
+      tf2::TimePoint(end_time), (*this->connection).data[0].PortEntranceTfName());
   const auto port_tf = this->GetTransform(tf2::TimePoint(end_time),
-                                          this->connection->PortTfName());
+                                          (*this->connection).data[0].PortTfName());
   const auto plug_tf = this->GetTransform(tf2::TimePoint(end_time),
-                                          this->connection->PlugTfName(
+                                          (*this->connection).data[0].PlugTfName(
                                             this->trackedCable.value()));
 
   if (!port_entrance_tf.has_value() || !port_tf.has_value() ||
@@ -835,8 +830,8 @@ Tier3Score ScoringTier2::ComputeTier3Score() const {
 
     if (tokens.size() >= 2u) {
       // Verify the plug is inserted into the correct target port
-      if (tokens[0] == connection->targetModuleName &&
-          tokens[1] == connection->portName) {
+      if (tokens[0] == (*this->connection).data[0].targetModuleName &&
+          tokens[1] == (*this->connection).data[0].portName) {
         return Tier3Score(kInsertionCompletionScore,
                           "Cable insertion successful.");
       } else {

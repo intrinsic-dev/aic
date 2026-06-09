@@ -82,6 +82,15 @@ namespace aic_scoring
     }
   };
 
+  /// \brief Connections for both end of the cable
+  struct CableConnections
+  {
+    public: std::array<Connection, 2> data;
+
+    CableConnections(const Connection& conn0, const Connection& conn1) :
+      data({conn0, conn1}) {}
+  };
+
   /// \brief Topic info POD.
   struct TopicInfo
   {
@@ -149,10 +158,6 @@ namespace aic_scoring
     /// \param[in] _node Pointer to the ROS node.
     public: ScoringTier2(rclcpp::Node *_node);
 
-    /// \brief Reset connection.
-    /// \param[in] _connections New connection.
-    private: void SetConnection(const Connection &_connection);
-
     /// \brief Set the gripper frame name.
     /// \param[in] _gripperFrame Gripper frame name.
     public: void SetGripperFrame(const std::string &_gripperFrame);
@@ -163,7 +168,7 @@ namespace aic_scoring
     /// \param[in] _connection Connection to monitor.
     /// \param[in] _max_task_time The maximum time to record for, used for tf buffer size.
     public: bool StartRecording(const std::string &_filename,
-                const Connection &_connection,
+                const CableConnections &_connections,
                 const std::chrono::seconds &_max_task_time);
 
     /// \brief Stop recording all scoring topics.
@@ -294,7 +299,7 @@ namespace aic_scoring
     private: std::vector<TopicInfo> topics;
 
     /// \brief Connection.
-    private: std::optional<Connection> connection;
+    private: std::optional<CableConnections> connection;
 
     /// \brief Generic subscriptions for all topics.
     private: std::vector<std::shared_ptr<rclcpp::GenericSubscription>>
