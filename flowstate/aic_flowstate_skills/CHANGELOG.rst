@@ -2,8 +2,8 @@
 Changelog for package aic_flowstate_skills
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.0 (2026-06-09)
+------------------
 * Add skill for restarting the control bridge in flowstate_ros_bridge (`#568 <https://github.com/intrinsic-dev/aic/issues/568>`_)
 * Bump SDK to v1.31.20260427.1  and build assets using pixi (`#564 <https://github.com/intrinsic-dev/aic/issues/564>`_)
 * Configure transitions in lifecycle_transition_skill as enums (`#566 <https://github.com/intrinsic-dev/aic/issues/566>`_)

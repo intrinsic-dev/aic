@@ -2,8 +2,8 @@
 Changelog for package aic_gazebo
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.0 (2026-06-09)
+------------------
 * Make cable dynamic on gripper contact (`#553 <https://github.com/intrinsic-dev/aic/issues/553>`_)
 * Refactor CableModerator to support any cable insertion order (`#546 <https://github.com/intrinsic-dev/aic/issues/546>`_)
 * Update CableModeratorPlugin to monitor grasp events (`#509 <https://github.com/intrinsic-dev/aic/issues/509>`_)

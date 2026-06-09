@@ -2,8 +2,8 @@
 Changelog for package lerobot_robot_aic
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.0 (2026-06-09)
+------------------
 * Fix SpaceMouse device not stored in AICSpaceMouseTeleop.connect() (`#417 <https://github.com/intrinsic-dev/aic/issues/417>`_)
 * lerobot-record: Prevent KeyError by populating cam_obs with initial placeholder frames (`#371 <https://github.com/intrinsic-dev/aic/issues/371>`_)
 * Add integration for LeRobot ACT policy (`#206 <https://github.com/intrinsic-dev/aic/issues/206>`_)

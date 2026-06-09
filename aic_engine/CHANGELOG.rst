@@ -2,8 +2,8 @@
 Changelog for package aic_engine
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.0 (2026-06-09)
+------------------
 * Add an engine for Phase 1 (`#552 <https://github.com/intrinsic-dev/aic/issues/552>`_)
 * Return non-zero code when aic_engine exits with error (`#411 <https://github.com/intrinsic-dev/aic/issues/411>`_)
 * Put SC port in view for Trial 3 sample config and clarify qualification_phase.md (`#387 <https://github.com/intrinsic-dev/aic/issues/387>`_)

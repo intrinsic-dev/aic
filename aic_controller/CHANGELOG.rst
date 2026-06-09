@@ -2,8 +2,8 @@
 Changelog for package aic_controller
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.0 (2026-06-09)
+------------------
 * Add top level LICENSE file (`#384 <https://github.com/intrinsic-dev/aic/issues/384>`_)
 * Fix URDF header include (.h vs .hpp) to compile aic_controller in ROS 2 Jazzy (`#358 <https://github.com/intrinsic-dev/aic/issues/358>`_)
 * Add `target_mode` field to `ControllerState` message (`#309 <https://github.com/intrinsic-dev/aic/issues/309>`_)

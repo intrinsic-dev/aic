@@ -2,8 +2,8 @@
 Changelog for package aic_bringup
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.0 (2026-06-09)
+------------------
 * Support multiple SC ports per rail on the taskboard for phase 1 (`#561 <https://github.com/intrinsic-dev/aic/issues/561>`_)
 * Update assets to include gazebo plugins (`#535 <https://github.com/intrinsic-dev/aic/issues/535>`_)
 * Refactor CableModerator to support any cable insertion order (`#546 <https://github.com/intrinsic-dev/aic/issues/546>`_)

@@ -2,8 +2,8 @@
 Changelog for package aic_scoring
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.0 (2026-06-09)
+------------------
 * Add an engine for Phase 1 (`#552 <https://github.com/intrinsic-dev/aic/issues/552>`_)
 * Add top level LICENSE file (`#384 <https://github.com/intrinsic-dev/aic/issues/384>`_)
 * bridge static pose data from gz topic to tf instead of tf_static (`#367 <https://github.com/intrinsic-dev/aic/issues/367>`_)

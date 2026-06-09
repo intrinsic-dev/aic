@@ -2,8 +2,8 @@
 Changelog for package aic_model_interfaces
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.0 (2026-06-09)
+------------------
 * Add top level LICENSE file (`#384 <https://github.com/intrinsic-dev/aic/issues/384>`_)
 * fix missing deps (`#226 <https://github.com/intrinsic-dev/aic/issues/226>`_)
 * Add controller state to observation (`#202 <https://github.com/intrinsic-dev/aic/issues/202>`_)

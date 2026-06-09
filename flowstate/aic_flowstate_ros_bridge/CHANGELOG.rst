@@ -2,8 +2,8 @@
 Changelog for package aic_flowstate_ros_bridge
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.0 (2026-06-09)
+------------------
 * implement TCP pose error computation (`#575 <https://github.com/intrinsic-dev/aic/issues/575>`_)
 * Enable stripping of TF frame prefix and remapping of TF frame names (`#565 <https://github.com/intrinsic-dev/aic/issues/565>`_)
 * Bump SDK to v1.31.20260427.1  and build assets using pixi (`#564 <https://github.com/intrinsic-dev/aic/issues/564>`_)

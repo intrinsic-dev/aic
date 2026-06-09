@@ -2,8 +2,8 @@
 Changelog for package aic_teleoperation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.0 (2026-06-09)
+------------------
 * Add top level LICENSE file (`#384 <https://github.com/intrinsic-dev/aic/issues/384>`_)
 * Add `target_mode` field to `ControllerState` message (`#309 <https://github.com/intrinsic-dev/aic/issues/309>`_)
 * change 'wrench_feedback_gains_at_tip' from Wrench to float64 (`#308 <https://github.com/intrinsic-dev/aic/issues/308>`_)

@@ -2,8 +2,8 @@
 Changelog for package aic_example_policies
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.0 (2026-06-09)
+------------------
 * Add check for observation before accessing it (`#388 <https://github.com/intrinsic-dev/aic/issues/388>`_)
 * Add top level LICENSE file (`#384 <https://github.com/intrinsic-dev/aic/issues/384>`_)
 * Note about RunACT and minor misc docs clarifications (`#380 <https://github.com/intrinsic-dev/aic/issues/380>`_)

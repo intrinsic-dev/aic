@@ -2,8 +2,8 @@
 Changelog for package aic_assets
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.0 (2026-06-09)
+------------------
 * Correct link names in SDF for gripper (`#572 <https://github.com/intrinsic-dev/aic/issues/572>`_)
 * Flip SFP module and update cable body (`#559 <https://github.com/intrinsic-dev/aic/issues/559>`_)
 * Update cable collisions to ensure gripper can grasp the cable (`#554 <https://github.com/intrinsic-dev/aic/issues/554>`_)

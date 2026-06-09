@@ -2,8 +2,8 @@
 Changelog for package aic_adapter
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.0 (2026-06-09)
+------------------
 * Optionally align camera timestamps in aic_adapter (`#567 <https://github.com/intrinsic-dev/aic/issues/567>`_)
 * Bridge wrist cameras from Flowstate sim to ROS (`#512 <https://github.com/intrinsic-dev/aic/issues/512>`_)
 * Support joint_states with 6 joints in aic_adapter (`#487 <https://github.com/intrinsic-dev/aic/issues/487>`_)
