@@ -19,7 +19,6 @@
 
 #include <Eigen/Dense>
 #include <filesystem>
-#include "tf2_eigen/tf2_eigen.hpp"
 #include <kdl/frames.hpp>
 #include <string>
 #include <utility>
@@ -39,6 +38,7 @@
 #include "rclcpp/create_service.hpp"
 #include "rclcpp/create_timer.hpp"
 #include "rclcpp/parameter.hpp"
+#include "tf2_eigen/tf2_eigen.hpp"
 
 // Interfaces
 #include "aic_control_interfaces/msg/controller_state.hpp"
@@ -497,14 +497,14 @@ void RobotControlBridge::calculatePoseError(
   Eigen::Quaterniond q_a(pose_a.linear());
   Eigen::Quaterniond q_b(pose_b.linear());
 
-  KDL::Frame frames_a = KDL::Frame(
-      KDL::Rotation::Quaternion(q_a.x(), q_a.y(), q_a.z(), q_a.w()),
-      KDL::Vector(pose_a.translation().x(), pose_a.translation().y(),
-                  pose_a.translation().z()));
-  KDL::Frame frames_b = KDL::Frame(
-      KDL::Rotation::Quaternion(q_b.x(), q_b.y(), q_b.z(), q_b.w()),
-      KDL::Vector(pose_b.translation().x(), pose_b.translation().y(),
-                  pose_b.translation().z()));
+  KDL::Frame frames_a =
+      KDL::Frame(KDL::Rotation::Quaternion(q_a.x(), q_a.y(), q_a.z(), q_a.w()),
+                 KDL::Vector(pose_a.translation().x(), pose_a.translation().y(),
+                             pose_a.translation().z()));
+  KDL::Frame frames_b =
+      KDL::Frame(KDL::Rotation::Quaternion(q_b.x(), q_b.y(), q_b.z(), q_b.w()),
+                 KDL::Vector(pose_b.translation().x(), pose_b.translation().y(),
+                             pose_b.translation().z()));
 
   // compute the difference between the frames
   KDL::Twist delta_x = KDL::diff(frames_a, frames_b, 1.0);

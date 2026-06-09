@@ -18,10 +18,9 @@
 #ifndef BRIDGES_ROBOT_CONTROL_BRIDGE_HPP_
 #define BRIDGES_ROBOT_CONTROL_BRIDGE_HPP_
 
+#include <Eigen/Geometry>
 #include <memory>
 #include <mutex>
-
-#include <Eigen/Geometry>
 
 #include "flowstate_ros_bridge/bridge_interface.hpp"
 #include "intrinsic/icon/actions/tare_force_torque_sensor_info.h"
