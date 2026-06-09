@@ -17,7 +17,9 @@
 
 #include "robot_control_bridge.hpp"
 
+#include <Eigen/Dense>
 #include <filesystem>
+#include <kdl/frames.hpp>
 #include <string>
 #include <utility>
 
@@ -36,6 +38,7 @@
 #include "rclcpp/create_service.hpp"
 #include "rclcpp/create_timer.hpp"
 #include "rclcpp/parameter.hpp"
+#include "tf2_eigen/tf2_eigen.hpp"
 
 // Interfaces
 #include "aic_control_interfaces/msg/controller_state.hpp"
@@ -421,10 +424,17 @@ void RobotControlBridge::agentBridgeOutputStreamCallback(
             last_update.reference_pose(6);
       }
 
-      for (int i = 0; i < 6 && i < ab_status_proto.pose_error_integrated_size();
-           ++i) {
-        data_->controller_state_.tcp_error[i] =
-            ab_status_proto.pose_error_integrated(i);
+      Eigen::Isometry3d current_tcp_pose;
+      tf2::fromMsg(data_->controller_state_.tcp_pose, current_tcp_pose);
+      Eigen::Isometry3d reference_tcp_pose;
+      tf2::fromMsg(data_->controller_state_.reference_tcp_pose,
+                   reference_tcp_pose);
+
+      Eigen::Matrix<double, 6, 1> tcp_pose_error;
+
+      calculatePoseError(current_tcp_pose, reference_tcp_pose, tcp_pose_error);
+      for (int i = 0; i < 6; ++i) {
+        data_->controller_state_.tcp_error[i] = tcp_pose_error(i);
       }
 
       break;
@@ -473,6 +483,34 @@ void RobotControlBridge::agentBridgeOutputStreamCallback(
   LOG_EVERY_N(INFO, 5000) << absl::StrFormat(
       "AgentBridge output stream translation time: %.3f ms",
       1000.0 * elapsed.seconds());
+}
+
+///=============================================================================
+void RobotControlBridge::calculatePoseError(
+    const Eigen::Isometry3d& pose_a, const Eigen::Isometry3d& pose_b,
+    Eigen::Matrix<double, 6, 1>& pose_delta) {
+  // Adapted from the KinematicsInterfaceKDL::calculate_frame_difference
+  // from the kinematics_interface library:
+  // Link:
+  // https://github.com/ros-controls/kinematics_interface/blob/078b57767f6dfa066876643a517f4e4117eb1480/kinematics_interface_kdl/src/kinematics_interface_kdl.cpp#L244
+
+  Eigen::Quaterniond q_a(pose_a.linear());
+  Eigen::Quaterniond q_b(pose_b.linear());
+
+  KDL::Frame frames_a =
+      KDL::Frame(KDL::Rotation::Quaternion(q_a.x(), q_a.y(), q_a.z(), q_a.w()),
+                 KDL::Vector(pose_a.translation().x(), pose_a.translation().y(),
+                             pose_a.translation().z()));
+  KDL::Frame frames_b =
+      KDL::Frame(KDL::Rotation::Quaternion(q_b.x(), q_b.y(), q_b.z(), q_b.w()),
+                 KDL::Vector(pose_b.translation().x(), pose_b.translation().y(),
+                             pose_b.translation().z()));
+
+  // compute the difference between the frames
+  KDL::Twist delta_x = KDL::diff(frames_a, frames_b, 1.0);
+  for (size_t i = 0; i < 6; ++i) {
+    pose_delta(static_cast<Eigen::Index>(i)) = delta_x[static_cast<int>(i)];
+  }
 }
 
 ///=============================================================================

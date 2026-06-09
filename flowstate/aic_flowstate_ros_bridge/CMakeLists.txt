@@ -23,12 +23,15 @@ set(dep_pkgs
   pluginlib
   rclcpp
   std_srvs
+  tf2_eigen
 )
 foreach(pkg ${dep_pkgs})
   find_package(${pkg} REQUIRED)
 endforeach()
 
+find_package(Eigen3 REQUIRED NO_MODULE)
 find_package(Protobuf REQUIRED)
+find_package(orocos_kdl_vendor REQUIRED)
 
 #==================================
 
@@ -54,9 +57,12 @@ target_link_libraries(robot_control_bridge
   absl::time
   agent_bridge_proto
   ament_index_cpp::ament_index_cpp
+  Eigen3::Eigen
   flowstate_ros_bridge::flowstate_ros_builtin_bridges
+  orocos-kdl
   pluginlib::pluginlib
   rclcpp::rclcpp
+  tf2_eigen::tf2_eigen
   ${aic_control_interfaces_TARGETS}
   ${std_srvs_TARGETS}
 )
