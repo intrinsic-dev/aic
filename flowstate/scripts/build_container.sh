@@ -123,6 +123,13 @@ elif [[ -n "$SKILL_NAME" && -n "$SKILL_PACKAGE" ]]; then
           && chmod +x inbuild
     fi
 
+    # Ensure the 'inbuild' tool is executable
+    if [ -f ./inbuild ] && [ ! -x ./inbuild ]; then
+      echo "INFO: Making inbuild tool executable..."
+      chmod +x ./inbuild
+    fi
+
+
     echo "INFO: Loading newly built image into local daemon..."
     docker load -i "$IMAGES_DIR/${SKILL_NAME}/${SKILL_NAME}.tar"
 

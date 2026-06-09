@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -e
 
 IMAGES_DIR=./images
 BUILDER_NAME=container-builder
@@ -51,25 +52,25 @@ DOCKERFILE_SERVICE="$AIC_TOP_DIR/flowstate/resources/Dockerfile.service"
 SERVICE_DIR="$AIC_TOP_DIR/flowstate/services/aic_adapter"
 
 
+# 2. Build and export the service image to a compressed .tar bundle
+# This builds the image and exports it directly to a tar archive with ZSTD compression,
+# which is much smaller and can be subsequently bundled by the inbuild tool.
+echo "INFO: Building and exporting image to compressed tar file..."
+if [ -d "$IMAGES_DIR/aic_adapter" ]; then
+  echo "INFO: Deleting existing $IMAGES_DIR/aic_adapter directory..."
+  rm -rf "$IMAGES_DIR/aic_adapter"
+fi
+mkdir -p "$IMAGES_DIR/aic_adapter"
+
 docker buildx build -t flowstate:aic_adapter \
   --builder="$BUILDER_NAME" \
-  --load \
+  --output="type=docker,dest=$IMAGES_DIR/aic_adapter/aic_adapter.tar,compression=zstd,push=false,name=flowstate:aic_adapter" \
   --file "$DOCKERFILE_SERVICE" \
   --build-arg="SERVICE_PACKAGE=aic_adapter" \
   --build-arg="SERVICE_NAME=aic_adapter" \
   --build-arg="SERVICE_EXECUTABLE_NAME=aic_adapter" \
   "$WORKSPACE_ROOT"
 
-# 2. Export the service image to a .tar bundle
-# This saves the docker image as a tar archive to the file system, which
-# can be subsequently bundled by the inbuild tool.
-echo "INFO: Exporting image to tar file..."
-if [ -d "$IMAGES_DIR/aic_adapter" ]; then
-  echo "INFO: Deleting existing $IMAGES_DIR/aic_adapter directory..."
-  rm -rf "$IMAGES_DIR/aic_adapter"
-fi
-mkdir -p "$IMAGES_DIR/aic_adapter"
-docker save -o "$IMAGES_DIR/aic_adapter/aic_adapter.tar" flowstate:aic_adapter
 chmod 644 "$IMAGES_DIR/aic_adapter/aic_adapter.tar"
 
 # 3. Bundle the service using inbuild
@@ -84,6 +85,13 @@ if [ ! -f ./inbuild ]; then
   wget "https://github.com/intrinsic-ai/sdk/releases/download/${SDK_VERSION}/inbuild-linux-amd64" -O inbuild \
   && chmod +x inbuild
 fi
+
+# Ensure the 'inbuild' tool is executable
+if [ -f ./inbuild ] && [ ! -x ./inbuild ]; then
+  echo "INFO: Making inbuild tool executable..."
+  chmod +x ./inbuild
+fi
+
 
 echo "INFO: Bundling service using inbuild..."
 ./inbuild service bundle \

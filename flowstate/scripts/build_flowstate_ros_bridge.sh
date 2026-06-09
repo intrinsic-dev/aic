@@ -45,6 +45,13 @@ if [ ! -f ./inbuild ]; then
     && chmod +x inbuild
 fi
 
+# Ensure the 'inbuild' tool is executable
+if [ -f ./inbuild ] && [ ! -x ./inbuild ]; then
+  echo "INFO: Making inbuild tool executable..."
+  chmod +x ./inbuild
+fi
+
+
 src/aic/flowstate/scripts/build_container.sh \
   --ros_distro "$ROS_DISTRO" \
   --service_name aic_flowstate_ros_bridge \
