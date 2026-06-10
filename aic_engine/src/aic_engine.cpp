@@ -31,7 +31,6 @@
 #include "lifecycle_msgs/srv/get_state.hpp"
 #include "rclcpp/executors.hpp"
 #include "rclcpp/subscription_options.hpp"
-#include "sensor_msgs/msg/joint_state.hpp"
 
 namespace aic {
 
@@ -85,10 +84,6 @@ Engine::Engine(const rclcpp::NodeOptions& options)
                 std::placeholders::_2),
       rclcpp::ServicesQoS(), callback_group_);
 
-  scoring_tier2_ = std::make_unique<aic_scoring::ScoringTier2>(node_.get());
-
-  scoring_tier2_->SetGripperFrame(
-      node_->get_parameter("gripper_frame_name").as_string());
 
   auto sub_options = rclcpp::SubscriptionOptions();
   sub_options.callback_group = callback_group_;
@@ -260,9 +255,7 @@ std::optional<std::string> Engine::initialize() {
 
 //==============================================================================
 void Engine::reset_engine() {
-  if (this->scoring_tier2_->IsRecording()) {
-    this->scoring_tier2_->StopRecording();
-  }
+  this->scoring_tier2_.reset();
   this->tasks_.clear();
   this->requested_run_ = false;
 }
@@ -444,31 +437,15 @@ bool Engine::check_endpoints() {
 //==============================================================================
 bool Engine::ready_scoring(const CableConnections& task, const uint64_t time_limit) {
   RCLCPP_INFO(node_->get_logger(), "Checking scoring system readiness...");
-  // Register the connection for this trial.
-
-  // Create unique bag filename with timestamp
-  auto now = std::chrono::system_clock::now();
-  auto time_t = std::chrono::system_clock::to_time_t(now);
-  auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-                now.time_since_epoch()) %
-            1000;
-
-  std::ostringstream oss;
-  oss << scoring_output_dir_ << "/bag_" << "_"
-      << std::put_time(std::localtime(&time_t), "%Y%m%d_%H%M%S") << "_"
-      << std::setfill('0') << std::setw(3) << ms.count();
-  const std::string bag_path = oss.str();
+  scoring_tier2_ = std::make_unique<aic_scoring::ScoringTier2>(node_.get(), node_->get_parameter("gripper_frame_name").as_string(), task);
 
   // Add a few seconds for safety since this is a limit for recorded data
-  if (!scoring_tier2_->StartRecording(bag_path, task,
-                                      std::chrono::seconds(time_limit + 10))) {
-    RCLCPP_ERROR(node_->get_logger(), "Failed to start recording to '%s'.",
-                 bag_path.c_str());
+  if (!scoring_tier2_->StartRecording(std::chrono::seconds(time_limit + 10))) {
+    RCLCPP_ERROR(node_->get_logger(), "Failed to start recording");
     return false;
   }
 
-  RCLCPP_INFO(node_->get_logger(), "Started recording to '%s'.",
-              bag_path.c_str());
+  RCLCPP_INFO(node_->get_logger(), "Started recording");
   return true;
 }
 

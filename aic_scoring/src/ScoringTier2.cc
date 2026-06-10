@@ -19,19 +19,14 @@
 
 #include <tf2/LinearMath/Matrix3x3.h>
 #include <tf2/LinearMath/Quaternion.h>
-#include <yaml-cpp/yaml.h>
 
 #include <Eigen/Dense>
 #include <algorithm>
 #include <chrono>
 #include <cmath>
-#include <filesystem>
 #include <iostream>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
-#include <rosbag2_cpp/reader.hpp>
-#include <rosbag2_cpp/writer.hpp>
-#include <rosbag2_storage/storage_options.hpp>
 #include <sstream>
 #include <string>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
@@ -39,153 +34,93 @@
 
 namespace aic_scoring {
 //////////////////////////////////////////////////
-ScoringTier2::ScoringTier2(rclcpp::Node *_node) : node(_node) {
-  this->topics.push_back({.name = kTfStaticTopic,
-                          .type = "tf2_msgs/msg/TFMessage",
-                          .latched = true});
-  this->topics.push_back(
-      {.name = kTfTopic, .type = "tf2_msgs/msg/TFMessage", .latched = false});
-  this->topics.push_back({.name = kCable0TfTopic,
-                          .type = "tf2_msgs/msg/TFMessage",
-                          .latched = false});
-  this->topics.push_back({.name = kCable1TfTopic,
-                          .type = "tf2_msgs/msg/TFMessage",
-                          .latched = false});
-  this->topics.push_back({.name = kCable2TfTopic,
-                          .type = "tf2_msgs/msg/TFMessage",
-                          .latched = false});
-  this->topics.push_back({.name = kCable3TfTopic,
-                          .type = "tf2_msgs/msg/TFMessage",
-                          .latched = false});
-  this->topics.push_back({.name = kCable4TfTopic,
-                          .type = "tf2_msgs/msg/TFMessage",
-                          .latched = false});
-  this->topics.push_back({.name = kContactsTopic,
-                          .type = "ros_gz_interfaces/msg/Contacts",
-                          .latched = false});
-  this->topics.push_back({.name = kWrenchTopic,
-                          .type = "geometry_msgs/msg/WrenchStamped",
-                          .latched = false});
-  this->topics.push_back({.name = kInsertionEventTopic,
-                          .type = "std_msgs/msg/String",
-                          .latched = false});
-  this->topics.push_back({.name = kCableActivatedTopic,
-                          .type = "std_msgs/msg/String",
-                          .latched = false});
-  this->topics.push_back({.name = kControllerStateTopic,
-                          .type = "aic_control_interfaces/msg/ControllerState",
-                          .latched = false});
-}
+ScoringTier2::ScoringTier2(rclcpp::Node *_node,
+    const std::string &_gripperFrame,
+    const CableConnections &_connections
+    )
+  : node(_node), gripperFrame(_gripperFrame), connection(_connections) {}
 
 //////////////////////////////////////////////////
-void ScoringTier2::SetGripperFrame(const std::string &_gripperFrame) {
-  this->gripperFrame = _gripperFrame;
-}
+bool ScoringTier2::StartRecording(const std::chrono::seconds &_max_task_time) {
+  this->tf2_buffer = std::make_unique<tf2::BufferCore>(_max_task_time);
 
-//////////////////////////////////////////////////
-bool ScoringTier2::StartRecording(const std::string &_filename,
-                                  const CableConnections &_connections,
-                                  const std::chrono::seconds &_max_task_time) {
-  this->Reset(_max_task_time);
-  this->connection = _connections;
   {
     std::lock_guard<std::mutex> lock(this->mutex);
     if (this->state != State::Idle) {
       RCLCPP_ERROR(this->node->get_logger(), "Scoring system is busy.");
       return false;
     }
-
-    try {
-      rosbag2_storage::StorageOptions storage_options;
-      storage_options.uri = _filename;
-      this->bagWriter.open(storage_options);
-    } catch (const std::exception &e) {
-      RCLCPP_ERROR(this->node->get_logger(), "Failed to open bag: %s",
-                   e.what());
-      return false;
-    }
     this->state = State::Recording;
-    this->bagUri = _filename;
   }
 
-  // Subscribe to all topics relevant for scoring.
-  for (const auto &topic : this->topics) {
-    auto qos = topic.latched
-                   ? rclcpp::QoS(rclcpp::KeepLast(100)).transient_local()
-                   : rclcpp::QoS(rclcpp::KeepLast(10)).reliable();
-    auto sub = this->node->create_generic_subscription(
-        topic.name, topic.type, qos,
-        [this, topic](std::shared_ptr<const rclcpp::SerializedMessage> msg,
-                      const rclcpp::MessageInfo &msg_info) {
-          // Bag the data.
-          const auto &rmw_info = msg_info.get_rmw_message_info();
-          std::lock_guard<std::mutex> lock(this->mutex);
-          if (this->state == State::Recording) {
-            this->bagWriter.write(msg, topic.name, topic.type,
-                                  rmw_info.received_timestamp,
-                                  rmw_info.source_timestamp);
-            if (topic.name == kCable0TfTopic) {
-              // A new cable transform was received
-              this->cable0TfReceived = true;
-            } else if (topic.name == kCable1TfTopic) {
-              // A new cable transform was received
-              this->cable1TfReceived = true;
-            } else if (topic.name == kCable2TfTopic) {
-              // A new cable transform was received
-              this->cable2TfReceived = true;
-            } else if (topic.name == kCable3TfTopic) {
-              // A new cable transform was received
-              this->cable3TfReceived = true;
-            } else if (topic.name == kCable4TfTopic) {
-              // A new cable transform was received
-              this->cable4TfReceived = true;
-            } else if (topic.name == kTfTopic) {
-              // A new gripper transform was received
-              this->gripperTfReceived = true;
-            } else if (topic.name == kTfStaticTopic) {
-              // A new static transform was received
-              this->staticTfReceived = true;
-            }
-          }
-        });
-    this->subscriptions.push_back(sub);
-  }
+  this->static_tf_sub = this->node->create_subscription<TFMsg>(
+      kTfStaticTopic,
+      rclcpp::QoS(10),
+      std::bind(&ScoringTier2::TfStaticCallback, this, std::placeholders::_1));
+
+  this->tf_sub = this->node->create_subscription<TFMsg>(
+      kTfTopic,
+      rclcpp::QoS(10),
+      std::bind(&ScoringTier2::TfCallback, this, std::placeholders::_1));
+
+  this->scoring_tf_sub = this->node->create_subscription<TFMsg>(
+      kScoringTfTopic,
+      rclcpp::QoS(10),
+      std::bind(&ScoringTier2::TfCallback, this, std::placeholders::_1));
+
+  this->contacts_sub = this->node->create_subscription<ContactsMsg>(
+      kContactsTopic,
+      rclcpp::QoS(10),
+      std::bind(&ScoringTier2::ContactsCallback, this, std::placeholders::_1));
+
+  this->wrench_sub = this->node->create_subscription<WrenchMsg>(
+      kWrenchTopic,
+      rclcpp::QoS(10),
+      std::bind(&ScoringTier2::WrenchCallback, this, std::placeholders::_1));
+
+  this->insertion_event_sub = this->node->create_subscription<StringMsg>(
+      kInsertionEventTopic,
+      rclcpp::QoS(10),
+      std::bind(&ScoringTier2::InsertionEventCallback, this, std::placeholders::_1));
+
+  this->cable_activated_sub = this->node->create_subscription<StringMsg>(
+      kCableActivatedTopic,
+      rclcpp::QoS(10),
+      std::bind(&ScoringTier2::CableActivatedCallback, this, std::placeholders::_1));
+
+  this->controller_state_sub = this->node->create_subscription<ControllerStateMsg>(
+      kControllerStateTopic,
+      rclcpp::QoS(10),
+      std::bind(&ScoringTier2::ControllerStateCallback, this, std::placeholders::_1));
 
   return this->WaitForTfs();
 }
 
 //////////////////////////////////////////////////
 bool ScoringTier2::WaitForTfs() {
-  this->cable0TfReceived = false;
-  this->cable1TfReceived = false;
-  this->cable2TfReceived = false;
-  this->cable3TfReceived = false;
-  this->cable4TfReceived = false;
-  this->gripperTfReceived = false;
-  this->staticTfReceived = false;
   // Simple spinlock to avoid locking, condition variables etc. for a fairly
   // straightforward wait.
+  if (!this->connection.has_value()) {
+    RCLCPP_ERROR(this->node->get_logger(),
+                 "No connection specified when waiting for tfs");
+    return false;
+  }
   const auto start = this->node->get_clock()->now();
-  const auto timeout = std::chrono::seconds(10);
+  const auto timeout = std::chrono::seconds(30);
   while (rclcpp::ok() &&
-         (!this->cable0TfReceived ||
-          !this->cable1TfReceived ||
-          !this->cable2TfReceived ||
-          !this->cable3TfReceived ||
-          !this->cable4TfReceived ||
-          !this->gripperTfReceived ||
-          !this->staticTfReceived) &&
+          (!this->GetTransform(tf2::TimePointZero, "cable_0", "default", true) ||
+          !this->GetTransform(tf2::TimePointZero, "cable_1", "default", true) ||
+          !this->GetTransform(tf2::TimePointZero, "cable_2", "default", true) ||
+          !this->GetTransform(tf2::TimePointZero, "cable_3", "default", true) ||
+          !this->GetTransform(tf2::TimePointZero, "cable_4", "default", true) ||
+          !this->GetTransform(tf2::TimePointZero, this->gripperFrame, "root", true) ||
+          !this->GetTransform(tf2::TimePointZero, this->connection.value().data[0].PortTfName(), "default", true) ||
+          !this->GetTransform(tf2::TimePointZero, this->connection.value().data[1].PortTfName(), "default", true)) &&
          this->node->get_clock()->now() - start < timeout) {
     this->node->get_clock()->sleep_for(
         rclcpp::Duration(std::chrono::milliseconds(100)));
   }
-  if (!this->cable0TfReceived ||
-      !this->cable1TfReceived ||
-      !this->cable2TfReceived ||
-      !this->cable3TfReceived ||
-      !this->cable4TfReceived ||
-      !this->gripperTfReceived ||
-      !this->staticTfReceived) {
+  if (this->node->get_clock()->now() - start > timeout) {
     RCLCPP_ERROR(this->node->get_logger(),
                  "Timeout while waiting for transforms for scoring.");
     return false;
@@ -200,20 +135,17 @@ bool ScoringTier2::StopRecording() {
     RCLCPP_ERROR(this->node->get_logger(), "Scoring system is not recording");
     return false;
   }
-  this->bagWriter.close();
   this->state = State::Idle;
+  // Clear all the subscriptions
+  this->static_tf_sub.reset();
+  this->tf_sub.reset();
+  this->scoring_tf_sub.reset();
+  this->contacts_sub.reset();
+  this->wrench_sub.reset();
+  this->insertion_event_sub.reset();
+  this->cable_activated_sub.reset();
+  this->controller_state_sub.reset();
   return true;
-}
-
-//////////////////////////////////////////////////
-template <typename Msg>
-Msg deserialize_from_rosbag(
-    std::shared_ptr<rosbag2_storage::SerializedBagMessage> msg_in) {
-  Msg msg;
-  rclcpp::SerializedMessage extracted_serialized_msg(*msg_in->serialized_data);
-  rclcpp::Serialization<Msg> serialization;
-  serialization.deserialize_message(&extracted_serialized_msg, &msg);
-  return msg;
 }
 
 //////////////////////////////////////////////////
@@ -224,60 +156,8 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
     RCLCPP_ERROR(this->node->get_logger(), "Scoring system is busy.");
     return {tier2_score, tier3_score};
   }
-  rosbag2_cpp::Reader bagReader;
-
-  try {
-    rosbag2_storage::StorageOptions storage_options;
-    storage_options.uri = this->bagUri;
-    bagReader.open(storage_options);
-  } catch (const std::exception &e) {
-    RCLCPP_ERROR(this->node->get_logger(), "Failed to open bag: %s", e.what());
-    return {tier2_score, tier3_score};
-  }
-  this->state = State::Scoring;
 
   tier2_score.message = "Scoring succeeded.";
-
-  // First pass: Process all messages to build the complete TF buffer.
-  // We need both static TF (robot URDF) and dynamic TF (joint states) to
-  // compute the full transform chain to the gripper.
-  while (rclcpp::ok() && bagReader.has_next()) {
-    const auto msg_ptr = bagReader.read_next();
-    // Debugging to make sure messages are in the bag
-    // RCLCPP_INFO(this->node->get_logger(), "Received message on topic '%s'",
-    //     msg_ptr->topic_name.c_str());
-    if (msg_ptr->topic_name == kTfTopic ||
-               msg_ptr->topic_name == kCable0TfTopic ||
-               msg_ptr->topic_name == kCable1TfTopic ||
-               msg_ptr->topic_name == kCable2TfTopic ||
-               msg_ptr->topic_name == kCable3TfTopic ||
-               msg_ptr->topic_name == kCable4TfTopic) {
-      const auto msg = deserialize_from_rosbag<TFMsg>(msg_ptr);
-      this->TfCallback(msg);
-    } else if (msg_ptr->topic_name == kTfStaticTopic) {
-      const auto msg = deserialize_from_rosbag<TFMsg>(msg_ptr);
-      this->TfStaticCallback(msg);
-    } else if (msg_ptr->topic_name == kContactsTopic) {
-      const auto msg = deserialize_from_rosbag<ContactsMsg>(msg_ptr);
-      this->ContactsCallback(msg);
-    } else if (msg_ptr->topic_name == kWrenchTopic) {
-      const auto msg = deserialize_from_rosbag<WrenchMsg>(msg_ptr);
-      this->WrenchCallback(msg);
-    } else if (msg_ptr->topic_name == kInsertionEventTopic) {
-      const auto msg = deserialize_from_rosbag<StringMsg>(msg_ptr);
-      this->InsertionEventCallback(msg);
-    } else if (msg_ptr->topic_name == kCableActivatedTopic) {
-      const auto msg = deserialize_from_rosbag<StringMsg>(msg_ptr);
-      this->CableActivatedCallback(msg);
-    } else if (msg_ptr->topic_name == kControllerStateTopic) {
-      const auto msg = deserialize_from_rosbag<ControllerStateMsg>(msg_ptr);
-      this->ControllerStateCallback(msg);
-    } else {
-      RCLCPP_WARN(this->node->get_logger(),
-                  "Unexpected topic name while scoring: %s",
-                  msg_ptr->topic_name.c_str());
-    }
-  }
 
   this->state = State::Idle;
   tier2_score.add_category_score("insertion force",
@@ -291,34 +171,28 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
   tier2_score.add_category_score(
       "trajectory efficiency",
       this->GetTrajectoryEfficiencyScore(tier3_score));
-  return {tier2_score, tier3_score};
-}
 
-//////////////////////////////////////////////////
-void ScoringTier2::Reset(const std::chrono::seconds &_buffer_size) {
-  this->connection.reset();
-  std::filesystem::remove_all(this->bagUri);
-  this->bagUri.clear();
-  this->tf2_buffer = std::make_unique<tf2::BufferCore>(_buffer_size);
-  this->state = State::Idle;
-  this->wrenches.clear();
-  this->endEffectorPoses.clear();
-  this->endEffectorVelocities.clear();
-  this->task_start_time.reset();
-  this->task_end_time.reset();
-  this->bagWriter.close();
-  this->contacts.clear();
-  this->insertionPortNamespaces.clear();
+  return {tier2_score, tier3_score};
 }
 
 //////////////////////////////////////////////////
 std::set<std::string> ScoringTier2::GetMissingRequiredTopics() const {
   std::set<std::string> unavailable;
-  for (const auto &subscription : this->subscriptions) {
-    if (subscription->get_publisher_count() == 0) {
-      unavailable.insert(subscription->get_topic_name());
+  auto check = [this, &unavailable](const char* topic) {
+    if (this->node->count_publishers(topic) == 0) {
+      unavailable.insert(topic);
     }
-  }
+  };
+
+  check(kTfStaticTopic);
+  check(kTfTopic);
+  check(kScoringTfTopic);
+  check(kContactsTopic);
+  check(kWrenchTopic);
+  check(kInsertionEventTopic);
+  check(kCableActivatedTopic);
+  check(kControllerStateTopic);
+
   return unavailable;
 }
 
@@ -847,7 +721,7 @@ std::optional<ScoringTier2::TransformStampedMsg> ScoringTier2::EndEffectorPose(
                  "Unable to compute end effector pose, gripper frame not set");
     return std::nullopt;
   }
-  return this->GetTransform(t, this->gripperFrame, "default", true);
+  return this->GetTransform(t, this->gripperFrame, "root", true);
 }
 
 //////////////////////////////////////////////////
@@ -953,18 +827,6 @@ Tier2Score::CategoryScore ScoringTier2::GetTaskDurationScore(
   sstream.precision(2);
   sstream << "Task duration: " << task_duration.seconds() << " seconds.";
   return CategoryScore(score, sstream.str());
-}
-
-//////////////////////////////////////////////////
-ScoringTier2Node::ScoringTier2Node(const std::string &_yamlFile)
-    : Node("score_tier2_node") {
-  try {
-    auto config = YAML::LoadFile(_yamlFile);
-    this->score = std::make_unique<aic_scoring::ScoringTier2>(this);
-  } catch (const YAML::BadFile &_e) {
-    std::cerr << "Unable to open YAML file [" << _yamlFile << "]" << std::endl;
-    return;
-  }
 }
 
 }  // namespace aic_scoring

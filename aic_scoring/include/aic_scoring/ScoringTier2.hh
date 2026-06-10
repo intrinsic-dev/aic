@@ -21,7 +21,6 @@
 #include <tf2/LinearMath/Matrix3x3.h>
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_ros/buffer.h>
-#include <yaml-cpp/yaml.h>
 
 #include <atomic>
 #include <memory>
@@ -36,14 +35,9 @@
 #include <rclcpp/rclcpp.hpp>
 
 #include <aic_control_interfaces/msg/controller_state.hpp>
-#include <aic_control_interfaces/msg/joint_motion_update.hpp>
-#include <aic_control_interfaces/msg/motion_update.hpp>
 #include <geometry_msgs/msg/transform_stamped.hpp>
 #include <geometry_msgs/msg/wrench_stamped.hpp>
 #include <ros_gz_interfaces/msg/contacts.hpp>
-#include <rosbag2_cpp/writer.hpp>
-#include <sensor_msgs/msg/joint_state.hpp>
-#include <std_msgs/msg/bool.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <tf2_msgs/msg/tf_message.hpp>
 #include <tf2/buffer_core.hpp>
@@ -92,29 +86,13 @@ namespace aic_scoring
       data({conn0, conn1}) {}
   };
 
-  /// \brief Topic info POD.
-  struct TopicInfo
-  {
-    /// \brief Topic name.
-    std::string name;
-
-    /// \brief Topic type (e.g., sensor_msgs/msg/JointState).
-    std::string type;
-
-    /// \brief Whether topic is latched or not
-    bool latched{false};
-  };
-
   // The Tier2 scoring interface.
   class ScoringTier2
   {
-    using JointStateMsg = sensor_msgs::msg::JointState;
     using TFMsg = tf2_msgs::msg::TFMessage;
     using ContactsMsg = ros_gz_interfaces::msg::Contacts;
     using WrenchMsg = geometry_msgs::msg::WrenchStamped;
     using ControllerStateMsg = aic_control_interfaces::msg::ControllerState;
-    using JointMotionUpdateMsg = aic_control_interfaces::msg::JointMotionUpdate;
-    using MotionUpdateMsg = aic_control_interfaces::msg::MotionUpdate;
     using StringMsg = std_msgs::msg::String;
     using TransformStampedMsg = geometry_msgs::msg::TransformStamped;
     using Vector3Msg = geometry_msgs::msg::Vector3;
@@ -131,29 +109,14 @@ namespace aic_scoring
     /// \brief Topic to subscribe for tf.
     public: static constexpr const char* kTfTopic = "/tf";
 
-    /// \brief Topic to subscribe for cable_0 tf.
-    public: static constexpr const char* kCable0TfTopic = "/cable_0/tf";
-
-    /// \brief Topic to subscribe for cable_1 tf.
-    public: static constexpr const char* kCable1TfTopic = "/cable_1/tf";
-
-    /// \brief Topic to subscribe for cable_2 tf.
-    public: static constexpr const char* kCable2TfTopic = "/cable_2/tf";
-
-    /// \brief Topic to subscribe for cable_3 tf.
-    public: static constexpr const char* kCable3TfTopic = "/cable_3/tf";
-
-    /// \brief Topic to subscribe for cable_4 tf.
-    public: static constexpr const char* kCable4TfTopic = "/cable_4/tf";
+    /// \brief Topic to subscribe for tf.
+    public: static constexpr const char* kScoringTfTopic = "/scoring/tf";
 
     /// \brief Topic to subscribe for contacts.
     public: static constexpr const char* kContactsTopic = "/aic/gazebo/contacts/off_limit";
 
     /// \brief Topic to subscribe for force torque sensor wrench.
     public: static constexpr const char* kWrenchTopic = "/fts_broadcaster/wrench";
-
-    /// \brief Topic to subscribe for pose commands sent to the controller.
-    public: static constexpr const char* kMotionUpdateTopic = "/aic_controller/pose_commands";
 
     /// \brief Topic to subscribe for insertion event
     public: static constexpr const char* kInsertionEventTopic =
@@ -169,20 +132,14 @@ namespace aic_scoring
 
     /// \brief Class constructor.
     /// \param[in] _node Pointer to the ROS node.
-    public: ScoringTier2(rclcpp::Node *_node);
-
-    /// \brief Set the gripper frame name.
-    /// \param[in] _gripperFrame Gripper frame name.
-    public: void SetGripperFrame(const std::string &_gripperFrame);
+    /// \param[in] _gripperFrame Name of the gripper frame.
+    /// \param[in] _connections Connections for this task.
+    public: ScoringTier2(rclcpp::Node *_node, const std::string &_gripperFrame, const CableConnections &_connections);
 
     /// \brief Start recording all scoring topics.
-    /// \return True if the bag was opened correctly and it's ready to record.
-    /// \param[in] _filename The path to the bag.
-    /// \param[in] _connection Connection to monitor.
+    /// \return True if the scoring system is ready.
     /// \param[in] _max_task_time The maximum time to record for, used for tf buffer size.
-    public: bool StartRecording(const std::string &_filename,
-                const CableConnections &_connections,
-                const std::chrono::seconds &_max_task_time);
+    public: bool StartRecording(const std::chrono::seconds &_max_task_time);
 
     /// \brief Stop recording all scoring topics.
     /// \return True if the bag was closed correctly.
@@ -191,10 +148,6 @@ namespace aic_scoring
     /// \brief Compute the score the bag that we just recorded.
     /// \return A pair with the Tier2 and Tier3 scores.
     public: std::pair<Tier2Score, Tier3Score> ComputeScore();
-
-    /// \brief Resets the internal data structures for a new scoring session
-    /// \param[in] _buffer_size The tf buffer size.
-    public: void Reset(const std::chrono::seconds &_buffer_size);
 
     /// \brief Get the topics required that are currently not being published.
     /// \return An unordered_set with the missing required topic names.
@@ -308,21 +261,21 @@ namespace aic_scoring
     /// \brief Pointer to a node.
     private: rclcpp::Node *node;
 
-    /// \brief Topics to subscribe to.
-    private: std::vector<TopicInfo> topics;
+    /// \brief Gripper frame name.
+    private: std::string gripperFrame;
 
     /// \brief Connection.
     private: std::optional<CableConnections> connection;
 
-    /// \brief Generic subscriptions for all topics.
-    private: std::vector<std::shared_ptr<rclcpp::GenericSubscription>>
-      subscriptions;
-
-    /// \brief A rosbag2 writer.
-    private: rosbag2_cpp::Writer bagWriter;
-
-    /// \brief The URI of the bag currently being processed.
-    private: std::string bagUri;
+    /// \brief Subscriptions for all the scoring data.
+    private: rclcpp::Subscription<TFMsg>::SharedPtr static_tf_sub;
+    private: rclcpp::Subscription<TFMsg>::SharedPtr tf_sub;
+    private: rclcpp::Subscription<TFMsg>::SharedPtr scoring_tf_sub;
+    private: rclcpp::Subscription<ContactsMsg>::SharedPtr contacts_sub;
+    private: rclcpp::Subscription<WrenchMsg>::SharedPtr wrench_sub;
+    private: rclcpp::Subscription<StringMsg>::SharedPtr insertion_event_sub;
+    private: rclcpp::Subscription<StringMsg>::SharedPtr cable_activated_sub;
+    private: rclcpp::Subscription<ControllerStateMsg>::SharedPtr controller_state_sub;
 
     /// \brief The time the task started, used for computing task duration.
     private: std::optional<rclcpp::Time> task_start_time;
@@ -352,47 +305,12 @@ namespace aic_scoring
     /// \brief Mutex to protect the access to the bag.
     private: std::mutex mutex;
 
-    /// \brief Gripper frame name.
-    private: std::string gripperFrame;
-
     /// \brief The insertion port namespaces as detected by the cable plugins.
     /// Empty string means no insertion event detected.
     private: std::unordered_set<std::string> insertionPortNamespaces;
 
     /// \brief The cable that was activated and is being tracked.
     private: std::optional<std::string> trackedCable;
-
-    /// \brief Whether the tf from cable_0 was recorded.
-    private: std::atomic<bool> cable0TfReceived = false;
-
-    /// \brief Whether the tf from cable_0 was recorded.
-    private: std::atomic<bool> cable1TfReceived = false;
-
-    /// \brief Whether the tf from cable_0 was recorded.
-    private: std::atomic<bool> cable2TfReceived = false;
-
-    /// \brief Whether the tf from cable_0 was recorded.
-    private: std::atomic<bool> cable3TfReceived = false;
-
-    /// \brief Whether the tf from cable_0 was recorded.
-    private: std::atomic<bool> cable4TfReceived = false;
-
-    /// \brief Whether the tf from a gripper was recorded.
-    private: std::atomic<bool> gripperTfReceived = false;
-
-    /// \brief Whether the tf from a gripper was recorded.
-    private: std::atomic<bool> staticTfReceived = false;
-  };
-
-  // The Tier2 class as a node.
-  class ScoringTier2Node : public rclcpp::Node
-  {
-    /// \brief Class constructor.
-    /// \param[in] _yamlFile Path to a YAML config file.
-    public: ScoringTier2Node(const std::string &_yamlFile);
-
-    /// \brief The scoring.
-    public: std::unique_ptr<ScoringTier2> score;
   };
 }
 #endif
