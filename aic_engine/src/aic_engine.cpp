@@ -151,6 +151,14 @@ void Engine::start_engine_callback(
     return;
   }
 
+  if (request->time_limit > 0) {
+    auto timeout = std::chrono::seconds(request->time_limit + 10);
+    RCLCPP_INFO(node_->get_logger(), "Registering safety timer for %ld seconds", timeout.count());
+    this->safety_timer_ = this->node_->create_timer(
+        timeout,
+        std::bind(&Engine::safety_timer_callback, this));
+  }
+
   response->success = true;
   requested_run_ = true;
 }
@@ -171,6 +179,12 @@ void Engine::stop_engine_callback(
     response->message = error;
     return;
   }
+  if (this->safety_timer_) {
+    RCLCPP_INFO(node_->get_logger(), "Canceling safety timer.");
+    this->safety_timer_->cancel();
+    this->safety_timer_.reset();
+  }
+
   RCLCPP_INFO(node_->get_logger(), "Received request to stop engine, computing score...");
   this->scoring_tier2_->SetTaskEndTime(this->node_->now());
 
@@ -497,6 +511,33 @@ void Engine::score_run() {
     RCLCPP_INFO(node_->get_logger(), "%s", line.c_str());
   }
   RCLCPP_INFO(node_->get_logger(), " ");
+}
+
+void Engine::safety_timer_callback() {
+  RCLCPP_WARN(node_->get_logger(), "Safety timer triggered! Force stopping engine to avoid memory leak.");
+
+  const auto task_it = std::find_if(
+      this->tasks_.begin(), this->tasks_.end(), [](const auto& it) {
+        if (it.second.status == TaskStatus::STARTED) return true;
+        return false;
+      });
+
+  if (task_it != this->tasks_.end()) {
+    this->scoring_tier2_->SetTaskEndTime(this->node_->now());
+    // Stop recording to free memory, but don't compute score (keep failure default)
+    if (!this->scoring_tier2_->StopRecording()) {
+      RCLCPP_ERROR(node_->get_logger(), "Failed to stop recording.");
+    }
+    task_it->second.status = TaskStatus::FINISHED;
+
+    this->score_run();
+  }
+  this->reset_engine();
+
+  if (this->safety_timer_) {
+    this->safety_timer_->cancel();
+    this->safety_timer_.reset();
+  }
 }
 
 }  // namespace aic

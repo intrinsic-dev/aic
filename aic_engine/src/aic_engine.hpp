@@ -109,6 +109,9 @@ class Engine {
   /// \brief Fully resets the engine to prepare for a new set of tasks.
   void reset_engine();
 
+  /// \brief Callback for the safety timer to force stop the engine.
+  void safety_timer_callback();
+
   /// \brief Check if the participant model is ready. As per challenge
   /// requirements. See challenge_rules.md for details. \return True if the
   /// model is ready, false otherwise.
@@ -176,6 +179,9 @@ class Engine {
 
   // Scoring tier 2 instance.
   std::unique_ptr<aic_scoring::ScoringTier2> scoring_tier2_;
+
+  // Safety timer to force stop the engine if it hangs.
+  rclcpp::TimerBase::SharedPtr safety_timer_;
 
   // Output directory for scoring.
   std::string scoring_output_dir_;
