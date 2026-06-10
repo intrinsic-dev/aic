@@ -95,9 +95,6 @@ Engine::Engine(const rclcpp::NodeOptions& options)
 
   model_get_state_client_ = node_->create_client<lifecycle_msgs::srv::GetState>(
       model_get_state_service_name_, rclcpp::ServicesQoS(), callback_group_);
-  tare_ft_client_ = node_->create_client<TriggerSrv>(
-      "/aic_controller/tare_force_torque_sensor", rclcpp::ServicesQoS(),
-      callback_group_);
 }
 
 //==============================================================================

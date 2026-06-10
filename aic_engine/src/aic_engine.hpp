@@ -155,7 +155,6 @@ class Engine {
   // Service clients.
   rclcpp::Client<lifecycle_msgs::srv::GetState>::SharedPtr
       model_get_state_client_;
-  rclcpp::Client<TriggerSrv>::SharedPtr tare_ft_client_;
 
   // Service servers.
   rclcpp::Service<StartEngineSrv>::SharedPtr start_engine_server_;

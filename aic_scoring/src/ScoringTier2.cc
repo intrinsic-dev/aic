@@ -280,31 +280,17 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
   }
 
   this->state = State::Idle;
-  // Compute initial plug-port distance for trajectory efficiency scoring.
-  // The robot must travel at least this distance, so it becomes the minimum
-  // path length for a perfect score.
-  double minPathLength = 0.0;
-  if (this->task_start_time.has_value()) {
-    const auto initDist = this->GetPlugPortDistance(tf2::TimePoint(
-        std::chrono::nanoseconds(this->task_start_time.value().nanoseconds())));
-    if (initDist.has_value()) {
-      minPathLength = initDist.value();
-    } else {
-      RCLCPP_WARN(this->node->get_logger(),
-                  "Failed to get initial plug port distance");
-    }
-  }
   tier2_score.add_category_score("insertion force",
                                  this->GetInsertionForceScore());
   tier2_score.add_category_score("contacts", this->GetContactsScore());
-  tier3_score = this->ComputeTier3Score();
+  tier3_score = this->CombineTier3Score();
   tier2_score.add_category_score("duration",
                                  this->GetTaskDurationScore(tier3_score));
   tier2_score.add_category_score("trajectory smoothness",
                                  this->GetTrajectoryJerkScore(tier3_score));
   tier2_score.add_category_score(
       "trajectory efficiency",
-      this->GetTrajectoryEfficiencyScore(minPathLength, tier3_score));
+      this->GetTrajectoryEfficiencyScore(tier3_score));
   return {tier2_score, tier3_score};
 }
 
@@ -322,7 +308,7 @@ void ScoringTier2::Reset(const std::chrono::seconds &_buffer_size) {
   this->task_end_time.reset();
   this->bagWriter.close();
   this->contacts.clear();
-  this->insertionPortNamespace.clear();
+  this->insertionPortNamespaces.clear();
 }
 
 //////////////////////////////////////////////////
@@ -411,9 +397,7 @@ void ScoringTier2::CableActivatedCallback(const StringMsg& _msg) {
 
 //////////////////////////////////////////////////
 void ScoringTier2::InsertionEventCallback(const StringMsg &_msg) {
-  // \todo(iche033) For now, assume only one insertion event per task
-  // Mark insertion completion as true as soon as one insertion is done.
-  this->insertionPortNamespace = _msg.data;
+  this->insertionPortNamespaces.insert(_msg.data);
 }
 
 //////////////////////////////////////////////////
@@ -452,7 +436,7 @@ std::optional<ScoringTier2::TransformStampedMsg> ScoringTier2::GetTransform(
 
 //////////////////////////////////////////////////
 std::optional<double> ScoringTier2::GetPlugPortDistance(
-    tf2::TimePoint t) const {
+    tf2::TimePoint t, std::size_t index) const {
   if (!this->connection.has_value()) {
     RCLCPP_ERROR(this->node->get_logger(), "No connection was found");
     return std::nullopt;
@@ -463,9 +447,9 @@ std::optional<double> ScoringTier2::GetPlugPortDistance(
   }
   // For now we only calculate the distance for the first connection
   const auto plug_tf_opt =
-      this->GetTransform(t, (*this->connection).data[0].PlugTfName(*this->trackedCable));
+      this->GetTransform(t, (*this->connection).data[index].PlugTfName(*this->trackedCable));
   const auto port_tf_opt =
-      this->GetTransform(t, (*this->connection).data[0].PortTfName());
+      this->GetTransform(t, (*this->connection).data[index].PortTfName());
   if (!plug_tf_opt.has_value() || !port_tf_opt.has_value()) {
     return std::nullopt;
   }
@@ -614,7 +598,7 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryJerkScore(
 
 //////////////////////////////////////////////////
 Tier2Score::CategoryScore ScoringTier2::GetTrajectoryEfficiencyScore(
-    double _minPathLength, const Tier3Score &_tier3) const {
+      const Tier3Score &_tier3) const {
   using CategoryScore = Tier2Score::CategoryScore;
 
   if (!this->task_end_time.has_value()) {
@@ -626,6 +610,27 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryEfficiencyScore(
         0,
         "Plug is not within max bounding radius from target port, "
         "not assigning efficiency bonus");
+  }
+
+  const std::size_t numConnections = this->connection.value().data.size();
+  double minPathLength = 0.0;
+  // Minimum distance is the sum of all the initialization distances.
+  // It should be impossible to reach full score but this is a reasonable minimum
+  // distance estimate.
+  for (std::size_t index = 0; index < numConnections; ++index) {
+    // Compute initial plug-port distance for trajectory efficiency scoring.
+    // The robot must travel at least this distance, so it becomes the minimum
+    // path length for a perfect score.
+    if (this->task_start_time.has_value()) {
+      const auto initDist = this->GetPlugPortDistance(tf2::TimePoint(
+          std::chrono::nanoseconds(this->task_start_time.value().nanoseconds())), index);
+      if (initDist.has_value()) {
+        minPathLength += initDist.value();
+      } else {
+        RCLCPP_WARN(this->node->get_logger(),
+                    "Failed to get initial plug port distance");
+      }
+    }
   }
 
   double totalPathLength = 0.0;
@@ -641,22 +646,22 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryEfficiencyScore(
   // Score range and path length bounds (meters).
   const double kMaxEfficiencyScore = 6.0;              // Shortest path
   const double kMinEfficiencyScore = 0.0;              // Longest path
-  const double kMaxPathLength = 1.0 + _minPathLength;  // Path for min score
+  const double kMaxPathLength = 1.0 + minPathLength;  // Path for min score
 
   std::stringstream ss;
   ss << std::fixed << std::setprecision(2);
   ss << "Total end-effector path length: " << totalPathLength << " m"
-     << ", initial plug-port distance: " << _minPathLength << " m";
+     << ", initial plug-port distance: " << minPathLength << " m";
 
   const double score = CalculateInverseProportionalScore(
-      kMaxEfficiencyScore, kMinEfficiencyScore, kMaxPathLength, _minPathLength,
+      kMaxEfficiencyScore, kMinEfficiencyScore, kMaxPathLength, minPathLength,
       totalPathLength);
 
   return CategoryScore(score, ss.str());
 }
 
 //////////////////////////////////////////////////
-Tier3Score ScoringTier2::GetDistanceScore() const {
+Tier3Score ScoringTier2::GetDistanceScore(std::size_t index) const {
   // A two step approach to compute the score:
   // * If we are in partial insertion, checked through a bounding box between
   //   the port entrance and its end, interpolate linearly in the range.
@@ -677,7 +682,7 @@ Tier3Score ScoringTier2::GetDistanceScore() const {
   // Being as close as possible to the port entrance will award
   // kClosestTaskScore
   const auto initDist = this->GetPlugPortDistance(tf2::TimePoint(
-      std::chrono::nanoseconds(this->task_start_time.value().nanoseconds())));
+      std::chrono::nanoseconds(this->task_start_time.value().nanoseconds())), index);
   double radiusFromPort = 0.0;
   if (initDist.has_value()) {
     radiusFromPort = initDist.value() * 0.5;
@@ -704,7 +709,7 @@ Tier3Score ScoringTier2::GetDistanceScore() const {
 
   const auto end_time =
       std::chrono::nanoseconds(this->task_end_time.value().nanoseconds());
-  const auto dist = this->GetPlugPortDistance(tf2::TimePoint(end_time));
+  const auto dist = this->GetPlugPortDistance(tf2::TimePoint(end_time), index);
   if (!dist.has_value()) {
     return Tier3Score(
         0, "Distance computation failed, tf between cable and port not found");
@@ -717,11 +722,11 @@ Tier3Score ScoringTier2::GetDistanceScore() const {
 
   // Check if we are in partial insertion
   const auto port_entrance_tf = this->GetTransform(
-      tf2::TimePoint(end_time), (*this->connection).data[0].PortEntranceTfName());
+      tf2::TimePoint(end_time), (*this->connection).data[index].PortEntranceTfName());
   const auto port_tf = this->GetTransform(tf2::TimePoint(end_time),
-                                          (*this->connection).data[0].PortTfName());
+                                          (*this->connection).data[index].PortTfName());
   const auto plug_tf = this->GetTransform(tf2::TimePoint(end_time),
-                                          (*this->connection).data[0].PlugTfName(
+                                          (*this->connection).data[index].PlugTfName(
                                             this->trackedCable.value()));
 
   if (!port_entrance_tf.has_value() || !port_tf.has_value() ||
@@ -777,7 +782,7 @@ Tier3Score ScoringTier2::GetDistanceScore() const {
 }
 
 //////////////////////////////////////////////////
-Tier3Score ScoringTier2::ComputeTier3Score() const {
+Tier3Score ScoringTier2::ComputeTier3Score(std::size_t index) const {
   // Binary will award kInsertionCompletionScore, partial insertion computed
   // in GetDistanceScore (and up to kMaxInsertionScore)
   constexpr double kInsertionCompletionScore = 75.0;
@@ -789,10 +794,10 @@ Tier3Score ScoringTier2::ComputeTier3Score() const {
 
   // Check if insertion is completed or not
   std::stringstream sstream;
-  if (!this->insertionPortNamespace.empty()) {
+  // Intentional copy since we will edit this
+  for (auto namespaceStr : this->insertionPortNamespaces) {
     // Tokenize the namespace string. The first token should be the
     // target module name and the second token should be the port name
-    std::string namespaceStr = this->insertionPortNamespace;
     std::vector<std::string> tokens;
     size_t pos = 0;
     std::string token;
@@ -806,8 +811,8 @@ Tier3Score ScoringTier2::ComputeTier3Score() const {
 
     if (tokens.size() >= 2u) {
       // Verify the plug is inserted into the correct target port
-      if (tokens[0] == (*this->connection).data[0].targetModuleName &&
-          tokens[1] == (*this->connection).data[0].portName) {
+      if (tokens[0] == (*this->connection).data[index].targetModuleName &&
+          tokens[1] == (*this->connection).data[index].portName) {
         return Tier3Score(kInsertionCompletionScore,
                           "Cable insertion successful.");
       } else {
@@ -816,13 +821,21 @@ Tier3Score ScoringTier2::ComputeTier3Score() const {
       }
     } else {
       const std::string msg = "Error parsing insertion port namespace: " +
-                              this->insertionPortNamespace;
+                              namespaceStr;
       RCLCPP_ERROR(this->node->get_logger(), msg.c_str());
       return Tier3Score(0.0, msg);
     }
   }
   // Cable insertion was not completed, compute partial insertion
-  return this->GetDistanceScore();
+  return this->GetDistanceScore(index);
+}
+
+Tier3Score ScoringTier2::CombineTier3Score() const {
+  const auto score_0 = this->ComputeTier3Score(0);
+  const auto score_1 = this->ComputeTier3Score(1);
+  const auto combinedScore = score_0.total_score() + score_1.total_score() / 2.0;
+  const std::string msg = "[Task 0] : '" + score_0.message + "'. [Task 1]: '" + score_1.message + "'.";
+  return Tier3Score(combinedScore, msg);
 }
 
 //////////////////////////////////////////////////

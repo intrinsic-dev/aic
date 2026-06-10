@@ -28,6 +28,7 @@
 #include <mutex>
 #include <set>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 #include <geometry_msgs/msg/pose_stamped.hpp>
@@ -251,12 +252,9 @@ namespace aic_scoring
        const Tier3Score &_tier3) const;
 
     /// \brief Calculates score for trajectory efficiency (path length).
-    /// \param[in] _minPathLength Minimum path length for max score (meters).
-    /// This is typically the initial plug-port distance.
     /// \param[in] _tier3 The result of tier3 scoring.
     /// \return Scoring for the trajectory efficiency category.
     private: Tier2Score::CategoryScore GetTrajectoryEfficiencyScore(
-        double _minPathLength,
         const Tier3Score &_tier3) const;
 
     /// \brief Gets the transform for the specified entity at the requested time.
@@ -272,20 +270,27 @@ namespace aic_scoring
                  const bool _suppress_error = false) const;
 
     /// \brief Calculates the distance between the plug and the port.
-    /// \param[in] _timestamp Time to check the distance
+    /// \param[in] t Time to check the distance
+    /// \param[in] index The index of the connection to check
     /// \return Distance between plug and port at the end of the task. nullopt if failed
-    private: std::optional<double> GetPlugPortDistance(tf2::TimePoint t) const;
+    private: std::optional<double> GetPlugPortDistance(tf2::TimePoint t, std::size_t index) const;
 
     /// \brief Calculates the penalty (if any) for excessive insertion force.
     /// \return Scoring for the insertion force category
     private: Tier2Score::CategoryScore GetInsertionForceScore() const;
 
     /// \brief Calculates the tier 3 score based on the distance between plug and port.
+    /// \param[in] index The index of the connection to score
     /// \return Scoring for the distance category
-    private: Tier3Score GetDistanceScore() const;
+    private: Tier3Score GetDistanceScore(std::size_t index) const;
 
     /// \return Compute Tier3 score
-    private: Tier3Score ComputeTier3Score() const;
+    /// \param[in] index The index of the connection to score
+    private: Tier3Score ComputeTier3Score(std::size_t index) const;
+
+    /// \brief Compute and combine tier 3 scores.
+    /// \return The tier3 score for the whole cable
+    private: Tier3Score CombineTier3Score() const;
 
     /// \brief Calculates the penalty (if any) for contacts with off limit entities.
     /// \return Scoring for the off limit contacts category
@@ -350,9 +355,9 @@ namespace aic_scoring
     /// \brief Gripper frame name.
     private: std::string gripperFrame;
 
-    /// \brief The insertion port namespace as detected by the cable plugins.
+    /// \brief The insertion port namespaces as detected by the cable plugins.
     /// Empty string means no insertion event detected.
-    private: std::string insertionPortNamespace;
+    private: std::unordered_set<std::string> insertionPortNamespaces;
 
     /// \brief The cable that was activated and is being tracked.
     private: std::optional<std::string> trackedCable;
