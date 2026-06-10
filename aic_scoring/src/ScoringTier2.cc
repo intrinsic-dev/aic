@@ -151,10 +151,9 @@ bool ScoringTier2::StopRecording() {
 //////////////////////////////////////////////////
 std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
   Tier2Score tier2_score("Scoring failed.");
-  Tier3Score tier3_score(0, "Task execution failed.");
   if (this->state != State::Idle) {
     RCLCPP_ERROR(this->node->get_logger(), "Scoring system is busy.");
-    return {tier2_score, tier3_score};
+    return {tier2_score, Tier3Score(0, "Task execution failed.")};
   }
 
   tier2_score.message = "Scoring succeeded.";
@@ -163,14 +162,14 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
   tier2_score.add_category_score("insertion force",
                                  this->GetInsertionForceScore());
   tier2_score.add_category_score("contacts", this->GetContactsScore());
-  tier3_score = this->CombineTier3Score();
+  const auto [success, tier3_score] = this->CombineTier3Score();
   tier2_score.add_category_score("duration",
-                                 this->GetTaskDurationScore(tier3_score));
+                                 this->GetTaskDurationScore(success));
   tier2_score.add_category_score("trajectory smoothness",
-                                 this->GetTrajectoryJerkScore(tier3_score));
+                                 this->GetTrajectoryJerkScore(success));
   tier2_score.add_category_score(
       "trajectory efficiency",
-      this->GetTrajectoryEfficiencyScore(tier3_score));
+      this->GetTrajectoryEfficiencyScore(success));
 
   return {tier2_score, tier3_score};
 }
@@ -360,7 +359,7 @@ static double CalculateInverseProportionalScore(const double max_score,
 
 //////////////////////////////////////////////////
 Tier2Score::CategoryScore ScoringTier2::GetTrajectoryJerkScore(
-    const Tier3Score &_tier3) const {
+    const bool _success) const {
   using CategoryScore = Tier2Score::CategoryScore;
 
   const double kMaxJerkScore = 6.0;
@@ -376,7 +375,7 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryJerkScore(
     return CategoryScore(0, "Task not completed.");
   }
 
-  if (_tier3.total_score() <= 0) {
+  if (!_success) {
     return CategoryScore(
         0,
         "Plug is not within max bounding radius from target port, "
@@ -472,14 +471,14 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryJerkScore(
 
 //////////////////////////////////////////////////
 Tier2Score::CategoryScore ScoringTier2::GetTrajectoryEfficiencyScore(
-      const Tier3Score &_tier3) const {
+      const bool _success) const {
   using CategoryScore = Tier2Score::CategoryScore;
 
   if (!this->task_end_time.has_value()) {
     return CategoryScore(0, "Task not completed.");
   }
 
-  if (_tier3.total_score() <= 0) {
+  if (!_success) {
     return CategoryScore(
         0,
         "Plug is not within max bounding radius from target port, "
@@ -696,12 +695,14 @@ Tier3Score ScoringTier2::ComputeTier3Score(std::size_t index) const {
   return this->GetDistanceScore(index);
 }
 
-Tier3Score ScoringTier2::CombineTier3Score() const {
+std::pair<bool, Tier3Score> ScoringTier2::CombineTier3Score() const {
   const auto score_0 = this->ComputeTier3Score(0);
   const auto score_1 = this->ComputeTier3Score(1);
+  const bool successful = score_0.total_score() > 0 &&
+    score_1.total_score() > 0;
   const auto combinedScore = (score_0.total_score() + score_1.total_score()) / 2.0;
   const std::string msg = "[Task 0] : '" + score_0.message + "'. [Task 1]: '" + score_1.message + "'.";
-  return Tier3Score(combinedScore, msg);
+  return {successful, Tier3Score(combinedScore, msg)};
 }
 
 //////////////////////////////////////////////////
@@ -785,7 +786,7 @@ Tier2Score::CategoryScore ScoringTier2::GetContactsScore() const {
 
 //////////////////////////////////////////////////
 Tier2Score::CategoryScore ScoringTier2::GetTaskDurationScore(
-    const Tier3Score &_tier3) const {
+    const bool _success) const {
   using CategoryScore = Tier2Score::CategoryScore;
 
   const rclcpp::Duration kMaxTaskTime = rclcpp::Duration::from_seconds(300.0);
@@ -801,7 +802,7 @@ Tier2Score::CategoryScore ScoringTier2::GetTaskDurationScore(
     return CategoryScore(0, "Time computation failed, task start time not set");
   }
 
-  if (_tier3.total_score() <= 0) {
+  if (!_success) {
     return CategoryScore(
         0,
         "Plug is not within max bounding radius from target port, "
