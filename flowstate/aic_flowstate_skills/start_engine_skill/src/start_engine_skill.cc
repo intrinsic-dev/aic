@@ -105,10 +105,10 @@ StartEngineSkill::Execute(const intrinsic::skills::ExecuteRequest& request,
   // Populate service request
   auto service_request =
       std::make_shared<aic_engine_interfaces::srv::StartEngine::Request>();
-  if (params.plug_name().size() != 2 ||
-      params.port_name().size() != 2 ||
+  if (params.plug_name().size() != 2 || params.port_name().size() != 2 ||
       params.target_module_name().size() != 2) {
-    return absl::InvalidArgumentError("Exactly two plug_name, port_name "
+    return absl::InvalidArgumentError(
+        "Exactly two plug_name, port_name "
         "and target_module_name must be provided");
   }
 
@@ -134,9 +134,8 @@ StartEngineSkill::Execute(const intrinsic::skills::ExecuteRequest& request,
 
   auto service_result = status_or_result.value();
   if (!service_result->success) {
-    RCLCPP_INFO(
-        client_node_.get_logger(), "Failed starting task, reason: %s",
-        service_result->message.c_str());
+    RCLCPP_INFO(client_node_.get_logger(), "Failed starting task, reason: %s",
+                service_result->message.c_str());
     return absl::InternalError(service_result->message);
   }
 

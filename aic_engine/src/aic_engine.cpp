@@ -84,7 +84,6 @@ Engine::Engine(const rclcpp::NodeOptions& options)
                 std::placeholders::_2),
       rclcpp::ServicesQoS(), callback_group_);
 
-
   auto sub_options = rclcpp::SubscriptionOptions();
   sub_options.callback_group = callback_group_;
 
@@ -128,17 +127,13 @@ void Engine::start_engine_callback(
     }
   }
 
-  Connection conn0 = {
-    .plugName = request->plug_name[0],
-    .targetModuleName = request->target_module_name[0],
-    .portName = request->port_name[0]
-  };
+  Connection conn0 = {.plugName = request->plug_name[0],
+                      .targetModuleName = request->target_module_name[0],
+                      .portName = request->port_name[0]};
 
-  Connection conn1 = {
-    .plugName = request->plug_name[1],
-    .targetModuleName = request->target_module_name[1],
-    .portName = request->port_name[1]
-  };
+  Connection conn1 = {.plugName = request->plug_name[1],
+                      .targetModuleName = request->target_module_name[1],
+                      .portName = request->port_name[1]};
 
   CableConnections task(conn0, conn1);
 
@@ -153,10 +148,10 @@ void Engine::start_engine_callback(
 
   if (request->time_limit > 0) {
     auto timeout = std::chrono::seconds(request->time_limit + 10);
-    RCLCPP_INFO(node_->get_logger(), "Registering safety timer for %ld seconds", timeout.count());
+    RCLCPP_INFO(node_->get_logger(), "Registering safety timer for %ld seconds",
+                timeout.count());
     this->safety_timer_ = this->node_->create_timer(
-        timeout,
-        std::bind(&Engine::safety_timer_callback, this));
+        timeout, std::bind(&Engine::safety_timer_callback, this));
   }
 
   response->success = true;
@@ -185,7 +180,8 @@ void Engine::stop_engine_callback(
     this->safety_timer_.reset();
   }
 
-  RCLCPP_INFO(node_->get_logger(), "Received request to stop engine, computing score...");
+  RCLCPP_INFO(node_->get_logger(),
+              "Received request to stop engine, computing score...");
   this->scoring_tier2_->SetTaskEndTime(this->node_->now());
 
   task_it->second.score.tier_1_success();
@@ -276,7 +272,8 @@ void Engine::reset_engine() {
 }
 
 //==============================================================================
-std::optional<std::string> Engine::start_trial(const CableConnections& task, const uint64_t time_limit) {
+std::optional<std::string> Engine::start_trial(const CableConnections& task,
+                                               const uint64_t time_limit) {
   RCLCPP_INFO(node_->get_logger(), " ");
   RCLCPP_INFO(node_->get_logger(),
               "╔════════════════════════════════════════╗");
@@ -297,7 +294,8 @@ std::optional<std::string> Engine::start_trial(const CableConnections& task, con
   RCLCPP_INFO(node_->get_logger(), "  ✓ Scoring Ready");
 
   this->scoring_tier2_->SetTaskStartTime(this->node_->now());
-  const auto task_id = std::string("trial_") + std::to_string(this->tasks_.size());
+  const auto task_id =
+      std::string("trial_") + std::to_string(this->tasks_.size());
   this->tasks_.insert({task_id, task});
   return std::nullopt;
 }
@@ -450,9 +448,12 @@ bool Engine::check_endpoints() {
 }
 
 //==============================================================================
-bool Engine::ready_scoring(const CableConnections& task, const uint64_t time_limit) {
+bool Engine::ready_scoring(const CableConnections& task,
+                           const uint64_t time_limit) {
   RCLCPP_INFO(node_->get_logger(), "Checking scoring system readiness...");
-  scoring_tier2_ = std::make_unique<aic_scoring::ScoringTier2>(node_.get(), node_->get_parameter("gripper_frame_name").as_string(), task);
+  scoring_tier2_ = std::make_unique<aic_scoring::ScoringTier2>(
+      node_.get(), node_->get_parameter("gripper_frame_name").as_string(),
+      task);
 
   // Add a few seconds for safety since this is a limit for recorded data
   if (!scoring_tier2_->StartRecording(std::chrono::seconds(time_limit + 10))) {
@@ -514,7 +515,9 @@ void Engine::score_run() {
 }
 
 void Engine::safety_timer_callback() {
-  RCLCPP_WARN(node_->get_logger(), "Safety timer triggered! Force stopping engine to avoid memory leak.");
+  RCLCPP_WARN(
+      node_->get_logger(),
+      "Safety timer triggered! Force stopping engine to avoid memory leak.");
 
   const auto task_it = std::find_if(
       this->tasks_.begin(), this->tasks_.end(), [](const auto& it) {
@@ -524,7 +527,8 @@ void Engine::safety_timer_callback() {
 
   if (task_it != this->tasks_.end()) {
     this->scoring_tier2_->SetTaskEndTime(this->node_->now());
-    // Stop recording to free memory, but don't compute score (keep failure default)
+    // Stop recording to free memory, but don't compute score (keep failure
+    // default)
     if (!this->scoring_tier2_->StopRecording()) {
       RCLCPP_ERROR(node_->get_logger(), "Failed to stop recording.");
     }
