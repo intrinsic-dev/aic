@@ -122,36 +122,6 @@ class Engine {
   /// \return True if the scoring system is ready, false otherwise.
   bool ready_scoring(const CableConnections& task, const uint64_t time_limit);
 
-  /// @brief Get the current model node's lifecycle state.
-  /// @return State if successful, std::nullopt if not.
-  std::optional<int> get_model_state();
-
-  /// @brief Trigger a state transition for the lifecycle node.
-  /// \param[in] transition The transition to trigger as per
-  /// lifecycle_msgs::msg::Transition enum definition.
-  /// @return True if transition succeeded, false otherwise.
-  bool transition_model_lifecycle_node(const uint8_t transition);
-
-  /// @brief Configure the model node and check expectations in the configured
-  /// state as per challenge requirements.
-  /// @return True if configuration succeeded, false otherwise.
-  bool configure_model_node();
-
-  /// @brief Activate the model node to transition from configured to active
-  /// state.
-  /// @return True if activation succeeded, false otherwise.
-  bool activate_model_node();
-
-  /// @brief Deactivate the model node to transition from active to configured
-  /// state.
-  /// @return True if deactivation succeeded, false otherwise.
-  bool deactivate_model_node();
-
-  /// @brief Cleanup the model node to transition from inactive to
-  /// unconfigured state.
-  /// @return True if cleanup succeeded, false otherwise.
-  bool cleanup_model_node();
-
   /// @brief Stop the bag recording and compute the current score.
   /// @param[in] A reference to the current trial score to update.
   void compute_score(TrialScore& trial);
@@ -159,24 +129,6 @@ class Engine {
   /// @brief Writes the result of the current run to a YAML file.
   /// \param[in] The score to serialize and write.
   void score_run();
-
-  /// @brief Wait for a future, interrupt if rclcpp Context is shut down.
-  /// \param[in] The future to wait for.
-  /// \param[in] The timeout to wait until.
-  /// @return true if the future resolved, false if it didn't.
-  template <typename FutureT>
-  bool wait_for_interruptible(const FutureT& future,
-                              const std::chrono::seconds timeout) const {
-    const auto start = node_->now();
-    const auto timeout_duration = rclcpp::Duration(timeout);
-    while (rclcpp::ok() && (node_->now() - start) < timeout_duration) {
-      if (future.wait_for(std::chrono::milliseconds(50)) ==
-          std::future_status::ready) {
-        return true;
-      }
-    }
-    return false;
-  }
 
   /// @brief Callback for the service to start the engine. Will start scoring.
   void start_engine_callback(
@@ -196,8 +148,6 @@ class Engine {
   std::string model_node_name_;
   // Name of the service to get the lifecycle state of the model node.
   std::string model_get_state_service_name_;
-  // Name of the service to change the lifecycle state of the model node.
-  std::string model_change_state_service_name_;
 
   // Internal ROS 2 node.
   rclcpp::Node::SharedPtr node_;
@@ -205,8 +155,6 @@ class Engine {
   // Service clients.
   rclcpp::Client<lifecycle_msgs::srv::GetState>::SharedPtr
       model_get_state_client_;
-  rclcpp::Client<lifecycle_msgs::srv::ChangeState>::SharedPtr
-      model_change_state_client_;
   rclcpp::Client<TriggerSrv>::SharedPtr tare_ft_client_;
 
   // Service servers.

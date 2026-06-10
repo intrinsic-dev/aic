@@ -45,7 +45,19 @@ ScoringTier2::ScoringTier2(rclcpp::Node *_node) : node(_node) {
                           .latched = true});
   this->topics.push_back(
       {.name = kTfTopic, .type = "tf2_msgs/msg/TFMessage", .latched = false});
-  this->topics.push_back({.name = kScoringTfTopic,
+  this->topics.push_back({.name = kCable0TfTopic,
+                          .type = "tf2_msgs/msg/TFMessage",
+                          .latched = false});
+  this->topics.push_back({.name = kCable1TfTopic,
+                          .type = "tf2_msgs/msg/TFMessage",
+                          .latched = false});
+  this->topics.push_back({.name = kCable2TfTopic,
+                          .type = "tf2_msgs/msg/TFMessage",
+                          .latched = false});
+  this->topics.push_back({.name = kCable3TfTopic,
+                          .type = "tf2_msgs/msg/TFMessage",
+                          .latched = false});
+  this->topics.push_back({.name = kCable4TfTopic,
                           .type = "tf2_msgs/msg/TFMessage",
                           .latched = false});
   this->topics.push_back({.name = kContactsTopic,
@@ -112,9 +124,21 @@ bool ScoringTier2::StartRecording(const std::string &_filename,
             this->bagWriter.write(msg, topic.name, topic.type,
                                   rmw_info.received_timestamp,
                                   rmw_info.source_timestamp);
-            if (topic.name == kScoringTfTopic) {
+            if (topic.name == kCable0TfTopic) {
               // A new cable transform was received
-              this->cableTfReceived = true;
+              this->cable0TfReceived = true;
+            } else if (topic.name == kCable1TfTopic) {
+              // A new cable transform was received
+              this->cable1TfReceived = true;
+            } else if (topic.name == kCable2TfTopic) {
+              // A new cable transform was received
+              this->cable2TfReceived = true;
+            } else if (topic.name == kCable3TfTopic) {
+              // A new cable transform was received
+              this->cable3TfReceived = true;
+            } else if (topic.name == kCable4TfTopic) {
+              // A new cable transform was received
+              this->cable4TfReceived = true;
             } else if (topic.name == kTfTopic) {
               // A new gripper transform was received
               this->gripperTfReceived = true;
@@ -132,7 +156,11 @@ bool ScoringTier2::StartRecording(const std::string &_filename,
 
 //////////////////////////////////////////////////
 bool ScoringTier2::WaitForTfs() {
-  this->cableTfReceived = false;
+  this->cable0TfReceived = false;
+  this->cable1TfReceived = false;
+  this->cable2TfReceived = false;
+  this->cable3TfReceived = false;
+  this->cable4TfReceived = false;
   this->gripperTfReceived = false;
   this->staticTfReceived = false;
   // Simple spinlock to avoid locking, condition variables etc. for a fairly
@@ -140,13 +168,23 @@ bool ScoringTier2::WaitForTfs() {
   const auto start = this->node->get_clock()->now();
   const auto timeout = std::chrono::seconds(10);
   while (rclcpp::ok() &&
-         (!this->cableTfReceived || !this->gripperTfReceived ||
+         (!this->cable0TfReceived ||
+          !this->cable1TfReceived ||
+          !this->cable2TfReceived ||
+          !this->cable3TfReceived ||
+          !this->cable4TfReceived ||
+          !this->gripperTfReceived ||
           !this->staticTfReceived) &&
          this->node->get_clock()->now() - start < timeout) {
     this->node->get_clock()->sleep_for(
         rclcpp::Duration(std::chrono::milliseconds(100)));
   }
-  if (!this->cableTfReceived || !this->gripperTfReceived ||
+  if (!this->cable0TfReceived ||
+      !this->cable1TfReceived ||
+      !this->cable2TfReceived ||
+      !this->cable3TfReceived ||
+      !this->cable4TfReceived ||
+      !this->gripperTfReceived ||
       !this->staticTfReceived) {
     RCLCPP_ERROR(this->node->get_logger(),
                  "Timeout while waiting for transforms for scoring.");
@@ -209,7 +247,11 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
     // RCLCPP_INFO(this->node->get_logger(), "Received message on topic '%s'",
     //     msg_ptr->topic_name.c_str());
     if (msg_ptr->topic_name == kTfTopic ||
-               msg_ptr->topic_name == kScoringTfTopic) {
+               msg_ptr->topic_name == kCable0TfTopic ||
+               msg_ptr->topic_name == kCable1TfTopic ||
+               msg_ptr->topic_name == kCable2TfTopic ||
+               msg_ptr->topic_name == kCable3TfTopic ||
+               msg_ptr->topic_name == kCable4TfTopic) {
       const auto msg = deserialize_from_rosbag<TFMsg>(msg_ptr);
       this->TfCallback(msg);
     } else if (msg_ptr->topic_name == kTfStaticTopic) {
@@ -281,7 +323,6 @@ void ScoringTier2::Reset(const std::chrono::seconds &_buffer_size) {
   this->bagWriter.close();
   this->contacts.clear();
   this->insertionPortNamespace.clear();
-  this->lastTaredFt.reset();
 }
 
 //////////////////////////////////////////////////
@@ -406,14 +447,12 @@ void ScoringTier2::ContactsCallback(const ContactsMsg &_msg) {
 void ScoringTier2::WrenchCallback(const WrenchMsg &_msg) {
   // We don't log for else statement since skipping a few wrench messages
   // at startup is not a big issue.
-  if (this->lastTaredFt.has_value()) {
-    const auto time = rclcpp::Time(_msg.header.stamp);
-    Vector3Msg wrench;
-    wrench.x = _msg.wrench.force.x - this->lastTaredFt.value().wrench.force.x;
-    wrench.y = _msg.wrench.force.y - this->lastTaredFt.value().wrench.force.y;
-    wrench.z = _msg.wrench.force.z - this->lastTaredFt.value().wrench.force.z;
-    this->wrenches.push_back({time.seconds(), wrench});
-  }
+  const auto time = rclcpp::Time(_msg.header.stamp);
+  Vector3Msg wrench;
+  wrench.x = _msg.wrench.force.x - this->lastTaredFt.value().wrench.force.x;
+  wrench.y = _msg.wrench.force.y - this->lastTaredFt.value().wrench.force.y;
+  wrench.z = _msg.wrench.force.z - this->lastTaredFt.value().wrench.force.z;
+  this->wrenches.push_back({time.seconds(), wrench});
 }
 
 //////////////////////////////////////////////////

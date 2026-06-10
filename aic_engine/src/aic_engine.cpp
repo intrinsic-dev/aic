@@ -46,17 +46,10 @@ Engine::Engine(const rclcpp::NodeOptions& options)
   model_node_name_ =
       node_->declare_parameter("model_node_name", std::string("aic_model"));
   model_get_state_service_name_ = "/" + model_node_name_ + "/get_state";
-  model_change_state_service_name_ = "/" + model_node_name_ + "/change_state";
-  node_->declare_parameter("config_file_path", std::string(""));
   node_->declare_parameter("endpoint_ready_timeout_seconds", 10);
   node_->declare_parameter("gripper_frame_name", std::string("gripper/tcp"));
   skip_model_ready_ = node_->declare_parameter("skip_model_ready", false);
   node_->declare_parameter("model_discovery_timeout_seconds", 30);
-  node_->declare_parameter("model_configure_timeout_seconds", 60);
-  node_->declare_parameter("model_activate_timeout_seconds", 60);
-  node_->declare_parameter("model_deactivate_timeout_seconds", 60);
-  node_->declare_parameter("model_cleanup_timeout_seconds", 60);
-  node_->declare_parameter("model_shutdown_timeout_seconds", 60);
 
   // Set scoring output directory from AIC_RESULTS_DIR environment variable
   // If not set or empty, default to $HOME/aic_results
@@ -102,10 +95,6 @@ Engine::Engine(const rclcpp::NodeOptions& options)
 
   model_get_state_client_ = node_->create_client<lifecycle_msgs::srv::GetState>(
       model_get_state_service_name_, rclcpp::ServicesQoS(), callback_group_);
-  model_change_state_client_ =
-      node_->create_client<lifecycle_msgs::srv::ChangeState>(
-          model_change_state_service_name_, rclcpp::ServicesQoS(),
-          callback_group_);
   tare_ft_client_ = node_->create_client<TriggerSrv>(
       "/aic_controller/tare_force_torque_sensor", rclcpp::ServicesQoS(),
       callback_group_);
@@ -190,6 +179,7 @@ void Engine::stop_engine_callback(
     response->message = error;
     return;
   }
+  RCLCPP_INFO(node_->get_logger(), "Received request to stop engine, computing score...");
 
   task_it->second.score.tier_1_success();
   task_it->second.status = TaskStatus::FINISHED;
@@ -278,10 +268,6 @@ void Engine::reset_engine() {
   }
   this->tasks_.clear();
   this->requested_run_ = false;
-
-  // Force deactivation + cleanup to make sure we are in a clean state
-  this->deactivate_model_node();
-  this->cleanup_model_node();
 }
 
 //==============================================================================
@@ -324,53 +310,6 @@ static std::string string_set_to_csv(const std::set<std::string>& strings) {
   }
   result += *it;
   return result;
-}
-
-//==============================================================================
-std::optional<int> Engine::get_model_state() {
-  RCLCPP_INFO(node_->get_logger(),
-              "Lifecycle node '%s' is available. Getting its state...",
-              model_node_name_.c_str());
-
-  if (!model_get_state_client_->wait_for_service(std::chrono::seconds(5))) {
-    RCLCPP_ERROR(node_->get_logger(),
-                 "GetState service '%s' not available after waiting",
-                 model_get_state_service_name_.c_str());
-    return false;
-  }
-
-  // Call the service to get current state
-  auto request = std::make_shared<lifecycle_msgs::srv::GetState::Request>();
-  auto future = model_get_state_client_->async_send_request(request);
-
-  if (!wait_for_interruptible(future, std::chrono::seconds(5))) {
-    RCLCPP_ERROR(node_->get_logger(),
-                 "GetState service call timed out for node '%s'",
-                 model_node_name_.c_str());
-    return false;
-  }
-
-  auto response = future.get();
-
-  return response->current_state.id;
-}
-
-//==============================================================================
-bool Engine::configure_model_node() {
-  RCLCPP_INFO(node_->get_logger(), "Configuring lifecycle node '%s'...",
-              model_node_name_.c_str());
-
-  if (!this->transition_model_lifecycle_node(
-          lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE)) {
-    return false;
-  }
-
-  RCLCPP_INFO(node_->get_logger(),
-              "Lifecycle node '%s' is in 'configured' state and meets all "
-              "expectations.",
-              model_node_name_.c_str());
-
-  return true;
 }
 
 //==============================================================================
@@ -447,28 +386,6 @@ bool Engine::check_model() {
     return false;
   }
 
-  const auto state = this->get_model_state();
-  if (!state.has_value()) {
-    return false;
-  }
-
-  // Assume it will either be unconfigured or active, never inactive
-  if (state.value() == lifecycle_msgs::msg::State::PRIMARY_STATE_UNCONFIGURED) {
-    if (!configure_model_node()) {
-      return false;
-    }
-    if (!activate_model_node()) {
-      return false;
-    }
-    return true;
-  }
-
-  if (state.value() != lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE) {
-    RCLCPP_ERROR(node_->get_logger(),
-                 "Lifecycle node '%s' not in ACTIVE state.",
-                 model_node_name_.c_str());
-    return false;
-  }
   return true;
 }
 
@@ -556,109 +473,6 @@ bool Engine::ready_scoring(const CableConnections& task, const uint64_t time_lim
   RCLCPP_INFO(node_->get_logger(), "Started recording to '%s'.",
               bag_path.c_str());
   return true;
-}
-
-//==============================================================================
-bool Engine::transition_model_lifecycle_node(const uint8_t transition) {
-  std::string transition_name;
-  switch (transition) {
-    case lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE:
-      transition_name = "configure";
-      break;
-    case lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE:
-      transition_name = "activate";
-      break;
-    case lifecycle_msgs::msg::Transition::TRANSITION_DEACTIVATE:
-      transition_name = "deactivate";
-      break;
-    case lifecycle_msgs::msg::Transition::TRANSITION_CLEANUP:
-      transition_name = "cleanup";
-      break;
-    case lifecycle_msgs::msg::Transition::TRANSITION_ACTIVE_SHUTDOWN:
-      [[fallthrough]];
-    case lifecycle_msgs::msg::Transition::TRANSITION_INACTIVE_SHUTDOWN:
-      [[fallthrough]];
-    case lifecycle_msgs::msg::Transition::TRANSITION_UNCONFIGURED_SHUTDOWN:
-      transition_name = "shutdown";
-      break;
-    default:
-      RCLCPP_ERROR(
-          node_->get_logger(),
-          "Failed to transition model node, transition %u not recognized",
-          (int)transition);
-      return false;
-  }
-  const std::string timeout_param_name =
-      "model_" + transition_name + "_timeout_seconds";
-  const int timeout = this->node_->get_parameter(timeout_param_name).as_int();
-
-  RCLCPP_INFO(node_->get_logger(),
-              "Transitioning model node '%s' to transition '%s'...",
-              model_node_name_.c_str(), transition_name.c_str());
-
-  auto change_state_request =
-      std::make_shared<lifecycle_msgs::srv::ChangeState::Request>();
-  change_state_request->transition.id = transition;
-
-  auto future =
-      model_change_state_client_->async_send_request(change_state_request);
-  if (!wait_for_interruptible(future, std::chrono::seconds(timeout))) {
-    RCLCPP_ERROR(
-        node_->get_logger(),
-        "ChangeState service call timed out for transition '%s' for node '%s'",
-        transition_name.c_str(), model_node_name_.c_str());
-    return false;
-  }
-
-  auto response = future.get();
-  if (!response->success) {
-    RCLCPP_ERROR(node_->get_logger(),
-                 "Failed to transition model node '%s' to state '%s'",
-                 model_node_name_.c_str(), transition_name.c_str());
-    return false;
-  }
-
-  RCLCPP_INFO(node_->get_logger(),
-              "Successfully transition model node '%s' to state '%s'",
-              model_node_name_.c_str(), transition_name.c_str());
-
-  return true;
-}
-
-//==============================================================================
-bool Engine::activate_model_node() {
-  if (skip_model_ready_) {
-    RCLCPP_INFO(node_->get_logger(),
-                "Skipping model activation as per parameter.");
-    return true;
-  }
-
-  // TODO(Yadunund): Verify active requirements.
-  return this->transition_model_lifecycle_node(
-      lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE);
-}
-
-//==============================================================================
-bool Engine::deactivate_model_node() {
-  if (skip_model_ready_) {
-    RCLCPP_INFO(node_->get_logger(),
-                "Skipping model deactivation as per parameter.");
-    return true;
-  }
-  return this->transition_model_lifecycle_node(
-      lifecycle_msgs::msg::Transition::TRANSITION_DEACTIVATE);
-}
-
-//==============================================================================
-bool Engine::cleanup_model_node() {
-  if (skip_model_ready_) {
-    RCLCPP_INFO(node_->get_logger(),
-                "Skipping model cleanup as per parameter.");
-    return true;
-  }
-
-  return this->transition_model_lifecycle_node(
-      lifecycle_msgs::msg::Transition::TRANSITION_CLEANUP);
 }
 
 //==============================================================================

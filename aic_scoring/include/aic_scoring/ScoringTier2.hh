@@ -130,8 +130,20 @@ namespace aic_scoring
     /// \brief Topic to subscribe for tf.
     public: static constexpr const char* kTfTopic = "/tf";
 
-    /// \brief Topic to subscribe for /scoring/tf.
-    public: static constexpr const char* kScoringTfTopic = "/scoring/tf";
+    /// \brief Topic to subscribe for cable_0 tf.
+    public: static constexpr const char* kCable0TfTopic = "/cable_0/tf";
+
+    /// \brief Topic to subscribe for cable_1 tf.
+    public: static constexpr const char* kCable1TfTopic = "/cable_1/tf";
+
+    /// \brief Topic to subscribe for cable_2 tf.
+    public: static constexpr const char* kCable2TfTopic = "/cable_2/tf";
+
+    /// \brief Topic to subscribe for cable_3 tf.
+    public: static constexpr const char* kCable3TfTopic = "/cable_3/tf";
+
+    /// \brief Topic to subscribe for cable_4 tf.
+    public: static constexpr const char* kCable4TfTopic = "/cable_4/tf";
 
     /// \brief Topic to subscribe for contacts.
     public: static constexpr const char* kContactsTopic = "/aic/gazebo/contacts/off_limit";
@@ -349,17 +361,26 @@ namespace aic_scoring
     /// \brief The cable that was activated and is being tracked.
     private: std::optional<std::string> trackedCable;
 
-    /// \brief Whether the tf from a cable was recorded.
-    private: std::atomic<bool> cableTfReceived = false;
+    /// \brief Whether the tf from cable_0 was recorded.
+    private: std::atomic<bool> cable0TfReceived = false;
+
+    /// \brief Whether the tf from cable_0 was recorded.
+    private: std::atomic<bool> cable1TfReceived = false;
+
+    /// \brief Whether the tf from cable_0 was recorded.
+    private: std::atomic<bool> cable2TfReceived = false;
+
+    /// \brief Whether the tf from cable_0 was recorded.
+    private: std::atomic<bool> cable3TfReceived = false;
+
+    /// \brief Whether the tf from cable_0 was recorded.
+    private: std::atomic<bool> cable4TfReceived = false;
 
     /// \brief Whether the tf from a gripper was recorded.
     private: std::atomic<bool> gripperTfReceived = false;
 
     /// \brief Whether the tf from a gripper was recorded.
     private: std::atomic<bool> staticTfReceived = false;
-
-    /// \brief The last tared ft reading rotated to the current pose received.
-    private: std::optional<WrenchMsg> lastTaredFt;
   };
 
   // The Tier2 class as a node.
