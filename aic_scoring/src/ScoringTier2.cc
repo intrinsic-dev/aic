@@ -520,7 +520,7 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryEfficiencyScore(
   // Score range and path length bounds (meters).
   const double kMaxEfficiencyScore = 6.0;              // Shortest path
   const double kMinEfficiencyScore = 0.0;              // Longest path
-  const double kMaxPathLength = 1.0 + minPathLength;  // Path for min score
+  const double kMaxPathLength = 2.0 + minPathLength;  // Path for min score
 
   std::stringstream ss;
   ss << std::fixed << std::setprecision(2);
@@ -553,19 +553,8 @@ Tier3Score ScoringTier2::GetDistanceScore(std::size_t index) const {
                       "Distance computation failed, task start time not set");
   }
 
-  // Being as close as possible to the port entrance will award
-  // kClosestTaskScore
-  const auto initDist = this->GetPlugPortDistance(tf2::TimePoint(
-      std::chrono::nanoseconds(this->task_start_time.value().nanoseconds())), index);
-  double radiusFromPort = 0.0;
-  if (initDist.has_value()) {
-    radiusFromPort = initDist.value() * 0.5;
-  } else {
-    RCLCPP_WARN(this->node->get_logger(),
-                "Failed to get initial plug port distance");
-  }
-
-  const double kMaxDistance = radiusFromPort;
+  // Fix the distance to 20 cm
+  const double kMaxDistance = 0.2;
   const double kClosestTaskScore = 25.0;
   const double kFurthestTaskScore = 0.0;
 
@@ -710,7 +699,7 @@ Tier3Score ScoringTier2::ComputeTier3Score(std::size_t index) const {
 Tier3Score ScoringTier2::CombineTier3Score() const {
   const auto score_0 = this->ComputeTier3Score(0);
   const auto score_1 = this->ComputeTier3Score(1);
-  const auto combinedScore = score_0.total_score() + score_1.total_score() / 2.0;
+  const auto combinedScore = (score_0.total_score() + score_1.total_score()) / 2.0;
   const std::string msg = "[Task 0] : '" + score_0.message + "'. [Task 1]: '" + score_1.message + "'.";
   return Tier3Score(combinedScore, msg);
 }
@@ -799,8 +788,8 @@ Tier2Score::CategoryScore ScoringTier2::GetTaskDurationScore(
     const Tier3Score &_tier3) const {
   using CategoryScore = Tier2Score::CategoryScore;
 
-  const rclcpp::Duration kMaxTaskTime = rclcpp::Duration::from_seconds(60.0);
-  const rclcpp::Duration kMinTaskTime = rclcpp::Duration::from_seconds(5.0);
+  const rclcpp::Duration kMaxTaskTime = rclcpp::Duration::from_seconds(300.0);
+  const rclcpp::Duration kMinTaskTime = rclcpp::Duration::from_seconds(60.0);
   const double kFastestTaskScore = 12.0;
   const double kSlowestTaskScore = 0.0;
 
