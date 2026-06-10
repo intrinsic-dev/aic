@@ -25,7 +25,6 @@ find_package(Eigen3 REQUIRED)
 
 # Create a library that can be linked against
 add_library(${PROJECT_NAME} SHARED
-  src/ScoringTier1.cc
   src/ScoringTier2.cc)
 
 target_link_libraries(${PROJECT_NAME}
@@ -47,15 +46,9 @@ target_include_directories(${PROJECT_NAME}
     "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>"
 )
 
-# Create executable that uses the library
-add_executable(scoring_tier1_main src/ScoringTier1_main.cc)
-target_link_libraries(scoring_tier1_main
-  PRIVATE ${PROJECT_NAME})
-
 # Install library and executable with export
 install(TARGETS
   ${PROJECT_NAME}
-  scoring_tier1_main
   EXPORT ${PROJECT_NAME}_targets
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
