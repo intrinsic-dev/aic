@@ -217,6 +217,25 @@ namespace aic_gazebo
     /// \param[in] _ecm Entity Component Manager
     private: void FindCableMounts(gz::sim::EntityComponentManager& _ecm);
 
+    /// \brief Disable all collisions in a link by setting their category and
+    /// collide bitmasks to 0.
+    /// \param[in] _linkEntity The link entity
+    /// \param[in] _ecm Entity Component Manager
+    private: void DisableLinkCollisions(
+        gz::sim::Entity _linkEntity,
+        gz::sim::EntityComponentManager &_ecm);
+
+    /// \brief Set collision and category bitmasks for all collisions in a link
+    /// \param[in] _linkEntity The link entity
+    /// \param[in] _categoryMask The category mask to set (optional)
+    /// \param[in] _collideMask The collide mask to set (optional)
+    /// \param[in] _ecm Entity Component Manager
+    private: void SetLinkCollisionsBitmasks(
+        gz::sim::Entity _linkEntity,
+        std::optional<uint16_t> _categoryMask,
+        std::optional<uint16_t> _collideMask,
+        gz::sim::EntityComponentManager &_ecm);
+
     /// \brief Set collision and category bitmasks for all collisions in a model
     /// \param[in] _modelEntity The model entity
     /// \param[in] _categoryMask The category mask to set (optional)

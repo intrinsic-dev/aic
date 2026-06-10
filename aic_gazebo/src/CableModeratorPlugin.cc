@@ -319,8 +319,6 @@ void CableModeratorPlugin::MakeCableStatic(
     _ecm.RequestRemoveEntity(tracker.detachableJointStatic1Entity);
     tracker.detachableJointStatic1Entity = kNullEntity;
   }
-  this->SetModelCollisionsBitmasks(tracker.modelEntity, kStaticCableCategory,
-                                   kStaticCableCollideMask, _ecm);
 }
 
 //////////////////////////////////////////////////
@@ -344,8 +342,6 @@ void CableModeratorPlugin::MakeCableDynamic(
   }
   (void)_ecm;
 #endif
-  this->SetModelCollisionsBitmasks(tracker.modelEntity, kDefaultCollideMask,
-                                   kDefaultCollideMask, _ecm);
 }
 
 //////////////////////////////////////////////////
@@ -486,6 +482,10 @@ void CableModeratorPlugin::PreUpdate(const gz::sim::UpdateInfo& /*_info*/,
         tracker.activeContactEnd.store(currentContactEnd);
         if (prevContactEnd == -1) {
           this->MakeCableDynamic(i, _ecm);
+          this->SetModelCollisionsBitmasks(tracker.modelEntity,
+                                           kDefaultCollideMask,
+                                           kDefaultCollideMask, _ecm);
+
         }
       }
 
@@ -542,15 +542,23 @@ void CableModeratorPlugin::PreUpdate(const gz::sim::UpdateInfo& /*_info*/,
       }
     }
 
+    // Make a cable end static once it is inserted
     if (tracker.end0Inserted &&
         tracker.detachableJointStatic0Entity == kNullEntity) {
       tracker.detachableJointStatic0Entity =
-          this->MakeStatic(tracker.connection0LinkEntity, false, _ecm);
+          this->MakeStatic(tracker.connection0LinkEntity, true, _ecm);
+      this->DisableLinkCollisions(tracker.connection0LinkEntity, _ecm);
+      gzdbg << "Locking End 0 after insertion. Resulting joint: "
+            << tracker.detachableJointStatic0Entity << std::endl;
+
     }
     if (tracker.end1Inserted &&
         tracker.detachableJointStatic1Entity == kNullEntity) {
       tracker.detachableJointStatic1Entity =
-          this->MakeStatic(tracker.connection1LinkEntity, false, _ecm);
+          this->MakeStatic(tracker.connection1LinkEntity, true, _ecm);
+      this->DisableLinkCollisions(tracker.connection1LinkEntity, _ecm);
+      gzdbg << "Locking End 1 after insertion. Resulting joint: "
+            << tracker.detachableJointStatic1Entity << std::endl;
     }
 
     if (tracker.end0Inserted && tracker.end1Inserted && !tracker.isCompleted) {
@@ -800,7 +808,13 @@ void CableModeratorPlugin::FindCableModels(EntityComponentManager& _ecm) {
               return true;
             });
 
+        // Make Cable static and set masks so the plugs do not collide with
+        // mount but should collide with gripper
         this->MakeCableStatic(i, _ecm);
+        this->SetModelCollisionsBitmasks(tracker.modelEntity,
+                                         kStaticCableCategory,
+                                         kStaticCableCollideMask, _ecm);
+
         gzmsg << "Found cable model: " << this->cableConfigs[i].modelName
               << std::endl;
       }
@@ -922,6 +936,30 @@ std::optional<int> CableModeratorPlugin::FindGraspedEnd(
   return std::nullopt;
 }
 
+void CableModeratorPlugin::DisableLinkCollisions(
+    gz::sim::Entity _linkEntity,
+    gz::sim::EntityComponentManager &_ecm) {
+  this->SetLinkCollisionsBitmasks(_linkEntity, 0, 0, _ecm);
+}
+
+void CableModeratorPlugin::SetLinkCollisionsBitmasks(
+    gz::sim::Entity _linkEntity,
+    std::optional<uint16_t> _categoryMask,
+    std::optional<uint16_t> _collideMask,
+    gz::sim::EntityComponentManager &_ecm) {
+  gz::sim::Link link(_linkEntity);
+  for (const auto& collisionEntity : link.Collisions(_ecm)) {
+    if (_categoryMask.has_value()) {
+      _ecm.SetComponentData<gz::sim::components::CategoryBitmaskCmd>(
+          collisionEntity, _categoryMask.value());
+    }
+    if (_collideMask.has_value()) {
+      _ecm.SetComponentData<gz::sim::components::CollisionBitmaskCmd>(
+          collisionEntity, _collideMask.value());
+    }
+  }
+}
+
 void CableModeratorPlugin::SetModelCollisionsBitmasks(
     gz::sim::Entity _modelEntity,
     std::optional<uint16_t> _categoryMask,
@@ -930,16 +968,8 @@ void CableModeratorPlugin::SetModelCollisionsBitmasks(
   gz::sim::Model model(_modelEntity);
   for (const auto& linkEntity : model.Links(_ecm)) {
     gz::sim::Link link(linkEntity);
-    for (const auto& collisionEntity : link.Collisions(_ecm)) {
-      if (_categoryMask.has_value()) {
-        _ecm.SetComponentData<gz::sim::components::CategoryBitmaskCmd>(
-            collisionEntity, _categoryMask.value());
-      }
-      if (_collideMask.has_value()) {
-        _ecm.SetComponentData<gz::sim::components::CollisionBitmaskCmd>(
-            collisionEntity, _collideMask.value());
-      }
-    }
+    this->SetLinkCollisionsBitmasks(linkEntity, _categoryMask, _collideMask,
+                                    _ecm);
   }
 }
 
