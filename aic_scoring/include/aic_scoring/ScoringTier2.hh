@@ -211,10 +211,6 @@ namespace aic_scoring
     /// \return True if recording, false otherwise.
     public: bool IsRecording() const;
 
-    /// \brief Populate the scoring input params from a YAML file.
-    /// \param[in] _config YAML configuration for the node
-    private: bool ParseStats(YAML::Node _config);
-
     /// \brief Callback for tf messages received while scoring.
     /// \param[in] _msg The received message.
     private: void TfCallback(const TFMsg& _msg);

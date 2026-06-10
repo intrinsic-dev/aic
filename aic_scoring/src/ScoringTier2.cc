@@ -326,62 +326,6 @@ void ScoringTier2::Reset(const std::chrono::seconds &_buffer_size) {
 }
 
 //////////////////////////////////////////////////
-bool ScoringTier2::ParseStats(YAML::Node _config) {
-  // Parse topics to subscribe to.
-  if (!_config["topics"]) {
-    RCLCPP_ERROR(this->node->get_logger(),
-                 "Unable to find [topics] in yaml file");
-    return false;
-  }
-
-  const auto &topics = _config["topics"];
-  if (!topics.IsSequence()) {
-    RCLCPP_ERROR(this->node->get_logger(),
-                 "Unable to find sequence of topics within [topics]");
-    return false;
-  }
-
-  for (const auto &newTopic : topics) {
-    if (!newTopic["topic"]) {
-      RCLCPP_ERROR(this->node->get_logger(),
-                   "Unrecognized element. It should be [topic]");
-      return false;
-    }
-
-    const auto &topicProperties = newTopic["topic"];
-    if (!topicProperties.IsMap()) {
-      RCLCPP_ERROR(this->node->get_logger(),
-                   "Unable to find properties within [topic]");
-      return false;
-    }
-
-    TopicInfo topicInfo;
-
-    if (!topicProperties["name"]) {
-      RCLCPP_ERROR(this->node->get_logger(),
-                   "Unable to find [name] within [topic]");
-      return false;
-    }
-    topicInfo.name = topicProperties["name"].as<std::string>();
-
-    if (!topicProperties["type"]) {
-      RCLCPP_ERROR(this->node->get_logger(),
-                   "Unable to find [type] within [topic]");
-      return false;
-    }
-    topicInfo.type = topicProperties["type"].as<std::string>();
-
-    if (topicProperties["latched"]) {
-      topicInfo.latched = topicProperties["latched"].as<bool>();
-    }
-
-    this->topics.push_back(topicInfo);
-  }
-
-  return true;
-}
-
-//////////////////////////////////////////////////
 std::set<std::string> ScoringTier2::GetMissingRequiredTopics() const {
   std::set<std::string> unavailable;
   for (const auto &subscription : this->subscriptions) {
@@ -445,14 +389,8 @@ void ScoringTier2::ContactsCallback(const ContactsMsg &_msg) {
 
 //////////////////////////////////////////////////
 void ScoringTier2::WrenchCallback(const WrenchMsg &_msg) {
-  // We don't log for else statement since skipping a few wrench messages
-  // at startup is not a big issue.
   const auto time = rclcpp::Time(_msg.header.stamp);
-  Vector3Msg wrench;
-  wrench.x = _msg.wrench.force.x - this->lastTaredFt.value().wrench.force.x;
-  wrench.y = _msg.wrench.force.y - this->lastTaredFt.value().wrench.force.y;
-  wrench.z = _msg.wrench.force.z - this->lastTaredFt.value().wrench.force.z;
-  this->wrenches.push_back({time.seconds(), wrench});
+  this->wrenches.push_back({time.seconds(), _msg.wrench.force});
 }
 
 //////////////////////////////////////////////////
@@ -484,7 +422,6 @@ void ScoringTier2::ControllerStateCallback(const ControllerStateMsg &_msg) {
     return static_cast<double>(t.sec) + static_cast<double>(t.nanosec) * 1e-9;
   };
 
-  this->lastTaredFt = _msg.fts_tare_offset;
   // Duplicated timestamp check
   const auto stamp = toSeconds(_msg.header.stamp);
   if (this->endEffectorVelocities.size() > 0 &&
