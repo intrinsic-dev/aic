@@ -172,6 +172,7 @@ void Engine::stop_engine_callback(
     return;
   }
   RCLCPP_INFO(node_->get_logger(), "Received request to stop engine, computing score...");
+  this->scoring_tier2_->SetTaskEndTime(this->node_->now());
 
   task_it->second.score.tier_1_success();
   task_it->second.status = TaskStatus::FINISHED;

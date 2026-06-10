@@ -581,9 +581,9 @@ Tier3Score ScoringTier2::GetDistanceScore(std::size_t index) const {
     return Tier3Score(0, "Task not completed.");
   }
 
-  const auto end_time =
-      std::chrono::nanoseconds(this->task_end_time.value().nanoseconds());
-  const auto dist = this->GetPlugPortDistance(tf2::TimePoint(end_time), index);
+  // We just use the latest sample to avoid race conditions between task end
+  // and tf message arrival
+  const auto dist = this->GetPlugPortDistance(tf2::TimePointZero, index);
   if (!dist.has_value()) {
     return Tier3Score(
         0, "Distance computation failed, tf between cable and port not found");
@@ -594,12 +594,15 @@ Tier3Score ScoringTier2::GetDistanceScore(std::size_t index) const {
         0, "Distance computation failed, no active cable found");
   }
 
+  RCLCPP_INFO(this->node->get_logger(),
+      "Final distance between plug and port is %.2f", dist.value());
+
   // Check if we are in partial insertion
   const auto port_entrance_tf = this->GetTransform(
-      tf2::TimePoint(end_time), (*this->connection).data[index].PortEntranceTfName());
-  const auto port_tf = this->GetTransform(tf2::TimePoint(end_time),
+      tf2::TimePointZero, (*this->connection).data[index].PortEntranceTfName());
+  const auto port_tf = this->GetTransform(tf2::TimePointZero,
                                           (*this->connection).data[index].PortTfName());
-  const auto plug_tf = this->GetTransform(tf2::TimePoint(end_time),
+  const auto plug_tf = this->GetTransform(tf2::TimePointZero,
                                           (*this->connection).data[index].PlugTfName(
                                             this->trackedCable.value()));
 
