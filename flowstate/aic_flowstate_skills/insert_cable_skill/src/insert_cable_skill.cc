@@ -50,7 +50,8 @@ class InsertCableClientNode : public rclcpp::Node {
   }
 
   absl::StatusOr<InsertCableAction::Result::SharedPtr> SendAction(
-      const InsertCableAction::Goal& goal, double timeout_ms) {
+      const InsertCableAction::Goal& goal, double timeout_ms,
+      const intrinsic::skills::ExecuteContext& context) {
     if (!client_->wait_for_action_server(std::chrono::seconds(10))) {
       return absl::UnavailableError(
           "Action server '/insert_cable' not available");
@@ -117,10 +118,14 @@ class InsertCableClientNode : public rclcpp::Node {
             this->get_node_base_interface(), result_future,
             std::chrono::milliseconds(static_cast<int>(timeout_ms))) !=
         rclcpp::FutureReturnCode::SUCCESS) {
-      // Clear active handle on timeout
+      // Clear active handle and request cancellation on timeout
       {
         std::lock_guard<std::mutex> lock(active_goal_mutex);
-        active_goal_handle.reset();
+        if (active_goal_handle) {
+          RCLCPP_WARN(this->get_logger(), "Timeout reached. Cancelling ROS 2 goal...");
+          client_->async_cancel_goal(active_goal_handle);
+          active_goal_handle.reset();
+        }
       }
       return absl::DeadlineExceededError(
           "Timed out waiting for action result.");
@@ -133,8 +138,12 @@ class InsertCableClientNode : public rclcpp::Node {
     }
 
     auto result_wrapper = result_future.get();
+    if (result_wrapper.code == rclcpp_action::ResultCode::CANCELED ||
+        context.canceller().cancelled()) {
+      return absl::CancelledError("Action was canceled.");
+    }
     if (result_wrapper.code != rclcpp_action::ResultCode::SUCCEEDED) {
-      return absl::InternalError("Action failed or was canceled.");
+      return absl::InternalError("Action failed.");
     }
 
     return result_wrapper.result;
@@ -174,8 +183,22 @@ InsertCableSkill::Preview(const intrinsic::skills::PreviewRequest& /*request*/,
 
 absl::StatusOr<std::unique_ptr<google::protobuf::Message>>
 InsertCableSkill::Execute(const intrinsic::skills::ExecuteRequest& request,
-                          intrinsic::skills::ExecuteContext& /*context*/) {
+                          intrinsic::skills::ExecuteContext& context) {
   RCLCPP_INFO(client_node_.get_logger(), "InsertCableSkill::Execute");
+
+  // Register cancellation callback
+  auto reg_status = context.canceller().RegisterCallback([this]() {
+    std::lock_guard<std::mutex> lock(active_goal_mutex);
+    if (active_goal_handle) {
+      RCLCPP_INFO(client_node_.get_logger(), "Flowstate requested cancellation. Cancelling ROS 2 goal...");
+      client_node_.client_->async_cancel_goal(active_goal_handle);
+    }
+    return absl::OkStatus();
+  });
+  if (!reg_status.ok()) {
+    return reg_status;
+  }
+  context.canceller().Ready();
 
   INTR_ASSIGN_OR_RETURN(
       auto params, request.params<ai::flowstate::InsertCableSkillParams>());
@@ -195,8 +218,10 @@ InsertCableSkill::Execute(const intrinsic::skills::ExecuteRequest& request,
   RCLCPP_INFO(client_node_.get_logger(), "Sending goal for task ID: %s",
               goal_msg.task.id.c_str());
 
+  RCLCPP_INFO(client_node_.get_logger(), "Time limit from params: %lu seconds", params.time_limit());
+
   auto status_or_result =
-      client_node_.SendAction(goal_msg, params.time_limit() * 1000.0);
+      client_node_.SendAction(goal_msg, params.time_limit() * 1000.0, context);
 
   if (!status_or_result.ok()) {
     return status_or_result.status();
