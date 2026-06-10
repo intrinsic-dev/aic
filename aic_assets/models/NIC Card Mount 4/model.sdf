@@ -651,6 +651,18 @@
             <size>0.008112 0.00025 0.0025</size>
           </box>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.1</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.1</friction>
+              <friction2>0.1</friction2>
+              <rolling_friction>0.1</rolling_friction>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
 
       <collision name="contact_collision_02">
@@ -660,6 +672,18 @@
             <size>0.008112 0.00025 0.0025</size>
           </box>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.1</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.1</friction>
+              <friction2>0.1</friction2>
+              <rolling_friction>0.1</rolling_friction>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
 
       <collision name="contact_collision_01_holder">
@@ -669,6 +693,18 @@
             <size>0.008112 0.00025 0.002</size>
           </box>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.1</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.1</friction>
+              <friction2>0.1</friction2>
+              <rolling_friction>0.1</rolling_friction>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
 
 
@@ -679,6 +715,18 @@
             <size>0.008112 0.00025 0.002</size>
           </box>
         </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.1</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.1</friction>
+              <friction2>0.1</friction2>
+              <rolling_friction>0.1</rolling_friction>
+            </bullet>
+          </friction>
+        </surface>
       </collision>
     </link>
 
