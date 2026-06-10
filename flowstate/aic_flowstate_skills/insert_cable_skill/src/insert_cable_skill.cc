@@ -122,7 +122,8 @@ class InsertCableClientNode : public rclcpp::Node {
       {
         std::lock_guard<std::mutex> lock(active_goal_mutex);
         if (active_goal_handle) {
-          RCLCPP_WARN(this->get_logger(), "Timeout reached. Cancelling ROS 2 goal...");
+          RCLCPP_WARN(this->get_logger(),
+                      "Timeout reached. Cancelling ROS 2 goal...");
           client_->async_cancel_goal(active_goal_handle);
           active_goal_handle.reset();
         }
@@ -190,7 +191,8 @@ InsertCableSkill::Execute(const intrinsic::skills::ExecuteRequest& request,
   auto reg_status = context.canceller().RegisterCallback([this]() {
     std::lock_guard<std::mutex> lock(active_goal_mutex);
     if (active_goal_handle) {
-      RCLCPP_INFO(client_node_.get_logger(), "Flowstate requested cancellation. Cancelling ROS 2 goal...");
+      RCLCPP_INFO(client_node_.get_logger(),
+                  "Flowstate requested cancellation. Cancelling ROS 2 goal...");
       client_node_.client_->async_cancel_goal(active_goal_handle);
     }
     return absl::OkStatus();
@@ -218,7 +220,8 @@ InsertCableSkill::Execute(const intrinsic::skills::ExecuteRequest& request,
   RCLCPP_INFO(client_node_.get_logger(), "Sending goal for task ID: %s",
               goal_msg.task.id.c_str());
 
-  RCLCPP_INFO(client_node_.get_logger(), "Time limit from params: %lu seconds", params.time_limit());
+  RCLCPP_INFO(client_node_.get_logger(), "Time limit from params: %lu seconds",
+              params.time_limit());
 
   auto status_or_result =
       client_node_.SendAction(goal_msg, params.time_limit() * 1000.0, context);
