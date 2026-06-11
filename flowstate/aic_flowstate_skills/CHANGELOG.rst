@@ -2,8 +2,8 @@
 Changelog for package aic_flowstate_skills
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.1 (2026-06-11)
+------------------
 * Fix pacakge name in skill manifests (`#583 <https://github.com/intrinsic-dev/aic/issues/583>`_)
 * Add goal handle cancellation (`#580 <https://github.com/intrinsic-dev/aic/issues/580>`_)
 * Contributors: Kaushik Balasundar, Yadunund

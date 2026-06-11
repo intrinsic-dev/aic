@@ -2,7 +2,7 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>aic_mujoco</name>
-  <version>0.1.0</version>
+  <version>0.1.1</version>
   <description>MuJoCo integration for AI for Industry Challenge</description>
   <maintainer email="yadunund@intrinsic.ai">Yadunund Vijay</maintainer>
   <maintainer email="kbalasundar@intrinsic.ai">Kaushik Balasundar</maintainer>

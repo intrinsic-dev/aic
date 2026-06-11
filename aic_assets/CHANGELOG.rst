@@ -2,8 +2,8 @@
 Changelog for package aic_assets
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.1 (2026-06-11)
+------------------
 * Fix NIC Card Mount SFP port contact collision pose (`#578 <https://github.com/intrinsic-dev/aic/issues/578>`_)
 * Contributors: Ian Chen
 
