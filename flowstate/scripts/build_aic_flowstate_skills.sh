@@ -1,15 +1,45 @@
 #!/usr/bin/env bash
 
+SKILLS_DIR="src/aic/flowstate/aic_flowstate_skills"
+
+# Function to list all valid skills dynamically
+list_available_skills() {
+  local skills=()
+  if [ -d "$SKILLS_DIR" ]; then
+    for dir in "$SKILLS_DIR"/*; do
+      if [ -d "$dir" ]; then
+        local name
+        name=$(basename "$dir")
+        # Check if the manifest file exists for this skill
+        if [ -f "$dir/src/${name}.manifest.textproto" ]; then
+          skills+=("$name")
+        fi
+      fi
+    done
+  fi
+  echo "${skills[@]}"
+}
+
 show_help() {
   echo "Usage: $(basename "$0") [OPTIONS]"
   echo ""
-  echo "Build and bundle the AIC skills (insert_cable_skill, tare_force_torque_sensor_skill, switch_to_aic_controller_skill) for Flowstate."
+  echo "Build and bundle the AIC skills for Flowstate."
   echo ""
   echo "Options:"
   echo "  -h, --help           Show this help message and exit"
   echo "  --ros_distro DISTRO  Name of the ROS distro (default: kilted)"
   echo "  --skill_name NAME    Build only the specified skill (default: build all)"
   echo ""
+  
+  local skills
+  skills=$(list_available_skills)
+  if [ -n "$skills" ]; then
+    echo "Available skills:"
+    for skill in $skills; do
+      echo "  - $skill"
+    done
+    echo ""
+  fi
 }
 
 ROS_DISTRO="kilted"
@@ -62,19 +92,34 @@ build_and_bundle_skill() {
     --output images/"$name"/"$name".bundle.tar
 }
 
+# Get the list of all available skills dynamically
+AVAILABLE_SKILLS=($(list_available_skills))
+
+if [ ${#AVAILABLE_SKILLS[@]} -eq 0 ]; then
+  echo "No skills found in $SKILLS_DIR"
+  exit 1
+fi
+
 if [ -n "$SKILL_NAME" ]; then
-  case "$SKILL_NAME" in
-    insert_cable_skill|tare_force_torque_sensor_skill|switch_to_aic_controller_skill)
-      build_and_bundle_skill "$SKILL_NAME"
-      ;;
-    *)
-      echo "Unknown skill name: $SKILL_NAME"
-      echo "Available skills: insert_cable_skill, tare_force_torque_sensor_skill, switch_to_aic_controller_skill"
-      exit 1
-      ;;
-  esac
+  # Check if the requested skill is in the list of available skills
+  is_valid=false
+  for skill in "${AVAILABLE_SKILLS[@]}"; do
+    if [ "$skill" = "$SKILL_NAME" ]; then
+      is_valid=true
+      break
+    fi
+  done
+
+  if [ "$is_valid" = true ]; then
+    build_and_bundle_skill "$SKILL_NAME"
+  else
+    echo "Unknown skill name: $SKILL_NAME"
+    echo "Available skills: ${AVAILABLE_SKILLS[*]}"
+    exit 1
+  fi
 else
-  build_and_bundle_skill "insert_cable_skill"
-  build_and_bundle_skill "tare_force_torque_sensor_skill"
-  build_and_bundle_skill "switch_to_aic_controller_skill"
+  # Build all available skills
+  for skill in "${AVAILABLE_SKILLS[@]}"; do
+    build_and_bundle_skill "$skill"
+  done
 fi
