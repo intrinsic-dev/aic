@@ -2,6 +2,12 @@
 Changelog for package aic_flowstate_skills
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fix pacakge name in skill manifests (`#583 <https://github.com/intrinsic-dev/aic/issues/583>`_)
+* Add goal handle cancellation (`#580 <https://github.com/intrinsic-dev/aic/issues/580>`_)
+* Contributors: Kaushik Balasundar, Yadunund
+
 0.1.0 (2026-06-09)
 ------------------
 * Add skill for restarting the control bridge in flowstate_ros_bridge (`#568 <https://github.com/intrinsic-dev/aic/issues/568>`_)

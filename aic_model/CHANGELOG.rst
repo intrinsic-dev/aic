@@ -2,6 +2,9 @@
 Changelog for package aic_model
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 0.1.0 (2026-06-09)
 ------------------
 * Update lerobot to fix pixi environment conflicts (`#467 <https://github.com/intrinsic-dev/aic/issues/467>`_) (`#492 <https://github.com/intrinsic-dev/aic/issues/492>`_)

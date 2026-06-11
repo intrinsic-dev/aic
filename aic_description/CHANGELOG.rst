@@ -2,6 +2,9 @@
 Changelog for package aic_description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 0.1.0 (2026-06-09)
 ------------------
 * Support multiple SC ports per rail on the taskboard for phase 1 (`#561 <https://github.com/intrinsic-dev/aic/issues/561>`_)

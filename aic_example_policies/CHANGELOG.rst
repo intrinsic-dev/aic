@@ -2,6 +2,9 @@
 Changelog for package aic_example_policies
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 0.1.0 (2026-06-09)
 ------------------
 * Add check for observation before accessing it (`#388 <https://github.com/intrinsic-dev/aic/issues/388>`_)

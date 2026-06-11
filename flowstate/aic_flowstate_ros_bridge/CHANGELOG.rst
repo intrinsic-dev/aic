@@ -2,6 +2,9 @@
 Changelog for package aic_flowstate_ros_bridge
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 0.1.0 (2026-06-09)
 ------------------
 * implement TCP pose error computation (`#575 <https://github.com/intrinsic-dev/aic/issues/575>`_)

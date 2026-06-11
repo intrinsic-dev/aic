@@ -2,6 +2,9 @@
 Changelog for package aic_scoring
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 0.1.0 (2026-06-09)
 ------------------
 * Add an engine for Phase 1 (`#552 <https://github.com/intrinsic-dev/aic/issues/552>`_)
