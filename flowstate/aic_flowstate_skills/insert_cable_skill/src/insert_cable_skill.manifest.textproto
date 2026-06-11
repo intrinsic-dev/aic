@@ -1,5 +1,5 @@
 id {
-  package: "ai.flowstate"
+  package: "ai.intrinsic"
   name: "insert_cable_skill"
 }
 display_name: "Insert Cable Skill"
