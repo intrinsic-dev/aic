@@ -102,10 +102,8 @@ class Engine {
   std::optional<std::string> initialize();
 
   /// \brief Handle the logic for a given trial.
-  /// \param[in] task The task to score.
   /// \return An error message if an error occured, std::nullopt otherwise.
-  std::optional<std::string> start_trial(const CableConnections& task,
-                                         const uint64_t time_limit);
+  std::optional<std::string> start_trial(const uint64_t time_limit);
 
   /// \brief Fully resets the engine to prepare for a new set of tasks.
   void reset_engine();
@@ -124,7 +122,7 @@ class Engine {
 
   /// \brief Check if the scoring system is ready.
   /// \return True if the scoring system is ready, false otherwise.
-  bool ready_scoring(const CableConnections& task, const uint64_t time_limit);
+  bool ready_scoring(const uint64_t time_limit);
 
   /// @brief Stop the bag recording and compute the current score.
   /// @param[in] A reference to the current trial score to update.

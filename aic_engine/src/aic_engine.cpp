@@ -141,7 +141,7 @@ void Engine::start_engine_callback(
     }
   }
 
-  const auto err = this->start_trial(task, request->time_limit);
+  const auto err = this->start_trial(request->time_limit);
   if (err.has_value()) {
     RCLCPP_ERROR(node_->get_logger(), "Failed starting engine: %s",
                  err.value().c_str());
@@ -149,6 +149,10 @@ void Engine::start_engine_callback(
     response->message = err.value();
     return;
   }
+
+  const auto task_id =
+      std::string("trial_") + std::to_string(this->tasks_.size());
+  this->tasks_.insert({task_id, task});
 
   if (request->time_limit > 0) {
     auto timeout = std::chrono::seconds(request->time_limit + 10);
@@ -281,8 +285,7 @@ void Engine::reset_engine() {
 }
 
 //==============================================================================
-std::optional<std::string> Engine::start_trial(const CableConnections& task,
-                                               const uint64_t time_limit) {
+std::optional<std::string> Engine::start_trial(const uint64_t time_limit) {
   RCLCPP_INFO(node_->get_logger(), " ");
   RCLCPP_INFO(node_->get_logger(),
               "╔════════════════════════════════════════╗");
@@ -292,7 +295,7 @@ std::optional<std::string> Engine::start_trial(const CableConnections& task,
               "╚════════════════════════════════════════╝");
   RCLCPP_INFO(node_->get_logger(), " ");
 
-  if (!this->ready_scoring(task, time_limit)) {
+  if (!this->ready_scoring(time_limit)) {
     const std::string error =
         "  ✗ EVALUATION ERROR: Scoring setup failed."
         "This is an infrastructure issue. Is eval environment "
@@ -303,9 +306,6 @@ std::optional<std::string> Engine::start_trial(const CableConnections& task,
   RCLCPP_INFO(node_->get_logger(), "  ✓ Scoring Ready");
 
   this->scoring_tier2_->SetTaskStartTime(this->node_->now());
-  const auto task_id =
-      std::string("trial_") + std::to_string(this->tasks_.size());
-  this->tasks_.insert({task_id, task});
   return std::nullopt;
 }
 
@@ -457,8 +457,7 @@ bool Engine::check_endpoints() {
 }
 
 //==============================================================================
-bool Engine::ready_scoring(const CableConnections& task,
-                           const uint64_t time_limit) {
+bool Engine::ready_scoring(const uint64_t time_limit) {
   RCLCPP_INFO(node_->get_logger(), "Checking scoring system readiness...");
 
   // Add a few seconds for safety since this is a limit for recorded data
@@ -483,6 +482,27 @@ void Engine::compute_score(TrialScore& score) {
 
   RCLCPP_INFO(node_->get_logger(), "Finished scoring trial, total score is: %f",
               score.total_score());
+
+  YAML::Node yaml_score;
+  yaml_score["tier_1"] = score.tier_1.to_yaml();
+  yaml_score["tier_2"] = score.tier_2.to_yaml();
+  yaml_score["tier_3"] = score.tier_3.to_yaml();
+
+  std::stringstream ss;
+  ss << yaml_score;
+  RCLCPP_INFO(node_->get_logger(),
+              "╔════════════════════════════════════════╗");
+  RCLCPP_INFO(node_->get_logger(),
+              "║        Trial Scoring Results           ║");
+  RCLCPP_INFO(node_->get_logger(),
+              "╚════════════════════════════════════════╝");
+
+  // Split the YAML output by lines and print each line
+  std::string line;
+  while (std::getline(ss, line)) {
+    RCLCPP_INFO(node_->get_logger(), "%s", line.c_str());
+  }
+  RCLCPP_INFO(node_->get_logger(), " ");
 }
 
 //==============================================================================
