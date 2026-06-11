@@ -179,7 +179,7 @@ class Engine {
   bool skip_ready_simulator_;
 
   // Scoring tier 2 instance.
-  std::unique_ptr<aic_scoring::ScoringTier2> scoring_tier2_;
+  std::shared_ptr<aic_scoring::ScoringTier2> scoring_tier2_;
 
   // Safety timer to force stop the engine if it hangs.
   rclcpp::TimerBase::SharedPtr safety_timer_;

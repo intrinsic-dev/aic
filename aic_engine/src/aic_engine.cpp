@@ -115,6 +115,20 @@ void Engine::start_engine_callback(
     return;
   }
 
+  Connection conn0 = {.plugName = request->plug_name[0],
+                      .targetModuleName = request->target_module_name[0],
+                      .portName = request->port_name[0]};
+
+  Connection conn1 = {.plugName = request->plug_name[1],
+                      .targetModuleName = request->target_module_name[1],
+                      .portName = request->port_name[1]};
+
+  CableConnections task(conn0, conn1);
+
+  scoring_tier2_ = std::make_shared<aic_scoring::ScoringTier2>(
+      node_.get(), node_->get_parameter("gripper_frame_name").as_string(),
+      task);
+
   // Only initialize once per run on the initial trial
   if (request->reset) {
     const auto initialization_result = this->initialize();
@@ -126,16 +140,6 @@ void Engine::start_engine_callback(
       return;
     }
   }
-
-  Connection conn0 = {.plugName = request->plug_name[0],
-                      .targetModuleName = request->target_module_name[0],
-                      .portName = request->port_name[0]};
-
-  Connection conn1 = {.plugName = request->plug_name[1],
-                      .targetModuleName = request->target_module_name[1],
-                      .portName = request->port_name[1]};
-
-  CableConnections task(conn0, conn1);
 
   const auto err = this->start_trial(task, request->time_limit);
   if (err.has_value()) {
@@ -266,6 +270,11 @@ std::optional<std::string> Engine::initialize() {
 
 //==============================================================================
 void Engine::reset_engine() {
+  if (this->safety_timer_) {
+    RCLCPP_INFO(node_->get_logger(), "Canceling safety timer on reset.");
+    this->safety_timer_->cancel();
+    this->safety_timer_.reset();
+  }
   this->scoring_tier2_.reset();
   this->tasks_.clear();
   this->requested_run_ = false;
@@ -451,9 +460,6 @@ bool Engine::check_endpoints() {
 bool Engine::ready_scoring(const CableConnections& task,
                            const uint64_t time_limit) {
   RCLCPP_INFO(node_->get_logger(), "Checking scoring system readiness...");
-  scoring_tier2_ = std::make_unique<aic_scoring::ScoringTier2>(
-      node_.get(), node_->get_parameter("gripper_frame_name").as_string(),
-      task);
 
   // Add a few seconds for safety since this is a limit for recorded data
   if (!scoring_tier2_->StartRecording(std::chrono::seconds(time_limit + 10))) {
@@ -526,11 +532,13 @@ void Engine::safety_timer_callback() {
       });
 
   if (task_it != this->tasks_.end()) {
-    this->scoring_tier2_->SetTaskEndTime(this->node_->now());
-    // Stop recording to free memory, but don't compute score (keep failure
-    // default)
-    if (!this->scoring_tier2_->StopRecording()) {
-      RCLCPP_ERROR(node_->get_logger(), "Failed to stop recording.");
+    if (this->scoring_tier2_) {
+      this->scoring_tier2_->SetTaskEndTime(this->node_->now());
+      // Stop recording to free memory, but don't compute score (keep failure
+      // default)
+      if (!this->scoring_tier2_->StopRecording()) {
+        RCLCPP_ERROR(node_->get_logger(), "Failed to stop recording.");
+      }
     }
     task_it->second.status = TaskStatus::FINISHED;
 

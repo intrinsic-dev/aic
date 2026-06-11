@@ -52,41 +52,71 @@ bool ScoringTier2::StartRecording(const std::chrono::seconds &_max_task_time) {
     this->state = State::Recording;
   }
 
+  auto shared_self = this->shared_from_this();
+  std::weak_ptr<ScoringTier2> weak_self = shared_self;
+
   this->static_tf_sub = this->node->create_subscription<TFMsg>(
-      kTfStaticTopic, rclcpp::QoS(10),
-      std::bind(&ScoringTier2::TfStaticCallback, this, std::placeholders::_1));
+      kTfStaticTopic, rclcpp::QoS(10), [weak_self](const TFMsg::SharedPtr msg) {
+        if (auto self = weak_self.lock()) {
+          self->TfStaticCallback(*msg);
+        }
+      });
 
   this->tf_sub = this->node->create_subscription<TFMsg>(
-      kTfTopic, rclcpp::QoS(10),
-      std::bind(&ScoringTier2::TfCallback, this, std::placeholders::_1));
+      kTfTopic, rclcpp::QoS(10), [weak_self](const TFMsg::SharedPtr msg) {
+        if (auto self = weak_self.lock()) {
+          self->TfCallback(*msg);
+        }
+      });
 
   this->scoring_tf_sub = this->node->create_subscription<TFMsg>(
       kScoringTfTopic, rclcpp::QoS(10),
-      std::bind(&ScoringTier2::TfCallback, this, std::placeholders::_1));
+      [weak_self](const TFMsg::SharedPtr msg) {
+        if (auto self = weak_self.lock()) {
+          self->TfCallback(*msg);
+        }
+      });
 
   this->contacts_sub = this->node->create_subscription<ContactsMsg>(
       kContactsTopic, rclcpp::QoS(10),
-      std::bind(&ScoringTier2::ContactsCallback, this, std::placeholders::_1));
+      [weak_self](const ContactsMsg::SharedPtr msg) {
+        if (auto self = weak_self.lock()) {
+          self->ContactsCallback(*msg);
+        }
+      });
 
   this->wrench_sub = this->node->create_subscription<WrenchMsg>(
       kWrenchTopic, rclcpp::QoS(10),
-      std::bind(&ScoringTier2::WrenchCallback, this, std::placeholders::_1));
+      [weak_self](const WrenchMsg::SharedPtr msg) {
+        if (auto self = weak_self.lock()) {
+          self->WrenchCallback(*msg);
+        }
+      });
 
   this->insertion_event_sub = this->node->create_subscription<StringMsg>(
       kInsertionEventTopic, rclcpp::QoS(10),
-      std::bind(&ScoringTier2::InsertionEventCallback, this,
-                std::placeholders::_1));
+      [weak_self](const StringMsg::SharedPtr msg) {
+        if (auto self = weak_self.lock()) {
+          self->InsertionEventCallback(*msg);
+        }
+      });
 
   this->cable_activated_sub = this->node->create_subscription<StringMsg>(
       kCableActivatedTopic, rclcpp::QoS(10),
-      std::bind(&ScoringTier2::CableActivatedCallback, this,
-                std::placeholders::_1));
+      [weak_self](const StringMsg::SharedPtr msg) {
+        if (auto self = weak_self.lock()) {
+          self->CableActivatedCallback(*msg);
+        }
+      });
 
   this->controller_state_sub =
       this->node->create_subscription<ControllerStateMsg>(
           kControllerStateTopic, rclcpp::QoS(10),
-          std::bind(&ScoringTier2::ControllerStateCallback, this,
-                    std::placeholders::_1));
+          [weak_self](const ControllerStateMsg::SharedPtr msg) {
+            if (auto self = weak_self.lock()) {
+              self->ControllerStateCallback(*msg);
+            }
+          });
 
   return this->WaitForTfs();
 }
@@ -255,6 +285,8 @@ void ScoringTier2::WrenchCallback(const WrenchMsg &_msg) {
 void ScoringTier2::CableActivatedCallback(const StringMsg &_msg) {
   if (!this->trackedCable.has_value()) {
     this->trackedCable = _msg.data;
+    RCLCPP_INFO(this->node->get_logger(), "Detected contact with cable %s",
+                _msg.data.c_str());
   } else {
     if (this->trackedCable.value() != _msg.data) {
       // TODO(luca) Consider applying a penalty if another cable
@@ -646,6 +678,48 @@ Tier3Score ScoringTier2::GetDistanceScore(std::size_t index) const {
   return Tier3Score(score, sstream.str());
 }
 
+std::optional<InsertionNamespace> InsertionNamespace::make(std::string msg) {
+  InsertionNamespace result;
+  std::vector<std::string> tokens;
+  size_t pos = 0;
+  std::string delimiter = "#";
+  while ((pos = msg.find(delimiter)) != std::string::npos) {
+    std::string token = msg.substr(0, pos);
+    if (!token.empty()) tokens.push_back(token);
+    msg.erase(0, pos + delimiter.length());
+  }
+  tokens.push_back(msg);
+  if (tokens.size() != 3) {
+    return std::nullopt;
+  }
+  result.cable_name = tokens[0];
+  if (tokens[1] == "0") {
+    result.cable_end = 0;
+  } else if (tokens[1] == "1") {
+    result.cable_end = 1;
+  } else {
+    return std::nullopt;
+  }
+  // Now split the namespace with the "/"
+  tokens.clear();
+  pos = 0;
+  delimiter = "/";
+  while ((pos = msg.find(delimiter)) != std::string::npos) {
+    std::string token = msg.substr(0, pos);
+    if (!token.empty()) tokens.push_back(token);
+    msg.erase(0, pos + delimiter.length());
+  }
+  tokens.push_back(msg);
+  if (tokens.size() < 2) {
+    return std::nullopt;
+  }
+  if (tokens.size() >= 2u) {
+    result.module_name = tokens[0];
+    result.port_name = tokens[1];
+  }
+  return result;
+}
+
 //////////////////////////////////////////////////
 Tier3Score ScoringTier2::ComputeTier3Score(std::size_t index) const {
   // Binary will award kInsertionCompletionScore, partial insertion computed
@@ -661,34 +735,38 @@ Tier3Score ScoringTier2::ComputeTier3Score(std::size_t index) const {
   std::stringstream sstream;
   // Intentional copy since we will edit this
   for (auto namespaceStr : this->insertionPortNamespaces) {
-    // Tokenize the namespace string. The first token should be the
-    // target module name and the second token should be the port name
-    std::vector<std::string> tokens;
-    size_t pos = 0;
-    std::string token;
-    std::string delimiter = "/";
-    while ((pos = namespaceStr.find(delimiter)) != std::string::npos) {
-      std::string token = namespaceStr.substr(0, pos);
-      if (!token.empty()) tokens.push_back(token);
-      namespaceStr.erase(0, pos + delimiter.length());
+    const auto parsedNamespace = InsertionNamespace::make(namespaceStr);
+    if (!parsedNamespace.has_value()) {
+      RCLCPP_ERROR(this->node->get_logger(), "Failed parsing namespace %s.",
+                   namespaceStr.c_str());
     }
-    tokens.push_back(namespaceStr);
+    if (!this->trackedCable.has_value() ||
+        *this->trackedCable != parsedNamespace->cable_name) {
+      RCLCPP_WARN(this->node->get_logger(),
+                  "Received insertion event for %s but it is not being "
+                  "tracked, ignoring...",
+                  parsedNamespace->cable_name.c_str());
+      continue;
+    }
+    if (parsedNamespace->cable_end != index) {
+      continue;
+    }
 
-    if (tokens.size() >= 2u) {
-      // Verify the plug is inserted into the correct target port
-      if (tokens[0] == (*this->connection).data[index].targetModuleName &&
-          tokens[1] == (*this->connection).data[index].portName) {
-        return Tier3Score(kInsertionCompletionScore,
-                          "Cable insertion successful.");
-      } else {
-        return Tier3Score(kInsertionPenalty,
-                          "Cable insertion failed. Incorrect Port.");
-      }
+    const auto &targetModuleName =
+        (*this->connection).data[index].targetModuleName;
+    const auto &portName = (*this->connection).data[index].portName;
+
+    if (parsedNamespace->module_name == targetModuleName &&
+        parsedNamespace->port_name == portName) {
+      return Tier3Score(kInsertionCompletionScore,
+                        "Cable insertion successful.");
     } else {
-      const std::string msg =
-          "Error parsing insertion port namespace: " + namespaceStr;
-      RCLCPP_ERROR(this->node->get_logger(), msg.c_str());
-      return Tier3Score(0.0, msg);
+      return Tier3Score(
+          kInsertionPenalty,
+          std::string("Cable insertion failed. Incorrect Port [") +
+              parsedNamespace->module_name + "/" + parsedNamespace->port_name +
+              "], while the task requested [" + targetModuleName + "/" +
+              portName + "].");
     }
   }
   // Cable insertion was not completed, compute partial insertion

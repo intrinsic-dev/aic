@@ -86,8 +86,19 @@ namespace aic_scoring
       data({conn0, conn1}) {}
   };
 
+  /// \brief Utility class to split incoming namespace strings into a struct
+  struct InsertionNamespace
+  {
+    std::string cable_name;
+    std::size_t cable_end;
+    std::string module_name;
+    std::string port_name;
+
+    static std::optional<InsertionNamespace> make(std::string msg);
+  };
+
   // The Tier2 scoring interface.
-  class ScoringTier2
+  class ScoringTier2 : public std::enable_shared_from_this<ScoringTier2>
   {
     using TFMsg = tf2_msgs::msg::TFMessage;
     using ContactsMsg = ros_gz_interfaces::msg::Contacts;
