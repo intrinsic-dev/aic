@@ -643,6 +643,91 @@
           </friction>
         </surface>
       </collision>
+
+      <collision name="contact_collision_01">
+        <pose>0.012963 -0.0305 0.002845 3.128092 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.008112 0.00025 0.0025</size>
+          </box>
+        </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.1</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.1</friction>
+              <friction2>0.1</friction2>
+              <rolling_friction>0.1</rolling_friction>
+            </bullet>
+          </friction>
+        </surface>
+      </collision>
+
+      <collision name="contact_collision_02">
+        <pose>-0.010237 -0.0305 0.002845 3.128092 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.008112 0.00025 0.0025</size>
+          </box>
+        </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.1</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.1</friction>
+              <friction2>0.1</friction2>
+              <rolling_friction>0.1</rolling_friction>
+            </bullet>
+          </friction>
+        </surface>
+      </collision>
+
+      <collision name="contact_collision_01_holder">
+        <pose>0.012963 -0.030 0.008 3.128092 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.008112 0.00025 0.002</size>
+          </box>
+        </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.1</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.1</friction>
+              <friction2>0.1</friction2>
+              <rolling_friction>0.1</rolling_friction>
+            </bullet>
+          </friction>
+        </surface>
+      </collision>
+
+
+      <collision name="contact_collision_02_holder">
+        <pose>-0.010237 -0.030 0.008 3.128092 0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.008112 0.00025 0.002</size>
+          </box>
+        </geometry>
+        <surface>
+          <friction>
+            <torsional>
+              <coefficient>0.1</coefficient>
+            </torsional>
+            <bullet>
+              <friction>0.1</friction>
+              <friction2>0.1</friction2>
+              <rolling_friction>0.1</rolling_friction>
+            </bullet>
+          </friction>
+        </surface>
+      </collision>
     </link>
 
     <joint name="card_joint" type="fixed">
@@ -652,22 +737,6 @@
 
     <link name="sfp_port_0_link">
       <pose relative_to="nic_card_link">0.01295 -0.031572 0.00501 4.69895 0 0</pose>
-      <collision name="contact_collision_01">
-        <pose>0.012963 -0.0305 0.002845 3.128092 0.0 0.0</pose>
-        <geometry>
-          <box>
-            <size>0.008112 0.00025 0.0025</size>
-          </box>
-        </geometry>
-      </collision>
-      <collision name="contact_collision_01_holder">
-        <pose>0.012963 -0.030 0.008 3.128092 0.0 0.0</pose>
-        <geometry>
-          <box>
-            <size>0.008112 0.00025 0.002</size>
-          </box>
-        </geometry>
-      </collision>
     </link>
     <plugin
       filename="static://gz::sim::systems::TouchPlugin"
@@ -696,22 +765,6 @@
 
     <link name="sfp_port_1_link">
       <pose relative_to="nic_card_link">-0.01025 -0.031572 0.00501 4.69895 0 0</pose>
-      <collision name="contact_collision_02">
-        <pose>-0.010237 -0.0305 0.002845 3.128092 0.0 0.0</pose>
-        <geometry>
-          <box>
-            <size>0.008112 0.00025 0.0025</size>
-          </box>
-        </geometry>
-      </collision>
-      <collision name="contact_collision_02_holder">
-        <pose>-0.010237 -0.030 0.008 3.128092 0.0 0.0</pose>
-        <geometry>
-          <box>
-            <size>0.008112 0.00025 0.002</size>
-          </box>
-        </geometry>
-      </collision>
     </link>
     <plugin
       filename="static://gz::sim::systems::TouchPlugin"
