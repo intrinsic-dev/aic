@@ -2,6 +2,9 @@
 Changelog for package lerobot_robot_aic
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.1.1 (2026-06-11)
+------------------
+
 0.1.0 (2026-06-09)
 ------------------
 * Fix SpaceMouse device not stored in AICSpaceMouseTeleop.connect() (`#417 <https://github.com/intrinsic-dev/aic/issues/417>`_)

@@ -2,6 +2,9 @@
 Changelog for package aic_gazebo
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.1.1 (2026-06-11)
+------------------
+
 0.1.0 (2026-06-09)
 ------------------
 * Make cable dynamic on gripper contact (`#553 <https://github.com/intrinsic-dev/aic/issues/553>`_)

@@ -2,6 +2,9 @@
 Changelog for package aic_adapter
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.1.1 (2026-06-11)
+------------------
+
 0.1.0 (2026-06-09)
 ------------------
 * Optionally align camera timestamps in aic_adapter (`#567 <https://github.com/intrinsic-dev/aic/issues/567>`_)

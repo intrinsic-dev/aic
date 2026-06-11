@@ -2,6 +2,11 @@
 Changelog for package aic_assets
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.1.1 (2026-06-11)
+------------------
+* Fix NIC Card Mount SFP port contact collision pose (`#578 <https://github.com/intrinsic-dev/aic/issues/578>`_)
+* Contributors: Ian Chen
+
 0.1.0 (2026-06-09)
 ------------------
 * Correct link names in SDF for gripper (`#572 <https://github.com/intrinsic-dev/aic/issues/572>`_)

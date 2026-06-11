@@ -2,6 +2,9 @@
 Changelog for package aic_mujoco
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.1.1 (2026-06-11)
+------------------
+
 0.1.0 (2026-06-09)
 ------------------
 * Automate mjcf pipeline from Gazebo SDF file and update README.md (`#393 <https://github.com/intrinsic-dev/aic/issues/393>`_)
