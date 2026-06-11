@@ -1,5 +1,5 @@
 id {
-  package: "ai.flowstate"
+  package: "ai.intrinsic"
   name: "lifecycle_transition_skill"
 }
 display_name: "Lifecycle Transition Skill"
