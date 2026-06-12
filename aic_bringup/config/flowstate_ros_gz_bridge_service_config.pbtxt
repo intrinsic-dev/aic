@@ -129,6 +129,22 @@
       direction: GZ_TO_ROS
       lazy: false
     }
+    bridges: {
+      ros_topic_name: "/scoring/insertion_event"
+      gz_topic_name: "/cable_moderator/insertion_event"
+      ros_type_name: "std_msgs/msg/String"
+      gz_type_name: "gz.msgs.StringMsg"
+      direction: GZ_TO_ROS
+      lazy: false
+    }
+    bridges: {
+      ros_topic_name: "/scoring/cable_activated"
+      gz_topic_name: "/cable_moderator/cable_activated"
+      ros_type_name: "std_msgs/msg/String"
+      gz_type_name: "gz.msgs.StringMsg"
+      direction: GZ_TO_ROS
+      lazy: false
+    }
   }
   gazebo_simulator: {
     name: "aic_gazebo_simulator"

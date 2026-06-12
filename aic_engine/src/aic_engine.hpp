@@ -32,7 +32,6 @@
 #include "aic_engine_interfaces/srv/stop_engine.hpp"
 #include "aic_scoring/ScoringTier2.hh"
 #include "aic_scoring/TierScore.hh"
-#include "aic_task_interfaces/action/insert_cable.hpp"
 #include "lifecycle_msgs/msg/state.hpp"
 #include "lifecycle_msgs/srv/change_state.hpp"
 #include "lifecycle_msgs/srv/get_state.hpp"
@@ -44,12 +43,12 @@
 //==============================================================================
 namespace aic {
 
-using InsertCableAction = aic_task_interfaces::action::InsertCable;
+using Connection = aic_scoring::Connection;
+using CableConnections = aic_scoring::CableConnections;
 using JointMotionUpdateMsg = aic_control_interfaces::msg::JointMotionUpdate;
 using MotionUpdateMsg = aic_control_interfaces::msg::MotionUpdate;
 using StartEngineSrv = aic_engine_interfaces::srv::StartEngine;
 using StopEngineSrv = aic_engine_interfaces::srv::StopEngine;
-using TaskMsg = aic_task_interfaces::msg::Task;
 using TriggerSrv = std_srvs::srv::Trigger;
 
 //==============================================================================
@@ -80,10 +79,10 @@ enum class TaskStatus {
 
 //==============================================================================
 struct TrialAttempt {
-  TaskMsg task;
+  CableConnections task;
   TaskStatus status;
   TrialScore score;
-  TrialAttempt(const TaskMsg& task_)
+  TrialAttempt(const CableConnections& task_)
       : task(task_), status(TaskStatus::STARTED) {}
 };
 
@@ -103,12 +102,14 @@ class Engine {
   std::optional<std::string> initialize();
 
   /// \brief Handle the logic for a given trial.
-  /// \param[in] task The task to score.
   /// \return An error message if an error occured, std::nullopt otherwise.
-  std::optional<std::string> start_trial(const TaskMsg& task);
+  std::optional<std::string> start_trial(const uint64_t time_limit);
 
   /// \brief Fully resets the engine to prepare for a new set of tasks.
   void reset_engine();
+
+  /// \brief Callback for the safety timer to force stop the engine.
+  void safety_timer_callback();
 
   /// \brief Check if the participant model is ready. As per challenge
   /// requirements. See challenge_rules.md for details. \return True if the
@@ -121,38 +122,7 @@ class Engine {
 
   /// \brief Check if the scoring system is ready.
   /// \return True if the scoring system is ready, false otherwise.
-  bool ready_scoring(const TaskMsg& task);
-
-  /// @brief Check if the model is in the unconfigured state together with other
-  /// expectations in this state.
-  /// @return True if the model is unconfigured, false otherwise.
-  bool model_node_is_unconfigured();
-
-  /// @brief Trigger a state transition for the lifecycle node.
-  /// \param[in] transition The transition to trigger as per
-  /// lifecycle_msgs::msg::Transition enum definition.
-  /// @return True if transition succeeded, false otherwise.
-  bool transition_model_lifecycle_node(const uint8_t transition);
-
-  /// @brief Configure the model node and check expectations in the configured
-  /// state as per challenge requirements.
-  /// @return True if configuration succeeded, false otherwise.
-  bool configure_model_node();
-
-  /// @brief Activate the model node to transition from configured to active
-  /// state.
-  /// @return True if activation succeeded, false otherwise.
-  bool activate_model_node();
-
-  /// @brief Deactivate the model node to transition from active to configured
-  /// state.
-  /// @return True if deactivation succeeded, false otherwise.
-  bool deactivate_model_node();
-
-  /// @brief Cleanup the model node to transition from inactive to
-  /// unconfigured state.
-  /// @return True if cleanup succeeded, false otherwise.
-  bool cleanup_model_node();
+  bool ready_scoring(const uint64_t time_limit);
 
   /// @brief Stop the bag recording and compute the current score.
   /// @param[in] A reference to the current trial score to update.
@@ -161,24 +131,6 @@ class Engine {
   /// @brief Writes the result of the current run to a YAML file.
   /// \param[in] The score to serialize and write.
   void score_run();
-
-  /// @brief Wait for a future, interrupt if rclcpp Context is shut down.
-  /// \param[in] The future to wait for.
-  /// \param[in] The timeout to wait until.
-  /// @return true if the future resolved, false if it didn't.
-  template <typename FutureT>
-  bool wait_for_interruptible(const FutureT& future,
-                              const std::chrono::seconds timeout) const {
-    const auto start = node_->now();
-    const auto timeout_duration = rclcpp::Duration(timeout);
-    while (rclcpp::ok() && (node_->now() - start) < timeout_duration) {
-      if (future.wait_for(std::chrono::milliseconds(50)) ==
-          std::future_status::ready) {
-        return true;
-      }
-    }
-    return false;
-  }
 
   /// @brief Callback for the service to start the engine. Will start scoring.
   void start_engine_callback(
@@ -198,22 +150,13 @@ class Engine {
   std::string model_node_name_;
   // Name of the service to get the lifecycle state of the model node.
   std::string model_get_state_service_name_;
-  // Name of the service to change the lifecycle state of the model node.
-  std::string model_change_state_service_name_;
 
   // Internal ROS 2 node.
   rclcpp::Node::SharedPtr node_;
 
-  // Action clients.
-  rclcpp_action::Client<InsertCableAction>::SharedPtr
-      insert_cable_action_client_;
-
   // Service clients.
   rclcpp::Client<lifecycle_msgs::srv::GetState>::SharedPtr
       model_get_state_client_;
-  rclcpp::Client<lifecycle_msgs::srv::ChangeState>::SharedPtr
-      model_change_state_client_;
-  rclcpp::Client<TriggerSrv>::SharedPtr tare_ft_client_;
 
   // Service servers.
   rclcpp::Service<StartEngineSrv>::SharedPtr start_engine_server_;
@@ -234,7 +177,10 @@ class Engine {
   bool skip_ready_simulator_;
 
   // Scoring tier 2 instance.
-  std::unique_ptr<aic_scoring::ScoringTier2> scoring_tier2_;
+  std::shared_ptr<aic_scoring::ScoringTier2> scoring_tier2_;
+
+  // Safety timer to force stop the engine if it hangs.
+  rclcpp::TimerBase::SharedPtr safety_timer_;
 
   // Output directory for scoring.
   std::string scoring_output_dir_;

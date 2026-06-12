@@ -160,6 +160,9 @@ void CableModeratorPlugin::Configure(
   this->cableInsertionPub = this->node.Advertise<gz::msgs::StringMsg>(
       "/cable_moderator/insertion_event");
 
+  this->cableActivationPub = this->node.Advertise<gz::msgs::StringMsg>(
+      "/cable_moderator/cable_activated");
+
   // Manual grasp subscribers for all cables
   for (size_t i = 0; i < this->cableTrackers.size(); ++i) {
     const auto& config = this->cableConfigs[i];
@@ -295,6 +298,9 @@ void CableModeratorPlugin::MakeCableDynamic(
     (GZ_SIM_MAJOR_VERSION == 10 && GZ_SIM_MINOR_VERSION >= 3) || \
     (GZ_SIM_MAJOR_VERSION > 10)
   Model(tracker.modelEntity).SetStatic(_ecm, false);
+  gz::msgs::StringMsg pubMsg;
+  pubMsg.set_data(this->cableConfigs[_cableIndex].modelName);
+  this->cableActivationPub.Publish(pubMsg);
 #else
   static bool warnedOnce = false;
   if (!warnedOnce) {

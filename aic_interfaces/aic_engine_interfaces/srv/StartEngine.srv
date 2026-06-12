@@ -1,6 +1,11 @@
 # Service to start the engine
 
-aic_task_interfaces/Task task # The task being executed by the model
+string[2] plug_name
+string[2] port_name
+string[2] target_module_name
+
+uint64 time_limit
+
 bool reset # Whether to reset the engine
 ---
 bool success             # indicate successful reset

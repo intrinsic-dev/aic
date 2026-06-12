@@ -17,7 +17,6 @@ find_package(ament_cmake REQUIRED)
 find_package(aic_scoring REQUIRED)
 find_package(aic_control_interfaces REQUIRED)
 find_package(aic_engine_interfaces REQUIRED)
-find_package(aic_task_interfaces REQUIRED)
 find_package(lifecycle_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
@@ -36,7 +35,6 @@ target_link_libraries(aic_engine
   yaml-cpp
   ${aic_control_interfaces_TARGETS}
   ${aic_engine_interfaces_TARGETS}
-  ${aic_task_interfaces_TARGETS}
   ${lifecycle_msgs_TARGETS}
   ${std_srvs_TARGETS}
 )

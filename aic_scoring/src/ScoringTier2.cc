@@ -19,19 +19,14 @@
 
 #include <tf2/LinearMath/Matrix3x3.h>
 #include <tf2/LinearMath/Quaternion.h>
-#include <yaml-cpp/yaml.h>
 
 #include <Eigen/Dense>
 #include <algorithm>
 #include <chrono>
 #include <cmath>
-#include <filesystem>
 #include <iostream>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
-#include <rosbag2_cpp/reader.hpp>
-#include <rosbag2_cpp/writer.hpp>
-#include <rosbag2_storage/storage_options.hpp>
 #include <sstream>
 #include <string>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
@@ -39,127 +34,123 @@
 
 namespace aic_scoring {
 //////////////////////////////////////////////////
-ScoringTier2::ScoringTier2(rclcpp::Node *_node) : node(_node) {
-  this->topics.push_back({.name = kJointStateTopic,
-                          .type = "sensor_msgs/msg/JointState",
-                          .latched = false});
-  this->topics.push_back({.name = kTfStaticTopic,
-                          .type = "tf2_msgs/msg/TFMessage",
-                          .latched = true});
-  this->topics.push_back(
-      {.name = kTfTopic, .type = "tf2_msgs/msg/TFMessage", .latched = false});
-  this->topics.push_back({.name = kScoringTfTopic,
-                          .type = "tf2_msgs/msg/TFMessage",
-                          .latched = false});
-  this->topics.push_back({.name = kContactsTopic,
-                          .type = "ros_gz_interfaces/msg/Contacts",
-                          .latched = false});
-  this->topics.push_back({.name = kWrenchTopic,
-                          .type = "geometry_msgs/msg/WrenchStamped",
-                          .latched = false});
-  this->topics.push_back({.name = kMotionUpdateTopic,
-                          .type = "aic_control_interfaces/msg/MotionUpdate",
-                          .latched = false});
-  this->topics.push_back(
-      {.name = kJointMotionUpdateTopic,
-       .type = "aic_control_interfaces/msg/JointMotionUpdate",
-       .latched = false});
-  this->topics.push_back({.name = kInsertionEventTopic,
-                          .type = "std_msgs/msg/String",
-                          .latched = false});
-  this->topics.push_back({.name = kControllerStateTopic,
-                          .type = "aic_control_interfaces/msg/ControllerState",
-                          .latched = false});
-}
+ScoringTier2::ScoringTier2(rclcpp::Node *_node,
+                           const std::string &_gripperFrame,
+                           const CableConnections &_connections)
+    : node(_node), gripperFrame(_gripperFrame), connection(_connections) {}
 
 //////////////////////////////////////////////////
-void ScoringTier2::SetConnection(const Connection &_connection) {
-  this->connection = _connection;
-}
+bool ScoringTier2::StartRecording(const std::chrono::seconds &_max_task_time) {
+  this->tf2_buffer = std::make_unique<tf2::BufferCore>(_max_task_time);
 
-//////////////////////////////////////////////////
-void ScoringTier2::SetGripperFrame(const std::string &_gripperFrame) {
-  this->gripperFrame = _gripperFrame;
-}
-
-//////////////////////////////////////////////////
-bool ScoringTier2::StartRecording(const std::string &_filename,
-                                  const Connection &_connection,
-                                  const std::chrono::seconds &_max_task_time) {
-  this->Reset(_max_task_time);
-  this->SetConnection(_connection);
   {
     std::lock_guard<std::mutex> lock(this->mutex);
     if (this->state != State::Idle) {
       RCLCPP_ERROR(this->node->get_logger(), "Scoring system is busy.");
       return false;
     }
-
-    try {
-      rosbag2_storage::StorageOptions storage_options;
-      storage_options.uri = _filename;
-      this->bagWriter.open(storage_options);
-    } catch (const std::exception &e) {
-      RCLCPP_ERROR(this->node->get_logger(), "Failed to open bag: %s",
-                   e.what());
-      return false;
-    }
     this->state = State::Recording;
-    this->bagUri = _filename;
   }
 
-  // Subscribe to all topics relevant for scoring.
-  for (const auto &topic : this->topics) {
-    auto qos = topic.latched
-                   ? rclcpp::QoS(rclcpp::KeepLast(100)).transient_local()
-                   : rclcpp::QoS(rclcpp::KeepLast(10)).reliable();
-    auto sub = this->node->create_generic_subscription(
-        topic.name, topic.type, qos,
-        [this, topic](std::shared_ptr<const rclcpp::SerializedMessage> msg,
-                      const rclcpp::MessageInfo &msg_info) {
-          // Bag the data.
-          const auto &rmw_info = msg_info.get_rmw_message_info();
-          std::lock_guard<std::mutex> lock(this->mutex);
-          if (this->state == State::Recording) {
-            this->bagWriter.write(msg, topic.name, topic.type,
-                                  rmw_info.received_timestamp,
-                                  rmw_info.source_timestamp);
-            if (topic.name == kScoringTfTopic) {
-              // A new cable transform was received
-              this->cableTfReceived = true;
-            } else if (topic.name == kTfTopic) {
-              // A new gripper transform was received
-              this->gripperTfReceived = true;
-            } else if (topic.name == kTfStaticTopic) {
-              // A new static transform was received
-              this->staticTfReceived = true;
+  auto shared_self = this->shared_from_this();
+  std::weak_ptr<ScoringTier2> weak_self = shared_self;
+
+  this->static_tf_sub = this->node->create_subscription<TFMsg>(
+      kTfStaticTopic, rclcpp::QoS(10), [weak_self](const TFMsg::SharedPtr msg) {
+        if (auto self = weak_self.lock()) {
+          self->TfStaticCallback(*msg);
+        }
+      });
+
+  this->tf_sub = this->node->create_subscription<TFMsg>(
+      kTfTopic, rclcpp::QoS(10), [weak_self](const TFMsg::SharedPtr msg) {
+        if (auto self = weak_self.lock()) {
+          self->TfCallback(*msg);
+        }
+      });
+
+  this->scoring_tf_sub = this->node->create_subscription<TFMsg>(
+      kScoringTfTopic, rclcpp::QoS(10),
+      [weak_self](const TFMsg::SharedPtr msg) {
+        if (auto self = weak_self.lock()) {
+          self->TfCallback(*msg);
+        }
+      });
+
+  this->contacts_sub = this->node->create_subscription<ContactsMsg>(
+      kContactsTopic, rclcpp::QoS(10),
+      [weak_self](const ContactsMsg::SharedPtr msg) {
+        if (auto self = weak_self.lock()) {
+          self->ContactsCallback(*msg);
+        }
+      });
+
+  this->wrench_sub = this->node->create_subscription<WrenchMsg>(
+      kWrenchTopic, rclcpp::QoS(10),
+      [weak_self](const WrenchMsg::SharedPtr msg) {
+        if (auto self = weak_self.lock()) {
+          self->WrenchCallback(*msg);
+        }
+      });
+
+  this->insertion_event_sub = this->node->create_subscription<StringMsg>(
+      kInsertionEventTopic, rclcpp::QoS(10),
+      [weak_self](const StringMsg::SharedPtr msg) {
+        if (auto self = weak_self.lock()) {
+          self->InsertionEventCallback(*msg);
+        }
+      });
+
+  this->cable_activated_sub = this->node->create_subscription<StringMsg>(
+      kCableActivatedTopic, rclcpp::QoS(10),
+      [weak_self](const StringMsg::SharedPtr msg) {
+        if (auto self = weak_self.lock()) {
+          self->CableActivatedCallback(*msg);
+        }
+      });
+
+  this->controller_state_sub =
+      this->node->create_subscription<ControllerStateMsg>(
+          kControllerStateTopic, rclcpp::QoS(10),
+          [weak_self](const ControllerStateMsg::SharedPtr msg) {
+            if (auto self = weak_self.lock()) {
+              self->ControllerStateCallback(*msg);
             }
-          }
-        });
-    this->subscriptions.push_back(sub);
-  }
+          });
 
   return this->WaitForTfs();
 }
 
 //////////////////////////////////////////////////
 bool ScoringTier2::WaitForTfs() {
-  this->cableTfReceived = false;
-  this->gripperTfReceived = false;
-  this->staticTfReceived = false;
   // Simple spinlock to avoid locking, condition variables etc. for a fairly
   // straightforward wait.
+  if (!this->connection.has_value()) {
+    RCLCPP_ERROR(this->node->get_logger(),
+                 "No connection specified when waiting for tfs");
+    return false;
+  }
   const auto start = this->node->get_clock()->now();
-  const auto timeout = std::chrono::seconds(10);
+  const auto timeout = std::chrono::seconds(30);
   while (rclcpp::ok() &&
-         (!this->cableTfReceived || !this->gripperTfReceived ||
-          !this->staticTfReceived) &&
+         (!this->GetTransform(tf2::TimePointZero, "cable_0", "default", true) ||
+          !this->GetTransform(tf2::TimePointZero, "cable_1", "default", true) ||
+          !this->GetTransform(tf2::TimePointZero, "cable_2", "default", true) ||
+          !this->GetTransform(tf2::TimePointZero, "cable_3", "default", true) ||
+          !this->GetTransform(tf2::TimePointZero, "cable_4", "default", true) ||
+          !this->GetTransform(tf2::TimePointZero, this->gripperFrame, "root",
+                              true) ||
+          !this->GetTransform(tf2::TimePointZero,
+                              this->connection.value().data[0].PortTfName(),
+                              "default", true) ||
+          !this->GetTransform(tf2::TimePointZero,
+                              this->connection.value().data[1].PortTfName(),
+                              "default", true)) &&
          this->node->get_clock()->now() - start < timeout) {
     this->node->get_clock()->sleep_for(
         rclcpp::Duration(std::chrono::milliseconds(100)));
   }
-  if (!this->cableTfReceived || !this->gripperTfReceived ||
-      !this->staticTfReceived) {
+  if (this->node->get_clock()->now() - start > timeout) {
     RCLCPP_ERROR(this->node->get_logger(),
                  "Timeout while waiting for transforms for scoring.");
     return false;
@@ -174,198 +165,62 @@ bool ScoringTier2::StopRecording() {
     RCLCPP_ERROR(this->node->get_logger(), "Scoring system is not recording");
     return false;
   }
-  this->bagWriter.close();
   this->state = State::Idle;
+  // Clear all the subscriptions
+  this->static_tf_sub.reset();
+  this->tf_sub.reset();
+  this->scoring_tf_sub.reset();
+  this->contacts_sub.reset();
+  this->wrench_sub.reset();
+  this->insertion_event_sub.reset();
+  this->cable_activated_sub.reset();
+  this->controller_state_sub.reset();
   return true;
-}
-
-//////////////////////////////////////////////////
-template <typename Msg>
-Msg deserialize_from_rosbag(
-    std::shared_ptr<rosbag2_storage::SerializedBagMessage> msg_in) {
-  Msg msg;
-  rclcpp::SerializedMessage extracted_serialized_msg(*msg_in->serialized_data);
-  rclcpp::Serialization<Msg> serialization;
-  serialization.deserialize_message(&extracted_serialized_msg, &msg);
-  return msg;
 }
 
 //////////////////////////////////////////////////
 std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
   Tier2Score tier2_score("Scoring failed.");
-  Tier3Score tier3_score(0, "Task execution failed.");
   if (this->state != State::Idle) {
     RCLCPP_ERROR(this->node->get_logger(), "Scoring system is busy.");
-    return {tier2_score, tier3_score};
+    return {tier2_score, Tier3Score(0, "Task execution failed.")};
   }
-  rosbag2_cpp::Reader bagReader;
-
-  try {
-    rosbag2_storage::StorageOptions storage_options;
-    storage_options.uri = this->bagUri;
-    bagReader.open(storage_options);
-  } catch (const std::exception &e) {
-    RCLCPP_ERROR(this->node->get_logger(), "Failed to open bag: %s", e.what());
-    return {tier2_score, tier3_score};
-  }
-  this->state = State::Scoring;
 
   tier2_score.message = "Scoring succeeded.";
 
-  // First pass: Process all messages to build the complete TF buffer.
-  // We need both static TF (robot URDF) and dynamic TF (joint states) to
-  // compute the full transform chain to the gripper.
-  while (rclcpp::ok() && bagReader.has_next()) {
-    const auto msg_ptr = bagReader.read_next();
-    // Debugging to make sure messages are in the bag
-    // RCLCPP_INFO(this->node->get_logger(), "Received message on topic '%s'",
-    //     msg_ptr->topic_name.c_str());
-    if (msg_ptr->topic_name == kJointStateTopic) {
-      const auto msg = deserialize_from_rosbag<JointStateMsg>(msg_ptr);
-      this->JointStateCallback(msg);
-    } else if (msg_ptr->topic_name == kTfTopic ||
-               msg_ptr->topic_name == kScoringTfTopic) {
-      const auto msg = deserialize_from_rosbag<TFMsg>(msg_ptr);
-      this->TfCallback(msg);
-    } else if (msg_ptr->topic_name == kTfStaticTopic) {
-      const auto msg = deserialize_from_rosbag<TFMsg>(msg_ptr);
-      this->TfStaticCallback(msg);
-    } else if (msg_ptr->topic_name == kContactsTopic) {
-      const auto msg = deserialize_from_rosbag<ContactsMsg>(msg_ptr);
-      this->ContactsCallback(msg);
-    } else if (msg_ptr->topic_name == kWrenchTopic) {
-      const auto msg = deserialize_from_rosbag<WrenchMsg>(msg_ptr);
-      this->WrenchCallback(msg);
-    } else if (msg_ptr->topic_name == kMotionUpdateTopic) {
-      const auto msg = deserialize_from_rosbag<MotionUpdateMsg>(msg_ptr);
-      this->MotionUpdateCallback(msg);
-    } else if (msg_ptr->topic_name == kJointMotionUpdateTopic) {
-      const auto msg = deserialize_from_rosbag<JointMotionUpdateMsg>(msg_ptr);
-      this->JointMotionUpdateCallback(msg);
-    } else if (msg_ptr->topic_name == kInsertionEventTopic) {
-      const auto msg = deserialize_from_rosbag<StringMsg>(msg_ptr);
-      this->InsertionEventCallback(msg);
-    } else if (msg_ptr->topic_name == kControllerStateTopic) {
-      const auto msg = deserialize_from_rosbag<ControllerStateMsg>(msg_ptr);
-      this->ControllerStateCallback(msg);
-    } else {
-      RCLCPP_WARN(this->node->get_logger(),
-                  "Unexpected topic name while scoring: %s",
-                  msg_ptr->topic_name.c_str());
-    }
-  }
-
   this->state = State::Idle;
-  // Compute initial plug-port distance for trajectory efficiency scoring.
-  // The robot must travel at least this distance, so it becomes the minimum
-  // path length for a perfect score.
-  double minPathLength = 0.0;
-  if (this->task_start_time.has_value()) {
-    const auto initDist = this->GetPlugPortDistance(tf2::TimePoint(
-        std::chrono::nanoseconds(this->task_start_time.value().nanoseconds())));
-    if (initDist.has_value()) {
-      minPathLength = initDist.value();
-    } else {
-      RCLCPP_WARN(this->node->get_logger(),
-                  "Failed to get initial plug port distance");
-    }
-  }
   tier2_score.add_category_score("insertion force",
                                  this->GetInsertionForceScore());
   tier2_score.add_category_score("contacts", this->GetContactsScore());
-  tier3_score = this->ComputeTier3Score();
+  const auto [success, tier3_score] = this->CombineTier3Score();
   tier2_score.add_category_score("duration",
-                                 this->GetTaskDurationScore(tier3_score));
+                                 this->GetTaskDurationScore(success));
   tier2_score.add_category_score("trajectory smoothness",
-                                 this->GetTrajectoryJerkScore(tier3_score));
-  tier2_score.add_category_score(
-      "trajectory efficiency",
-      this->GetTrajectoryEfficiencyScore(minPathLength, tier3_score));
+                                 this->GetTrajectoryJerkScore(success));
+  tier2_score.add_category_score("trajectory efficiency",
+                                 this->GetTrajectoryEfficiencyScore(success));
+
   return {tier2_score, tier3_score};
-}
-
-//////////////////////////////////////////////////
-void ScoringTier2::Reset(const std::chrono::seconds &_buffer_size) {
-  this->connection.reset();
-  std::filesystem::remove_all(this->bagUri);
-  this->bagUri.clear();
-  this->tf2_buffer = std::make_unique<tf2::BufferCore>(_buffer_size);
-  this->state = State::Idle;
-  this->wrenches.clear();
-  this->endEffectorPoses.clear();
-  this->endEffectorVelocities.clear();
-  this->task_start_time.reset();
-  this->task_end_time.reset();
-  this->bagWriter.close();
-  this->contacts.clear();
-  this->insertionPortNamespace.clear();
-  this->lastTaredFt.reset();
-}
-
-//////////////////////////////////////////////////
-bool ScoringTier2::ParseStats(YAML::Node _config) {
-  // Parse topics to subscribe to.
-  if (!_config["topics"]) {
-    RCLCPP_ERROR(this->node->get_logger(),
-                 "Unable to find [topics] in yaml file");
-    return false;
-  }
-
-  const auto &topics = _config["topics"];
-  if (!topics.IsSequence()) {
-    RCLCPP_ERROR(this->node->get_logger(),
-                 "Unable to find sequence of topics within [topics]");
-    return false;
-  }
-
-  for (const auto &newTopic : topics) {
-    if (!newTopic["topic"]) {
-      RCLCPP_ERROR(this->node->get_logger(),
-                   "Unrecognized element. It should be [topic]");
-      return false;
-    }
-
-    const auto &topicProperties = newTopic["topic"];
-    if (!topicProperties.IsMap()) {
-      RCLCPP_ERROR(this->node->get_logger(),
-                   "Unable to find properties within [topic]");
-      return false;
-    }
-
-    TopicInfo topicInfo;
-
-    if (!topicProperties["name"]) {
-      RCLCPP_ERROR(this->node->get_logger(),
-                   "Unable to find [name] within [topic]");
-      return false;
-    }
-    topicInfo.name = topicProperties["name"].as<std::string>();
-
-    if (!topicProperties["type"]) {
-      RCLCPP_ERROR(this->node->get_logger(),
-                   "Unable to find [type] within [topic]");
-      return false;
-    }
-    topicInfo.type = topicProperties["type"].as<std::string>();
-
-    if (topicProperties["latched"]) {
-      topicInfo.latched = topicProperties["latched"].as<bool>();
-    }
-
-    this->topics.push_back(topicInfo);
-  }
-
-  return true;
 }
 
 //////////////////////////////////////////////////
 std::set<std::string> ScoringTier2::GetMissingRequiredTopics() const {
   std::set<std::string> unavailable;
-  for (const auto &subscription : this->subscriptions) {
-    if (subscription->get_publisher_count() == 0) {
-      unavailable.insert(subscription->get_topic_name());
+  auto check = [this, &unavailable](const char *topic) {
+    if (this->node->count_publishers(topic) == 0) {
+      unavailable.insert(topic);
     }
-  }
+  };
+
+  check(kTfStaticTopic);
+  check(kTfTopic);
+  check(kScoringTfTopic);
+  check(kContactsTopic);
+  check(kWrenchTopic);
+  check(kInsertionEventTopic);
+  check(kCableActivatedTopic);
+  check(kControllerStateTopic);
+
   return unavailable;
 }
 
@@ -382,9 +237,6 @@ void ScoringTier2::SetTaskStartTime(const rclcpp::Time &_time) {
 void ScoringTier2::SetTaskEndTime(const rclcpp::Time &_time) {
   this->task_end_time = _time;
 }
-
-//////////////////////////////////////////////////
-void ScoringTier2::JointStateCallback(const JointStateMsg &_msg) { (void)_msg; }
 
 //////////////////////////////////////////////////
 void ScoringTier2::TfCallback(const TFMsg &_msg) {
@@ -425,33 +277,31 @@ void ScoringTier2::ContactsCallback(const ContactsMsg &_msg) {
 
 //////////////////////////////////////////////////
 void ScoringTier2::WrenchCallback(const WrenchMsg &_msg) {
-  // We don't log for else statement since skipping a few wrench messages
-  // at startup is not a big issue.
-  if (this->lastTaredFt.has_value()) {
-    const auto time = rclcpp::Time(_msg.header.stamp);
-    Vector3Msg wrench;
-    wrench.x = _msg.wrench.force.x - this->lastTaredFt.value().wrench.force.x;
-    wrench.y = _msg.wrench.force.y - this->lastTaredFt.value().wrench.force.y;
-    wrench.z = _msg.wrench.force.z - this->lastTaredFt.value().wrench.force.z;
-    this->wrenches.push_back({time.seconds(), wrench});
+  const auto time = rclcpp::Time(_msg.header.stamp);
+  this->wrenches.push_back({time.seconds(), _msg.wrench.force});
+}
+
+//////////////////////////////////////////////////
+void ScoringTier2::CableActivatedCallback(const StringMsg &_msg) {
+  if (!this->trackedCable.has_value()) {
+    this->trackedCable = _msg.data;
+    RCLCPP_INFO(this->node->get_logger(), "Detected contact with cable %s",
+                _msg.data.c_str());
+  } else {
+    if (this->trackedCable.value() != _msg.data) {
+      // TODO(luca) Consider applying a penalty if another cable
+      // is activated in the same scoring run
+      RCLCPP_WARN(this->node->get_logger(),
+                  "Cable %s was being tracked but a new cable %s was activated,"
+                  " this is not allowed and might result in a penalty.",
+                  this->trackedCable.value().c_str(), _msg.data.c_str());
+    }
   }
 }
 
 //////////////////////////////////////////////////
-void ScoringTier2::MotionUpdateCallback(const MotionUpdateMsg &_msg) {
-  (void)_msg;
-}
-
-//////////////////////////////////////////////////
-void ScoringTier2::JointMotionUpdateCallback(const JointMotionUpdateMsg &_msg) {
-  (void)_msg;
-}
-
-//////////////////////////////////////////////////
 void ScoringTier2::InsertionEventCallback(const StringMsg &_msg) {
-  // \todo(iche033) For now, assume only one insertion event per task
-  // Mark insertion completion as true as soon as one insertion is done.
-  this->insertionPortNamespace = _msg.data;
+  this->insertionPortNamespaces.insert(_msg.data);
 }
 
 //////////////////////////////////////////////////
@@ -460,7 +310,6 @@ void ScoringTier2::ControllerStateCallback(const ControllerStateMsg &_msg) {
     return static_cast<double>(t.sec) + static_cast<double>(t.nanosec) * 1e-9;
   };
 
-  this->lastTaredFt = _msg.fts_tare_offset;
   // Duplicated timestamp check
   const auto stamp = toSeconds(_msg.header.stamp);
   if (this->endEffectorVelocities.size() > 0 &&
@@ -491,16 +340,20 @@ std::optional<ScoringTier2::TransformStampedMsg> ScoringTier2::GetTransform(
 
 //////////////////////////////////////////////////
 std::optional<double> ScoringTier2::GetPlugPortDistance(
-    tf2::TimePoint t) const {
+    tf2::TimePoint t, std::size_t index) const {
   if (!this->connection.has_value()) {
     RCLCPP_ERROR(this->node->get_logger(), "No connection was found");
     return std::nullopt;
   }
+  if (!this->trackedCable.has_value()) {
+    RCLCPP_ERROR(this->node->get_logger(), "No cable is active");
+    return std::nullopt;
+  }
   // For now we only calculate the distance for the first connection
-  const auto plug_tf_opt =
-      this->GetTransform(t, this->connection->PlugTfName());
+  const auto plug_tf_opt = this->GetTransform(
+      t, (*this->connection).data[index].PlugTfName(*this->trackedCable));
   const auto port_tf_opt =
-      this->GetTransform(t, this->connection->PortTfName());
+      this->GetTransform(t, (*this->connection).data[index].PortTfName());
   if (!plug_tf_opt.has_value() || !port_tf_opt.has_value()) {
     return std::nullopt;
   }
@@ -537,7 +390,7 @@ static double CalculateInverseProportionalScore(const double max_score,
 
 //////////////////////////////////////////////////
 Tier2Score::CategoryScore ScoringTier2::GetTrajectoryJerkScore(
-    const Tier3Score &_tier3) const {
+    const bool _success) const {
   using CategoryScore = Tier2Score::CategoryScore;
 
   const double kMaxJerkScore = 6.0;
@@ -553,7 +406,7 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryJerkScore(
     return CategoryScore(0, "Task not completed.");
   }
 
-  if (_tier3.total_score() <= 0) {
+  if (!_success) {
     return CategoryScore(
         0,
         "Plug is not within max bounding radius from target port, "
@@ -649,18 +502,41 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryJerkScore(
 
 //////////////////////////////////////////////////
 Tier2Score::CategoryScore ScoringTier2::GetTrajectoryEfficiencyScore(
-    double _minPathLength, const Tier3Score &_tier3) const {
+    const bool _success) const {
   using CategoryScore = Tier2Score::CategoryScore;
 
   if (!this->task_end_time.has_value()) {
     return CategoryScore(0, "Task not completed.");
   }
 
-  if (_tier3.total_score() <= 0) {
+  if (!_success) {
     return CategoryScore(
         0,
         "Plug is not within max bounding radius from target port, "
         "not assigning efficiency bonus");
+  }
+
+  const std::size_t numConnections = this->connection.value().data.size();
+  double minPathLength = 0.0;
+  // Minimum distance is the sum of all the initialization distances.
+  // It should be impossible to reach full score but this is a reasonable
+  // minimum distance estimate.
+  for (std::size_t index = 0; index < numConnections; ++index) {
+    // Compute initial plug-port distance for trajectory efficiency scoring.
+    // The robot must travel at least this distance, so it becomes the minimum
+    // path length for a perfect score.
+    if (this->task_start_time.has_value()) {
+      const auto initDist = this->GetPlugPortDistance(
+          tf2::TimePoint(std::chrono::nanoseconds(
+              this->task_start_time.value().nanoseconds())),
+          index);
+      if (initDist.has_value()) {
+        minPathLength += initDist.value();
+      } else {
+        RCLCPP_WARN(this->node->get_logger(),
+                    "Failed to get initial plug port distance");
+      }
+    }
   }
 
   double totalPathLength = 0.0;
@@ -674,24 +550,24 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryEfficiencyScore(
   }
 
   // Score range and path length bounds (meters).
-  const double kMaxEfficiencyScore = 6.0;              // Shortest path
-  const double kMinEfficiencyScore = 0.0;              // Longest path
-  const double kMaxPathLength = 1.0 + _minPathLength;  // Path for min score
+  const double kMaxEfficiencyScore = 6.0;             // Shortest path
+  const double kMinEfficiencyScore = 0.0;             // Longest path
+  const double kMaxPathLength = 2.0 + minPathLength;  // Path for min score
 
   std::stringstream ss;
   ss << std::fixed << std::setprecision(2);
   ss << "Total end-effector path length: " << totalPathLength << " m"
-     << ", initial plug-port distance: " << _minPathLength << " m";
+     << ", initial plug-port distance: " << minPathLength << " m";
 
   const double score = CalculateInverseProportionalScore(
-      kMaxEfficiencyScore, kMinEfficiencyScore, kMaxPathLength, _minPathLength,
+      kMaxEfficiencyScore, kMinEfficiencyScore, kMaxPathLength, minPathLength,
       totalPathLength);
 
   return CategoryScore(score, ss.str());
 }
 
 //////////////////////////////////////////////////
-Tier3Score ScoringTier2::GetDistanceScore() const {
+Tier3Score ScoringTier2::GetDistanceScore(std::size_t index) const {
   // A two step approach to compute the score:
   // * If we are in partial insertion, checked through a bounding box between
   //   the port entrance and its end, interpolate linearly in the range.
@@ -709,19 +585,8 @@ Tier3Score ScoringTier2::GetDistanceScore() const {
                       "Distance computation failed, task start time not set");
   }
 
-  // Being as close as possible to the port entrance will award
-  // kClosestTaskScore
-  const auto initDist = this->GetPlugPortDistance(tf2::TimePoint(
-      std::chrono::nanoseconds(this->task_start_time.value().nanoseconds())));
-  double radiusFromPort = 0.0;
-  if (initDist.has_value()) {
-    radiusFromPort = initDist.value() * 0.5;
-  } else {
-    RCLCPP_WARN(this->node->get_logger(),
-                "Failed to get initial plug port distance");
-  }
-
-  const double kMaxDistance = radiusFromPort;
+  // Fix the distance to 20 cm
+  const double kMaxDistance = 0.2;
   const double kClosestTaskScore = 25.0;
   const double kFurthestTaskScore = 0.0;
 
@@ -737,21 +602,29 @@ Tier3Score ScoringTier2::GetDistanceScore() const {
     return Tier3Score(0, "Task not completed.");
   }
 
-  const auto end_time =
-      std::chrono::nanoseconds(this->task_end_time.value().nanoseconds());
-  const auto dist = this->GetPlugPortDistance(tf2::TimePoint(end_time));
+  // We just use the latest sample to avoid race conditions between task end
+  // and tf message arrival
+  const auto dist = this->GetPlugPortDistance(tf2::TimePointZero, index);
   if (!dist.has_value()) {
     return Tier3Score(
         0, "Distance computation failed, tf between cable and port not found");
   }
 
+  if (!this->trackedCable.has_value()) {
+    return Tier3Score(0, "Distance computation failed, no active cable found");
+  }
+
+  RCLCPP_INFO(this->node->get_logger(),
+              "Final distance between plug and port is %.2f", dist.value());
+
   // Check if we are in partial insertion
   const auto port_entrance_tf = this->GetTransform(
-      tf2::TimePoint(end_time), this->connection->PortEntranceTfName());
-  const auto port_tf = this->GetTransform(tf2::TimePoint(end_time),
-                                          this->connection->PortTfName());
-  const auto plug_tf = this->GetTransform(tf2::TimePoint(end_time),
-                                          this->connection->PlugTfName());
+      tf2::TimePointZero, (*this->connection).data[index].PortEntranceTfName());
+  const auto port_tf = this->GetTransform(
+      tf2::TimePointZero, (*this->connection).data[index].PortTfName());
+  const auto plug_tf = this->GetTransform(
+      tf2::TimePointZero,
+      (*this->connection).data[index].PlugTfName(this->trackedCable.value()));
 
   if (!port_entrance_tf.has_value() || !port_tf.has_value() ||
       !plug_tf.has_value()) {
@@ -805,8 +678,50 @@ Tier3Score ScoringTier2::GetDistanceScore() const {
   return Tier3Score(score, sstream.str());
 }
 
+std::optional<InsertionNamespace> InsertionNamespace::make(std::string msg) {
+  InsertionNamespace result;
+  std::vector<std::string> tokens;
+  size_t pos = 0;
+  std::string delimiter = "#";
+  while ((pos = msg.find(delimiter)) != std::string::npos) {
+    std::string token = msg.substr(0, pos);
+    if (!token.empty()) tokens.push_back(token);
+    msg.erase(0, pos + delimiter.length());
+  }
+  tokens.push_back(msg);
+  if (tokens.size() != 3) {
+    return std::nullopt;
+  }
+  result.cable_name = tokens[0];
+  if (tokens[1] == "0") {
+    result.cable_end = 0;
+  } else if (tokens[1] == "1") {
+    result.cable_end = 1;
+  } else {
+    return std::nullopt;
+  }
+  // Now split the namespace with the "/"
+  tokens.clear();
+  pos = 0;
+  delimiter = "/";
+  while ((pos = msg.find(delimiter)) != std::string::npos) {
+    std::string token = msg.substr(0, pos);
+    if (!token.empty()) tokens.push_back(token);
+    msg.erase(0, pos + delimiter.length());
+  }
+  tokens.push_back(msg);
+  if (tokens.size() < 2) {
+    return std::nullopt;
+  }
+  if (tokens.size() >= 2u) {
+    result.module_name = tokens[0];
+    result.port_name = tokens[1];
+  }
+  return result;
+}
+
 //////////////////////////////////////////////////
-Tier3Score ScoringTier2::ComputeTier3Score() const {
+Tier3Score ScoringTier2::ComputeTier3Score(std::size_t index) const {
   // Binary will award kInsertionCompletionScore, partial insertion computed
   // in GetDistanceScore (and up to kMaxInsertionScore)
   constexpr double kInsertionCompletionScore = 75.0;
@@ -818,40 +733,56 @@ Tier3Score ScoringTier2::ComputeTier3Score() const {
 
   // Check if insertion is completed or not
   std::stringstream sstream;
-  if (!this->insertionPortNamespace.empty()) {
-    // Tokenize the namespace string. The first token should be the
-    // target module name and the second token should be the port name
-    std::string namespaceStr = this->insertionPortNamespace;
-    std::vector<std::string> tokens;
-    size_t pos = 0;
-    std::string token;
-    std::string delimiter = "/";
-    while ((pos = namespaceStr.find(delimiter)) != std::string::npos) {
-      std::string token = namespaceStr.substr(0, pos);
-      if (!token.empty()) tokens.push_back(token);
-      namespaceStr.erase(0, pos + delimiter.length());
+  // Intentional copy since we will edit this
+  for (auto namespaceStr : this->insertionPortNamespaces) {
+    const auto parsedNamespace = InsertionNamespace::make(namespaceStr);
+    if (!parsedNamespace.has_value()) {
+      RCLCPP_ERROR(this->node->get_logger(), "Failed parsing namespace %s.",
+                   namespaceStr.c_str());
     }
-    tokens.push_back(namespaceStr);
+    if (!this->trackedCable.has_value() ||
+        *this->trackedCable != parsedNamespace->cable_name) {
+      RCLCPP_WARN(this->node->get_logger(),
+                  "Received insertion event for %s but it is not being "
+                  "tracked, ignoring...",
+                  parsedNamespace->cable_name.c_str());
+      continue;
+    }
+    if (parsedNamespace->cable_end != index) {
+      continue;
+    }
 
-    if (tokens.size() >= 2u) {
-      // Verify the plug is inserted into the correct target port
-      if (tokens[0] == connection->targetModuleName &&
-          tokens[1] == connection->portName) {
-        return Tier3Score(kInsertionCompletionScore,
-                          "Cable insertion successful.");
-      } else {
-        return Tier3Score(kInsertionPenalty,
-                          "Cable insertion failed. Incorrect Port.");
-      }
+    const auto &targetModuleName =
+        (*this->connection).data[index].targetModuleName;
+    const auto &portName = (*this->connection).data[index].portName;
+
+    if (parsedNamespace->module_name == targetModuleName &&
+        parsedNamespace->port_name == portName) {
+      return Tier3Score(kInsertionCompletionScore,
+                        "Cable insertion successful.");
     } else {
-      const std::string msg = "Error parsing insertion port namespace: " +
-                              this->insertionPortNamespace;
-      RCLCPP_ERROR(this->node->get_logger(), msg.c_str());
-      return Tier3Score(0.0, msg);
+      return Tier3Score(
+          kInsertionPenalty,
+          std::string("Cable insertion failed. Incorrect Port [") +
+              parsedNamespace->module_name + "/" + parsedNamespace->port_name +
+              "], while the task requested [" + targetModuleName + "/" +
+              portName + "].");
     }
   }
   // Cable insertion was not completed, compute partial insertion
-  return this->GetDistanceScore();
+  return this->GetDistanceScore(index);
+}
+
+std::pair<bool, Tier3Score> ScoringTier2::CombineTier3Score() const {
+  const auto score_0 = this->ComputeTier3Score(0);
+  const auto score_1 = this->ComputeTier3Score(1);
+  const bool successful =
+      score_0.total_score() > 0 && score_1.total_score() > 0;
+  const auto combinedScore =
+      (score_0.total_score() + score_1.total_score()) / 2.0;
+  const std::string msg = "[Task 0] : '" + score_0.message + "'. [Task 1]: '" +
+                          score_1.message + "'.";
+  return {successful, Tier3Score(combinedScore, msg)};
 }
 
 //////////////////////////////////////////////////
@@ -863,7 +794,7 @@ std::optional<ScoringTier2::TransformStampedMsg> ScoringTier2::EndEffectorPose(
                  "Unable to compute end effector pose, gripper frame not set");
     return std::nullopt;
   }
-  return this->GetTransform(t, this->gripperFrame, "default", true);
+  return this->GetTransform(t, this->gripperFrame, "root", true);
 }
 
 //////////////////////////////////////////////////
@@ -935,11 +866,11 @@ Tier2Score::CategoryScore ScoringTier2::GetContactsScore() const {
 
 //////////////////////////////////////////////////
 Tier2Score::CategoryScore ScoringTier2::GetTaskDurationScore(
-    const Tier3Score &_tier3) const {
+    const bool _success) const {
   using CategoryScore = Tier2Score::CategoryScore;
 
-  const rclcpp::Duration kMaxTaskTime = rclcpp::Duration::from_seconds(60.0);
-  const rclcpp::Duration kMinTaskTime = rclcpp::Duration::from_seconds(5.0);
+  const rclcpp::Duration kMaxTaskTime = rclcpp::Duration::from_seconds(300.0);
+  const rclcpp::Duration kMinTaskTime = rclcpp::Duration::from_seconds(60.0);
   const double kFastestTaskScore = 12.0;
   const double kSlowestTaskScore = 0.0;
 
@@ -951,7 +882,7 @@ Tier2Score::CategoryScore ScoringTier2::GetTaskDurationScore(
     return CategoryScore(0, "Time computation failed, task start time not set");
   }
 
-  if (_tier3.total_score() <= 0) {
+  if (!_success) {
     return CategoryScore(
         0,
         "Plug is not within max bounding radius from target port, "
@@ -969,18 +900,6 @@ Tier2Score::CategoryScore ScoringTier2::GetTaskDurationScore(
   sstream.precision(2);
   sstream << "Task duration: " << task_duration.seconds() << " seconds.";
   return CategoryScore(score, sstream.str());
-}
-
-//////////////////////////////////////////////////
-ScoringTier2Node::ScoringTier2Node(const std::string &_yamlFile)
-    : Node("score_tier2_node") {
-  try {
-    auto config = YAML::LoadFile(_yamlFile);
-    this->score = std::make_unique<aic_scoring::ScoringTier2>(this);
-  } catch (const YAML::BadFile &_e) {
-    std::cerr << "Unable to open YAML file [" << _yamlFile << "]" << std::endl;
-    return;
-  }
 }
 
 }  // namespace aic_scoring
