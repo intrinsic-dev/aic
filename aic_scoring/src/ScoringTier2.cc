@@ -409,7 +409,7 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryJerkScore(
   if (!_success) {
     return CategoryScore(
         0,
-        "Plug is not within max bounding radius from target port, "
+        "Plugs are not within max bounding radius from target ports, "
         "not assigning jerk bonus");
   }
 
@@ -512,7 +512,7 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryEfficiencyScore(
   if (!_success) {
     return CategoryScore(
         0,
-        "Plug is not within max bounding radius from target port, "
+        "Plugs are not within max bounding radius from target ports, "
         "not assigning efficiency bonus");
   }
 
@@ -885,7 +885,7 @@ Tier2Score::CategoryScore ScoringTier2::GetTaskDurationScore(
   if (!_success) {
     return CategoryScore(
         0,
-        "Plug is not within max bounding radius from target port, "
+        "Plugs are not within max bounding radius from target ports, "
         "not assigning time bonus");
   }
 
