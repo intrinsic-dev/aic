@@ -146,7 +146,7 @@ bool ScoringTier2::WaitForTfs() {
           !this->GetTransform(tf2::TimePointZero,
                               this->connection.value().data[1].PortTfName(),
                               "default", true)) &&
-         this->node->get_clock()->now() - start < timeout) {
+         this->node->get_clock()->now() - start <= timeout) {
     this->node->get_clock()->sleep_for(
         rclcpp::Duration(std::chrono::milliseconds(100)));
   }
