@@ -72,8 +72,8 @@ The task board is designed to be easy to 3D print with readily available compone
   * LC to SC cable (Quantity: 5) - [Amazon link](https://a.co/d/edbwgg2)
   * SC-SC connectors (Quantity: 1 pack) - [Amazon link](https://a.co/d/4PgnstS)
 * **Task board BOM:**
-  * 3D printed parts (chassis, rails, and component mounts) - [aic/aic_assets/taskboard_cad](../aic_assets/taskboard_cad)
-  * Assembly guide - [aic/aic_assets/taskboard_cad/V1015044 - AIC TASKBOARD ASSEMBLY GUIDE.pdf](../aic_assets/taskboard_cad/V1015044%20-%20AIC%20TASKBOARD%20ASSEMBLY%20GUIDE.pdf)
+  * 3D printed parts (chassis, rails, and component mounts) - [Task Board CAD](../aic_assets/taskboard_cad)
+  * Assembly guide - [TASKBOARD ASSEMBLY GUIDE](../aic_assets/taskboard_cad/V1015044%20-%20AIC%20TASKBOARD%20ASSEMBLY%20GUIDE.pdf)
 
 ## 4. Configuration Structure
 
