@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Fail fast and surface the real error instead of cascading.
+set -eo pipefail
+
 IMAGES_DIR=./images
 BUILDER_NAME=container-builder
 ROS_DISTRO=kilted
@@ -64,6 +67,11 @@ while [[ $# -gt 0 ]]; do
 done
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
+# Ensure the buildx builder exists.
+# This is a no-op if the builder already exists.
+docker buildx inspect "$BUILDER_NAME" >/dev/null 2>&1 \
+  || docker buildx create --name "$BUILDER_NAME" --driver docker-container
 
 if [[ -n "$SERVICE_NAME" && -n "$SERVICE_PACKAGE" ]]; then
   mkdir -p $IMAGES_DIR/$SERVICE_NAME
