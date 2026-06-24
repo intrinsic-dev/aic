@@ -321,14 +321,19 @@ class AicModel(LifecycleNode):
 
 
 def main(args=None):
+    aic_model_node = None
     try:
-        with rclpy.init(args=args):
-            aic_model_node = AicModel()
-            executor = MultiThreadedExecutor()
-            executor.add_node(aic_model_node)
-            executor.spin()
+        rclpy.init(args=args)
+        aic_model_node = AicModel()
+        executor = MultiThreadedExecutor()
+        executor.add_node(aic_model_node)
+        executor.spin()
     except (KeyboardInterrupt, ExternalShutdownException):
         pass
+    finally:
+        if aic_model_node is not None:
+            aic_model_node.destroy_node()
+        rclpy.shutdown()
 
 
 if __name__ == "__main__":

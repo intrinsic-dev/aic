@@ -33,6 +33,7 @@
   <exec_depend>tf2_msgs</exec_depend>
 
   <depend>eigen</depend>
+  <depend>gz_math_vendor</depend>
 
   <test_depend>ament_lint_auto</test_depend>
 
