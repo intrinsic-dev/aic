@@ -142,6 +142,9 @@ elif [[ -n "$SKILL_NAME" && -n "$SKILL_PACKAGE" ]]; then
     docker load -i "$IMAGES_DIR/${SKILL_NAME}/${SKILL_NAME}.tar"
 
     echo "INFO: Extracting descriptor set from container..."
+    # Remove any leftover temp_container from a previously aborted run so
+    # this `docker create` doesn't hit a name conflict.
+    docker rm -f temp_container >/dev/null 2>&1 || true
     docker create --name temp_container "$SKILL_PACKAGE:$SKILL_NAME"
     docker cp "temp_container:/opt/ros/overlay/install/share/${SKILL_PACKAGE}/${SKILL_NAME}_protos.desc" \
      "$IMAGES_DIR/${SKILL_NAME}/${SKILL_NAME}_protos.desc"
