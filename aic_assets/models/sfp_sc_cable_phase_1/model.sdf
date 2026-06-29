@@ -7,29 +7,11 @@
          Workaround this by removing their collisions.
       -->
       <experimental:params>
-        <collision element_id="link_1::link_1_collision" action="modify">
-          <pose>0 0 0.006 0 0 0</pose>
-          <geometry>
-            <capsule>
-              <length>0.036</length>
-              <radius>0.002</radius>
-            </capsule>
-          </geometry>
-          <surface>
-            <friction>
-              <torsional>
-                <coefficient>0.05</coefficient>
-              </torsional>
-              <bullet>
-                <friction>0.05</friction>
-                <friction2>0.05</friction2>
-              </bullet>
-            </friction>
-          </surface>
-        </collision>
         <collision element_id="cable_end_0::base_collision" action="remove"/>
         <collision element_id="cable_connection_0::collision_0" action="remove"/>
         <collision element_id="cable_connection_0::collision_1" action="remove"/>
+        <collision element_id="cable_connection_1::collision_0" action="remove"/>
+        <collision element_id="cable_connection_1::collision_1" action="remove"/>
       </experimental:params>
       <uri>model://cable_base_c_rotated_phase_1</uri>
     </include>
