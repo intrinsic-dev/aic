@@ -81,26 +81,31 @@ def launch_setup(context, *args, **kwargs):
     sfp_mount_rail_2_roll = LaunchConfiguration("sfp_mount_rail_2_roll")
     sfp_mount_rail_2_pitch = LaunchConfiguration("sfp_mount_rail_2_pitch")
     sfp_mount_rail_2_yaw = LaunchConfiguration("sfp_mount_rail_2_yaw")
+    
     sc_mount_rail_2_present = LaunchConfiguration("sc_mount_rail_2_present")
     sc_mount_rail_2_translation = LaunchConfiguration("sc_mount_rail_2_translation")
     sc_mount_rail_2_roll = LaunchConfiguration("sc_mount_rail_2_roll")
     sc_mount_rail_2_pitch = LaunchConfiguration("sc_mount_rail_2_pitch")
     sc_mount_rail_2_yaw = LaunchConfiguration("sc_mount_rail_2_yaw")
+    
     sfp_mount_rail_3_present = LaunchConfiguration("sfp_mount_rail_3_present")
     sfp_mount_rail_3_translation = LaunchConfiguration("sfp_mount_rail_3_translation")
     sfp_mount_rail_3_roll = LaunchConfiguration("sfp_mount_rail_3_roll")
     sfp_mount_rail_3_pitch = LaunchConfiguration("sfp_mount_rail_3_pitch")
     sfp_mount_rail_3_yaw = LaunchConfiguration("sfp_mount_rail_3_yaw")
+    
     sc_mount_rail_3_present = LaunchConfiguration("sc_mount_rail_3_present")
     sc_mount_rail_3_translation = LaunchConfiguration("sc_mount_rail_3_translation")
     sc_mount_rail_3_roll = LaunchConfiguration("sc_mount_rail_3_roll")
     sc_mount_rail_3_pitch = LaunchConfiguration("sc_mount_rail_3_pitch")
     sc_mount_rail_3_yaw = LaunchConfiguration("sc_mount_rail_3_yaw")
+    
     sfp_mount_rail_4_present = LaunchConfiguration("sfp_mount_rail_4_present")
     sfp_mount_rail_4_translation = LaunchConfiguration("sfp_mount_rail_4_translation")
     sfp_mount_rail_4_roll = LaunchConfiguration("sfp_mount_rail_4_roll")
     sfp_mount_rail_4_pitch = LaunchConfiguration("sfp_mount_rail_4_pitch")
     sfp_mount_rail_4_yaw = LaunchConfiguration("sfp_mount_rail_4_yaw")
+    
     sc_mount_rail_4_present = LaunchConfiguration("sc_mount_rail_4_present")
     sc_mount_rail_4_translation = LaunchConfiguration("sc_mount_rail_4_translation")
     sc_mount_rail_4_roll = LaunchConfiguration("sc_mount_rail_4_roll")
@@ -555,124 +560,7 @@ def launch_setup(context, *args, **kwargs):
     )
 
 
-    # Cable arguments
-    spawn_actions = [gz_spawn_task_board]
-
-    cable_0_present = LaunchConfiguration("cable_0_present")
-    spawn_actions.append(
-        IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(
-                PathJoinSubstitution(
-                    [FindPackageShare("aic_bringup"), "launch", "spawn_cable.launch.py"]
-                )
-            ),
-            condition=IfCondition(cable_0_present),
-            launch_arguments={
-                "cable_name": "cable_0",
-                "cable_type": LaunchConfiguration("cable_0_type"),
-                "cable_x": LaunchConfiguration("cable_0_x"),
-                "cable_y": LaunchConfiguration("cable_0_y"),
-                "cable_z": LaunchConfiguration("cable_0_z"),
-                "cable_roll": LaunchConfiguration("cable_0_roll"),
-                "cable_pitch": LaunchConfiguration("cable_0_pitch"),
-                "cable_yaw": LaunchConfiguration("cable_0_yaw"),
-                "attach_cable_to_gripper": "false",
-            }.items(),
-        )
-    )
-
-    cable_1_present = LaunchConfiguration("cable_1_present")
-    spawn_actions.append(
-        IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(
-                PathJoinSubstitution(
-                    [FindPackageShare("aic_bringup"), "launch", "spawn_cable.launch.py"]
-                )
-            ),
-            condition=IfCondition(cable_1_present),
-            launch_arguments={
-                "cable_name": "cable_1",
-                "cable_type": LaunchConfiguration("cable_1_type"),
-                "cable_x": LaunchConfiguration("cable_1_x"),
-                "cable_y": LaunchConfiguration("cable_1_y"),
-                "cable_z": LaunchConfiguration("cable_1_z"),
-                "cable_roll": LaunchConfiguration("cable_1_roll"),
-                "cable_pitch": LaunchConfiguration("cable_1_pitch"),
-                "cable_yaw": LaunchConfiguration("cable_1_yaw"),
-                "attach_cable_to_gripper": "false",
-            }.items(),
-        )
-    )
-
-    cable_2_present = LaunchConfiguration("cable_2_present")
-    spawn_actions.append(
-        IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(
-                PathJoinSubstitution(
-                    [FindPackageShare("aic_bringup"), "launch", "spawn_cable.launch.py"]
-                )
-            ),
-            condition=IfCondition(cable_2_present),
-            launch_arguments={
-                "cable_name": "cable_2",
-                "cable_type": LaunchConfiguration("cable_2_type"),
-                "cable_x": LaunchConfiguration("cable_2_x"),
-                "cable_y": LaunchConfiguration("cable_2_y"),
-                "cable_z": LaunchConfiguration("cable_2_z"),
-                "cable_roll": LaunchConfiguration("cable_2_roll"),
-                "cable_pitch": LaunchConfiguration("cable_2_pitch"),
-                "cable_yaw": LaunchConfiguration("cable_2_yaw"),
-                "attach_cable_to_gripper": "false",
-            }.items(),
-        )
-    )
-
-    cable_3_present = LaunchConfiguration("cable_3_present")
-    spawn_actions.append(
-        IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(
-                PathJoinSubstitution(
-                    [FindPackageShare("aic_bringup"), "launch", "spawn_cable.launch.py"]
-                )
-            ),
-            condition=IfCondition(cable_3_present),
-            launch_arguments={
-                "cable_name": "cable_3",
-                "cable_type": LaunchConfiguration("cable_3_type"),
-                "cable_x": LaunchConfiguration("cable_3_x"),
-                "cable_y": LaunchConfiguration("cable_3_y"),
-                "cable_z": LaunchConfiguration("cable_3_z"),
-                "cable_roll": LaunchConfiguration("cable_3_roll"),
-                "cable_pitch": LaunchConfiguration("cable_3_pitch"),
-                "cable_yaw": LaunchConfiguration("cable_3_yaw"),
-                "attach_cable_to_gripper": "false",
-            }.items(),
-        )
-    )
-
-    cable_4_present = LaunchConfiguration("cable_4_present")
-    spawn_actions.append(
-        IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(
-                PathJoinSubstitution(
-                    [FindPackageShare("aic_bringup"), "launch", "spawn_cable.launch.py"]
-                )
-            ),
-            condition=IfCondition(cable_4_present),
-            launch_arguments={
-                "cable_name": "cable_4",
-                "cable_type": LaunchConfiguration("cable_4_type"),
-                "cable_x": LaunchConfiguration("cable_4_x"),
-                "cable_y": LaunchConfiguration("cable_4_y"),
-                "cable_z": LaunchConfiguration("cable_4_z"),
-                "cable_roll": LaunchConfiguration("cable_4_roll"),
-                "cable_pitch": LaunchConfiguration("cable_4_pitch"),
-                "cable_yaw": LaunchConfiguration("cable_4_yaw"),
-                "attach_cable_to_gripper": "false",
-            }.items(),
-        )
-    )
-    return spawn_actions
+    return [gz_spawn_task_board]
 
 
 def generate_launch_description():
@@ -1534,50 +1422,10 @@ def generate_launch_description():
     )
 
 
-    declared_arguments.append(DeclareLaunchArgument("cable_0_present", default_value="false", description="Whether cable 0 is present"))
-    declared_arguments.append(DeclareLaunchArgument("cable_0_type", default_value="sfp_sc_cable_phase_1", description="Cable 0 type"))
-    declared_arguments.append(DeclareLaunchArgument("cable_0_x", default_value="0.0", description="Cable 0 x position"))
-    declared_arguments.append(DeclareLaunchArgument("cable_0_y", default_value="0.0", description="Cable 0 y position"))
-    declared_arguments.append(DeclareLaunchArgument("cable_0_z", default_value="0.0", description="Cable 0 z position"))
-    declared_arguments.append(DeclareLaunchArgument("cable_0_roll", default_value="0.0", description="Cable 0 roll orientation"))
-    declared_arguments.append(DeclareLaunchArgument("cable_0_pitch", default_value="0.0", description="Cable 0 pitch orientation"))
-    declared_arguments.append(DeclareLaunchArgument("cable_0_yaw", default_value="0.0", description="Cable 0 yaw orientation"))
 
-    declared_arguments.append(DeclareLaunchArgument("cable_1_present", default_value="false", description="Whether cable 1 is present"))
-    declared_arguments.append(DeclareLaunchArgument("cable_1_type", default_value="sfp_sc_cable_phase_1", description="Cable 1 type"))
-    declared_arguments.append(DeclareLaunchArgument("cable_1_x", default_value="0.0", description="Cable 1 x position"))
-    declared_arguments.append(DeclareLaunchArgument("cable_1_y", default_value="0.0", description="Cable 1 y position"))
-    declared_arguments.append(DeclareLaunchArgument("cable_1_z", default_value="0.0", description="Cable 1 z position"))
-    declared_arguments.append(DeclareLaunchArgument("cable_1_roll", default_value="0.0", description="Cable 1 roll orientation"))
-    declared_arguments.append(DeclareLaunchArgument("cable_1_pitch", default_value="0.0", description="Cable 1 pitch orientation"))
-    declared_arguments.append(DeclareLaunchArgument("cable_1_yaw", default_value="0.0", description="Cable 1 yaw orientation"))
 
-    declared_arguments.append(DeclareLaunchArgument("cable_2_present", default_value="false", description="Whether cable 2 is present"))
-    declared_arguments.append(DeclareLaunchArgument("cable_2_type", default_value="sfp_sc_cable_phase_1", description="Cable 2 type"))
-    declared_arguments.append(DeclareLaunchArgument("cable_2_x", default_value="0.0", description="Cable 2 x position"))
-    declared_arguments.append(DeclareLaunchArgument("cable_2_y", default_value="0.0", description="Cable 2 y position"))
-    declared_arguments.append(DeclareLaunchArgument("cable_2_z", default_value="0.0", description="Cable 2 z position"))
-    declared_arguments.append(DeclareLaunchArgument("cable_2_roll", default_value="0.0", description="Cable 2 roll orientation"))
-    declared_arguments.append(DeclareLaunchArgument("cable_2_pitch", default_value="0.0", description="Cable 2 pitch orientation"))
-    declared_arguments.append(DeclareLaunchArgument("cable_2_yaw", default_value="0.0", description="Cable 2 yaw orientation"))
 
-    declared_arguments.append(DeclareLaunchArgument("cable_3_present", default_value="false", description="Whether cable 3 is present"))
-    declared_arguments.append(DeclareLaunchArgument("cable_3_type", default_value="sfp_sc_cable_phase_1", description="Cable 3 type"))
-    declared_arguments.append(DeclareLaunchArgument("cable_3_x", default_value="0.0", description="Cable 3 x position"))
-    declared_arguments.append(DeclareLaunchArgument("cable_3_y", default_value="0.0", description="Cable 3 y position"))
-    declared_arguments.append(DeclareLaunchArgument("cable_3_z", default_value="0.0", description="Cable 3 z position"))
-    declared_arguments.append(DeclareLaunchArgument("cable_3_roll", default_value="0.0", description="Cable 3 roll orientation"))
-    declared_arguments.append(DeclareLaunchArgument("cable_3_pitch", default_value="0.0", description="Cable 3 pitch orientation"))
-    declared_arguments.append(DeclareLaunchArgument("cable_3_yaw", default_value="0.0", description="Cable 3 yaw orientation"))
 
-    declared_arguments.append(DeclareLaunchArgument("cable_4_present", default_value="false", description="Whether cable 4 is present"))
-    declared_arguments.append(DeclareLaunchArgument("cable_4_type", default_value="sfp_sc_cable_phase_1", description="Cable 4 type"))
-    declared_arguments.append(DeclareLaunchArgument("cable_4_x", default_value="0.0", description="Cable 4 x position"))
-    declared_arguments.append(DeclareLaunchArgument("cable_4_y", default_value="0.0", description="Cable 4 y position"))
-    declared_arguments.append(DeclareLaunchArgument("cable_4_z", default_value="0.0", description="Cable 4 z position"))
-    declared_arguments.append(DeclareLaunchArgument("cable_4_roll", default_value="0.0", description="Cable 4 roll orientation"))
-    declared_arguments.append(DeclareLaunchArgument("cable_4_pitch", default_value="0.0", description="Cable 4 pitch orientation"))
-    declared_arguments.append(DeclareLaunchArgument("cable_4_yaw", default_value="0.0", description="Cable 4 yaw orientation"))
     return LaunchDescription(
         declared_arguments + [OpaqueFunction(function=launch_setup)]
     )

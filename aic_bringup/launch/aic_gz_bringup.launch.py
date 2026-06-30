@@ -289,29 +289,62 @@ def launch_setup(context, *args, **kwargs):
     spawn_cable = LaunchConfiguration("spawn_cable")
     cable_description_file = LaunchConfiguration("cable_description_file")
 
-    spawn_cable_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            PathJoinSubstitution(
-                [
-                    FindPackageShare("aic_bringup"),
-                    "launch",
-                    "spawn_cable.launch.py",
-                ]
-            )
-        ),
-        launch_arguments={
-            "cable_description_file": cable_description_file,
-            "cable_x": cable_x,
-            "cable_y": cable_y,
-            "cable_z": cable_z,
-            "cable_roll": cable_roll,
-            "cable_pitch": cable_pitch,
-            "cable_yaw": cable_yaw,
-            "attach_cable_to_gripper": attach_cable_to_gripper,
-            "cable_type": cable_type,
-        }.items(),
-        condition=IfCondition(spawn_cable),
+    # Original single cable support (if spawn_cable:=true)
+    spawn_cable_actions = []
+    spawn_cable_actions.append(
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(
+                PathJoinSubstitution(
+                    [
+                        FindPackageShare("aic_bringup"),
+                        "launch",
+                        "spawn_cable.launch.py",
+                    ]
+                )
+            ),
+            launch_arguments={
+                "cable_description_file": cable_description_file,
+                "cable_x": cable_x,
+                "cable_y": cable_y,
+                "cable_z": cable_z,
+                "cable_roll": cable_roll,
+                "cable_pitch": cable_pitch,
+                "cable_yaw": cable_yaw,
+                "attach_cable_to_gripper": attach_cable_to_gripper,
+                "cable_type": cable_type,
+            }.items(),
+            condition=IfCondition(spawn_cable),
+        )
     )
+
+    # Multi-cable support (if cable_X_present:=true)
+    for i in range(5):
+        spawn_cable_actions.append(
+            IncludeLaunchDescription(
+                PythonLaunchDescriptionSource(
+                    PathJoinSubstitution(
+                        [
+                            FindPackageShare("aic_bringup"),
+                            "launch",
+                            "spawn_cable.launch.py",
+                        ]
+                    )
+                ),
+                launch_arguments={
+                    "cable_description_file": cable_description_file,
+                    "cable_name": f"cable_{i}",
+                    "cable_x": LaunchConfiguration(f"cable_{i}_x", default="0.0"),
+                    "cable_y": LaunchConfiguration(f"cable_{i}_y", default="0.0"),
+                    "cable_z": LaunchConfiguration(f"cable_{i}_z", default="0.0"),
+                    "cable_roll": LaunchConfiguration(f"cable_{i}_roll", default="0.0"),
+                    "cable_pitch": LaunchConfiguration(f"cable_{i}_pitch", default="0.0"),
+                    "cable_yaw": LaunchConfiguration(f"cable_{i}_yaw", default="0.0"),
+                    "attach_cable_to_gripper": "false",
+                    "cable_type": LaunchConfiguration(f"cable_{i}_type", default="sfp_sc_cable"),
+                }.items(),
+                condition=IfCondition(LaunchConfiguration(f"cable_{i}_present", default="false")),
+            )
+        )
 
     gz_ip_env = SetEnvironmentVariable(name="GZ_IP", value="127.0.0.1")
 
@@ -426,7 +459,7 @@ def launch_setup(context, *args, **kwargs):
         ros_gz_bridge,
         gz_spawn_entity,
         spawn_task_board_launch,
-        spawn_cable_launch,
+        *spawn_cable_actions,
         ground_truth_tf_relay,
         ground_truth_static_tf_publisher,
         aic_engine,
