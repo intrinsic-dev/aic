@@ -58,6 +58,48 @@
   <xacro:arg name="sc_mount_rail_1_pitch" default="0.0"/>
   <xacro:arg name="sc_mount_rail_1_yaw" default="0.0"/>
 
+  <!-- SFP Mount Rail 2: X=0.0535, Y=-0.15625 -->
+  <xacro:arg name="sfp_mount_rail_2_present" default="false"/>
+  <xacro:arg name="sfp_mount_rail_2_translation" default="0.0"/>
+  <xacro:arg name="sfp_mount_rail_2_roll" default="0.0"/>
+  <xacro:arg name="sfp_mount_rail_2_pitch" default="0.0"/>
+  <xacro:arg name="sfp_mount_rail_2_yaw" default="0.0"/>
+
+  <!-- SC Mount Rail 2: X=0.0985, Y=-0.15625 -->
+  <xacro:arg name="sc_mount_rail_2_present" default="false"/>
+  <xacro:arg name="sc_mount_rail_2_translation" default="0.0"/>
+  <xacro:arg name="sc_mount_rail_2_roll" default="0.0"/>
+  <xacro:arg name="sc_mount_rail_2_pitch" default="0.0"/>
+  <xacro:arg name="sc_mount_rail_2_yaw" default="0.0"/>
+
+  <!-- SFP Mount Rail 3: X=0.0535, Y=-0.05625 -->
+  <xacro:arg name="sfp_mount_rail_3_present" default="false"/>
+  <xacro:arg name="sfp_mount_rail_3_translation" default="0.0"/>
+  <xacro:arg name="sfp_mount_rail_3_roll" default="0.0"/>
+  <xacro:arg name="sfp_mount_rail_3_pitch" default="0.0"/>
+  <xacro:arg name="sfp_mount_rail_3_yaw" default="0.0"/>
+
+  <!-- SC Mount Rail 3: X=0.0985, Y=-0.05625 -->
+  <xacro:arg name="sc_mount_rail_3_present" default="false"/>
+  <xacro:arg name="sc_mount_rail_3_translation" default="0.0"/>
+  <xacro:arg name="sc_mount_rail_3_roll" default="0.0"/>
+  <xacro:arg name="sc_mount_rail_3_pitch" default="0.0"/>
+  <xacro:arg name="sc_mount_rail_3_yaw" default="0.0"/>
+
+  <!-- SFP Mount Rail 4: X=0.0535, Y=0.15625 -->
+  <xacro:arg name="sfp_mount_rail_4_present" default="false"/>
+  <xacro:arg name="sfp_mount_rail_4_translation" default="0.0"/>
+  <xacro:arg name="sfp_mount_rail_4_roll" default="0.0"/>
+  <xacro:arg name="sfp_mount_rail_4_pitch" default="0.0"/>
+  <xacro:arg name="sfp_mount_rail_4_yaw" default="0.0"/>
+
+  <!-- SC Mount Rail 4: X=0.0985, Y=0.15625 -->
+  <xacro:arg name="sc_mount_rail_4_present" default="false"/>
+  <xacro:arg name="sc_mount_rail_4_translation" default="0.0"/>
+  <xacro:arg name="sc_mount_rail_4_roll" default="0.0"/>
+  <xacro:arg name="sc_mount_rail_4_pitch" default="0.0"/>
+  <xacro:arg name="sc_mount_rail_4_yaw" default="0.0"/>
+
   <!-- SC Port 0 -->
   <xacro:arg name="sc_port_0_present" default="false"/>
   <xacro:arg name="sc_port_0_translation" default="0.0"/>
@@ -153,7 +195,7 @@
     <joint name="sfp_mount_rail_0_joint" type="fixed">
       <parent link="task_board_base_link"/>
       <child link="sfp_mount_rail_0_link"/>
-      <origin xyz="0.055 ${-0.10625 + $(arg sfp_mount_rail_0_translation)} 0.01" rpy="$(arg sfp_mount_rail_0_roll) $(arg sfp_mount_rail_0_pitch) $(arg sfp_mount_rail_0_yaw)"/>
+      <origin xyz="0.055 ${-0.10625 + $(arg sfp_mount_rail_0_translation)} 0.012" rpy="$(arg sfp_mount_rail_0_roll) $(arg sfp_mount_rail_0_pitch) $(arg sfp_mount_rail_0_yaw)"/>
     </joint>
   </xacro:if>
 
@@ -183,7 +225,7 @@
     <joint name="sfp_mount_rail_1_joint" type="fixed">
       <parent link="task_board_base_link"/>
       <child link="sfp_mount_rail_1_link"/>
-      <origin xyz="0.055 ${0.10625 + $(arg sfp_mount_rail_1_translation)} 0.01" rpy="$(arg sfp_mount_rail_1_roll) $(arg sfp_mount_rail_1_pitch) $(arg sfp_mount_rail_1_yaw)"/>
+      <origin xyz="0.055 ${0.10625 + $(arg sfp_mount_rail_1_translation)} 0.012" rpy="$(arg sfp_mount_rail_1_roll) $(arg sfp_mount_rail_1_pitch) $(arg sfp_mount_rail_1_yaw)"/>
     </joint>
   </xacro:if>
 
@@ -193,7 +235,67 @@
     <joint name="sc_mount_rail_1_joint" type="fixed">
       <parent link="task_board_base_link"/>
       <child link="sc_mount_rail_1_link"/>
-      <origin xyz="0.0985 ${0.10625 + $(arg sc_mount_rail_1_translation)} 0.01" rpy="$(arg sc_mount_rail_1_roll) $(arg sc_mount_rail_1_pitch) $(arg sc_mount_rail_1_yaw)"/>
+      <origin xyz="0.0985 ${0.10625 + $(arg sc_mount_rail_1_translation)} 0.012" rpy="$(arg sc_mount_rail_1_roll) $(arg sc_mount_rail_1_pitch) $(arg sc_mount_rail_1_yaw)"/>
+    </joint>
+  </xacro:if>
+
+  <!-- SFP Mount Rail 2: X=0.055, Y=-0.15625 -->
+  <xacro:if value="$(arg sfp_mount_rail_2_present)">
+    <xacro:sfp_mount prefix="sfp_mount_rail_2_"/>
+    <joint name="sfp_mount_rail_2_joint" type="fixed">
+      <parent link="task_board_base_link"/>
+      <child link="sfp_mount_rail_2_link"/>
+      <origin xyz="0.055 ${-0.15625 + $(arg sfp_mount_rail_2_translation)} 0.012" rpy="$(arg sfp_mount_rail_2_roll) $(arg sfp_mount_rail_2_pitch) $(arg sfp_mount_rail_2_yaw)"/>
+    </joint>
+  </xacro:if>
+
+  <!-- SC Mount Rail 2: X=0.1, Y=-0.15625 -->
+  <xacro:if value="$(arg sc_mount_rail_2_present)">
+    <xacro:sc_mount prefix="sc_mount_rail_2_"/>
+    <joint name="sc_mount_rail_2_joint" type="fixed">
+      <parent link="task_board_base_link"/>
+      <child link="sc_mount_rail_2_link"/>
+      <origin xyz="0.1 ${-0.15625 + $(arg sc_mount_rail_2_translation)} 0.012" rpy="$(arg sc_mount_rail_2_roll) $(arg sc_mount_rail_2_pitch) $(arg sc_mount_rail_2_yaw)"/>
+    </joint>
+  </xacro:if>
+
+  <!-- SFP Mount Rail 3: X=0.055, Y=-0.05625 -->
+  <xacro:if value="$(arg sfp_mount_rail_3_present)">
+    <xacro:sfp_mount prefix="sfp_mount_rail_3_"/>
+    <joint name="sfp_mount_rail_3_joint" type="fixed">
+      <parent link="task_board_base_link"/>
+      <child link="sfp_mount_rail_3_link"/>
+      <origin xyz="0.055 ${-0.05625 + $(arg sfp_mount_rail_3_translation)} 0.012" rpy="$(arg sfp_mount_rail_3_roll) $(arg sfp_mount_rail_3_pitch) $(arg sfp_mount_rail_3_yaw)"/>
+    </joint>
+  </xacro:if>
+
+  <!-- SC Mount Rail 3: X=0.1, Y=-0.05625 -->
+  <xacro:if value="$(arg sc_mount_rail_3_present)">
+    <xacro:sc_mount prefix="sc_mount_rail_3_"/>
+    <joint name="sc_mount_rail_3_joint" type="fixed">
+      <parent link="task_board_base_link"/>
+      <child link="sc_mount_rail_3_link"/>
+      <origin xyz="0.1 ${-0.05625 + $(arg sc_mount_rail_3_translation)} 0.012" rpy="$(arg sc_mount_rail_3_roll) $(arg sc_mount_rail_3_pitch) $(arg sc_mount_rail_3_yaw)"/>
+    </joint>
+  </xacro:if>
+
+  <!-- SFP Mount Rail 4: X=0.055, Y=0.15625 -->
+  <xacro:if value="$(arg sfp_mount_rail_4_present)">
+    <xacro:sfp_mount prefix="sfp_mount_rail_4_"/>
+    <joint name="sfp_mount_rail_4_joint" type="fixed">
+      <parent link="task_board_base_link"/>
+      <child link="sfp_mount_rail_4_link"/>
+      <origin xyz="0.055 ${0.15625 + $(arg sfp_mount_rail_4_translation)} 0.012" rpy="$(arg sfp_mount_rail_4_roll) $(arg sfp_mount_rail_4_pitch) $(arg sfp_mount_rail_4_yaw)"/>
+    </joint>
+  </xacro:if>
+
+  <!-- SC Mount Rail 4: X=0.0985, Y=0.15625 -->
+  <xacro:if value="$(arg sc_mount_rail_4_present)">
+    <xacro:sc_mount prefix="sc_mount_rail_4_"/>
+    <joint name="sc_mount_rail_4_joint" type="fixed">
+      <parent link="task_board_base_link"/>
+      <child link="sc_mount_rail_4_link"/>
+      <origin xyz="0.0985 ${0.15625 + $(arg sc_mount_rail_4_translation)} 0.012" rpy="$(arg sc_mount_rail_4_roll) $(arg sc_mount_rail_4_pitch) $(arg sc_mount_rail_4_yaw)"/>
     </joint>
   </xacro:if>
 

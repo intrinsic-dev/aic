@@ -76,6 +76,38 @@ def launch_setup(context, *args, **kwargs):
     sc_mount_rail_1_pitch = LaunchConfiguration("sc_mount_rail_1_pitch")
     sc_mount_rail_1_yaw = LaunchConfiguration("sc_mount_rail_1_yaw")
 
+    sfp_mount_rail_2_present = LaunchConfiguration("sfp_mount_rail_2_present")
+    sfp_mount_rail_2_translation = LaunchConfiguration("sfp_mount_rail_2_translation")
+    sfp_mount_rail_2_roll = LaunchConfiguration("sfp_mount_rail_2_roll")
+    sfp_mount_rail_2_pitch = LaunchConfiguration("sfp_mount_rail_2_pitch")
+    sfp_mount_rail_2_yaw = LaunchConfiguration("sfp_mount_rail_2_yaw")
+    sc_mount_rail_2_present = LaunchConfiguration("sc_mount_rail_2_present")
+    sc_mount_rail_2_translation = LaunchConfiguration("sc_mount_rail_2_translation")
+    sc_mount_rail_2_roll = LaunchConfiguration("sc_mount_rail_2_roll")
+    sc_mount_rail_2_pitch = LaunchConfiguration("sc_mount_rail_2_pitch")
+    sc_mount_rail_2_yaw = LaunchConfiguration("sc_mount_rail_2_yaw")
+    sfp_mount_rail_3_present = LaunchConfiguration("sfp_mount_rail_3_present")
+    sfp_mount_rail_3_translation = LaunchConfiguration("sfp_mount_rail_3_translation")
+    sfp_mount_rail_3_roll = LaunchConfiguration("sfp_mount_rail_3_roll")
+    sfp_mount_rail_3_pitch = LaunchConfiguration("sfp_mount_rail_3_pitch")
+    sfp_mount_rail_3_yaw = LaunchConfiguration("sfp_mount_rail_3_yaw")
+    sc_mount_rail_3_present = LaunchConfiguration("sc_mount_rail_3_present")
+    sc_mount_rail_3_translation = LaunchConfiguration("sc_mount_rail_3_translation")
+    sc_mount_rail_3_roll = LaunchConfiguration("sc_mount_rail_3_roll")
+    sc_mount_rail_3_pitch = LaunchConfiguration("sc_mount_rail_3_pitch")
+    sc_mount_rail_3_yaw = LaunchConfiguration("sc_mount_rail_3_yaw")
+    sfp_mount_rail_4_present = LaunchConfiguration("sfp_mount_rail_4_present")
+    sfp_mount_rail_4_translation = LaunchConfiguration("sfp_mount_rail_4_translation")
+    sfp_mount_rail_4_roll = LaunchConfiguration("sfp_mount_rail_4_roll")
+    sfp_mount_rail_4_pitch = LaunchConfiguration("sfp_mount_rail_4_pitch")
+    sfp_mount_rail_4_yaw = LaunchConfiguration("sfp_mount_rail_4_yaw")
+    sc_mount_rail_4_present = LaunchConfiguration("sc_mount_rail_4_present")
+    sc_mount_rail_4_translation = LaunchConfiguration("sc_mount_rail_4_translation")
+    sc_mount_rail_4_roll = LaunchConfiguration("sc_mount_rail_4_roll")
+    sc_mount_rail_4_pitch = LaunchConfiguration("sc_mount_rail_4_pitch")
+    sc_mount_rail_4_yaw = LaunchConfiguration("sc_mount_rail_4_yaw")
+
+
     # SC Port parameters
     sc_port_0_present = LaunchConfiguration("sc_port_0_present")
     sc_port_0_translation = LaunchConfiguration("sc_port_0_translation")
@@ -252,6 +284,96 @@ def launch_setup(context, *args, **kwargs):
             " ",
             "sc_mount_rail_1_yaw:=",
             sc_mount_rail_1_yaw,
+            " ",
+            "sfp_mount_rail_2_present:=",
+            sfp_mount_rail_2_present,
+            " ",
+            "sfp_mount_rail_2_translation:=",
+            sfp_mount_rail_2_translation,
+            " ",
+            "sfp_mount_rail_2_roll:=",
+            sfp_mount_rail_2_roll,
+            " ",
+            "sfp_mount_rail_2_pitch:=",
+            sfp_mount_rail_2_pitch,
+            " ",
+            "sfp_mount_rail_2_yaw:=",
+            sfp_mount_rail_2_yaw,
+            " ",
+            "sc_mount_rail_2_present:=",
+            sc_mount_rail_2_present,
+            " ",
+            "sc_mount_rail_2_translation:=",
+            sc_mount_rail_2_translation,
+            " ",
+            "sc_mount_rail_2_roll:=",
+            sc_mount_rail_2_roll,
+            " ",
+            "sc_mount_rail_2_pitch:=",
+            sc_mount_rail_2_pitch,
+            " ",
+            "sc_mount_rail_2_yaw:=",
+            sc_mount_rail_2_yaw,
+            " ",
+            "sfp_mount_rail_3_present:=",
+            sfp_mount_rail_3_present,
+            " ",
+            "sfp_mount_rail_3_translation:=",
+            sfp_mount_rail_3_translation,
+            " ",
+            "sfp_mount_rail_3_roll:=",
+            sfp_mount_rail_3_roll,
+            " ",
+            "sfp_mount_rail_3_pitch:=",
+            sfp_mount_rail_3_pitch,
+            " ",
+            "sfp_mount_rail_3_yaw:=",
+            sfp_mount_rail_3_yaw,
+            " ",
+            "sc_mount_rail_3_present:=",
+            sc_mount_rail_3_present,
+            " ",
+            "sc_mount_rail_3_translation:=",
+            sc_mount_rail_3_translation,
+            " ",
+            "sc_mount_rail_3_roll:=",
+            sc_mount_rail_3_roll,
+            " ",
+            "sc_mount_rail_3_pitch:=",
+            sc_mount_rail_3_pitch,
+            " ",
+            "sc_mount_rail_3_yaw:=",
+            sc_mount_rail_3_yaw,
+            " ",
+            "sfp_mount_rail_4_present:=",
+            sfp_mount_rail_4_present,
+            " ",
+            "sfp_mount_rail_4_translation:=",
+            sfp_mount_rail_4_translation,
+            " ",
+            "sfp_mount_rail_4_roll:=",
+            sfp_mount_rail_4_roll,
+            " ",
+            "sfp_mount_rail_4_pitch:=",
+            sfp_mount_rail_4_pitch,
+            " ",
+            "sfp_mount_rail_4_yaw:=",
+            sfp_mount_rail_4_yaw,
+            " ",
+            "sc_mount_rail_4_present:=",
+            sc_mount_rail_4_present,
+            " ",
+            "sc_mount_rail_4_translation:=",
+            sc_mount_rail_4_translation,
+            " ",
+            "sc_mount_rail_4_roll:=",
+            sc_mount_rail_4_roll,
+            " ",
+            "sc_mount_rail_4_pitch:=",
+            sc_mount_rail_4_pitch,
+            " ",
+            "sc_mount_rail_4_yaw:=",
+            sc_mount_rail_4_yaw,
             " ",
             "sc_port_0_present:=",
             sc_port_0_present,
@@ -827,6 +949,217 @@ def generate_launch_description():
             "sc_mount_rail_1_yaw",
             default_value="0.0",
             description="SC Mount Rail 1 yaw orientation (radians)",
+        )
+    )
+
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "sfp_mount_rail_2_present",
+            default_value="false",
+            description="SFP Mount Rail 2 present",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "sfp_mount_rail_2_translation",
+            default_value="0.0",
+            description="SFP Mount Rail 2 translation",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "sfp_mount_rail_2_roll",
+            default_value="0.0",
+            description="SFP Mount Rail 2 roll",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "sfp_mount_rail_2_pitch",
+            default_value="0.0",
+            description="SFP Mount Rail 2 pitch",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "sfp_mount_rail_2_yaw",
+            default_value="0.0",
+            description="SFP Mount Rail 2 yaw",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "sc_mount_rail_2_present",
+            default_value="false",
+            description="SC Mount Rail 2 present",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "sc_mount_rail_2_translation",
+            default_value="0.0",
+            description="SC Mount Rail 2 translation",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "sc_mount_rail_2_roll",
+            default_value="0.0",
+            description="SC Mount Rail 2 roll",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "sc_mount_rail_2_pitch",
+            default_value="0.0",
+            description="SC Mount Rail 2 pitch",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "sc_mount_rail_2_yaw",
+            default_value="0.0",
+            description="SC Mount Rail 2 yaw",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "sfp_mount_rail_3_present",
+            default_value="false",
+            description="SFP Mount Rail 3 present",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "sfp_mount_rail_3_translation",
+            default_value="0.0",
+            description="SFP Mount Rail 3 translation",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "sfp_mount_rail_3_roll",
+            default_value="0.0",
+            description="SFP Mount Rail 3 roll",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "sfp_mount_rail_3_pitch",
+            default_value="0.0",
+            description="SFP Mount Rail 3 pitch",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "sfp_mount_rail_3_yaw",
+            default_value="0.0",
+            description="SFP Mount Rail 3 yaw",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "sc_mount_rail_3_present",
+            default_value="false",
+            description="SC Mount Rail 3 present",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "sc_mount_rail_3_translation",
+            default_value="0.0",
+            description="SC Mount Rail 3 translation",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "sc_mount_rail_3_roll",
+            default_value="0.0",
+            description="SC Mount Rail 3 roll",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "sc_mount_rail_3_pitch",
+            default_value="0.0",
+            description="SC Mount Rail 3 pitch",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "sc_mount_rail_3_yaw",
+            default_value="0.0",
+            description="SC Mount Rail 3 yaw",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "sfp_mount_rail_4_present",
+            default_value="false",
+            description="SFP Mount Rail 4 present",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "sfp_mount_rail_4_translation",
+            default_value="0.0",
+            description="SFP Mount Rail 4 translation",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "sfp_mount_rail_4_roll",
+            default_value="0.0",
+            description="SFP Mount Rail 4 roll",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "sfp_mount_rail_4_pitch",
+            default_value="0.0",
+            description="SFP Mount Rail 4 pitch",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "sfp_mount_rail_4_yaw",
+            default_value="0.0",
+            description="SFP Mount Rail 4 yaw",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "sc_mount_rail_4_present",
+            default_value="false",
+            description="SC Mount Rail 4 present",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "sc_mount_rail_4_translation",
+            default_value="0.0",
+            description="SC Mount Rail 4 translation",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "sc_mount_rail_4_roll",
+            default_value="0.0",
+            description="SC Mount Rail 4 roll",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "sc_mount_rail_4_pitch",
+            default_value="0.0",
+            description="SC Mount Rail 4 pitch",
+        )
+    )
+    declared_arguments.append(
+        DeclareLaunchArgument(
+            "sc_mount_rail_4_yaw",
+            default_value="0.0",
+            description="SC Mount Rail 4 yaw",
         )
     )
 
