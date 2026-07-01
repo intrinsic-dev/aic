@@ -70,13 +70,9 @@ namespace aic_gazebo
     gz::sim::Entity connection1LinkEntity{gz::sim::kNullEntity};
 
     /// \brief Whether connection 0 has been inserted into a port
-    bool end0Inserted{false};
+    std::atomic<bool> end0Inserted{false};
     /// \brief Whether connection 1 has been inserted into a port
-    bool end1Inserted{false};
-    /// \brief Whether connection 0 insertion has been published
-    bool end0Published{false};
-    /// \brief Whether connection 1 insertion has been published
-    bool end1Published{false};
+    std::atomic<bool> end1Inserted{false};
     /// \brief Whether the cable task is completed
     bool isCompleted{false};
     /// \brief Thread-safe tracker of the active contact end
