@@ -23,12 +23,12 @@
 #include <functional>
 #include <gz/common/Console.hh>
 #include <gz/plugin/Register.hh>
-#include <gz/sim/Util.hh>
 #include <gz/sim/Link.hh>
-#include <gz/sim/components/CollisionBitmask.hh>
+#include <gz/sim/Util.hh>
 #include <gz/sim/components/CanonicalLink.hh>
 #include <gz/sim/components/ChildLinkName.hh>
 #include <gz/sim/components/Collision.hh>
+#include <gz/sim/components/CollisionBitmask.hh>
 #include <gz/sim/components/ContactSensorData.hh>
 #include <gz/sim/components/DetachableJoint.hh>
 #include <gz/sim/components/JointType.hh>
@@ -237,7 +237,8 @@ void CableModeratorPlugin::ProcessManualGraspRequests(
                              components::DetachableJoint(
                                  {this->endEffectorLinkEntity,
                                   tracker.connection0LinkEntity, "fixed"}));
-        _ecm.CreateComponent(jointEntity,
+        _ecm.CreateComponent(
+            jointEntity,
             components::DetachableJointEnforceFixedConstraint(true));
         gzmsg << "Manually attached " << this->cableConfigs[i].modelName
               << " end 0" << std::endl;
@@ -269,7 +270,8 @@ void CableModeratorPlugin::ProcessManualGraspRequests(
                              components::DetachableJoint(
                                  {this->endEffectorLinkEntity,
                                   tracker.connection1LinkEntity, "fixed"}));
-        _ecm.CreateComponent(jointEntity,
+        _ecm.CreateComponent(
+            jointEntity,
             components::DetachableJointEnforceFixedConstraint(true));
         gzmsg << "Manually attached " << this->cableConfigs[i].modelName
               << " end 1" << std::endl;
@@ -484,7 +486,6 @@ void CableModeratorPlugin::PreUpdate(const gz::sim::UpdateInfo& /*_info*/,
           this->SetModelCollisionsBitmasks(tracker.modelEntity,
                                            kDefaultCollideMask,
                                            kDefaultCollideMask, _ecm);
-
         }
       }
 
@@ -549,7 +550,6 @@ void CableModeratorPlugin::PreUpdate(const gz::sim::UpdateInfo& /*_info*/,
       this->DisableLinkCollisions(tracker.connection0LinkEntity, _ecm);
       gzdbg << "Locking End 0 after insertion. Resulting joint: "
             << tracker.detachableJointStatic0Entity << std::endl;
-
     }
     if (tracker.end1Inserted &&
         tracker.detachableJointStatic1Entity == kNullEntity) {
@@ -637,7 +637,8 @@ Entity CableModeratorPlugin::MakeStatic(Entity _entity,
   _ecm.CreateComponent(detachableJointEntity,
                        components::DetachableJoint(
                            {parentLinkEntity, childLinkEntity, "fixed"}));
-  _ecm.CreateComponent(detachableJointEntity,
+  _ecm.CreateComponent(
+      detachableJointEntity,
       components::DetachableJointEnforceFixedConstraint(false));
 
   return detachableJointEntity;
@@ -936,16 +937,14 @@ std::optional<int> CableModeratorPlugin::FindGraspedEnd(
 }
 
 void CableModeratorPlugin::DisableLinkCollisions(
-    gz::sim::Entity _linkEntity,
-    gz::sim::EntityComponentManager &_ecm) {
+    gz::sim::Entity _linkEntity, gz::sim::EntityComponentManager& _ecm) {
   this->SetLinkCollisionsBitmasks(_linkEntity, 0, 0, _ecm);
 }
 
 void CableModeratorPlugin::SetLinkCollisionsBitmasks(
-    gz::sim::Entity _linkEntity,
-    std::optional<uint16_t> _categoryMask,
+    gz::sim::Entity _linkEntity, std::optional<uint16_t> _categoryMask,
     std::optional<uint16_t> _collideMask,
-    gz::sim::EntityComponentManager &_ecm) {
+    gz::sim::EntityComponentManager& _ecm) {
   gz::sim::Link link(_linkEntity);
   for (const auto& collisionEntity : link.Collisions(_ecm)) {
     if (_categoryMask.has_value()) {
@@ -960,10 +959,9 @@ void CableModeratorPlugin::SetLinkCollisionsBitmasks(
 }
 
 void CableModeratorPlugin::SetModelCollisionsBitmasks(
-    gz::sim::Entity _modelEntity,
-    std::optional<uint16_t> _categoryMask,
+    gz::sim::Entity _modelEntity, std::optional<uint16_t> _categoryMask,
     std::optional<uint16_t> _collideMask,
-    gz::sim::EntityComponentManager &_ecm) {
+    gz::sim::EntityComponentManager& _ecm) {
   gz::sim::Model model(_modelEntity);
   for (const auto& linkEntity : model.Links(_ecm)) {
     gz::sim::Link link(linkEntity);
