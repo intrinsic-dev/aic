@@ -217,6 +217,7 @@ class RobotControlBridge : public BridgeInterface {
     int restart_connection_retries_;
     uint8_t target_mode_value_;
     std::optional<int64_t> last_part_status_timestamp_ns_;
+    double time_to_target_seconds_;
 
     aic_control_interfaces::msg::ControllerState controller_state_;
     std::mutex controller_state_mutex_;

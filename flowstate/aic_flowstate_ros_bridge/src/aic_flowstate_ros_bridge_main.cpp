@@ -125,6 +125,10 @@ int main(int argc, char* argv[]) {
                       robot_control_bridge_config.task_settings_file());
   params.emplace_back("joint_task_settings_file",
                       robot_control_bridge_config.joint_task_settings_file());
+  params.emplace_back("time_to_target_seconds",
+                      robot_control_bridge_config.time_to_target_seconds());
+  params.emplace_back("control_mode",
+                      robot_control_bridge_config.control_mode());
   const auto& override_joint_names_proto = s.override_joint_names();
   std::vector<std::string> override_joint_names(
       override_joint_names_proto.begin(), override_joint_names_proto.end());
