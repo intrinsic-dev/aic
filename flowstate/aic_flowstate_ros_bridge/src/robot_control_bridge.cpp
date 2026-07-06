@@ -58,6 +58,9 @@ constexpr const char* kFlowstateZenohRouterParamName =
     "flowstate_zenoh_router_address";
 constexpr const char* kRestartConnectionRetriesParamName =
     "restart_connection_retries";
+constexpr const char* kTimeToTargetSecondsParamName =
+    "time_to_target_seconds";
+constexpr const char* kControlModeParamName = "control_mode";
 
 ///=============================================================================
 void RobotControlBridge::declare_ros_parameters(
@@ -80,6 +83,10 @@ void RobotControlBridge::declare_ros_parameters(
                                      rclcpp::ParameterValue{""});
   param_interface->declare_parameter(kRestartConnectionRetriesParamName,
                                      rclcpp::ParameterValue{10});
+  param_interface->declare_parameter(kTimeToTargetSecondsParamName,
+                                     rclcpp::ParameterValue{0.1});
+  param_interface->declare_parameter(kControlModeParamName,
+                                     rclcpp::ParameterValue{"admittance"});
 }
 
 ///=============================================================================
@@ -108,6 +115,12 @@ bool RobotControlBridge::initialize(
   data_->restart_connection_retries_ =
       param_interface->get_parameter(kRestartConnectionRetriesParamName)
           .get_value<int>();
+  data_->time_to_target_seconds_ =
+      param_interface->get_parameter(kTimeToTargetSecondsParamName)
+          .get_value<double>();
+  std::string control_mode_str =
+      param_interface->get_parameter(kControlModeParamName)
+          .get_value<std::string>();
   std::filesystem::path task_settings_file =
       param_interface->get_parameter(kAgentBridgeTaskSettingsFileParamName)
           .get_value<std::string>();
@@ -169,6 +182,18 @@ bool RobotControlBridge::initialize(
            "filepath for loading default task_settings.";
     throw std::runtime_error("'joint_task_settings_file' parameter is empty.");
   }
+
+  if (control_mode_str == "admittance") {
+    data_->agent_bridge_fixed_params_.mutable_task_settings()->set_control_mode(
+        intrinsic_proto::icon::actions::proto::ControlMode::ADMITTANCE);
+  } else if (control_mode_str == "impedance") {
+    data_->agent_bridge_fixed_params_.mutable_task_settings()->set_control_mode(
+        intrinsic_proto::icon::actions::proto::ControlMode::IMPEDANCE);
+  } else {
+    LOG(ERROR) << "Invalid control_mode: " << control_mode_str;
+    throw std::runtime_error("Invalid control_mode parameter.");
+  }
+
   // Set default taring cycle of 100
   // todo(johntgz) set this as a ros parameter
   data_->tare_ft_sensor_fixed_params_.set_num_taring_cycles(100);
@@ -679,14 +704,18 @@ bool RobotControlBridge::startControllerAction() {
   ActionDescriptor agent_bridge_descriptor =
       ActionDescriptor(
           intrinsic::icon::AgentBridgeInfo::kActionTypeName, kAgentBridgeId,
-          {{intrinsic::icon::AgentBridgeInfo::kSlotName, data_->part_name_}})
+          {{intrinsic::icon::AgentBridgeInfo::kSlotName, data_->part_name_},
+           {intrinsic::icon::AgentBridgeInfo::kForceTorqueSlotName,
+            data_->ft_sensor_part_name_}})
           .WithFixedParams(data_->agent_bridge_fixed_params_);
 
   ActionDescriptor agent_bridge_joint_descriptor =
       ActionDescriptor(intrinsic::icon::AgentBridgeJointInfo::kActionTypeName,
                        kAgentBridgeJointId,
                        {{intrinsic::icon::AgentBridgeJointInfo::kSlotName,
-                         data_->part_name_}})
+                         data_->part_name_},
+                        {intrinsic::icon::AgentBridgeJointInfo::kForceTorqueSlotName,
+                         data_->ft_sensor_part_name_}})
           .WithFixedParams(data_->agent_bridge_joint_fixed_params_);
 
   ActionDescriptor tare_ft_sensor_descriptor =
@@ -1122,7 +1151,7 @@ void RobotControlBridge::MotionUpdateCallback(
 
   // Set time_to_target_seconds to a default of 1.1 * controller period (0.002
   // s), so it will reach the target as fast as possible
-  proto_msg.set_time_to_target_seconds(0.0022);
+  proto_msg.set_time_to_target_seconds(data_->time_to_target_seconds_);
 
   // Write the MotionUpdate proto message to the AgentBridge action
   auto status = data_->agent_bridge_writer_->Write(proto_msg);
@@ -1211,7 +1240,7 @@ void RobotControlBridge::JointMotionUpdateCallback(
 
   // Set time_to_target_seconds to a default of 1.1 * controller period (0.002
   // s), so it will reach the target as fast as possible
-  proto_msg.set_time_to_target_seconds(0.0022);
+  proto_msg.set_time_to_target_seconds(data_->time_to_target_seconds_);
 
   // Write the JointMotionUpdate proto message to the AgentBridgeJoint action
   auto status = data_->agent_bridge_joint_writer_->Write(proto_msg);

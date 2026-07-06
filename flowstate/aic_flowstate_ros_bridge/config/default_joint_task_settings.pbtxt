@@ -6,13 +6,13 @@ damping_smoothing_constant: 0.1
 
 # These limits cannot exceed the application limits.
 joint_limits_update: {
-  min_position: { values: [-6.22, -4.059, -2.77, -6.22, -6.22, -6.22] }
-  max_position: { values: [6.22, 0.95, 2.77, 6.22, 6.22, 6.22] }
+  min_position: { values: [-6.22, -4.059, -2.77, -6.22, -6.22, 1.571] }
+  max_position: { values: [6.22, 0.95, 2.77, 6.22, 6.22, 4.712] }
   # For safety/testing, reducing velocity limits is usually the most intuitive
   # and all that matters for conservative motion. Reducting acceleration and
   # jerk limits can have counter-intuitive behavior.
-  max_velocity: { values: [0.8, 0.8, 0.8, 0.8, 0.8, 0.8] }
-  max_acceleration: { values: [10, 10, 10, 10, 10, 10] }
+  max_velocity: { values: [0.746, 0.746, 0.746, 0.746, 0.746, 0.746] }
+  max_acceleration: { values: [5, 5, 5, 5, 5, 5] }
   max_jerk: { values: [8001, 8001, 8001, 8001, 8001, 8001] }
   max_effort: { values: [100.0, 100.0, 100.0, 28.0, 28.0, 28.0] }
 }
