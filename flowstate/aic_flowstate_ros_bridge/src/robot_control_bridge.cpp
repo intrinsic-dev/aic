@@ -61,6 +61,7 @@ constexpr const char* kRestartConnectionRetriesParamName =
 constexpr const char* kTimeToTargetSecondsParamName =
     "time_to_target_seconds";
 constexpr const char* kControlModeParamName = "control_mode";
+constexpr const char* kCriticalMassParamName = "critical_mass";
 
 ///=============================================================================
 void RobotControlBridge::declare_ros_parameters(
@@ -87,6 +88,9 @@ void RobotControlBridge::declare_ros_parameters(
                                      rclcpp::ParameterValue{0.1});
   param_interface->declare_parameter(kControlModeParamName,
                                      rclcpp::ParameterValue{"admittance"});
+  param_interface->declare_parameter(
+      kCriticalMassParamName,
+      rclcpp::ParameterValue{std::vector<double>{5.0, 5.0, 5.0, 5.0, 5.0, 5.0}});
 }
 
 ///=============================================================================
@@ -118,6 +122,9 @@ bool RobotControlBridge::initialize(
   data_->time_to_target_seconds_ =
       param_interface->get_parameter(kTimeToTargetSecondsParamName)
           .get_value<double>();
+  data_->critical_mass_ =
+      param_interface->get_parameter(kCriticalMassParamName)
+          .get_value<std::vector<double>>();
   std::string control_mode_str =
       param_interface->get_parameter(kControlModeParamName)
           .get_value<std::string>();
@@ -893,16 +900,11 @@ bool RobotControlBridge::resetMotionUpdate() {
     target_mass->mutable_data()->Resize(36, 0.0);
 
     if (data_->agent_bridge_fixed_params_.task_settings().has_max_stiffness() &&
-        data_->agent_bridge_fixed_params_.task_settings().has_max_damping() &&
-        data_->agent_bridge_fixed_params_.task_settings()
-            .has_mass_for_critical_damping()) {
+        data_->agent_bridge_fixed_params_.task_settings().has_max_damping()) {
       const auto& max_stiffness =
           data_->agent_bridge_fixed_params_.task_settings().max_stiffness();
       const auto& max_damping =
           data_->agent_bridge_fixed_params_.task_settings().max_damping();
-      const auto& critical_mass =
-          data_->agent_bridge_fixed_params_.task_settings()
-              .mass_for_critical_damping();
 
       target_stiffness->set_data(0, max_stiffness.x());
       target_stiffness->set_data(7, max_stiffness.y());
@@ -918,15 +920,19 @@ bool RobotControlBridge::resetMotionUpdate() {
       target_damping->set_data(28, max_damping.ry());
       target_damping->set_data(35, max_damping.rz());
 
-      target_mass->set_data(0, critical_mass.x());
-      target_mass->set_data(7, critical_mass.y());
-      target_mass->set_data(14, critical_mass.z());
-      target_mass->set_data(21, critical_mass.rx());
-      target_mass->set_data(28, critical_mass.ry());
-      target_mass->set_data(35, critical_mass.rz());
+      if (data_->critical_mass_.size() >= 6) {
+        target_mass->set_data(0, data_->critical_mass_[0]);
+        target_mass->set_data(7, data_->critical_mass_[1]);
+        target_mass->set_data(14, data_->critical_mass_[2]);
+        target_mass->set_data(21, data_->critical_mass_[3]);
+        target_mass->set_data(28, data_->critical_mass_[4]);
+        target_mass->set_data(35, data_->critical_mass_[5]);
+      } else {
+        LOG(ERROR) << "critical_mass parameter does not have 6 elements.";
+        return false;
+      }
     } else {
-      LOG(ERROR) << "Task settings missing max_stiffness, max_damping, or "
-                    "mass_for_critical_damping parameters.";
+      LOG(ERROR) << "Task settings missing max_stiffness or max_damping parameters.";
       return false;
     }
 

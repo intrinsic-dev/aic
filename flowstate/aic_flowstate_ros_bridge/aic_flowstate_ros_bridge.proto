@@ -12,6 +12,7 @@ message RobotControlBridgeConfig {
   string joint_task_settings_file = 6;
   double time_to_target_seconds = 7;
   string control_mode = 8;
+  repeated double critical_mass = 9;
 }
 
 // Configuration to control which sensors are enabled to publish ROS 2 messages.
