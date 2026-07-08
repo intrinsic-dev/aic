@@ -6,7 +6,7 @@
 # with critical damping under the assume mass.
 max_stiffness: { x: 800 y: 800 z: 800 rx: 40 ry: 40 rz: 40 }
 max_damping: { x: 76 y: 76 z: 76 rx: 10 ry: 10 rz: 10 }
-mass_for_critical_damping: { x: 1.8 y: 1.8 z: 1.8 rx: 0.12 ry: 0.12 rz: 0.12 }
+mass_for_critical_damping: { x: 10.0 y: 10.0 z: 10.0 rx: 5.0 ry: 5.0 rz: 5.0 }
 
 # Limits of a reasonable retangular volume in front the the robot. This should
 # be adjusted for different workcells and even different applications.
@@ -18,12 +18,12 @@ cartesian_limits {
   max_translational_position: 1.0   # y
   max_translational_position: 1.5   # z
 
-  min_translational_velocity: -0.3
-  min_translational_velocity: -0.3
-  min_translational_velocity: -0.3
-  max_translational_velocity: 0.3
-  max_translational_velocity: 0.3
-  max_translational_velocity: 0.3
+  min_translational_velocity: -1.0
+  min_translational_velocity: -1.0
+  min_translational_velocity: -1.0
+  max_translational_velocity: 1.0
+  max_translational_velocity: 1.0
+  max_translational_velocity: 1.0
 
   min_translational_acceleration: -10
   min_translational_acceleration: -10
@@ -39,7 +39,7 @@ cartesian_limits {
   max_translational_jerk: 3000.0
   max_translational_jerk: 3000.0
 
-  max_rotational_velocity: 1
+  max_rotational_velocity: 2
   max_rotational_acceleration: 10
   max_rotational_jerk: 3000.0
 }
@@ -103,3 +103,5 @@ pose_error_integrator_bound: { x: 10 y: 10 z: 10 rx: 2 ry: 2 rz: 2 }
 # The control mode allows switching between impedance and admittance control,
 # and defaults to impedance control when not specified.
 control_mode: ADMITTANCE
+
+sensed_wrench_deadband { x: 0.2 y: 0.2 z: 0.5 rx: 0.05 ry: 0.05 rz: 0.05 }
