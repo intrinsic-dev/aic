@@ -25,8 +25,7 @@
 #include <gz/plugin/Register.hh>
 #include <gz/sim/Util.hh>
 #include <gz/sim/Link.hh>
-#include <gz/sim/components/CollisionBitmaskCmd.hh>
-#include <gz/sim/components/CategoryBitmaskCmd.hh>
+#include <gz/sim/components/CollisionBitmask.hh>
 #include <gz/sim/components/CanonicalLink.hh>
 #include <gz/sim/components/ChildLinkName.hh>
 #include <gz/sim/components/Collision.hh>
@@ -954,7 +953,7 @@ void CableModeratorPlugin::SetLinkCollisionsBitmasks(
           collisionEntity, _categoryMask.value());
     }
     if (_collideMask.has_value()) {
-      _ecm.SetComponentData<gz::sim::components::CollisionBitmaskCmd>(
+      _ecm.SetComponentData<gz::sim::components::CollideBitmaskCmd>(
           collisionEntity, _collideMask.value());
     }
   }
