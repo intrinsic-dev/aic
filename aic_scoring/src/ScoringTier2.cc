@@ -423,7 +423,7 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryJerkScore(
   if (!_success) {
     return CategoryScore(
         0,
-        "Plug is not within max bounding radius from target port, "
+        "Plugs are not within max bounding radius from target ports, "
         "not assigning jerk bonus");
   }
 
@@ -526,7 +526,7 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryEfficiencyScore(
   if (!_success) {
     return CategoryScore(
         0,
-        "Plug is not within max bounding radius from target port, "
+        "Plugs are not within max bounding radius from target ports, "
         "not assigning efficiency bonus");
   }
 
@@ -665,7 +665,7 @@ Tier3Score ScoringTier2::GetDistanceScore(std::size_t index) const {
 
   std::stringstream sstream;
   sstream.setf(std::ios::fixed);
-  sstream.precision(2);
+  sstream.precision(3);
 
   // A bounding box with a kEntranceXYTol x-z size, up to port_entrance.z,
   // down until port_trans.z - a small value (for numerical tolerances)
@@ -680,8 +680,8 @@ Tier3Score ScoringTier2::GetDistanceScore(std::size_t index) const {
 
     // If we are within insertion threshold, score it as a full success
     if (plug_to_port_dist <= kInsertionThreshold) {
-      sstream << "No contact detected but plug within minimum threshold of"
-        << kInsertionThreshold << ". Assigning full score.";
+      sstream << "No contact detected but plug within minimum threshold of "
+        << kInsertionThreshold << "m. Assigning full score.";
       return Tier3Score(kInsertionCompletionScore, sstream.str());
     }
 
@@ -698,8 +698,13 @@ Tier3Score ScoringTier2::GetDistanceScore(std::size_t index) const {
       kClosestTaskScore, kFurthestTaskScore, distance_threshold + maxDistance,
       distance_threshold, dist.value());
 
-  sstream << "No insertion detected. Final plug port distance: " << dist.value()
-          << "m.";
+  if (score == kFurthestTaskScore) {
+    sstream << "Plug too far from port. Final plug port distance: " << dist.value()
+            << "m. Minimum required distance was " << maxDistance << "m.";
+  } else {
+    sstream << "No insertion detected. Final plug port distance: " << dist.value()
+            << "m.";
+  }
 
   return Tier3Score(score, sstream.str());
 }
@@ -910,7 +915,7 @@ Tier2Score::CategoryScore ScoringTier2::GetTaskDurationScore(
   if (!_success) {
     return CategoryScore(
         0,
-        "Plug is not within max bounding radius from target port, "
+        "Plugs are not within max bounding radius from target ports, "
         "not assigning time bonus");
   }
 
