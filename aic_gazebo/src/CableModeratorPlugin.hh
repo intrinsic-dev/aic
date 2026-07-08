@@ -99,6 +99,10 @@ namespace aic_gazebo
     std::unordered_set<gz::sim::Entity> end0CollisionEntities;
     /// \brief Collision entities monitored for End 1
     std::unordered_set<gz::sim::Entity> end1CollisionEntities;
+    /// \brief Discovered port link entities for End 0
+    std::vector<gz::sim::Entity> port0LinkEntities;
+    /// \brief Discovered port link entities for End 1
+    std::vector<gz::sim::Entity> port1LinkEntities;
     /// \brief Cable connection port subscribers
     std::vector<gz::transport::Node::Subscriber> portSubs;
 
@@ -246,6 +250,17 @@ namespace aic_gazebo
         std::optional<uint16_t> _categoryMask,
         std::optional<uint16_t> _collideMask,
         gz::sim::EntityComponentManager &_ecm);
+
+    /// \brief Find all Port link entities matching the generic config names
+    private: void FindPortEntities(gz::sim::EntityComponentManager& _ecm);
+
+    /// \brief Check if plug is close to ANY of the compatible ports
+    private: bool CheckDistanceInsertion(size_t _cableIndex, int _end,
+        const gz::sim::EntityComponentManager& _ecm);
+
+    /// \brief Publish the insertion event to notify scoring
+    private: void PublishInsertionEvent(size_t _cableIndex, int _end,
+        const gz::sim::EntityComponentManager& _ecm);
 
     /// \brief Entity of attachment link in the end effector model
     private: gz::sim::Entity endEffectorLinkEntity{gz::sim::kNullEntity};
