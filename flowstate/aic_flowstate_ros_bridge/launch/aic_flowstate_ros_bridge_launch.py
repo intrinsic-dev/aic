@@ -106,10 +106,10 @@ def generate_launch_description():
                             "flowstate_zenoh_router_address"
                         ),
                         "bridge_plugins": [
-                            # "flowstate_ros_bridge::ExecutiveBridge",
-                            # "flowstate_ros_bridge::WorldBridge",
+                            "flowstate_ros_bridge::ExecutiveBridge",
+                            "flowstate_ros_bridge::WorldBridge",
                             "flowstate_ros_bridge::RobotControlBridge",
-                            # "flowstate_ros_bridge::AicCameraBridge",
+                            "flowstate_ros_bridge::AicCameraBridge",
                         ],
                         "server_address": LaunchConfiguration("server_address"),
                         "instance": LaunchConfiguration("instance"),

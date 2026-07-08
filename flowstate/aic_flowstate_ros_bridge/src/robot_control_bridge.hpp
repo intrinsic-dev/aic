@@ -218,6 +218,7 @@ class RobotControlBridge : public BridgeInterface {
     uint8_t target_mode_value_;
     std::optional<int64_t> last_part_status_timestamp_ns_;
     double time_to_target_seconds_;
+    std::vector<double> critical_mass_;
 
     aic_control_interfaces::msg::ControllerState controller_state_;
     std::mutex controller_state_mutex_;
