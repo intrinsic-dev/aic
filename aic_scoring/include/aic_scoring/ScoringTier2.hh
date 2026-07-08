@@ -141,6 +141,9 @@ namespace aic_scoring
     public: static constexpr const char* kControllerStateTopic =
         "/aic_controller/controller_state";
 
+    /// \brief The score assigned for completed insertion.
+    public: static constexpr double kInsertionCompletionScore = 75.0;
+
     /// \brief Class constructor.
     /// \param[in] _node Pointer to the ROS node.
     /// \param[in] _gripperFrame Name of the gripper frame.

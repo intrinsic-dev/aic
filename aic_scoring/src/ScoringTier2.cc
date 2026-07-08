@@ -598,6 +598,9 @@ Tier3Score ScoringTier2::GetDistanceScore(std::size_t index) const {
   // inserted.
   const double kEntranceXYTol = 0.005;
 
+  // 1mm threshold for full insertion detection
+  const double kInsertionThreshold = 0.001;
+
   if (!this->task_end_time.has_value()) {
     return Tier3Score(0, "Task not completed.");
   }
@@ -658,6 +661,13 @@ Tier3Score ScoringTier2::GetDistanceScore(std::size_t index) const {
     // are from the actual port
     const double port_to_entrance_dist = port_entrance_trans.z - port_trans.z;
     const double plug_to_port_dist = plug_trans.z - port_trans.z;
+
+    // If we are within insertion threshold, score it as a full success
+    if (plug_to_port_dist <= kInsertionThreshold) {
+      sstream << "No contact detected but plug within minimum threshold of"
+        << kInsertionThreshold << ". Assigning full score.";
+      return Tier3Score(kInsertionCompletionScore, sstream.str());
+    }
 
     // The closest we are the higher we score
     const double score = CalculateInverseProportionalScore(
@@ -724,7 +734,6 @@ std::optional<InsertionNamespace> InsertionNamespace::make(std::string msg) {
 Tier3Score ScoringTier2::ComputeTier3Score(std::size_t index) const {
   // Binary will award kInsertionCompletionScore, partial insertion computed
   // in GetDistanceScore (and up to kMaxInsertionScore)
-  constexpr double kInsertionCompletionScore = 75.0;
   constexpr double kInsertionPenalty = -12.0;
 
   if (!this->task_end_time.has_value()) {
