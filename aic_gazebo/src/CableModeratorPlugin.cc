@@ -964,8 +964,30 @@ void CableModeratorPlugin::SetModelCollisionsBitmasks(
     std::optional<uint16_t> _categoryMask,
     std::optional<uint16_t> _collideMask,
     gz::sim::EntityComponentManager &_ecm) {
+  // Find the cable that we are trying to set collisions for
+  const CableTracker* targetTracker = nullptr;
+  for (const auto& tracker : this->cableTrackers) {
+    if (tracker.modelEntity == _modelEntity) {
+      targetTracker = &tracker;
+      break;
+    }
+  }
+
   gz::sim::Model model(_modelEntity);
   for (const auto& linkEntity : model.Links(_ecm)) {
+    // Skip setting this bitmask if it is for an inserted port, since  this
+    // is already made static on insertion and we don't want to make it
+    // dynamic again upon grasping the second end.
+    if (targetTracker) {
+      if (linkEntity == targetTracker->connection0LinkEntity &&
+          targetTracker->end0Inserted) {
+        continue;
+      }
+      if (linkEntity == targetTracker->connection1LinkEntity &&
+          targetTracker->end1Inserted) {
+        continue;
+      }
+    }
     gz::sim::Link link(linkEntity);
     this->SetLinkCollisionsBitmasks(linkEntity, _categoryMask, _collideMask,
                                     _ecm);
