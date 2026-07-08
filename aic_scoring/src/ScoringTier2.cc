@@ -277,7 +277,7 @@ void ScoringTier2::ContactsCallback(const ContactsMsg &_msg) {
 
 //////////////////////////////////////////////////
 void ScoringTier2::WrenchCallback(const WrenchMsg &_msg) {
-  const auto time = rclcpp::Time(_msg.header.stamp);
+  const auto time = this->node->get_clock()->now();
   this->wrenches.push_back({time.seconds(), _msg.wrench.force});
 }
 
