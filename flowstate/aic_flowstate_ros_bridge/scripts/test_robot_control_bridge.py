@@ -18,6 +18,8 @@
 
 import sys
 import time
+import json
+from datetime import datetime
 import rclpy
 import numpy as np
 from rclpy.executors import ExternalShutdownException
@@ -25,14 +27,14 @@ from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from aic_control_interfaces.msg import (
     MotionUpdate,
-    JointMotionUpdate,
+    ControllerState,
     TrajectoryGenerationMode,
     TargetMode,
 )
 from aic_control_interfaces.srv import (
     ChangeTargetMode,
 )
-from geometry_msgs.msg import Pose, Point, Quaternion, Wrench, Vector3, Twist
+from geometry_msgs.msg import Pose, Point, Quaternion, Wrench, Vector3, Twist, WrenchStamped
 
 
 class TestRobotControlBridgeNode(Node):
@@ -45,6 +47,53 @@ class TestRobotControlBridgeNode(Node):
             "controller_namespace", "aic_controller"
         ).value
 
+        self.test_pose_targets_str = self.declare_parameter(
+            "test_pose_targets", "[]"
+        ).value
+
+
+        self.log_filepath = self.declare_parameter(
+            "log_filepath", ""
+        ).value
+
+        stiffness_param = self.declare_parameter(
+            "target_stiffness", [10.0, 10.0]
+        ).value
+        self.target_stiffness = [stiffness_param[0]] * 3 + [stiffness_param[1]] * 3
+
+        damping_param = self.declare_parameter(
+            "target_damping", [5.0, 5.0]
+        ).value
+        self.target_damping = [damping_param[0]] * 3 + [damping_param[1]] * 3
+
+        self.publish_duration = self.declare_parameter(
+            "publish_duration", 5.0
+        ).value
+
+        self.stop_duration = self.declare_parameter(
+            "stop_duration", 5.0
+        ).value
+
+        parsed_targets = json.loads(self.test_pose_targets_str)
+        if parsed_targets and not isinstance(parsed_targets[0], list):
+            # Reshape 1D array into 2D array of poses (7 elements each)
+            self.test_pose_targets = [
+                parsed_targets[i : i + 7]
+                for i in range(0, len(parsed_targets), 7)
+            ]
+        else:
+            self.test_pose_targets = parsed_targets
+
+        self.tcp_error = None
+        self.latest_wrench = None
+
+        self.wrench_subscriber = self.create_subscription(
+            WrenchStamped,
+            "/fts_broadcaster/wrench",
+            self.wrench_callback,
+            10
+        )
+
         self.motion_update_publisher = self.create_publisher(
             MotionUpdate, f"/{self.controller_namespace}/pose_commands", 10
         )
@@ -55,17 +104,12 @@ class TestRobotControlBridgeNode(Node):
             )
             time.sleep(1.0)
 
-        self.joint_motion_update_publisher = self.create_publisher(
-            JointMotionUpdate,
-            f"/{self.controller_namespace}/joint_commands",
-            10,
+        self.state_subscriber = self.create_subscription(
+            ControllerState,
+            f"/{self.controller_namespace}/controller_state",
+            self.state_callback,
+            10
         )
-
-        while self.joint_motion_update_publisher.get_subscription_count() == 0:
-            self.get_logger().info(
-                f"Waiting for subscriber to '{self.controller_namespace}/joint_commands'..."
-            )
-            time.sleep(1.0)
 
         self.client = self.create_client(
             ChangeTargetMode, f"/{self.controller_namespace}/change_target_mode"
@@ -77,6 +121,19 @@ class TestRobotControlBridgeNode(Node):
                 f"Waiting for service '{self.controller_namespace}/change_target_mode'..."
             )
             time.sleep(1.0)
+
+    def state_callback(self, msg: ControllerState):
+        self.tcp_error = list(msg.tcp_error)
+
+    def wrench_callback(self, msg: WrenchStamped):
+        self.latest_wrench = [
+            msg.wrench.force.x,
+            msg.wrench.force.y,
+            msg.wrench.force.z,
+            msg.wrench.torque.x,
+            msg.wrench.torque.y,
+            msg.wrench.torque.z,
+        ]
 
     def generate_motion_update(
         self,
@@ -100,24 +157,14 @@ class TestRobotControlBridgeNode(Node):
                 linear=Vector3(x=twist[0], y=twist[1], z=twist[2]),
                 angular=Vector3(x=twist[3], y=twist[4], z=twist[5]),
             )
-        msg.target_stiffness = np.diag([75.0, 75.0, 75.0, 75.0, 75.0, 75.0]).flatten()
-        msg.target_damping = np.diag([35.0, 35.0, 35.0, 35.0, 35.0, 35.0]).flatten()
+        msg.target_stiffness = np.diag(self.target_stiffness).flatten()
+        msg.target_damping = np.diag(self.target_damping).flatten()
         msg.feedforward_wrench_at_tip = Wrench(
             force=Vector3(x=0.0, y=0.0, z=0.0),
             torque=Vector3(x=0.0, y=0.0, z=0.0),
         )
         msg.wrench_feedback_gains_at_tip = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         msg.trajectory_generation_mode.mode = mode
-
-        return msg
-
-    def generate_joint_motion_update(self, joint_pos):
-        msg = JointMotionUpdate()
-
-        msg.target_state.positions = joint_pos
-        msg.target_stiffness = [100, 100, 100, 100, 150, 150]
-        msg.target_damping = [30, 30, 20, 20, 4, 4]
-        msg.trajectory_generation_mode.mode = TrajectoryGenerationMode.MODE_POSITION
 
         return msg
 
@@ -128,28 +175,6 @@ class TestRobotControlBridgeNode(Node):
                 pos, quat, frame_id, TrajectoryGenerationMode.MODE_POSITION
             )
         )
-        self.get_logger().info(
-            f"Published MotionUpdate with POSITION trajectory mode to aic_controller"
-        )
-
-    def send_cartesian_twist_target(self, twist, frame_id):
-
-        self.motion_update_publisher.publish(
-            self.generate_motion_update(
-                None, None, frame_id, TrajectoryGenerationMode.MODE_VELOCITY, twist
-            )
-        )
-        self.get_logger().info(
-            f"Published MotionUpdate with VELOCITY trajectory mode to aic_controller"
-        )
-
-    def send_joint_target(self, joint_pos):
-
-        self.joint_motion_update_publisher.publish(
-            self.generate_joint_motion_update(joint_pos)
-        )
-
-        self.get_logger().info("Published JointMotionUpdate to aic_controller")
 
     def send_change_target_mode_req(self, mode):
 
@@ -179,63 +204,51 @@ def main(args=None):
     node = TestRobotControlBridgeNode()
 
     try:
-        quat_tool_down = [
-            0.7071068,
-            0.7071068,
-            0.0,
-            0.0,
-        ]  # ZYX = (180, 0, 90), z axis normal to plane and (x,y) axes are aligned with base_link axes
-
-        # Trigger reconection
-        node.send_cartesian_pose_target(
-            [-0.501, -0.175, 0.2],
-            quat_tool_down,
-            "base_link",
-        )
-        time.sleep(3)
-
         # Send service request to switch to Cartesian target mode
         node.send_change_target_mode_req(TargetMode.MODE_CARTESIAN)
 
-        # Send Cartesian pose targets in both "base_link" and "gripper/tcp" frames
-        node.send_cartesian_pose_target(
-            [-0.501, -0.175, 0.2],
-            quat_tool_down,
-            "base_link",
-        )
-        time.sleep(5)
+        output_log = {
+            "target_stiffness": node.target_stiffness,
+            "target_damping": node.target_damping,
+            "results": {}
+        }
 
-        node.send_cartesian_pose_target(
-            [-0.501, -0.175, 0.5],
-            [-0.2126311, 0.2126311, 0.6743797, 0.6743797],
-            "base_link",
-        )
-        time.sleep(5)
+        for pose in node.test_pose_targets:
+            # pose is expected to be [x, y, z, qx, qy, qz, qw]
+            pos = pose[0:3]
+            quat = pose[3:7]
 
-        # Send Cartesian twist targets in both "base_link" and "gripper/tcp" frames
-        node.send_cartesian_twist_target(
-            [0.05, 0.0, 0.0, 0.0, 0.0, 0.0],
-            "base_link",
-        )
-        time.sleep(3)
-        node.send_cartesian_twist_target(
-            [0.0, -0.05, 0.0, 0.0, 0.0, 0.0],
-            "gripper/tcp",
-        )
-        time.sleep(3)
+            node.get_logger().info(f"Testing pose target: {pose}")
 
-        # Send service request to switch to joint target mode
-        node.send_change_target_mode_req(TargetMode.MODE_JOINT)
+            node.get_logger().info(f"Publishing motion update for {node.publish_duration} seconds.")
+            start_time = time.time()
+            while time.time() - start_time < node.publish_duration and rclpy.ok():
+                node.send_cartesian_pose_target(pos, quat, "base_link")
+                rclpy.spin_once(node, timeout_sec=0.04) # 25 Hz
 
-        node.send_joint_target([0.5, -1.25, -1.5, -1.5, 1.0, 1.0])
-        time.sleep(5)
+            node.get_logger().info(f"Stopping motion updates for {node.stop_duration} seconds.")
+            start_time = time.time()
+            while time.time() - start_time < node.stop_duration and rclpy.ok():
+                rclpy.spin_once(node, timeout_sec=0.1)
 
-        node.send_joint_target(
-            [0.0, -1.354375, -1.6648696, -1.6931439, 1.5708, 1.4109242]
-        )
-        time.sleep(5)
+            if node.tcp_error is not None:
+                node.get_logger().info(f"Recording tcp_error: {node.tcp_error}")
+                recorded_data = {"tcp_error": node.tcp_error}
+                if node.latest_wrench is not None:
+                    node.get_logger().info(f"Recording wrench: {node.latest_wrench}")
+                    recorded_data["wrench"] = node.latest_wrench
+                output_log["results"][str(pose)] = recorded_data
 
-        rclpy.spin(node)
+        if output_log["results"]:
+            if node.log_filepath:
+                filename = node.log_filepath
+            else:
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                filename = f"tcp_accuracy_{timestamp}.json"
+
+            with open(filename, "w") as f:
+                json.dump(output_log, f, indent=4)
+            node.get_logger().info(f"Saved TCP accuracy to {filename}")
 
     except (KeyboardInterrupt, ExternalShutdownException):
         pass
