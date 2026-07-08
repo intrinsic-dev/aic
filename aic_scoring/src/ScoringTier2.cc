@@ -370,6 +370,20 @@ std::optional<double> ScoringTier2::GetPlugPortDistance(
 }
 
 //////////////////////////////////////////////////
+std::optional<double> ScoringTier2::GetStartPlugPortDistance(
+    std::size_t index) const {
+  if (!this->task_start_time.has_value()) {
+    RCLCPP_ERROR(this->node->get_logger(), "Task was not started");
+    return std::nullopt;
+  }
+
+  return this->GetPlugPortDistance(
+        tf2::TimePoint(std::chrono::nanoseconds(
+            this->task_start_time.value().nanoseconds())),
+        index);
+}
+
+//////////////////////////////////////////////////
 // Calculates an inverse proportional score clamped to max_score for min_range
 // and min_score for max_range, and with a linear inverse proportional
 // interpolation inbetween.
@@ -526,10 +540,7 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryEfficiencyScore(
     // The robot must travel at least this distance, so it becomes the minimum
     // path length for a perfect score.
     if (this->task_start_time.has_value()) {
-      const auto initDist = this->GetPlugPortDistance(
-          tf2::TimePoint(std::chrono::nanoseconds(
-              this->task_start_time.value().nanoseconds())),
-          index);
+      const auto initDist = this->GetStartPlugPortDistance(index);
       if (initDist.has_value()) {
         minPathLength += initDist.value();
       } else {
@@ -585,8 +596,13 @@ Tier3Score ScoringTier2::GetDistanceScore(std::size_t index) const {
                       "Distance computation failed, task start time not set");
   }
 
-  // Fix the distance to 20 cm
-  const double kMaxDistance = 0.2;
+  const auto maxDistanceOpt = this->GetStartPlugPortDistance(index);
+  if (!maxDistanceOpt.has_value()) {
+    return Tier3Score(
+        0, "Distance computation failed, initial tf between cable and port not found");
+  }
+  // Max distance is 50% of the initial distance
+  const auto& maxDistance = maxDistanceOpt.value() * 0.5;
   const double kClosestTaskScore = 25.0;
   const double kFurthestTaskScore = 0.0;
 
@@ -679,7 +695,7 @@ Tier3Score ScoringTier2::GetDistanceScore(std::size_t index) const {
   }
 
   const double score = CalculateInverseProportionalScore(
-      kClosestTaskScore, kFurthestTaskScore, distance_threshold + kMaxDistance,
+      kClosestTaskScore, kFurthestTaskScore, distance_threshold + maxDistance,
       distance_threshold, dist.value());
 
   sstream << "No insertion detected. Final plug port distance: " << dist.value()
