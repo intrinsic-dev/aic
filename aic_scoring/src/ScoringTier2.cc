@@ -277,7 +277,7 @@ void ScoringTier2::ContactsCallback(const ContactsMsg &_msg) {
 
 //////////////////////////////////////////////////
 void ScoringTier2::WrenchCallback(const WrenchMsg &_msg) {
-  const auto time = rclcpp::Time(_msg.header.stamp);
+  const auto time = this->node->get_clock()->now();
   this->wrenches.push_back({time.seconds(), _msg.wrench.force});
 }
 
@@ -370,6 +370,20 @@ std::optional<double> ScoringTier2::GetPlugPortDistance(
 }
 
 //////////////////////////////////////////////////
+std::optional<double> ScoringTier2::GetStartPlugPortDistance(
+    std::size_t index) const {
+  if (!this->task_start_time.has_value()) {
+    RCLCPP_ERROR(this->node->get_logger(), "Task was not started");
+    return std::nullopt;
+  }
+
+  return this->GetPlugPortDistance(
+      tf2::TimePoint(std::chrono::nanoseconds(
+          this->task_start_time.value().nanoseconds())),
+      index);
+}
+
+//////////////////////////////////////////////////
 // Calculates an inverse proportional score clamped to max_score for min_range
 // and min_score for max_range, and with a linear inverse proportional
 // interpolation inbetween.
@@ -409,7 +423,7 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryJerkScore(
   if (!_success) {
     return CategoryScore(
         0,
-        "Plug is not within max bounding radius from target port, "
+        "Plugs are not within max bounding radius from target ports, "
         "not assigning jerk bonus");
   }
 
@@ -512,7 +526,7 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryEfficiencyScore(
   if (!_success) {
     return CategoryScore(
         0,
-        "Plug is not within max bounding radius from target port, "
+        "Plugs are not within max bounding radius from target ports, "
         "not assigning efficiency bonus");
   }
 
@@ -526,10 +540,7 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryEfficiencyScore(
     // The robot must travel at least this distance, so it becomes the minimum
     // path length for a perfect score.
     if (this->task_start_time.has_value()) {
-      const auto initDist = this->GetPlugPortDistance(
-          tf2::TimePoint(std::chrono::nanoseconds(
-              this->task_start_time.value().nanoseconds())),
-          index);
+      const auto initDist = this->GetStartPlugPortDistance(index);
       if (initDist.has_value()) {
         minPathLength += initDist.value();
       } else {
@@ -585,8 +596,14 @@ Tier3Score ScoringTier2::GetDistanceScore(std::size_t index) const {
                       "Distance computation failed, task start time not set");
   }
 
-  // Fix the distance to 20 cm
-  const double kMaxDistance = 0.2;
+  const auto maxDistanceOpt = this->GetStartPlugPortDistance(index);
+  if (!maxDistanceOpt.has_value()) {
+    return Tier3Score(0,
+                      "Distance computation failed, initial tf between cable "
+                      "and port not found");
+  }
+  // Max distance is 50% of the initial distance
+  const auto maxDistance = maxDistanceOpt.value() * 0.5;
   const double kClosestTaskScore = 25.0;
   const double kFurthestTaskScore = 0.0;
 
@@ -646,7 +663,7 @@ Tier3Score ScoringTier2::GetDistanceScore(std::size_t index) const {
 
   std::stringstream sstream;
   sstream.setf(std::ios::fixed);
-  sstream.precision(2);
+  sstream.precision(3);
 
   // A bounding box with a kEntranceXYTol x-z size, up to port_entrance.z,
   // down until port_trans.z - a small value (for numerical tolerances)
@@ -669,11 +686,17 @@ Tier3Score ScoringTier2::GetDistanceScore(std::size_t index) const {
   }
 
   const double score = CalculateInverseProportionalScore(
-      kClosestTaskScore, kFurthestTaskScore, distance_threshold + kMaxDistance,
+      kClosestTaskScore, kFurthestTaskScore, distance_threshold + maxDistance,
       distance_threshold, dist.value());
 
-  sstream << "No insertion detected. Final plug port distance: " << dist.value()
-          << "m.";
+  if (score == kFurthestTaskScore) {
+    sstream << "Plug too far from port. Final plug port distance: "
+            << dist.value() << "m. Minimum required distance was "
+            << maxDistance << "m.";
+  } else {
+    sstream << "No insertion detected. Final plug port distance: "
+            << dist.value() << "m.";
+  }
 
   return Tier3Score(score, sstream.str());
 }
@@ -885,7 +908,7 @@ Tier2Score::CategoryScore ScoringTier2::GetTaskDurationScore(
   if (!_success) {
     return CategoryScore(
         0,
-        "Plug is not within max bounding radius from target port, "
+        "Plugs are not within max bounding radius from target ports, "
         "not assigning time bonus");
   }
 

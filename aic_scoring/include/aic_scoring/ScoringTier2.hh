@@ -239,6 +239,11 @@ namespace aic_scoring
     /// \return Distance between plug and port at the end of the task. nullopt if failed
     private: std::optional<double> GetPlugPortDistance(tf2::TimePoint t, std::size_t index) const;
 
+    /// \brief Calculates the distance between the plug and the port at the start of the task.
+    /// \param[in] index The index of the connection to check
+    /// \return Distance between plug and port at the end of the task. nullopt if failed
+    private: std::optional<double> GetStartPlugPortDistance(std::size_t index) const;
+
     /// \brief Calculates the penalty (if any) for excessive insertion force.
     /// \return Scoring for the insertion force category
     private: Tier2Score::CategoryScore GetInsertionForceScore() const;
