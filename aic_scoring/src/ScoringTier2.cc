@@ -378,9 +378,9 @@ std::optional<double> ScoringTier2::GetStartPlugPortDistance(
   }
 
   return this->GetPlugPortDistance(
-        tf2::TimePoint(std::chrono::nanoseconds(
-            this->task_start_time.value().nanoseconds())),
-        index);
+      tf2::TimePoint(std::chrono::nanoseconds(
+          this->task_start_time.value().nanoseconds())),
+      index);
 }
 
 //////////////////////////////////////////////////
@@ -598,11 +598,12 @@ Tier3Score ScoringTier2::GetDistanceScore(std::size_t index) const {
 
   const auto maxDistanceOpt = this->GetStartPlugPortDistance(index);
   if (!maxDistanceOpt.has_value()) {
-    return Tier3Score(
-        0, "Distance computation failed, initial tf between cable and port not found");
+    return Tier3Score(0,
+                      "Distance computation failed, initial tf between cable "
+                      "and port not found");
   }
   // Max distance is 50% of the initial distance
-  const auto& maxDistance = maxDistanceOpt.value() * 0.5;
+  const auto maxDistance = maxDistanceOpt.value() * 0.5;
   const double kClosestTaskScore = 25.0;
   const double kFurthestTaskScore = 0.0;
 
@@ -689,11 +690,12 @@ Tier3Score ScoringTier2::GetDistanceScore(std::size_t index) const {
       distance_threshold, dist.value());
 
   if (score == kFurthestTaskScore) {
-    sstream << "Plug too far from port. Final plug port distance: " << dist.value()
-            << "m. Minimum required distance was " << maxDistance << "m.";
+    sstream << "Plug too far from port. Final plug port distance: "
+            << dist.value() << "m. Minimum required distance was "
+            << maxDistance << "m.";
   } else {
-    sstream << "No insertion detected. Final plug port distance: " << dist.value()
-            << "m.";
+    sstream << "No insertion detected. Final plug port distance: "
+            << dist.value() << "m.";
   }
 
   return Tier3Score(score, sstream.str());
