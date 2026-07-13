@@ -1,0 +1,26 @@
+id {
+  package: "ai.intrinsic"
+  name: "read_from_kv_store"
+}
+display_name: "Read From KV Store"
+vendor {
+  display_name: "Intrinsic"
+}
+documentation {
+  description: "Skill that reads generic Protobuf payloads from the Key-Value store at a specified storage location."
+}
+options {
+  supports_cancellation: false
+  cc_config {
+    create_skill: "::ReadFromKVStore::CreateSkill"
+  }
+}
+parameter {
+  message_full_name: "ai.flowstate.ReadFromKVStoreParams"
+  default_value: {
+    type_url: "type.googleapis.com/ai.flowstate.ReadFromKVStoreParams"
+  }
+}
+return_type {
+  message_full_name: "ai.flowstate.ReadFromKVStoreResult"
+}

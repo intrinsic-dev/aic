@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package ai.flowstate;
+
+import "google/protobuf/any.proto";
+
+message StorageLocation {
+  string store = 1;
+  string key = 2;
+}
+
+message WriteToKVStoreParams {
+  StorageLocation location = 1;
+  google.protobuf.Any value = 2;
+  repeated google.protobuf.Any values = 3;
+}
+
+message WriteToKVStoreResult {
+  bool success = 1;
+  string message = 2;
+}
