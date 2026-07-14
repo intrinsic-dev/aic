@@ -77,7 +77,7 @@ void RobotControlBridge::declare_ros_parameters(
   param_interface->declare_parameter(kPartNameParamName,
                                      rclcpp::ParameterValue{"arm"});
   param_interface->declare_parameter(kFTPartNameParamName,
-                                     rclcpp::ParameterValue{"ft_sensor"});
+                                     rclcpp::ParameterValue{""});
   param_interface->declare_parameter(kAgentBridgeTaskSettingsFileParamName,
                                      rclcpp::ParameterValue{""});
   param_interface->declare_parameter(kAgentBridgeJointTaskSettingsFileParamName,
@@ -113,9 +113,14 @@ bool RobotControlBridge::initialize(
                          .get_value<std::string>();
   data_->part_name_ = param_interface->get_parameter(kPartNameParamName)
                           .get_value<std::string>();
-  data_->ft_sensor_part_name_ =
+  std::string param_ft_sensor_part_name =
       param_interface->get_parameter(kFTPartNameParamName)
           .get_value<std::string>();
+  if (!param_ft_sensor_part_name.empty()) {
+    data_->ft_sensor_part_name_ = param_ft_sensor_part_name;
+  } else {
+    data_->ft_sensor_part_name_ = std::nullopt;
+  }
   data_->restart_connection_retries_ =
       param_interface->get_parameter(kRestartConnectionRetriesParamName)
           .get_value<int>();
@@ -709,30 +714,32 @@ bool RobotControlBridge::startControllerAction() {
   // Define ActionDescriptors for both the AgentBridge and AgentBridgeJoint
   // actions
   ActionDescriptor agent_bridge_descriptor =
-      ActionDescriptor(
-          intrinsic::icon::AgentBridgeInfo::kActionTypeName, kAgentBridgeId,
-          {{intrinsic::icon::AgentBridgeInfo::kSlotName, data_->part_name_},
-           {intrinsic::icon::AgentBridgeInfo::kForceTorqueSlotName,
-            data_->ft_sensor_part_name_}})
-          .WithFixedParams(data_->agent_bridge_fixed_params_);
+      data_->ft_sensor_part_name_.has_value()
+          ? ActionDescriptor(
+                intrinsic::icon::AgentBridgeInfo::kActionTypeName, kAgentBridgeId,
+                {{intrinsic::icon::AgentBridgeInfo::kSlotName, data_->part_name_},
+                 {intrinsic::icon::AgentBridgeInfo::kForceTorqueSlotName,
+                  data_->ft_sensor_part_name_.value()}})
+                .WithFixedParams(data_->agent_bridge_fixed_params_)
+          : ActionDescriptor(
+                intrinsic::icon::AgentBridgeInfo::kActionTypeName, kAgentBridgeId,
+                {{intrinsic::icon::AgentBridgeInfo::kSlotName, data_->part_name_}})
+                .WithFixedParams(data_->agent_bridge_fixed_params_);
 
   ActionDescriptor agent_bridge_joint_descriptor =
-      ActionDescriptor(intrinsic::icon::AgentBridgeJointInfo::kActionTypeName,
-                       kAgentBridgeJointId,
-                       {{intrinsic::icon::AgentBridgeJointInfo::kSlotName,
-                         data_->part_name_},
-                        {intrinsic::icon::AgentBridgeJointInfo::kForceTorqueSlotName,
-                         data_->ft_sensor_part_name_}})
-          .WithFixedParams(data_->agent_bridge_joint_fixed_params_);
-
-  ActionDescriptor tare_ft_sensor_descriptor =
-      ActionDescriptor(
-          intrinsic::icon::TareForceTorqueSensorInfo::kActionTypeName,
-          kTareForceTorqueSensorId,
-          {{intrinsic::icon::TareForceTorqueSensorInfo::
-                kForceTorqueSensorSlotName,
-            data_->ft_sensor_part_name_}})
-          .WithFixedParams(data_->tare_ft_sensor_fixed_params_);
+      data_->ft_sensor_part_name_.has_value()
+          ? ActionDescriptor(intrinsic::icon::AgentBridgeJointInfo::kActionTypeName,
+                             kAgentBridgeJointId,
+                             {{intrinsic::icon::AgentBridgeJointInfo::kSlotName,
+                               data_->part_name_},
+                              {intrinsic::icon::AgentBridgeJointInfo::kForceTorqueSlotName,
+                               data_->ft_sensor_part_name_.value()}})
+                .WithFixedParams(data_->agent_bridge_joint_fixed_params_)
+          : ActionDescriptor(intrinsic::icon::AgentBridgeJointInfo::kActionTypeName,
+                             kAgentBridgeJointId,
+                             {{intrinsic::icon::AgentBridgeJointInfo::kSlotName,
+                               data_->part_name_}})
+                .WithFixedParams(data_->agent_bridge_joint_fixed_params_);
 
   // Add the AgentBridge and AgentBridgeJoint actions to the session, then
   // create StreamWriters for each of the actions.
@@ -758,13 +765,26 @@ bool RobotControlBridge::startControllerAction() {
   data_->agent_bridge_joint_action_ = agent_bridge_joint_action_or.value();
 
   // Add the TareForceTorqueSensor action to the current session
-  auto tare_action_or = data_->session_->AddAction(tare_ft_sensor_descriptor);
-  if (!tare_action_or.ok()) {
-    LOG(ERROR) << "Failed to add TareForceTorqueSensor Action: "
-               << tare_action_or.status().message().data();
-    return false;
+  if (data_->ft_sensor_part_name_.has_value()) {
+    ActionDescriptor tare_ft_sensor_descriptor =
+        ActionDescriptor(
+            intrinsic::icon::TareForceTorqueSensorInfo::kActionTypeName,
+            kTareForceTorqueSensorId,
+            {{intrinsic::icon::TareForceTorqueSensorInfo::
+                  kForceTorqueSensorSlotName,
+              data_->ft_sensor_part_name_.value()}})
+            .WithFixedParams(data_->tare_ft_sensor_fixed_params_);
+
+    auto tare_action_or = data_->session_->AddAction(tare_ft_sensor_descriptor);
+    if (!tare_action_or.ok()) {
+      LOG(ERROR) << "Failed to add TareForceTorqueSensor Action: "
+                 << tare_action_or.status().message().data();
+      return false;
+    }
+    data_->tare_action_ = tare_action_or.value();
+  } else {
+    data_->tare_action_ = std::nullopt;
   }
-  data_->tare_action_ = tare_action_or.value();
 
   // Create StreamWriter for the AgentBridge action
   auto agent_bridge_writer_or =
@@ -860,8 +880,9 @@ bool RobotControlBridge::startControllerSession() {
 
   // Start ICON Session
   std::vector<std::string> parts = {data_->part_name_};
-  if (data_->ft_sensor_part_name_ != data_->part_name_) {
-    parts.push_back(data_->ft_sensor_part_name_);
+  if (data_->ft_sensor_part_name_.has_value() &&
+      data_->ft_sensor_part_name_.value() != data_->part_name_) {
+    parts.push_back(data_->ft_sensor_part_name_.value());
   }
 
   auto session_or = Session::Start(icon_channel_or.value(), parts);
