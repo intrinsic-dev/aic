@@ -574,7 +574,9 @@ void CableModeratorPlugin::PreUpdate(const gz::sim::UpdateInfo& /*_info*/,
         tracker.detachableJointStatic0Entity == kNullEntity) {
       tracker.detachableJointStatic0Entity =
           this->MakeStatic(tracker.connection0LinkEntity, true, _ecm);
-      this->DisableLinkCollisions(tracker.connection0LinkEntity, _ecm);
+      if (tracker.activeGraspJoint.load() == kNullEntity) {
+        this->DisableLinkCollisions(tracker.connection0LinkEntity, _ecm);
+      }
       gzdbg << "Locking End 0 after insertion. Resulting joint: "
             << tracker.detachableJointStatic0Entity << std::endl;
 
@@ -583,9 +585,20 @@ void CableModeratorPlugin::PreUpdate(const gz::sim::UpdateInfo& /*_info*/,
         tracker.detachableJointStatic1Entity == kNullEntity) {
       tracker.detachableJointStatic1Entity =
           this->MakeStatic(tracker.connection1LinkEntity, true, _ecm);
-      this->DisableLinkCollisions(tracker.connection1LinkEntity, _ecm);
+      if (tracker.activeGraspJoint.load() == kNullEntity) {
+        this->DisableLinkCollisions(tracker.connection1LinkEntity, _ecm);
+      }
       gzdbg << "Locking End 1 after insertion. Resulting joint: "
             << tracker.detachableJointStatic1Entity << std::endl;
+    }
+
+    if (tracker.activeGraspJoint.load() == kNullEntity) {
+      if (tracker.end0Inserted && tracker.detachableJointStatic0Entity != kNullEntity) {
+        this->DisableLinkCollisions(tracker.connection0LinkEntity, _ecm);
+      }
+      if (tracker.end1Inserted && tracker.detachableJointStatic1Entity != kNullEntity) {
+        this->DisableLinkCollisions(tracker.connection1LinkEntity, _ecm);
+      }
     }
 
     if (tracker.end0Inserted && tracker.end1Inserted && !tracker.isCompleted) {
