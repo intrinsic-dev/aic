@@ -25,8 +25,7 @@
 #include <gz/plugin/Register.hh>
 #include <gz/sim/Util.hh>
 #include <gz/sim/Link.hh>
-#include <gz/sim/components/CollisionBitmaskCmd.hh>
-#include <gz/sim/components/CategoryBitmaskCmd.hh>
+#include <gz/sim/components/CollisionBitmask.hh>
 #include <gz/sim/components/CanonicalLink.hh>
 #include <gz/sim/components/ChildLinkName.hh>
 #include <gz/sim/components/Collision.hh>
@@ -44,6 +43,7 @@
 #include <queue>
 #include <sdf/Joint.hh>
 #include <unordered_map>
+#include <algorithm>
 
 using namespace gz;
 using namespace sim;
@@ -87,6 +87,11 @@ constexpr uint16_t kDefaultCollideMask = 0xFFFF;
 }  // namespace
 
 namespace aic_gazebo {
+
+// 5 mounts * 2 ports per mount = 10 SFP ports total
+constexpr size_t kExpectedSfpPorts = 10;
+// 5 SC ports total
+constexpr size_t kExpectedScPorts = 5;
 
 //////////////////////////////////////////////////
 void CableModeratorPlugin::Configure(
@@ -396,6 +401,7 @@ void CableModeratorPlugin::PreUpdate(const gz::sim::UpdateInfo& /*_info*/,
   }
 
   this->FindCableModels(_ecm);
+  this->FindPortEntities(_ecm);
 
   this->ProcessManualGraspRequests(_ecm);
 
@@ -539,6 +545,27 @@ void CableModeratorPlugin::PreUpdate(const gz::sim::UpdateInfo& /*_info*/,
       } else {
         tracker.activeGraspJoint.store(kNullEntity);
         tracker.lastGraspedEnd = std::nullopt;
+      }
+    }
+
+    // Distance-based insertion check
+    if (tracker.isDynamic) {
+      Entity graspJoint = tracker.activeGraspJoint.load();
+      if (graspJoint != kNullEntity) {
+        int graspedEnd = tracker.lastGraspedEnd.value_or(-1);
+        if (graspedEnd == 0 && !tracker.end0Inserted) {
+          if (this->CheckDistanceInsertion(i, 0, _ecm)) {
+            tracker.end0Inserted = true;
+            gzmsg << "Distance-based insertion detected for " << this->cableConfigs[i].modelName << " End 0" << std::endl;
+            this->PublishInsertionEvent(i, 0, _ecm);
+          }
+        } else if (graspedEnd == 1 && !tracker.end1Inserted) {
+          if (this->CheckDistanceInsertion(i, 1, _ecm)) {
+            tracker.end1Inserted = true;
+            gzmsg << "Distance-based insertion detected for " << this->cableConfigs[i].modelName << " End 1" << std::endl;
+            this->PublishInsertionEvent(i, 1, _ecm);
+          }
+        }
       }
     }
 
@@ -954,7 +981,7 @@ void CableModeratorPlugin::SetLinkCollisionsBitmasks(
           collisionEntity, _categoryMask.value());
     }
     if (_collideMask.has_value()) {
-      _ecm.SetComponentData<gz::sim::components::CollisionBitmaskCmd>(
+      _ecm.SetComponentData<gz::sim::components::CollideBitmaskCmd>(
           collisionEntity, _collideMask.value());
     }
   }
@@ -965,12 +992,143 @@ void CableModeratorPlugin::SetModelCollisionsBitmasks(
     std::optional<uint16_t> _categoryMask,
     std::optional<uint16_t> _collideMask,
     gz::sim::EntityComponentManager &_ecm) {
+  // Find the cable that we are trying to set collisions for
+  const CableTracker* targetTracker = nullptr;
+  for (const auto& tracker : this->cableTrackers) {
+    if (tracker.modelEntity == _modelEntity) {
+      targetTracker = &tracker;
+      break;
+    }
+  }
+
   gz::sim::Model model(_modelEntity);
   for (const auto& linkEntity : model.Links(_ecm)) {
+    // Skip setting this bitmask if it is for an inserted port, since  this
+    // is already made static on insertion and we don't want to make it
+    // dynamic again upon grasping the second end.
+    if (targetTracker) {
+      if (linkEntity == targetTracker->connection0LinkEntity &&
+          targetTracker->end0Inserted) {
+        continue;
+      }
+      if (linkEntity == targetTracker->connection1LinkEntity &&
+          targetTracker->end1Inserted) {
+        continue;
+      }
+    }
     gz::sim::Link link(linkEntity);
     this->SetLinkCollisionsBitmasks(linkEntity, _categoryMask, _collideMask,
                                     _ecm);
   }
+}
+
+//////////////////////////////////////////////////
+void CableModeratorPlugin::FindPortEntities(EntityComponentManager& _ecm) {
+  bool needSearch = false;
+  for (const auto& tracker : this->cableTrackers) {
+    if (tracker.found && !tracker.isCompleted) {
+      if (tracker.port0LinkEntities.size() < kExpectedSfpPorts ||
+          tracker.port1LinkEntities.size() < kExpectedScPorts) {
+        needSearch = true;
+        break;
+      }
+    }
+  }
+  if (!needSearch) return;
+
+  _ecm.Each<components::Link, components::ParentEntity, components::Name>(
+      [&](const Entity& _entity, const components::Link*,
+          const components::ParentEntity* _parentPart,
+          const components::Name* _nameComp) -> bool {
+
+        Entity modelEntity = _parentPart->Data();
+        auto modelNameComp = _ecm.Component<components::Name>(modelEntity);
+        if (!modelNameComp) return true;
+
+        const std::string& modelName = modelNameComp->Data();
+        const std::string& linkName = _nameComp->Data();
+
+        if (linkName.find("port") == std::string::npos) return true;
+        if (linkName.find("entrance") != std::string::npos) return true;
+
+        for (size_t i = 0; i < this->cableConfigs.size(); ++i) {
+          const auto& config = this->cableConfigs[i];
+          auto& tracker = this->cableTrackers[i];
+
+          if (modelName.find(config.connection0PortName) != std::string::npos ||
+              linkName.find(config.connection0PortName) != std::string::npos) {
+            if (std::find(tracker.port0LinkEntities.begin(), tracker.port0LinkEntities.end(), _entity) == tracker.port0LinkEntities.end()) {
+              tracker.port0LinkEntities.push_back(_entity);
+              gzdbg << "Cable " << config.modelName << " End 0 matched port: "
+                    << modelName << "/" << linkName
+                    << " (" << tracker.port0LinkEntities.size() << "/" << kExpectedSfpPorts << ")" << std::endl;
+            }
+          }
+
+          if (modelName.find(config.connection1PortName) != std::string::npos ||
+              linkName.find(config.connection1PortName) != std::string::npos) {
+            if (std::find(tracker.port1LinkEntities.begin(), tracker.port1LinkEntities.end(), _entity) == tracker.port1LinkEntities.end()) {
+              tracker.port1LinkEntities.push_back(_entity);
+              gzdbg << "Cable " << config.modelName << " End 1 matched port: "
+                    << modelName << "/" << linkName
+                    << " (" << tracker.port1LinkEntities.size() << "/" << kExpectedScPorts << ")" << std::endl;
+            }
+          }
+        }
+        return true;
+      });
+}
+
+//////////////////////////////////////////////////
+bool CableModeratorPlugin::CheckDistanceInsertion(
+    size_t _cableIndex, int _end, const EntityComponentManager& _ecm) {
+
+  auto& tracker = this->cableTrackers[_cableIndex];
+  
+  std::string tipLinkName = (_end == 0) ? "sfp_tip_link" : "sc_tip_link";
+  Entity tipEntity = findLinkInModel(this->cableConfigs[_cableIndex].modelName, tipLinkName, _ecm);
+  
+  const auto& portEntities = (_end == 0) ? tracker.port0LinkEntities : tracker.port1LinkEntities;
+
+  if (tipEntity == kNullEntity || portEntities.empty()) return false;
+
+  math::Pose3d plugPose = gz::sim::worldPose(tipEntity, _ecm);
+  const double kInsertionThreshold = 0.001; // 1mm
+
+  for (Entity portEntity : portEntities) {
+    math::Pose3d portPose = gz::sim::worldPose(portEntity, _ecm);
+    double dist = plugPose.Pos().Distance(portPose.Pos());
+
+    if (dist < kInsertionThreshold) {
+      auto portNameComp = _ecm.Component<components::Name>(portEntity);
+      auto parentEnt = _ecm.Component<components::ParentEntity>(portEntity);
+      if (portNameComp && parentEnt) {
+        auto modelNameComp = _ecm.Component<components::Name>(parentEnt->Data());
+        if (modelNameComp) {
+          std::string portModel = modelNameComp->Data();
+          std::string portLink = portNameComp->Data();
+          size_t pos = portLink.rfind("_link");
+          if (pos != std::string::npos) {
+            portLink = portLink.substr(0, pos);
+          }
+          tracker.touchEventCallbackNamespace = portModel + "/" + portLink;
+        }
+      }
+      return true;
+    }
+  }
+  return false;
+}
+
+//////////////////////////////////////////////////
+void CableModeratorPlugin::PublishInsertionEvent(
+    size_t _cableIndex, int _end, const EntityComponentManager& /*_ecm*/) {
+  auto& tracker = this->cableTrackers[_cableIndex];
+  gz::msgs::StringMsg pubMsg;
+  pubMsg.set_data(this->cableConfigs[_cableIndex].modelName + "#" +
+                  std::to_string(_end) + "#" +
+                  tracker.touchEventCallbackNamespace);
+  this->cableInsertionPub.Publish(pubMsg);
 }
 
 }  // namespace aic_gazebo
