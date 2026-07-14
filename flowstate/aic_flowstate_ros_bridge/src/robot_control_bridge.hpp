@@ -210,7 +210,7 @@ class RobotControlBridge : public BridgeInterface {
 
     bool connected_to_controller_;
     std::string part_name_;
-    std::string ft_sensor_part_name_;
+    std::optional<std::string> ft_sensor_part_name_;
     std::string instance_;
     std::string server_address_;
     std::size_t num_joints_;
