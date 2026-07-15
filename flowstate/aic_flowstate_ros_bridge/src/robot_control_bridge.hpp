@@ -40,6 +40,7 @@
 #include "aic_control_interfaces/msg/target_mode.hpp"
 #include "aic_control_interfaces/msg/trajectory_generation_mode.hpp"
 #include "aic_control_interfaces/srv/change_target_mode.hpp"
+#include "geometry_msgs/msg/wrench_stamped.hpp"
 #include "std_srvs/srv/trigger.hpp"
 
 namespace flowstate_ros_bridge {
@@ -201,6 +202,9 @@ class RobotControlBridge : public BridgeInterface {
     rclcpp::Publisher<aic_control_interfaces::msg::ControllerState>::SharedPtr
         controller_state_pub_;
 
+    rclcpp::Subscription<geometry_msgs::msg::WrenchStamped>::SharedPtr
+        ft_sensor_sub_;
+
     rclcpp::Service<aic_control_interfaces::srv::ChangeTargetMode>::SharedPtr
         change_target_mode_srv_;
     rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr restart_bridge_srv_;
@@ -220,6 +224,7 @@ class RobotControlBridge : public BridgeInterface {
 
     aic_control_interfaces::msg::ControllerState controller_state_;
     std::mutex controller_state_mutex_;
+    geometry_msgs::msg::WrenchStamped sensed_wrench_at_tip_;
 
     Data();
     ~Data();
