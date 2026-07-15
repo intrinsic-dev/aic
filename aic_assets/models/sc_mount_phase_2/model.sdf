@@ -1,0 +1,103 @@
+<?xml version="1.0" ?>
+<sdf xmlns:intrinsic="https://intrinsic.ai/" version="1.9">
+  <model name="SC Mount">
+    <link name="sc_mount_link">
+      <visual name="sc_mount_visual">
+        <geometry>
+          <mesh>
+            <uri>sc_mount_visual.glb</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <collision name="v1015079011_collider_box.001">
+        <pose>6.8e-05 -0.0054 0.019451 0.0 0.785398 -0.0</pose>
+        <geometry>
+          <box>
+            <size>0.025812 0.0032 0.013799</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="v1015079011_collider_box.002">
+        <pose>6.8e-05 0.00585 0.019451 0.0 0.785398 -0.0</pose>
+        <geometry>
+          <box>
+            <size>0.025812 0.0023 0.013799</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="v1015079011_collider_box003_collider_box">
+        <pose>-0.00835 -0.0 0.02787 0.0 0.785398 -0.0</pose>
+        <geometry>
+          <box>
+            <size>0.002 0.014 0.013799</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="v1015079011_collider_box003_collider_box.001">
+        <pose>0.008564 -0.0 0.010956 0.0 0.785398 -0.0</pose>
+        <geometry>
+          <box>
+            <size>0.001842 0.014 0.013799</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="v1015079011_collider_box003_collider_box.003">
+        <pose>-0.004726 -0.0 0.014656 0.0 0.785398 -0.0</pose>
+        <geometry>
+          <box>
+            <size>0.025812 0.014 0.001239</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="v1015079011_collider_box003_collider_box.004">
+        <pose>0.012889 -0.0 0.010624 0.0 -0.0 -0.0</pose>
+        <geometry>
+          <box>
+            <size>0.002221 0.014 0.009249</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="v1015079011_collider_box003_collider_box004_collider_box">
+        <pose>-0.012955 -0.0 0.014711 0.0 -0.0 -0.0</pose>
+        <geometry>
+          <box>
+            <size>0.00209 0.014 0.017422</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="fixture for sc plug_collider_box">
+        <pose>0.0 -0.011259 0.0085 0.0 -0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.006 0.008518 0.005</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="fixture for sc plug_collider_box.001">
+        <pose>0.0 0.011259 0.0085 0.0 -0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.006 0.008518 0.005</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="plug fixture base mount_collider_box.002">
+        <pose>0.0 0.0 0.0025 0.0 -0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.051 0.006 0.005</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="plug fixture base mount_collider_cylinder.002">
+        <pose>0.0 0.0 0.003 0.0 -0.0 0.0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.0152</radius>
+            <length>0.006</length>
+          </cylinder>
+        </geometry>
+      </collision>
+    </link>
+  </model>
+</sdf>
