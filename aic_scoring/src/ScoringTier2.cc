@@ -542,7 +542,7 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryEfficiencyScore(
     if (this->task_start_time.has_value()) {
       const auto initDist = this->GetStartPlugPortDistance(index);
       if (initDist.has_value()) {
-        minPathLength += initDist.value();
+        minPathLength += 2.0 * initDist.value();
       } else {
         RCLCPP_WARN(this->node->get_logger(),
                     "Failed to get initial plug port distance");
@@ -563,7 +563,7 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryEfficiencyScore(
   // Score range and path length bounds (meters).
   const double kMaxEfficiencyScore = 6.0;             // Shortest path
   const double kMinEfficiencyScore = 0.0;             // Longest path
-  const double kMaxPathLength = 2.0 + minPathLength;  // Path for min score
+  const double kMaxPathLength = minPathLength * 5.0;  // Path for min score
 
   std::stringstream ss;
   ss << std::fixed << std::setprecision(2);
