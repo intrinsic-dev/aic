@@ -563,7 +563,7 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryEfficiencyScore(
   // Score range and path length bounds (meters).
   const double kMaxEfficiencyScore = 6.0;             // Shortest path
   const double kMinEfficiencyScore = 0.0;             // Longest path
-  const double kMaxPathLength = minPathLength * 5.0;  // Path for min score
+  const double kMaxPathLength = minPathLength * 10.0;  // Path for min score
 
   std::stringstream ss;
   ss << std::fixed << std::setprecision(2);
