@@ -20,6 +20,7 @@
 #include <memory>
 #include <string>
 
+#include "absl/log/log.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "google/protobuf/wrappers.pb.h"
@@ -45,8 +46,11 @@ absl::StatusOr<std::unique_ptr<google::protobuf::Message>> WriteToKVStore::Execu
 
   std::string key = params.key();
   if (key.empty()) {
+    LOG(ERROR) << "WriteToKVStore failed: Storage location key is empty.";
     return absl::InvalidArgumentError("Storage location key must not be empty");
   }
+
+  LOG(INFO) << "Executing WriteToKVStore for key: '" << key << "', count: " << params.count();
 
   // Connect to default PubSub KVStore ("kv_store" prefix)
   intrinsic::PubSub pubsub;
@@ -56,8 +60,16 @@ absl::StatusOr<std::unique_ptr<google::protobuf::Message>> WriteToKVStore::Execu
   google::protobuf::Int64Value value_msg;
   value_msg.set_value(params.count());
 
+  LOG(INFO) << "Setting key '" << key << "' to value " << params.count() << " in KV store with high_consistency=true";
+
   // Enable high_consistency to block until the value is confirmed persisted in the store
-  INTR_RETURN_IF_ERROR(kvstore.Set(key, value_msg, /*high_consistency=*/true));
+  absl::Status status = kvstore.Set(key, value_msg, /*high_consistency=*/true);
+  if (!status.ok()) {
+    LOG(ERROR) << "Failed to set key '" << key << "' in KV store: " << status.message();
+    return status;
+  }
+
+  LOG(INFO) << "Successfully wrote counter value " << params.count() << " to key '" << key << "'";
 
   auto result = std::make_unique<ai::flowstate::WriteToKVStoreResult>();
   result->set_success(true);

@@ -20,6 +20,7 @@
 #include <memory>
 #include <string>
 
+#include "absl/log/log.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "google/protobuf/wrappers.pb.h"
@@ -45,17 +46,28 @@ absl::StatusOr<std::unique_ptr<google::protobuf::Message>> ReadFromKVStore::Exec
 
   std::string key = params.key();
   if (key.empty()) {
+    LOG(ERROR) << "ReadFromKVStore failed: Storage location key is empty.";
     return absl::InvalidArgumentError("Storage location key must not be empty");
   }
+
+  LOG(INFO) << "Executing ReadFromKVStore for key: '" << key << "'";
 
   // Connect to default PubSub KVStore ("kv_store" prefix)
   intrinsic::PubSub pubsub;
   INTR_ASSIGN_OR_RETURN(intrinsic::KeyValueStore kvstore,
                         pubsub.KeyValueStore());
 
+  LOG(INFO) << "Retrieving value for key '" << key << "' from KV store";
+
   // Retrieve the Int64Value directly from KV store
-  INTR_ASSIGN_OR_RETURN(google::protobuf::Int64Value value_msg,
-                        kvstore.Get<google::protobuf::Int64Value>(key));
+  auto value_or = kvstore.Get<google::protobuf::Int64Value>(key);
+  if (!value_or.ok()) {
+    LOG(ERROR) << "Failed to retrieve key '" << key << "' from KV store: " << value_or.status().message();
+    return value_or.status();
+  }
+
+  google::protobuf::Int64Value value_msg = value_or.value();
+  LOG(INFO) << "Successfully retrieved counter value " << value_msg.value() << " from key '" << key << "'";
 
   auto result = std::make_unique<ai::flowstate::ReadFromKVStoreResult>();
   result->set_count(value_msg.value());
