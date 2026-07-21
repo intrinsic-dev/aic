@@ -27,22 +27,22 @@
 #include "intrinsic/platform/pubsub/pubsub.h"
 #include "write_to_kv_store.pb.h"
 
-std::unique_ptr<intrinsic::skills::SkillInterface> WriteToKVStore::CreateSkill() {
+std::unique_ptr<intrinsic::skills::SkillInterface>
+WriteToKVStore::CreateSkill() {
   return std::make_unique<WriteToKVStore>();
 }
 
-absl::StatusOr<std::unique_ptr<google::protobuf::Message>> WriteToKVStore::Preview(
-    const intrinsic::skills::PreviewRequest& /*request*/,
-    intrinsic::skills::PreviewContext& /*context*/) {
+absl::StatusOr<std::unique_ptr<google::protobuf::Message>>
+WriteToKVStore::Preview(const intrinsic::skills::PreviewRequest& /*request*/,
+                        intrinsic::skills::PreviewContext& /*context*/) {
   return absl::UnimplementedError("Preview not supported for this skill");
 }
 
-absl::StatusOr<std::unique_ptr<google::protobuf::Message>> WriteToKVStore::Execute(
-    const intrinsic::skills::ExecuteRequest& request,
-    intrinsic::skills::ExecuteContext& /*context*/) {
-  INTR_ASSIGN_OR_RETURN(
-      auto params,
-      request.params<ai::flowstate::WriteToKVStoreParams>());
+absl::StatusOr<std::unique_ptr<google::protobuf::Message>>
+WriteToKVStore::Execute(const intrinsic::skills::ExecuteRequest& request,
+                        intrinsic::skills::ExecuteContext& /*context*/) {
+  INTR_ASSIGN_OR_RETURN(auto params,
+                        request.params<ai::flowstate::WriteToKVStoreParams>());
 
   std::string key = params.key();
   if (key.empty()) {
@@ -50,7 +50,8 @@ absl::StatusOr<std::unique_ptr<google::protobuf::Message>> WriteToKVStore::Execu
     return absl::InvalidArgumentError("Storage location key must not be empty");
   }
 
-  LOG(INFO) << "Executing WriteToKVStore for key: '" << key << "', count: " << params.count();
+  LOG(INFO) << "Executing WriteToKVStore for key: '" << key
+            << "', count: " << params.count();
 
   // Connect to default PubSub KVStore ("kv_store" prefix)
   intrinsic::PubSub pubsub;
@@ -60,20 +61,25 @@ absl::StatusOr<std::unique_ptr<google::protobuf::Message>> WriteToKVStore::Execu
   google::protobuf::Int64Value value_msg;
   value_msg.set_value(params.count());
 
-  LOG(INFO) << "Setting key '" << key << "' to value " << params.count() << " in KV store with high_consistency=true";
+  LOG(INFO) << "Setting key '" << key << "' to value " << params.count()
+            << " in KV store with high_consistency=true";
 
-  // Enable high_consistency to block until the value is confirmed persisted in the store
+  // Enable high_consistency to block until the value is confirmed persisted in
+  // the store
   absl::Status status = kvstore.Set(key, value_msg, /*high_consistency=*/true);
   if (!status.ok()) {
-    LOG(ERROR) << "Failed to set key '" << key << "' in KV store: " << status.message();
+    LOG(ERROR) << "Failed to set key '" << key
+               << "' in KV store: " << status.message();
     return status;
   }
 
-  LOG(INFO) << "Successfully wrote counter value " << params.count() << " to key '" << key << "'";
+  LOG(INFO) << "Successfully wrote counter value " << params.count()
+            << " to key '" << key << "'";
 
   auto result = std::make_unique<ai::flowstate::WriteToKVStoreResult>();
   result->set_success(true);
-  result->set_message(absl::StrCat("Successfully wrote counter value ", params.count(), " to key '", key, "'"));
+  result->set_message(absl::StrCat("Successfully wrote counter value ",
+                                   params.count(), " to key '", key, "'"));
 
   return result;
 }

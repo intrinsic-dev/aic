@@ -23,26 +23,26 @@
 #include "absl/log/log.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
+#include "delete_from_kv_store.pb.h"
 #include "google/protobuf/wrappers.pb.h"
 #include "intrinsic/platform/pubsub/pubsub.h"
-#include "delete_from_kv_store.pb.h"
 
-std::unique_ptr<intrinsic::skills::SkillInterface> DeleteFromKVStore::CreateSkill() {
+std::unique_ptr<intrinsic::skills::SkillInterface>
+DeleteFromKVStore::CreateSkill() {
   return std::make_unique<DeleteFromKVStore>();
 }
 
-absl::StatusOr<std::unique_ptr<google::protobuf::Message>> DeleteFromKVStore::Preview(
-    const intrinsic::skills::PreviewRequest& /*request*/,
-    intrinsic::skills::PreviewContext& /*context*/) {
+absl::StatusOr<std::unique_ptr<google::protobuf::Message>>
+DeleteFromKVStore::Preview(const intrinsic::skills::PreviewRequest& /*request*/,
+                           intrinsic::skills::PreviewContext& /*context*/) {
   return absl::UnimplementedError("Preview not supported for this skill");
 }
 
-absl::StatusOr<std::unique_ptr<google::protobuf::Message>> DeleteFromKVStore::Execute(
-    const intrinsic::skills::ExecuteRequest& request,
-    intrinsic::skills::ExecuteContext& /*context*/) {
+absl::StatusOr<std::unique_ptr<google::protobuf::Message>>
+DeleteFromKVStore::Execute(const intrinsic::skills::ExecuteRequest& request,
+                           intrinsic::skills::ExecuteContext& /*context*/) {
   INTR_ASSIGN_OR_RETURN(
-      auto params,
-      request.params<ai::flowstate::DeleteFromKVStoreParams>());
+      auto params, request.params<ai::flowstate::DeleteFromKVStoreParams>());
 
   std::string key = params.key();
   if (key.empty()) {
@@ -62,7 +62,8 @@ absl::StatusOr<std::unique_ptr<google::protobuf::Message>> DeleteFromKVStore::Ex
   // Delete key from KV store
   absl::Status status = kvstore.Delete(key);
   if (!status.ok()) {
-    LOG(ERROR) << "Failed to delete key '" << key << "' from KV store: " << status.message();
+    LOG(ERROR) << "Failed to delete key '" << key
+               << "' from KV store: " << status.message();
     return status;
   }
 
@@ -70,7 +71,8 @@ absl::StatusOr<std::unique_ptr<google::protobuf::Message>> DeleteFromKVStore::Ex
 
   auto result = std::make_unique<ai::flowstate::DeleteFromKVStoreResult>();
   result->set_success(true);
-  result->set_message(absl::StrCat("Successfully deleted key '", key, "' from KV store"));
+  result->set_message(
+      absl::StrCat("Successfully deleted key '", key, "' from KV store"));
 
   return result;
 }

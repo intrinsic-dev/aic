@@ -20,5 +20,5 @@
 
 int main(int argc, char** argv) {
   return intrinsic::skills::SkillMain(argc, argv, "delete_from_kv_store",
-                                     &DeleteFromKVStore::CreateSkill);
+                                      &DeleteFromKVStore::CreateSkill);
 }

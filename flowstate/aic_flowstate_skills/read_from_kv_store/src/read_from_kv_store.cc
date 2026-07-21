@@ -27,22 +27,22 @@
 #include "intrinsic/platform/pubsub/pubsub.h"
 #include "read_from_kv_store.pb.h"
 
-std::unique_ptr<intrinsic::skills::SkillInterface> ReadFromKVStore::CreateSkill() {
+std::unique_ptr<intrinsic::skills::SkillInterface>
+ReadFromKVStore::CreateSkill() {
   return std::make_unique<ReadFromKVStore>();
 }
 
-absl::StatusOr<std::unique_ptr<google::protobuf::Message>> ReadFromKVStore::Preview(
-    const intrinsic::skills::PreviewRequest& /*request*/,
-    intrinsic::skills::PreviewContext& /*context*/) {
+absl::StatusOr<std::unique_ptr<google::protobuf::Message>>
+ReadFromKVStore::Preview(const intrinsic::skills::PreviewRequest& /*request*/,
+                         intrinsic::skills::PreviewContext& /*context*/) {
   return absl::UnimplementedError("Preview not supported for this skill");
 }
 
-absl::StatusOr<std::unique_ptr<google::protobuf::Message>> ReadFromKVStore::Execute(
-    const intrinsic::skills::ExecuteRequest& request,
-    intrinsic::skills::ExecuteContext& /*context*/) {
-  INTR_ASSIGN_OR_RETURN(
-      auto params,
-      request.params<ai::flowstate::ReadFromKVStoreParams>());
+absl::StatusOr<std::unique_ptr<google::protobuf::Message>>
+ReadFromKVStore::Execute(const intrinsic::skills::ExecuteRequest& request,
+                         intrinsic::skills::ExecuteContext& /*context*/) {
+  INTR_ASSIGN_OR_RETURN(auto params,
+                        request.params<ai::flowstate::ReadFromKVStoreParams>());
 
   std::string key = params.key();
   if (key.empty()) {
@@ -62,17 +62,20 @@ absl::StatusOr<std::unique_ptr<google::protobuf::Message>> ReadFromKVStore::Exec
   // Retrieve the Int64Value directly from KV store
   auto value_or = kvstore.Get<google::protobuf::Int64Value>(key);
   if (!value_or.ok()) {
-    LOG(ERROR) << "Failed to retrieve key '" << key << "' from KV store: " << value_or.status().message();
+    LOG(ERROR) << "Failed to retrieve key '" << key
+               << "' from KV store: " << value_or.status().message();
     return value_or.status();
   }
 
   google::protobuf::Int64Value value_msg = value_or.value();
-  LOG(INFO) << "Successfully retrieved counter value " << value_msg.value() << " from key '" << key << "'";
+  LOG(INFO) << "Successfully retrieved counter value " << value_msg.value()
+            << " from key '" << key << "'";
 
   auto result = std::make_unique<ai::flowstate::ReadFromKVStoreResult>();
   result->set_count(value_msg.value());
   result->set_success(true);
-  result->set_message(absl::StrCat("Successfully retrieved counter value ", value_msg.value(), " from key '", key, "'"));
+  result->set_message(absl::StrCat("Successfully retrieved counter value ",
+                                   value_msg.value(), " from key '", key, "'"));
 
   return result;
 }
