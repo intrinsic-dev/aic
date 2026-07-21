@@ -107,8 +107,7 @@ bool AicCameraBridge::initialize(
   auto left_capture_result_sub =
       data_->pubsub_
           ->CreateSubscription<intrinsic_proto::perception::v1::CaptureResult>(
-              "assets/left_camera/capture_result",
-              intrinsic::TopicConfig(),
+              "assets/left_camera/capture_result", intrinsic::TopicConfig(),
               [this](const intrinsic_proto::perception::v1::CaptureResult&
                          capture_result_msg) {
                 this->CaptureResultCallback(capture_result_msg,
@@ -120,8 +119,8 @@ bool AicCameraBridge::initialize(
                << left_capture_result_sub.status();
     return false;
   }
-  data_->left_capture_result_sub_ =
-      std::make_shared<intrinsic::Subscription>(std::move(*left_capture_result_sub));
+  data_->left_capture_result_sub_ = std::make_shared<intrinsic::Subscription>(
+      std::move(*left_capture_result_sub));
   auto center_capture_result_sub =
       data_->pubsub_
           ->CreateSubscription<intrinsic_proto::perception::v1::CaptureResult>(
@@ -144,8 +143,7 @@ bool AicCameraBridge::initialize(
   auto right_capture_result_sub =
       data_->pubsub_
           ->CreateSubscription<intrinsic_proto::perception::v1::CaptureResult>(
-              "assets/right_camera/capture_result",
-              intrinsic::TopicConfig(),
+              "assets/right_camera/capture_result", intrinsic::TopicConfig(),
               [this](const intrinsic_proto::perception::v1::CaptureResult&
                          capture_result_msg) {
                 this->CaptureResultCallback(
