@@ -52,7 +52,8 @@ DeleteFromKVStore::Execute(const intrinsic::skills::ExecuteRequest& request,
 
   LOG(INFO) << "Executing DeleteFromKVStore for key: '" << key << "'";
 
-  // Connect to default PubSub KVStore ("kv_store" prefix) using pre-connected member pubsub_
+  // Connect to default PubSub KVStore ("kv_store" prefix) using pre-connected
+  // member pubsub_
   INTR_ASSIGN_OR_RETURN(intrinsic::KeyValueStore kvstore,
                         pubsub_.KeyValueStore());
 
