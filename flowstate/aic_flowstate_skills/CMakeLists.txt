@@ -28,5 +28,6 @@ add_subdirectory(tare_force_torque_sensor_skill)
 add_subdirectory(lifecycle_transition_skill)
 add_subdirectory(write_to_kv_store)
 add_subdirectory(read_from_kv_store)
+add_subdirectory(delete_from_kv_store)
 
 ament_package()

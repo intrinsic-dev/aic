@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package ai.flowstate;
+
+message DeleteFromKVStoreParams {
+  // Key name in the Key-Value store to delete
+  string key = 1;
+}
+
+message DeleteFromKVStoreResult {
+  bool success = 1;
+  string message = 2;
+}
