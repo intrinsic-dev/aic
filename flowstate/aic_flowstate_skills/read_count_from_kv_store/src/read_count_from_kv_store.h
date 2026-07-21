@@ -15,8 +15,8 @@
  *
  */
 
-#ifndef FLOWSTATE_AIC_SKILLS_READ_FROM_KV_STORE_H_
-#define FLOWSTATE_AIC_SKILLS_READ_FROM_KV_STORE_H_
+#ifndef FLOWSTATE_AIC_SKILLS_READ_COUNT_FROM_KV_STORE_H_
+#define FLOWSTATE_AIC_SKILLS_READ_COUNT_FROM_KV_STORE_H_
 
 #include <memory>
 
@@ -24,10 +24,10 @@
 #include "intrinsic/platform/pubsub/pubsub.h"
 #include "intrinsic/skills/cc/skill_interface.h"
 
-class ReadFromKVStore : public intrinsic::skills::SkillInterface {
+class ReadCountFromKVStore : public intrinsic::skills::SkillInterface {
  public:
-  ReadFromKVStore() = default;
-  ~ReadFromKVStore() override = default;
+  ReadCountFromKVStore() = default;
+  ~ReadCountFromKVStore() override = default;
 
   static std::unique_ptr<intrinsic::skills::SkillInterface> CreateSkill();
 
@@ -43,4 +43,4 @@ class ReadFromKVStore : public intrinsic::skills::SkillInterface {
   intrinsic::PubSub pubsub_;
 };
 
-#endif  // FLOWSTATE_AIC_SKILLS_READ_FROM_KV_STORE_H_
+#endif  // FLOWSTATE_AIC_SKILLS_READ_COUNT_FROM_KV_STORE_H_

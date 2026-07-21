@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package ai.flowstate;
 
-message WriteToKVStoreParams {
+message WriteCountToKVStoreParams {
   // Key name in the Key-Value store
   string key = 1;
 
@@ -10,7 +10,7 @@ message WriteToKVStoreParams {
   int64 count = 2;
 }
 
-message WriteToKVStoreResult {
+message WriteCountToKVStoreResult {
   bool success = 1;
   string message = 2;
 }

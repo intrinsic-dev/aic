@@ -2,12 +2,12 @@ syntax = "proto3";
 
 package ai.flowstate;
 
-message ReadFromKVStoreParams {
+message ReadCountFromKVStoreParams {
   // Key name in the Key-Value store
   string key = 1;
 }
 
-message ReadFromKVStoreResult {
+message ReadCountFromKVStoreResult {
   // Integer value / counter read from the KV store
   int64 count = 1;
 

@@ -1,0 +1,26 @@
+id {
+  package: "ai.intrinsic"
+  name: "read_count_from_kv_store"
+}
+display_name: "Read Count From KV Store"
+vendor {
+  display_name: "Intrinsic"
+}
+documentation {
+  description: "Skill that reads integer counter values from the Key-Value store at a specified storage location."
+}
+options {
+  supports_cancellation: false
+  cc_config {
+    create_skill: "::ReadCountFromKVStore::CreateSkill"
+  }
+}
+parameter {
+  message_full_name: "ai.flowstate.ReadCountFromKVStoreParams"
+  default_value: {
+    type_url: "type.googleapis.com/ai.flowstate.ReadCountFromKVStoreParams"
+  }
+}
+return_type {
+  message_full_name: "ai.flowstate.ReadCountFromKVStoreResult"
+}

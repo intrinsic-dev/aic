@@ -15,8 +15,8 @@
  *
  */
 
-#ifndef FLOWSTATE_AIC_SKILLS_WRITE_TO_KV_STORE_H_
-#define FLOWSTATE_AIC_SKILLS_WRITE_TO_KV_STORE_H_
+#ifndef FLOWSTATE_AIC_SKILLS_WRITE_COUNT_TO_KV_STORE_H_
+#define FLOWSTATE_AIC_SKILLS_WRITE_COUNT_TO_KV_STORE_H_
 
 #include <memory>
 
@@ -24,10 +24,10 @@
 #include "intrinsic/platform/pubsub/pubsub.h"
 #include "intrinsic/skills/cc/skill_interface.h"
 
-class WriteToKVStore : public intrinsic::skills::SkillInterface {
+class WriteCountToKVStore : public intrinsic::skills::SkillInterface {
  public:
-  WriteToKVStore() = default;
-  ~WriteToKVStore() override = default;
+  WriteCountToKVStore() = default;
+  ~WriteCountToKVStore() override = default;
 
   static std::unique_ptr<intrinsic::skills::SkillInterface> CreateSkill();
 
@@ -43,4 +43,4 @@ class WriteToKVStore : public intrinsic::skills::SkillInterface {
   intrinsic::PubSub pubsub_;
 };
 
-#endif  // FLOWSTATE_AIC_SKILLS_WRITE_TO_KV_STORE_H_
+#endif  // FLOWSTATE_AIC_SKILLS_WRITE_COUNT_TO_KV_STORE_H_
