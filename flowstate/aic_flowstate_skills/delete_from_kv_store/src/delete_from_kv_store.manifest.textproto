@@ -1,0 +1,26 @@
+id {
+  package: "ai.intrinsic"
+  name: "delete_from_kv_store"
+}
+display_name: "Delete From KV Store"
+vendor {
+  display_name: "Intrinsic"
+}
+documentation {
+  description: "Skill that deletes keys from the Key-Value store."
+}
+options {
+  supports_cancellation: false
+  cc_config {
+    create_skill: "::DeleteFromKVStore::CreateSkill"
+  }
+}
+parameter {
+  message_full_name: "ai.flowstate.DeleteFromKVStoreParams"
+  default_value: {
+    type_url: "type.googleapis.com/ai.flowstate.DeleteFromKVStoreParams"
+  }
+}
+return_type {
+  message_full_name: "ai.flowstate.DeleteFromKVStoreResult"
+}

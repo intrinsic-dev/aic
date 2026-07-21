@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package ai.flowstate;
+
+message WriteCountToKVStoreParams {
+  // Key name in the Key-Value store
+  string key = 1;
+
+  // Integer value / counter to write to the KV store
+  int64 count = 2;
+}
+
+message WriteCountToKVStoreResult {
+  bool success = 1;
+  string message = 2;
+}
