@@ -2,17 +2,12 @@ syntax = "proto3";
 
 package ai.flowstate;
 
-import "google/protobuf/any.proto";
-
-message StorageLocation {
-  string store = 1;
-  string key = 2;
-}
-
 message WriteToKVStoreParams {
-  StorageLocation location = 1;
-  google.protobuf.Any value = 2;
-  repeated google.protobuf.Any values = 3;
+  // Key name in the Key-Value store
+  string key = 1;
+
+  // Integer value / counter to write to the KV store
+  int64 count = 2;
 }
 
 message WriteToKVStoreResult {

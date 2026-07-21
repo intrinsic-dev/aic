@@ -22,6 +22,8 @@
 
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
+#include "google/protobuf/wrappers.pb.h"
+#include "intrinsic/platform/pubsub/pubsub.h"
 #include "write_to_kv_store.pb.h"
 
 std::unique_ptr<intrinsic::skills::SkillInterface> WriteToKVStore::CreateSkill() {
@@ -41,16 +43,25 @@ absl::StatusOr<std::unique_ptr<google::protobuf::Message>> WriteToKVStore::Execu
       auto params,
       request.params<ai::flowstate::WriteToKVStoreParams>());
 
-  std::string store = params.location().store();
-  std::string key = params.location().key();
-
-  if (store.empty() || key.empty()) {
-    return absl::InvalidArgumentError("Storage location store and key must not be empty");
+  std::string key = params.key();
+  if (key.empty()) {
+    return absl::InvalidArgumentError("Storage location key must not be empty");
   }
+
+  // Connect to default PubSub KVStore ("kv_store" prefix)
+  intrinsic::PubSub pubsub;
+  INTR_ASSIGN_OR_RETURN(intrinsic::KeyValueStore kvstore,
+                        pubsub.KeyValueStore());
+
+  google::protobuf::Int64Value value_msg;
+  value_msg.set_value(params.count());
+
+  // Enable high_consistency to block until the value is confirmed persisted in the store
+  INTR_RETURN_IF_ERROR(kvstore.Set(key, value_msg, /*high_consistency=*/true));
 
   auto result = std::make_unique<ai::flowstate::WriteToKVStoreResult>();
   result->set_success(true);
-  result->set_message(absl::StrCat("Successfully wrote payload to store '", store, "' at key '", key, "'"));
+  result->set_message(absl::StrCat("Successfully wrote counter value ", params.count(), " to key '", key, "'"));
 
   return result;
 }
