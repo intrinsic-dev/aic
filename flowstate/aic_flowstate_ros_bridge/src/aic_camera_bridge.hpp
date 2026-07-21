@@ -22,6 +22,7 @@
 #include <mutex>
 
 #include "flowstate_ros_bridge/bridge_interface.hpp"
+#include "intrinsic/perception/proto/v1/capture_result.pb.h"
 #include "intrinsic/platform/pubsub/pubsub.h"
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/camera_info.hpp"
@@ -43,6 +44,11 @@ class AicCameraBridge : public BridgeInterface {
  private:
   void FindFocalLength();
   void ImageCallback(const sensor_msgs::msg::pb::jazzy::Image& image);
+  void CaptureResultCallback(
+      const intrinsic_proto::perception::v1::CaptureResult& capture_result,
+      std::shared_ptr<rclcpp::Publisher<sensor_msgs::msg::Image>> image_pub_,
+      std::shared_ptr<rclcpp::Publisher<sensor_msgs::msg::CameraInfo>>
+          camera_info_pub_);
 
   struct Data : public std::enable_shared_from_this<Data> {
     ROSNodeInterfaces node_interfaces_;
@@ -52,6 +58,9 @@ class AicCameraBridge : public BridgeInterface {
     double focal_length_x_ = 0.0;
     double focal_length_y_ = 0.0;
     std::shared_ptr<intrinsic::Subscription> image_sub_;
+    std::shared_ptr<intrinsic::Subscription> left_capture_result_sub_;
+    std::shared_ptr<intrinsic::Subscription> center_capture_result_sub_;
+    std::shared_ptr<intrinsic::Subscription> right_capture_result_sub_;
     std::shared_ptr<rclcpp::Publisher<sensor_msgs::msg::Image>> left_image_pub_;
     std::shared_ptr<rclcpp::Publisher<sensor_msgs::msg::Image>>
         center_image_pub_;

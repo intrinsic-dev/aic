@@ -27,6 +27,7 @@
 #include "ament_index_cpp/get_package_share_directory.hpp"
 #include "intrinsic/icon/cc_client/operational_status.h"
 #include "intrinsic/icon/common/builtins.h"
+#include "intrinsic/perception/proto/v1/capture_result.pb.h"
 #include "intrinsic/platform/pubsub/zenoh_util/zenoh_config.h"
 #include "intrinsic/util/grpc/channel.h"
 #include "intrinsic/util/grpc/connection_params.h"
@@ -103,9 +104,171 @@ bool AicCameraBridge::initialize(
   data_->image_sub_ =
       std::make_shared<intrinsic::Subscription>(std::move(*image_sub));
 
+  auto left_capture_result_sub =
+      data_->pubsub_
+          ->CreateSubscription<intrinsic_proto::perception::v1::CaptureResult>(
+              "assets/left_camera/capture_result",
+              intrinsic::TopicConfig(),
+              [this](const intrinsic_proto::perception::v1::CaptureResult&
+                         capture_result_msg) {
+                this->CaptureResultCallback(capture_result_msg,
+                                            this->data_->left_image_pub_,
+                                            this->data_->left_camera_info_pub_);
+              });
+  if (!left_capture_result_sub.ok()) {
+    LOG(ERROR) << "Unable to create Flowstate capture_result subscription: "
+               << left_capture_result_sub.status();
+    return false;
+  }
+  data_->left_capture_result_sub_ =
+      std::make_shared<intrinsic::Subscription>(std::move(*left_capture_result_sub));
+  auto center_capture_result_sub =
+      data_->pubsub_
+          ->CreateSubscription<intrinsic_proto::perception::v1::CaptureResult>(
+              "assets/center_camera/capture_result",
+              intrinsic::TopicConfig(),
+              [this](const intrinsic_proto::perception::v1::CaptureResult&
+                         capture_result_msg) {
+                this->CaptureResultCallback(
+                    capture_result_msg, this->data_->center_image_pub_,
+                    this->data_->center_camera_info_pub_);
+              });
+  if (!center_capture_result_sub.ok()) {
+    LOG(ERROR) << "Unable to create Flowstate capture_result subscription: "
+               << center_capture_result_sub.status();
+    return false;
+  }
+  data_->center_capture_result_sub_ = std::make_shared<intrinsic::Subscription>(
+      std::move(*center_capture_result_sub));
+
+  auto right_capture_result_sub =
+      data_->pubsub_
+          ->CreateSubscription<intrinsic_proto::perception::v1::CaptureResult>(
+              "assets/right_camera/capture_result",
+              intrinsic::TopicConfig(),
+              [this](const intrinsic_proto::perception::v1::CaptureResult&
+                         capture_result_msg) {
+                this->CaptureResultCallback(
+                    capture_result_msg, this->data_->right_image_pub_,
+                    this->data_->right_camera_info_pub_);
+              });
+  if (!right_capture_result_sub.ok()) {
+    LOG(ERROR) << "Unable to create Flowstate capture_result subscription: "
+               << right_capture_result_sub.status();
+    return false;
+  }
+  LOG(INFO) << "Subscribed to Flowstate capture_result topics";
+  data_->right_capture_result_sub_ = std::make_shared<intrinsic::Subscription>(
+      std::move(*right_capture_result_sub));
+
   LOG(INFO) << "Initialized AicCameraBridge.";
 
   return true;
+}
+
+void AicCameraBridge::CaptureResultCallback(
+    const intrinsic_proto::perception::v1::CaptureResult& capture_result,
+    std::shared_ptr<rclcpp::Publisher<sensor_msgs::msg::Image>> image_pub,
+    std::shared_ptr<rclcpp::Publisher<sensor_msgs::msg::CameraInfo>>
+        camera_info_pub) {
+  if (capture_result.sensor_images_size() != 1) {
+    LOG(ERROR) << " Unexpected number of images: "
+               << capture_result.sensor_images_size();
+    return;
+  }
+  if (capture_result.sensor_images(0).buffer().encoding() != 0) {
+    LOG(ERROR) << "Expected uncompressed data. Saw encoding type "
+               << capture_result.sensor_images(0).buffer().encoding();
+    return;
+  }
+  if (capture_result.sensor_images(0).buffer().pixel_type() != 1) {
+    LOG(ERROR) << "Expected pixel type INTENSITY. Saw type "
+               << capture_result.sensor_images(0).buffer().pixel_type();
+    return;
+  }
+  if (capture_result.sensor_images(0).buffer().num_channels() != 3) {
+    LOG(ERROR) << "Expected a 3-channel image. Saw "
+               << capture_result.sensor_images(0).buffer().num_channels();
+    return;
+  }
+  if (capture_result.sensor_images(0).buffer().type() != 1) {
+    LOG(ERROR) << "Expected an 8-bit image. Saw data type "
+               << capture_result.sensor_images(0).buffer().type();
+    return;
+  }
+  if (!capture_result.sensor_images(0).buffer().has_dimensions()) {
+    LOG(ERROR) << "Image buffer did not have dimensions";
+    return;
+  }
+  const int cols = capture_result.sensor_images(0).buffer().dimensions().cols();
+  const int rows = capture_result.sensor_images(0).buffer().dimensions().rows();
+
+  sensor_msgs::msg::Image ros_image;
+  ros_image.header.stamp.sec =
+      capture_result.sensor_images(0).acquisition_time().seconds();
+  ros_image.header.stamp.nanosec =
+      capture_result.sensor_images(0).acquisition_time().nanos();
+  ros_image.height =
+      capture_result.sensor_images(0).buffer().dimensions().rows();
+  ros_image.width =
+      capture_result.sensor_images(0).buffer().dimensions().cols();
+  ros_image.step = ros_image.width * 3;
+  ros_image.encoding = "rgb8";
+  ros_image.is_bigendian = 0;
+  ros_image.data.assign(capture_result.sensor_images(0).buffer().data().begin(),
+                        capture_result.sensor_images(0).buffer().data().end());
+
+  sensor_msgs::msg::CameraInfo camera_info;
+  camera_info.header = ros_image.header;
+  camera_info.height = ros_image.height;
+
+  camera_info.distortion_model = "plumb_bob";
+  camera_info.d.assign(5, 0.0);
+
+  if (capture_result.sensor_images(0).sensor_config().has_camera_params()) {
+    const double fx = capture_result.sensor_images(0)
+                          .sensor_config()
+                          .camera_params()
+                          .intrinsic_params()
+                          .focal_length_x();
+    const double fy = capture_result.sensor_images(0)
+                          .sensor_config()
+                          .camera_params()
+                          .intrinsic_params()
+                          .focal_length_y();
+    const double cx = capture_result.sensor_images(0)
+                          .sensor_config()
+                          .camera_params()
+                          .intrinsic_params()
+                          .principal_point_x();
+    const double cy = capture_result.sensor_images(0)
+                          .sensor_config()
+                          .camera_params()
+                          .intrinsic_params()
+                          .principal_point_y();
+
+    // Populate the intrinsic camera matrix
+    camera_info.k[0] = fx;
+    camera_info.k[2] = cx;
+    camera_info.k[4] = fy;
+    camera_info.k[5] = cy;
+    camera_info.k[8] = 1.0;
+
+    // Identity rotation matrix, the convention for monocular cameras.
+    camera_info.r[0] = 1.0;
+    camera_info.r[4] = 1.0;
+    camera_info.r[8] = 1.0;
+
+    // Populate the projection matrix following monocular conventions.
+    camera_info.p[0] = fx;
+    camera_info.p[2] = cx;
+    camera_info.p[5] = fy;
+    camera_info.p[6] = cy;
+    camera_info.p[10] = 1.0;
+  }
+
+  image_pub->publish(std::move(ros_image));
+  camera_info_pub->publish(std::move(camera_info));
 }
 
 ///=============================================================================
@@ -203,6 +366,9 @@ AicCameraBridge::Data::Data() {}
 AicCameraBridge::Data::~Data() {
   pubsub_.reset();
   image_sub_.reset();
+  left_capture_result_sub_.reset();
+  center_capture_result_sub_.reset();
+  right_capture_result_sub_.reset();
   left_image_pub_.reset();
   center_image_pub_.reset();
   right_image_pub_.reset();
