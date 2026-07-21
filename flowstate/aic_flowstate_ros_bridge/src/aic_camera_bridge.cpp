@@ -124,8 +124,7 @@ bool AicCameraBridge::initialize(
   auto center_capture_result_sub =
       data_->pubsub_
           ->CreateSubscription<intrinsic_proto::perception::v1::CaptureResult>(
-              "assets/center_camera/capture_result",
-              intrinsic::TopicConfig(),
+              "assets/center_camera/capture_result", intrinsic::TopicConfig(),
               [this](const intrinsic_proto::perception::v1::CaptureResult&
                          capture_result_msg) {
                 this->CaptureResultCallback(
