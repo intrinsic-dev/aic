@@ -53,10 +53,9 @@ WriteToKVStore::Execute(const intrinsic::skills::ExecuteRequest& request,
   LOG(INFO) << "Executing WriteToKVStore for key: '" << key
             << "', count: " << params.count();
 
-  // Connect to default PubSub KVStore ("kv_store" prefix)
-  intrinsic::PubSub pubsub;
+  // Connect to default PubSub KVStore ("kv_store" prefix) using pre-connected member pubsub_
   INTR_ASSIGN_OR_RETURN(intrinsic::KeyValueStore kvstore,
-                        pubsub.KeyValueStore());
+                        pubsub_.KeyValueStore());
 
   google::protobuf::Int64Value value_msg;
   value_msg.set_value(params.count());

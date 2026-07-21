@@ -21,6 +21,7 @@
 #include <memory>
 
 #include "absl/status/statusor.h"
+#include "intrinsic/platform/pubsub/pubsub.h"
 #include "intrinsic/skills/cc/skill_interface.h"
 
 class ReadFromKVStore : public intrinsic::skills::SkillInterface {
@@ -37,6 +38,9 @@ class ReadFromKVStore : public intrinsic::skills::SkillInterface {
   absl::StatusOr<std::unique_ptr<google::protobuf::Message>> Execute(
       const intrinsic::skills::ExecuteRequest& request,
       intrinsic::skills::ExecuteContext& context) override;
+
+ private:
+  intrinsic::PubSub pubsub_;
 };
 
 #endif  // FLOWSTATE_AIC_SKILLS_READ_FROM_KV_STORE_H_

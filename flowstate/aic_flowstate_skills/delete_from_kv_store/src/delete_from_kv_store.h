@@ -22,11 +22,13 @@
 
 #include "absl/status/statusor.h"
 #include "google/protobuf/message.h"
+#include "intrinsic/platform/pubsub/pubsub.h"
 #include "intrinsic/skills/cc/skill_interface.h"
 
 class DeleteFromKVStore : public intrinsic::skills::SkillInterface {
  public:
   DeleteFromKVStore() = default;
+  ~DeleteFromKVStore() override = default;
 
   static std::unique_ptr<intrinsic::skills::SkillInterface> CreateSkill();
 
@@ -37,6 +39,9 @@ class DeleteFromKVStore : public intrinsic::skills::SkillInterface {
   absl::StatusOr<std::unique_ptr<google::protobuf::Message>> Execute(
       const intrinsic::skills::ExecuteRequest& request,
       intrinsic::skills::ExecuteContext& context) override;
+
+ private:
+  intrinsic::PubSub pubsub_;
 };
 
 #endif  // AI_FLOWSTATE_SKILLS_DELETE_FROM_KV_STORE_H_

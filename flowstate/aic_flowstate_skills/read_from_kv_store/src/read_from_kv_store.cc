@@ -52,10 +52,9 @@ ReadFromKVStore::Execute(const intrinsic::skills::ExecuteRequest& request,
 
   LOG(INFO) << "Executing ReadFromKVStore for key: '" << key << "'";
 
-  // Connect to default PubSub KVStore ("kv_store" prefix)
-  intrinsic::PubSub pubsub;
+  // Connect to default PubSub KVStore ("kv_store" prefix) using pre-connected member pubsub_
   INTR_ASSIGN_OR_RETURN(intrinsic::KeyValueStore kvstore,
-                        pubsub.KeyValueStore());
+                        pubsub_.KeyValueStore());
 
   LOG(INFO) << "Retrieving value for key '" << key << "' from KV store";
 
