@@ -12,6 +12,15 @@ message RobotControlBridgeConfig {
   string joint_task_settings_file = 6;
 }
 
+message ToolTransformationConfig {
+  double x = 1;
+  double y = 2;
+  double z = 3;
+  double roll = 4;
+  double pitch = 5;
+  double yaw = 6;
+}
+
 // Configuration to control which sensors are enabled to publish ROS 2 messages.
 // Robot state (joints) and force/torque sensor data.
 message SensorPublisherConfig {
@@ -24,6 +33,7 @@ message SensorPublisherConfig {
   string robot_controller_instance = 7;
   bool throttle_robot_state_topic = 8;
   repeated string override_joint_names = 9;
+  ToolTransformationConfig force_torque_tool_transform = 10;
 }
 
 message FlowstateRosBridgeConfig {

@@ -112,6 +112,19 @@ int main(int argc, char* argv[]) {
                       s.robot_controller_instance());
   params.emplace_back("throttle_robot_state_topic",
                       s.throttle_robot_state_topic());
+  if (s.has_force_torque_tool_transform()) {
+    std::vector<double> ft_transform = {
+        s.force_torque_tool_transform().x(),
+        s.force_torque_tool_transform().y(),
+        s.force_torque_tool_transform().z(),
+        s.force_torque_tool_transform().roll(),
+        s.force_torque_tool_transform().pitch(),
+        s.force_torque_tool_transform().yaw()
+    };
+    params.emplace_back("force_torque_tool_transform", ft_transform);
+  } else {
+    params.emplace_back("force_torque_tool_transform", std::vector<double>{0, 0, 0, 0, 0, 0});
+  }
 
   const auto& robot_control_bridge_config =
       ros_config.robot_control_bridge_config();
