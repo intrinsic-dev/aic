@@ -41,6 +41,12 @@ using namespace std::chrono_literals;
 
 namespace flowstate_ros_bridge {
 
+namespace {
+constexpr char kLeftCameraOpticalFrame[] = "left_camera/optical";
+constexpr char kCenterCameraOpticalFrame[] = "center_camera/optical";
+constexpr char kRightCameraOpticalFrame[] = "right_camera/optical";
+}  // namespace
+
 ///=============================================================================
 void AicCameraBridge::declare_ros_parameters(
     ROSNodeInterfaces /*ros_node_interfaces*/) {
@@ -111,6 +117,7 @@ bool AicCameraBridge::initialize(
               [this](const intrinsic_proto::perception::v1::CaptureResult&
                          capture_result_msg) {
                 this->CaptureResultCallback(capture_result_msg,
+                                            kLeftCameraOpticalFrame,
                                             this->data_->left_image_pub_,
                                             this->data_->left_camera_info_pub_);
               });
@@ -128,7 +135,8 @@ bool AicCameraBridge::initialize(
               [this](const intrinsic_proto::perception::v1::CaptureResult&
                          capture_result_msg) {
                 this->CaptureResultCallback(
-                    capture_result_msg, this->data_->center_image_pub_,
+                    capture_result_msg, kCenterCameraOpticalFrame,
+                    this->data_->center_image_pub_,
                     this->data_->center_camera_info_pub_);
               });
   if (!center_capture_result_sub.ok()) {
@@ -146,7 +154,8 @@ bool AicCameraBridge::initialize(
               [this](const intrinsic_proto::perception::v1::CaptureResult&
                          capture_result_msg) {
                 this->CaptureResultCallback(
-                    capture_result_msg, this->data_->right_image_pub_,
+                    capture_result_msg, kRightCameraOpticalFrame,
+                    this->data_->right_image_pub_,
                     this->data_->right_camera_info_pub_);
               });
   if (!right_capture_result_sub.ok()) {
@@ -165,6 +174,7 @@ bool AicCameraBridge::initialize(
 
 void AicCameraBridge::CaptureResultCallback(
     const intrinsic_proto::perception::v1::CaptureResult& capture_result,
+    const std::string& frame_id,
     std::shared_ptr<rclcpp::Publisher<sensor_msgs::msg::Image>> image_pub,
     std::shared_ptr<rclcpp::Publisher<sensor_msgs::msg::CameraInfo>>
         camera_info_pub) {
@@ -201,6 +211,7 @@ void AicCameraBridge::CaptureResultCallback(
   const int rows = capture_result.sensor_images(0).buffer().dimensions().rows();
 
   sensor_msgs::msg::Image ros_image;
+  ros_image.header.frame_id = frame_id;
   ros_image.header.stamp.sec =
       capture_result.sensor_images(0).acquisition_time().seconds();
   ros_image.header.stamp.nanosec =
@@ -218,31 +229,18 @@ void AicCameraBridge::CaptureResultCallback(
   sensor_msgs::msg::CameraInfo camera_info;
   camera_info.header = ros_image.header;
   camera_info.height = ros_image.height;
+  camera_info.width = ros_image.width;
 
   camera_info.distortion_model = "plumb_bob";
   camera_info.d.assign(5, 0.0);
 
   if (capture_result.sensor_images(0).sensor_config().has_camera_params()) {
-    const double fx = capture_result.sensor_images(0)
-                          .sensor_config()
-                          .camera_params()
-                          .intrinsic_params()
-                          .focal_length_x();
-    const double fy = capture_result.sensor_images(0)
-                          .sensor_config()
-                          .camera_params()
-                          .intrinsic_params()
-                          .focal_length_y();
-    const double cx = capture_result.sensor_images(0)
-                          .sensor_config()
-                          .camera_params()
-                          .intrinsic_params()
-                          .principal_point_x();
-    const double cy = capture_result.sensor_images(0)
-                          .sensor_config()
-                          .camera_params()
-                          .intrinsic_params()
-                          .principal_point_y();
+    const auto& params =
+        capture_result.sensor_images(0).sensor_config().camera_params();
+    const double fx = params.intrinsic_params().focal_length_x();
+    const double fy = params.intrinsic_params().focal_length_y();
+    const double cx = params.intrinsic_params().principal_point_x();
+    const double cy = params.intrinsic_params().principal_point_y();
 
     // Populate the intrinsic camera matrix
     camera_info.k[0] = fx;
@@ -338,17 +336,17 @@ void AicCameraBridge::ImageCallback(
   // Route based on frame_id substring
   const std::string& frame_id = image.header().frame_id();
   if (frame_id.find("left_camera") != std::string::npos) {
-    ros_image.header.frame_id = "left_camera/optical";
+    ros_image.header.frame_id = kLeftCameraOpticalFrame;
     camera_info.header.frame_id = ros_image.header.frame_id;
     data_->left_image_pub_->publish(std::move(ros_image));
     data_->left_camera_info_pub_->publish(std::move(camera_info));
   } else if (frame_id.find("center_camera") != std::string::npos) {
-    ros_image.header.frame_id = "center_camera/optical";
+    ros_image.header.frame_id = kCenterCameraOpticalFrame;
     camera_info.header.frame_id = ros_image.header.frame_id;
     data_->center_image_pub_->publish(std::move(ros_image));
     data_->center_camera_info_pub_->publish(std::move(camera_info));
   } else if (frame_id.find("right_camera") != std::string::npos) {
-    ros_image.header.frame_id = "right_camera/optical";
+    ros_image.header.frame_id = kRightCameraOpticalFrame;
     camera_info.header.frame_id = ros_image.header.frame_id;
     data_->right_image_pub_->publish(std::move(ros_image));
     data_->right_camera_info_pub_->publish(std::move(camera_info));
