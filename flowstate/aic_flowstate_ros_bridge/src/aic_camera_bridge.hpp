@@ -46,6 +46,7 @@ class AicCameraBridge : public BridgeInterface {
   void ImageCallback(const sensor_msgs::msg::pb::jazzy::Image& image);
   void CaptureResultCallback(
       const intrinsic_proto::perception::v1::CaptureResult& capture_result,
+      const std::string& frame_id,
       std::shared_ptr<rclcpp::Publisher<sensor_msgs::msg::Image>> image_pub_,
       std::shared_ptr<rclcpp::Publisher<sensor_msgs::msg::CameraInfo>>
           camera_info_pub_);
