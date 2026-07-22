@@ -235,9 +235,8 @@ void AicCameraBridge::CaptureResultCallback(
   camera_info.d.assign(5, 0.0);
 
   if (capture_result.sensor_images(0).sensor_config().has_camera_params()) {
-    const auto& params = capture_result.sensor_images(0)
-                             .sensor_config()
-                             .camera_params();
+    const auto& params =
+        capture_result.sensor_images(0).sensor_config().camera_params();
     const double fx = params.intrinsic_params().focal_length_x();
     const double fy = params.intrinsic_params().focal_length_y();
     const double cx = params.intrinsic_params().principal_point_x();
