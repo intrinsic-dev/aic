@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package ai.flowstate;
+
+message StopRecordingSkillParams {
+}
+
+message StopRecordingSkillResult {
+  // Path to the saved bag recording.
+  string bag_path = 1;
+}
