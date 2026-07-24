@@ -4,7 +4,7 @@ authors = ["Teo Koon Peng <koonpeng@intrinsic.ai>"]
 channels = ["robostack-kilted", "conda-forge"]
 platforms = ["linux-64"]
 version = "0.1.0"
-conda-pypi-map = { "robostack-kilted" = "robostack_mapping.json", "conda-forge" = "robostack_mapping.json" }
+conda-pypi-map = { "robostack-kilted" = "robostack_mapping.json" }
 preview = ["pixi-build"]
 
 [environments]
@@ -15,10 +15,14 @@ skill-runtime = { features = ["skill-runtime"], solve-group = "default" }
 [feature.skill-runtime.target.linux-64.dependencies]
 evdev = ">=1.9.2,<2"
 lttng-ust = "*"
+ros-kilted-rosbag2-cpp = "*"
+ros-kilted-rosbag2-transport = "*"
+ros-kilted-rosbag2-storage-mcap = "*"
 
 [feature.skill-runtime.dependencies]
 ros-kilted-aic-control-interfaces = { path = "aic_interfaces/aic_control_interfaces" }
 ros-kilted-aic-example-policies = { path = "aic_example_policies" }
+ros-kilted-aic-logger-interfaces = { path = "aic_interfaces/aic_logger_interfaces" }
 ros-kilted-aic-model = { path = "aic_model" }
 ros-kilted-aic-model-interfaces = { path = "aic_interfaces/aic_model_interfaces" }
 ros-kilted-aic-task-interfaces = { path = "aic_interfaces/aic_task_interfaces" }
@@ -51,9 +55,6 @@ ros-kilted-ros-gz-interfaces = ">=2.1.0,<2.2"
 ros-kilted-yaml-cpp-vendor = "*"
 ros-kilted-orocos-kdl-vendor = "*"
 nlohmann_json = "*"
-ros-kilted-rosbag2-cpp = "*"
-ros-kilted-rosbag2-transport = "*"
-ros-kilted-rosbag2-storage-mcap = "*"
 
 [feature.build-dependencies.dependencies]
 colcon-common-extensions = ">=0.3.0,<0.4"

@@ -22,8 +22,8 @@
 #include <thread>
 #include <vector>
 
-#include "aic_logger/srv/start_recording.hpp"
-#include "aic_logger/srv/stop_recording.hpp"
+#include "aic_logger_interfaces/srv/start_recording.hpp"
+#include "aic_logger_interfaces/srv/stop_recording.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "rosbag2_transport/record_options.hpp"
 #include "rosbag2_transport/recorder.hpp"
@@ -46,12 +46,12 @@ class AicLoggerNode : public rclcpp::Node {
 
  private:
   void HandleStartRecording(
-      const std::shared_ptr<aic_logger::srv::StartRecording::Request> request,
-      std::shared_ptr<aic_logger::srv::StartRecording::Response> response);
+      const std::shared_ptr<aic_logger_interfaces::srv::StartRecording::Request> request,
+      std::shared_ptr<aic_logger_interfaces::srv::StartRecording::Response> response);
 
   void HandleStopRecording(
-      const std::shared_ptr<aic_logger::srv::StopRecording::Request> request,
-      std::shared_ptr<aic_logger::srv::StopRecording::Response> response);
+      const std::shared_ptr<aic_logger_interfaces::srv::StopRecording::Request> request,
+      std::shared_ptr<aic_logger_interfaces::srv::StopRecording::Response> response);
 
   std::string output_directory_ = "/tmp";
   std::string storage_id_ = "mcap";
@@ -66,8 +66,8 @@ class AicLoggerNode : public rclcpp::Node {
   std::shared_ptr<rclcpp::executors::SingleThreadedExecutor> recorder_executor_;
   std::thread recorder_thread_;
 
-  rclcpp::Service<aic_logger::srv::StartRecording>::SharedPtr start_recording_service_;
-  rclcpp::Service<aic_logger::srv::StopRecording>::SharedPtr stop_recording_service_;
+  rclcpp::Service<aic_logger_interfaces::srv::StartRecording>::SharedPtr start_recording_service_;
+  rclcpp::Service<aic_logger_interfaces::srv::StopRecording>::SharedPtr stop_recording_service_;
 };
 
 }  // namespace aic_logger

@@ -63,11 +63,10 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-mkdir -p "$IMAGES_DIR"
-IMAGES_DIR=$(cd "$IMAGES_DIR" && pwd)
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 if [[ -n "$SERVICE_NAME" && -n "$SERVICE_PACKAGE" ]]; then
-  mkdir -p "$IMAGES_DIR/$SERVICE_NAME"
+  mkdir -p $IMAGES_DIR/$SERVICE_NAME
 
   if [[ -n "$CUSTOM_DOCKERFILE" ]]; then
     DOCKERFILE="$CUSTOM_DOCKERFILE"
@@ -77,7 +76,12 @@ if [[ -n "$SERVICE_NAME" && -n "$SERVICE_PACKAGE" ]]; then
 
   docker buildx build -t $SERVICE_PACKAGE:$SERVICE_NAME \
       --builder="$BUILDER_NAME" \
-      --output="type=docker,dest=$IMAGES_DIR/$SERVICE_NAME/$SERVICE_NAME.tar" \
+      --output="\
+        type=docker,\
+        dest=$IMAGES_DIR/$SERVICE_NAME/$SERVICE_NAME.tar,\
+        compression=zstd,\
+        push=false,\
+        name=$SERVICE_PACKAGE:$SERVICE_NAME" \
       --file $DOCKERFILE \
       --build-arg="SERVICE_PACKAGE=$SERVICE_PACKAGE" \
       --build-arg="SERVICE_NAME=$SERVICE_NAME" \
@@ -85,10 +89,8 @@ if [[ -n "$SERVICE_NAME" && -n "$SERVICE_PACKAGE" ]]; then
       --build-arg="SERVICE_EXECUTABLE_NAME=${SERVICE_NAME}_main" \
       --build-arg="ROS_DISTRO=$ROS_DISTRO" \
       .
-
-  chmod 644 "$IMAGES_DIR/$SERVICE_NAME/$SERVICE_NAME.tar"
 elif [[ -n "$SKILL_NAME" && -n "$SKILL_PACKAGE" ]]; then
-  mkdir -p "$IMAGES_DIR/$SKILL_NAME"
+  mkdir -p $IMAGES_DIR/$SKILL_NAME
 
   if [[ -n "$CUSTOM_DOCKERFILE" ]]; then
     DOCKERFILE="$CUSTOM_DOCKERFILE"
@@ -98,15 +100,18 @@ elif [[ -n "$SKILL_NAME" && -n "$SKILL_PACKAGE" ]]; then
 
   docker buildx build -t $SKILL_PACKAGE:$SKILL_NAME \
       --builder="$BUILDER_NAME" \
-      --output="type=docker,dest=$IMAGES_DIR/$SKILL_NAME/$SKILL_NAME.tar" \
+      --output="\
+        type=docker,\
+        dest=$IMAGES_DIR/$SKILL_NAME/$SKILL_NAME.tar,\
+        compression=zstd,\
+        push=false,\
+        name=$SKILL_PACKAGE:$SKILL_NAME" \
       --file $DOCKERFILE \
       --build-arg="SKILL_PACKAGE=$SKILL_PACKAGE" \
       --build-arg="SKILL_NAME=$SKILL_NAME" \
       --build-arg="SKILL_EXECUTABLE_NAME=${SKILL_NAME}_main" \
       --build-arg="ROS_DISTRO=$ROS_DISTRO" \
       .
-
-  chmod 644 "$IMAGES_DIR/$SKILL_NAME/$SKILL_NAME.tar"
 
   if [[ -n "$MANIFEST_PATH" ]]; then
     SDK_VERSION="v1.31.20260427.1"

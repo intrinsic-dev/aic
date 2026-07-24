@@ -562,6 +562,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/zstd-1.5.7-hb78ec9c_6.conda
       - conda: aic_example_policies
       - conda: aic_interfaces/aic_control_interfaces
+      - conda: aic_interfaces/aic_logger_interfaces
       - conda: aic_interfaces/aic_model_interfaces
       - conda: aic_interfaces/aic_task_interfaces
       - conda: aic_model
@@ -1076,6 +1077,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/zstd-1.5.7-hb78ec9c_6.conda
       - conda: aic_example_policies
       - conda: aic_interfaces/aic_control_interfaces
+      - conda: aic_interfaces/aic_logger_interfaces
       - conda: aic_interfaces/aic_model_interfaces
       - conda: aic_interfaces/aic_task_interfaces
       - conda: aic_model
@@ -1441,6 +1443,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/zstd-1.5.7-hb78ec9c_6.conda
       - conda: aic_example_policies
       - conda: aic_interfaces/aic_control_interfaces
+      - conda: aic_interfaces/aic_logger_interfaces
       - conda: aic_interfaces/aic_model_interfaces
       - conda: aic_interfaces/aic_task_interfaces
       - conda: aic_model
@@ -7326,6 +7329,23 @@ packages:
   - ros-kilted-sensor-msgs
   - ros-kilted-std-srvs
   - ros-kilted-trajectory-msgs
+  - ros2-distro-mutex
+  - ros2-distro-mutex >=0.17.0,<0.18.0a0
+  - libgcc >=15
+  - libgcc >=15
+  - libstdcxx >=15
+  - python_abi 3.12.* *_cp312
+  - numpy >=1.25,<3
+  license: LicenseRef-Apache-2.0
+- conda: aic_interfaces/aic_logger_interfaces
+  name: ros-kilted-aic-logger-interfaces
+  version: 0.1.0
+  build: hb0f4dca_0
+  subdir: linux-64
+  variants:
+    target_platform: linux-64
+  depends:
+  - ros-kilted-rosidl-default-runtime
   - ros2-distro-mutex
   - ros2-distro-mutex >=0.17.0,<0.18.0a0
   - libgcc >=15

@@ -36,12 +36,12 @@ static std::string GetCurrentTimeString() {
 
 AicLoggerNode::AicLoggerNode(const rclcpp::NodeOptions& options)
     : rclcpp::Node("aic_logger", options) {
-  start_recording_service_ = create_service<aic_logger::srv::StartRecording>(
+  start_recording_service_ = create_service<aic_logger_interfaces::srv::StartRecording>(
       "~/start_recording",
       std::bind(&AicLoggerNode::HandleStartRecording, this,
                 std::placeholders::_1, std::placeholders::_2));
 
-  stop_recording_service_ = create_service<aic_logger::srv::StopRecording>(
+  stop_recording_service_ = create_service<aic_logger_interfaces::srv::StopRecording>(
       "~/stop_recording",
       std::bind(&AicLoggerNode::HandleStopRecording, this,
                 std::placeholders::_1, std::placeholders::_2));
@@ -91,8 +91,8 @@ void AicLoggerNode::Configure(const std::string& output_directory,
 }
 
 void AicLoggerNode::HandleStartRecording(
-    const std::shared_ptr<aic_logger::srv::StartRecording::Request> request,
-    std::shared_ptr<aic_logger::srv::StartRecording::Response> response) {
+    const std::shared_ptr<aic_logger_interfaces::srv::StartRecording::Request> request,
+    std::shared_ptr<aic_logger_interfaces::srv::StartRecording::Response> response) {
   std::lock_guard<std::mutex> lock(recording_mutex_);
 
   if (is_recording_) {
@@ -151,8 +151,8 @@ void AicLoggerNode::HandleStartRecording(
 }
 
 void AicLoggerNode::HandleStopRecording(
-    const std::shared_ptr<aic_logger::srv::StopRecording::Request> /*request*/,
-    std::shared_ptr<aic_logger::srv::StopRecording::Response> response) {
+    const std::shared_ptr<aic_logger_interfaces::srv::StopRecording::Request> /*request*/,
+    std::shared_ptr<aic_logger_interfaces::srv::StopRecording::Response> response) {
   std::lock_guard<std::mutex> lock(recording_mutex_);
 
   if (!is_recording_) {

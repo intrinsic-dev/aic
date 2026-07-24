@@ -12,19 +12,13 @@ endif()
 
 find_package(ament_cmake REQUIRED)
 find_package(intrinsic_sdk_cmake REQUIRED)
-find_package(rosidl_default_generators REQUIRED)
+find_package(aic_logger_interfaces REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rosbag2_cpp REQUIRED)
 find_package(rosbag2_transport REQUIRED)
 find_package(rosbag2_storage REQUIRED)
 find_package(absl REQUIRED)
 find_package(Protobuf REQUIRED)
-
-# Generate ROS 2 service interfaces
-rosidl_generate_interfaces(${PROJECT_NAME}
-  "srv/StartRecording.srv"
-  "srv/StopRecording.srv"
-)
 
 # Define aic_logger_node library
 add_library(aic_logger_node SHARED
@@ -40,11 +34,8 @@ target_link_libraries(aic_logger_node
   rosbag2_cpp::rosbag2_cpp
   rosbag2_transport::rosbag2_transport
   rosbag2_storage::rosbag2_storage
+  aic_logger_interfaces::aic_logger_interfaces__rosidl_typesupport_cpp
 )
-
-# Link generated ROS service interfaces
-rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} "rosidl_typesupport_cpp")
-target_link_libraries(aic_logger_node ${cpp_typesupport_target})
 
 # Intrinsic Flowstate service manifest generation
 set(SERVICE_NAME "aic_logger")
@@ -94,6 +85,6 @@ install(FILES
 
 ament_export_include_directories(include)
 ament_export_libraries(aic_logger_node)
-ament_export_dependencies(rclcpp rosbag2_cpp rosbag2_transport rosbag2_storage)
+ament_export_dependencies(rclcpp rosbag2_cpp rosbag2_transport rosbag2_storage aic_logger_interfaces)
 
 ament_package()
