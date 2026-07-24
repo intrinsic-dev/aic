@@ -567,8 +567,6 @@ environments:
         build: hb0f4dca_0
       - conda: aic_interfaces/aic_control_interfaces
         build: hb0f4dca_0
-      - conda: aic_interfaces/aic_logger_interfaces
-        build: hb0f4dca_0
       - conda: aic_interfaces/aic_model_interfaces
         build: hb0f4dca_0
       - conda: aic_interfaces/aic_task_interfaces
@@ -1176,8 +1174,6 @@ environments:
         build: h60d57d3_0
       - conda: aic_interfaces/aic_control_interfaces
         build: h60d57d3_0
-      - conda: aic_interfaces/aic_logger_interfaces
-        build: h60d57d3_0
       - conda: aic_interfaces/aic_model_interfaces
         build: h60d57d3_0
       - conda: aic_interfaces/aic_task_interfaces
@@ -1689,8 +1685,6 @@ environments:
         build: hb0f4dca_0
       - conda: aic_interfaces/aic_control_interfaces
         build: hb0f4dca_0
-      - conda: aic_interfaces/aic_logger_interfaces
-        build: hb0f4dca_0
       - conda: aic_interfaces/aic_model_interfaces
         build: hb0f4dca_0
       - conda: aic_interfaces/aic_task_interfaces
@@ -2085,8 +2079,6 @@ environments:
         build: h60d57d3_0
       - conda: aic_interfaces/aic_control_interfaces
         build: h60d57d3_0
-      - conda: aic_interfaces/aic_logger_interfaces
-        build: h60d57d3_0
       - conda: aic_interfaces/aic_model_interfaces
         build: h60d57d3_0
       - conda: aic_interfaces/aic_task_interfaces
@@ -2465,8 +2457,6 @@ environments:
         build: hb0f4dca_0
       - conda: aic_interfaces/aic_control_interfaces
         build: hb0f4dca_0
-      - conda: aic_interfaces/aic_logger_interfaces
-        build: hb0f4dca_0
       - conda: aic_interfaces/aic_model_interfaces
         build: hb0f4dca_0
       - conda: aic_interfaces/aic_task_interfaces
@@ -2825,8 +2815,6 @@ environments:
       - conda: aic_example_policies
         build: h60d57d3_0
       - conda: aic_interfaces/aic_control_interfaces
-        build: h60d57d3_0
-      - conda: aic_interfaces/aic_logger_interfaces
         build: h60d57d3_0
       - conda: aic_interfaces/aic_model_interfaces
         build: h60d57d3_0
@@ -11552,38 +11540,6 @@ packages:
   - ros-kilted-sensor-msgs
   - ros-kilted-std-srvs
   - ros-kilted-trajectory-msgs
-  - ros2-distro-mutex
-  - ros2-distro-mutex >=0.17.0,<0.18.0a0
-  - libgcc >=15
-  - libgcc >=15
-  - libstdcxx >=15
-  - python_abi 3.12.* *_cp312
-  - numpy >=1.25,<3
-  license: LicenseRef-Apache-2.0
-- conda: aic_interfaces/aic_logger_interfaces
-  name: ros-kilted-aic-logger-interfaces
-  version: 0.1.0
-  build: h60d57d3_0
-  subdir: osx-arm64
-  variants:
-    target_platform: osx-arm64
-  depends:
-  - ros-kilted-rosidl-default-runtime
-  - ros2-distro-mutex
-  - ros2-distro-mutex >=0.17.0,<0.18.0a0
-  - libcxx >=22
-  - python_abi 3.12.* *_cp312
-  - numpy >=1.25,<3
-  license: LicenseRef-Apache-2.0
-- conda: aic_interfaces/aic_logger_interfaces
-  name: ros-kilted-aic-logger-interfaces
-  version: 0.1.0
-  build: hb0f4dca_0
-  subdir: linux-64
-  variants:
-    target_platform: linux-64
-  depends:
-  - ros-kilted-rosidl-default-runtime
   - ros2-distro-mutex
   - ros2-distro-mutex >=0.17.0,<0.18.0a0
   - libgcc >=15
