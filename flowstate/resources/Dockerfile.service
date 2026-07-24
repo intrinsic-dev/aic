@@ -24,13 +24,13 @@ COPY src/aic/aic_interfaces/ ./aic_interfaces/
 COPY src/aic/aic_example_policies/ ./aic_example_policies/
 COPY src/aic/aic_model/ ./aic_model/
 COPY src/aic/aic_utils/ ./aic_utils/
-RUN pixi install --environment skill-build && pixi install --environment skill-runtime
+RUN pixi install --frozen --environment skill-build && pixi install --frozen --environment skill-runtime
 
 
 # Pre-build SDK to optimize caching of heavy dependencies
 FROM pixi-builder AS sdk-builder
 COPY src/sdk-ros/ ./sdk-ros/
-RUN pixi run --environment skill-build colcon build \
+RUN pixi run --frozen --environment skill-build colcon build \
     --merge-install \
     --cmake-args -DCMAKE_BUILD_TYPE=Release \
     --event-handlers=console_direct+ \
@@ -48,7 +48,7 @@ COPY src/aic/flowstate/ ./flowstate/
 COPY src/aic/aic_adapter/ ./aic_adapter/
 
 # Build target service package using existing install space
-RUN pixi run --environment skill-build colcon build \
+RUN pixi run --frozen --environment skill-build colcon build \
     --merge-install \
     --cmake-args -DCMAKE_BUILD_TYPE=Release \
     --event-handlers=console_direct+ \
@@ -56,7 +56,7 @@ RUN pixi run --environment skill-build colcon build \
     --base-paths flowstate aic_adapter sdk-ros
 
 # Capture pixi environment activation for runtime
-RUN pixi shell-hook --environment skill-runtime > /pixi_hook.sh \
+RUN pixi shell-hook --frozen --environment skill-runtime > /pixi_hook.sh \
     && rm -rf /root/.pixi/cache /root/.cache/pixi /workspace/.pixi/cache
 
 # Runtime stage
@@ -75,6 +75,7 @@ WORKDIR /workspace
 
 # Copy Pixi environment and built artifacts
 COPY --from=build /workspace/.pixi/envs/skill-runtime /workspace/.pixi/envs/skill-runtime
+RUN ln -s /workspace/.pixi/envs/skill-runtime /workspace/.pixi/envs/skill-build
 COPY --from=build /workspace/install ./install
 COPY --from=build /pixi_hook.sh /pixi_hook.sh
 
