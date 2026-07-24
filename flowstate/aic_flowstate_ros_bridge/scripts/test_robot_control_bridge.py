@@ -77,11 +77,11 @@ class TestRobotControlBridgeNode(Node):
         self.target_pose_damping = [damping_param[0]] * 3 + [damping_param[1]] * 3
 
         self.target_joint_stiffness = self.declare_parameter(
-            "target_joint_stiffness", [3000.0, 3000.0, 3000.0, 3000.0, 3000.0, 3000.0]
+            "target_joint_stiffness", [50.0, 50.0, 50.0, 10.0, 10.0, 10.0]
         ).value
 
         self.target_joint_damping = self.declare_parameter(
-            "target_joint_damping", [50.0, 50.0, 50.0, 50.0, 50.0, 50.0]
+            "target_joint_damping", [25.0, 25.0, 25.0, 5.0, 5.0, 5.0]
         ).value
 
         self.publish_duration = self.declare_parameter(
