@@ -86,6 +86,9 @@ COPY --from=build /pixi_hook.sh /pixi_hook.sh
 RUN mkdir -p /opt/ros/overlay \
     && ln -sf /workspace/install /opt/ros/overlay/install
 
+# Alias skill-build path to skill-runtime so colcon setup scripts find local_setup.bash
+RUN ln -sf /workspace/.pixi/envs/skill-runtime /workspace/.pixi/envs/skill-build
+
 # Environment variables for skill execution
 ENV PYTHONPATH="/workspace/install/opt/bindings/pybind11_abseil:/workspace/install/lib/python3.12/site-packages"
 ENV LD_LIBRARY_PATH="/workspace/install/opt/bindings/pybind11_abseil:/workspace/install/lib"
@@ -98,6 +101,7 @@ ENV SKILL_CONFIG="share/${SKILL_PACKAGE}/${SKILL_NAME}_config.pbbin"
 RUN echo '#!/bin/bash' > /run_skill.sh \
     && echo 'set -e' >> /run_skill.sh \
     && echo 'source /pixi_hook.sh' >> /run_skill.sh \
+    && echo 'export LD_LIBRARY_PATH="/workspace/.pixi/envs/skill-runtime/lib:/workspace/install/lib:${LD_LIBRARY_PATH}"' >> /run_skill.sh \
     && echo 'source /workspace/install/setup.bash' >> /run_skill.sh \
     && echo 'export RMW_IMPLEMENTATION=rmw_zenoh_cpp' >> /run_skill.sh \
     && echo 'export ROS_HOME=/tmp' >> /run_skill.sh \

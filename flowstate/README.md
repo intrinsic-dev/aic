@@ -276,7 +276,7 @@ export INTRINSIC_CLUSTER="vmp-xxxx-xxxxxxx"
 ## 🛠️ Building the start_recording_skill
 
 ```bash
-pixi run --manifest-path src/aic/pixi.toml ./src/aic/flowstate/scripts/build_container.sh \
+./src/aic/flowstate/scripts/build_container.sh \
   --skill_name start_recording_skill \
   --skill_package aic_flowstate_skills \
   --manifest_path src/aic/flowstate/aic_flowstate_skills/start_recording_skill/src/start_recording_skill.manifest.textproto \
@@ -320,7 +320,7 @@ export INTRINSIC_CLUSTER="vmp-xxxx-xxxxxxx"
 ## 🛠️ Building the stop_recording_skill
 
 ```bash
-pixi run --manifest-path src/aic/pixi.toml ./src/aic/flowstate/scripts/build_container.sh \
+./src/aic/flowstate/scripts/build_container.sh \
   --skill_name stop_recording_skill \
   --skill_package aic_flowstate_skills \
   --manifest_path src/aic/flowstate/aic_flowstate_skills/stop_recording_skill/src/stop_recording_skill.manifest.textproto \

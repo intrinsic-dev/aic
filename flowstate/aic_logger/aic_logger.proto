@@ -6,7 +6,6 @@ package intrinsic;
 message AicLoggerConfig {
   string workcell_id = 1;
   string flowstate_zenoh_router_address = 2;
-  optional string external_zenoh_router_address = 3;
 
   repeated string topics = 4;
   repeated string services = 5;

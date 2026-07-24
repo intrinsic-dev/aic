@@ -82,6 +82,7 @@ void AicLoggerNode::Configure(const std::string& output_directory,
   record_options_.all_services = record_all_services;
   record_options_.all_actions = record_all_actions;
   record_options_.is_discovery_disabled = false;
+  record_options_.rmw_serialization_format = "cdr";
 
   RCLCPP_INFO(get_logger(),
               "Configured aic_logger (output_dir: %s, storage_id: %s, "

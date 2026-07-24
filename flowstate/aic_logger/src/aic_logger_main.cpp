@@ -41,16 +41,8 @@ int main(int argc, char* argv[]) {
     LOG(WARNING) << "Error unpacking AicLoggerConfig from service config file...";
   }
 
-  // Handle optional external router address
-  std::string external_router_address;
-  if (!logger_config.external_zenoh_router_address().empty()) {
-    external_router_address = logger_config.external_zenoh_router_address();
-  }
-
   std::string zenoh_config_override = "connect/endpoints=[\"";
-  if (!external_router_address.empty()) {
-    zenoh_config_override += external_router_address;
-  } else if (!logger_config.flowstate_zenoh_router_address().empty()) {
+  if (!logger_config.flowstate_zenoh_router_address().empty()) {
     zenoh_config_override += logger_config.flowstate_zenoh_router_address();
   } else {
     zenoh_config_override += "tcp/zenoh-router.app-intrinsic-base.svc.cluster.local:7447";
