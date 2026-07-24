@@ -19,7 +19,7 @@ lttng-ust = "*"
 [feature.skill-runtime.dependencies]
 ros-kilted-aic-control-interfaces = { path = "aic_interfaces/aic_control_interfaces" }
 ros-kilted-aic-example-policies = { path = "aic_example_policies" }
-ros-kilted-aic-logger-interfaces = { path = "aic_interfaces/aic_logger_interfaces" }
+ros-kilted-aic-logging = { path = "aic_logging" }
 ros-kilted-aic-model = { path = "aic_model" }
 ros-kilted-aic-model-interfaces = { path = "aic_interfaces/aic_model_interfaces" }
 ros-kilted-aic-task-interfaces = { path = "aic_interfaces/aic_task_interfaces" }
@@ -54,6 +54,7 @@ ros-kilted-orocos-kdl-vendor = "*"
 ros-kilted-rosbag2-cpp = "*"
 ros-kilted-rosbag2-transport = "*"
 ros-kilted-rosbag2-storage-mcap = "*"
+ros-kilted-ros2bag = "*"
 nlohmann_json = "*"
 
 [feature.build-dependencies.dependencies]

@@ -1,0 +1,51 @@
+# AIC Recording Configuration
+# Defines exact topics, services, actions, and MCAP storage options for the AIC solution.
+
+# Storage configuration
+storage:
+  identifier: "mcap"                # Storage plugin: "mcap" or "sqlite3"
+  output_dir: "/tmp/aic_bags"       # Destination base directory for recorded bags
+  preset_profile: "zstd_fast"       # Storage preset: "none", "fastwrite", "zstd_fast", "zstd_small"
+  max_bag_size: 0                   # Split file threshold in bytes (0 = disabled)
+  max_bag_duration: 0            # Split file threshold in seconds (0 = disabled)
+  max_cache_size: 104857600         # Cache size in bytes (default: 100MB)
+
+# Topic recording options
+topics:
+  record_all: false                 # Record specified list of topics
+  include:                          # Exact list of topics to record
+    - "/wrist_camera_1/rgb"
+    - "/wrist_camera_1/camera_info"
+    - "/wrist_camera_2/rgb"
+    - "/wrist_camera_2/camera_info"
+    - "/workcell_camera_1/rgb"
+    - "/workcell_camera_1/camera_info"
+    - "/ati/wrench"
+    - "/joint_states"
+    - "/robot_description"
+    - "/gripper_state"
+    - "/controller/cartesian_commands"
+    - "/controller/joint_commands"
+    - "/task_state"
+    - "/rosout"
+  exclude: []
+
+# Service recording options
+services:
+  record_all: false
+  include: []
+  exclude: []
+
+# Action recording options
+actions:
+  record_all: false                 # Record specified list of actions
+  include:                          # Exact list of actions to record
+    - "/insert_cable"
+  exclude: []
+
+# Advanced filtering & options
+advanced:
+  regex: ""                         # Optional regex pattern for topic/service inclusion
+  exclude_regex: ""                 # Optional regex pattern for exclusion
+  node_name: "aic_external_recorder" # Name of the recorder ROS node
+  include_hidden_topics: false      # Include hidden ROS 2 topics

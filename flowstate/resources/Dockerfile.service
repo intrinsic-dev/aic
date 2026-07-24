@@ -82,9 +82,6 @@ COPY --from=build /pixi_hook.sh /pixi_hook.sh
 RUN mkdir -p /opt/ros/overlay \
     && ln -sf /workspace/install /opt/ros/overlay/install
 
-# Alias skill-build path to skill-runtime so colcon setup scripts find local_setup.bash
-RUN ln -sf /workspace/.pixi/envs/skill-runtime /workspace/.pixi/envs/skill-build
-
 # Runtime environment variables
 ENV ROS_HOME=/tmp
 ENV RMW_IMPLEMENTATION=rmw_zenoh_cpp
@@ -97,7 +94,6 @@ ENV SERVICE_EXECUTABLE_NAME=${SERVICE_EXECUTABLE_NAME}
 RUN echo '#!/bin/bash' > /entrypoint.sh \
     && echo 'set -e' >> /entrypoint.sh \
     && echo 'source /pixi_hook.sh' >> /entrypoint.sh \
-    && echo 'export LD_LIBRARY_PATH="/workspace/.pixi/envs/skill-runtime/lib:/workspace/install/lib:${LD_LIBRARY_PATH}"' >> /entrypoint.sh \
     && echo 'source /workspace/install/setup.bash' >> /entrypoint.sh \
     && echo 'exec "$@"' >> /entrypoint.sh \
     && chmod +x /entrypoint.sh

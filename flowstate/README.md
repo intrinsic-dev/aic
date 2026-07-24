@@ -47,9 +47,6 @@ pixi run --manifest-path src/aic/pixi.toml bash src/aic/flowstate/scripts/build_
 
 # 4. Build and bundle the AIC adapter service
 pixi run --manifest-path src/aic/pixi.toml bash src/aic/flowstate/scripts/build_aic_adapter.sh
-
-# 5. Build and bundle the AIC logger service
-pixi run --manifest-path src/aic/pixi.toml bash src/aic/flowstate/scripts/build_aic_logger.sh
 ```
 
 ---
@@ -257,94 +254,6 @@ After building, upload and install the skill into your solution context.
 
 # 1. Export path to side-loaded service bundle
 export SKILL_BUNDLE=~/ws_aic_phase1/images/switch_to_aic_controller_skill/switch_to_aic_controller_skill.bundle.tar
-
-# 2. Add Organization
-export INTRINSIC_ORGANIZATION="<ORG_NAME>"
-
-# 3. Add Cluster Endpoint
-export INTRINSIC_CLUSTER="vmp-xxxx-xxxxxxx"
-
-./inctl asset install \
-  --org $INTRINSIC_ORGANIZATION \
-  --cluster $INTRINSIC_CLUSTER \
-  $SKILL_BUNDLE
-
-```
-
----
-
-## 🛠️ Building the start_recording_skill
-
-```bash
-./src/aic/flowstate/scripts/build_container.sh \
-  --skill_name start_recording_skill \
-  --skill_package aic_flowstate_skills \
-  --manifest_path src/aic/flowstate/aic_flowstate_skills/start_recording_skill/src/start_recording_skill.manifest.textproto \
-  --dockerfile ./src/aic/flowstate/resources/Dockerfile.skill
-
-./inbuild skill bundle \
-  --file_descriptor_set images/start_recording_skill/start_recording_skill_protos.desc \
-  --manifest src/aic/flowstate/aic_flowstate_skills/start_recording_skill/src/start_recording_skill.manifest.textproto \
-  --oci_image images/start_recording_skill/start_recording_skill.tar \
-  --output images/start_recording_skill/start_recording_skill.bundle.tar
-```
-
----
-
-## 📥 Installing start_recording_skill to Flowstate
-
-After building, upload and install the skill into your solution context.
-
----
-
-```bash
-
-# 1. Export path to side-loaded skill bundle
-export SKILL_BUNDLE=~/ws_aic_phase1/images/start_recording_skill/start_recording_skill.bundle.tar
-
-# 2. Add Organization
-export INTRINSIC_ORGANIZATION="<ORG_NAME>"
-
-# 3. Add Cluster Endpoint
-export INTRINSIC_CLUSTER="vmp-xxxx-xxxxxxx"
-
-./inctl asset install \
-  --org $INTRINSIC_ORGANIZATION \
-  --cluster $INTRINSIC_CLUSTER \
-  $SKILL_BUNDLE
-
-```
-
----
-
-## 🛠️ Building the stop_recording_skill
-
-```bash
-./src/aic/flowstate/scripts/build_container.sh \
-  --skill_name stop_recording_skill \
-  --skill_package aic_flowstate_skills \
-  --manifest_path src/aic/flowstate/aic_flowstate_skills/stop_recording_skill/src/stop_recording_skill.manifest.textproto \
-  --dockerfile ./src/aic/flowstate/resources/Dockerfile.skill
-
-./inbuild skill bundle \
-  --file_descriptor_set images/stop_recording_skill/stop_recording_skill_protos.desc \
-  --manifest src/aic/flowstate/aic_flowstate_skills/stop_recording_skill/src/stop_recording_skill.manifest.textproto \
-  --oci_image images/stop_recording_skill/stop_recording_skill.tar \
-  --output images/stop_recording_skill/stop_recording_skill.bundle.tar
-```
-
----
-
-## 📥 Installing stop_recording_skill to Flowstate
-
-After building, upload and install the skill into your solution context.
-
----
-
-```bash
-
-# 1. Export path to side-loaded skill bundle
-export SKILL_BUNDLE=~/ws_aic_phase1/images/stop_recording_skill/stop_recording_skill.bundle.tar
 
 # 2. Add Organization
 export INTRINSIC_ORGANIZATION="<ORG_NAME>"
