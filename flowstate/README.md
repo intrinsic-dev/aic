@@ -47,6 +47,9 @@ pixi run --manifest-path src/aic/pixi.toml bash src/aic/flowstate/scripts/build_
 
 # 4. Build and bundle the AIC adapter service
 pixi run --manifest-path src/aic/pixi.toml bash src/aic/flowstate/scripts/build_aic_adapter.sh
+
+# 5. Build and bundle the AIC logger service
+pixi run --manifest-path src/aic/pixi.toml bash src/aic/flowstate/scripts/build_aic_logger.sh
 ```
 
 ---
