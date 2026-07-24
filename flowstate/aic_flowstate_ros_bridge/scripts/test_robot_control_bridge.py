@@ -35,7 +35,15 @@ from aic_control_interfaces.msg import (
 from aic_control_interfaces.srv import (
     ChangeTargetMode,
 )
-from geometry_msgs.msg import Pose, Point, Quaternion, Wrench, Vector3, Twist, WrenchStamped
+from geometry_msgs.msg import (
+    Pose,
+    Point,
+    Quaternion,
+    Wrench,
+    Vector3,
+    Twist,
+    WrenchStamped,
+)
 from trajectory_msgs.msg import JointTrajectoryPoint
 from sensor_msgs.msg import JointState
 
@@ -58,22 +66,16 @@ class TestRobotControlBridgeNode(Node):
             "test_joint_targets", "[]"
         ).value
 
-        self.test_mode = self.declare_parameter(
-            "test_mode", "pose"
-        ).value
+        self.test_mode = self.declare_parameter("test_mode", "pose").value
 
-        self.log_filepath = self.declare_parameter(
-            "log_filepath", ""
-        ).value
+        self.log_filepath = self.declare_parameter("log_filepath", "").value
 
         stiffness_param = self.declare_parameter(
             "target_pose_stiffness", [10.0, 10.0]
         ).value
         self.target_pose_stiffness = [stiffness_param[0]] * 3 + [stiffness_param[1]] * 3
 
-        damping_param = self.declare_parameter(
-            "target_pose_damping", [5.0, 5.0]
-        ).value
+        damping_param = self.declare_parameter("target_pose_damping", [5.0, 5.0]).value
         self.target_pose_damping = [damping_param[0]] * 3 + [damping_param[1]] * 3
 
         self.target_joint_stiffness = self.declare_parameter(
@@ -84,20 +86,15 @@ class TestRobotControlBridgeNode(Node):
             "target_joint_damping", [25.0, 25.0, 25.0, 5.0, 5.0, 5.0]
         ).value
 
-        self.publish_duration = self.declare_parameter(
-            "publish_duration", 5.0
-        ).value
+        self.publish_duration = self.declare_parameter("publish_duration", 5.0).value
 
-        self.stop_duration = self.declare_parameter(
-            "stop_duration", 5.0
-        ).value
+        self.stop_duration = self.declare_parameter("stop_duration", 5.0).value
 
         parsed_targets = json.loads(self.test_pose_targets_str)
         if parsed_targets and not isinstance(parsed_targets[0], list):
             # Reshape 1D array into 2D array of poses (7 elements each)
             self.test_pose_targets = [
-                parsed_targets[i : i + 7]
-                for i in range(0, len(parsed_targets), 7)
+                parsed_targets[i : i + 7] for i in range(0, len(parsed_targets), 7)
             ]
         else:
             self.test_pose_targets = parsed_targets
@@ -119,10 +116,7 @@ class TestRobotControlBridgeNode(Node):
         self.joint_error = None
 
         self.wrench_subscriber = self.create_subscription(
-            WrenchStamped,
-            "/fts_broadcaster/wrench",
-            self.wrench_callback,
-            10
+            WrenchStamped, "/fts_broadcaster/wrench", self.wrench_callback, 10
         )
 
         self.motion_update_publisher = self.create_publisher(
@@ -150,14 +144,11 @@ class TestRobotControlBridgeNode(Node):
             ControllerState,
             f"/{self.controller_namespace}/controller_state",
             self.state_callback,
-            10
+            10,
         )
 
         self.joint_state_subscriber = self.create_subscription(
-            JointState,
-            "/joint_states",
-            self.joint_state_callback,
-            10
+            JointState, "/joint_states", self.joint_state_callback, 10
         )
 
         self.client = self.create_client(
@@ -173,14 +164,27 @@ class TestRobotControlBridgeNode(Node):
 
     def joint_state_callback(self, msg: JointState):
         self.current_joint_state = msg.position
-        if self.reference_joint_state is not None and len(self.reference_joint_state) > 0:
-            self.joint_error = [abs(c - r) for c, r in zip(self.current_joint_state, self.reference_joint_state)]
+        if (
+            self.reference_joint_state is not None
+            and len(self.reference_joint_state) > 0
+        ):
+            self.joint_error = [
+                abs(c - r)
+                for c, r in zip(self.current_joint_state, self.reference_joint_state)
+            ]
 
     def state_callback(self, msg: ControllerState):
         self.tcp_error = list(msg.tcp_error)
         self.reference_joint_state = msg.reference_joint_state.positions
-        if self.current_joint_state is not None and self.reference_joint_state is not None and len(self.reference_joint_state) > 0:
-            self.joint_error = [abs(c - r) for c, r in zip(self.current_joint_state, self.reference_joint_state)]
+        if (
+            self.current_joint_state is not None
+            and self.reference_joint_state is not None
+            and len(self.reference_joint_state) > 0
+        ):
+            self.joint_error = [
+                abs(c - r)
+                for c, r in zip(self.current_joint_state, self.reference_joint_state)
+            ]
 
     def wrench_callback(self, msg: WrenchStamped):
         self.latest_wrench = [
@@ -292,7 +296,7 @@ def main(args=None):
             "target_pose_damping": node.target_pose_damping,
             "target_joint_stiffness": node.target_joint_stiffness,
             "target_joint_damping": node.target_joint_damping,
-            "results": {}
+            "results": {},
         }
 
         if node.test_mode == "pose" and node.test_pose_targets:
@@ -306,13 +310,17 @@ def main(args=None):
 
                 node.get_logger().info(f"Testing pose target: {pose}")
 
-                node.get_logger().info(f"Publishing motion update for {node.publish_duration} seconds.")
+                node.get_logger().info(
+                    f"Publishing motion update for {node.publish_duration} seconds."
+                )
                 start_time = time.time()
                 while time.time() - start_time < node.publish_duration and rclpy.ok():
                     node.send_cartesian_pose_target(pos, quat, "base_link")
-                    rclpy.spin_once(node, timeout_sec=0.04) # 25 Hz
+                    rclpy.spin_once(node, timeout_sec=0.04)  # 25 Hz
 
-                node.get_logger().info(f"Stopping motion updates for {node.stop_duration} seconds.")
+                node.get_logger().info(
+                    f"Stopping motion updates for {node.stop_duration} seconds."
+                )
                 start_time = time.time()
                 while time.time() - start_time < node.stop_duration and rclpy.ok():
                     rclpy.spin_once(node, timeout_sec=0.1)
@@ -321,7 +329,9 @@ def main(args=None):
                     node.get_logger().info(f"Recording tcp_error: {node.tcp_error}")
                     recorded_data = {"tcp_error": node.tcp_error}
                     if node.latest_wrench is not None:
-                        node.get_logger().info(f"Recording wrench: {node.latest_wrench}")
+                        node.get_logger().info(
+                            f"Recording wrench: {node.latest_wrench}"
+                        )
                         recorded_data["wrench"] = node.latest_wrench
                     output_log["results"][str(pose)] = recorded_data
 
@@ -332,13 +342,17 @@ def main(args=None):
             for joint_target in node.test_joint_targets:
                 node.get_logger().info(f"Testing joint target: {joint_target}")
 
-                node.get_logger().info(f"Publishing joint motion update for {node.publish_duration} seconds.")
+                node.get_logger().info(
+                    f"Publishing joint motion update for {node.publish_duration} seconds."
+                )
                 start_time = time.time()
                 while time.time() - start_time < node.publish_duration and rclpy.ok():
                     node.send_joint_target(joint_target)
-                    rclpy.spin_once(node, timeout_sec=0.04) # 25 Hz
+                    rclpy.spin_once(node, timeout_sec=0.04)  # 25 Hz
 
-                node.get_logger().info(f"Stopping joint motion updates for {node.stop_duration} seconds.")
+                node.get_logger().info(
+                    f"Stopping joint motion updates for {node.stop_duration} seconds."
+                )
                 start_time = time.time()
                 while time.time() - start_time < node.stop_duration and rclpy.ok():
                     rclpy.spin_once(node, timeout_sec=0.1)
@@ -347,7 +361,9 @@ def main(args=None):
                     node.get_logger().info(f"Recording joint_error: {node.joint_error}")
                     recorded_data = {"joint_error": node.joint_error}
                     if node.latest_wrench is not None:
-                        node.get_logger().info(f"Recording wrench: {node.latest_wrench}")
+                        node.get_logger().info(
+                            f"Recording wrench: {node.latest_wrench}"
+                        )
                         recorded_data["wrench"] = node.latest_wrench
                     output_log["results"][str(joint_target)] = recorded_data
 
