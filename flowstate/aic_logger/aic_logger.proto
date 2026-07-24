@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package intrinsic;
+
+// Configuration for aic_logger flowstate service
+message AicLoggerConfig {
+  string workcell_id = 1;
+  string flowstate_zenoh_router_address = 2;
+  optional string external_zenoh_router_address = 3;
+
+  repeated string topics = 4;
+  repeated string services = 5;
+  repeated string actions = 6;
+
+  bool record_all_topics = 7;
+  bool record_all_services = 8;
+  bool record_all_actions = 9;
+
+  string output_directory = 10;
+  string storage_id = 11;
+}

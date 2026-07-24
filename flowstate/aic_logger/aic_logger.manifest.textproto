@@ -1,0 +1,30 @@
+metadata {
+  id {
+    package: "ai.intrinsic"
+    name: "aic_logger"
+  }
+  vendor {
+    display_name: "Intrinsic"
+  }
+  documentation {
+    description: "Flowstate ROS 2 data recording service using rosbag2."
+  }
+  display_name: "AIC Logger Service"
+}
+service_def {
+  real_spec {
+    image {
+      archive_filename: "aic_logger.tar"
+    }
+  }
+  sim_spec {
+    image {
+      archive_filename: "aic_logger.tar"
+    }
+  }
+}
+assets {
+  default_configuration_filename: "default_config.binarypb",
+  parameter_descriptor_filename: "parameter-descriptor-set.proto.bin",
+  image_filenames: ["aic_logger.tar"]
+}

@@ -1,0 +1,12 @@
+# proto-file: aic_logger.proto
+# proto-message: AicLoggerConfig
+[type.googleapis.com/intrinsic.AicLoggerConfig] {
+  workcell_id: ""
+  flowstate_zenoh_router_address: "tcp/zenoh-router.app-intrinsic-base.svc.cluster.local:7447"
+  external_zenoh_router_address: "tcp/zenoh-router.app-intrinsic-base.svc.cluster.local:7447"
+  record_all_topics: true
+  record_all_services: false
+  record_all_actions: false
+  output_directory: "/tmp"
+  storage_id: "mcap"
+}
