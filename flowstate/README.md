@@ -37,16 +37,16 @@ You can build and bundle both the services and skills automatically inside the P
 
 ```bash
 # 1. Use the help to get the list of all available skills
-pixi run --manifest-path src/aic/pixi.toml bash src/aic/flowstate/scripts/build_aic_flowstate_skills.sh --help
+pixi run --frozen --manifest-path src/aic/pixi.toml bash src/aic/flowstate/scripts/build_aic_flowstate_skills.sh --help
 
 # 2. Build and bundle skills in aic_flowstate_skills (builds all by default, or specify a single skill via --skill_name)
-pixi run --manifest-path src/aic/pixi.toml bash src/aic/flowstate/scripts/build_aic_flowstate_skills.sh [--skill_name <insert_cable_skill|tare_force_torque_sensor_skill|switch_to_aic_controller_skill>]
+pixi run --frozen --manifest-path src/aic/pixi.toml bash src/aic/flowstate/scripts/build_aic_flowstate_skills.sh [--skill_name <insert_cable_skill|tare_force_torque_sensor_skill|switch_to_aic_controller_skill>]
 
 # 3. Build and bundle the flowstate ROS bridge service
-pixi run --manifest-path src/aic/pixi.toml bash src/aic/flowstate/scripts/build_flowstate_ros_bridge.sh
+pixi run --frozen --manifest-path src/aic/pixi.toml bash src/aic/flowstate/scripts/build_flowstate_ros_bridge.sh
 
 # 4. Build and bundle the AIC adapter service
-pixi run --manifest-path src/aic/pixi.toml bash src/aic/flowstate/scripts/build_aic_adapter.sh
+pixi run --frozen --manifest-path src/aic/pixi.toml bash src/aic/flowstate/scripts/build_aic_adapter.sh
 ```
 
 ---
