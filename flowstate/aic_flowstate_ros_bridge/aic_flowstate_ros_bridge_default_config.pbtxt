@@ -36,6 +36,14 @@
       "wrist_2_joint",
       "wrist_3_joint"
     ]
+    force_torque_tool_transform: {
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      roll: 0.0
+      pitch: 0.0
+      yaw: 0.0
+    }
   },
   robot_control_bridge_config: {
     server_address: "istio-ingressgateway.app-ingress.svc.cluster.local:80"
