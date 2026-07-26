@@ -35,6 +35,11 @@ vcs import . < aic/flowstate/flowstate.repos
 
 You can build and bundle both the services and skills automatically inside the Pixi environment. Run these commands from the **workspace root** (e.g. `~/ws_aic_phase1`):
 
+> [!IMPORTANT]
+> **Dependency Management Note**
+> The build commands below use the `--frozen` flag to ensure strict reproducibility. If you add or modify dependencies in `pixi.toml`, you **must** run `pixi update` first to regenerate the lockfile, otherwise your changes will be silently ignored during the build.
+
+
 ```bash
 # 1. Use the help to get the list of all available skills
 pixi run --frozen --manifest-path src/aic/pixi.toml bash src/aic/flowstate/scripts/build_aic_flowstate_skills.sh --help

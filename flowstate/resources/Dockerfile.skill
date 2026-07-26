@@ -79,6 +79,7 @@ WORKDIR /workspace
 
 # Copy Pixi environment and built artifacts
 COPY --from=build /workspace/.pixi/envs/skill-runtime /workspace/.pixi/envs/skill-runtime
+# Symlink skill-build to skill-runtime to fix hardcoded paths generated in the colcon install space
 RUN ln -s /workspace/.pixi/envs/skill-runtime /workspace/.pixi/envs/skill-build
 COPY --from=build /workspace/install ./install
 COPY --from=build /pixi_hook.sh /pixi_hook.sh
