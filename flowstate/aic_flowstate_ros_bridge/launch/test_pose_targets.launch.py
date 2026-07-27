@@ -87,15 +87,6 @@ def generate_launch_description():
                         # 'target_pose_damping': [200.0, 54.7723], # Crtically damped
                         # 'target_pose_damping': [1800.0, 1265.787853], # Overdamped
                         "target_pose_damping": [600.0, 150.0],  # Slightly Overdamped
-                        "target_joint_stiffness": [
-                            100.0,
-                            100.0,
-                            100.0,
-                            100.0,
-                            100.0,
-                            100.0,
-                        ],
-                        "target_joint_damping": [10.0, 10.0, 10.0, 10.0, 10.0, 10.0],
                         "publish_duration": 5.0,
                         "stop_duration": 2.0,
                     }
