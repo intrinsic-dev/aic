@@ -141,9 +141,10 @@ int main(int argc, char* argv[]) {
                       robot_control_bridge_config.time_to_target_seconds());
   params.emplace_back("control_mode",
                       robot_control_bridge_config.control_mode());
-  
+
   const auto& critical_mass_proto = robot_control_bridge_config.critical_mass();
-  std::vector<double> critical_mass(critical_mass_proto.begin(), critical_mass_proto.end());
+  std::vector<double> critical_mass(critical_mass_proto.begin(),
+                                    critical_mass_proto.end());
   params.emplace_back("critical_mass", critical_mass);
   const auto& override_joint_names_proto = s.override_joint_names();
   std::vector<std::string> override_joint_names(
