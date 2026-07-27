@@ -1,32 +1,32 @@
 # 📦 AIC Logging (`aic_logging`)
 
-This package provides a **decoupled, external recording workflow** for logging ROS 2 topics, services, and actions from the AIC solution context to MCAP bag files over a 1GbE network connection.
+This package provides a **decoupled, external recording workflow** for logging ROS 2 topics, services, and actions from the AIC solution context to MCAP bag files over a 10GbE network connection.
 
 ---
 
-## 🏗️ Architecture & 1GbE Network Bandwidth Math
+## 🏗️ Architecture & 10GbE Network Bandwidth Math
 
-Rather than recording bag files directly inside Kubernetes pod services (which introduces storage I/O bottlenecks and pod lifecycle constraints), recording is offloaded to a **dedicated external recording machine** connected to the Industrial PC (IPC) network over a 1GbE link.
+Rather than recording bag files directly inside Kubernetes pod services (which introduces storage I/O bottlenecks and pod lifecycle constraints), recording is offloaded to a **dedicated external recording machine** connected to the Industrial PC (IPC) network over a high-speed **10GbE link**.
 
 ### Bandwidth Calculation for 3x 5MP Cameras:
 - **Single 5MP Uncompressed RGB8 Frame**: ~2448 × 2048 × 3 bytes = **~15 MB per frame** (120 Megabits).
 - **3 Cameras** (`wrist_camera_1`, `wrist_camera_2`, `workcell_camera_1`): **45 MB per synchronized frame set**.
-- **1GbE Real-world Network Limit**: ~85–90 MB/s (~700–720 Mbps) safe operational ceiling.
+- **10GbE Real-world Network Limit**: ~950–1,000 MB/s (~7.6–8.0 Gbps) safe operational ceiling.
 
-| Frequency / Camera | Total Image Data Rate | 1GbE Network Status |
+| Frequency / Camera | Total Image Data Rate | 10GbE Network Status |
 | :--- | :--- | :--- |
-| **5.0 Hz** | $3 \times 15\text{ MB} \times 5 = \mathbf{225\text{ MB/s}}\ (1.8\text{ Gbps})$ | ❌ **Saturates 1GbE link** (Drops frames) |
-| **2.0 Hz** | $3 \times 15\text{ MB} \times 2 = \mathbf{90\text{ MB/s}}\ (720\text{ Mbps})$ | ✅ **Selected Operational Cap** (~720 Mbps) |
-| **1.5 Hz** | $3 \times 15\text{ MB} \times 1.5 = \mathbf{67.5\text{ MB/s}}\ (540\text{ Mbps})$ | ✅ **Conservative Safe Rate** |
+| **30.0 Hz** | $3 \times 15\text{ MB} \times 30 = \mathbf{1,350\text{ MB/s}}\ (10.8\text{ Gbps})$ | ❌ **Exceeds 10GbE link** (Drops frames) |
+| **20.0 Hz** | $3 \times 15\text{ MB} \times 20 = \mathbf{900\text{ MB/s}}\ (7.2\text{ Gbps})$ | ✅ **Selected Operational Rate** (~72% of 10GbE) |
+| **15.0 Hz** | $3 \times 15\text{ MB} \times 15 = \mathbf{675\text{ MB/s}}\ (5.4\text{ Gbps})$ | ✅ **Conservative Safe Rate** |
 
-To guarantee no network dropouts over raw 1GbE, the Zenoh router configuration downsamples the 3x 5MP uncompressed image topics to **2.0 Hz**.
+Over a 10GbE link, streaming 3x 5MP uncompressed cameras at **20.0 Hz** consumes **900 MB/s (7.2 Gbps)**, comfortably operating within the 10GbE network bandwidth budget.
 
 ---
 
 ## ⚙️ Configuration Files
 
 ### 1. Zenoh Router Configuration (`zenoh_router_config.json5`)
-Configures 2.0 Hz downsampling rules for wrist and workcell camera RGB streams and camera info topics:
+Configures 20.0 Hz rate limiting rules for wrist and workcell camera RGB streams and camera info topics:
 
 ```json5
 {
@@ -42,12 +42,12 @@ Configures 2.0 Hz downsampling rules for wrist and workcell camera RGB streams a
     ]
   },
   downsampling: [
-    { key_expr: "**/wrist_camera_1/rgb/**", freq: 2.0 },
-    { key_expr: "**/wrist_camera_1/camera_info/**", freq: 2.0 },
-    { key_expr: "**/wrist_camera_2/rgb/**", freq: 2.0 },
-    { key_expr: "**/wrist_camera_2/camera_info/**", freq: 2.0 },
-    { key_expr: "**/workcell_camera_1/rgb/**", freq: 2.0 },
-    { key_expr: "**/workcell_camera_1/camera_info/**", freq: 2.0 }
+    { key_expr: "**/wrist_camera_1/rgb/**", freq: 20.0 },
+    { key_expr: "**/wrist_camera_1/camera_info/**", freq: 20.0 },
+    { key_expr: "**/wrist_camera_2/rgb/**", freq: 20.0 },
+    { key_expr: "**/wrist_camera_2/camera_info/**", freq: 20.0 },
+    { key_expr: "**/workcell_camera_1/rgb/**", freq: 20.0 },
+    { key_expr: "**/workcell_camera_1/camera_info/**", freq: 20.0 }
   ]
 }
 ```
@@ -111,7 +111,7 @@ cd src/aic
 pixi install
 ```
 
-### 2. Start the Local Zenoh Router (2.0 Hz Rate Limit)
+### 2. Start the Local Zenoh Router (20.0 Hz Rate Limit)
 ```bash
 pixi run ros2 run rmw_zenoh_cpp rmw_zenohd --config aic_logging/zenoh_router_config.json5
 ```

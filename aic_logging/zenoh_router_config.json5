@@ -1,7 +1,7 @@
 {
   // Zenoh Router Configuration for AIC External Recording Machine
   // Bridges local ROS 2 network traffic to the Industrial PC (IPC) Kubernetes cluster router
-  // and enforces topic rate limiting / downsampling over the 1GbE network link.
+  // over a 10GbE network link.
 
   mode: "router",
 
@@ -20,37 +20,37 @@
   },
 
   // Traffic control & Downsampling rules
-  // Capping 3x 5MP cameras at 2.0 Hz = 3 * 15 MB * 2 Hz = 90.0 MB/s (~720 Mbps), staying within 1GbE
+  // 3x 5MP uncompressed cameras @ 20 Hz = 3 * 15 MB * 20 Hz = 900 MB/s (~7.2 Gbps), safely within 10GbE link
   downsampling: [
     {
-      // Wrist Camera 1 RGB stream (5MP uncompressed @ 2.0 Hz)
+      // Wrist Camera 1 RGB stream (5MP uncompressed @ 20.0 Hz)
       key_expr: "**/wrist_camera_1/rgb/**",
-      freq: 2.0
+      freq: 20.0
     },
     {
       // Wrist Camera 1 Camera Info
       key_expr: "**/wrist_camera_1/camera_info/**",
-      freq: 2.0
+      freq: 20.0
     },
     {
-      // Wrist Camera 2 RGB stream (5MP uncompressed @ 2.0 Hz)
+      // Wrist Camera 2 RGB stream (5MP uncompressed @ 20.0 Hz)
       key_expr: "**/wrist_camera_2/rgb/**",
-      freq: 2.0
+      freq: 20.0
     },
     {
       // Wrist Camera 2 Camera Info
       key_expr: "**/wrist_camera_2/camera_info/**",
-      freq: 2.0
+      freq: 20.0
     },
     {
-      // Workcell Camera 1 RGB stream (5MP uncompressed @ 2.0 Hz)
+      // Workcell Camera 1 RGB stream (5MP uncompressed @ 20.0 Hz)
       key_expr: "**/workcell_camera_1/rgb/**",
-      freq: 2.0
+      freq: 20.0
     },
     {
       // Workcell Camera 1 Camera Info
       key_expr: "**/workcell_camera_1/camera_info/**",
-      freq: 2.0
+      freq: 20.0
     }
   ]
 }
