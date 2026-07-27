@@ -58,8 +58,7 @@ constexpr const char* kFlowstateZenohRouterParamName =
     "flowstate_zenoh_router_address";
 constexpr const char* kRestartConnectionRetriesParamName =
     "restart_connection_retries";
-constexpr const char* kTimeToTargetSecondsParamName =
-    "time_to_target_seconds";
+constexpr const char* kTimeToTargetSecondsParamName = "time_to_target_seconds";
 constexpr const char* kControlModeParamName = "control_mode";
 constexpr const char* kCriticalMassParamName = "critical_mass";
 
@@ -88,9 +87,9 @@ void RobotControlBridge::declare_ros_parameters(
                                      rclcpp::ParameterValue{0.1});
   param_interface->declare_parameter(kControlModeParamName,
                                      rclcpp::ParameterValue{"admittance"});
-  param_interface->declare_parameter(
-      kCriticalMassParamName,
-      rclcpp::ParameterValue{std::vector<double>{5.0, 5.0, 5.0, 5.0, 5.0, 5.0}});
+  param_interface->declare_parameter(kCriticalMassParamName,
+                                     rclcpp::ParameterValue{std::vector<double>{
+                                         5.0, 5.0, 5.0, 5.0, 5.0, 5.0}});
 }
 
 ///=============================================================================
@@ -127,9 +126,8 @@ bool RobotControlBridge::initialize(
   data_->time_to_target_seconds_ =
       param_interface->get_parameter(kTimeToTargetSecondsParamName)
           .get_value<double>();
-  data_->critical_mass_ =
-      param_interface->get_parameter(kCriticalMassParamName)
-          .get_value<std::vector<double>>();
+  data_->critical_mass_ = param_interface->get_parameter(kCriticalMassParamName)
+                              .get_value<std::vector<double>>();
   std::string control_mode_str =
       param_interface->get_parameter(kControlModeParamName)
           .get_value<std::string>();
@@ -716,29 +714,34 @@ bool RobotControlBridge::startControllerAction() {
   ActionDescriptor agent_bridge_descriptor =
       data_->ft_sensor_part_name_.has_value()
           ? ActionDescriptor(
-                intrinsic::icon::AgentBridgeInfo::kActionTypeName, kAgentBridgeId,
-                {{intrinsic::icon::AgentBridgeInfo::kSlotName, data_->part_name_},
+                intrinsic::icon::AgentBridgeInfo::kActionTypeName,
+                kAgentBridgeId,
+                {{intrinsic::icon::AgentBridgeInfo::kSlotName,
+                  data_->part_name_},
                  {intrinsic::icon::AgentBridgeInfo::kForceTorqueSlotName,
                   data_->ft_sensor_part_name_.value()}})
                 .WithFixedParams(data_->agent_bridge_fixed_params_)
-          : ActionDescriptor(
-                intrinsic::icon::AgentBridgeInfo::kActionTypeName, kAgentBridgeId,
-                {{intrinsic::icon::AgentBridgeInfo::kSlotName, data_->part_name_}})
+          : ActionDescriptor(intrinsic::icon::AgentBridgeInfo::kActionTypeName,
+                             kAgentBridgeId,
+                             {{intrinsic::icon::AgentBridgeInfo::kSlotName,
+                               data_->part_name_}})
                 .WithFixedParams(data_->agent_bridge_fixed_params_);
 
   ActionDescriptor agent_bridge_joint_descriptor =
       data_->ft_sensor_part_name_.has_value()
-          ? ActionDescriptor(intrinsic::icon::AgentBridgeJointInfo::kActionTypeName,
-                             kAgentBridgeJointId,
-                             {{intrinsic::icon::AgentBridgeJointInfo::kSlotName,
-                               data_->part_name_},
-                              {intrinsic::icon::AgentBridgeJointInfo::kForceTorqueSlotName,
-                               data_->ft_sensor_part_name_.value()}})
+          ? ActionDescriptor(
+                intrinsic::icon::AgentBridgeJointInfo::kActionTypeName,
+                kAgentBridgeJointId,
+                {{intrinsic::icon::AgentBridgeJointInfo::kSlotName,
+                  data_->part_name_},
+                 {intrinsic::icon::AgentBridgeJointInfo::kForceTorqueSlotName,
+                  data_->ft_sensor_part_name_.value()}})
                 .WithFixedParams(data_->agent_bridge_joint_fixed_params_)
-          : ActionDescriptor(intrinsic::icon::AgentBridgeJointInfo::kActionTypeName,
-                             kAgentBridgeJointId,
-                             {{intrinsic::icon::AgentBridgeJointInfo::kSlotName,
-                               data_->part_name_}})
+          : ActionDescriptor(
+                intrinsic::icon::AgentBridgeJointInfo::kActionTypeName,
+                kAgentBridgeJointId,
+                {{intrinsic::icon::AgentBridgeJointInfo::kSlotName,
+                  data_->part_name_}})
                 .WithFixedParams(data_->agent_bridge_joint_fixed_params_);
 
   // Add the AgentBridge and AgentBridgeJoint actions to the session, then
@@ -953,7 +956,8 @@ bool RobotControlBridge::resetMotionUpdate() {
         return false;
       }
     } else {
-      LOG(ERROR) << "Task settings missing max_stiffness or max_damping parameters.";
+      LOG(ERROR)
+          << "Task settings missing max_stiffness or max_damping parameters.";
       return false;
     }
 

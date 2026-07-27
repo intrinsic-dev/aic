@@ -24,13 +24,19 @@ def generate_launch_description():
                         ##########################
                         # Test 1:
                         ##########################
-                        'test_joint_targets': '['
-                        '-1.27, -1.8, -1.47, -1.57, 1.57, -1.57,'
+                        "test_joint_targets": "["
+                        "-1.27, -1.8, -1.47, -1.57, 1.57, -1.57,"
                         # Home
-                        '-1.57, -1.57, -1.57, -1.57, 1.57, -1.57'
-                        ']',
+                        "-1.57, -1.57, -1.57, -1.57, 1.57, -1.57" "]",
                         "log_filepath": "",  # Empty string defaults to tcp_accuracy_<DATETIME>.json
-                        "target_joint_stiffness": [100.0, 100.0, 100.0, 25.0, 25.0, 25.0],
+                        "target_joint_stiffness": [
+                            100.0,
+                            100.0,
+                            100.0,
+                            25.0,
+                            25.0,
+                            25.0,
+                        ],
                         "target_joint_damping": [10.0, 10.0, 10.0, 5.0, 5.0, 5.0],
                         "publish_duration": 3.0,
                         "stop_duration": 2.0,
