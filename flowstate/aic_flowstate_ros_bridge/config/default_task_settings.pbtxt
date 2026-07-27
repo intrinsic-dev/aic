@@ -75,7 +75,8 @@ nullspace_target_configuration { joints: [0.0, 0.0, 0.0, 0.0, 1.57, 0.0] }
 
 activation_percentage: -1
 
-interpolation_mode: LINEAR_INTERPOLATION
+# Using reflexxes interpolation constraints commands to specified kinematic limits
+interpolation_mode: REFLEXXES
 
 # Parameters for limiting the distance between reference pose and sensed pose.
 #
