@@ -1,47 +1,32 @@
+import os
 import launch
+from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
+from launch.actions import DeclareLaunchArgument
+from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
 
 def generate_launch_description():
+    config_file_arg = DeclareLaunchArgument(
+        'config_file',
+        default_value=os.path.join(
+            get_package_share_directory('aic_flowstate_ros_bridge'),
+            'config',
+            'test_joint_targets.yaml'
+        ),
+        description='Path to the YAML configuration file for the test_robot_control_bridge_node'
+    )
+
     return LaunchDescription(
         [
+            config_file_arg,
             Node(
                 package="aic_flowstate_ros_bridge",
                 executable="test_robot_control_bridge.py",
                 name="test_robot_control_bridge_node",
                 output="screen",
-                parameters=[
-                    {
-                        "controller_namespace": "aic_controller",
-                        "test_mode": "joint",
-                        ##########################
-                        # Home position:
-                        ##########################
-                        # "test_joint_targets": "["
-                        # "-1.57, -1.57, -1.57, -1.57, 1.57, -1.57"
-                        # "]",
-                        ##########################
-                        # Test 1:
-                        ##########################
-                        "test_joint_targets": "["
-                        "-1.27, -1.8, -1.47, -1.57, 1.57, -1.57,"
-                        # Home
-                        "-1.57, -1.57, -1.57, -1.57, 1.57, -1.57" "]",
-                        "log_filepath": "",  # Empty string defaults to tcp_accuracy_<DATETIME>.json
-                        "target_joint_stiffness": [
-                            100.0,
-                            100.0,
-                            100.0,
-                            25.0,
-                            25.0,
-                            25.0,
-                        ],
-                        "target_joint_damping": [10.0, 10.0, 10.0, 5.0, 5.0, 5.0],
-                        "publish_duration": 3.0,
-                        "stop_duration": 2.0,
-                    }
-                ],
+                parameters=[LaunchConfiguration('config_file')],
             )
         ]
     )
