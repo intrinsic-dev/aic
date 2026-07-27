@@ -151,7 +151,7 @@ def generate_launch_description():
             "cable_type",
             default_value="sfp_sc_cable",
             description="Type of cable model to spawn. Available options: 'sfp_sc_cable', 'sfp_sc_cable_reversed', and 'sfp_sc_cable_phase_1'",
-            choices=["sfp_sc_cable", "sfp_sc_cable_reversed", "sfp_sc_cable_phase_1"],
+            choices=["sfp_sc_cable", "sfp_sc_cable_reversed", "sfp_sc_cable_phase_1", "sfp_sc_cable_phase_2"],
         )
     )
     declared_arguments.append(
