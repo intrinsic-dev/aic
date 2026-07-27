@@ -113,16 +113,16 @@ pixi install
 
 ### 2. Start the Local Zenoh Router (2.0 Hz Rate Limit)
 ```bash
-pixi run ros2 run rmw_zenoh_cpp zenohd --config src/aic/aic_logging/zenoh_router_config.json5
+pixi run ros2 run rmw_zenoh_cpp rmw_zenohd --config aic_logging/zenoh_router_config.json5
 ```
 
 ### 3. Start Recording Session
 ```bash
 # Preview the ros2 bag record command
-pixi run python3 src/aic/aic_logging/record.py --dry-run
+pixi run python3 aic_logging/record.py --dry-run
 
 # Start recording
-pixi run python3 src/aic/aic_logging/record.py --config src/aic/aic_logging/recording_config.yaml --name "cable_insertion_run"
+pixi run python3 aic_logging/record.py --config aic_logging/recording_config.yaml --name "cable_insertion_run"
 ```
 
 ---
