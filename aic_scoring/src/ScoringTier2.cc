@@ -526,7 +526,7 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryEfficiencyScore() const {
     if (this->task_start_time.has_value()) {
       const auto initDist = this->GetStartPlugPortDistance(index);
       if (initDist.has_value()) {
-        minPathLength += initDist.value();
+        minPathLength += 2.0 * initDist.value();
       } else {
         RCLCPP_WARN(this->node->get_logger(),
                     "Failed to get initial plug port distance");
@@ -547,7 +547,7 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryEfficiencyScore() const {
   // Score range and path length bounds (meters).
   const double kMaxEfficiencyScore = 6.0;             // Shortest path
   const double kMinEfficiencyScore = 0.0;             // Longest path
-  const double kMaxPathLength = 2.0 + minPathLength;  // Path for min score
+  const double kMaxPathLength = minPathLength * 10.0;  // Path for min score
 
   std::stringstream ss;
   ss << std::fixed << std::setprecision(2);
@@ -812,7 +812,8 @@ Tier2Score::CategoryScore ScoringTier2::GetInsertionForceScore() const {
   const double kDurationThreshold = 1.0;
   const double kPenalty = -12.0;
 
-  double max_force = 0.0;
+  std::size_t samples = 0;
+  double average_force = 0.0;
   double time_above_threshold = 0.0;
   // Start from 1 for easier dt calculation
   for (std::size_t i = 1; i < this->wrenches.size(); ++i) {
@@ -821,8 +822,18 @@ Tier2Score::CategoryScore ScoringTier2::GetInsertionForceScore() const {
     if (force_mag > kForceThreshold) {
       time_above_threshold +=
           this->wrenches[i].first - this->wrenches[i - 1].first;
+      average_force += force_mag;
+      ++samples;
+    } else {
+      // The penalty was applied and we are below threshold, break and report
+      if (time_above_threshold > kDurationThreshold) {
+        break;
+      }
+      // The penalty was not applied, and we are below threshold, reset count
+      time_above_threshold = 0.0;
+      average_force = 0.0;
+      samples = 0;
     }
-    if (force_mag > max_force) max_force = force_mag;
   }
 
   std::string msg;
@@ -830,13 +841,15 @@ Tier2Score::CategoryScore ScoringTier2::GetInsertionForceScore() const {
     return CategoryScore(0, "No excessive force detected");
   }
 
+  average_force /= samples;
+
   double score = 0.0;
   std::stringstream sstream;
   sstream.setf(std::ios::fixed);
   sstream.precision(2);
   sstream << "Insertion force above " << kForceThreshold
           << " N, detected for a time of " << time_above_threshold
-          << " seconds. Max detected force: " << max_force << "N.";
+          << " seconds. Average detected force: " << average_force << "N.";
 
   if (time_above_threshold > kDurationThreshold) {
     score = kPenalty;
