@@ -13,39 +13,39 @@
         <pose>0.0 -0.0 0.01031 0.0 -0.0 0.0</pose>
         <geometry>
           <box>
-            <size>0.030282 0.01775 0.008619</size>
+            <size>0.030302 0.01777 0.008639</size>
           </box>
         </geometry>
       </collision>
       <collision name="iso 4762 - m2 x 8072_collider_box.001">
-        <pose>-0.004364 -0.0 0.024914 0.0 -0.785398 0.0</pose>
+        <pose>-0.004422 -0.0 0.024972 0.0 -0.785398 0.0</pose>
         <geometry>
           <box>
-            <size>0.03387 0.01775 0.001728</size>
+            <size>0.03389 0.01777 0.001584</size>
           </box>
         </geometry>
       </collision>
       <collision name="iso 4762 - m2 x 8072_collider_box.002">
-        <pose>0.006197 -0.0 0.018745 0.0 -0.785398 0.0</pose>
+        <pose>0.006374 -0.0 0.018568 0.0 -0.785398 0.0</pose>
         <geometry>
           <box>
-            <size>0.027658 0.01775 0.003688</size>
+            <size>0.027678 0.01777 0.003208</size>
           </box>
         </geometry>
       </collision>
       <collision name="iso 4762 - m2 x 8072_collider_box.003">
-        <pose>-0.001197 0.007723 0.02004 0.0 -0.785398 0.0</pose>
+        <pose>-0.001197 0.008189 0.02004 0.0 -0.785398 0.0</pose>
         <geometry>
           <box>
-            <size>0.036285 0.002305 0.010956</size>
+            <size>0.036305 0.001392 0.010976</size>
           </box>
         </geometry>
       </collision>
       <collision name="iso 4762 - m2 x 8072_collider_box.004">
-        <pose>-0.001435 -0.007938 0.020278 0.0 -0.785398 0.0</pose>
+        <pose>-0.001435 -0.008188 0.020278 0.0 -0.785398 0.0</pose>
         <geometry>
           <box>
-            <size>0.036285 0.001875 0.01163</size>
+            <size>0.036305 0.001395 0.01165</size>
           </box>
         </geometry>
       </collision>
@@ -53,7 +53,7 @@
         <pose>-0.008179 -0.0 0.013534 0.0 -0.785398 0.0</pose>
         <geometry>
           <box>
-            <size>0.017238 0.01775 0.01163</size>
+            <size>0.017258 0.01777 0.01165</size>
           </box>
         </geometry>
       </collision>
@@ -61,7 +61,7 @@
         <pose>0.014053 -0.0 0.017771 0.0 -0.0 0.0</pose>
         <geometry>
           <box>
-            <size>0.004893 0.01775 0.016755</size>
+            <size>0.004913 0.01777 0.016775</size>
           </box>
         </geometry>
       </collision>
@@ -69,24 +69,24 @@
         <pose>-0.0 0.0 0.008 0.0 -0.0 0.0</pose>
         <geometry>
           <box>
-            <size>0.006 0.03108 0.006</size>
+            <size>0.00602 0.0311 0.00602</size>
           </box>
         </geometry>
       </collision>
       <collision name="plug fixture base mount_collider_box.001">
-        <pose>0.0 0.0 0.0025 0.0 -0.0 0.0</pose>
+        <pose>-0.0 0.0 0.0025 0.0 -0.0 0.0</pose>
         <geometry>
           <box>
-            <size>0.051 0.006 0.005</size>
+            <size>0.05102 0.00602 0.00502</size>
           </box>
         </geometry>
       </collision>
       <collision name="plug fixture base mount_collider_cylinder.001">
-        <pose>0.0 0.0 0.003 0.0 -0.0 0.0</pose>
+        <pose>0.0 -0.0 0.003 0.0 -0.0 0.0</pose>
         <geometry>
           <cylinder>
-            <radius>0.0152</radius>
-            <length>0.006</length>
+            <radius>0.01521</radius>
+            <length>0.006019</length>
           </cylinder>
         </geometry>
       </collision>

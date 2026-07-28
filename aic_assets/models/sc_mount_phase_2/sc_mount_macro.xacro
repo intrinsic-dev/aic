@@ -1,0 +1,88 @@
+<?xml version="1.0" ?>
+<robot xmlns:xacro="http://wiki.ros.org/xacro">
+
+  <xacro:macro name="sc_mount" params="prefix">
+    <link name="${prefix}link">
+      <inertial>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <mass value="0.1"/>
+        <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
+      </inertial>
+
+      <visual name="sc_mount_visual">
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://aic_assets/models/sc_mount_phase_2/sc_mount_visual.glb"/>
+        </geometry>
+      </visual>
+
+      <collision name="v1015079011_collider_box.001">
+        <origin xyz="6.8e-05 -0.00565 0.019451" rpy="0.0 0.785398 -0.0"/>
+        <geometry>
+          <box size="0.025823 0.002705 0.013809"/>
+        </geometry>
+      </collision>
+      <collision name="v1015079011_collider_box.002">
+        <origin xyz="6.8e-05 0.0061 0.019451" rpy="0.0 0.785398 -0.0"/>
+        <geometry>
+          <box size="0.025823 0.001803 0.013809"/>
+        </geometry>
+      </collision>
+      <collision name="v1015079011_collider_box003_collider_box">
+        <origin xyz="-0.008527 -0.0 0.028047" rpy="0.0 0.785398 -0.0"/>
+        <geometry>
+          <box size="0.001502 0.014087 0.013819"/>
+        </geometry>
+      </collision>
+      <collision name="v1015079011_collider_box003_collider_box.001">
+        <origin xyz="0.008741 -0.0 0.010779" rpy="0.0 0.785398 -0.0"/>
+        <geometry>
+          <box size="0.001343 0.014087 0.013819"/>
+        </geometry>
+      </collision>
+      <collision name="v1015079011_collider_box003_collider_box.003">
+        <origin xyz="-0.004726 -0.0 0.014656" rpy="0.0 0.785398 -0.0"/>
+        <geometry>
+          <box size="0.025832 0.014122 0.001241"/>
+        </geometry>
+      </collision>
+      <collision name="v1015079011_collider_box003_collider_box.004">
+        <origin xyz="0.012889 -0.0 0.010624" rpy="0.0 -0.0 -0.0"/>
+        <geometry>
+          <box size="0.002224 0.01402 0.009286"/>
+        </geometry>
+      </collision>
+      <collision name="v1015079011_collider_box003_collider_box004_collider_box">
+        <origin xyz="-0.012955 -0.0 0.014711" rpy="0.0 -0.0 -0.0"/>
+        <geometry>
+          <box size="0.002092 0.01402 0.017492"/>
+        </geometry>
+      </collision>
+      <collision name="fixture for sc plug_collider_box">
+        <origin xyz="0.0 -0.011259 0.0085" rpy="0.0 -0.0 0.0"/>
+        <geometry>
+          <box size="0.006004 0.008524 0.005004"/>
+        </geometry>
+      </collision>
+      <collision name="fixture for sc plug_collider_box.001">
+        <origin xyz="0.0 0.011259 0.0085" rpy="0.0 -0.0 0.0"/>
+        <geometry>
+          <box size="0.006004 0.008524 0.005004"/>
+        </geometry>
+      </collision>
+      <collision name="plug fixture base mount_collider_box.002">
+        <origin xyz="0.0 0.0 0.0025" rpy="0.0 -0.0 0.0"/>
+        <geometry>
+          <box size="0.05102 0.006004 0.005014"/>
+        </geometry>
+      </collision>
+      <collision name="plug fixture base mount_collider_cylinder.002">
+        <origin xyz="0.0 0.0 0.003" rpy="0.0 -0.0 0.0"/>
+        <geometry>
+          <cylinder radius="0.015206" length="0.006017"/>
+        </geometry>
+      </collision>
+    </link>
+  </xacro:macro>
+
+</robot>
