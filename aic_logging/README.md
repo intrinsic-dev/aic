@@ -113,8 +113,10 @@ pixi install
 
 ### 2. Start the Local Zenoh Router (20.0 Hz Rate Limit)
 ```bash
-pixi run ros2 run rmw_zenoh_cpp rmw_zenohd --config aic_logging/zenoh_router_config.json5
+ZENOH_ROUTER_CONFIG_URI=aic_logging/zenoh_router_config.json5 pixi run ros2 run rmw_zenoh_cpp rmw_zenohd
 ```
+
+This can be verified by downsampling further and checking that the rate reported by `ros2 topic hz` goes down.
 
 ### 3. Start Recording Session
 ```bash

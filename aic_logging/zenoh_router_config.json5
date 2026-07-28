@@ -23,34 +23,20 @@
   // 3x 5MP uncompressed cameras @ 20 Hz = 3 * 15 MB * 20 Hz = 900 MB/s (~7.2 Gbps), safely within 10GbE link
   downsampling: [
     {
-      // Wrist Camera 1 RGB stream (5MP uncompressed @ 20.0 Hz)
-      key_expr: "**/wrist_camera_1/rgb/**",
-      freq: 20.0
-    },
-    {
-      // Wrist Camera 1 Camera Info
-      key_expr: "**/wrist_camera_1/camera_info/**",
-      freq: 20.0
-    },
-    {
-      // Wrist Camera 2 RGB stream (5MP uncompressed @ 20.0 Hz)
-      key_expr: "**/wrist_camera_2/rgb/**",
-      freq: 20.0
-    },
-    {
-      // Wrist Camera 2 Camera Info
-      key_expr: "**/wrist_camera_2/camera_info/**",
-      freq: 20.0
-    },
-    {
-      // Workcell Camera 1 RGB stream (5MP uncompressed @ 20.0 Hz)
-      key_expr: "**/workcell_camera_1/rgb/**",
-      freq: 20.0
-    },
-    {
-      // Workcell Camera 1 Camera Info
-      key_expr: "**/workcell_camera_1/camera_info/**",
-      freq: 20.0
+      messages: [
+        "delete",
+        "put",
+        "query",
+        "reply",
+      ],
+      rules: [
+        { key_expr: "**/wrist_camera_1/rgb/**", freq: 20.0 },
+        { key_expr: "**/wrist_camera_1/camera_info/**", freq: 20.0 },
+        { key_expr: "**/wrist_camera_2/rgb/**", freq: 20.0 },
+        { key_expr: "**/wrist_camera_2/camera_info/**", freq: 20.0 },
+        { key_expr: "**/workcell_camera_1/rgb/**", freq: 20.0 },
+        { key_expr: "**/workcell_camera_1/camera_info/**", freq: 20.0 },
+      ],
     }
   ]
 }

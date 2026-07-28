@@ -100,11 +100,15 @@ def build_command(config, args):
     if topics_cfg.get("record_all", False):
         cmd.append("--all-topics")
     else:
-        for topic in topics_cfg.get("include", []):
-            cmd.extend(["-t", topic])
+        inc_topics = topics_cfg.get("include", [])
+        if inc_topics:
+            cmd.append("--topics")
+            cmd.extend(inc_topics)
 
-    for topic in topics_cfg.get("exclude", []):
-        cmd.extend(["--exclude-topics", topic])
+    exc_topics = topics_cfg.get("exclude", [])
+    if exc_topics:
+        cmd.append("--exclude-topics")
+        cmd.extend(exc_topics)
 
     # Services
     if services_cfg.get("record_all", False):
@@ -115,8 +119,10 @@ def build_command(config, args):
             cmd.append("--services")
             cmd.extend(inc_services)
 
-    for service in services_cfg.get("exclude", []):
-        cmd.extend(["--exclude-services", service])
+    exc_services = services_cfg.get("exclude", [])
+    if exc_services:
+        cmd.append("--exclude-services")
+        cmd.extend(exc_services)
 
     # Actions
     if actions_cfg.get("record_all", False):
@@ -127,8 +133,10 @@ def build_command(config, args):
             cmd.append("--actions")
             cmd.extend(inc_actions)
 
-    for action in actions_cfg.get("exclude", []):
-        cmd.extend(["--exclude-actions", action])
+    exc_actions = actions_cfg.get("exclude", [])
+    if exc_actions:
+        cmd.append("--exclude-actions")
+        cmd.extend(exc_actions)
 
     # Advanced filters
     regex = adv_cfg.get("regex", "")
