@@ -454,7 +454,6 @@ void CableModeratorPlugin::PreUpdate(const gz::sim::UpdateInfo& /*_info*/,
 
     bool end0InContact = false;
     bool end1InContact = false;
-    int currentContactEnd = -1;
 
     for (Entity collisionEnt : tracker.end0CollisionEntities) {
       if (hasGripperContact(collisionEnt, tracker.end0CollisionEntities)) {
@@ -470,82 +469,61 @@ void CableModeratorPlugin::PreUpdate(const gz::sim::UpdateInfo& /*_info*/,
       }
     }
 
-    if (end0InContact) {
-      currentContactEnd = 0;
-    } else if (end1InContact) {
-      currentContactEnd = 1;
+    if (end0InContact || end1InContact) {
+      if (tracker.portSubs.empty()) this->CreatePortSubscribers(i);
     }
 
-    if (currentContactEnd != -1) {
-      // Create subscribers if they weren't already.
-      if (tracker.portSubs.empty()) this->CreatePortSubscribers(i);
+    // Require an active DetachableJoint grasp before unfreezing cable ends
+    Entity graspJoint = this->FindExternalGraspJoint(tracker, _ecm);
+    if (graspJoint != kNullEntity) {
+      auto graspedEndOpt = this->FindGraspedEnd(i, graspJoint, _ecm);
+      if (graspedEndOpt.has_value()) {
+        int graspedEnd = graspedEndOpt.value();
+        tracker.lastGraspedEnd = graspedEnd;
+        tracker.activeGraspJoint.store(graspJoint);
+        tracker.activeContactEnd.store(graspedEnd);
 
-      int prevContactEnd = tracker.activeContactEnd.load();
-      if (prevContactEnd == -1 || prevContactEnd != currentContactEnd) {
-        gzmsg << "Cable " << this->cableConfigs[i].modelName
-              << " contact confirmed near End " << currentContactEnd
-              << std::endl;
-        tracker.activeContactEnd.store(currentContactEnd);
-        if (prevContactEnd == -1) {
+        if (!tracker.isDynamic) {
           this->MakeCableDynamic(i, _ecm);
           this->SetModelCollisionsBitmasks(tracker.modelEntity,
                                            kDefaultCollideMask,
                                            kDefaultCollideMask, _ecm);
+        }
 
-        }
-      }
-
-      if (currentContactEnd == 0) {
-        // Grasping near End 0: Unfreeze End 0 (if not inserted), Ensure End 1
-        // is frozen
-        if (!tracker.end0Inserted &&
-            tracker.detachableJointStatic0Entity != kNullEntity) {
-          _ecm.RequestRemoveEntity(tracker.detachableJointStatic0Entity);
-          tracker.detachableJointStatic0Entity = kNullEntity;
-          gzmsg << "Unfreezing End 0 for manipulation." << std::endl;
-        }
-        if (!tracker.end1Inserted &&
-            tracker.detachableJointStatic1Entity == kNullEntity) {
-          tracker.detachableJointStatic1Entity =
-              this->MakeStatic(tracker.connection1LinkEntity, true, _ecm);
-          gzdbg << "Locking End 1. Resulting joint: "
-                << tracker.detachableJointStatic1Entity << std::endl;
-        }
-      } else {
-        // Grasping near End 1: Unfreeze End 1 (if not inserted), Ensure End 0
-        // is frozen
-        if (!tracker.end1Inserted &&
-            tracker.detachableJointStatic1Entity != kNullEntity) {
-          _ecm.RequestRemoveEntity(tracker.detachableJointStatic1Entity);
-          tracker.detachableJointStatic1Entity = kNullEntity;
-          gzmsg << "Unfreezing End 1 for manipulation." << std::endl;
-        }
-        if (!tracker.end0Inserted &&
-            tracker.detachableJointStatic0Entity == kNullEntity) {
-          tracker.detachableJointStatic0Entity =
-              this->MakeStatic(tracker.connection0LinkEntity, true, _ecm);
-          gzdbg << "Locking End 0. Resulting joint: "
-                << tracker.detachableJointStatic0Entity << std::endl;
+        if (graspedEnd == 0) {
+          if (!tracker.end0Inserted &&
+              tracker.detachableJointStatic0Entity != kNullEntity) {
+            _ecm.RequestRemoveEntity(tracker.detachableJointStatic0Entity);
+            tracker.detachableJointStatic0Entity = kNullEntity;
+            gzmsg << "Unfreezing End 0 (Active grasp joint confirmed)." << std::endl;
+          }
+          if (!tracker.end1Inserted &&
+              tracker.detachableJointStatic1Entity == kNullEntity) {
+            tracker.detachableJointStatic1Entity =
+                this->MakeStatic(tracker.connection1LinkEntity, true, _ecm);
+            gzmsg << "Locking End 1. Resulting joint: "
+                  << tracker.detachableJointStatic1Entity << std::endl;
+          }
+        } else {
+          if (!tracker.end1Inserted &&
+              tracker.detachableJointStatic1Entity != kNullEntity) {
+            _ecm.RequestRemoveEntity(tracker.detachableJointStatic1Entity);
+            tracker.detachableJointStatic1Entity = kNullEntity;
+            gzmsg << "Unfreezing End 1 (Active grasp joint confirmed)." << std::endl;
+          }
+          if (!tracker.end0Inserted &&
+              tracker.detachableJointStatic0Entity == kNullEntity) {
+            tracker.detachableJointStatic0Entity =
+                this->MakeStatic(tracker.connection0LinkEntity, true, _ecm);
+            gzmsg << "Locking End 0. Resulting joint: "
+                  << tracker.detachableJointStatic0Entity << std::endl;
+          }
         }
       }
     } else {
-      // Dynamic State Persistence: once made dynamic, keep it dynamic even
-      // without active contact.
+      tracker.activeGraspJoint.store(kNullEntity);
+      tracker.lastGraspedEnd = std::nullopt;
       tracker.activeContactEnd.store(-1);
-    }
-
-    if (tracker.isDynamic) {
-      Entity graspJoint = this->FindExternalGraspJoint(tracker, _ecm);
-      if (graspJoint != kNullEntity) {
-        auto closerEnd = this->FindGraspedEnd(i, graspJoint, _ecm);
-        if (closerEnd.has_value()) {
-          tracker.lastGraspedEnd = closerEnd;
-        }
-        tracker.activeGraspJoint.store(graspJoint);
-      } else {
-        tracker.activeGraspJoint.store(kNullEntity);
-        tracker.lastGraspedEnd = std::nullopt;
-      }
     }
 
     // Distance-based insertion check
@@ -574,7 +552,9 @@ void CableModeratorPlugin::PreUpdate(const gz::sim::UpdateInfo& /*_info*/,
         tracker.detachableJointStatic0Entity == kNullEntity) {
       tracker.detachableJointStatic0Entity =
           this->MakeStatic(tracker.connection0LinkEntity, true, _ecm);
-      this->DisableLinkCollisions(tracker.connection0LinkEntity, _ecm);
+      if (tracker.activeGraspJoint.load() == kNullEntity) {
+        this->DisableLinkCollisions(tracker.connection0LinkEntity, _ecm);
+      }
       gzdbg << "Locking End 0 after insertion. Resulting joint: "
             << tracker.detachableJointStatic0Entity << std::endl;
 
@@ -583,9 +563,20 @@ void CableModeratorPlugin::PreUpdate(const gz::sim::UpdateInfo& /*_info*/,
         tracker.detachableJointStatic1Entity == kNullEntity) {
       tracker.detachableJointStatic1Entity =
           this->MakeStatic(tracker.connection1LinkEntity, true, _ecm);
-      this->DisableLinkCollisions(tracker.connection1LinkEntity, _ecm);
+      if (tracker.activeGraspJoint.load() == kNullEntity) {
+        this->DisableLinkCollisions(tracker.connection1LinkEntity, _ecm);
+      }
       gzdbg << "Locking End 1 after insertion. Resulting joint: "
             << tracker.detachableJointStatic1Entity << std::endl;
+    }
+
+    if (tracker.activeGraspJoint.load() == kNullEntity) {
+      if (tracker.end0Inserted && tracker.detachableJointStatic0Entity != kNullEntity) {
+        this->DisableLinkCollisions(tracker.connection0LinkEntity, _ecm);
+      }
+      if (tracker.end1Inserted && tracker.detachableJointStatic1Entity != kNullEntity) {
+        this->DisableLinkCollisions(tracker.connection1LinkEntity, _ecm);
+      }
     }
 
     if (tracker.end0Inserted && tracker.end1Inserted && !tracker.isCompleted) {
