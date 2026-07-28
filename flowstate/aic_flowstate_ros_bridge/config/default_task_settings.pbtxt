@@ -18,12 +18,12 @@ cartesian_limits {
   max_translational_position: 1.0   # y
   max_translational_position: 1.5   # z
 
-  min_translational_velocity: -1.0
-  min_translational_velocity: -1.0
-  min_translational_velocity: -1.0
-  max_translational_velocity: 1.0
-  max_translational_velocity: 1.0
-  max_translational_velocity: 1.0
+  min_translational_velocity: -0.25
+  min_translational_velocity: -0.25
+  min_translational_velocity: -0.25
+  max_translational_velocity: 0.25
+  max_translational_velocity: 0.25
+  max_translational_velocity: 0.25
 
   min_translational_acceleration: -10
   min_translational_acceleration: -10
