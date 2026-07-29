@@ -4,8 +4,8 @@
 # Impedance control parameters need to be tuned for every robot and endeffector.
 # The values below correspond to a robotiq-2f gripper with Axia80 F/T cell.
 # with critical damping under the assume mass.
-max_stiffness: { x: 800 y: 800 z: 800 rx: 40 ry: 40 rz: 40 }
-max_damping: { x: 76 y: 76 z: 76 rx: 10 ry: 10 rz: 10 }
+max_stiffness: { x: 1000 y: 1000 z: 1000 rx: 150 ry: 150 rz: 150 }
+max_damping: { x: 1562.049935 y: 1562.049935 z: 1562.049935 rx: 1096.814453 ry: 1096.814453 rz: 1096.814453 }
 mass_for_critical_damping: { x: 10.0 y: 10.0 z: 10.0 rx: 5.0 ry: 5.0 rz: 5.0 }
 
 # Limits of a reasonable retangular volume in front the the robot. This should

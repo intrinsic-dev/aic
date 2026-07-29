@@ -83,10 +83,22 @@ def generate_launch_description():
                         "-0.1, -0.5, 0.5, 0.7071068, -0.7071068, 0.0, 0.0 "  # Home
                         "]",
                         "log_filepath": "",  # Empty string defaults to tcp_accuracy_<DATETIME>.json
-                        "target_pose_stiffness": [1000.0, 150.0],
-                        # 'target_pose_damping': [200.0, 54.7723], # Crtically damped
-                        # 'target_pose_damping': [1800.0, 1265.787853], # Overdamped
-                        "target_pose_damping": [600.0, 150.0],  # Slightly Overdamped
+                        "target_pose_stiffness": [
+                            1000.0,
+                            1000.0,
+                            1000.0,
+                            150.0,
+                            150.0,
+                            150.0,
+                        ],
+                        "target_pose_damping": [
+                            1562.049935,
+                            1562.049935,
+                            1562.049935,
+                            1096.814453,
+                            1096.814453,
+                            1096.814453
+                        ],
                         "publish_duration": 5.0,
                         "stop_duration": 2.0,
                     }

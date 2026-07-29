@@ -30,14 +30,21 @@ def generate_launch_description():
                         "-1.57, -1.57, -1.57, -1.57, 1.57, -1.57" "]",
                         "log_filepath": "",  # Empty string defaults to tcp_accuracy_<DATETIME>.json
                         "target_joint_stiffness": [
-                            100.0,
-                            100.0,
-                            100.0,
-                            25.0,
-                            25.0,
-                            25.0,
+                            50.0,
+                            50.0,
+                            50.0,
+                            10.0,
+                            10.0,
+                            10.0,
                         ],
-                        "target_joint_damping": [10.0, 10.0, 10.0, 5.0, 5.0, 5.0],
+                        "target_joint_damping": [
+                            25.0,
+                            25.0,
+                            25.0,
+                            5.0,
+                            5.0,
+                            5.0,
+                        ],
                         "publish_duration": 3.0,
                         "stop_duration": 2.0,
                     }
