@@ -22,6 +22,8 @@
 #include <kdl/frames.hpp>
 #include <string>
 #include <utility>
+#include <fstream>
+#include <nlohmann/json.hpp>
 
 #include "absl/flags/flag.h"
 #include "absl/log/log.h"
@@ -203,6 +205,96 @@ bool RobotControlBridge::initialize(
     LOG(ERROR) << "Invalid control_mode: " << control_mode_str;
     throw std::runtime_error("Invalid control_mode parameter.");
   }
+
+#ifdef USE_FIXED_CONTROL_PARAMETERS
+  {
+    std::filesystem::path fixed_json_path = ament_index_cpp::get_package_share_directory("aic_flowstate_ros_bridge") + "/config/fixed_task_settings.json";
+    try {
+      std::ifstream f(fixed_json_path.string());
+      if (!f.is_open()) {
+        throw std::runtime_error("Could not open JSON config file.");
+      }
+      nlohmann::json config = nlohmann::json::parse(f);
+
+      auto target_pose_stiffness = config["target_pose_stiffness"].get<std::vector<double>>();
+      auto target_pose_damping = config["target_pose_damping"].get<std::vector<double>>();
+      auto target_mass = config["target_mass"].get<std::vector<double>>();
+
+      if (target_pose_stiffness.size() != 6 || target_pose_damping.size() != 6 || target_mass.size() != 6) {
+        LOG(ERROR) << "Fixed task settings: target_pose_stiffness, target_pose_damping, and target_mass must have exactly 6 elements.";
+        throw std::runtime_error("Fixed task settings must have exactly 6 elements for pose stiffness, damping, and mass.");
+      }
+
+      auto* mu = data_->agent_bridge_fixed_params_.mutable_motion_update();
+      auto* target_stiffness = mu->mutable_target_stiffness();
+      auto* target_damping = mu->mutable_target_damping();
+      auto* target_mass_proto = mu->mutable_target_mass();
+      target_stiffness->mutable_data()->Resize(36, 0.0);
+      target_damping->mutable_data()->Resize(36, 0.0);
+      target_mass_proto->mutable_data()->Resize(36, 0.0);
+
+      if (target_pose_stiffness.size() >= 6) {
+        target_stiffness->set_data(0, target_pose_stiffness[0]);
+        target_stiffness->set_data(7, target_pose_stiffness[1]);
+        target_stiffness->set_data(14, target_pose_stiffness[2]);
+        target_stiffness->set_data(21, target_pose_stiffness[3]);
+        target_stiffness->set_data(28, target_pose_stiffness[4]);
+        target_stiffness->set_data(35, target_pose_stiffness[5]);
+      }
+      if (target_pose_damping.size() >= 6) {
+        target_damping->set_data(0, target_pose_damping[0]);
+        target_damping->set_data(7, target_pose_damping[1]);
+        target_damping->set_data(14, target_pose_damping[2]);
+        target_damping->set_data(21, target_pose_damping[3]);
+        target_damping->set_data(28, target_pose_damping[4]);
+        target_damping->set_data(35, target_pose_damping[5]);
+      }
+      if (target_mass.size() >= 6) {
+        target_mass_proto->set_data(0, target_mass[0]);
+        target_mass_proto->set_data(7, target_mass[1]);
+        target_mass_proto->set_data(14, target_mass[2]);
+        target_mass_proto->set_data(21, target_mass[3]);
+        target_mass_proto->set_data(28, target_mass[4]);
+        target_mass_proto->set_data(35, target_mass[5]);
+      }
+
+      auto target_joint_stiffness = config["target_joint_stiffness"].get<std::vector<double>>();
+      auto target_joint_damping = config["target_joint_damping"].get<std::vector<double>>();
+
+      if (target_joint_stiffness.size() != 6 || target_joint_damping.size() != 6) {
+        LOG(ERROR) << "Fixed task settings: target_joint_stiffness and target_joint_damping must have exactly 6 elements.";
+        throw std::runtime_error("Fixed task settings must have exactly 6 elements for joint stiffness and damping.");
+      }
+
+      auto* mu_joint = data_->agent_bridge_joint_fixed_params_.mutable_motion_update();
+      auto* tjs = mu_joint->mutable_target_stiffness();
+      auto* tjd = mu_joint->mutable_target_damping();
+      tjs->clear_joints();
+      tjd->clear_joints();
+      for (double v : target_joint_stiffness) {
+        tjs->add_joints(v);
+      }
+      for (double v : target_joint_damping) {
+        tjd->add_joints(v);
+      }
+
+      std::string mode_str = config["control_mode"].get<std::string>();
+      auto* ts = data_->agent_bridge_fixed_params_.mutable_task_settings();
+      if (mode_str == "admittance") {
+        ts->set_control_mode(intrinsic_proto::icon::actions::proto::ControlMode::ADMITTANCE);
+      } else if (mode_str == "impedance") {
+        ts->set_control_mode(intrinsic_proto::icon::actions::proto::ControlMode::IMPEDANCE);
+      } else {
+        LOG(ERROR) << "Invalid control_mode: " << mode_str;
+        throw std::runtime_error("Invalid control_mode parameter.");
+      }
+
+    } catch (const std::exception& e) {
+      LOG(ERROR) << "Failed to read fixed_task_settings.json: " << e.what();
+      throw std::runtime_error("Failed to read fixed_task_settings.json");
+    }
+  }
+#endif
 
   // Set default taring cycle of 100
   // todo(johntgz) set this as a ros parameter
@@ -913,6 +1005,7 @@ bool RobotControlBridge::resetMotionUpdate() {
     auto* target_state = initial_motion_update->mutable_target_state();
     target_state->mutable_velocity()->Resize(6, 0.0);
 
+#ifndef USE_FIXED_CONTROL_PARAMETERS
     // Use max values from task settings for initial stiffness, damping, and
     // mass
     auto* target_stiffness = initial_motion_update->mutable_target_stiffness();
@@ -960,6 +1053,7 @@ bool RobotControlBridge::resetMotionUpdate() {
           << "Task settings missing max_stiffness or max_damping parameters.";
       return false;
     }
+#endif
 
     auto* fw = initial_motion_update->mutable_feedforward_wrench_at_tip();
     fw->set_x(0);
@@ -985,6 +1079,7 @@ bool RobotControlBridge::resetMotionUpdate() {
       ->mutable_velocity()
       ->Resize(data_->num_joints_, 0.0);
 
+#ifndef USE_FIXED_CONTROL_PARAMETERS
   auto* target_joint_stiffness =
       initial_joint_motion_update->mutable_target_stiffness();
   auto* target_joint_damping =
@@ -1005,6 +1100,7 @@ bool RobotControlBridge::resetMotionUpdate() {
       target_joint_damping->set_joints(i, damping.joints(i));
     }
   }
+#endif
 
   return true;
 }
@@ -1152,6 +1248,7 @@ void RobotControlBridge::MotionUpdateCallback(
   target_state->add_velocity(msg->velocity.angular.y);
   target_state->add_velocity(msg->velocity.angular.z);
 
+#ifndef USE_FIXED_CONTROL_PARAMETERS
   // Map stiffness and damping parameters
   auto* stiffness = proto_msg.mutable_target_stiffness();
   auto* damping = proto_msg.mutable_target_damping();
@@ -1161,6 +1258,7 @@ void RobotControlBridge::MotionUpdateCallback(
     stiffness->add_data(msg->target_stiffness[i]);
     damping->add_data(msg->target_damping[i]);
   }
+#endif
 
   // Map feedforward wrench at tip
   auto* fw = proto_msg.mutable_feedforward_wrench_at_tip();
@@ -1250,6 +1348,7 @@ void RobotControlBridge::JointMotionUpdateCallback(
     target_state->add_velocity(vel);
   }
 
+#ifndef USE_FIXED_CONTROL_PARAMETERS
   // Map the stiffness and damping parameters
   auto* stiffness = proto_msg.mutable_target_stiffness();
   auto* damping = proto_msg.mutable_target_damping();
@@ -1261,6 +1360,7 @@ void RobotControlBridge::JointMotionUpdateCallback(
   for (double d : msg->target_damping) {
     damping->add_joints(d);
   }
+#endif
 
   // Map the feedforward torque
   auto* ff_torque = proto_msg.mutable_target_feedforward_torque();
