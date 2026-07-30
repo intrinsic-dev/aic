@@ -19,11 +19,11 @@
 
 #include <Eigen/Dense>
 #include <filesystem>
+#include <fstream>
 #include <kdl/frames.hpp>
+#include <nlohmann/json.hpp>
 #include <string>
 #include <utility>
-#include <fstream>
-#include <nlohmann/json.hpp>
 
 #include "absl/flags/flag.h"
 #include "absl/log/log.h"
@@ -208,7 +208,10 @@ bool RobotControlBridge::initialize(
 
 #ifdef USE_FIXED_CONTROL_PARAMETERS
   {
-    std::filesystem::path fixed_json_path = ament_index_cpp::get_package_share_directory("aic_flowstate_ros_bridge") + "/config/fixed_task_settings.json";
+    std::filesystem::path fixed_json_path =
+        ament_index_cpp::get_package_share_directory(
+            "aic_flowstate_ros_bridge") +
+        "/config/fixed_task_settings.json";
     try {
       std::ifstream f(fixed_json_path.string());
       if (!f.is_open()) {
@@ -216,13 +219,20 @@ bool RobotControlBridge::initialize(
       }
       nlohmann::json config = nlohmann::json::parse(f);
 
-      auto target_pose_stiffness = config["target_pose_stiffness"].get<std::vector<double>>();
-      auto target_pose_damping = config["target_pose_damping"].get<std::vector<double>>();
+      auto target_pose_stiffness =
+          config["target_pose_stiffness"].get<std::vector<double>>();
+      auto target_pose_damping =
+          config["target_pose_damping"].get<std::vector<double>>();
       auto target_mass = config["target_mass"].get<std::vector<double>>();
 
-      if (target_pose_stiffness.size() != 6 || target_pose_damping.size() != 6 || target_mass.size() != 6) {
-        LOG(ERROR) << "Fixed task settings: target_pose_stiffness, target_pose_damping, and target_mass must have exactly 6 elements.";
-        throw std::runtime_error("Fixed task settings must have exactly 6 elements for pose stiffness, damping, and mass.");
+      if (target_pose_stiffness.size() != 6 ||
+          target_pose_damping.size() != 6 || target_mass.size() != 6) {
+        LOG(ERROR) << "Fixed task settings: target_pose_stiffness, "
+                      "target_pose_damping, and target_mass must have exactly "
+                      "6 elements.";
+        throw std::runtime_error(
+            "Fixed task settings must have exactly 6 elements for pose "
+            "stiffness, damping, and mass.");
       }
 
       auto* mu = data_->agent_bridge_fixed_params_.mutable_motion_update();
@@ -258,15 +268,22 @@ bool RobotControlBridge::initialize(
         target_mass_proto->set_data(35, target_mass[5]);
       }
 
-      auto target_joint_stiffness = config["target_joint_stiffness"].get<std::vector<double>>();
-      auto target_joint_damping = config["target_joint_damping"].get<std::vector<double>>();
+      auto target_joint_stiffness =
+          config["target_joint_stiffness"].get<std::vector<double>>();
+      auto target_joint_damping =
+          config["target_joint_damping"].get<std::vector<double>>();
 
-      if (target_joint_stiffness.size() != 6 || target_joint_damping.size() != 6) {
-        LOG(ERROR) << "Fixed task settings: target_joint_stiffness and target_joint_damping must have exactly 6 elements.";
-        throw std::runtime_error("Fixed task settings must have exactly 6 elements for joint stiffness and damping.");
+      if (target_joint_stiffness.size() != 6 ||
+          target_joint_damping.size() != 6) {
+        LOG(ERROR) << "Fixed task settings: target_joint_stiffness and "
+                      "target_joint_damping must have exactly 6 elements.";
+        throw std::runtime_error(
+            "Fixed task settings must have exactly 6 elements for joint "
+            "stiffness and damping.");
       }
 
-      auto* mu_joint = data_->agent_bridge_joint_fixed_params_.mutable_motion_update();
+      auto* mu_joint =
+          data_->agent_bridge_joint_fixed_params_.mutable_motion_update();
       auto* tjs = mu_joint->mutable_target_stiffness();
       auto* tjd = mu_joint->mutable_target_damping();
       tjs->clear_joints();
@@ -281,9 +298,11 @@ bool RobotControlBridge::initialize(
       std::string mode_str = config["control_mode"].get<std::string>();
       auto* ts = data_->agent_bridge_fixed_params_.mutable_task_settings();
       if (mode_str == "admittance") {
-        ts->set_control_mode(intrinsic_proto::icon::actions::proto::ControlMode::ADMITTANCE);
+        ts->set_control_mode(
+            intrinsic_proto::icon::actions::proto::ControlMode::ADMITTANCE);
       } else if (mode_str == "impedance") {
-        ts->set_control_mode(intrinsic_proto::icon::actions::proto::ControlMode::IMPEDANCE);
+        ts->set_control_mode(
+            intrinsic_proto::icon::actions::proto::ControlMode::IMPEDANCE);
       } else {
         LOG(ERROR) << "Invalid control_mode: " << mode_str;
         throw std::runtime_error("Invalid control_mode parameter.");

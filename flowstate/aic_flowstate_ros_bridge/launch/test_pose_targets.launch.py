@@ -97,7 +97,7 @@ def generate_launch_description():
                             1562.049935,
                             1096.814453,
                             1096.814453,
-                            1096.814453
+                            1096.814453,
                         ],
                         "publish_duration": 5.0,
                         "stop_duration": 2.0,
