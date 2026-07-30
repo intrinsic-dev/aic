@@ -26,10 +26,10 @@ interpolation_mode: REFLEXXES
 
 # Stiffness and damping cannot exceed the application limits.
 stiffness: {
-  joints: [100., 100., 100., 25., 25., 25.]
+  joints: [175., 175., 175., 125., 50., 50.]
 }
 damping: {
-  joints: [10.0, 10.0, 10.0, 5.0, 5.0, 5.0]
+  joints: [50.0, 50.0, 50.0, 35.0, 10.0, 10.0]
 }
 
 # Using ~50% of max_effort -- and this is could be more conservative.
