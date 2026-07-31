@@ -1,0 +1,22 @@
+<?xml version="1.0" ?>
+<sdf xmlns:intrinsic="https://intrinsic.ai/" version="1.9">
+  <model name="Task Board Base">
+    <link name="base_link">
+      <visual name="base_visual">
+        <geometry>
+          <mesh>
+            <uri>base_visual.glb</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <collision name="v1015083001_collider_box">
+        <pose>-0.0 0.0 0.006 0.0 0.0 -0.0</pose>
+        <geometry>
+          <box>
+            <size>0.30002 0.42502 0.012048</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model>
+</sdf>
