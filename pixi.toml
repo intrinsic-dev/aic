@@ -22,6 +22,7 @@ ros-kilted-aic-example-policies = { path = "aic_example_policies" }
 ros-kilted-aic-model = { path = "aic_model" }
 ros-kilted-aic-model-interfaces = { path = "aic_interfaces/aic_model_interfaces" }
 ros-kilted-aic-task-interfaces = { path = "aic_interfaces/aic_task_interfaces" }
+ros-kilted-aic-engine-interfaces = { path = "aic_interfaces/aic_engine_interfaces" }
 ros-kilted-aic-teleoperation = { path = "aic_utils/aic_teleoperation" }
 ros-kilted-control-msgs = "*"
 ros-kilted-geometry-msgs = "*"
