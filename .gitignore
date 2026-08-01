@@ -25,4 +25,8 @@ log/
 *.orig
 pixi_*.lock
 
+# Ignore zip files in aic_assets
+aic_assets/**/*.zip
+aic_assets/*.zip
+
 

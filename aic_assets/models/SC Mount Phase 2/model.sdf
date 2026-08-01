@@ -1,6 +1,7 @@
 <?xml version="1.0" ?>
 <sdf xmlns:intrinsic="https://intrinsic.ai/" version="1.9">
   <model name="SC Mount">
+    <static>true</static>
     <link name="sc_mount_link">
       <visual name="sc_mount_visual">
         <geometry>
