@@ -58,6 +58,7 @@ constexpr const char* kFlowstateZenohRouterParamName =
     "flowstate_zenoh_router_address";
 constexpr const char* kRestartConnectionRetriesParamName =
     "restart_connection_retries";
+constexpr const char* kForceTorqueTopicParamName = "force_torque_topic";
 
 ///=============================================================================
 void RobotControlBridge::declare_ros_parameters(
@@ -108,6 +109,9 @@ bool RobotControlBridge::initialize(
   data_->restart_connection_retries_ =
       param_interface->get_parameter(kRestartConnectionRetriesParamName)
           .get_value<int>();
+  std::string force_torque_topic =
+      param_interface->get_parameter(kForceTorqueTopicParamName)
+          .get_value<std::string>();
   std::filesystem::path task_settings_file =
       param_interface->get_parameter(kAgentBridgeTaskSettingsFileParamName)
           .get_value<std::string>();
@@ -245,6 +249,16 @@ bool RobotControlBridge::initialize(
   rclcpp::QoS reliable_qos = rclcpp::QoS(rclcpp::KeepLast(10)).reliable();
 
   // ROS Subscriptions to MotionUpdate and JointMotionUpdate commands
+  if (!force_torque_topic.empty()) {
+    data_->ft_sensor_sub_ =
+        rclcpp::create_subscription<geometry_msgs::msg::WrenchStamped>(
+            topics_interface, force_torque_topic, reliable_qos,
+            [this](const geometry_msgs::msg::WrenchStamped::SharedPtr msg) {
+              std::lock_guard<std::mutex> lock(data_->controller_state_mutex_);
+              data_->sensed_wrench_at_tip_ = *msg;
+            });
+  }
+
   data_->motion_update_sub_ =
       rclcpp::create_subscription<aic_control_interfaces::msg::MotionUpdate>(
           topics_interface, "aic_controller/pose_commands", reliable_qos,
@@ -610,6 +624,12 @@ void RobotControlBridge::TareForceTorqueSensorCallback(
     response->message =
         "No active controller session or tare action not initialized";
     return;
+  }
+
+  // Read force torque sensor value and store the offset
+  {
+    std::lock_guard<std::mutex> lock(data_->controller_state_mutex_);
+    data_->controller_state_.fts_tare_offset = data_->sensed_wrench_at_tip_;
   }
 
   auto status =
