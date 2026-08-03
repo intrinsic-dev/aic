@@ -15,19 +15,14 @@ def generate_launch_description():
                     {
                         "controller_namespace": "aic_controller",
                         "test_mode": "joint",
+                        # Example test_joint_targets format: JSON string of a flattened list of joint values (or list of lists).
+                        # The list is automatically chunked into 6 values per joint target: [j1, j2, j3, j4, j5, j6]
                         ##########################
                         # Home position:
                         ##########################
-                        # "test_joint_targets": "["
-                        # "-1.57, -1.57, -1.57, -1.57, 1.57, -1.57"
-                        # "]",
-                        ##########################
-                        # Test 1:
-                        ##########################
                         "test_joint_targets": "["
-                        "-1.27, -1.8, -1.47, -1.57, 1.57, -1.57,"
-                        # Home
-                        "-1.57, -1.57, -1.57, -1.57, 1.57, -1.57" "]",
+                        "-1.57, -1.57, -1.57, -1.57, 1.57, -1.57"
+                        "]",
                         "log_filepath": "",  # Empty string defaults to tcp_accuracy_<DATETIME>.json
                         "target_joint_stiffness": [
                             175.0,
