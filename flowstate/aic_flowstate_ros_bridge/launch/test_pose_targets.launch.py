@@ -20,9 +20,9 @@ def generate_launch_description():
                         ##########################
                         # Home position
                         ##########################
-                        'test_pose_targets': '['
-                        '-0.1, -0.5, 0.5, 0.7071068, -0.7071068, 0.0, 0.0 '
-                        ']',
+                        "test_pose_targets": "["
+                        "-0.1, -0.5, 0.5, 0.7071068, -0.7071068, 0.0, 0.0 "
+                        "]",
                         "log_filepath": "",  # Empty string defaults to tcp_accuracy_<DATETIME>.json
                         "target_pose_stiffness": [
                             1000.0,
