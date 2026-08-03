@@ -12,6 +12,7 @@ install(
   FILES
     recording_config.yaml
     zenoh_router_config.json5
+    zenoh_session_config.json5
   DESTINATION share/${PROJECT_NAME}
 )
 

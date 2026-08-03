@@ -65,7 +65,7 @@ storage:
   identifier: "mcap"                # Storage plugin: "mcap" or "sqlite3"
   output_dir: "/tmp/aic_bags"       # Base output directory
   preset_profile: "zstd_fast"       # Storage preset: "none", "fastwrite", "zstd_fast", "zstd_small"
-  max_cache_size: 104857600         # 100 MB buffer cache
+  max_cache_size: 104857600         # 100 MB buffer cache (increase to 500MB-1GB for high throughput)
 
 topics:
   record_all: false
@@ -103,7 +103,7 @@ advanced:
 
 ---
 
-## 🚀 Step-by-Step Execution Guide
+## 🚀 Option 1: Recording with Local Zenoh Router
 
 ### 1. Setup Environment on Recording Machine
 ```bash
@@ -129,6 +129,31 @@ pixi run python3 aic_logging/record.py --config aic_logging/recording_config.yam
 
 ---
 
+## 🚀 Option 2: Recording without Zenoh Router (Direct to IPC)
+
+This sets the Zenoh session to
+* be a client directly to the IPC's Zenoh router
+* have no rate limiting
+* enable shared memory with increased memory buffer
+* use large TCP socket buffer
+
+### 1. Setup Environment on Recording Machine
+```bash
+cd src/aic
+pixi install
+```
+
+### 2. Start Recording Session
+```bash
+# Preview the ros2 bag record command
+ZENOH_SESSION_CONFIG_URI=aic_logging/zenoh_session_config.json5 pixi run python3 aic_logging/record.py --dry-run
+
+# Start recording
+ZENOH_SESSION_CONFIG_URI=aic_logging/zenoh_session_config.json5 pixi run python3 aic_logging/record.py --config aic_logging/recording_config.yaml --name "cable_insertion_run"
+```
+
+---
+
 ## 🔍 Inspecting and Playing Back Bags
 
 ### Inspect Bag Metadata
@@ -140,3 +165,27 @@ pixi run ros2 bag info /tmp/aic_bags/<BAG_FOLDER_NAME>
 ```bash
 pixi run ros2 bag play /tmp/aic_bags/<BAG_FOLDER_NAME>
 ```
+
+---
+
+## 💡 High-Throughput & Bandwidth Optimization Recommendations
+
+When logging multiple uncompressed 5MP camera streams (~900 MB/s continuous):
+
+1. **Eliminate CPU Compression Bottleneck (`preset_profile`)**:
+   - `zstd_fast` compresses frames on CPU in real-time. At ~900 MB/s, Zstd compression requires multiple CPU cores and can saturate CPU threads, causing writer queue overflow.
+   - For ultra-high write speeds to an NVMe SSD, switch `preset_profile` to `"fastwrite"` or `"none"` in `recording_config.yaml`.
+2. **Increase Recorder Cache (`max_cache_size`)**:
+   - Increase `max_cache_size` to `524288000` (500 MB) or `1048576000` (1 GB) to smooth out NVMe write flush spikes.
+3. **TCP Socket Buffer & Kernel Tuning**:
+   - Increase OS TCP receive buffers on both host and recording machine:
+     ```bash
+     sudo sysctl -w net.core.rmem_max=67108864
+     sudo sysctl -w net.core.wmem_max=67108864
+     sudo sysctl -w net.ipv4.tcp_rmem="4096 87380 67108864"
+     sudo sysctl -w net.ipv4.tcp_wmem="4096 65536 67108864"
+     ```
+4. **Enable 9000 MTU Jumbo Frames**:
+   - Standard 1500 MTU generates ~600,000 packets/sec for 900 MB/s. Configuring MTU 9000 on the 10GbE NICs drops interrupt rate by 6x and reduces CPU overhead.
+5. **Shared Memory Pool Size (`/dev/shm`)**:
+   - The default SHM pool in Zenoh is 48 MiB. When handling 3x 15 MB frames (45 MB), the pool quickly exhausts. We increased `pool_size` in `zenoh_session_config.json5` to 256 MiB (`268435456`). Ensure `/dev/shm` has sufficient capacity (`df -h /dev/shm`).

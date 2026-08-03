@@ -1,0 +1,32 @@
+{
+  // Zenoh Session Configuration for AIC External Recording Machine
+  // Overrides default session settings for high-throughput direct logging from the IPC Zenoh router.
+
+  // In client mode, ROS 2 nodes connect directly to the remote IPC Zenoh router for routing and discovery
+  mode: "client",
+
+  // Connect directly to the IPC Zenoh router endpoint (replace with actual IPC IP/hostname)
+  connect: {
+    endpoints: [
+      "tcp/ip.address.of.ipc:17447"
+    ]
+  },
+
+  transport: {
+    link: {
+      rx: {
+        // Link receiving buffer size in bytes (default: 65535).
+        // Increased to 64 MiB to accommodate in-flight bursts of uncompressed 5MP camera frames.
+        buffer_size: 67108864
+      }
+    },
+    shared_memory: {
+      // Enable shared memory optimization for zero-copy message passing on the host (default: false)
+      enabled: true,
+      transport_optimization: {
+        // Increased SHM pool size to 256 MiB (default: 50331648 / 48 MiB) for multi-camera streams
+        pool_size: 268435456
+      }
+    }
+  }
+}
