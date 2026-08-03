@@ -35,7 +35,7 @@ find_package(Protobuf REQUIRED)
 find_package(orocos_kdl_vendor REQUIRED)
 
 #==================================
-option(USE_FIXED_CONTROL_PARAMETERS "Use fixed control parameters" OFF)
+option(USE_FIXED_CONTROL_PARAMETERS "Use fixed control parameters" ON)
 if(USE_FIXED_CONTROL_PARAMETERS)
   add_compile_definitions(USE_FIXED_CONTROL_PARAMETERS)
 endif()
