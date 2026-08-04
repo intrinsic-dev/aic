@@ -70,7 +70,7 @@
     </link>
 
     <link name="nic_card_link">
-      <pose>-0.002 -0.01785 0.0899 -1.57 0 0</pose>
+      <pose>0 0 0.0899 -1.57 0 0</pose>
       <inertial auto="true">
         <mass>0.15</mass>
       </inertial>
