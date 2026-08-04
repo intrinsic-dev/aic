@@ -70,20 +70,27 @@ class TestRobotControlBridgeNode(Node):
 
         self.log_filepath = self.declare_parameter("log_filepath", "").value
 
-        stiffness_param = self.declare_parameter(
-            "target_pose_stiffness", [10.0, 10.0]
+        self.target_pose_stiffness = self.declare_parameter(
+            "target_pose_stiffness", [1000.0, 1000.0, 1000.0, 150.0, 150.0, 150.0]
         ).value
-        self.target_pose_stiffness = [stiffness_param[0]] * 3 + [stiffness_param[1]] * 3
-
-        damping_param = self.declare_parameter("target_pose_damping", [5.0, 5.0]).value
-        self.target_pose_damping = [damping_param[0]] * 3 + [damping_param[1]] * 3
+        self.target_pose_damping = self.declare_parameter(
+            "target_pose_damping",
+            [
+                1562.049935,
+                1562.049935,
+                1562.049935,
+                1096.814453,
+                1096.814453,
+                1096.814453,
+            ],
+        ).value
 
         self.target_joint_stiffness = self.declare_parameter(
-            "target_joint_stiffness", [50.0, 50.0, 50.0, 10.0, 10.0, 10.0]
+            "target_joint_stiffness", [175.0, 175.0, 175.0, 125.0, 50.0, 50.0]
         ).value
 
         self.target_joint_damping = self.declare_parameter(
-            "target_joint_damping", [25.0, 25.0, 25.0, 5.0, 5.0, 5.0]
+            "target_joint_damping", [50.0, 50.0, 50.0, 35.0, 10.0, 10.0]
         ).value
 
         self.publish_duration = self.declare_parameter("publish_duration", 5.0).value
