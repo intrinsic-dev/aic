@@ -77,8 +77,8 @@ inline void SetDiagonal6x6(google::protobuf::RepeatedField<double>* field,
 
 inline void SetDiagonal6x6(google::protobuf::RepeatedField<double>* field,
                            const intrinsic_proto::icon::CartVec6& diag) {
-  SetDiagonal6x6(field, {diag.x(), diag.y(), diag.z(), diag.rx(), diag.ry(),
-                         diag.rz()});
+  SetDiagonal6x6(
+      field, {diag.x(), diag.y(), diag.z(), diag.rx(), diag.ry(), diag.rz()});
 }
 
 }  // namespace
