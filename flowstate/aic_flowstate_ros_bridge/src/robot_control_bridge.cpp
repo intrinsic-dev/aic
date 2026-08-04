@@ -64,6 +64,25 @@ constexpr const char* kTimeToTargetSecondsParamName = "time_to_target_seconds";
 constexpr const char* kControlModeParamName = "control_mode";
 constexpr const char* kCriticalMassParamName = "critical_mass";
 
+namespace {
+
+inline void SetDiagonal6x6(google::protobuf::RepeatedField<double>* field,
+                           const std::vector<double>& diag) {
+  field->Clear();
+  field->Resize(36, 0.0);
+  for (int i = 0; i < 6; ++i) {
+    field->Set(i * 7, diag[i]);
+  }
+}
+
+inline void SetDiagonal6x6(google::protobuf::RepeatedField<double>* field,
+                           const intrinsic_proto::icon::CartVec6& diag) {
+  SetDiagonal6x6(field, {diag.x(), diag.y(), diag.z(), diag.rx(), diag.ry(),
+                         diag.rz()});
+}
+
+}  // namespace
+
 ///=============================================================================
 void RobotControlBridge::declare_ros_parameters(
     ROSNodeInterfaces ros_node_interfaces) {
@@ -239,34 +258,9 @@ bool RobotControlBridge::initialize(
       auto* target_stiffness = mu->mutable_target_stiffness();
       auto* target_damping = mu->mutable_target_damping();
       auto* target_mass_proto = mu->mutable_target_mass();
-      target_stiffness->mutable_data()->Resize(36, 0.0);
-      target_damping->mutable_data()->Resize(36, 0.0);
-      target_mass_proto->mutable_data()->Resize(36, 0.0);
-
-      if (target_pose_stiffness.size() >= 6) {
-        target_stiffness->set_data(0, target_pose_stiffness[0]);
-        target_stiffness->set_data(7, target_pose_stiffness[1]);
-        target_stiffness->set_data(14, target_pose_stiffness[2]);
-        target_stiffness->set_data(21, target_pose_stiffness[3]);
-        target_stiffness->set_data(28, target_pose_stiffness[4]);
-        target_stiffness->set_data(35, target_pose_stiffness[5]);
-      }
-      if (target_pose_damping.size() >= 6) {
-        target_damping->set_data(0, target_pose_damping[0]);
-        target_damping->set_data(7, target_pose_damping[1]);
-        target_damping->set_data(14, target_pose_damping[2]);
-        target_damping->set_data(21, target_pose_damping[3]);
-        target_damping->set_data(28, target_pose_damping[4]);
-        target_damping->set_data(35, target_pose_damping[5]);
-      }
-      if (target_mass.size() >= 6) {
-        target_mass_proto->set_data(0, target_mass[0]);
-        target_mass_proto->set_data(7, target_mass[1]);
-        target_mass_proto->set_data(14, target_mass[2]);
-        target_mass_proto->set_data(21, target_mass[3]);
-        target_mass_proto->set_data(28, target_mass[4]);
-        target_mass_proto->set_data(35, target_mass[5]);
-      }
+      SetDiagonal6x6(target_stiffness->mutable_data(), target_pose_stiffness);
+      SetDiagonal6x6(target_damping->mutable_data(), target_pose_damping);
+      SetDiagonal6x6(target_mass_proto->mutable_data(), target_mass);
 
       auto target_joint_stiffness =
           config["target_joint_stiffness"].get<std::vector<double>>();
@@ -1042,27 +1036,11 @@ bool RobotControlBridge::resetMotionUpdate() {
       const auto& max_damping =
           data_->agent_bridge_fixed_params_.task_settings().max_damping();
 
-      target_stiffness->set_data(0, max_stiffness.x());
-      target_stiffness->set_data(7, max_stiffness.y());
-      target_stiffness->set_data(14, max_stiffness.z());
-      target_stiffness->set_data(21, max_stiffness.rx());
-      target_stiffness->set_data(28, max_stiffness.ry());
-      target_stiffness->set_data(35, max_stiffness.rz());
-
-      target_damping->set_data(0, max_damping.x());
-      target_damping->set_data(7, max_damping.y());
-      target_damping->set_data(14, max_damping.z());
-      target_damping->set_data(21, max_damping.rx());
-      target_damping->set_data(28, max_damping.ry());
-      target_damping->set_data(35, max_damping.rz());
+      SetDiagonal6x6(target_stiffness->mutable_data(), max_stiffness);
+      SetDiagonal6x6(target_damping->mutable_data(), max_damping);
 
       if (data_->critical_mass_.size() >= 6) {
-        target_mass->set_data(0, data_->critical_mass_[0]);
-        target_mass->set_data(7, data_->critical_mass_[1]);
-        target_mass->set_data(14, data_->critical_mass_[2]);
-        target_mass->set_data(21, data_->critical_mass_[3]);
-        target_mass->set_data(28, data_->critical_mass_[4]);
-        target_mass->set_data(35, data_->critical_mass_[5]);
+        SetDiagonal6x6(target_mass->mutable_data(), data_->critical_mass_);
       } else {
         LOG(ERROR) << "critical_mass parameter does not have 6 elements.";
         return false;
