@@ -187,44 +187,31 @@
 
     <include>
       <name>cable</name>
-      <!-- original pose -->
-      <!--<pose>0.0076451278291642666 -0.093802653253078461 1.2291398048400879 -2.8064396162578418 -1.0706809115800313 2.8943799240908668</pose>-->
-      <!-- updated pose -->
-      <pose>0.0075511815957725048 -0.092348650097846985 1.2272508144378662 -2.8227283872419728 -1.0694414097954403 2.8794203539904726</pose>
+      <pose>0.0017559147672727704 -0.11399164795875549 1.2425658702850342 -2.8245333170319484 -1.0731767236652139 2.8995132648172817</pose>
       <uri>model://sfp_sc_cable_phase_2</uri>
+      <!--<plugin filename="gz-sim-detachable-joint-system"
+              name="gz::sim::systems::DetachableJoint">
+       <parent_link>sc_plug_link</parent_link>
+       <child_model>sc_mount</child_model>
+       <child_link>sc_mount_link</child_link>
+      </plugin>-->
     </include>
 
     <model name="sfp_mount">
       <static>true</static>
-      <pose>0.09501 -0.093745 1.15 -2.444e-09 -2.296e-09 3.1415</pose>
+      <pose>0.0725 -0.11375 1.15 0 0 3.1415</pose>
       <include merge="true">
         <name>sfp_mount</name>
-        <uri>model://SFP Mount</uri>
+        <uri>model://sfp_mount_phase_2</uri>
       </include>
-      <plugin filename="gz-sim-detachable-joint-system"
-              name="gz::sim::systems::DetachableJoint">
-       <parent_link>sfp_mount_link</parent_link>
-       <child_model>cable</child_model>
-       <child_link>sfp_module_link</child_link>
-      </plugin>
     </model>
 
-      <!-- original pose -->
-      <!--<pose>0.05001 -0.093741 1.152 -2.444015e-09 -2.296014e-09 3.1415</pose>-->
-      <!-- updated pose -->
       <include>
         <static>true</static>
-        <pose>0.05001 -0.073745 1.152 -2.444015e-09 -2.296014e-09 3.1415</pose>
+        <pose>0.0275 -0.09375 1.152 0 0 3.1415</pose>
         <name>sc_mount</name>
-        <uri>model://SC Mount</uri>
-        <!--<plugin filename="gz-sim-detachable-joint-system"
-                name="gz::sim::systems::DetachableJoint">
-         <parent_link>sc_mount_link</parent_link>
-         <child_model>cable</child_model>
-         <child_link>sc_plug_link</child_link>
-        </plugin>-->
+        <uri>model://sc_mount_phase_2</uri>
       </include>
-
 
   </world>
 </sdf>
