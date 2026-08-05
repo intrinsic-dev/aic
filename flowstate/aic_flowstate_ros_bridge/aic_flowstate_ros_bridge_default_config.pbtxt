@@ -52,5 +52,8 @@
     ft_sensor_part_name: "ati"
     task_settings_file: "config/default_task_settings.pbtxt"
     joint_task_settings_file: "config/default_joint_task_settings.pbtxt"
+    time_to_target_seconds: 0.1
+    control_mode: "admittance"
+    critical_mass: [10.0, 10.0, 10.0, 5.0, 5.0, 5.0]
   },
 }

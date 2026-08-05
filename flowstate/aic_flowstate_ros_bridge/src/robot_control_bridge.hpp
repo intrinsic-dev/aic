@@ -210,13 +210,15 @@ class RobotControlBridge : public BridgeInterface {
 
     bool connected_to_controller_;
     std::string part_name_;
-    std::string ft_sensor_part_name_;
+    std::optional<std::string> ft_sensor_part_name_;
     std::string instance_;
     std::string server_address_;
     std::size_t num_joints_;
     int restart_connection_retries_;
     uint8_t target_mode_value_;
     std::optional<int64_t> last_part_status_timestamp_ns_;
+    double time_to_target_seconds_;
+    std::vector<double> critical_mass_;
 
     aic_control_interfaces::msg::ControllerState controller_state_;
     std::mutex controller_state_mutex_;
