@@ -1,0 +1,285 @@
+<?xml version="1.0" ?>
+<sdf version="1.6">
+  <world name="cable_phase_2">
+    <gravity>0 0 0</gravity>
+    <physics name="1ms" type="ignored">
+      <max_step_size>0.002</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+    </physics>
+    <plugin
+      filename="gz-sim-physics-system"
+      name="gz::sim::systems::Physics">
+    </plugin>
+    <plugin
+      filename="gz-sim-user-commands-system"
+      name="gz::sim::systems::UserCommands">
+    </plugin>
+    <plugin
+      filename="gz-sim-scene-broadcaster-system"
+      name="gz::sim::systems::SceneBroadcaster">
+    </plugin>
+
+
+    <gui fullscreen="0">
+
+      <!-- 3D scene -->
+      <plugin filename="MinimalScene" name="3D View">
+        <gz-gui>
+          <title>3D View</title>
+          <property type="bool" key="showTitleBar">false</property>
+          <property type="string" key="state">docked</property>
+        </gz-gui>
+
+        <engine>ogre2</engine>
+        <scene>scene</scene>
+        <ambient_light>0.0 0.0 0.0</ambient_light>
+        <background_color>0.8 0.8 0.8</background_color>
+        <camera_pose>-6 0 6 0 0.5 0</camera_pose>
+      </plugin>
+
+      <plugin filename="GlobalIlluminationVct" name="GI">
+        <gz-gui>
+          <property type="string" key="state">docked_collapsed</property>
+        </gz-gui>
+        <enabled>true</enabled>
+        <highQuality>false</highQuality>
+        <resolution>256 256 256</resolution>
+        <octantCount>1 1 1</octantCount>
+        <conserveMemory>true</conserveMemory>
+        <thinWallCounter>1.0</thinWallCounter>
+        <anisotropic>true</anisotropic>
+        <bounceCount>3</bounceCount>
+      </plugin>
+
+      <!-- Plugins that add functionality to the scene -->
+      <plugin filename="EntityContextMenuPlugin" name="Entity context menu">
+        <gz-gui>
+          <property key="state" type="string">floating</property>
+          <property key="width" type="double">5</property>
+          <property key="height" type="double">5</property>
+          <property key="showTitleBar" type="bool">false</property>
+        </gz-gui>
+      </plugin>
+      <plugin filename="GzSceneManager" name="Scene Manager">
+        <gz-gui>
+          <property key="resizable" type="bool">false</property>
+          <property key="width" type="double">5</property>
+          <property key="height" type="double">5</property>
+          <property key="state" type="string">floating</property>
+          <property key="showTitleBar" type="bool">false</property>
+        </gz-gui>
+      </plugin>
+      <plugin filename="InteractiveViewControl" name="Interactive view control">
+        <gz-gui>
+          <property key="resizable" type="bool">false</property>
+          <property key="width" type="double">5</property>
+          <property key="height" type="double">5</property>
+          <property key="state" type="string">floating</property>
+          <property key="showTitleBar" type="bool">false</property>
+        </gz-gui>
+      </plugin>
+      <plugin filename="CameraTracking" name="Camera Tracking">
+        <gz-gui>
+          <property key="resizable" type="bool">false</property>
+          <property key="width" type="double">5</property>
+          <property key="height" type="double">5</property>
+          <property key="state" type="string">floating</property>
+          <property key="showTitleBar" type="bool">false</property>
+        </gz-gui>
+      </plugin>
+      <!-- World control -->
+      <plugin filename="WorldControl" name="World control">
+        <gz-gui>
+          <title>World control</title>
+          <property type="bool" key="showTitleBar">false</property>
+          <property type="bool" key="resizable">false</property>
+          <property type="double" key="height">72</property>
+          <property type="double" key="z">1</property>
+
+          <property type="string" key="state">floating</property>
+          <anchors target="3D View">
+            <line own="left" target="left"/>
+            <line own="bottom" target="bottom"/>
+          </anchors>
+        </gz-gui>
+
+        <play_pause>true</play_pause>
+        <step>true</step>
+        <start_paused>true</start_paused>
+        <use_event>true</use_event>
+
+      </plugin>
+
+      <!-- World statistics -->
+      <plugin filename="WorldStats" name="World stats">
+        <gz-gui>
+          <title>World stats</title>
+          <property type="bool" key="showTitleBar">false</property>
+          <property type="bool" key="resizable">false</property>
+          <property type="double" key="height">110</property>
+          <property type="double" key="width">290</property>
+          <property type="double" key="z">1</property>
+
+          <property type="string" key="state">floating</property>
+          <anchors target="3D View">
+            <line own="right" target="right"/>
+            <line own="bottom" target="bottom"/>
+          </anchors>
+        </gz-gui>
+
+        <sim_time>true</sim_time>
+        <real_time>true</real_time>
+        <real_time_factor>true</real_time_factor>
+        <iterations>true</iterations>
+      </plugin>
+
+      <!-- Inspector -->
+      <plugin filename="ComponentInspector" name="Component inspector">
+        <gz-gui>
+          <property type="string" key="state">docked</property>
+        </gz-gui>
+      </plugin>
+
+      <!-- Entity tree -->
+      <plugin filename="EntityTree" name="Entity tree">
+        <gz-gui>
+          <property type="string" key="state">docked</property>
+        </gz-gui>
+      </plugin>
+
+    </gui>
+
+<!--    <light type="directional" name="sun">
+      <cast_shadows>true</cast_shadows>
+      <pose>0 0 10 0 0 0</pose>
+      <diffuse>0.8 0.8 0.8 1</diffuse>
+      <specular>0.2 0.2 0.2 1</specular>
+      <attenuation>
+        <range>1000</range>
+        <constant>0.9</constant>
+        <linear>0.01</linear>
+        <quadratic>0.001</quadratic>
+      </attenuation>
+      <direction>-0.5 0.1 -0.9</direction>
+    </light>
+-->
+
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <!--plane>
+              <normal>0 0 1</normal>
+              <size>100 100</size>
+            </plane-->
+            <box>
+              <size>20 20 0.1</size>
+            </box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>20 20 0.1</size>
+            </box>
+          </geometry>
+          <material>
+            <ambient>0.8 0.8 0.8 1</ambient>
+            <diffuse>0.8 0.8 0.8 1</diffuse>
+            <specular>0.8 0.8 0.8 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+<!--    <include>
+      <pose>0.1500000004920933 -0.19999999532104853 1.139999982525508 -2.4440147588972266e-09 -2.2960146619769773e-09 3.1415000228211269</pose>
+      <uri>model://taskboard</uri>
+    </include>
+-->
+
+    <light type="spot" name="enclosure_light">
+      <pose>0 0 2.5 0 0 0</pose>
+      <cast_shadows>true</cast_shadows>
+      <diffuse>1 1 1 1</diffuse>
+      <intensity>0.4</intensity>
+      <specular>.1 .1 .1 1</specular>
+      <attenuation>
+        <range>2</range>
+        <constant>1.0</constant>
+        <linear>0.01</linear>
+        <quadratic>0.001</quadratic>
+      </attenuation>
+      <spot>
+        <inner_angle>0.1</inner_angle>
+        <outer_angle>2</outer_angle>
+        <falloff>1.0</falloff>
+      </spot>
+      <visualize>false</visualize>
+    </light>
+
+    <light type="point" name="ceiling_01">
+      <pose>2 2 6 0 0 0</pose>
+      <cast_shadows>false</cast_shadows>
+      <diffuse>1 1 1 1</diffuse>
+      <intensity>1</intensity>
+      <specular>.1 .1 .1 1</specular>
+      <attenuation>
+        <range>9</range>
+        <constant>1.0</constant>
+        <linear>0.01</linear>
+        <quadratic>0.001</quadratic>
+      </attenuation>
+      <visualize>false</visualize>
+    </light>
+
+    <light type="point" name="ceiling_02">
+      <pose>-2 -2 6 0 0 0</pose>
+      <cast_shadows>false</cast_shadows>
+      <diffuse>1 1 1 1</diffuse>
+      <intensity>1</intensity>
+      <specular>.1 .1 .1 1</specular>
+      <attenuation>
+        <range>9</range>
+        <constant>1.0</constant>
+        <linear>0.01</linear>
+        <quadratic>0.001</quadratic>
+      </attenuation>
+      <visualize>false</visualize>
+    </light>
+
+    <include>
+      <name>enclosure_phase_2</name>
+      <static>true</static>
+      <pose>0 0 0 0 0 0</pose>
+      <uri>model://Enclosure Phase 2</uri>
+    </include>
+
+    <include>
+      <name>enclosure</name>
+      <static>true</static>
+      <pose>0 3 0 0 0 0</pose>
+      <uri>model://Enclosure</uri>
+    </include>
+
+
+<!--
+    <include>
+      <name>cable</name>
+      <pose>0.0073774475604295731 -0.092691071331501007 1.2291140556335449 -2.81076289378999 -1.0712828988604046 2.8818182256822586</pose>
+      <uri>model://sfp_sc_cable_phase_2</uri>
+    </include>
+-->
+
+    <include>
+      <pose>0.1500000004920933 -0.19999999532104853 1.139999982525508 -2.4440147588972266e-09 -2.2960146619769773e-09 3.1415000228211269</pose>
+      <uri>model://taskboard</uri>
+    </include>
+
+
+
+
+
+  </world>
+</sdf>
