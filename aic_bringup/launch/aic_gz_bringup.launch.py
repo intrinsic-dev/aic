@@ -667,8 +667,13 @@ def generate_launch_description():
         DeclareLaunchArgument(
             "cable_type",
             default_value="sfp_sc_cable",
-            description="Type of cable model to spawn. Available options: 'sfp_sc_cable', and 'sfp_sc_cable_reversed'",
-            choices=["sfp_sc_cable", "sfp_sc_cable_reversed", "sfp_sc_cable_phase_1"],
+            description="Type of cable model to spawn. Available options: 'sfp_sc_cable', 'sfp_sc_cable_reversed', 'sfp_sc_cable_phase_1', and 'sfp_sc_cable_phase_2'",
+            choices=[
+                "sfp_sc_cable",
+                "sfp_sc_cable_reversed",
+                "sfp_sc_cable_phase_1",
+                "sfp_sc_cable_phase_2",
+            ],
         )
     )
     declared_arguments.append(
