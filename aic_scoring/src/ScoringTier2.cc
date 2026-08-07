@@ -192,13 +192,13 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
   tier2_score.add_category_score("insertion force",
                                  this->GetInsertionForceScore());
   tier2_score.add_category_score("contacts", this->GetContactsScore());
-  const auto [success, tier3_score] = this->CombineTier3Score();
+  const auto tier3_score = this->CombineTier3Score();
   tier2_score.add_category_score("duration",
-                                 this->GetTaskDurationScore(success));
+                                 this->GetTaskDurationScore());
   tier2_score.add_category_score("trajectory smoothness",
-                                 this->GetTrajectoryJerkScore(success));
+                                 this->GetTrajectoryJerkScore());
   tier2_score.add_category_score("trajectory efficiency",
-                                 this->GetTrajectoryEfficiencyScore(success));
+                                 this->GetTrajectoryEfficiencyScore());
 
   return {tier2_score, tier3_score};
 }
@@ -403,8 +403,7 @@ static double CalculateInverseProportionalScore(const double max_score,
 }
 
 //////////////////////////////////////////////////
-Tier2Score::CategoryScore ScoringTier2::GetTrajectoryJerkScore(
-    const bool _success) const {
+Tier2Score::CategoryScore ScoringTier2::GetTrajectoryJerkScore() const {
   using CategoryScore = Tier2Score::CategoryScore;
 
   const double kMaxJerkScore = 6.0;
@@ -418,13 +417,6 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryJerkScore(
 
   if (!this->task_end_time.has_value()) {
     return CategoryScore(0, "Task not completed.");
-  }
-
-  if (!_success) {
-    return CategoryScore(
-        0,
-        "Plugs are not within max bounding radius from target ports, "
-        "not assigning jerk bonus");
   }
 
   if (this->endEffectorVelocities.size() < kWindowSize) {
@@ -515,19 +507,11 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryJerkScore(
 }
 
 //////////////////////////////////////////////////
-Tier2Score::CategoryScore ScoringTier2::GetTrajectoryEfficiencyScore(
-    const bool _success) const {
+Tier2Score::CategoryScore ScoringTier2::GetTrajectoryEfficiencyScore() const {
   using CategoryScore = Tier2Score::CategoryScore;
 
   if (!this->task_end_time.has_value()) {
     return CategoryScore(0, "Task not completed.");
-  }
-
-  if (!_success) {
-    return CategoryScore(
-        0,
-        "Plugs are not within max bounding radius from target ports, "
-        "not assigning efficiency bonus");
   }
 
   const std::size_t numConnections = this->connection.value().data.size();
@@ -796,16 +780,14 @@ Tier3Score ScoringTier2::ComputeTier3Score(std::size_t index) const {
   return this->GetDistanceScore(index);
 }
 
-std::pair<bool, Tier3Score> ScoringTier2::CombineTier3Score() const {
+Tier3Score ScoringTier2::CombineTier3Score() const {
   const auto score_0 = this->ComputeTier3Score(0);
   const auto score_1 = this->ComputeTier3Score(1);
-  const bool successful =
-      score_0.total_score() > 0 && score_1.total_score() > 0;
   const auto combinedScore =
       (score_0.total_score() + score_1.total_score()) / 2.0;
   const std::string msg = "[Task 0] : '" + score_0.message + "'. [Task 1]: '" +
                           score_1.message + "'.";
-  return {successful, Tier3Score(combinedScore, msg)};
+  return Tier3Score(combinedScore, msg);
 }
 
 //////////////////////////////////////////////////
@@ -888,8 +870,7 @@ Tier2Score::CategoryScore ScoringTier2::GetContactsScore() const {
 }
 
 //////////////////////////////////////////////////
-Tier2Score::CategoryScore ScoringTier2::GetTaskDurationScore(
-    const bool _success) const {
+Tier2Score::CategoryScore ScoringTier2::GetTaskDurationScore() const {
   using CategoryScore = Tier2Score::CategoryScore;
 
   const rclcpp::Duration kMaxTaskTime = rclcpp::Duration::from_seconds(300.0);
@@ -903,13 +884,6 @@ Tier2Score::CategoryScore ScoringTier2::GetTaskDurationScore(
 
   if (!this->task_start_time.has_value()) {
     return CategoryScore(0, "Time computation failed, task start time not set");
-  }
-
-  if (!_success) {
-    return CategoryScore(
-        0,
-        "Plugs are not within max bounding radius from target ports, "
-        "not assigning time bonus");
   }
 
   const rclcpp::Duration task_duration =
