@@ -37,7 +37,7 @@ ZENOH_CONFIG_OVERRIDE='connect/endpoints=["tcp/'"$AIC_ROUTER_ADDR"'"]'
 ZENOH_CONFIG_OVERRIDE+=';transport/shared_memory/enabled=false'
 export ZENOH_CONFIG_OVERRIDE
 
-exec ros2 run aic_engine aic_engine --ros-args -p use_sim_time:=true
+exec ros2 run aic_engine aic_engine
 EOF
 
 ENTRYPOINT ["/entrypoint.sh"]

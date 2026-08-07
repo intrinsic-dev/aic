@@ -16,15 +16,50 @@
  */
 
 #include <cstdlib>
+#include <fstream>
+#include <iostream>
+#include <memory>
+#include <vector>
 
 #include "aic_engine.hpp"
+#include "aic_engine.pb.h"
+#include "intrinsic/resources/proto/runtime_context.pb.h"
 #include "rclcpp/executor.hpp"
+#include "rclcpp/rclcpp.hpp"
+
+//==============================================================================
+intrinsic_proto::config::RuntimeContext GetRuntimeContext() {
+  intrinsic_proto::config::RuntimeContext runtime_context;
+  std::ifstream runtime_context_file;
+  runtime_context_file.open("/etc/intrinsic/runtime_config.pb",
+                            std::ios::binary);
+  if (!runtime_context.ParseFromIstream(&runtime_context_file)) {
+    // Return default context for running locally
+    std::cerr << "Warning: using default RuntimeContext\n";
+  }
+  return runtime_context;
+}
 
 //==============================================================================
 int main(int argc, char** argv) {
+  auto runtime_context = GetRuntimeContext();
+  intrinsic::AicEngineConfig config;
+  bool use_sim_time = true;
+  if (runtime_context.config().UnpackTo(&config)) {
+    use_sim_time = config.use_sim_time();
+  } else {
+    std::cerr << "Warning: Error unpacking AicEngineConfig from service "
+                 "config file... Passing default ros args to node\n";
+  }
+
   rclcpp::init(argc, argv);
 
-  auto engine = std::make_shared<aic::Engine>();
+  rclcpp::NodeOptions options;
+  std::vector<rclcpp::Parameter> params;
+  params.emplace_back("use_sim_time", use_sim_time);
+  options.parameter_overrides(params);
+
+  auto engine = std::make_shared<aic::Engine>(options);
   engine->spin();
 
   rclcpp::shutdown();

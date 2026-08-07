@@ -12,6 +12,7 @@
   <depend>aic_scoring</depend>
   <depend>aic_control_interfaces</depend>
   <depend>aic_engine_interfaces</depend>
+  <depend>intrinsic_sdk_cmake</depend>
   <depend>lifecycle_msgs</depend>
   <depend>rclcpp</depend>
   <depend>rclcpp_action</depend>

@@ -1,0 +1,6 @@
+# proto-file: aic_engine.proto
+# proto-message: AicEngineConfig
+# Corresponds to the message definition in aic_engine.proto
+[type.googleapis.com/intrinsic.AicEngineConfig] {
+  use_sim_time: true
+}

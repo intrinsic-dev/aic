@@ -86,9 +86,19 @@ if [ -f ./inbuild ] && [ ! -x ./inbuild ]; then
   chmod +x ./inbuild
 fi
 
+echo "INFO: Loading newly built service image into local daemon..."
+docker load -i "$IMAGES_DIR/aic_engine/aic_engine.tar"
+
+echo "INFO: Extracting descriptor set from container..."
+docker create --name temp_container_service flowstate:aic_engine
+docker cp "temp_container_service:/ws_aic/install/share/aic_engine/aic_engine_protos.desc" \
+  "$IMAGES_DIR/aic_engine/aic_engine_protos.desc"
+docker rm -f temp_container_service
 
 echo "INFO: Bundling service using inbuild..."
 ./inbuild service bundle \
-  --manifest "$SERVICE_DIR/aic_engine.manifest.textproto" \
+  --file_descriptor_set "$IMAGES_DIR/aic_engine/aic_engine_protos.desc" \
+  --manifest "$AIC_TOP_DIR/aic_engine/aic_engine.manifest.textproto" \
   --oci_image "$IMAGES_DIR/aic_engine/aic_engine.tar" \
-  --output "$IMAGES_DIR/aic_engine/aic_engine.bundle.tar"
+  --output "$IMAGES_DIR/aic_engine/aic_engine.bundle.tar" \
+  --default_config "$AIC_TOP_DIR/aic_engine/aic_engine_default_config.pbtxt"

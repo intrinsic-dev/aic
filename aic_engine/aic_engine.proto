@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+package intrinsic;
+
+message AicEngineConfig {
+  bool use_sim_time = 1;
+}
