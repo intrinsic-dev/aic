@@ -1,0 +1,60 @@
+<?xml version="1.0" ?>
+<sdf version="1.9">
+  <model name="sfp_sc_cable">
+    <include merge="true">
+      <uri>model://cable_base_c_rotated_phase_2</uri>
+    </include>
+    <include merge="true">
+      <uri>model://LC Plug</uri>
+      <pose relative_to="cable_connection_0">-0.041 0 0 0 3.14159 1.57079</pose>
+    </include>
+    <include merge="true">
+      <uri>model://SC Plug</uri>
+      <pose relative_to="cable_connection_1">0.052 0 0 0 0 0.0</pose>
+    </include>
+    <include merge="true">
+      <!--
+         Remove collisions that are not necessary for grasping.
+      -->
+      <experimental:params>
+        <collision element_id="sfp_module_link::port_collider_box" action="remove"/>
+        <collision element_id="sfp_module_link::port_collider_box.001" action="remove"/>
+        <collision element_id="sfp_module_link::port_collider_box.002" action="remove"/>
+        <collision element_id="sfp_module_link::port_collider_box.003" action="remove"/>
+        <collision element_id="sfp_module_link::port_collider_box.004" action="remove"/>
+        <collision element_id="sfp_module_link::port_collider_box.005" action="remove"/>
+        <collision element_id="sfp_module_link::port_collider_box.006" action="remove"/>
+        <collision element_id="sfp_module_link::port_collider_box.007" action="remove"/>
+      </experimental:params>
+      <uri>model://SFP Module</uri>
+      <pose relative_to="lc_plug_link">0 0.0384 0 0 3.14159 3.14159</pose>
+    </include>
+    <joint name="plug_0_joint" type="fixed">
+      <parent>cable_connection_0</parent>
+      <child>lc_plug_link</child>
+    </joint>
+    <joint name="plug_1_joint" type="fixed">
+      <parent>cable_connection_1</parent>
+      <child>sc_plug_link</child>
+    </joint>
+    <joint name="sfp_module_joint" type="fixed">
+      <parent>lc_plug_link</parent>
+      <child>sfp_module_link</child>
+    </joint>
+
+    <plugin filename="static://gz::sim::systems::PosePublisher"
+      name="gz::sim::systems::PosePublisher">
+      <publish_link_pose>true</publish_link_pose>
+      <publish_sensor_pose>false</publish_sensor_pose>
+      <publish_collision_pose>false</publish_collision_pose>
+      <publish_visual_pose>false</publish_visual_pose>
+      <publish_nested_model_pose>true</publish_nested_model_pose>
+      <publish_model_pose>true</publish_model_pose>
+      <use_pose_vector_msg>true</use_pose_vector_msg>
+      <static_publisher>false</static_publisher>
+      <update_frequency>0</update_frequency>
+      <static_update_frequency>0</static_update_frequency>
+    </plugin>
+  </model>
+
+</sdf>
