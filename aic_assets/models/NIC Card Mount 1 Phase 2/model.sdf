@@ -60,7 +60,7 @@
         </geometry>
       </collision>
       <collision name="nic base mount_collider_box">
-        <pose>0.0 -0.002501 0.005014 0.0 -0.0 -1.570796</pose>
+        <pose>0.0 0.002501 0.005014 0.0 0.0 1.570796</pose>
         <geometry>
           <box>
             <size>0.03842 0.094948 0.01004</size>
