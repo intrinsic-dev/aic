@@ -75,6 +75,9 @@ pyright = "==1.1.408"
 ros-kilted-lerobot-robot-aic = { path = "aic_utils/lerobot_robot_aic" }
 ros-kilted-moveit-msgs = "*"
 setuptools = ">=71.0.0,<81.0.0"
+ros-kilted-ros2bag = ">=0.32.0,<0.33"
+ros-kilted-rosbag2-transport = ">=0.32.0,<0.33"
+ros-kilted-rosbag2-storage-mcap = ">=0.32.0,<0.33"
 
 [feature.dev-only.pypi-dependencies]
 huggingface-hub = { version = "~=1.7" }
@@ -85,7 +88,3 @@ mujoco = "==3.5.0"
 pynput = ">=1.7.6,<2"
 pyspacemouse = ">=2.0.0, <3"
 
-[dependencies]
-ros-kilted-ros2bag = ">=0.32.0,<0.33"
-ros-kilted-rosbag2-transport = ">=0.32.0,<0.33"
-ros-kilted-rosbag2-storage-mcap = ">=0.32.0,<0.33"
