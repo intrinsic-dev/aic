@@ -4,7 +4,7 @@ authors = ["Teo Koon Peng <koonpeng@intrinsic.ai>"]
 channels = ["robostack-kilted", "conda-forge"]
 platforms = ["linux-64", "osx-arm64"]
 version = "0.1.0"
-conda-pypi-map = { "robostack-kilted" = "robostack_mapping.json", "conda-forge" = "robostack_mapping.json" }
+conda-pypi-map = { "robostack-kilted" = "robostack_mapping.json" }
 preview = ["pixi-build"]
 
 [environments]
@@ -51,10 +51,6 @@ ros-kilted-vision-msgs = ">=4.2.0,<4.3"
 ros-kilted-ros-gz-interfaces = ">=2.1.0,<2.2"
 ros-kilted-yaml-cpp-vendor = "*"
 ros-kilted-orocos-kdl-vendor = "*"
-ros-kilted-rosbag2-cpp = "*"
-ros-kilted-rosbag2-transport = "*"
-ros-kilted-rosbag2-storage-mcap = "*"
-ros-kilted-ros2bag = "*"
 nlohmann_json = "*"
 
 [feature.build-dependencies.dependencies]
@@ -89,3 +85,7 @@ mujoco = "==3.5.0"
 pynput = ">=1.7.6,<2"
 pyspacemouse = ">=2.0.0, <3"
 
+[dependencies]
+ros-kilted-ros2bag = ">=0.32.0,<0.33"
+ros-kilted-rosbag2-transport = ">=0.32.0,<0.33"
+ros-kilted-rosbag2-storage-mcap = ">=0.32.0,<0.33"
