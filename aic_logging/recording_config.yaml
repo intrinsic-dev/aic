@@ -4,7 +4,7 @@
 # Storage configuration
 storage:
   identifier: "mcap"                # Storage plugin: "mcap" or "sqlite3"
-  output_dir: "/storage/sda/ros2_bag"       # Destination base directory for recorded bags
+  output_dir: "/home/ros2_bag"       # Destination base directory for recorded bags
   preset_profile: "zstd_fast"       # Storage preset: "none", "fastwrite", "zstd_fast", "zstd_small"
   max_bag_size: 0                   # Split file threshold in bytes (0 = disabled)
   max_bag_duration: 0            # Split file threshold in seconds (0 = disabled)

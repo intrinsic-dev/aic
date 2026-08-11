@@ -88,3 +88,7 @@ mujoco = "==3.5.0"
 pynput = ">=1.7.6,<2"
 pyspacemouse = ">=2.0.0, <3"
 
+[feature.dev-only.tasks]
+start_recording = { cmd = "python3 aic_logging/record.py --config aic_logging/recording_config.yaml", env = { ZENOH_SESSION_CONFIG_URI = "aic_logging/zenoh_session_config.json5" } }
+play_recording = { cmd = "ros2 bag play", env = { ZENOH_SESSION_CONFIG_URI = "aic_logging/zenoh_session_config.json5" } }
+bag_info = { cmd = "ros2 bag info", env = { ZENOH_SESSION_CONFIG_URI = "aic_logging/zenoh_session_config.json5" } }
