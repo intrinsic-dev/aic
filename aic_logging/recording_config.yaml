@@ -4,7 +4,7 @@
 # Storage configuration
 storage:
   identifier: "mcap"                # Storage plugin: "mcap" or "sqlite3"
-  output_dir: "/tmp/aic_bags"       # Destination base directory for recorded bags
+  output_dir: "/storage/sda/ros2_bag"       # Destination base directory for recorded bags
   preset_profile: "zstd_fast"       # Storage preset: "none", "fastwrite", "zstd_fast", "zstd_small"
   max_bag_size: 0                   # Split file threshold in bytes (0 = disabled)
   max_bag_duration: 0            # Split file threshold in seconds (0 = disabled)
@@ -14,26 +14,31 @@ storage:
 topics:
   record_all: false                 # Record specified list of topics
   include:                          # Exact list of topics to record
-    - "/wrist_camera_1/rgb"
-    - "/wrist_camera_1/camera_info"
-    - "/wrist_camera_2/rgb"
-    - "/wrist_camera_2/camera_info"
-    - "/workcell_camera_1/rgb"
-    - "/workcell_camera_1/camera_info"
-    - "/ati/wrench"
+    - "/left_camera/image"
+    - "/left_camera/camera_info"
+    - "/center_camera/image"
+    - "/center_camera/camera_info"
+    - "/right_camera/image"
+    - "/right_camera/camera_info"
+    - "/fts_broadcaster/wrench"
     - "/joint_states"
     - "/robot_description"
     - "/gripper_state"
-    - "/controller/cartesian_commands"
-    - "/controller/joint_commands"
-    - "/task_state"
+    - "/tf"
+    - "/tf_static"
+    - "/aic_controller/controller_state"
+    - "/aic_controller/pose_commands"
+    - "/aic_controller/joint_commands"
     - "/rosout"
+    - "/observations"
   exclude: []
 
 # Service recording options
 services:
   record_all: false
-  include: []
+  include:
+    - "/aic_controller/change_target_mode"
+    - "/aic_controller/tare_force_torque_sensor"
   exclude: []
 
 # Action recording options

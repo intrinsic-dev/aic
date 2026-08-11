@@ -8,7 +8,7 @@
   // Connect to the IPC cluster router endpoint
   connect: {
     endpoints: [
-      "tcp/ip.address.of.ipc:17447"
+      "tcp/192.168.1.124:17447"
     ]
   },
 
@@ -30,12 +30,13 @@
         "reply",
       ],
       rules: [
-        { key_expr: "**/wrist_camera_1/rgb/**", freq: 20.0 },
-        { key_expr: "**/wrist_camera_1/camera_info/**", freq: 20.0 },
-        { key_expr: "**/wrist_camera_2/rgb/**", freq: 20.0 },
-        { key_expr: "**/wrist_camera_2/camera_info/**", freq: 20.0 },
-        { key_expr: "**/workcell_camera_1/rgb/**", freq: 20.0 },
-        { key_expr: "**/workcell_camera_1/camera_info/**", freq: 20.0 },
+        { key_expr: "**/left_camera/image/**", freq: 1.0 },
+        { key_expr: "**/left_camera/camera_info/**", freq: 1.0 },
+        { key_expr: "**/center_camera/image/**", freq: 1.0 },
+        { key_expr: "**/center_camera/camera_info/**", freq: 1.0 },
+        { key_expr: "**/right_camera/image/**", freq: 1.0 },
+        { key_expr: "**/right_camera/camera_info/**", freq: 1.0 },
+        { key_expr: "**/observations/**", freq: 1.0 },
       ],
     }
   ]
