@@ -1,7 +1,9 @@
 <?xml version="1.0" ?>
+<!--
+  Load several rendering sensors.
+-->
 <sdf version="1.6">
-  <world name="cable_phase_2">
-    <gravity>0 0 0</gravity>
+  <world name="cable_mount">
     <physics name="1ms" type="ignored">
       <max_step_size>0.002</max_step_size>
       <real_time_factor>1.0</real_time_factor>
@@ -165,6 +167,10 @@
         </collision>
         <visual name="visual">
           <geometry>
+            <!--plane>
+              <normal>0 0 1</normal>
+              <size>100 100</size>
+            </plane-->
             <box>
               <size>20 20 0.1</size>
             </box>
@@ -179,39 +185,57 @@
     </model>
 
     <include>
-      <name>enclosure</name>
-      <static>true</static>
-      <pose>0 0 0 0 0 0</pose>
-      <uri>model://Enclosure</uri>
+      <pose>0.028558 0 1.02189 0.762406 0 -1.57079</pose>
+      <uri>model://SFP Module</uri>
     </include>
 
     <include>
-      <name>cable</name>
-      <pose>0.0017559147672727704 -0.11399164795875549 1.2425658702850342 -2.8245333170319484 -1.0731767236652139 2.8995132648172817</pose>
-      <uri>model://sfp_sc_cable_phase_2</uri>
-      <!--<plugin filename="gz-sim-detachable-joint-system"
-              name="gz::sim::systems::DetachableJoint">
-       <parent_link>sc_plug_link</parent_link>
-       <child_model>sc_mount</child_model>
-       <child_link>sc_mount_link</child_link>
-      </plugin>-->
+      <static>true</static>
+      <pose>0 0 1 0 0.0 0</pose>
+      <uri>model://SFP Mount</uri>
     </include>
 
-    <model name="sfp_mount">
+    <include>
+      <name>sfp_mount_phase_2</name>
       <static>true</static>
-      <pose>0.0725 -0.11375 1.15 0 0 3.1415</pose>
-      <include merge="true">
-        <name>sfp_mount</name>
-        <uri>model://sfp_mount_phase_2</uri>
-      </include>
-    </model>
+      <pose>0 0.1 1 0 0.0 0</pose>
+      <uri>model://sfp_mount_phase_2</uri>
+    </include>
 
-      <include>
-        <static>true</static>
-        <pose>0.0275 -0.09375 1.152 0 0 3.1415</pose>
-        <name>sc_mount</name>
-        <uri>model://sc_mount_phase_2</uri>
-      </include>
+
+
+    <include>
+      <pose>0.024812 0.2 1.01569 1.57079 0.785398 3.14159</pose>
+      <uri>model://SC Plug</uri>
+    </include>
+
+    <include>
+      <static>true</static>
+      <pose>0.0 0.2 1 0 0 0</pose>
+      <uri>model://SC Mount</uri>
+    </include>
+
+    <include>
+      <name>sc_mount_phase_2</name>
+      <static>true</static>
+      <pose>0.0 0.3 1 0 0 0</pose>
+      <uri>model://sc_mount_phase_2</uri>
+    </include>
+
+
+
+<!--    <include>
+      <pose>0.0 0.5 1.0 0 0 0</pose>
+      <uri>model://NIC Card Mount</uri>
+    </include>
+
+    <include>
+      <pose>0.0 -0.5 1.0 0 0 0</pose>
+      <uri>model://NIC Card</uri>
+    </include>
+-->
+
+
 
   </world>
 </sdf>

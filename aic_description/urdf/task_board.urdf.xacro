@@ -3,8 +3,8 @@
   <!-- Include component macros -->
   <xacro:include filename="$(find aic_assets)/models/Task Board Base/task_board_base_macro.xacro"/>
   <xacro:include filename="$(find aic_assets)/models/LC Mount/lc_mount_macro.xacro"/>
-  <xacro:include filename="$(find aic_assets)/models/SFP Mount/sfp_mount_macro.xacro"/>
-  <xacro:include filename="$(find aic_assets)/models/SC Mount/sc_mount_macro.xacro"/>
+  <xacro:include filename="$(find aic_assets)/models/sfp_mount_phase_2/sfp_mount_macro.xacro"/>
+  <xacro:include filename="$(find aic_assets)/models/sc_mount_phase_2/sc_mount_macro.xacro"/>
   <xacro:include filename="$(find aic_assets)/models/SC Port/sc_port_macro.xacro"/>
   <xacro:include filename="$(find aic_assets)/models/NIC Card Mount/nic_card_mount_macro.xacro"/>
 
@@ -153,7 +153,7 @@
     <joint name="sfp_mount_rail_0_joint" type="fixed">
       <parent link="task_board_base_link"/>
       <child link="sfp_mount_rail_0_link"/>
-      <origin xyz="0.055 ${-0.10625 + $(arg sfp_mount_rail_0_translation)} 0.01" rpy="$(arg sfp_mount_rail_0_roll) $(arg sfp_mount_rail_0_pitch) $(arg sfp_mount_rail_0_yaw)"/>
+      <origin xyz="0.0775 ${-0.10625 + $(arg sfp_mount_rail_0_translation)} 0.01" rpy="$(arg sfp_mount_rail_0_roll) $(arg sfp_mount_rail_0_pitch) $(arg sfp_mount_rail_0_yaw)"/>
     </joint>
   </xacro:if>
 
@@ -163,7 +163,7 @@
     <joint name="sc_mount_rail_0_joint" type="fixed">
       <parent link="task_board_base_link"/>
       <child link="sc_mount_rail_0_link"/>
-      <origin xyz="0.1 ${-0.10625 + $(arg sc_mount_rail_0_translation)} 0.012" rpy="$(arg sc_mount_rail_0_roll) $(arg sc_mount_rail_0_pitch) $(arg sc_mount_rail_0_yaw)"/>
+      <origin xyz="0.1225 ${-0.10625 + $(arg sc_mount_rail_0_translation)} 0.012" rpy="$(arg sc_mount_rail_0_roll) $(arg sc_mount_rail_0_pitch) $(arg sc_mount_rail_0_yaw)"/>
     </joint>
   </xacro:if>
 

@@ -1,0 +1,95 @@
+<?xml version="1.0" ?>
+<sdf xmlns:intrinsic="https://intrinsic.ai/" version="1.9">
+  <model name="SFP Mount">
+    <link name="sfp_mount_link">
+      <visual name="sfp_mount_visual">
+        <geometry>
+          <mesh>
+            <uri>sfp_mount_visual.glb</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <collision name="iso 4762 - m2 x 8072_collider_box">
+        <pose>0.0 -0.0 0.01031 0.0 -0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.030302 0.01777 0.008639</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="iso 4762 - m2 x 8072_collider_box.001">
+        <pose>-0.004422 -0.0 0.024972 0.0 -0.785398 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.03389 0.01777 0.001584</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="iso 4762 - m2 x 8072_collider_box.002">
+        <pose>0.006374 -0.0 0.018568 0.0 -0.785398 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.027678 0.01777 0.003208</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="iso 4762 - m2 x 8072_collider_box.003">
+        <pose>-0.001197 0.008189 0.02004 0.0 -0.785398 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.036305 0.001392 0.010976</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="iso 4762 - m2 x 8072_collider_box.004">
+        <pose>-0.001435 -0.008188 0.020278 0.0 -0.785398 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.036305 0.001395 0.01165</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="iso 4762 - m2 x 8072_collider_box.005">
+        <pose>-0.008179 -0.0 0.013534 0.0 -0.785398 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.017258 0.01777 0.01165</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="iso 4762 - m2 x 8072_collider_box.007">
+        <pose>0.014053 -0.0 0.017771 0.0 -0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.004913 0.01777 0.016775</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="fixture for sfp connector_collider_box">
+        <pose>-0.0 0.0 0.008 0.0 -0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.00602 0.0311 0.00602</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="plug fixture base mount_collider_box.001">
+        <pose>-0.0 0.0 0.0025 0.0 -0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.05102 0.00602 0.00502</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="plug fixture base mount_collider_cylinder.001">
+        <pose>0.0 -0.0 0.003 0.0 -0.0 0.0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.01521</radius>
+            <length>0.006019</length>
+          </cylinder>
+        </geometry>
+      </collision>
+    </link>
+  </model>
+</sdf>

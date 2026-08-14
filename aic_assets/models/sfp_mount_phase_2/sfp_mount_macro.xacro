@@ -1,0 +1,82 @@
+<?xml version="1.0" ?>
+<robot xmlns:xacro="http://wiki.ros.org/xacro">
+
+  <xacro:macro name="sfp_mount" params="prefix">
+    <link name="${prefix}link">
+      <inertial>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <mass value="0.1"/>
+        <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
+      </inertial>
+
+      <visual name="sfp_mount_visual">
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="package://aic_assets/models/sfp_mount_phase_2/sfp_mount_visual.glb"/>
+        </geometry>
+      </visual>
+
+      <collision name="iso 4762 - m2 x 8072_collider_box">
+        <origin xyz="0.0 -0.0 0.01031" rpy="0.0 -0.0 0.0"/>
+        <geometry>
+          <box size="0.030302 0.01777 0.008639"/>
+        </geometry>
+      </collision>
+      <collision name="iso 4762 - m2 x 8072_collider_box.001">
+        <origin xyz="-0.004422 -0.0 0.024972" rpy="0.0 -0.785398 0.0"/>
+        <geometry>
+          <box size="0.03389 0.01777 0.001584"/>
+        </geometry>
+      </collision>
+      <collision name="iso 4762 - m2 x 8072_collider_box.002">
+        <origin xyz="0.006374 -0.0 0.018568" rpy="0.0 -0.785398 0.0"/>
+        <geometry>
+          <box size="0.027678 0.01777 0.003208"/>
+        </geometry>
+      </collision>
+      <collision name="iso 4762 - m2 x 8072_collider_box.003">
+        <origin xyz="-0.001197 0.008189 0.02004" rpy="0.0 -0.785398 0.0"/>
+        <geometry>
+          <box size="0.036305 0.001392 0.010976"/>
+        </geometry>
+      </collision>
+      <collision name="iso 4762 - m2 x 8072_collider_box.004">
+        <origin xyz="-0.001435 -0.008188 0.020278" rpy="0.0 -0.785398 0.0"/>
+        <geometry>
+          <box size="0.036305 0.001395 0.01165"/>
+        </geometry>
+      </collision>
+      <collision name="iso 4762 - m2 x 8072_collider_box.005">
+        <origin xyz="-0.008179 -0.0 0.013534" rpy="0.0 -0.785398 0.0"/>
+        <geometry>
+          <box size="0.017258 0.01777 0.01165"/>
+        </geometry>
+      </collision>
+      <collision name="iso 4762 - m2 x 8072_collider_box.007">
+        <origin xyz="0.014053 -0.0 0.017771" rpy="0.0 -0.0 0.0"/>
+        <geometry>
+          <box size="0.004913 0.01777 0.016775"/>
+        </geometry>
+      </collision>
+      <collision name="fixture for sfp connector_collider_box">
+        <origin xyz="-0.0 0.0 0.008" rpy="0.0 -0.0 0.0"/>
+        <geometry>
+          <box size="0.00602 0.0311 0.00602"/>
+        </geometry>
+      </collision>
+      <collision name="plug fixture base mount_collider_box.001">
+        <origin xyz="-0.0 0.0 0.0025" rpy="0.0 -0.0 0.0"/>
+        <geometry>
+          <box size="0.05102 0.00602 0.00502"/>
+        </geometry>
+      </collision>
+      <collision name="plug fixture base mount_collider_cylinder.001">
+        <origin xyz="0.0 -0.0 0.003" rpy="0.0 -0.0 0.0"/>
+        <geometry>
+          <cylinder radius="0.01521" length="0.006019"/>
+        </geometry>
+      </collision>
+    </link>
+  </xacro:macro>
+
+</robot>
