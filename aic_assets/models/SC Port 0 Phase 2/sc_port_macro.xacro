@@ -1,0 +1,14 @@
+<?xml version="1.0" ?>
+<robot xmlns:xacro="http://wiki.ros.org/xacro">
+
+  <xacro:macro name="sc_port" params="prefix pose">
+    <gazebo>
+      <include>
+        <name>${prefix}</name>
+        <uri>package://aic_assets/models/SC Port</uri>
+        <pose>${pose}</pose>
+      </include>
+    </gazebo>
+  </xacro:macro>
+
+</robot>

@@ -1,0 +1,70 @@
+<?xml version="1.0" ?>
+<sdf version="1.9">
+  <model name="Enclosure">
+    <link name="enclosure_link">
+      <visual name="enclosure_visual">
+        <geometry>
+          <mesh>
+            <uri>enclosure_visual.glb</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name="light_visual">
+        <geometry>
+          <mesh>
+            <uri>light_visual.glb</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <collision name="v1015026001_collider_box">
+        <pose>-0.010998 0.009283 0.569706 -1.570796 -3.141593 -0.0</pose>
+        <geometry>
+          <box>
+            <size>1.5 1.138984 1.5</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="v1015028001_collider_box">
+        <pose>0.713602 0.733883 1.329198 -0.0 0.0 3.141593</pose>
+        <geometry>
+          <box>
+            <size>0.0508 0.0508 2.5</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="v1015013001_collider_box">
+        <pose>-0.010998 0.009283 2.548799 -0.0 -1.570796 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.0608 1.5 1.5</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="v1015027_collider_box">
+        <pose>-0.735598 0.733883 1.329198 -0.0 0.0 3.141593</pose>
+        <geometry>
+          <box>
+            <size>0.0508 0.0508 2.5</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="v1015029_collider_box">
+        <pose>-0.735598 -0.715317 1.329198 -3.141593 0.0 3.141593</pose>
+        <geometry>
+          <box>
+            <size>0.0508 0.0508 2.5</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="v1015030_collider_box">
+        <pose>0.713602 -0.715317 1.329198 -0.0 0.0 3.141593</pose>
+        <geometry>
+          <box>
+            <size>0.0508 0.0508 2.5</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model>
+</sdf>
+

@@ -30,10 +30,15 @@ foreach(pkg ${dep_pkgs})
 endforeach()
 
 find_package(Eigen3 REQUIRED NO_MODULE)
+find_package(nlohmann_json REQUIRED)
 find_package(Protobuf REQUIRED)
 find_package(orocos_kdl_vendor REQUIRED)
 
 #==================================
+option(USE_FIXED_CONTROL_PARAMETERS "Use fixed control parameters" ON)
+if(USE_FIXED_CONTROL_PARAMETERS)
+  add_compile_definitions(USE_FIXED_CONTROL_PARAMETERS)
+endif()
 
 intrinsic_sdk_protobuf_generate(
   NAME agent_bridge
@@ -63,6 +68,7 @@ target_link_libraries(robot_control_bridge
   pluginlib::pluginlib
   rclcpp::rclcpp
   tf2_eigen::tf2_eigen
+  nlohmann_json::nlohmann_json
   ${aic_control_interfaces_TARGETS}
   ${std_srvs_TARGETS}
 )

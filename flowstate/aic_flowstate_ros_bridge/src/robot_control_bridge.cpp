@@ -19,7 +19,9 @@
 
 #include <Eigen/Dense>
 #include <filesystem>
+#include <fstream>
 #include <kdl/frames.hpp>
+#include <nlohmann/json.hpp>
 #include <string>
 #include <utility>
 
@@ -58,6 +60,28 @@ constexpr const char* kFlowstateZenohRouterParamName =
     "flowstate_zenoh_router_address";
 constexpr const char* kRestartConnectionRetriesParamName =
     "restart_connection_retries";
+constexpr const char* kTimeToTargetSecondsParamName = "time_to_target_seconds";
+constexpr const char* kControlModeParamName = "control_mode";
+constexpr const char* kCriticalMassParamName = "critical_mass";
+
+namespace {
+
+inline void SetDiagonal6x6(google::protobuf::RepeatedField<double>* field,
+                           const std::vector<double>& diag) {
+  field->Clear();
+  field->Resize(36, 0.0);
+  for (int i = 0; i < 6; ++i) {
+    field->Set(i * 7, diag[i]);
+  }
+}
+
+inline void SetDiagonal6x6(google::protobuf::RepeatedField<double>* field,
+                           const intrinsic_proto::icon::CartVec6& diag) {
+  SetDiagonal6x6(
+      field, {diag.x(), diag.y(), diag.z(), diag.rx(), diag.ry(), diag.rz()});
+}
+
+}  // namespace
 
 ///=============================================================================
 void RobotControlBridge::declare_ros_parameters(
@@ -73,13 +97,20 @@ void RobotControlBridge::declare_ros_parameters(
   param_interface->declare_parameter(kPartNameParamName,
                                      rclcpp::ParameterValue{"arm"});
   param_interface->declare_parameter(kFTPartNameParamName,
-                                     rclcpp::ParameterValue{"ft_sensor"});
+                                     rclcpp::ParameterValue{""});
   param_interface->declare_parameter(kAgentBridgeTaskSettingsFileParamName,
                                      rclcpp::ParameterValue{""});
   param_interface->declare_parameter(kAgentBridgeJointTaskSettingsFileParamName,
                                      rclcpp::ParameterValue{""});
   param_interface->declare_parameter(kRestartConnectionRetriesParamName,
                                      rclcpp::ParameterValue{10});
+  param_interface->declare_parameter(kTimeToTargetSecondsParamName,
+                                     rclcpp::ParameterValue{0.1});
+  param_interface->declare_parameter(kControlModeParamName,
+                                     rclcpp::ParameterValue{"admittance"});
+  param_interface->declare_parameter(kCriticalMassParamName,
+                                     rclcpp::ParameterValue{std::vector<double>{
+                                         5.0, 5.0, 5.0, 5.0, 5.0, 5.0}});
 }
 
 ///=============================================================================
@@ -102,12 +133,25 @@ bool RobotControlBridge::initialize(
                          .get_value<std::string>();
   data_->part_name_ = param_interface->get_parameter(kPartNameParamName)
                           .get_value<std::string>();
-  data_->ft_sensor_part_name_ =
+  std::string param_ft_sensor_part_name =
       param_interface->get_parameter(kFTPartNameParamName)
           .get_value<std::string>();
+  if (!param_ft_sensor_part_name.empty()) {
+    data_->ft_sensor_part_name_ = param_ft_sensor_part_name;
+  } else {
+    data_->ft_sensor_part_name_ = std::nullopt;
+  }
   data_->restart_connection_retries_ =
       param_interface->get_parameter(kRestartConnectionRetriesParamName)
           .get_value<int>();
+  data_->time_to_target_seconds_ =
+      param_interface->get_parameter(kTimeToTargetSecondsParamName)
+          .get_value<double>();
+  data_->critical_mass_ = param_interface->get_parameter(kCriticalMassParamName)
+                              .get_value<std::vector<double>>();
+  std::string control_mode_str =
+      param_interface->get_parameter(kControlModeParamName)
+          .get_value<std::string>();
   std::filesystem::path task_settings_file =
       param_interface->get_parameter(kAgentBridgeTaskSettingsFileParamName)
           .get_value<std::string>();
@@ -169,6 +213,102 @@ bool RobotControlBridge::initialize(
            "filepath for loading default task_settings.";
     throw std::runtime_error("'joint_task_settings_file' parameter is empty.");
   }
+
+  if (control_mode_str == "admittance") {
+    data_->agent_bridge_fixed_params_.mutable_task_settings()->set_control_mode(
+        intrinsic_proto::icon::actions::proto::ControlMode::ADMITTANCE);
+  } else if (control_mode_str == "impedance") {
+    data_->agent_bridge_fixed_params_.mutable_task_settings()->set_control_mode(
+        intrinsic_proto::icon::actions::proto::ControlMode::IMPEDANCE);
+  } else {
+    LOG(ERROR) << "Invalid control_mode: " << control_mode_str;
+    throw std::runtime_error("Invalid control_mode parameter.");
+  }
+
+#ifdef USE_FIXED_CONTROL_PARAMETERS
+  {
+    std::filesystem::path fixed_json_path =
+        ament_index_cpp::get_package_share_directory(
+            "aic_flowstate_ros_bridge") +
+        "/config/fixed_task_settings.json";
+    try {
+      std::ifstream f(fixed_json_path.string());
+      if (!f.is_open()) {
+        throw std::runtime_error("Could not open JSON config file.");
+      }
+      nlohmann::json config = nlohmann::json::parse(f);
+
+      auto target_pose_stiffness =
+          config["target_pose_stiffness"].get<std::vector<double>>();
+      auto target_pose_damping =
+          config["target_pose_damping"].get<std::vector<double>>();
+      auto target_mass = config["target_mass"].get<std::vector<double>>();
+
+      if (target_pose_stiffness.size() != 6 ||
+          target_pose_damping.size() != 6 || target_mass.size() != 6) {
+        LOG(ERROR) << "Fixed task settings: target_pose_stiffness, "
+                      "target_pose_damping, and target_mass must have exactly "
+                      "6 elements.";
+        throw std::runtime_error(
+            "Fixed task settings must have exactly 6 elements for pose "
+            "stiffness, damping, and mass.");
+      }
+
+      auto* mu = data_->agent_bridge_fixed_params_.mutable_motion_update();
+      auto* target_stiffness = mu->mutable_target_stiffness();
+      auto* target_damping = mu->mutable_target_damping();
+      auto* target_mass_proto = mu->mutable_target_mass();
+      SetDiagonal6x6(target_stiffness->mutable_data(), target_pose_stiffness);
+      SetDiagonal6x6(target_damping->mutable_data(), target_pose_damping);
+      SetDiagonal6x6(target_mass_proto->mutable_data(), target_mass);
+
+      auto target_joint_stiffness =
+          config["target_joint_stiffness"].get<std::vector<double>>();
+      auto target_joint_damping =
+          config["target_joint_damping"].get<std::vector<double>>();
+
+      if (target_joint_stiffness.size() != 6 ||
+          target_joint_damping.size() != 6) {
+        LOG(ERROR) << "Fixed task settings: target_joint_stiffness and "
+                      "target_joint_damping must have exactly 6 elements.";
+        throw std::runtime_error(
+            "Fixed task settings must have exactly 6 elements for joint "
+            "stiffness and damping.");
+      }
+
+      auto* mu_joint =
+          data_->agent_bridge_joint_fixed_params_.mutable_motion_update();
+      auto* tjs = mu_joint->mutable_target_stiffness();
+      auto* tjd = mu_joint->mutable_target_damping();
+      tjs->clear_joints();
+      tjd->clear_joints();
+      for (double v : target_joint_stiffness) {
+        tjs->add_joints(v);
+      }
+      for (double v : target_joint_damping) {
+        tjd->add_joints(v);
+      }
+
+      std::string mode_str = config["control_mode"].get<std::string>();
+      auto* ts = data_->agent_bridge_fixed_params_.mutable_task_settings();
+      if (mode_str == "admittance") {
+        ts->set_control_mode(
+            intrinsic_proto::icon::actions::proto::ControlMode::ADMITTANCE);
+      } else if (mode_str == "impedance") {
+        ts->set_control_mode(
+            intrinsic_proto::icon::actions::proto::ControlMode::IMPEDANCE);
+      } else {
+        LOG(ERROR) << "Invalid control_mode: " << mode_str;
+        throw std::runtime_error("Invalid control_mode parameter.");
+      }
+
+    } catch (const std::exception& e) {
+      LOG(ERROR) << "Failed to read fixed_task_settings.json: " << e.what();
+      throw std::runtime_error("Failed to read fixed_task_settings.json");
+    }
+  }
+#endif
+
   // Set default taring cycle of 100
   // todo(johntgz) set this as a ros parameter
   data_->tare_ft_sensor_fixed_params_.set_num_taring_cycles(100);
@@ -677,26 +817,37 @@ bool RobotControlBridge::startControllerAction() {
   // Define ActionDescriptors for both the AgentBridge and AgentBridgeJoint
   // actions
   ActionDescriptor agent_bridge_descriptor =
-      ActionDescriptor(
-          intrinsic::icon::AgentBridgeInfo::kActionTypeName, kAgentBridgeId,
-          {{intrinsic::icon::AgentBridgeInfo::kSlotName, data_->part_name_}})
-          .WithFixedParams(data_->agent_bridge_fixed_params_);
+      data_->ft_sensor_part_name_.has_value()
+          ? ActionDescriptor(
+                intrinsic::icon::AgentBridgeInfo::kActionTypeName,
+                kAgentBridgeId,
+                {{intrinsic::icon::AgentBridgeInfo::kSlotName,
+                  data_->part_name_},
+                 {intrinsic::icon::AgentBridgeInfo::kForceTorqueSlotName,
+                  data_->ft_sensor_part_name_.value()}})
+                .WithFixedParams(data_->agent_bridge_fixed_params_)
+          : ActionDescriptor(intrinsic::icon::AgentBridgeInfo::kActionTypeName,
+                             kAgentBridgeId,
+                             {{intrinsic::icon::AgentBridgeInfo::kSlotName,
+                               data_->part_name_}})
+                .WithFixedParams(data_->agent_bridge_fixed_params_);
 
   ActionDescriptor agent_bridge_joint_descriptor =
-      ActionDescriptor(intrinsic::icon::AgentBridgeJointInfo::kActionTypeName,
-                       kAgentBridgeJointId,
-                       {{intrinsic::icon::AgentBridgeJointInfo::kSlotName,
-                         data_->part_name_}})
-          .WithFixedParams(data_->agent_bridge_joint_fixed_params_);
-
-  ActionDescriptor tare_ft_sensor_descriptor =
-      ActionDescriptor(
-          intrinsic::icon::TareForceTorqueSensorInfo::kActionTypeName,
-          kTareForceTorqueSensorId,
-          {{intrinsic::icon::TareForceTorqueSensorInfo::
-                kForceTorqueSensorSlotName,
-            data_->ft_sensor_part_name_}})
-          .WithFixedParams(data_->tare_ft_sensor_fixed_params_);
+      data_->ft_sensor_part_name_.has_value()
+          ? ActionDescriptor(
+                intrinsic::icon::AgentBridgeJointInfo::kActionTypeName,
+                kAgentBridgeJointId,
+                {{intrinsic::icon::AgentBridgeJointInfo::kSlotName,
+                  data_->part_name_},
+                 {intrinsic::icon::AgentBridgeJointInfo::kForceTorqueSlotName,
+                  data_->ft_sensor_part_name_.value()}})
+                .WithFixedParams(data_->agent_bridge_joint_fixed_params_)
+          : ActionDescriptor(
+                intrinsic::icon::AgentBridgeJointInfo::kActionTypeName,
+                kAgentBridgeJointId,
+                {{intrinsic::icon::AgentBridgeJointInfo::kSlotName,
+                  data_->part_name_}})
+                .WithFixedParams(data_->agent_bridge_joint_fixed_params_);
 
   // Add the AgentBridge and AgentBridgeJoint actions to the session, then
   // create StreamWriters for each of the actions.
@@ -722,13 +873,26 @@ bool RobotControlBridge::startControllerAction() {
   data_->agent_bridge_joint_action_ = agent_bridge_joint_action_or.value();
 
   // Add the TareForceTorqueSensor action to the current session
-  auto tare_action_or = data_->session_->AddAction(tare_ft_sensor_descriptor);
-  if (!tare_action_or.ok()) {
-    LOG(ERROR) << "Failed to add TareForceTorqueSensor Action: "
-               << tare_action_or.status().message().data();
-    return false;
+  if (data_->ft_sensor_part_name_.has_value()) {
+    ActionDescriptor tare_ft_sensor_descriptor =
+        ActionDescriptor(
+            intrinsic::icon::TareForceTorqueSensorInfo::kActionTypeName,
+            kTareForceTorqueSensorId,
+            {{intrinsic::icon::TareForceTorqueSensorInfo::
+                  kForceTorqueSensorSlotName,
+              data_->ft_sensor_part_name_.value()}})
+            .WithFixedParams(data_->tare_ft_sensor_fixed_params_);
+
+    auto tare_action_or = data_->session_->AddAction(tare_ft_sensor_descriptor);
+    if (!tare_action_or.ok()) {
+      LOG(ERROR) << "Failed to add TareForceTorqueSensor Action: "
+                 << tare_action_or.status().message().data();
+      return false;
+    }
+    data_->tare_action_ = tare_action_or.value();
+  } else {
+    data_->tare_action_ = std::nullopt;
   }
-  data_->tare_action_ = tare_action_or.value();
 
   // Create StreamWriter for the AgentBridge action
   auto agent_bridge_writer_or =
@@ -824,8 +988,9 @@ bool RobotControlBridge::startControllerSession() {
 
   // Start ICON Session
   std::vector<std::string> parts = {data_->part_name_};
-  if (data_->ft_sensor_part_name_ != data_->part_name_) {
-    parts.push_back(data_->ft_sensor_part_name_);
+  if (data_->ft_sensor_part_name_.has_value() &&
+      data_->ft_sensor_part_name_.value() != data_->part_name_) {
+    parts.push_back(data_->ft_sensor_part_name_.value());
   }
 
   auto session_or = Session::Start(icon_channel_or.value(), parts);
@@ -853,6 +1018,7 @@ bool RobotControlBridge::resetMotionUpdate() {
     auto* target_state = initial_motion_update->mutable_target_state();
     target_state->mutable_velocity()->Resize(6, 0.0);
 
+#ifndef USE_FIXED_CONTROL_PARAMETERS
     // Use max values from task settings for initial stiffness, damping, and
     // mass
     auto* target_stiffness = initial_motion_update->mutable_target_stiffness();
@@ -864,42 +1030,27 @@ bool RobotControlBridge::resetMotionUpdate() {
     target_mass->mutable_data()->Resize(36, 0.0);
 
     if (data_->agent_bridge_fixed_params_.task_settings().has_max_stiffness() &&
-        data_->agent_bridge_fixed_params_.task_settings().has_max_damping() &&
-        data_->agent_bridge_fixed_params_.task_settings()
-            .has_mass_for_critical_damping()) {
+        data_->agent_bridge_fixed_params_.task_settings().has_max_damping()) {
       const auto& max_stiffness =
           data_->agent_bridge_fixed_params_.task_settings().max_stiffness();
       const auto& max_damping =
           data_->agent_bridge_fixed_params_.task_settings().max_damping();
-      const auto& critical_mass =
-          data_->agent_bridge_fixed_params_.task_settings()
-              .mass_for_critical_damping();
 
-      target_stiffness->set_data(0, max_stiffness.x());
-      target_stiffness->set_data(7, max_stiffness.y());
-      target_stiffness->set_data(14, max_stiffness.z());
-      target_stiffness->set_data(21, max_stiffness.rx());
-      target_stiffness->set_data(28, max_stiffness.ry());
-      target_stiffness->set_data(35, max_stiffness.rz());
+      SetDiagonal6x6(target_stiffness->mutable_data(), max_stiffness);
+      SetDiagonal6x6(target_damping->mutable_data(), max_damping);
 
-      target_damping->set_data(0, max_damping.x());
-      target_damping->set_data(7, max_damping.y());
-      target_damping->set_data(14, max_damping.z());
-      target_damping->set_data(21, max_damping.rx());
-      target_damping->set_data(28, max_damping.ry());
-      target_damping->set_data(35, max_damping.rz());
-
-      target_mass->set_data(0, critical_mass.x());
-      target_mass->set_data(7, critical_mass.y());
-      target_mass->set_data(14, critical_mass.z());
-      target_mass->set_data(21, critical_mass.rx());
-      target_mass->set_data(28, critical_mass.ry());
-      target_mass->set_data(35, critical_mass.rz());
+      if (data_->critical_mass_.size() >= 6) {
+        SetDiagonal6x6(target_mass->mutable_data(), data_->critical_mass_);
+      } else {
+        LOG(ERROR) << "critical_mass parameter does not have 6 elements.";
+        return false;
+      }
     } else {
-      LOG(ERROR) << "Task settings missing max_stiffness, max_damping, or "
-                    "mass_for_critical_damping parameters.";
+      LOG(ERROR)
+          << "Task settings missing max_stiffness or max_damping parameters.";
       return false;
     }
+#endif
 
     auto* fw = initial_motion_update->mutable_feedforward_wrench_at_tip();
     fw->set_x(0);
@@ -925,6 +1076,7 @@ bool RobotControlBridge::resetMotionUpdate() {
       ->mutable_velocity()
       ->Resize(data_->num_joints_, 0.0);
 
+#ifndef USE_FIXED_CONTROL_PARAMETERS
   auto* target_joint_stiffness =
       initial_joint_motion_update->mutable_target_stiffness();
   auto* target_joint_damping =
@@ -945,6 +1097,7 @@ bool RobotControlBridge::resetMotionUpdate() {
       target_joint_damping->set_joints(i, damping.joints(i));
     }
   }
+#endif
 
   return true;
 }
@@ -1092,6 +1245,7 @@ void RobotControlBridge::MotionUpdateCallback(
   target_state->add_velocity(msg->velocity.angular.y);
   target_state->add_velocity(msg->velocity.angular.z);
 
+#ifndef USE_FIXED_CONTROL_PARAMETERS
   // Map stiffness and damping parameters
   auto* stiffness = proto_msg.mutable_target_stiffness();
   auto* damping = proto_msg.mutable_target_damping();
@@ -1101,6 +1255,7 @@ void RobotControlBridge::MotionUpdateCallback(
     stiffness->add_data(msg->target_stiffness[i]);
     damping->add_data(msg->target_damping[i]);
   }
+#endif
 
   // Map feedforward wrench at tip
   auto* fw = proto_msg.mutable_feedforward_wrench_at_tip();
@@ -1122,7 +1277,7 @@ void RobotControlBridge::MotionUpdateCallback(
 
   // Set time_to_target_seconds to a default of 1.1 * controller period (0.002
   // s), so it will reach the target as fast as possible
-  proto_msg.set_time_to_target_seconds(0.0022);
+  proto_msg.set_time_to_target_seconds(data_->time_to_target_seconds_);
 
   // Write the MotionUpdate proto message to the AgentBridge action
   auto status = data_->agent_bridge_writer_->Write(proto_msg);
@@ -1190,6 +1345,7 @@ void RobotControlBridge::JointMotionUpdateCallback(
     target_state->add_velocity(vel);
   }
 
+#ifndef USE_FIXED_CONTROL_PARAMETERS
   // Map the stiffness and damping parameters
   auto* stiffness = proto_msg.mutable_target_stiffness();
   auto* damping = proto_msg.mutable_target_damping();
@@ -1201,6 +1357,7 @@ void RobotControlBridge::JointMotionUpdateCallback(
   for (double d : msg->target_damping) {
     damping->add_joints(d);
   }
+#endif
 
   // Map the feedforward torque
   auto* ff_torque = proto_msg.mutable_target_feedforward_torque();
@@ -1211,7 +1368,7 @@ void RobotControlBridge::JointMotionUpdateCallback(
 
   // Set time_to_target_seconds to a default of 1.1 * controller period (0.002
   // s), so it will reach the target as fast as possible
-  proto_msg.set_time_to_target_seconds(0.0022);
+  proto_msg.set_time_to_target_seconds(data_->time_to_target_seconds_);
 
   // Write the JointMotionUpdate proto message to the AgentBridgeJoint action
   auto status = data_->agent_bridge_joint_writer_->Write(proto_msg);

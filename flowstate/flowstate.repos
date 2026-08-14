@@ -3,4 +3,4 @@ repositories:
     type: git
     url: https://github.com/intrinsic-ai/sdk-ros.git
     # From https://github.com/intrinsic-ai/sdk-ros/tree/aic
-    version: 17f1aab71bdf5ad237c86f7e4c83a30e3f21e245
+    version: cbc15287ae0867c7093a70b852cde8bc33a557eb

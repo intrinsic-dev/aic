@@ -2,8 +2,12 @@
 Changelog for package aic_flowstate_ros_bridge
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-0.1.1 (2026-06-11)
+0.1.1 (2026-08-04)
 ------------------
+* Expose tool transformation for FT sensor (`#603 <https://github.com/intrinsic-dev/aic/issues/603>`_)
+* Subscribe to proto CaptureResults and publish ROS images (`#600 <https://github.com/intrinsic-dev/aic/issues/600>`_)
+* Support admittance control (`#598 <https://github.com/intrinsic-dev/aic/issues/598>`_)
+* Contributors: John TGZ, Kaushik Balasundar, Morgan Quigley
 
 0.1.0 (2026-06-09)
 ------------------

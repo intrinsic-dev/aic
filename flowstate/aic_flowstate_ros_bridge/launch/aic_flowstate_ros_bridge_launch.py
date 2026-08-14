@@ -77,6 +77,16 @@ def generate_launch_description():
                 description="F/T sensor part name",
             ),
             DeclareLaunchArgument(
+                "control_mode",
+                default_value="admittance",
+                description="Control mode (admittance or impedance)",
+            ),
+            DeclareLaunchArgument(
+                "time_to_target_seconds",
+                default_value="0.1",
+                description="Time to reach target in seconds",
+            ),
+            DeclareLaunchArgument(
                 "use_sim_time",
                 default_value="true",
                 description="Use simulation clock if true",
@@ -124,6 +134,10 @@ def generate_launch_description():
                         "joint_task_settings_file": os.path.join(
                             "config",
                             "default_joint_task_settings.pbtxt",
+                        ),
+                        "control_mode": LaunchConfiguration("control_mode"),
+                        "time_to_target_seconds": LaunchConfiguration(
+                            "time_to_target_seconds"
                         ),
                         "override_joint_names": [
                             "shoulder_pan_joint",

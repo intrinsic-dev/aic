@@ -10,6 +10,18 @@ message RobotControlBridgeConfig {
   string ft_sensor_part_name = 4;
   string task_settings_file = 5;
   string joint_task_settings_file = 6;
+  double time_to_target_seconds = 7;
+  string control_mode = 8;
+  repeated double critical_mass = 9;
+}
+
+message ToolTransformationConfig {
+  double x = 1;
+  double y = 2;
+  double z = 3;
+  double roll = 4;
+  double pitch = 5;
+  double yaw = 6;
 }
 
 // Configuration to control which sensors are enabled to publish ROS 2 messages.
@@ -24,6 +36,7 @@ message SensorPublisherConfig {
   string robot_controller_instance = 7;
   bool throttle_robot_state_topic = 8;
   repeated string override_joint_names = 9;
+  ToolTransformationConfig force_torque_tool_transform = 10;
 }
 
 message FlowstateRosBridgeConfig {

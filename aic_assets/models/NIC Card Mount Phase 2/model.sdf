@@ -1,0 +1,70 @@
+<?xml version="1.0" ?>
+<sdf xmlns:intrinsic="https://intrinsic.ai/" version="1.9">
+  <model name="NIC Card Mount">
+    <link name="nic_card_mount_link">
+      <visual name="nic_card_mount_visual">
+        <geometry>
+          <mesh>
+            <uri>nic_card_mount_visual.glb</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <collision name="v1015085006_collider_box">
+        <pose>0.008 -0.0075 0.0875 0.0 0.0 1.570796</pose>
+        <geometry>
+          <box>
+            <size>0.005003 0.074013 0.155018</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="v1015085006_collider_box.001">
+        <pose>-0.046402 0.0025 0.172 0.0 0.0 1.570796</pose>
+        <geometry>
+          <box>
+            <size>0.025016 0.036198 0.014002</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="v1015085006_collider_box.002">
+        <pose>0.040535 -0.0025 0.118 0.0 0.0 1.570796</pose>
+        <geometry>
+          <box>
+            <size>0.01501 0.005065 0.108012</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="v1015085006_collider_box.003">
+        <pose>1e-06 3e-06 0.0125 0.0 0.0 1.570796</pose>
+        <geometry>
+          <box>
+            <size>0.020019 0.091935 0.005001</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="v1015085006_collider_box004_collider_box">
+        <pose>-0.03923 -0.007499 0.147803 0.0 0.0 1.570796</pose>
+        <geometry>
+          <box>
+            <size>0.005021 0.028547 0.034399</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="nic card mount_collider_box">
+        <pose>0.04199 0.0065 0.159548 0.0 -0.0 1.570796</pose>
+        <geometry>
+          <box>
+            <size>0.03302 0.007981 0.024906</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="nic base mount_collider_box">
+        <pose>0.0 0.002501 0.005014 0.0 0.0 1.570796</pose>
+        <geometry>
+          <box>
+            <size>0.03842 0.094948 0.01004</size>
+          </box>
+        </geometry>
+      </collision>
+    </link>
+  </model>
+</sdf>
