@@ -516,6 +516,7 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryEfficiencyScore() const {
 
   const std::size_t numConnections = this->connection.value().data.size();
   double minPathLength = 0.0;
+  bool groundTruthFound = false;
   // Minimum distance is the sum of all the initialization distances.
   // It should be impossible to reach full score but this is a reasonable
   // minimum distance estimate.
@@ -527,9 +528,11 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryEfficiencyScore() const {
       const auto initDist = this->GetStartPlugPortDistance(index);
       if (initDist.has_value()) {
         minPathLength += 2.0 * initDist.value();
+        groundTruthFound = true;
       } else {
         RCLCPP_WARN(this->node->get_logger(),
-                    "Failed to get initial plug port distance");
+                    "Failed to get initial plug port distance, defaulting to 0.5m.");
+        minPathLength += 0.5;
       }
     }
   }
@@ -551,8 +554,15 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryEfficiencyScore() const {
 
   std::stringstream ss;
   ss << std::fixed << std::setprecision(2);
-  ss << "Total end-effector path length: " << totalPathLength << " m"
-     << ", initial plug-port distance: " << minPathLength << " m";
+
+  if (groundTruthFound) {
+    ss << "Total end-effector path length: " << totalPathLength << " m"
+       << ", initial plug-port distance: " << minPathLength << " m";
+  } else {
+    ss << "Total end-effector path length: " << totalPathLength << " m"
+       << ", no ground truth available, min distance for scoring: "
+       << minPathLength << " m";
+  }
 
   const double score = CalculateInverseProportionalScore(
       kMaxEfficiencyScore, kMinEfficiencyScore, kMaxPathLength, minPathLength,
