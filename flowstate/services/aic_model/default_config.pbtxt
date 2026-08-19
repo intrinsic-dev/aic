@@ -1,0 +1,6 @@
+# proto-file: google/protobuf/any.proto
+# proto-message: Any
+[type.googleapis.com/aic.AICModelConfig] {
+  use_sim_time: true
+}
+

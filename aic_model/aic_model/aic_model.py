@@ -49,10 +49,36 @@ from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 from trajectory_msgs.msg import JointTrajectoryPoint
 
+import os
+from rclpy.parameter import Parameter
+from intrinsic.resources.proto import runtime_context_pb2
+import aic_model_config_pb2
+
 
 class AicModel(LifecycleNode):
     def __init__(self):
         super().__init__("aic_model")
+
+        # 1. Read Flowstate RuntimeContext from /etc/intrinsic/runtime_config.pb
+        use_sim_time = True  # Default fallback when running locally outside Flowstate
+        config_path = "/etc/intrinsic/runtime_config.pb"
+        if os.path.exists(config_path):
+            try:
+                with open(config_path, "rb") as f:
+                    context = runtime_context_pb2.RuntimeContext.FromString(f.read())
+                    config = aic_model_config_pb2.AICModelConfig()
+                    if context.config.Unpack(config):
+                        use_sim_time = config.use_sim_time
+                        self.get_logger().info(
+                            f"Loaded AICModelConfig from Flowstate: use_sim_time={use_sim_time}"
+                        )
+            except Exception as e:
+                self.get_logger().warn(
+                    f"Could not parse runtime_config.pb ({e}), using default use_sim_time={use_sim_time}"
+                )
+        # 2. Dynamically set the ROS 2 use_sim_time parameter
+        self.set_parameters([Parameter("use_sim_time", Parameter.Type.BOOL, use_sim_time)])
+
         self.declare_parameter("policy", "WaveArm")
         policy_module_name = (
             self.get_parameter("policy").get_parameter_value().string_value

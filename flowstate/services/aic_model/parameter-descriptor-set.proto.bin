@@ -1,0 +1,14 @@
+
+ä
+google/protobuf/any.protogoogle.protobuf"6
+Any
+type_url (	RtypeUrl
+value (RvalueBv
+com.google.protobufBAnyProtoPZ,google.golang.org/protobuf/types/known/anypb¢GPBªGoogle.Protobuf.WellKnownTypesbproto3
+´
+aic_model_config.protoaicgoogle/protobuf/any.proto"2
+AICModelConfig 
+use_sim_time (R
+useSimTime">
+RuntimeContext,
+config (2.google.protobuf.AnyRconfigbproto3

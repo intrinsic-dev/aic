@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package aic;
+
+message AICModelConfig {
+  // Rendered as an interactive toggle switch in the Flowstate Service Manager UI
+  bool use_sim_time = 1;
+}
+

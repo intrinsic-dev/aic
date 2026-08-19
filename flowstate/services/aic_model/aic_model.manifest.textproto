@@ -12,6 +12,7 @@ metadata {
   display_name: "Participant Policy Node"
 }
 service_def {
+  config_message_full_name: "aic.AICModelConfig"
   real_spec {
     image {
       archive_filename: "aic_model.tar"
@@ -40,5 +41,7 @@ service_def {
   } 
 }
 assets {
+  default_configuration_filename: "default_config.binarypb"
+  parameter_descriptor_filename: "parameter-descriptor-set.proto.bin"
   image_filenames: ["aic_model.tar"]
 }
