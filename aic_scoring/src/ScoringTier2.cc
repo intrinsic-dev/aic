@@ -40,7 +40,8 @@ ScoringTier2::ScoringTier2(rclcpp::Node *_node,
     : node(_node), gripperFrame(_gripperFrame), connection(_connections) {}
 
 //////////////////////////////////////////////////
-bool ScoringTier2::StartRecording(const std::chrono::seconds &_max_task_time) {
+bool ScoringTier2::StartRecording(const std::chrono::seconds &_max_task_time,
+                                  const bool _use_sim_time) {
   this->tf2_buffer = std::make_unique<tf2::BufferCore>(_max_task_time);
 
   {
@@ -118,7 +119,10 @@ bool ScoringTier2::StartRecording(const std::chrono::seconds &_max_task_time) {
             }
           });
 
-  return this->WaitForTfs();
+  if (_use_sim_time) {
+    return this->WaitForTfs();
+  }
+  return true;
 }
 
 //////////////////////////////////////////////////

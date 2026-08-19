@@ -150,7 +150,9 @@ namespace aic_scoring
     /// \brief Start recording all scoring topics.
     /// \return True if the scoring system is ready.
     /// \param[in] _max_task_time The maximum time to record for, used for tf buffer size.
-    public: bool StartRecording(const std::chrono::seconds &_max_task_time);
+    /// \param[in] _use_sim_time Whether to wait for simulation TFs.
+    public: bool StartRecording(const std::chrono::seconds &_max_task_time,
+                                const bool _use_sim_time = true);
 
     /// \brief Stop recording all scoring topics.
     /// \return True if the bag was closed correctly.

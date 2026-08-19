@@ -460,8 +460,11 @@ bool Engine::check_endpoints() {
 bool Engine::ready_scoring(const uint64_t time_limit) {
   RCLCPP_INFO(node_->get_logger(), "Checking scoring system readiness...");
 
+  const bool use_sim_time = node_->get_parameter_or("use_sim_time", true);
+
   // Add a few seconds for safety since this is a limit for recorded data
-  if (!scoring_tier2_->StartRecording(std::chrono::seconds(time_limit + 10))) {
+  if (!scoring_tier2_->StartRecording(std::chrono::seconds(time_limit + 10),
+                                      use_sim_time)) {
     RCLCPP_ERROR(node_->get_logger(), "Failed to start recording");
     return false;
   }
