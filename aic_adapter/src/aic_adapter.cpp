@@ -61,7 +61,7 @@ AicAdapterNode::AicAdapterNode() : Node("aic_adapter_node") {
   include_gripper_in_joint_state_ =
       this->declare_parameter("include_gripper_in_joint_state", true);
   image_time_tolerance_ =
-      this->declare_parameter("image_time_tolerance", 0.001);
+      this->declare_parameter("image_time_tolerance", 0.05);
   align_camera_timestamps_ =
       this->declare_parameter("align_camera_timestamps", false);
 
