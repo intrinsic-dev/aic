@@ -17,11 +17,13 @@
 
 #include "aic_adapter/aic_adapter.hpp"
 
+#include <cmath>
 #include <cstdlib>
 #include <cstring>
 #include <deque>
 #include <format>
 #include <memory>
+#include <string>
 
 #include "aic_control_interfaces/msg/controller_state.hpp"
 #include "aic_model_interfaces/msg/observation.hpp"
@@ -78,6 +80,8 @@ AicAdapterNode::AicAdapterNode() : Node("aic_adapter_node") {
   wrench_sub_ = this->create_subscription<geometry_msgs::msg::WrenchStamped>(
       "/fts_broadcaster/wrench", 5,
       [this](geometry_msgs::msg::WrenchStamped::UniquePtr msg) -> void {
+        RCLCPP_INFO_ONCE(this->get_logger(),
+                         "Received first wrench message from /fts_broadcaster/wrench");
         this->wrench_deque_->push_front(std::move(msg));
         while (this->wrench_deque_->size() > kWrenchDequeMaxLength) {
           this->wrench_deque_->pop_back();
@@ -98,6 +102,8 @@ AicAdapterNode::AicAdapterNode() : Node("aic_adapter_node") {
   joint_state_sub_ = this->create_subscription<sensor_msgs::msg::JointState>(
       "/joint_states", 5,
       [this](sensor_msgs::msg::JointState::UniquePtr msg) -> void {
+        RCLCPP_INFO_ONCE(this->get_logger(),
+                         "Received first joint_state message from /joint_states");
         this->joint_state_deque_->push_front(std::move(msg));
         while (this->joint_state_deque_->size() > kJointStateDequeMaxLength) {
           this->joint_state_deque_->pop_back();
@@ -111,6 +117,9 @@ AicAdapterNode::AicAdapterNode() : Node("aic_adapter_node") {
           "/aic_controller/controller_state", 5,
           [this](aic_control_interfaces::msg::ControllerState::UniquePtr msg)
               -> void {
+            RCLCPP_INFO_ONCE(
+                this->get_logger(),
+                "Received first controller_state message from /aic_controller/controller_state");
             this->controller_state_deque_->push_front(std::move(msg));
             while (this->controller_state_deque_->size() >
                    kControllerStateDequeMaxLength) {
@@ -123,20 +132,40 @@ AicAdapterNode::AicAdapterNode() : Node("aic_adapter_node") {
         this->create_subscription<sensor_msgs::msg::CameraInfo>(
             std::format("/{}_camera/camera_info", kCameraNames[camera_idx]), 5,
             [this, camera_idx](sensor_msgs::msg::CameraInfo::UniquePtr msg)
-                -> void { this->camera_infos_[camera_idx] = std::move(msg); }));
+                -> void {
+              RCLCPP_INFO_ONCE(
+                  this->get_logger(),
+                  "Received first camera_info message for %s_camera",
+                  kCameraNames[camera_idx]);
+              this->camera_infos_[camera_idx] = std::move(msg);
+            }));
     image_subs_.push_back(this->create_subscription<sensor_msgs::msg::Image>(
         std::format("/{}_camera/image", kCameraNames[camera_idx]), 5,
         [this, camera_idx](sensor_msgs::msg::Image::UniquePtr msg) -> void {
+          RCLCPP_INFO_ONCE(
+              this->get_logger(),
+              "Received first image message for %s_camera (stamp: %.6f)",
+              kCameraNames[camera_idx],
+              rclcpp::Time(msg->header.stamp).seconds());
           this->image_callback(camera_idx, std::move(msg));
         }));
   }
-  RCLCPP_INFO(this->get_logger(), "Adapter node initialization complete.");
+
+  RCLCPP_INFO(this->get_logger(),
+              "Adapter node initialization complete. Params: "
+              "image_time_tolerance=%.6f s, align_camera_timestamps=%s, "
+              "include_gripper_in_joint_state=%s. Publishing topic: '%s'",
+              image_time_tolerance_,
+              align_camera_timestamps_ ? "true" : "false",
+              include_gripper_in_joint_state_ ? "true" : "false",
+              observation_pub_->get_topic_name());
 }
 
 void AicAdapterNode::image_callback(size_t camera_idx,
                                     sensor_msgs::msg::Image::UniquePtr msg) {
-  if (camera_idx > images_.size()) {
-    RCLCPP_ERROR(this->get_logger(), "unexpected camera idx: %zu", camera_idx);
+  if (camera_idx >= images_.size()) {
+    RCLCPP_ERROR(this->get_logger(), "unexpected camera idx: %zu (max %zu)",
+                 camera_idx, images_.size());
     return;
   }
   images_[camera_idx] = std::move(msg);
@@ -145,6 +174,16 @@ void AicAdapterNode::image_callback(size_t camera_idx,
   // remove them from our buffer.
   for (size_t i = 0; i < kNumCameras; i++) {
     if (!images_[i] || !camera_infos_[i]) {
+      RCLCPP_WARN_THROTTLE(
+          this->get_logger(), *this->get_clock(), 1000,
+          "[image_callback] Waiting for all camera data. Status: "
+          "left(img=%s, info=%s), center(img=%s, info=%s), right(img=%s, info=%s)",
+          images_[kLeftCameraIndex] ? "OK" : "MISSING",
+          camera_infos_[kLeftCameraIndex] ? "OK" : "MISSING",
+          images_[kCenterCameraIndex] ? "OK" : "MISSING",
+          camera_infos_[kCenterCameraIndex] ? "OK" : "MISSING",
+          images_[kRightCameraIndex] ? "OK" : "MISSING",
+          camera_infos_[kRightCameraIndex] ? "OK" : "MISSING");
       return;
     }
   }
@@ -153,7 +192,15 @@ void AicAdapterNode::image_callback(size_t camera_idx,
   for (size_t i = 1; i < kNumCameras; i++) {
     const rclcpp::Duration cam_time_diff =
         t_image_0 - rclcpp::Time(images_[i]->header.stamp);
-    if (abs(cam_time_diff.seconds()) > image_time_tolerance_) {
+    const double diff_sec = std::abs(cam_time_diff.seconds());
+    if (diff_sec > image_time_tolerance_) {
+      RCLCPP_WARN_THROTTLE(
+          this->get_logger(), *this->get_clock(), 1000,
+          "[image_callback] Camera timestamp mismatch! Delta between %s and %s is %.6f s "
+          "(tolerance: %.6f s). Stamps: %s=%.6f, %s=%.6f",
+          kCameraNames[0], kCameraNames[i], diff_sec, image_time_tolerance_,
+          kCameraNames[0], t_image_0.seconds(),
+          kCameraNames[i], rclcpp::Time(images_[i]->header.stamp).seconds());
       return;
     }
   }
@@ -189,7 +236,7 @@ void AicAdapterNode::image_callback(size_t camera_idx,
   // (This is to handle any randomness in the arrival order of the image
   // and its associated CameraInfo.)
   observation_msg->left_camera_info.header.stamp =
-      observation_msg->left_image.header.stamp;
+  observation_msg->left_image.header.stamp;
   observation_msg->center_camera_info.header.stamp =
       observation_msg->center_image.header.stamp;
   observation_msg->right_camera_info.header.stamp =
@@ -198,6 +245,7 @@ void AicAdapterNode::image_callback(size_t camera_idx,
   // Look for the joint state message that is closest to the timestamp
   // of the images.
   size_t joint_state_msg_idx = 0;
+  bool joint_state_found = false;
   for (joint_state_msg_idx = 0;
        joint_state_msg_idx < joint_state_deque_->size();
        joint_state_msg_idx++) {
@@ -209,13 +257,30 @@ void AicAdapterNode::image_callback(size_t camera_idx,
     if (t_joint_state_msg <= t_image_0) {
       ReorderJointState(*(*joint_state_deque_)[joint_state_msg_idx],
                         observation_msg->joint_states);
+      joint_state_found = true;
       break;
+    }
+  }
+  if (!joint_state_found) {
+    if (joint_state_deque_->empty()) {
+      RCLCPP_WARN_THROTTLE(
+          this->get_logger(), *this->get_clock(), 2000,
+          "[image_callback] Joint state deque is empty. Observation joint_states will be empty.");
+    } else {
+      RCLCPP_WARN_THROTTLE(
+          this->get_logger(), *this->get_clock(), 2000,
+          "[image_callback] No joint_state found with stamp <= image stamp "
+          "(image_t=%.6f, newest_joint_t=%.6f, oldest_joint_t=%.6f).",
+          t_image_0.seconds(),
+          rclcpp::Time((*joint_state_deque_)[0]->header.stamp).seconds(),
+          rclcpp::Time(joint_state_deque_->back()->header.stamp).seconds());
     }
   }
 
   // Look for the controller state message that is closest to the timestamp
   // of the images.
   size_t controller_state_msg_idx = 0;
+  bool controller_state_found = false;
   for (controller_state_msg_idx = 0;
        controller_state_msg_idx < controller_state_deque_->size();
        controller_state_msg_idx++) {
@@ -227,13 +292,30 @@ void AicAdapterNode::image_callback(size_t camera_idx,
     if (t_controller_state_msg <= t_image_0) {
       observation_msg->controller_state =
           *(*controller_state_deque_)[controller_state_msg_idx];
+      controller_state_found = true;
       break;
+    }
+  }
+  if (!controller_state_found) {
+    if (controller_state_deque_->empty()) {
+      RCLCPP_WARN_THROTTLE(
+          this->get_logger(), *this->get_clock(), 2000,
+          "[image_callback] Controller state deque is empty.");
+    } else {
+      RCLCPP_WARN_THROTTLE(
+          this->get_logger(), *this->get_clock(), 2000,
+          "[image_callback] No controller_state found with stamp <= image stamp "
+          "(image_t=%.6f, newest_ctrl_t=%.6f, oldest_ctrl_t=%.6f).",
+          t_image_0.seconds(),
+          rclcpp::Time((*controller_state_deque_)[0]->header.stamp).seconds(),
+          rclcpp::Time(controller_state_deque_->back()->header.stamp).seconds());
     }
   }
 
   // Look for the wrench message that is closest to the timestamp
   // of the images.
   size_t wrench_msg_idx = 0;
+  bool wrench_found = false;
   for (wrench_msg_idx = 0; wrench_msg_idx < wrench_deque_->size();
        wrench_msg_idx++) {
     if (!(*wrench_deque_)[wrench_msg_idx]) {
@@ -243,11 +325,31 @@ void AicAdapterNode::image_callback(size_t camera_idx,
         (*wrench_deque_)[wrench_msg_idx]->header.stamp);
     if (t_wrench_msg <= t_image_0) {
       observation_msg->wrist_wrench = *(*wrench_deque_)[wrench_msg_idx];
+      wrench_found = true;
       break;
+    }
+  }
+  if (!wrench_found) {
+    if (wrench_deque_->empty()) {
+      RCLCPP_WARN_THROTTLE(
+          this->get_logger(), *this->get_clock(), 2000,
+          "[image_callback] Wrench deque is empty.");
+    } else {
+      RCLCPP_WARN_THROTTLE(
+          this->get_logger(), *this->get_clock(), 2000,
+          "[image_callback] No wrench found with stamp <= image stamp "
+          "(image_t=%.6f, newest_wrench_t=%.6f, oldest_wrench_t=%.6f).",
+          t_image_0.seconds(),
+          rclcpp::Time((*wrench_deque_)[0]->header.stamp).seconds(),
+          rclcpp::Time(wrench_deque_->back()->header.stamp).seconds());
     }
   }
 
   this->observation_pub_->publish(std::move(observation_msg));
+  RCLCPP_INFO_THROTTLE(
+      this->get_logger(), *this->get_clock(), 2000,
+      "Successfully published /observations message (image stamp: %.6f).",
+      t_image_0.seconds());
 }
 
 void AicAdapterNode::ReorderJointState(
@@ -256,26 +358,38 @@ void AicAdapterNode::ReorderJointState(
   reordered.header = original.header;
   const size_t n_joints = original.name.size();
   if (n_joints != joint_sort_order_.size()) {
-    RCLCPP_ERROR(get_logger(), "Expected %zu joints. Received %zu",
-                 joint_sort_order_.size(), n_joints);
+    std::string received_names;
+    for (const auto& name : original.name) {
+      received_names += name + " ";
+    }
+    RCLCPP_ERROR_THROTTLE(
+        get_logger(), *get_clock(), 2000,
+        "[ReorderJointState] Expected %zu joints, received %zu. Joints in message: [%s]",
+        joint_sort_order_.size(), n_joints, received_names.c_str());
     return;
   }
 
   if (original.position.size() != n_joints) {
-    RCLCPP_ERROR(get_logger(), "Expected %zu joint positions. Received %zu",
-                 original.position.size(), n_joints);
+    RCLCPP_ERROR_THROTTLE(
+        get_logger(), *get_clock(), 2000,
+        "[ReorderJointState] Expected %zu joint positions. Received %zu",
+        original.position.size(), n_joints);
     return;
   }
 
   if (original.velocity.size() != n_joints) {
-    RCLCPP_ERROR(get_logger(), "Expected %zu joint velocities. Received %zu",
-                 original.velocity.size(), n_joints);
+    RCLCPP_ERROR_THROTTLE(
+        get_logger(), *get_clock(), 2000,
+        "[ReorderJointState] Expected %zu joint velocities. Received %zu",
+        original.velocity.size(), n_joints);
     return;
   }
 
   if (original.effort.size() != n_joints) {
-    RCLCPP_ERROR(get_logger(), "Expected %zu joint efforts. Received %zu",
-                 original.effort.size(), n_joints);
+    RCLCPP_ERROR_THROTTLE(
+        get_logger(), *get_clock(), 2000,
+        "[ReorderJointState] Expected %zu joint efforts. Received %zu",
+        original.effort.size(), n_joints);
     return;
   }
 
@@ -287,8 +401,10 @@ void AicAdapterNode::ReorderJointState(
   for (size_t original_joint_idx = 0; original_joint_idx < n_joints;
        original_joint_idx++) {
     if (!joint_sort_order_.contains(original.name[original_joint_idx])) {
-      RCLCPP_ERROR(get_logger(), "Ignoring unexpected joint name: %s",
-                   original.name[original_joint_idx].c_str());
+      RCLCPP_ERROR_THROTTLE(
+          get_logger(), *get_clock(), 2000,
+          "[ReorderJointState] Ignoring unexpected joint name: %s",
+          original.name[original_joint_idx].c_str());
       continue;
     }
     const size_t reordered_idx =
