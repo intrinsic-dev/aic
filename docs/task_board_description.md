@@ -67,10 +67,10 @@ Zones 3 and 4 serve as organized supply areas for components (LC plugs, SC plugs
 The task board is designed to be easy to 3D print with readily available components. To build a complete task board, you will need:
 
 * **Off-the-shelf components:**
-  * NIC Card (Quantity: 5) - [Amazon link](https://a.co/d/5lkWCj4)
-  * SFP module (Quantity: 5) - [Amazon link](https://a.co/d/7RGkdZO)
-  * LC to SC cable (Quantity: 5) - [Amazon link](https://a.co/d/edbwgg2)
-  * SC-SC connectors (Quantity: 1 pack) - [Amazon link](https://a.co/d/4PgnstS)
+  * NIC Card (Quantity: 5) - [Amazon link](https://a.co/d/0igiQkU5)
+  * SFP module (Quantity: 5) - [Amazon link](https://a.co/d/0e2Fzlo1)
+  * LC to SC cable (Quantity: 5) - [Amazon link](https://a.co/d/0i8kwLL6)
+  * SC-SC connectors (Quantity: 1 pack) - [Amazon link](https://a.co/d/0h1FGCQu)
 * **Task board BOM:**
   * 3D printed parts (chassis, rails, and component mounts) - [Task Board CAD](../aic_assets/taskboard_cad)
   * Assembly guide - [TASKBOARD ASSEMBLY GUIDE](../aic_assets/taskboard_cad/V1015044%20-%20AIC%20TASKBOARD%20ASSEMBLY%20GUIDE.pdf)
