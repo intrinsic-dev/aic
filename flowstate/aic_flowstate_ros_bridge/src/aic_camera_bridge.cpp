@@ -242,6 +242,24 @@ void AicCameraBridge::CaptureResultCallback(
     const double cx = params.intrinsic_params().principal_point_x();
     const double cy = params.intrinsic_params().principal_point_y();
 
+    // Store intrinsics in camera_intrinsics_ map
+    std::string cam_key;
+    if (frame_id.find("left") != std::string::npos) {
+      cam_key = "left_camera";
+    } else if (frame_id.find("center") != std::string::npos) {
+      cam_key = "center_camera";
+    } else if (frame_id.find("right") != std::string::npos) {
+      cam_key = "right_camera";
+    }
+    if (!cam_key.empty()) {
+      CameraIntrinsics& ci = data_->camera_intrinsics_[cam_key];
+      ci.fx = fx;
+      ci.fy = fy;
+      ci.cx = cx;
+      ci.cy = cy;
+      ci.valid = true;
+    }
+
     // Populate the intrinsic camera matrix
     camera_info.k[0] = fx;
     camera_info.k[2] = cx;
@@ -289,14 +307,35 @@ void AicCameraBridge::ImageCallback(
 
   const absl::Duration ros_image_creation_duration = absl::Now() - start_time;
 
+  // Route based on frame_id substring
+  const std::string& frame_id = image.header().frame_id();
+  std::string cam_key;
+  if (frame_id.find("left_camera") != std::string::npos) {
+    ros_image.header.frame_id = kLeftCameraOpticalFrame;
+    cam_key = "left_camera";
+  } else if (frame_id.find("center_camera") != std::string::npos) {
+    ros_image.header.frame_id = kCenterCameraOpticalFrame;
+    cam_key = "center_camera";
+  } else if (frame_id.find("right_camera") != std::string::npos) {
+    ros_image.header.frame_id = kRightCameraOpticalFrame;
+    cam_key = "right_camera";
+  } else {
+    LOG(WARNING) << "Unknown camera frame_id: " << frame_id;
+    return;
+  }
+
   // Every 10 seconds (3 cameras at 20 Hz = 60 images/sec), check to see if
-  // the focal length needs to be queried again, in case it failed on startup
+  // any camera intrinsics need to be queried again, in case it failed on startup
   // due to random container startup ordering.
   static int callback_count = 0;
   callback_count++;
   if (callback_count % 600 == 0) {
-    if (data_->focal_length_x_ == 0.0) {
-      LOG(INFO) << "Focal length still zero. Retrying search.";
+    bool missing_intrinsics =
+        !data_->camera_intrinsics_["left_camera"].valid ||
+        !data_->camera_intrinsics_["center_camera"].valid ||
+        !data_->camera_intrinsics_["right_camera"].valid;
+    if (missing_intrinsics) {
+      LOG(INFO) << "Camera intrinsics still incomplete. Retrying search.";
       FindFocalLength();
     }
     LOG(INFO) << absl::StrFormat(
@@ -304,21 +343,34 @@ void AicCameraBridge::ImageCallback(
         absl::ToDoubleSeconds(ros_image_creation_duration));
   }
 
+  CameraIntrinsics intrinsics;
+  auto it = data_->camera_intrinsics_.find(cam_key);
+  if (it != data_->camera_intrinsics_.end() && it->second.valid) {
+    intrinsics = it->second;
+  } else {
+    // Fallback if not yet received
+    intrinsics.cx = ros_image.width / 2.0;
+    intrinsics.cy = ros_image.height / 2.0;
+  }
+
   sensor_msgs::msg::CameraInfo camera_info;
   camera_info.header = ros_image.header;
   camera_info.height = ros_image.height;
   camera_info.width = ros_image.width;
 
-  // Images from the simulation are undistorted, so the distortion
-  // parameter vector 'd' will be left as zeros.
+  // Images from the simulation are undistorted unless distortion is specified
   camera_info.distortion_model = "plumb_bob";
-  camera_info.d.assign(5, 0.0);
+  if (!intrinsics.d.empty()) {
+    camera_info.d = intrinsics.d;
+  } else {
+    camera_info.d.assign(5, 0.0);
+  }
 
   // Populate the intrinsic camera matrix
-  camera_info.k[0] = data_->focal_length_x_;
-  camera_info.k[2] = ros_image.width / 2.0;
-  camera_info.k[4] = data_->focal_length_y_;
-  camera_info.k[5] = ros_image.height / 2.0;
+  camera_info.k[0] = intrinsics.fx;
+  camera_info.k[2] = intrinsics.cx;
+  camera_info.k[4] = intrinsics.fy;
+  camera_info.k[5] = intrinsics.cy;
   camera_info.k[8] = 1.0;
 
   // Identity rotation matrix, the convention for monocular cameras.
@@ -327,31 +379,21 @@ void AicCameraBridge::ImageCallback(
   camera_info.r[8] = 1.0;
 
   // Populate the projection matrix following monocular conventions.
-  camera_info.p[0] = data_->focal_length_x_;
-  camera_info.p[2] = ros_image.width / 2.0;
-  camera_info.p[5] = data_->focal_length_y_;
-  camera_info.p[6] = ros_image.height / 2.0;
+  camera_info.p[0] = intrinsics.fx;
+  camera_info.p[2] = intrinsics.cx;
+  camera_info.p[5] = intrinsics.fy;
+  camera_info.p[6] = intrinsics.cy;
   camera_info.p[10] = 1.0;
 
-  // Route based on frame_id substring
-  const std::string& frame_id = image.header().frame_id();
-  if (frame_id.find("left_camera") != std::string::npos) {
-    ros_image.header.frame_id = kLeftCameraOpticalFrame;
-    camera_info.header.frame_id = ros_image.header.frame_id;
+  if (cam_key == "left_camera") {
     data_->left_image_pub_->publish(std::move(ros_image));
     data_->left_camera_info_pub_->publish(std::move(camera_info));
-  } else if (frame_id.find("center_camera") != std::string::npos) {
-    ros_image.header.frame_id = kCenterCameraOpticalFrame;
-    camera_info.header.frame_id = ros_image.header.frame_id;
+  } else if (cam_key == "center_camera") {
     data_->center_image_pub_->publish(std::move(ros_image));
     data_->center_camera_info_pub_->publish(std::move(camera_info));
-  } else if (frame_id.find("right_camera") != std::string::npos) {
-    ros_image.header.frame_id = kRightCameraOpticalFrame;
-    camera_info.header.frame_id = ros_image.header.frame_id;
+  } else if (cam_key == "right_camera") {
     data_->right_image_pub_->publish(std::move(ros_image));
     data_->right_camera_info_pub_->publish(std::move(camera_info));
-  } else {
-    LOG(WARNING) << "Unknown camera frame_id: " << frame_id;
   }
 }
 
@@ -372,23 +414,55 @@ AicCameraBridge::Data::~Data() {
 void AicCameraBridge::FindFocalLength() {
   if (!data_->world_client_) return;
   auto objects_or = data_->world_client_->GetObjects();
-  if (objects_or.ok()) {
-    for (const auto& object : *objects_or) {
-      const auto& proto = object.Proto();
-      for (const auto& [name, entity] : proto.entities()) {
-        if (entity.has_sensor_component() &&
-            entity.sensor_component().has_camera()) {
-          const auto& camera = entity.sensor_component().camera();
-          if (camera.has_properties() && camera.properties().has_intrinsics()) {
-            data_->focal_length_x_ = camera.properties().intrinsics().fx();
-            data_->focal_length_y_ = camera.properties().intrinsics().fy();
-            LOG(INFO) << "Found focal length: " << data_->focal_length_x_
-                      << ", " << data_->focal_length_y_;
-            break;
+  if (!objects_or.ok()) {
+    LOG(WARNING) << "Failed to query objects from World service: "
+                 << objects_or.status();
+    return;
+  }
+  for (const auto& object : *objects_or) {
+    const auto& proto = object.Proto();
+    for (const auto& [name, entity] : proto.entities()) {
+      if (entity.has_sensor_component() &&
+          entity.sensor_component().has_camera()) {
+        const auto& camera = entity.sensor_component().camera();
+        if (camera.has_properties() && camera.properties().has_intrinsics()) {
+          const auto& intr = camera.properties().intrinsics();
+          CameraIntrinsics ci;
+          ci.fx = intr.fx();
+          ci.fy = intr.fy();
+          ci.cx = intr.cx();
+          ci.cy = intr.cy();
+          if (camera.properties().has_distortion()) {
+            const auto& dist = camera.properties().distortion();
+            ci.d = {dist.k1(), dist.k2(), dist.p1(), dist.p2(), dist.k3()};
+          }
+          ci.valid = true;
+
+          std::string entity_name = entity.name();
+          if (entity_name.empty()) entity_name = entity.local_name();
+          if (entity_name.empty()) entity_name = entity.alias();
+          if (entity_name.empty()) entity_name = entity.sensor_component().topic();
+
+          std::string cam_key;
+          if (entity_name.find("left") != std::string::npos) {
+            cam_key = "left_camera";
+          } else if (entity_name.find("center") != std::string::npos) {
+            cam_key = "center_camera";
+          } else if (entity_name.find("right") != std::string::npos) {
+            cam_key = "right_camera";
+          } else if (!entity_name.empty()) {
+            cam_key = entity_name;
+          }
+
+          if (!cam_key.empty()) {
+            data_->camera_intrinsics_[cam_key] = ci;
+            LOG(INFO) << "Found camera [" << cam_key << "] (entity: '"
+                      << entity_name << "') intrinsics via gRPC: fx=" << ci.fx
+                      << ", fy=" << ci.fy << ", cx=" << ci.cx
+                      << ", cy=" << ci.cy;
           }
         }
       }
-      if (data_->focal_length_x_ != 0.0) break;
     }
   }
 }

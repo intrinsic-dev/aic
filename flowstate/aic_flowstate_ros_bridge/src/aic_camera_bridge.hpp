@@ -20,6 +20,9 @@
 
 #include <memory>
 #include <mutex>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 #include "flowstate_ros_bridge/bridge_interface.hpp"
 #include "intrinsic/perception/proto/v1/capture_result.pb.h"
@@ -30,6 +33,15 @@
 #include "third_party/ros2/ros_interfaces/jazzy/sensor_msgs/msg/image.pb.h"
 
 namespace flowstate_ros_bridge {
+
+struct CameraIntrinsics {
+  double fx = 0.0;
+  double fy = 0.0;
+  double cx = 0.0;
+  double cy = 0.0;
+  std::vector<double> d = {0.0, 0.0, 0.0, 0.0, 0.0};
+  bool valid = false;
+};
 
 class AicCameraBridge : public BridgeInterface {
  public:
@@ -56,8 +68,7 @@ class AicCameraBridge : public BridgeInterface {
 
     std::shared_ptr<intrinsic::PubSub> pubsub_;
     std::shared_ptr<World> world_client_;
-    double focal_length_x_ = 0.0;
-    double focal_length_y_ = 0.0;
+    std::unordered_map<std::string, CameraIntrinsics> camera_intrinsics_;
     std::shared_ptr<intrinsic::Subscription> image_sub_;
     std::shared_ptr<intrinsic::Subscription> left_capture_result_sub_;
     std::shared_ptr<intrinsic::Subscription> center_capture_result_sub_;
