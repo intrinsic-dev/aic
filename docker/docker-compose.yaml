@@ -28,6 +28,21 @@ services:
       AIC_ROUTER_ADDR: eval:7447
       AIC_MODEL_PASSWD: CHANGE_IN_PROD
       # AIC_ENABLE_ACL: true
+  docs:
+    build:
+      dockerfile: docker/aic_docs/Dockerfile
+      context: ..
+    ports:
+      - "8000:8000"
+    volumes:
+      - ..:/aic
+      - ../../media:/media
+    networks:
+      - docs_net
+    command: sphinx-autobuild docs /_build/html --host 0.0.0.0 --port 8000
+
 networks:
   default:
     internal: true
+  docs_net:
+    driver: bridge
