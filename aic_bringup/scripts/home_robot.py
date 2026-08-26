@@ -139,18 +139,22 @@ class HomeTrajectoryNode(Node):
 
 
 def main(args=None):
+    node = None
     try:
-        with rclpy.init(args=args):
-            node = HomeTrajectoryNode()
-            node.send_trajectory()
-            if node.use_aic_control:
-                # Keep alive for a short duration to ensure message delivery.
-                rclpy.spin_once(node, timeout_sec=2.0)
-                rclpy.shutdown()
-            else:
-                rclpy.spin(node)
+        rclpy.init(args=args)
+        node = HomeTrajectoryNode()
+        node.send_trajectory()
+        if node.use_aic_control:
+            # Keep alive for a short duration to ensure message delivery.
+            rclpy.spin_once(node, timeout_sec=2.0)
+        else:
+            rclpy.spin(node)
     except (KeyboardInterrupt, ExternalShutdownException):
         pass
+    finally:
+        if node is not None:
+            node.destroy_node()
+        rclpy.shutdown()
 
 
 if __name__ == "__main__":

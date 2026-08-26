@@ -174,9 +174,10 @@ class TestImpedanceNode(Node):
 
 
 def main(args=None):
+    node = None
     try:
-        with rclpy.init(args=args):
-            node = TestImpedanceNode()
+        rclpy.init(args=args)
+        node = TestImpedanceNode()
 
             # Send service request to switch to Cartesian target mode
             node.send_change_target_mode_req(TargetMode.MODE_CARTESIAN)
@@ -232,9 +233,10 @@ def main(args=None):
 
     except (KeyboardInterrupt, ExternalShutdownException):
         pass
-
-    node.destroy_node()
-    rclpy.shutdown()
+    finally:
+        if node is not None:
+            node.destroy_node()
+        rclpy.shutdown()
 
 
 if __name__ == "__main__":
