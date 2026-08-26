@@ -28,6 +28,7 @@
 GZ_ADD_PLUGIN(aic_gazebo::ResetJointsPlugin, gz::sim::System,
               aic_gazebo::ResetJointsPlugin::ISystemConfigure,
               aic_gazebo::ResetJointsPlugin::ISystemPreUpdate,
+              aic_gazebo::ResetJointsPlugin::ISystemPostUpdate,
               aic_gazebo::ResetJointsPlugin::ISystemReset)
 
 namespace aic_gazebo {
@@ -150,12 +151,28 @@ void ResetJointsPlugin::PreUpdate(const gz::sim::UpdateInfo& _info,
           << " reset to initial position: " << initialPosition << std::endl;
   }
 
+  this->requestedJoints_.clear();
+  this->reset_pending_ = true;
+}
+
+//////////////////////////////////////////////////
+void ResetJointsPlugin::PostUpdate(
+    const gz::sim::UpdateInfo& /*_info*/,
+    const gz::sim::EntityComponentManager& /*_ecm*/) {
+  std::lock_guard<std::mutex> lock(this->mutex_);
+  if (!this->reset_pending_) {
+    return;
+  }
+
+  // Resolve the promise AFTER physics has processed the JointPositionReset
+  // and JointVelocityReset components (Update runs between PreUpdate and
+  // PostUpdate).  This ensures that when the service caller receives the
+  // response, the hardware state interfaces reflect the new joint positions.
   aic_engine_interfaces::srv::ResetJoints::Response response;
   response.success = true;
   this->reset_promise_->set_value(response);
-
-  this->requestedJoints_.clear();
   this->reset_promise_ = nullptr;
+  this->reset_pending_ = false;
 }
 
 //////////////////////////////////////////////////
