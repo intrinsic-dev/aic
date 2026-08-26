@@ -67,13 +67,19 @@ parser.add_argument(
 AppLauncher.add_app_launcher_args(parser)
 args_cli = parser.parse_args()
 
-app_launcher = AppLauncher(args_cli)
+app_launcher_args = vars(args_cli)
+if "handtracking" in args_cli.teleop_device.lower():
+    app_launcher_args["xr"] = True
+
+app_launcher = AppLauncher(app_launcher_args)
 simulation_app = app_launcher.app
 
 """Rest everything follows."""
 
 import logging
 import os
+import queue
+import threading
 import time
 from collections.abc import Callable
 
@@ -162,6 +168,13 @@ def main() -> None:
     env_cfg.recorders.dataset_export_dir_path = output_dir
     env_cfg.recorders.dataset_filename = output_file_name
     env_cfg.recorders.dataset_export_mode = DatasetExportMode.EXPORT_SUCCEEDED_ONLY
+
+    if args_cli.xr:
+        from xr_utils import configure_xr_env, remove_xr_cameras
+
+        env_cfg = configure_xr_env(env_cfg)
+        env_cfg = remove_xr_cameras(env_cfg)
+        env_cfg.sim.render.antialiasing_mode = "DLSS"
 
     # Create environment
     env = gym.make(args_cli.task, cfg=env_cfg).unwrapped
@@ -253,12 +266,42 @@ def main() -> None:
     env.reset()
     teleop_interface.reset()
 
+    command_queue: queue.SimpleQueue[str] | None = None
+    stop_event: threading.Event | None = None
+    if args_cli.xr:
+        from xr_utils import spawn_stdin_reader
+
+        command_queue = queue.SimpleQueue()
+        stop_event = threading.Event()
+        spawn_stdin_reader(command_queue, stop_event)
+
     print(f"Using teleop device: {teleop_interface}")
-    print("Recording demonstrations. Press 'R' to reset/discard current episode.")
+    if args_cli.xr:
+        print("Recording demonstrations. Hotkeys: s=start, p=pause, r=reset, q=quit")
+    else:
+        print("Recording demonstrations. Press 'R' to reset/discard current episode.")
     print(f"Recorded 0 successful demonstrations so far.")
 
     with contextlib.suppress(KeyboardInterrupt) and torch.inference_mode():
         while simulation_app.is_running():
+            if stop_event is not None and stop_event.is_set():
+                break
+
+            if command_queue is not None:
+                while True:
+                    try:
+                        cmd = command_queue.get_nowait()
+                    except queue.Empty:
+                        break
+                    if cmd == "s":
+                        start_recording()
+                    elif cmd == "p":
+                        stop_recording()
+                    elif cmd == "r":
+                        reset_recording()
+                    elif cmd == "q":
+                        stop_event.set()
+
             action = teleop_interface.advance()
             actions = action.repeat(env.num_envs, 1)
 
