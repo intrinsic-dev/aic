@@ -813,7 +813,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libbrotlienc-1.2.0-hc919400_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libcblas-3.11.0-8_hb0561ab_openblas.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libcurl-8.20.0-hd5a2499_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libcxx-22.1.7-h55c6f16_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libcxx-23.1.0-h55c6f16_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libdeflate-1.25-hc11a715_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libdovi-3.3.2-h78f8ca3_4.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libedit-3.1.20250104-pl5321hafb1f1b_0.conda
@@ -1778,7 +1778,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libblas-3.11.0-8_h51639a9_openblas.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libcblas-3.11.0-8_hb0561ab_openblas.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libcurl-8.20.0-hd5a2499_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libcxx-22.1.7-h55c6f16_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libcxx-23.1.0-h55c6f16_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libedit-3.1.20250104-pl5321hafb1f1b_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libev-4.33-h93a5062_2.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libexpat-2.8.1-hf6b4638_0.conda
@@ -2522,7 +2522,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libblas-3.11.0-8_h51639a9_openblas.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libcblas-3.11.0-8_hb0561ab_openblas.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libcurl-8.20.0-hd5a2499_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libcxx-22.1.7-h55c6f16_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libcxx-23.1.0-h55c6f16_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libedit-3.1.20250104-pl5321hafb1f1b_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libev-4.33-h93a5062_2.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libexpat-2.8.1-hf6b4638_0.conda
@@ -6951,16 +6951,16 @@ packages:
   purls: []
   size: 400568
   timestamp: 1777462251987
-- conda: https://conda.anaconda.org/conda-forge/osx-arm64/libcxx-22.1.7-h55c6f16_0.conda
-  sha256: cceb668dc1b71f054b1036dd83eca2e02c0c3a4b2ba3ad28c74a982d819597a3
-  md5: 0325fbe13eb6dd39234eb305ac1b3cb8
+- conda: https://conda.anaconda.org/conda-forge/osx-arm64/libcxx-23.1.0-h55c6f16_0.conda
+  sha256: d3e5f0b767964af25ef81edffc002f8e822b1a5c55330da1ae3a857f70c4e4ee
+  md5: 5303ba06fab927399ed8dfb3227b0af8
   depends:
   - __osx >=11.0
   license: Apache-2.0 WITH LLVM-exception
   license_family: Apache
   purls: []
-  size: 568252
-  timestamp: 1780441702930
+  size: 575940
+  timestamp: 1787698697875
 - conda: https://conda.anaconda.org/conda-forge/linux-64/libdeflate-1.25-h17f619e_0.conda
   sha256: aa8e8c4be9a2e81610ddf574e05b64ee131fab5e0e3693210c9d6d2fba32c680
   md5: 6c77a605a7a689d17d4819c0f8ac9a00
@@ -11486,7 +11486,7 @@ packages:
   - ros-kilted-trajectory-msgs
   - ros2-distro-mutex
   - ros2-distro-mutex >=0.17.0,<0.18.0a0
-  - libcxx >=22
+  - libcxx >=23
   - python_abi 3.12.* *_cp312
   - numpy >=1.25,<3
   license: LicenseRef-Apache-2.0
@@ -11532,7 +11532,7 @@ packages:
   - ros-kilted-trajectory-msgs
   - ros2-distro-mutex
   - ros2-distro-mutex >=0.17.0,<0.18.0a0
-  - libcxx >=22
+  - libcxx >=23
   - python_abi 3.12.* *_cp312
   - numpy >=1.25,<3
   license: LicenseRef-Apache-2.0
@@ -11578,7 +11578,7 @@ packages:
   - ros-kilted-rmw-zenoh-cpp
   - ros2-distro-mutex
   - ros2-distro-mutex >=0.17.0,<0.18.0a0
-  - libcxx >=22
+  - libcxx >=23
   - python_abi 3.12.* *_cp312
   - numpy >=1.25,<3
   license: LicenseRef-Apache-2.0
@@ -11623,7 +11623,7 @@ packages:
   - ros-kilted-trajectory-msgs
   - ros2-distro-mutex
   - ros2-distro-mutex >=0.17.0,<0.18.0a0
-  - libcxx >=22
+  - libcxx >=23
   - python_abi 3.12.* *_cp312
   - numpy >=1.25,<3
   license: LicenseRef-Apache-2.0
@@ -11670,7 +11670,7 @@ packages:
   - ros-kilted-trajectory-msgs
   - ros2-distro-mutex
   - ros2-distro-mutex >=0.17.0,<0.18.0a0
-  - libcxx >=22
+  - libcxx >=23
   - python_abi 3.12.* *_cp312
   - numpy >=1.25,<3
   license: LicenseRef-Apache-2.0
@@ -11708,7 +11708,7 @@ packages:
   - ros-kilted-rosidl-default-runtime
   - ros2-distro-mutex
   - ros2-distro-mutex >=0.17.0,<0.18.0a0
-  - libcxx >=22
+  - libcxx >=23
   - python_abi 3.12.* *_cp312
   - numpy >=1.25,<3
   license: LicenseRef-Apache-2.0
@@ -11742,7 +11742,7 @@ packages:
   - ros-kilted-rclpy
   - ros2-distro-mutex
   - ros2-distro-mutex >=0.17.0,<0.18.0a0
-  - libcxx >=22
+  - libcxx >=23
   - python_abi 3.12.* *_cp312
   - numpy >=1.25,<3
   license: LicenseRef-Apache-2.0
@@ -14389,7 +14389,7 @@ packages:
   - ros-kilted-std-msgs
   - ros2-distro-mutex
   - ros2-distro-mutex >=0.17.0,<0.18.0a0
-  - libcxx >=22
+  - libcxx >=23
   - python_abi 3.12.* *_cp312
   - numpy >=1.25,<3
   license: LicenseRef-Apache-2.0
