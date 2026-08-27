@@ -6,10 +6,3 @@ channels = [
   "robostack-kilted",
   "conda-forge",
 ]
-
-[package.build-dependencies]
-empy = "==3.3.4"
-
-[package.host-dependencies]
-empy = "==3.3.4"
-

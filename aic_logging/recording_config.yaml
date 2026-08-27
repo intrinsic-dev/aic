@@ -1,0 +1,56 @@
+# AIC Recording Configuration
+# Defines exact topics, services, actions, and MCAP storage options for the AIC solution.
+
+# Storage configuration
+storage:
+  identifier: "mcap"                # Storage plugin: "mcap" or "sqlite3"
+  output_dir: "/home/ros2_bag"       # Destination base directory for recorded bags
+  preset_profile: "zstd_fast"       # Storage preset: "none", "fastwrite", "zstd_fast", "zstd_small"
+  max_bag_size: 0                   # Split file threshold in bytes (0 = disabled)
+  max_bag_duration: 0            # Split file threshold in seconds (0 = disabled)
+  max_cache_size: 104857600         # Cache size in bytes (default: 100MB)
+
+# Topic recording options
+topics:
+  record_all: false                 # Record specified list of topics
+  include:                          # Exact list of topics to record
+    - "/left_camera/image"
+    - "/left_camera/camera_info"
+    - "/center_camera/image"
+    - "/center_camera/camera_info"
+    - "/right_camera/image"
+    - "/right_camera/camera_info"
+    - "/fts_broadcaster/wrench"
+    - "/joint_states"
+    - "/robot_description"
+    - "/gripper_state"
+    - "/tf"
+    - "/tf_static"
+    - "/aic_controller/controller_state"
+    - "/aic_controller/pose_commands"
+    - "/aic_controller/joint_commands"
+    - "/rosout"
+    - "/observations"
+  exclude: []
+
+# Service recording options
+services:
+  record_all: false
+  include:
+    - "/aic_controller/change_target_mode"
+    - "/aic_controller/tare_force_torque_sensor"
+  exclude: []
+
+# Action recording options
+actions:
+  record_all: false                 # Record specified list of actions
+  include:                          # Exact list of actions to record
+    - "/insert_cable"
+  exclude: []
+
+# Advanced filtering & options
+advanced:
+  regex: ""                         # Optional regex pattern for topic/service inclusion
+  exclude_regex: ""                 # Optional regex pattern for exclusion
+  node_name: "aic_external_recorder" # Name of the recorder ROS node
+  include_hidden_topics: false      # Include hidden ROS 2 topics

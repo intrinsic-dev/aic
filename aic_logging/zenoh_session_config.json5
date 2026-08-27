@@ -1,0 +1,54 @@
+{
+  // Zenoh Session Configuration for AIC External Recording Machine
+  // Overrides default session settings for high-throughput direct logging from the IPC Zenoh router.
+
+  // In client mode, ROS 2 nodes connect directly to the remote IPC Zenoh router for routing and discovery
+  mode: "client",
+
+  // Connect directly to the IPC Zenoh router endpoint (replace with actual IPC IP/hostname)
+  connect: {
+    endpoints: [
+      "tcp/192.168.1.124:17447"
+    ]
+  },
+
+  transport: {
+    link: {
+      rx: {
+        // Link receiving buffer size in bytes (default: 65535).
+        // Increased to 64 MiB to accommodate in-flight bursts of uncompressed 5MP camera frames.
+        buffer_size: 67108864
+      }
+    },
+    shared_memory: {
+      // Enable shared memory optimization for zero-copy message passing on the host (default: false)
+      enabled: true,
+      transport_optimization: {
+        // Increased SHM pool size to 256 MiB (default: 50331648 / 48 MiB) for multi-camera streams
+        pool_size: 268435456
+      }
+    }
+  },
+
+  // Traffic control & Downsampling rules
+  // 3x 5MP uncompressed cameras @ 20 Hz = 3 * 15 MB * 20 Hz = 900 MB/s (~7.2 Gbps), safely within 10GbE link
+  downsampling: [
+    {
+      messages: [
+        "delete",
+        "put",
+        "query",
+        "reply",
+      ],
+      rules: [
+        { key_expr: "**/left_camera/image/**", freq: 1.0 },
+        { key_expr: "**/left_camera/camera_info/**", freq: 1.0 },
+        { key_expr: "**/center_camera/image/**", freq: 1.0 },
+        { key_expr: "**/center_camera/camera_info/**", freq: 1.0 },
+        { key_expr: "**/right_camera/image/**", freq: 1.0 },
+        { key_expr: "**/right_camera/camera_info/**", freq: 1.0 },
+        { key_expr: "**/observations/**", freq: 1.0 },
+      ],
+    }
+  ]
+}
