@@ -8,7 +8,9 @@ channels = [
 ]
 
 [package.host-dependencies]
+empy = "==3.3.4"
 ros-kilted-aic-control-interfaces = { path = "../aic_control_interfaces" }
 
 [package.build-dependencies]
+empy = "==3.3.4"
 ros-kilted-aic-control-interfaces = { path = "../aic_control_interfaces" }
