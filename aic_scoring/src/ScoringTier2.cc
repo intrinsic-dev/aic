@@ -819,81 +819,13 @@ std::optional<ScoringTier2::TransformStampedMsg> ScoringTier2::EndEffectorPose(
 //////////////////////////////////////////////////
 Tier2Score::CategoryScore ScoringTier2::GetInsertionForceScore() const {
   using CategoryScore = Tier2Score::CategoryScore;
-  // Apply a fixed penalty if excessive force is detected for more than a
-  // certain time
-  // The sensor reading is tared at startup so its reading is close to 0N.
-  const double kForceThreshold = 20.0;
-  const double kDurationThreshold = 1.0;
-  const double kPenalty = -12.0;
-
-  std::size_t samples = 0;
-  double average_force = 0.0;
-  double time_above_threshold = 0.0;
-  // Start from 1 for easier dt calculation
-  for (std::size_t i = 1; i < this->wrenches.size(); ++i) {
-    const auto &f = this->wrenches[i].second;
-    const double force_mag = std::sqrt(f.x * f.x + f.y * f.y + f.z * f.z);
-    if (force_mag > kForceThreshold) {
-      time_above_threshold +=
-          this->wrenches[i].first - this->wrenches[i - 1].first;
-      average_force += force_mag;
-      ++samples;
-    } else {
-      // The penalty was applied and we are below threshold, break and report
-      if (time_above_threshold > kDurationThreshold) {
-        break;
-      }
-      // The penalty was not applied, and we are below threshold, reset count
-      time_above_threshold = 0.0;
-      average_force = 0.0;
-      samples = 0;
-    }
-  }
-
-  std::string msg;
-  if (time_above_threshold == 0.0) {
-    return CategoryScore(0, "No excessive force detected");
-  }
-
-  average_force /= samples;
-
-  double score = 0.0;
-  std::stringstream sstream;
-  sstream.setf(std::ios::fixed);
-  sstream.precision(2);
-  sstream << "Insertion force above " << kForceThreshold
-          << " N, detected for a time of " << time_above_threshold
-          << " seconds. Average detected force: " << average_force << "N.";
-
-  if (time_above_threshold > kDurationThreshold) {
-    score = kPenalty;
-    sstream << " This is above the threshold of " << kDurationThreshold
-            << " seconds. Penalty applied.";
-  } else {
-    sstream << " This is below the threshold of " << kDurationThreshold
-            << " seconds. Penalty not applied.";
-  }
-
-  return CategoryScore(score, sstream.str());
+  return CategoryScore(0.0, "To be provided by AIC Team");
 }
 
 //////////////////////////////////////////////////
 Tier2Score::CategoryScore ScoringTier2::GetContactsScore() const {
   using CategoryScore = Tier2Score::CategoryScore;
-  // Apply a fixed penalty if any contact was detected.
-  const double kPenalty = -24.0;
-  if (this->contacts.empty()) {
-    return CategoryScore(0, "No contact detected.");
-  }
-
-  const auto &contact = this->contacts[0].contacts[0];
-  std::stringstream sstream;
-  sstream.setf(std::ios::fixed);
-  sstream.precision(2);
-  sstream << "Contacts detected (only first reported) between entity named ["
-          << contact.collision1.name << "] and [" << contact.collision2.name
-          << "]. Penalty applied.";
-  return CategoryScore(kPenalty, sstream.str());
+  return CategoryScore(0.0, "To be provided by AIC Team");
 }
 
 //////////////////////////////////////////////////
