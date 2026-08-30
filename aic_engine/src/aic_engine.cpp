@@ -483,8 +483,7 @@ void Engine::compute_score(TrialScore& score) {
   score.tier_2 = tier2_score;
   score.tier_3 = tier3_score;
 
-  RCLCPP_INFO(node_->get_logger(), "Finished scoring trial, total score is: %f",
-              score.total_score());
+  RCLCPP_INFO(node_->get_logger(),"Finished scoring trial. Total score will be provided by AIC Team");
 
   YAML::Node yaml_score;
   yaml_score["tier_1"] = score.tier_1.to_yaml();
