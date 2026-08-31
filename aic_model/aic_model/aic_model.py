@@ -77,7 +77,9 @@ class AicModel(LifecycleNode):
                     f"Could not parse runtime_config.pb ({e}), using default use_sim_time={use_sim_time}"
                 )
         # 2. Dynamically set the ROS 2 use_sim_time parameter
-        self.set_parameters([Parameter("use_sim_time", Parameter.Type.BOOL, use_sim_time)])
+        self.set_parameters(
+            [Parameter("use_sim_time", Parameter.Type.BOOL, use_sim_time)]
+        )
 
         self.declare_parameter("policy", "WaveArm")
         policy_module_name = (
