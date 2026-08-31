@@ -11,6 +11,8 @@ preview = ["pixi-build"]
 default = { features = ["skill-runtime", "build-dependencies", "dev-only"], solve-group = "default" }
 skill-build = { features = ["skill-runtime", "build-dependencies"], solve-group = "default" }
 skill-runtime = { features = ["skill-runtime"], solve-group = "default" }
+engine-build = {features = ["engine-runtime", "skill-runtime" , "build-dependencies"], solve-group = "default" }
+engine-runtime = { features = ["engine-runtime", "skill-runtime"], solve-group = "default" }
 
 [feature.skill-runtime.target.linux-64.dependencies]
 evdev = ">=1.9.2,<2"
@@ -35,7 +37,7 @@ ros-kilted-rmw-zenoh-cpp = "*"
 ros-kilted-ros-core = "*"
 re2 = "*"
 flatbuffers = "*"
-eigen = "==3.4.0"
+eigen = ">=3.4.0"
 zeromq = "*"
 libgrpc = "<1.80.0"
 prometheus-cpp = "*"
@@ -51,6 +53,10 @@ ros-kilted-ros-gz-interfaces = ">=2.1.0,<2.2"
 ros-kilted-yaml-cpp-vendor = "*"
 ros-kilted-orocos-kdl-vendor = "*"
 nlohmann_json = "*"
+
+[feature.engine-runtime.dependencies]
+ros-kilted-aic-engine-interfaces = { path = "aic_interfaces/aic_engine_interfaces" }
+ros-kilted-aic-scoring = { path = "aic_scoring" }
 
 [feature.build-dependencies.dependencies]
 colcon-common-extensions = ">=0.3.0,<0.4"

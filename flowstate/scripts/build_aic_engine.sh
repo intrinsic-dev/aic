@@ -63,6 +63,10 @@ docker buildx build -t flowstate:aic_engine \
   --file "$DOCKERFILE_SERVICE" \
   "$AIC_TOP_DIR/.."
 
+# TODO: enable compression with dedicated builder
+#  --builder="$BUILDER_NAME" \
+#  --output="type=docker,dest=$IMAGES_DIR/aic_engine/aic_engine.tar,compression=zstd,push=false,name=flowstate:aic_engine" \
+#
 chmod 644 "$IMAGES_DIR/aic_engine/aic_engine.tar"
 
 # 3. Bundle the service using inbuild

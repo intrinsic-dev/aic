@@ -1,0 +1,14 @@
+[package.build.backend]
+name = "pixi-build-ros"
+version = "==0.3.3.20260113.c8b6a54"
+channels = [
+  "https://prefix.dev/pixi-build-backends",
+  "robostack-kilted",
+  "conda-forge",
+]
+
+[package.build-dependencies]
+empy = "==3.3.4"
+
+[package.host-dependencies]
+empy = "==3.3.4"
