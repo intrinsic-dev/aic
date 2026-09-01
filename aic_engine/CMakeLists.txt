@@ -44,7 +44,7 @@ target_link_libraries(aic_engine
   aic_scoring::aic_scoring
   rclcpp::rclcpp
   rclcpp_action::rclcpp_action
-  yaml-cpp
+  yaml-cpp::yaml-cpp
   ${aic_control_interfaces_TARGETS}
   ${aic_engine_interfaces_TARGETS}
   ${lifecycle_msgs_TARGETS}

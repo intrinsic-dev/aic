@@ -61,7 +61,7 @@ docker buildx build -t flowstate:aic_engine \
   --builder="$BUILDER_NAME" \
   --output="type=docker,dest=$IMAGES_DIR/aic_engine/aic_engine.tar,compression=zstd,push=false,name=flowstate:aic_engine" \
   --file "$DOCKERFILE_SERVICE" \
-  "$AIC_TOP_DIR/.."
+  "$AIC_TOP_DIR/../.."
 
 # TODO: enable compression with dedicated builder
 #  --builder="$BUILDER_NAME" \
@@ -93,7 +93,7 @@ docker load -i "$IMAGES_DIR/aic_engine/aic_engine.tar"
 
 echo "INFO: Extracting descriptor set from container..."
 docker create --name temp_container_service flowstate:aic_engine
-docker cp "temp_container_service:/ws_aic/install/share/aic_engine/aic_engine_protos.desc" \
+docker cp "temp_container_service:/workspace/install/share/aic_engine/aic_engine_protos.desc" \
   "$IMAGES_DIR/aic_engine/aic_engine_protos.desc"
 docker rm -f temp_container_service
 

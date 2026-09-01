@@ -18,12 +18,12 @@ ENV PATH="/root/.pixi/bin:${PATH}"
 WORKDIR /workspace
 
 # Pre-cache Pixi environment
-COPY src/aic/pixi.toml src/aic/pixi.lock src/aic/robostack_mapping.json ./
-COPY aic/aic_interfaces/aic_control_interfaces /workspace/src/aic/aic_control_interfaces
-COPY aic/aic_interfaces/aic_engine_interfaces /workspace/src/aic/aic_engine_interfaces
-COPY aic/aic_interfaces/aic_task_interfaces /workspace/src/aic/aic_task_interfaces
-COPY aic/aic_scoring /workspace/src/aic/aic_scoring
-COPY aic/aic_engine /workspace/src/aic/aic_engine
+COPY src/aic/pixi.toml src/aic/pixi.lock src/aic/robostack_mapping.json src/aic/pixi_env_setup.sh ./
+COPY src/aic/aic_interfaces ./aic_interfaces
+COPY src/aic/aic_example_policies/ ./aic_example_policies/
+COPY src/aic/aic_model/ ./aic_model/
+COPY src/aic/aic_utils/ ./aic_utils/
+COPY src/aic/aic_scoring ./aic_scoring
 
 # Copy path-dependent local packages for Pixi validation
 RUN pixi install --frozen --environment engine-build && pixi install --frozen --environment engine-runtime
@@ -49,7 +49,6 @@ ARG DEPENDENCIES
 # Copy target user packages
 COPY src/aic/flowstate/ ./flowstate/
 COPY src/aic/aic_engine/ ./aic_engine/
-COPY src/aic/aic_scoring/ ./aic_scoring/
 # COPY src/aic/aic_adapter/ ./aic_adapter/
 
 # Build target service package using existing install space
@@ -57,7 +56,7 @@ RUN pixi run --frozen --environment engine-build colcon build \
     --merge-install \
     --cmake-args -DCMAKE_BUILD_TYPE=Release \
     --event-handlers=console_direct+ \
-    --packages-up-to ${SERVICE_PACKAGE} \
+    --packages-up-to aic_engine \
     --base-paths aic_engine flowstate sdk-ros 
 # TODO: Add aic_adapter above
 
@@ -85,6 +84,7 @@ COPY --from=build /workspace/.pixi/envs/engine-runtime /workspace/.pixi/envs/eng
 RUN ln -s /workspace/.pixi/envs/engine-runtime /workspace/.pixi/envs/engine-build
 COPY --from=build /workspace/install ./install
 COPY --from=build /pixi_hook.sh /pixi_hook.sh
+COPY --from=build /workspace/pixi_env_setup.sh /workspace/pixi_env_setup.sh
 
 # Bridge paths for build_bundle.sh expectations (/opt/ros/overlay/install)
 RUN mkdir -p /opt/ros/overlay \
@@ -93,20 +93,18 @@ RUN mkdir -p /opt/ros/overlay \
 # Runtime environment variables
 ENV ROS_HOME=/tmp
 ENV RMW_IMPLEMENTATION=rmw_zenoh_cpp
-ENV ZENOH_CONFIG_OVERRIDE='connect/endpoints=["tcp/zenoh-router.app-intrinsic-base.svc.cluster.local:7447"]'
-ENV SERVICE_PACKAGE=${SERVICE_PACKAGE}
-ENV SERVICE_NAME=${SERVICE_NAME}
-ENV SERVICE_EXECUTABLE_NAME=${SERVICE_EXECUTABLE_NAME}
+ENV ZENOH_ROUTER_CHECK_ATTEMPTS=-1
+ENV ZENOH_CONFIG_OVERRIDE='connect/endpoints=["tcp/zenoh-router.app-intrinsic-base.svc.cluster.local:7447"];transport/shared_memory/enabled=false'
+ENV LD_LIBRARY_PATH=/workspace/.pixi/envs/engine-runtime/lib:${LD_LIBRARY_PATH}
 
 # Entrypoint to activate Pixi and ROS setup
 RUN echo '#!/bin/bash' > /entrypoint.sh \
     && echo 'set -e' >> /entrypoint.sh \
     && echo 'source /pixi_hook.sh' >> /entrypoint.sh \
     && echo 'source /workspace/install/setup.bash' >> /entrypoint.sh \
+    && echo 'export LD_LIBRARY_PATH="/workspace/.pixi/envs/engine-runtime/lib:${LD_LIBRARY_PATH}"' >> /entrypoint.sh \
     && echo 'exec "$@"' >> /entrypoint.sh \
     && chmod +x /entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh"]
-#CMD ["bash", "-c", "exec /workspace/install/lib/${SERVICE_PACKAGE}/${SERVICE_EXECUTABLE_NAME}"]
-CMD ["bash"]
-
+CMD ["bash", "-c", "exec /workspace/install/lib/aic_engine/aic_engine"]
