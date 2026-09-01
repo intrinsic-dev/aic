@@ -69,7 +69,7 @@ docker buildx build -t flowstate:aic_model \
   --load \
   --build-arg CONTAINER_IMAGE="$CONTAINER_IMAGE" \
   --file "$DOCKERFILE_SERVICE" \
-  "$SERVICE_DIR"
+  "$AIC_TOP_DIR/.."
 
 # 2. Export the service image to a .tar bundle
 # This saves the docker image as a tar archive to the file system, which
@@ -106,6 +106,8 @@ fi
 echo "INFO: Bundling service using inbuild..."
 ./inbuild service bundle \
   --manifest "$SERVICE_DIR/aic_model.manifest.textproto" \
+  --default_config "$SERVICE_DIR/default_config.pbtxt" \
+  --file_descriptor_set "$SERVICE_DIR/parameter-descriptor-set.proto.bin" \
   --oci_image "$IMAGES_DIR/aic_model/aic_model.tar" \
   --output "$IMAGES_DIR/aic_model/aic_model.bundle.tar"
 
