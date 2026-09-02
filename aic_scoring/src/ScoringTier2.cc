@@ -40,7 +40,8 @@ ScoringTier2::ScoringTier2(rclcpp::Node *_node,
     : node(_node), gripperFrame(_gripperFrame), connection(_connections) {}
 
 //////////////////////////////////////////////////
-bool ScoringTier2::StartRecording(const std::chrono::seconds &_max_task_time) {
+bool ScoringTier2::StartRecording(const std::chrono::seconds &_max_task_time,
+                                  const bool _use_sim_time) {
   this->tf2_buffer = std::make_unique<tf2::BufferCore>(_max_task_time);
 
   {
@@ -118,7 +119,10 @@ bool ScoringTier2::StartRecording(const std::chrono::seconds &_max_task_time) {
             }
           });
 
-  return this->WaitForTfs();
+  if (_use_sim_time) {
+    return this->WaitForTfs();
+  }
+  return true;
 }
 
 //////////////////////////////////////////////////
@@ -192,13 +196,13 @@ std::pair<Tier2Score, Tier3Score> ScoringTier2::ComputeScore() {
   tier2_score.add_category_score("insertion force",
                                  this->GetInsertionForceScore());
   tier2_score.add_category_score("contacts", this->GetContactsScore());
-  const auto [success, tier3_score] = this->CombineTier3Score();
+  const auto tier3_score = this->CombineTier3Score();
   tier2_score.add_category_score("duration",
-                                 this->GetTaskDurationScore(success));
+                                 this->GetTaskDurationScore());
   tier2_score.add_category_score("trajectory smoothness",
-                                 this->GetTrajectoryJerkScore(success));
+                                 this->GetTrajectoryJerkScore());
   tier2_score.add_category_score("trajectory efficiency",
-                                 this->GetTrajectoryEfficiencyScore(success));
+                                 this->GetTrajectoryEfficiencyScore());
 
   return {tier2_score, tier3_score};
 }
@@ -403,8 +407,7 @@ static double CalculateInverseProportionalScore(const double max_score,
 }
 
 //////////////////////////////////////////////////
-Tier2Score::CategoryScore ScoringTier2::GetTrajectoryJerkScore(
-    const bool _success) const {
+Tier2Score::CategoryScore ScoringTier2::GetTrajectoryJerkScore() const {
   using CategoryScore = Tier2Score::CategoryScore;
 
   const double kMaxJerkScore = 6.0;
@@ -418,13 +421,6 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryJerkScore(
 
   if (!this->task_end_time.has_value()) {
     return CategoryScore(0, "Task not completed.");
-  }
-
-  if (!_success) {
-    return CategoryScore(
-        0,
-        "Plugs are not within max bounding radius from target ports, "
-        "not assigning jerk bonus");
   }
 
   if (this->endEffectorVelocities.size() < kWindowSize) {
@@ -515,23 +511,16 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryJerkScore(
 }
 
 //////////////////////////////////////////////////
-Tier2Score::CategoryScore ScoringTier2::GetTrajectoryEfficiencyScore(
-    const bool _success) const {
+Tier2Score::CategoryScore ScoringTier2::GetTrajectoryEfficiencyScore() const {
   using CategoryScore = Tier2Score::CategoryScore;
 
   if (!this->task_end_time.has_value()) {
     return CategoryScore(0, "Task not completed.");
   }
 
-  if (!_success) {
-    return CategoryScore(
-        0,
-        "Plugs are not within max bounding radius from target ports, "
-        "not assigning efficiency bonus");
-  }
-
   const std::size_t numConnections = this->connection.value().data.size();
   double minPathLength = 0.0;
+  bool groundTruthFound = false;
   // Minimum distance is the sum of all the initialization distances.
   // It should be impossible to reach full score but this is a reasonable
   // minimum distance estimate.
@@ -542,10 +531,12 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryEfficiencyScore(
     if (this->task_start_time.has_value()) {
       const auto initDist = this->GetStartPlugPortDistance(index);
       if (initDist.has_value()) {
-        minPathLength += initDist.value();
+        minPathLength += 2.0 * initDist.value();
+        groundTruthFound = true;
       } else {
         RCLCPP_WARN(this->node->get_logger(),
-                    "Failed to get initial plug port distance");
+                    "Failed to get initial plug port distance, defaulting to 0.5m.");
+        minPathLength += 0.5;
       }
     }
   }
@@ -563,12 +554,19 @@ Tier2Score::CategoryScore ScoringTier2::GetTrajectoryEfficiencyScore(
   // Score range and path length bounds (meters).
   const double kMaxEfficiencyScore = 6.0;             // Shortest path
   const double kMinEfficiencyScore = 0.0;             // Longest path
-  const double kMaxPathLength = 2.0 + minPathLength;  // Path for min score
+  const double kMaxPathLength = minPathLength * 10.0;  // Path for min score
 
   std::stringstream ss;
   ss << std::fixed << std::setprecision(2);
-  ss << "Total end-effector path length: " << totalPathLength << " m"
-     << ", initial plug-port distance: " << minPathLength << " m";
+
+  if (groundTruthFound) {
+    ss << "Total end-effector path length: " << totalPathLength << " m"
+       << ", initial plug-port distance: " << minPathLength << " m";
+  } else {
+    ss << "Total end-effector path length: " << totalPathLength << " m"
+       << ", no ground truth available, min distance for scoring: "
+       << minPathLength << " m";
+  }
 
   const double score = CalculateInverseProportionalScore(
       kMaxEfficiencyScore, kMinEfficiencyScore, kMaxPathLength, minPathLength,
@@ -796,16 +794,14 @@ Tier3Score ScoringTier2::ComputeTier3Score(std::size_t index) const {
   return this->GetDistanceScore(index);
 }
 
-std::pair<bool, Tier3Score> ScoringTier2::CombineTier3Score() const {
+Tier3Score ScoringTier2::CombineTier3Score() const {
   const auto score_0 = this->ComputeTier3Score(0);
   const auto score_1 = this->ComputeTier3Score(1);
-  const bool successful =
-      score_0.total_score() > 0 && score_1.total_score() > 0;
   const auto combinedScore =
       (score_0.total_score() + score_1.total_score()) / 2.0;
   const std::string msg = "[Task 0] : '" + score_0.message + "'. [Task 1]: '" +
                           score_1.message + "'.";
-  return {successful, Tier3Score(combinedScore, msg)};
+  return Tier3Score(combinedScore, msg);
 }
 
 //////////////////////////////////////////////////
@@ -823,73 +819,17 @@ std::optional<ScoringTier2::TransformStampedMsg> ScoringTier2::EndEffectorPose(
 //////////////////////////////////////////////////
 Tier2Score::CategoryScore ScoringTier2::GetInsertionForceScore() const {
   using CategoryScore = Tier2Score::CategoryScore;
-  // Apply a fixed penalty if excessive force is detected for more than a
-  // certain time
-  // The sensor reading is tared at startup so its reading is close to 0N.
-  const double kForceThreshold = 20.0;
-  const double kDurationThreshold = 1.0;
-  const double kPenalty = -12.0;
-
-  double max_force = 0.0;
-  double time_above_threshold = 0.0;
-  // Start from 1 for easier dt calculation
-  for (std::size_t i = 1; i < this->wrenches.size(); ++i) {
-    const auto &f = this->wrenches[i].second;
-    const double force_mag = std::sqrt(f.x * f.x + f.y * f.y + f.z * f.z);
-    if (force_mag > kForceThreshold) {
-      time_above_threshold +=
-          this->wrenches[i].first - this->wrenches[i - 1].first;
-    }
-    if (force_mag > max_force) max_force = force_mag;
-  }
-
-  std::string msg;
-  if (time_above_threshold == 0.0) {
-    return CategoryScore(0, "No excessive force detected");
-  }
-
-  double score = 0.0;
-  std::stringstream sstream;
-  sstream.setf(std::ios::fixed);
-  sstream.precision(2);
-  sstream << "Insertion force above " << kForceThreshold
-          << " N, detected for a time of " << time_above_threshold
-          << " seconds. Max detected force: " << max_force << "N.";
-
-  if (time_above_threshold > kDurationThreshold) {
-    score = kPenalty;
-    sstream << " This is above the threshold of " << kDurationThreshold
-            << " seconds. Penalty applied.";
-  } else {
-    sstream << " This is below the threshold of " << kDurationThreshold
-            << " seconds. Penalty not applied.";
-  }
-
-  return CategoryScore(score, sstream.str());
+  return CategoryScore(0.0, "To be provided by AIC Team");
 }
 
 //////////////////////////////////////////////////
 Tier2Score::CategoryScore ScoringTier2::GetContactsScore() const {
   using CategoryScore = Tier2Score::CategoryScore;
-  // Apply a fixed penalty if any contact was detected.
-  const double kPenalty = -24.0;
-  if (this->contacts.empty()) {
-    return CategoryScore(0, "No contact detected.");
-  }
-
-  const auto &contact = this->contacts[0].contacts[0];
-  std::stringstream sstream;
-  sstream.setf(std::ios::fixed);
-  sstream.precision(2);
-  sstream << "Contacts detected (only first reported) between entity named ["
-          << contact.collision1.name << "] and [" << contact.collision2.name
-          << "]. Penalty applied.";
-  return CategoryScore(kPenalty, sstream.str());
+  return CategoryScore(0.0, "To be provided by AIC Team");
 }
 
 //////////////////////////////////////////////////
-Tier2Score::CategoryScore ScoringTier2::GetTaskDurationScore(
-    const bool _success) const {
+Tier2Score::CategoryScore ScoringTier2::GetTaskDurationScore() const {
   using CategoryScore = Tier2Score::CategoryScore;
 
   const rclcpp::Duration kMaxTaskTime = rclcpp::Duration::from_seconds(300.0);
@@ -903,13 +843,6 @@ Tier2Score::CategoryScore ScoringTier2::GetTaskDurationScore(
 
   if (!this->task_start_time.has_value()) {
     return CategoryScore(0, "Time computation failed, task start time not set");
-  }
-
-  if (!_success) {
-    return CategoryScore(
-        0,
-        "Plugs are not within max bounding radius from target ports, "
-        "not assigning time bonus");
   }
 
   const rclcpp::Duration task_duration =

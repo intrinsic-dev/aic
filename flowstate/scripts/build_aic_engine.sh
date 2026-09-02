@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -e
 
 IMAGES_DIR=./images
 BUILDER_NAME=container-builder
@@ -42,29 +43,30 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 # Compute absolute path to top-level aic directory (two levels up from flowstate/scripts)
 AIC_TOP_DIR=$(cd "$SCRIPT_DIR/../.." && pwd)
-
-# 1. Build the Flowstate service image on top of my-solution:v1
-# This step adds the necessary configurations to the base image,
-# allowing the service to communicate with Flowstate Zenoh router.
 SERVICE_DIR="$AIC_TOP_DIR/flowstate/services/aic_engine"
 DOCKERFILE_SERVICE="$SERVICE_DIR/Dockerfile.service"
 
-docker buildx build -t flowstate:aic_engine \
-  --no-cache \
-  --load \
-  --file "$DOCKERFILE_SERVICE" \
-  "$AIC_TOP_DIR/.."
-
-# 2. Export the service image to a .tar bundle
-# This saves the docker image as a tar archive to the file system, which
-# can be subsequently bundled by the inbuild tool.
-echo "INFO: Exporting image to tar file..."
+# 1. Build and export the service image to a compressed .tar bundle
+# This builds the image and exports it directly to a tar archive with ZSTD compression,
+# which is much smaller and can be subsequently bundled by the inbuild tool.
+echo "INFO: Building and exporting image to compressed tar file..."
 if [ -d "$IMAGES_DIR/aic_engine" ]; then
   echo "INFO: Deleting existing $IMAGES_DIR/aic_engine directory..."
   rm -rf "$IMAGES_DIR/aic_engine"
 fi
 mkdir -p "$IMAGES_DIR/aic_engine"
-docker save -o "$IMAGES_DIR/aic_engine/aic_engine.tar" flowstate:aic_engine
+
+docker buildx build -t flowstate:aic_engine \
+  --no-cache \
+  --builder="$BUILDER_NAME" \
+  --output="type=docker,dest=$IMAGES_DIR/aic_engine/aic_engine.tar,compression=zstd,push=false,name=flowstate:aic_engine" \
+  --file "$DOCKERFILE_SERVICE" \
+  "$AIC_TOP_DIR/../.."
+
+# TODO: enable compression with dedicated builder
+#  --builder="$BUILDER_NAME" \
+#  --output="type=docker,dest=$IMAGES_DIR/aic_engine/aic_engine.tar,compression=zstd,push=false,name=flowstate:aic_engine" \
+#
 chmod 644 "$IMAGES_DIR/aic_engine/aic_engine.tar"
 
 # 3. Bundle the service using inbuild
@@ -86,9 +88,19 @@ if [ -f ./inbuild ] && [ ! -x ./inbuild ]; then
   chmod +x ./inbuild
 fi
 
+echo "INFO: Loading newly built service image into local daemon..."
+docker load -i "$IMAGES_DIR/aic_engine/aic_engine.tar"
+
+echo "INFO: Extracting descriptor set from container..."
+docker create --name temp_container_service flowstate:aic_engine
+docker cp "temp_container_service:/workspace/install/share/aic_engine/aic_engine_protos.desc" \
+  "$IMAGES_DIR/aic_engine/aic_engine_protos.desc"
+docker rm -f temp_container_service
 
 echo "INFO: Bundling service using inbuild..."
 ./inbuild service bundle \
-  --manifest "$SERVICE_DIR/aic_engine.manifest.textproto" \
+  --file_descriptor_set "$IMAGES_DIR/aic_engine/aic_engine_protos.desc" \
+  --manifest "$AIC_TOP_DIR/aic_engine/aic_engine.manifest.textproto" \
   --oci_image "$IMAGES_DIR/aic_engine/aic_engine.tar" \
-  --output "$IMAGES_DIR/aic_engine/aic_engine.bundle.tar"
+  --output "$IMAGES_DIR/aic_engine/aic_engine.bundle.tar" \
+  --default_config "$AIC_TOP_DIR/aic_engine/aic_engine_default_config.pbtxt"

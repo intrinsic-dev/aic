@@ -21,8 +21,10 @@ service_def {
     image {
       archive_filename: "aic_engine.tar"
     }
-  } 
+  }
 }
 assets {
+  default_configuration_filename: "default_config.binarypb",
+  parameter_descriptor_filename: "parameter-descriptor-set.proto.bin",
   image_filenames: ["aic_engine.tar"]
 }

@@ -150,7 +150,9 @@ namespace aic_scoring
     /// \brief Start recording all scoring topics.
     /// \return True if the scoring system is ready.
     /// \param[in] _max_task_time The maximum time to record for, used for tf buffer size.
-    public: bool StartRecording(const std::chrono::seconds &_max_task_time);
+    /// \param[in] _use_sim_time Whether to wait for simulation TFs.
+    public: bool StartRecording(const std::chrono::seconds &_max_task_time,
+                                const bool _use_sim_time = true);
 
     /// \brief Stop recording all scoring topics.
     /// \return True if the bag was closed correctly.
@@ -210,16 +212,12 @@ namespace aic_scoring
     private: void ControllerStateCallback(const ControllerStateMsg& _msg);
 
     /// \brief Calculates score related with the gripper trajectory jerk.
-    /// \param[in] _success Whether the task succeeded.
     /// \return Scoring for the trajectory jerk score.
-    private: Tier2Score::CategoryScore GetTrajectoryJerkScore(
-        const bool _success) const;
+    private: Tier2Score::CategoryScore GetTrajectoryJerkScore() const;
 
     /// \brief Calculates score for trajectory efficiency (path length).
-    /// \param[in] _success Whether the task succeeded.
     /// \return Scoring for the trajectory efficiency category.
-    private: Tier2Score::CategoryScore GetTrajectoryEfficiencyScore(
-        const bool _success) const;
+    private: Tier2Score::CategoryScore GetTrajectoryEfficiencyScore() const;
 
     /// \brief Gets the transform for the specified entity at the requested time.
     /// \param[in] _t the time point to get the transform.
@@ -258,19 +256,16 @@ namespace aic_scoring
     private: Tier3Score ComputeTier3Score(std::size_t index) const;
 
     /// \brief Compute and combine tier 3 scores.
-    /// \return The tier3 score for the whole cable and a boolean that is true
-    /// if both tasks were close to succeeding, false otherwise.
-    private: std::pair<bool, Tier3Score> CombineTier3Score() const;
+    /// \return The tier3 score for the whole cable.
+    private: Tier3Score CombineTier3Score() const;
 
     /// \brief Calculates the penalty (if any) for contacts with off limit entities.
     /// \return Scoring for the off limit contacts category
     private: Tier2Score::CategoryScore GetContactsScore() const;
 
     /// \brief Calculates the score for task duration.
-    /// \param[in] _success Whether the task succeeded.
     /// \return Scoring for the task duration category.
-    private: Tier2Score::CategoryScore GetTaskDurationScore(
-        const bool _success) const;
+    private: Tier2Score::CategoryScore GetTaskDurationScore() const;
 
     /// \brief Wait for the cable and gripper TFs to be received.
     /// \return True if the transform were received, false if timeout occurred.

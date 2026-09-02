@@ -1,43 +1,110 @@
-FROM docker.io/library/ros:kilted-ros-base AS build
+FROM ubuntu:24.04 AS pixi-builder
 
-# Add base dependencies
-COPY aic/aic_interfaces/aic_control_interfaces /ws_aic/src/aic/aic_control_interfaces
-COPY aic/aic_interfaces/aic_engine_interfaces /ws_aic/src/aic/aic_engine_interfaces
-COPY aic/aic_interfaces/aic_task_interfaces /ws_aic/src/aic/aic_task_interfaces
-COPY aic/aic_scoring /ws_aic/src/aic/aic_scoring
-COPY aic/aic_engine /ws_aic/src/aic/aic_engine
-COPY sdk-ros /ws_aic/src/sdk-ros
+# Install prerequisites
+RUN apt-get update && apt-get install -y \
+    curl \
+    git \
+    patch \
+    build-essential \
+    python3 \
+    libxml2-dev \
+    liblttng-ust-dev \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install dependencies
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked --mount=type=cache,target=/var/lib/apt,sharing=locked \
-  apt update && apt upgrade -y && \
-  # undeclared deps
-  apt install python3-numpy && \
-  apt install ros-kilted-rmw-zenoh-cpp -y && \
-  cd /ws_aic && \
-  rosdep install --from-path src --ignore-src --rosdistro kilted -yr
+# Install Pixi
+RUN curl -fsSL https://pixi.sh/install.sh | PIXI_VERSION=0.67.2 bash
+ENV PATH="/root/.pixi/bin:${PATH}"
 
-# Build the workspace
-SHELL ["/bin/bash", "-c"]
-RUN --mount=type=cache,target=/ws_aic/build,sharing=locked \
-  cd /ws_aic \
-  && . /opt/ros/kilted/setup.bash \
-  && colcon build --packages-up-to aic_engine --cmake-args -DCMAKE_BUILD_TYPE=Release --merge-install --executor sequential \
-  && rm -rf /ws_aic/log /ws_aic/src
+WORKDIR /workspace
 
-COPY --chmod=755 <<"EOF" /entrypoint.sh
-#!/bin/bash
-set -e
+# Pre-cache Pixi environment
+COPY src/aic/pixi.toml src/aic/pixi.lock src/aic/robostack_mapping.json src/aic/pixi_env_setup.sh ./
+COPY src/aic/aic_interfaces ./aic_interfaces
+COPY src/aic/aic_example_policies/ ./aic_example_policies/
+COPY src/aic/aic_model/ ./aic_model/
+COPY src/aic/aic_utils/ ./aic_utils/
+COPY src/aic/aic_scoring ./aic_scoring
 
-. /ws_aic/install/setup.bash
-export RMW_IMPLEMENTATION=rmw_zenoh_cpp
-export ZENOH_ROUTER_CHECK_ATTEMPTS=-1
-export AIC_ROUTER_ADDR='zenoh-router.app-intrinsic-base.svc.cluster.local:7447'
-ZENOH_CONFIG_OVERRIDE='connect/endpoints=["tcp/'"$AIC_ROUTER_ADDR"'"]'
-ZENOH_CONFIG_OVERRIDE+=';transport/shared_memory/enabled=false'
-export ZENOH_CONFIG_OVERRIDE
+# Copy path-dependent local packages for Pixi validation
+RUN pixi install --frozen --environment engine-build && pixi install --frozen --environment engine-runtime
 
-exec ros2 run aic_engine aic_engine --ros-args -p use_sim_time:=true
-EOF
+
+
+# Pre-build SDK to optimize caching of heavy dependencies
+FROM pixi-builder AS sdk-builder
+COPY src/sdk-ros/ ./sdk-ros/
+RUN pixi run --frozen --environment engine-build colcon build \
+    --merge-install \
+    --cmake-args -DCMAKE_BUILD_TYPE=Release \
+    --event-handlers=console_direct+ \
+    --packages-up-to intrinsic_sdk \
+    --base-paths sdk-ros
+
+# Final build stage for user code overlay
+FROM sdk-builder AS build
+
+ARG SERVICE_PACKAGE
+ARG DEPENDENCIES
+
+# Copy target user packages
+COPY src/aic/flowstate/ ./flowstate/
+COPY src/aic/aic_engine/ ./aic_engine/
+# COPY src/aic/aic_adapter/ ./aic_adapter/
+
+# Build target service package using existing install space
+RUN pixi run --frozen --environment engine-build colcon build \
+    --merge-install \
+    --cmake-args -DCMAKE_BUILD_TYPE=Release \
+    --event-handlers=console_direct+ \
+    --packages-up-to aic_engine \
+    --base-paths aic_engine flowstate sdk-ros 
+# TODO: Add aic_adapter above
+
+# Capture pixi environment activation for runtime
+RUN pixi shell-hook --frozen --environment engine-runtime > /pixi_hook.sh \
+    && rm -rf /root/.pixi/cache /root/.cache/pixi /workspace/.pixi/cache
+
+# Runtime stage
+FROM ubuntu:24.04 AS runtime
+
+ARG SERVICE_PACKAGE
+ARG SERVICE_NAME
+ARG SERVICE_EXECUTABLE_NAME
+ARG DEPENDENCIES
+
+RUN apt-get update && apt-get install -y \
+    bash \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /workspace
+
+# Copy Pixi environment and built artifacts
+COPY --from=build /workspace/.pixi/envs/engine-runtime /workspace/.pixi/envs/engine-runtime
+# Symlink engine-build to service-runtime to fix hardcoded paths generated in the colcon install space
+RUN ln -s /workspace/.pixi/envs/engine-runtime /workspace/.pixi/envs/engine-build
+COPY --from=build /workspace/install ./install
+COPY --from=build /pixi_hook.sh /pixi_hook.sh
+COPY --from=build /workspace/pixi_env_setup.sh /workspace/pixi_env_setup.sh
+
+# Bridge paths for build_bundle.sh expectations (/opt/ros/overlay/install)
+RUN mkdir -p /opt/ros/overlay \
+    && ln -sf /workspace/install /opt/ros/overlay/install
+
+# Runtime environment variables
+ENV ROS_HOME=/tmp
+ENV RMW_IMPLEMENTATION=rmw_zenoh_cpp
+ENV ZENOH_ROUTER_CHECK_ATTEMPTS=-1
+ENV ZENOH_CONFIG_OVERRIDE='connect/endpoints=["tcp/zenoh-router.app-intrinsic-base.svc.cluster.local:7447"];transport/shared_memory/enabled=false'
+ENV LD_LIBRARY_PATH=/workspace/.pixi/envs/engine-runtime/lib:${LD_LIBRARY_PATH}
+
+# Entrypoint to activate Pixi and ROS setup
+RUN echo '#!/bin/bash' > /entrypoint.sh \
+    && echo 'set -e' >> /entrypoint.sh \
+    && echo 'source /pixi_hook.sh' >> /entrypoint.sh \
+    && echo 'source /workspace/install/setup.bash' >> /entrypoint.sh \
+    && echo 'export LD_LIBRARY_PATH="/workspace/.pixi/envs/engine-runtime/lib:${LD_LIBRARY_PATH}"' >> /entrypoint.sh \
+    && echo 'exec "$@"' >> /entrypoint.sh \
+    && chmod +x /entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh"]
+CMD ["bash", "-c", "exec /workspace/install/lib/aic_engine/aic_engine"]
