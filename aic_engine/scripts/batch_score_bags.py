@@ -188,12 +188,14 @@ def main():
                     rel_path = os.path.relpath(bag_path, root_dir)
                     parts = rel_path.split(os.sep)
                     
-                    if len(parts) >= 5 and parts[1] == "final_eval":
+                    if len(parts) >= 4:
                         team_name = parts[0]
-                        trial_name = parts[2]
+                        trial_name = parts[-3]
+                        cable_folder = parts[-2]
                     else:
                         team_name = "Unknown"
                         trial_name = "Unknown"
+                        cable_folder = "Unknown"
                         
                     print(f"Processing: {team_name} / {trial_name} -> {file}")
                     
@@ -204,8 +206,7 @@ def main():
                             'Trial Name': trial_name
                         }
                         row.update(cable)
-                        if len(parts) >= 5 and parts[1] == "final_eval":
-                            row['Cable Index'] = parts[3]
+                        row['Cable Index'] = cable_folder
                         writer.writerow(row)
                         
     print(f"Scoring complete. Results saved to {out_csv}")
