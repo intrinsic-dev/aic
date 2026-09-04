@@ -21,11 +21,12 @@ The script will automatically discover all `.mcap` bags and generate a `scoring_
 The script assumes the data is organized in the following nested structure to correctly extract the team and trial names:
 
 ```text
-final_evals/
+<root_folder>/
 └── <team_name>/
-    └── <trial_name>/
-        └── <run_folder_name>/
-            └── <bag_file>.mcap
+    └── final_eval/
+        └── <trial_name>/
+            └── <run_folder_name>/
+                └── <bag_file>.mcap
 ```
 
 *Note: If an `.mcap` file is found closer to the root, it will still be processed, but its Team and Trial names will be marked as "Unknown".*

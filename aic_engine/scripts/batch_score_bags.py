@@ -188,9 +188,9 @@ def main():
                     rel_path = os.path.relpath(bag_path, root_dir)
                     parts = rel_path.split(os.sep)
                     
-                    if len(parts) >= 4:
+                    if len(parts) >= 5 and parts[1] == "final_eval":
                         team_name = parts[0]
-                        trial_name = parts[1]
+                        trial_name = parts[2]
                     else:
                         team_name = "Unknown"
                         trial_name = "Unknown"
