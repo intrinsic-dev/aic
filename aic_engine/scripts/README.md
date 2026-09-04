@@ -40,7 +40,7 @@ The script parses the `/aic_controller/controller_state` and `/fts_broadcaster/w
 3. **Cable Segmentation**: Intervals are grouped in pairs to represent a single cable.
    - Interval 1 = SFP Insertion
    - Interval 2 = SC Insertion
-   - *If a trial ends prematurely (e.g., stopping after a failed SFP insertion), the script gracefully processes the odd number of intervals and simply leaves the missing SC side blank in the CSV.*
+   - *Since each bag file is assumed to contain only one cable, the script will output 1 cable row per bag file. The `Cable Index` in the CSV will be populated directly from the `<run_folder_name>` (e.g., `cable_1`).*
 
 ### Force Calculation & Biasing
 4. **Z-Axis Only**: Only the Z-axis force ($F_z$) is evaluated.

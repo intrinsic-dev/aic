@@ -204,6 +204,8 @@ def main():
                             'Trial Name': trial_name
                         }
                         row.update(cable)
+                        if len(parts) >= 5 and parts[1] == "final_eval":
+                            row['Cable Index'] = parts[3]
                         writer.writerow(row)
                         
     print(f"Scoring complete. Results saved to {out_csv}")
