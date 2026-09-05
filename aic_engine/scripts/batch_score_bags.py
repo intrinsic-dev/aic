@@ -45,19 +45,25 @@ def process_interval(interval, threshold, bag_start_t):
             
     formatted_violations = []
     first_violation_start = float('inf')
+    first_violation_avg = 0.0
     
+    if violations:
+        first_block = violations[0]
+        first_violation_avg = sum(f for t, f in first_block) / len(first_block)
+        first_violation_start = first_block[0][0]
+        
     for block in violations:
         avg = sum(f for t, f in block) / len(block)
         rel_start = block[0][0] - bag_start_t
         rel_end = block[-1][0] - bag_start_t
-        first_violation_start = min(first_violation_start, block[0][0])
         formatted_violations.append(f"{rel_start:.1f}s-{rel_end:.1f}s (Avg: {avg:.1f}N)")
         
     return {
         'avg_fz': overall_avg,
         'peak_fz': overall_peak,
         'violations': formatted_violations,
-        'first_violation_start': first_violation_start
+        'first_violation_start': first_violation_start,
+        'first_violation_avg': first_violation_avg
     }
 
 def process_bag(bag_path):
@@ -187,17 +193,17 @@ def process_bag(bag_path):
             penalty_applied = True
             triggered_by = "SC"
             
+        avg_force_penalty = "N/A"
+        if penalty_applied:
+            if triggered_by == "SFP":
+                avg_force_penalty = f"{sfp_stats['first_violation_avg']:.2f}"
+            else:
+                avg_force_penalty = f"{sc_stats['first_violation_avg']:.2f}"
+                
         cable_data = {
-            'Cable Index': cable_index,
-            'AIC Controller Switch Found': aic_switch_found,
             'Penalty Applied': penalty_applied,
             'Penalty Triggered By': triggered_by,
-            'SFP Average Force (N)': f"{sfp_stats['avg_fz']:.2f}",
-            'SC Average Force (N)': f"{sc_stats['avg_fz']:.2f}" if sc_stats else "N/A",
-            'SFP Peak Force (N)': f"{sfp_stats['peak_fz']:.2f}",
-            'SC Peak Force (N)': f"{sc_stats['peak_fz']:.2f}" if sc_stats else "N/A",
-            'SFP Violations': "; ".join(sfp_stats['violations']),
-            'SC Violations': "; ".join(sc_stats['violations']) if sc_stats else "N/A"
+            'Average Force During First Penalty (N)': avg_force_penalty
         }
         results.append(cable_data)
         cable_index += 1
@@ -215,10 +221,8 @@ def main():
     out_csv = os.path.join(root_dir, f"{args.team}_scoring_results.csv" if args.team else "scoring_results.csv")
     
     fieldnames = [
-        'Team Name', 'Trial Name', 'Cable Index', 'AIC Controller Switch Found', 'Penalty Applied', 'Penalty Triggered By',
-        'SFP Average Force (N)', 'SC Average Force (N)', 
-        'SFP Peak Force (N)', 'SC Peak Force (N)', 
-        'SFP Violations', 'SC Violations'
+        'Team Name', 'Trial Name', 'Penalty Applied', 'Penalty Triggered By',
+        'Average Force During First Penalty (N)'
     ]
     
     with open(out_csv, 'w', newline='') as f:
@@ -257,7 +261,6 @@ def main():
                             'Trial Name': trial_name
                         }
                         row.update(cable)
-                        row['Cable Index'] = cable_folder
                         writer.writerow(row)
                         
     print(f"Scoring complete. Results saved to {out_csv}")
