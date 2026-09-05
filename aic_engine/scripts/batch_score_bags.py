@@ -82,6 +82,8 @@ def process_bag(bag_path):
     
     wrench_topic = '/fts_broadcaster/wrench'
     rosout_topic = '/rosout'
+    pose_cmd_topic = '/aic_controller/pose_commands'
+    joint_cmd_topic = '/aic_controller/joint_commands'
     
     if wrench_topic not in type_map or rosout_topic not in type_map:
         print(f"Warning: Missing required topics in {bag_path}")
@@ -93,6 +95,8 @@ def process_bag(bag_path):
     switch_times = []
     tare_times = []
     wrenches = []
+    pose_cmd_times = []
+    joint_cmd_times = []
     
     while reader.has_next():
         topic, data, timestamp = reader.read_next()
@@ -113,6 +117,12 @@ def process_bag(bag_path):
             fz = msg.wrench.force.z
             wrenches.append((t, fz))
             
+        elif topic == pose_cmd_topic:
+            pose_cmd_times.append(timestamp * 1e-9)
+            
+        elif topic == joint_cmd_topic:
+            joint_cmd_times.append(timestamp * 1e-9)
+            
     if not wrenches:
         return []
         
@@ -128,8 +138,23 @@ def process_bag(bag_path):
         
     active_intervals = []
     for i, st in enumerate(start_times):
-        end_t = start_times[i+1] if i + 1 < len(start_times) else wrenches[-1][0]
-        active_intervals.append({'start': st, 'end': end_t})
+        next_st = start_times[i+1] if i + 1 < len(start_times) else float('inf')
+        
+        # Isolate commands that belong to this insertion phase
+        p_cmds = [t for t in pose_cmd_times if st <= t < next_st]
+        j_cmds = [t for t in joint_cmd_times if st <= t < next_st]
+        
+        if p_cmds:
+            interval_start = p_cmds[0]
+            interval_end = p_cmds[-1]
+        elif j_cmds:
+            interval_start = j_cmds[0]
+            interval_end = j_cmds[-1]
+        else:
+            interval_start = st
+            interval_end = next_st if next_st != float('inf') else wrenches[-1][0]
+            
+        active_intervals.append({'start': interval_start, 'end': interval_end})
         
     bag_start_t = wrenches[0][0]
     
