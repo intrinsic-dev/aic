@@ -80,40 +80,56 @@ def process_bag(bag_path):
     topic_types = reader.get_all_topics_and_types()
     type_map = {t.name: t.type for t in topic_types}
     
-    controller_topic = '/aic_controller/controller_state'
     wrench_topic = '/fts_broadcaster/wrench'
+    rosout_topic = '/rosout'
     
-    if controller_topic not in type_map or wrench_topic not in type_map:
+    if wrench_topic not in type_map or rosout_topic not in type_map:
         print(f"Warning: Missing required topics in {bag_path}")
         return []
         
-    controller_msg_type = get_message_type(type_map[controller_topic])
     wrench_msg_type = get_message_type(type_map[wrench_topic])
+    rosout_msg_type = get_message_type(type_map[rosout_topic])
     
-    active_intervals = []
+    switch_times = []
+    tare_times = []
     wrenches = []
-    last_controller_t = -1.0
     
     while reader.has_next():
         topic, data, timestamp = reader.read_next()
         
-        if topic == controller_topic:
-            msg = deserialize_message(data, controller_msg_type)
-            t = msg.header.stamp.sec + msg.header.stamp.nanosec * 1e-9
-            if last_controller_t < 0 or (t - last_controller_t) > 2.0:
-                active_intervals.append({'start': t, 'end': t})
-            else:
-                active_intervals[-1]['end'] = t
-            last_controller_t = t
-            
+        if topic == rosout_topic:
+            msg = deserialize_message(data, rosout_msg_type)
+            t = msg.stamp.sec + msg.stamp.nanosec * 1e-9
+            if 'SwitchToAICController' in msg.msg:
+                if not switch_times or t - switch_times[-1] > 1.0:
+                    switch_times.append(t)
+            elif 'TareForceTorqueSensorSkill' in msg.msg:
+                if not tare_times or t - tare_times[-1] > 1.0:
+                    tare_times.append(t)
+                    
         elif topic == wrench_topic:
             msg = deserialize_message(data, wrench_msg_type)
             t = msg.header.stamp.sec + msg.header.stamp.nanosec * 1e-9
             fz = msg.wrench.force.z
             wrenches.append((t, fz))
             
-    if not active_intervals or not wrenches:
+    if not wrenches:
         return []
+        
+    aic_switch_found = True
+    start_times = switch_times
+    if not start_times:
+        start_times = tare_times
+        aic_switch_found = False
+        
+    if not start_times:
+        print(f"Warning: No SwitchToAICController or Tare commands found in {bag_path}")
+        return []
+        
+    active_intervals = []
+    for i, st in enumerate(start_times):
+        end_t = start_times[i+1] if i + 1 < len(start_times) else wrenches[-1][0]
+        active_intervals.append({'start': st, 'end': end_t})
         
     bag_start_t = wrenches[0][0]
     
@@ -148,6 +164,7 @@ def process_bag(bag_path):
             
         cable_data = {
             'Cable Index': cable_index,
+            'AIC Controller Switch Found': aic_switch_found,
             'Penalty Applied': penalty_applied,
             'Penalty Triggered By': triggered_by,
             'SFP Average Force (N)': f"{sfp_stats['avg_fz']:.2f}",
@@ -165,13 +182,14 @@ def process_bag(bag_path):
 def main():
     parser = argparse.ArgumentParser(description="Batch score offline bags")
     parser.add_argument('--folder', type=str, required=True, help="Root folder containing final_evals data")
+    parser.add_argument('--team', type=str, default=None, help="Specific team name to process (default: all teams)")
     args = parser.parse_args()
     
     root_dir = os.path.abspath(args.folder)
-    out_csv = os.path.join(root_dir, "scoring_results.csv")
+    out_csv = os.path.join(root_dir, f"{args.team}_scoring_results.csv" if args.team else "scoring_results.csv")
     
     fieldnames = [
-        'Team Name', 'Trial Name', 'Cable Index', 'Penalty Applied', 'Penalty Triggered By',
+        'Team Name', 'Trial Name', 'Cable Index', 'AIC Controller Switch Found', 'Penalty Applied', 'Penalty Triggered By',
         'SFP Average Force (N)', 'SC Average Force (N)', 
         'SFP Peak Force (N)', 'SC Peak Force (N)', 
         'SFP Violations', 'SC Violations'
@@ -196,6 +214,9 @@ def main():
                         team_name = "Unknown"
                         trial_name = "Unknown"
                         cable_folder = "Unknown"
+                        
+                    if args.team and team_name != args.team:
+                        continue
                         
                     print(f"Processing: {team_name} / {trial_name} -> {file}")
                     

@@ -12,8 +12,11 @@ Provide the root folder containing the evaluation data.
 
 ```bash
 cd ~/aic_ws/src/aic
-pixi run python src/aic_engine/scripts/batch_score_bags.py --folder /path/to/final_evals
+pixi run python src/aic_engine/scripts/batch_score_bags.py --folder /path/to/final_evals [--team team_name]
 ```
+
+- `--folder`: The root directory containing the data. 
+- `--team`: *(Optional)* If provided, the script will only process bags belonging to the specified team. Otherwise, it processes all teams.
 
 The script will automatically discover all `.mcap` bags and generate a `scoring_results.csv` in the provided root folder.
 
@@ -32,15 +35,18 @@ The script assumes the data is organized in the following nested structure to co
 *Note: If an `.mcap` file is found closer to the root, it will still be processed, but its Team and Trial names will be marked as "Unknown".*
 
 ## Scoring Assumptions & Logic
-The script parses the `/aic_controller/controller_state` and `/fts_broadcaster/wrench` topics and enforces the following assumptions:
+The script parses the necessary topics and enforces the following assumptions:
 
 ### Phase Detection
-1. **Active Intervals**: The start of the insertion phase is marked by the presence of `ControllerStateMsg`s. If the messages stop for a gap of `> 2.0s`, the controller is considered deactivated, marking the end of the insertion interval.
-2. **Move Robot Ignored**: All forces recorded outside of these active `aic_controller` intervals are assumed to be during the `move_robot` phases and are completely ignored.
+1. **Rosout Indicators**: The `aic_controller/controller_state` topic is published continuously for the entire duration of the bag. Therefore, to isolate the *actual* insertion phases, the script relies on the `/rosout` topic.
+   - It marks the start of a new insertion interval when it finds a `SwitchToAICController::Execute` log.
+   - If this log is missing, it falls back to using the `TareForceTorqueSensorSkill::Execute` log.
+   - It explicitly notes in the CSV whether the switch was successfully found.
+2. **Move Robot Ignored**: All forces recorded outside of these active insertion intervals are assumed to be during the `move_robot` phases and are completely ignored.
 3. **Cable Segmentation**: Intervals are grouped in pairs to represent a single cable.
    - Interval 1 = SFP Insertion
    - Interval 2 = SC Insertion
-   - *Since each bag file is assumed to contain only one cable, the script will output 1 cable row per bag file. The `Cable Index` in the CSV will be populated directly from the `<run_folder_name>` (e.g., `cable_1`).*
+   - *Since each bag file is assumed to contain only one cable, the script will output 1 cable row per bag file. If the bag only contains 1 interval (e.g. stopping after a failed SFP insertion), it safely leaves the SC metrics blank.*
 
 ### Force Calculation & Biasing
 4. **Z-Axis Only**: Only the Z-axis force ($F_z$) is evaluated.
