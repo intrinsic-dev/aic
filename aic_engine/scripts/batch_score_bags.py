@@ -183,6 +183,7 @@ def main():
     parser = argparse.ArgumentParser(description="Batch score offline bags")
     parser.add_argument('--folder', type=str, required=True, help="Root folder containing final_evals data")
     parser.add_argument('--team', type=str, default=None, help="Specific team name to process (default: all teams)")
+    parser.add_argument('--eval-dir', type=str, default="final_eval", help="Directory name to filter valid bags (default: final_eval)")
     args = parser.parse_args()
     
     root_dir = os.path.abspath(args.folder)
@@ -216,7 +217,7 @@ def main():
                         cable_folder = "Unknown"
                         
                     # Skip junk bags that aren't part of a final evaluation
-                    if not any("final_eval" in p for p in parts):
+                    if not any(args.eval_dir in p for p in parts):
                         continue
                         
                     if args.team and team_name != args.team:
