@@ -8,15 +8,16 @@ This script requires the `rosbag2_py` and `rclpy` libraries to parse `.mcap` fil
 If you are using the AIC `pixi` environment (specifically on the `ac/aic-logger` branch or later), these dependencies are already installed automatically. Simply run the script via `pixi run python`.
 
 ## Usage
-Provide the root folder containing the evaluation data. 
+Provide the root folder containing the evaluation data.
 
 ```bash
 cd ~/aic_ws/src/aic
-pixi run python src/aic_engine/scripts/batch_score_bags.py --folder /path/to/final_evals [--team team_name]
+pixi run python src/aic_engine/scripts/batch_score_bags.py --folder /path/to/final_evals [--team team_name] [--eval-dir-name folder_name]
 ```
 
 - `--folder`: The root directory containing the data. 
 - `--team`: *(Optional)* If provided, the script will only process bags belonging to the specified team. Otherwise, it processes all teams.
+- `--eval-dir-name`: *(Optional)* If provided, the script will only process bags that have this string in their folder path (defaults to `final_eval`). This is useful for filtering out junk or practice bags.
 
 The script will automatically discover all `.mcap` bags and generate a `scoring_results.csv` in the provided root folder.
 
