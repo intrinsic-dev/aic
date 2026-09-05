@@ -215,6 +215,10 @@ def main():
                         trial_name = "Unknown"
                         cable_folder = "Unknown"
                         
+                    # Skip junk bags that aren't part of a final evaluation
+                    if not any("final_eval" in p for p in parts):
+                        continue
+                        
                     if args.team and team_name != args.team:
                         continue
                         
