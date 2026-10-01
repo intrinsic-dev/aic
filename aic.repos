@@ -155,7 +155,8 @@ repositories:
   ros-controls/kinematics_interface:
     type: git
     url: https://github.com/ros-controls/kinematics_interface.git
-    version: 2.4.0
+    # >= 2.4.1 required for pinocchio 4.x (Frame::parent was removed in favor of parentJoint).
+    version: 2.4.2
   ros-controls/realtime_tools:
     type: git
     url: https://github.com/ros-controls/realtime_tools.git
@@ -164,6 +165,13 @@ repositories:
     type: git
     url: https://github.com/ros-controls/ros2_control.git
     version: 5.11.3
+  ros-controls/ros2_control_cmake:
+    type: git
+    # Pinned to 0.3.0 which defaults to C++17. 0.4.0 defaults to C++20, which breaks
+    # hardware_interface in ros2_control < 5.14.1 (missing <charconv> include).
+    # Remove this pin once ros2_control is bumped to >= 5.14.1.
+    url: https://github.com/ros-controls/ros2_control_cmake.git
+    version: 0.3.0
   ros-controls/ros2_controllers:
     type: git
     url: https://github.com/ros-controls/ros2_controllers.git
