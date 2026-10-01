@@ -122,7 +122,7 @@ git clone https://github.com/intrinsic-dev/aic
 
 # Install and build dependencies
 cd ~/ws_aic/src/aic
-pixi install
+pixi install --locked
 ```
 
 **What you should see:**
@@ -175,7 +175,7 @@ See [Scene Description](./scene_description.md) for more details about the simul
 With the simulation environment running (Step 2), run the following policy:
 ```bash
 cd ~/ws_aic/src/aic
-pixi run ros2 run aic_model aic_model --ros-args -p use_sim_time:=true -p policy:=aic_example_policies.ros.WaveArm
+pixi run --locked ros2 run aic_model aic_model --ros-args -p use_sim_time:=true -p policy:=aic_example_policies.ros.WaveArm
 ```
 
 > [!NOTE]
