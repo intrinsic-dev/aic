@@ -2,6 +2,7 @@
 
 [![build](https://github.com/intrinsic-dev/aic/actions/workflows/build.yml/badge.svg)](https://github.com/intrinsic-dev/aic/actions/workflows/build.yml)
 [![style](https://github.com/intrinsic-dev/aic/actions/workflows/style.yml/badge.svg)](https://github.com/intrinsic-dev/aic/actions/workflows/style.yml)
+[![environment](https://github.com/intrinsic-dev/aic/actions/workflows/environment.yml/badge.svg)](https://github.com/intrinsic-dev/aic/actions/workflows/environment.yml)
 
 ![](../media/aic_banner.png)
 
