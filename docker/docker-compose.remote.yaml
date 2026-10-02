@@ -1,0 +1,14 @@
+services:
+  eval:
+    gpus: all
+    environment:
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility,graphics
+      __EGL_VENDOR_LIBRARY_FILENAMES: /etc/glvnd/egl_vendor.d/10_nvidia.json
+    volumes:
+      - ./10_nvidia.json:/etc/glvnd/egl_vendor.d/10_nvidia.json:ro
+  model:
+    gpus: all
+    environment:
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility,graphics

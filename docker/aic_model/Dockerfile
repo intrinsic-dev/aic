@@ -11,12 +11,22 @@ COPY aic_interfaces /ws_aic/src/aic/aic_interfaces
 COPY aic_utils /ws_aic/src/aic/aic_utils
 COPY pixi.toml pixi.lock /ws_aic/src/aic/
 COPY pixi_env_setup.sh /ws_aic/src/aic/
+COPY docker/aic_model/fetch_policy_assets.py /ws_aic/src/aic/docker/aic_model/fetch_policy_assets.py
 
 # Add other dependencies
 
 SHELL ["/bin/bash", "-c"]
-RUN --mount=type=cache,target=/root/.cache/rattler/cache --mount=type=cache,target=/ws_aic/src/aic/.pixi/build \
-    cd /ws_aic/src/aic && pixi install --locked
+# Avoid cache-mounting .pixi/build: BuildKit can reuse it across builds and stale policy code.
+RUN --mount=type=cache,target=/root/.cache/rattler/cache \
+    cd /ws_aic/src/aic && pixi install --locked \
+    && rm -rf /ws_aic/src/aic/.pixi/build/work
+
+# Offline policy assets for aic_example_policies (RunACT): HF checkpoint + ResNet18 via torch.hub (same as torchvision).
+# Paths match aic_example_policies/resource/... as resolved by RunACT.py.
+RUN --mount=type=cache,target=/root/.cache/huggingface/hub \
+    cd /ws_aic/src/aic \
+    && HF_HUB_CACHE=/root/.cache/huggingface/hub \
+        pixi run python docker/aic_model/fetch_policy_assets.py
 
 WORKDIR /ws_aic/src/aic
 COPY --chmod=755 <<"EOF" /entrypoint.sh
@@ -53,8 +63,13 @@ if should_enable_acl; then
 fi
 export ZENOH_CONFIG_OVERRIDE
 echo "ZENOH_CONFIG_OVERRIDE=$ZENOH_CONFIG_OVERRIDE"
+
+# set ROS logger to stdout
+export RCUTILS_LOGGING_USE_STDOUT=1
+
 exec pixi run --as-is ros2 run aic_model aic_model "$@"
 EOF
 
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["--ros-args", "-p", "policy:=aic_example_policies.ros.CheatCode", "-p", "use_sim_time:=true"]
+CMD ["--ros-args", "-p", "policy:=aic_example_policies.ros.RunACT", "-p", "use_sim_time:=true"]
+

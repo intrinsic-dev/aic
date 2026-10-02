@@ -17,6 +17,7 @@
 
 import importlib
 import inspect
+import traceback
 import numpy as np
 import rclpy
 import threading
@@ -121,7 +122,9 @@ class AicModel(LifecycleNode):
         try:
             self._policy = self._policy_class(self)
         except Exception as e:
-            self.get_logger().error(f"Error instantiating policy: {e}")
+            self.get_logger().error(
+                f"Error instantiating policy: {e}\n{traceback.format_exc()}"
+            )
             return TransitionCallbackReturn.ERROR
         return TransitionCallbackReturn.SUCCESS
 
