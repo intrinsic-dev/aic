@@ -37,9 +37,15 @@ class CancelAllTasksNode(Node):
 
 
 def main(args=None):
-    with rclpy.init(args=args):
+    node = None
+    try:
+        rclpy.init(args=args)
         node = CancelAllTasksNode()
         node.call_cancel_task()
+    finally:
+        if node is not None:
+            node.destroy_node()
+        rclpy.shutdown()
 
 
 if __name__ == "__main__":

@@ -33,7 +33,7 @@
 #include "rclcpp/version.h"
 #if RCLCPP_VERSION_GTE(29, 0, 0)
 #include "urdf/model.hpp"
-#elif
+#else
 #include "urdf/model.h"
 #endif
 
