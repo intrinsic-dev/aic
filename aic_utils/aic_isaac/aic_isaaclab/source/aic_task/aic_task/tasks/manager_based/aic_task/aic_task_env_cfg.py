@@ -5,7 +5,7 @@
 
 import math
 import os
-from dataclasses import MISSING
+from dataclasses import MISSING, field
 
 import isaaclab.sim as sim_utils
 from isaaclab.actuators import ImplicitActuatorCfg
@@ -26,7 +26,9 @@ from isaaclab.utils import configclass
 from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
 from isaaclab.utils.noise import AdditiveUniformNoiseCfg as Unoise
 from isaaclab.sensors import TiledCameraCfg
-from isaaclab.devices import DevicesCfg
+from isaaclab.devices import DevicesCfg, OpenXRDevice, OpenXRDeviceCfg
+from isaaclab.devices.openxr import XrCfg
+from isaaclab.devices.openxr.retargeters import Se3RelRetargeterCfg
 from isaaclab.devices.keyboard import Se3KeyboardCfg
 from isaaclab.devices.spacemouse import Se3SpaceMouseCfg
 from isaaclab.devices.gamepad import Se3GamepadCfg
@@ -548,6 +550,12 @@ class RewardsCfg:
 class AICTaskEnvCfg(ManagerBasedRLEnvCfg):
     """AIC task env: UR5e robot and custom scene."""
 
+    xr: XrCfg = field(
+        default_factory=lambda: XrCfg(
+            anchor_pos=(0.0, -0.4, -1.15),
+            anchor_rot=(0.866, 0.0, 0.0, -0.5),
+        )
+    )
     # Scene settings
     scene: AICTaskSceneCfg = AICTaskSceneCfg(num_envs=1, env_spacing=4.0)
     # Basic settings
@@ -622,6 +630,20 @@ class AICTaskEnvCfg(ManagerBasedRLEnvCfg):
         # Teleop device configuration
         self.teleop_devices = DevicesCfg(
             devices={
+                "handtracking": OpenXRDeviceCfg(
+                    xr_cfg=self.xr,
+                    retargeters=[
+                        Se3RelRetargeterCfg(
+                            bound_hand=OpenXRDevice.TrackingTarget.HAND_RIGHT,
+                            zero_out_xy_rotation=True,
+                            use_wrist_position=True,
+                            alpha_pos=0.8,
+                            alpha_rot=0.8,
+                            sim_device=self.sim.device,
+                        ),
+                    ],
+                    sim_device=self.sim.device,
+                ),
                 "keyboard": Se3KeyboardCfg(
                     pos_sensitivity=0.08,
                     rot_sensitivity=0.05,
