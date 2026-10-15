@@ -1,0 +1,142 @@
+/* =========================================
+   Intrinsic Color Scheme Light/Dark Theme Override
+   ========================================= */
+
+/* -------- LIGHT THEME (No Maize) -------- */
+html[data-theme="light"] {
+    /* Core Brand Colors */
+    --pst-color-primary: #3b00c5; /* Dark of Intrinsic Bright Set - Purple */      
+    --pst-color-secondary: #7e4afc; /* Intrinsic Bright Set - Purple */       
+    --pst-color-secondary-highlight: #7e4afc; /* Intrinsic Bright Set - Purple */
+
+    --pst-color-text-base: #000000; /* Intrinsic Neutral Set - Black */
+    --pst-color-text-muted: #7f7f7f; /* Dark of Intrinsic Neutral Set - Gray */
+    --pst-color-link: var(--pst-color-primary); /* Dark of Intrinsic Bright Set - Purple */
+    --pst-color-link-hover: #7e4afc; /* Intrinsic Bright Set - Purple */
+
+    /* Inline Code & Technical Elements */
+    --pst-color-inline-code: #1e0063; /* Dark of Intrinsic Bright Set - Purple */
+    --pst-color-inline-code-links: #7e4afc; /* Intrinsic Bright Set - Purple */
+
+    /* UI Containers (Surfaces) */
+    --pst-color-background: #ffffff; /* Intrinsic Neutral Set - White */
+    --pst-color-on-background: #ffffff; /* Intrinsic Neutral Set - White */
+    --pst-color-surface: #efeeee;
+    --pst-color-on-surface: #ffffff; /* Intrinsic Neutral Set - White */
+
+    /* Admonitions & Highlights */
+    /* Following could be used to modify admonitions 
+    --pst-color-info: ;
+    --pst-color-info-bg: ;
+    --pst-color-attention: ;
+    --pst-color-target: ;
+    */
+
+    /* Functional UI */
+    --pst-color-shadow: #ffffff; /* Intrinsic Neutral Set - White */
+    --pst-color-border: #d1d1d1; /* Intrinsic Neutral Set - Gray */
+    --pst-color-table-row-hover-bg: #ffffff; /* Intrinsic Neutral Set - White */
+    --pst-color-accent: var(--pst-color-primary);
+}
+
+
+
+/* -------- DARK THEME -------- */
+html[data-theme="dark"] {
+    /* Core Brand Colors */
+    --pst-color-primary: #00ffaab0; /* Dark of Intrinsic Bright Set - Green */          
+    --pst-color-secondary: #00ffab; /* Intrinsic Bright Set - Green */
+    --pst-color-secondary-highlight: #00ffab;
+
+    /* Typography & Links */
+    --pst-color-text-base: #d1d1d1; /* Intrinsic Neutral Set - Gray */
+    --pst-color-text-muted: #d1d1d1ad; /* Dark of Intrinsic Neutral Set - Gray */
+    --pst-color-link: var(--pst-color-primary); /* Dark of Intrinsic Bright Set - Green */
+    --pst-color-link-hover: #00ffab; /* Hyperlink hover Intrinsic Bright Set - Green */
+
+    /* Inline Code & Technical Elements */
+    --pst-color-inline-code: #00ffaacb; /* Dark of Intrinsic Bright Set - Green (Base of hyper links) */
+    --pst-color-inline-code-links: #00ffab; /* Intrinsic Bright Set - Green */
+
+    /* UI Containers (Surfaces) */
+    --pst-color-background: #000000; /* Intrinsic Neutral Set - Black */
+    --pst-color-on-background: #000000; /* Intrinsic Neutral Set - Black (To avoid button and table select row background)*/
+    --pst-color-surface: #d1d1d100; /* Dark of Intrinsic Neutral Set - Black (For code blocks) */ 
+    --pst-color-on-surface: #000000;
+
+    /* Admonitions & Highlights */
+    /* Following could be used to modify admonitions 
+    --pst-color-info: ;
+    --pst-color-info-bg: ;
+    --pst-color-info-highlight: ; 
+    --pst-color-attention: ;
+    --pst-color-target: ;
+    */
+
+    /* Functional UI */
+    --pst-color-shadow: #000000; /* Intrinsic Neutral Set - Black (To avoid shadow) */
+    --pst-color-border: #d1d1d1; /* Intrinsic Neutral Set - Gray */
+    --pst-color-table-row-hover-bg: #000000; /* Intrinsic Neutral Set - Black (To avoid highlight) */
+    --pst-color-accent: var(--pst-color-primary);
+}
+
+/* -------- GENERAL -------- */
+
+/* Ensure links don't have underline clutter */
+a {
+    text-decoration: none !important;
+}
+
+/* Announcement + warning banners */
+.bd-header-announcement a,
+.bd-header-version-warning a {
+    color: #ff4d42;
+}
+
+/* Navbar search box - minimal borders */
+.form-control {
+    border-radius: 0 !important;
+    border: none !important;
+    outline: none !important;
+}
+
+/* Reduce padding around navbar logo and icons */
+.navbar-brand,
+.navbar-icon-links {
+    padding-top: 0rem !important;
+    padding-bottom: 0rem !important;
+}
+
+/* Showcase-style tables (optional styling) */
+.showcase-table {
+    min-width: 75%;
+}
+
+.showcase-table td {
+    border-color: #d1d1d1;
+    border-style: solid;
+    border-width: 1px;
+}
+
+.showcase-table p {
+    margin: 0;
+    padding: 0;
+}
+
+.showcase-table .rot90 {
+    transform: rotate(-90deg);
+    margin: 0;
+    padding: 0;
+}
+
+.showcase-table .center {
+    text-align: center;
+    vertical-align: middle;
+}
+
+/* Explicitly disable Bootstrap zebra striping often used in Sphinx themes */
+table.table-striped > tbody > tr:nth-of-type(odd),
+table.table-striped > tbody > tr:nth-of-type(even),
+.bd-content table tr {
+    background-color: var(--pst-color-table-row-bg) !important;
+}

@@ -76,7 +76,7 @@ A policy node is essentially a ROS 2 node that subscribes to observations and pu
 
 For this tutorial, we will be using [aic_model](../aic_model/) to implement a policy node.
 
-> [!Important]
+> [!IMPORTANT]
 > Take note of the prompt in the bash examples. If it starts with `(aic) $`, then it should be run from inside the pixi environment.
 >
 > Example:
@@ -134,7 +134,7 @@ ros-kilted-aic-model-interfaces = { path = "../aic_interfaces/aic_model_interfac
 ros-kilted-aic-task-interfaces = { path = "../aic_interfaces/aic_task_interfaces" }
 ```
 
-> [!Tip]
+> [!TIP]
 > Normally, pixi will automatically discover the dependencies from `package.xml`. But because we are building the aic interfaces from source, we need to tell pixi where to find them.
 
 ### Add the pixi package to the workspace
@@ -171,7 +171,7 @@ $ pixi reinstall ros-kilted-my-policy-node
 $ pixi run ros2 run aic_model aic_model --ros-args -p use_sim_time:=true -p policy:=my_policy_node.WaveArm
 ```
 
-> [!Note]
+> [!NOTE]
 > The command above runs the `aic_model` node, which then dynamically loads and runs your specific policy implementation (`my_policy_node.WaveArm`).
 
 ### Dependency Management
@@ -221,7 +221,7 @@ ros-kilted-my-policy-node = { path = "my_policy_node" }
 ros-kilted-my-local-dep = { path = "my_local_dep" }
 ```
 
-> [!Tip]
+> [!TIP]
 > pixi automatically prefixes a ROS package with `ros-<distro>-` and converts underscores to hyphens.
 
 ### Build-Run-Debug Cycle (Python)
@@ -233,7 +233,7 @@ ros-kilted-my-local-dep = { path = "my_local_dep" }
 $ pixi reinstall <package>
 ```
 
-> [!Tip]
+> [!TIP]
 > You may enter the pixi environment with `pixi shell` and force an "editable" install with `pip install -e`. But note that this circumvents pixi and may cause unintended side effects.
 
 ### Preparing for Submission
