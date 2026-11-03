@@ -11,6 +11,7 @@ preview = ["pixi-build"]
 evdev = ">=1.9.2,<2"
 
 [dependencies]
+black = "==26.3.1"                                                                     # keep in sync with .github/workflows/style.yml
 isort = "==5.13.2"                                                                     # version bundled by the vscode extension
 json5 = ">=0.13.0,<0.14"                                                               # version bundled by the vscode extension
 numpy = "<2.3.0"
