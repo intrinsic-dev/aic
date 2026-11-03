@@ -39,7 +39,6 @@ from aic_control_interfaces.msg import (
 )
 from aic_control_interfaces.srv import ChangeTargetMode
 
-
 # UR5e joint names in order
 JOINT_NAMES = [
     "shoulder_pan_joint",
