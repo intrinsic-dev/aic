@@ -235,8 +235,7 @@ class AICCartesianTeleoperatorNode(Node):
 
 def main(args=None):
 
-    print(
-        f"""
+    print(f"""
         Keyboard teleoperation for Cartesian control
         ---------------------------
         Linear translation:
@@ -258,8 +257,7 @@ def main(args=None):
             m : Use global ('base_link') frame
 
         Press ESC to quit
-        """
-    )
+        """)
 
     try:
         with rclpy.init(args=args):

@@ -198,8 +198,7 @@ class AICTeleoperatorNode(Node):
 
 def main(args=None):
 
-    print(
-        f"""
+    print(f"""
         Keyboard teleoperation for joint control
         ---------------------------
         Angular joint movement:
@@ -215,8 +214,7 @@ def main(args=None):
             l : Activate FAST mode ({FAST_ANGULAR_VEL} rad/s)
 
         Press ESC to quit
-        """
-    )
+        """)
 
     try:
         with rclpy.init(args=args):
