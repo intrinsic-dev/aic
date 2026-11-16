@@ -31,6 +31,7 @@ namespace aic_gazebo {
 class ResetJointsPlugin : public gz::sim::System,
                           public gz::sim::ISystemConfigure,
                           public gz::sim::ISystemPreUpdate,
+                          public gz::sim::ISystemPostUpdate,
                           public gz::sim::ISystemReset {
   // Documentation inherited
  public:
@@ -43,6 +44,11 @@ class ResetJointsPlugin : public gz::sim::System,
  public:
   void PreUpdate(const gz::sim::UpdateInfo& _info,
                  gz::sim::EntityComponentManager& _ecm) override;
+
+  // Documentation inherited
+ public:
+  void PostUpdate(const gz::sim::UpdateInfo& _info,
+                  const gz::sim::EntityComponentManager& _ecm) override;
 
   // Documentation inherited
  public:
@@ -78,6 +84,11 @@ class ResetJointsPlugin : public gz::sim::System,
   /// \brief Mutex to prevent overwriting joint requests.
  private:
   std::mutex mutex_;
+
+  /// \brief Flag indicating reset components were applied in PreUpdate and
+  /// the promise should be resolved in PostUpdate (after physics processes).
+ private:
+  bool reset_pending_{false};
 
   /// \brief Thread to spin ROS 2 node.
  private:

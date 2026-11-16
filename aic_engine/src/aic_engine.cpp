@@ -1697,6 +1697,11 @@ bool Engine::home_robot() {
     return false;
   }
 
+  // Allow at least a few physics steps for the joint reset to propagate
+  // through the simulation pipeline (Update + PostUpdate) before reactivating
+  // the controller, which reads hardware state on activation.
+  node_->get_clock()->sleep_for(rclcpp::Duration::from_seconds(0.01));
+
   // Activate aic_controller & resume simulation
   if (!switch_controllers({"aic_controller"}, {})) {
     RCLCPP_ERROR(node_->get_logger(), "Failed to activate aic_controller.");
