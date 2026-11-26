@@ -176,7 +176,7 @@ def postprocess_world_xml(
 
     # 1. Update cable_end_0 pose to tuned values
     if cable_end_pos is None:
-        cable_end_pos = "0.171400 0.020606 1.511889"
+        cable_end_pos = "0.171400 0.020606 1.484489"
     if cable_end_quat is None:
         cable_end_quat = "0.712741 0.312130 -0.052173 0.625982"
     xml_str = re.sub(
@@ -459,7 +459,7 @@ def main():
         if is_reversed:
             gripper_plug_name = "sc_plug_link"
             # Tuned values for reversed cable (sc_plug at gripper end)
-            cable_end_pos = "0.172124 0.029369 1.507828"
+            cable_end_pos = "0.172124 0.029369 1.480428"
             cable_end_quat = "0.713143 0.312161 -0.049352 0.625737"
             weld_relpose = (
                 "-0.000980 0.000693 0.180020" " 0.170140 -0.684594 0.157796 -0.691002"
