@@ -717,7 +717,7 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             "cable_z",
-            default_value="1.518",
+            default_value="1.491",
             description="Cable spawn Z position",
         )
     )

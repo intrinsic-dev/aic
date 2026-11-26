@@ -110,8 +110,8 @@ ros2 launch aic_bringup aic_gz_bringup.launch.py [parameters]
 - `cable_type` (default: `"sfp_sc_cable"`) - Type of cable to spawn. Options: [`sfp_sc_cable`, `sfp_sc_cable_reversed`]
 - `cable_x` (default: `"0.172"`) - Cable spawn X position (meters)
 - `cable_y` (default: `"0.024"`) - Cable spawn Y position (meters)
-- `cable_z` (default: `"1.518"`) - Cable spawn Z position (meters)
-    - Note: set `cable_z` to `1.508` if `cable_type` is `sfp_sc_cable_reversed`
+- `cable_z` (default: `"1.491"`) - Cable spawn Z position (meters)
+    - Note: set `cable_z` to `1.481` if `cable_type` is `sfp_sc_cable_reversed`
 - `cable_roll` (default: `"0.4432"`) - Cable spawn roll orientation (radians)
 - `cable_pitch` (default: `"-0.48"`) - Cable spawn pitch orientation (radians)
 - `cable_yaw` (default: `"1.3303"`) - Cable spawn yaw orientation (radians)
