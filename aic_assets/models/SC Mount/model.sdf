@@ -9,76 +9,93 @@
           </mesh>
         </geometry>
       </visual>
-      <collision name="v1015079011_collider_box">
-        <pose>0.039002 -0.0 0.0025 0.0 -0.0 -0.0</pose>
-        <geometry>
-          <box>
-            <size>0.017747 0.014 0.005</size>
-          </box>
-        </geometry>
-      </collision>
       <collision name="v1015079011_collider_box.001">
-        <pose>0.022568 -0.0054 0.013451 0.0 0.785398 -0.0</pose>
+        <pose>6.8e-05 -0.00565 0.019451 0.0 0.785398 -0.0</pose>
         <geometry>
           <box>
-            <size>0.025812 0.0032 0.013799</size>
+            <size>0.025823 0.002705 0.013809</size>
           </box>
         </geometry>
       </collision>
       <collision name="v1015079011_collider_box.002">
-        <pose>0.022568 0.00585 0.013451 0.0 0.785398 -0.0</pose>
+        <pose>6.8e-05 0.0061 0.019451 0.0 0.785398 -0.0</pose>
         <geometry>
           <box>
-            <size>0.025812 0.0023 0.013799</size>
+            <size>0.025823 0.001803 0.013809</size>
           </box>
         </geometry>
       </collision>
       <collision name="v1015079011_collider_box003_collider_box">
-        <pose>0.01415 -0.0 0.02187 0.0 0.785398 -0.0</pose>
+        <pose>-0.008527 -0.0 0.028047 0.0 0.785398 -0.0</pose>
         <geometry>
           <box>
-            <size>0.002 0.014 0.013799</size>
+            <size>0.001502 0.014087 0.013819</size>
           </box>
         </geometry>
       </collision>
       <collision name="v1015079011_collider_box003_collider_box.001">
-        <pose>0.031064 -0.0 0.004956 0.0 0.785398 -0.0</pose>
+        <pose>0.008741 -0.0 0.010779 0.0 0.785398 -0.0</pose>
         <geometry>
           <box>
-            <size>0.001842 0.014 0.013799</size>
-          </box>
-        </geometry>
-      </collision>
-      <collision name="v1015079011_collider_box003_collider_box.002">
-        <pose>0.009506 -0.0 0.0025 0.0 -0.0 -0.0</pose>
-        <geometry>
-          <box>
-            <size>0.024957 0.014 0.005</size>
+            <size>0.001343 0.014087 0.013819</size>
           </box>
         </geometry>
       </collision>
       <collision name="v1015079011_collider_box003_collider_box.003">
-        <pose>0.017774 -0.0 0.008656 0.0 0.785398 -0.0</pose>
+        <pose>-0.004726 -0.0 0.014656 0.0 0.785398 -0.0</pose>
         <geometry>
           <box>
-            <size>0.025812 0.014 0.001239</size>
+            <size>0.025832 0.014122 0.001241</size>
           </box>
         </geometry>
       </collision>
       <collision name="v1015079011_collider_box003_collider_box.004">
-        <pose>0.035389 -0.0 0.004624 0.0 -0.0 -0.0</pose>
+        <pose>0.012889 -0.0 0.010624 0.0 -0.0 -0.0</pose>
         <geometry>
           <box>
-            <size>0.002221 0.014 0.009249</size>
+            <size>0.002224 0.01402 0.009286</size>
           </box>
         </geometry>
       </collision>
       <collision name="v1015079011_collider_box003_collider_box004_collider_box">
-        <pose>0.009545 -0.0 0.008711 0.0 -0.0 -0.0</pose>
+        <pose>-0.012955 -0.0 0.014711 0.0 -0.0 -0.0</pose>
         <geometry>
           <box>
-            <size>0.00209 0.014 0.017422</size>
+            <size>0.002092 0.01402 0.017492</size>
           </box>
+        </geometry>
+      </collision>
+      <collision name="fixture for sc plug_collider_box">
+        <pose>0.0 -0.011259 0.0085 0.0 -0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.006004 0.008524 0.005004</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="fixture for sc plug_collider_box.001">
+        <pose>0.0 0.011259 0.0085 0.0 -0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.006004 0.008524 0.005004</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="plug fixture base mount_collider_box.002">
+        <pose>0.0 0.0 0.0025 0.0 -0.0 0.0</pose>
+        <geometry>
+          <box>
+            <size>0.05102 0.006004 0.005014</size>
+          </box>
+        </geometry>
+      </collision>
+      <collision name="plug fixture base mount_collider_cylinder.002">
+        <pose>0.0 0.0 0.003 0.0 -0.0 0.0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.015206</radius>
+            <length>0.006017</length>
+          </cylinder>
         </geometry>
       </collision>
     </link>
