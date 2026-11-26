@@ -4,7 +4,7 @@
   <!-- TF prefix parameter -->
   <xacro:property name="tf_prefix" value="ati/"/>
   <!-- adapter_offset is the effective length that the adapter adds to the endeffector -->
-  <xacro:property name="adapter_offset" value="0.0245"/>
+  <xacro:property name="adapter_offset" value="0.0254"/>
 
   <xacro:macro name="axia80_m20" params="tf_prefix">
     <link name="${tf_prefix}base_link">
@@ -17,19 +17,19 @@
       </inertial>
 
       <visual name="axia_ft_sensor_visual">
-        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <origin xyz="0 0 0.025399" rpy="${-pi} 0 ${-pi/2}"/>
         <geometry>
           <mesh filename="package://aic_assets/models/Axia80 M20/axia_ft_sensor_visual.glb"/>
         </geometry>
       </visual>
       <collision name="axia80_m20_collider_cylinder">
-        <origin xyz="0.0 -0.000004 0.012699" rpy="3.141593 0.0 0.0"/>
+        <origin xyz="0.0 0.0 0.0127" rpy="0.0 0.0 0.0"/>
         <geometry>
           <cylinder length="0.025399" radius="0.041519"/>
         </geometry>
       </collision>
       <collision name="axia80_m20001_collider_cylinder">
-        <origin xyz="0.0 0.041828 0.018432" rpy="-1.570796 0 0"/>
+        <origin xyz="-0.041828 0.0 0.006967" rpy="0.0 1.570796 0.0"/>
         <geometry>
           <cylinder radius="0.006027" length="0.016717"/>
         </geometry>

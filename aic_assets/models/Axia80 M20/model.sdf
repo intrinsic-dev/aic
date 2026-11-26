@@ -3,6 +3,7 @@
   <model name="Axia80 M20">
     <link name="axia_ft_sensor_link">
       <visual name="axia_ft_sensor_visual">
+        <pose>0.0 0.0 0.025399 -3.141593 0.0 -1.570796</pose>
         <geometry>
           <mesh>
             <uri>axia_ft_sensor_visual.glb</uri>
@@ -10,7 +11,7 @@
         </geometry>
       </visual>
       <collision name="axia80_m20_collider_cylinder">
-        <pose>0.0 -4e-06 0.012699 3.141593 -0.0 0.0</pose>
+        <pose>0.0 0.0 0.0127 0.0 0.0 0.0</pose>
         <geometry>
           <cylinder>
             <radius>0.041519</radius>
@@ -19,7 +20,7 @@
         </geometry>
       </collision>
       <collision name="axia80_m20001_collider_cylinder">
-        <pose>0.0 0.041828 0.018432 -1.570796 -0.0 0.0</pose>
+        <pose>-0.041828 0.0 0.006967 0.0 1.570796 0.0</pose>
         <geometry>
           <cylinder>
             <radius>0.006027</radius>
