@@ -17,6 +17,14 @@ fts_broadcaster:
   ros__parameters:
     frame_id: ati/tool_link
     sensor_name: AtiForceTorqueSensor
+    sensor_filter_chain:
+      filter1:
+        name: low_pass_filter
+        type: "control_filters/LowPassFilterWrench"
+        params:
+          sampling_frequency: 50.0 # [Hz]
+          damping_frequency: 10.0 # Cut-off frequency [Hz]
+          damping_intensity: 0.707
     update_rate: 50
 
 aic_controller:
