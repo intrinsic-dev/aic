@@ -216,15 +216,17 @@ def main(args=None):
         Press ESC to quit
         """)
 
+    node = None
     try:
-        with rclpy.init(args=args):
-            node = AICTeleoperatorNode()
-            node.send_change_control_mode_req(TargetMode.MODE_JOINT)
-            rclpy.spin(node)
+        rclpy.init(args=args)
+        node = AICTeleoperatorNode()
+        node.send_change_control_mode_req(TargetMode.MODE_JOINT)
+        rclpy.spin(node)
     except (KeyboardInterrupt, ExternalShutdownException):
         pass
     finally:
-        node.destroy_node()
+        if node is not None:
+            node.destroy_node()
         rclpy.shutdown()
 
 

@@ -133,14 +133,19 @@ class CreateAndCancelTaskNode(Node):
 
 
 def main(args=None):
+    node = None
     try:
-        with rclpy.init(args=args):
-            node = CreateAndCancelTaskNode()
-            node.activate_model_node()
-            node.send_goal()
-            rclpy.spin(node)
+        rclpy.init(args=args)
+        node = CreateAndCancelTaskNode()
+        node.activate_model_node()
+        node.send_goal()
+        rclpy.spin(node)
     except (KeyboardInterrupt, ExternalShutdownException):
         pass
+    finally:
+        if node is not None:
+            node.destroy_node()
+        rclpy.shutdown()
 
 
 if __name__ == "__main__":

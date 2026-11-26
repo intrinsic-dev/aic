@@ -54,7 +54,9 @@ class CycleLifecycleNode(Node):
 
 
 def main(args=None):
-    with rclpy.init(args=args):
+    node = None
+    try:
+        rclpy.init(args=args)
         node = CycleLifecycleNode()
         state = node.get_model_state()
         print(f"current state: {state}")
@@ -73,6 +75,10 @@ def main(args=None):
 
         print(f"shutting down...")
         node.change_model_state(Transition.TRANSITION_INACTIVE_SHUTDOWN)
+    finally:
+        if node is not None:
+            node.destroy_node()
+        rclpy.shutdown()
 
 
 if __name__ == "__main__":

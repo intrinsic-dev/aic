@@ -259,16 +259,18 @@ def main(args=None):
         Press ESC to quit
         """)
 
+    node = None
     try:
-        with rclpy.init(args=args):
-            node = AICCartesianTeleoperatorNode()
-            node.send_change_control_mode_req(TargetMode.MODE_CARTESIAN)
-            rclpy.spin(node)
+        rclpy.init(args=args)
+        node = AICCartesianTeleoperatorNode()
+        node.send_change_control_mode_req(TargetMode.MODE_CARTESIAN)
+        rclpy.spin(node)
     except (KeyboardInterrupt, ExternalShutdownException):
         pass
     finally:
-        node.stop_keyboard_listener()
-        node.destroy_node()
+        if node is not None:
+            node.stop_keyboard_listener()
+            node.destroy_node()
         rclpy.shutdown()
 
 
